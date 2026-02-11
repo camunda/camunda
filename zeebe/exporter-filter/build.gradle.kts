@@ -9,6 +9,8 @@ plugins {
 dependencies {
     api(project(":zeebe-protocol"))
     api(project(":zeebe-util"))
+    implementation(libs.com.fasterxml.jackson.core.jackson.databind)
+    implementation(libs.com.fasterxml.jackson.core.jackson.core)
     implementation(libs.org.slf4j.slf4j.api)
     api(project(":zeebe-exporter-api"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)

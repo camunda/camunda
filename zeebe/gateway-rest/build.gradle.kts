@@ -50,7 +50,7 @@ dependencies {
     testImplementation(libs.org.springframework.spring.test)
     testImplementation(libs.org.springframework.spring.webflux)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.web)
-    testImplementation(libs.org.springframework.boot.spring.boot.test.x1)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test.autoconfigure)
     testImplementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.net.bytebuddy.byte.buddy)

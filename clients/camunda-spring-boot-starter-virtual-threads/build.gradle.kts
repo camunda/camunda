@@ -7,16 +7,16 @@ plugins {
 }
 
 dependencies {
-    implementation(libs.org.springframework.boot.spring.boot.autoconfigure.x1)
-    implementation(libs.org.springframework.spring.context.x1)
-    implementation(libs.org.springframework.spring.beans.x1)
+    implementation(libs.org.springframework.boot.spring.boot.autoconfigure)
+    implementation(libs.org.springframework.spring.context)
+    implementation(libs.org.springframework.spring.beans)
     implementation(libs.io.micrometer.micrometer.core)
     testImplementation(libs.org.springframework.boot.spring.boot.starter.test)
     testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api.x1)
     testImplementation(libs.org.assertj.assertj.core)
     compileOnly(project(":camunda-spring-boot-starter"))
-    compileOnly(libs.org.springframework.boot.spring.boot.actuator.autoconfigure.x1)
+    compileOnly(libs.org.springframework.boot.spring.boot.actuator.autoconfigure)
 }
 
 description = "Camunda Spring Boot Starter Virtual Threads"

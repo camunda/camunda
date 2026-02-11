@@ -75,3 +75,6 @@ cmd/renovate/renovate*/
 
 # HTTP test private environment files
 **/http-client.private.env.json
+
+
+__pycache__/

@@ -36,7 +36,7 @@ dependencies {
     testImplementation(project(":zeebe-atomix-utils"))
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.springframework.spring.test)
-    testImplementation(libs.org.springframework.boot.spring.boot.test.x1)
+    testImplementation(libs.org.springframework.boot.spring.boot.test)
     testImplementation(libs.org.assertj.assertj.core)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)

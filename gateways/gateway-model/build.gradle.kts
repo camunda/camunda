@@ -18,6 +18,7 @@ openApiGenerate {
 dependencies {
     api(libs.org.springframework.spring.core)
     api(libs.org.springframework.spring.context)
+    api(libs.org.springframework.spring.web)
     api(libs.com.fasterxml.jackson.core.jackson.annotations)
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(libs.jakarta.validation.jakarta.validation.api)
