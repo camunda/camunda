@@ -104,7 +104,7 @@ const renderUserTaskDetails = (
 
   return (
     <div>
-      <Subtitle>Operation changes</Subtitle>
+      <Subtitle>Properties</Subtitle>
       <DataTable headers={headers} rows={rows} />
     </div>
   );
@@ -134,6 +134,20 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     let detailsContent: React.ReactNode = null;
 
     switch (entry.operationType) {
+      case 'RESOLVE_INCIDENT': {
+        const incidentKey = entry.details?.incident?.key;
+        detailsContent =
+          incidentKey != null ? (
+            <DataTable
+              headers={[
+                {header: 'Property', key: 'property'},
+                {header: 'Value', key: 'value'},
+              ]}
+              rows={[{id: 'incidentKey', property: 'Incident key', value: incidentKey}]}
+            />
+          ) : null;
+        break;
+      }
       case 'ADD_VARIABLE':
       case 'UPDATE_VARIABLE': {
         const variable = entry.details?.variable;
@@ -177,7 +191,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Subtitle>Operation changes</Subtitle>
+        <Subtitle>Properties</Subtitle>
         {detailsContent}
       </div>
     );

@@ -48,6 +48,7 @@ export type MockAuditLogEntry = AuditLogEntry & {
     };
     resourceKey?: string;
     resourceType?: string;
+    incident?: {key: string};
   };
   isMultiInstanceOperation?: boolean;
   batchOperationId?: string;
@@ -103,6 +104,7 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     isMultiInstanceOperation: true,
     batchOperationId: '2251799813688003',
     affectedInstancesCount: 89,
+    details: {incident: {key: '2251799813685247'}},
   },
   // Batch operation - Modify Process Instance
   {
@@ -316,6 +318,7 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     startTimestamp: '2024-01-13T09:51:45.000+0000',
     endTimestamp: '2024-01-13T09:52:10.000+0000',
     user: 'Ryan Howard',
+    details: {incident: {key: '2251799813685198'}},
   },
   {
     id: '5',
@@ -330,6 +333,7 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     startTimestamp: '2024-01-12T13:33:57.000+0000',
     endTimestamp: '2024-01-12T13:35:12.000+0000',
     user: 'Toby Flenderson',
+    details: {incident: {key: '2251799813685201'}},
   },
   {
     id: '6',
@@ -401,6 +405,7 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     endTimestamp: '2024-01-12T13:35:12.000+0000',
     user: 'Robert California',
     errorMessage: 'Unable to resolve incident: The process instance has been terminated and incidents can no longer be resolved.',
+    details: {incident: {key: '2251799813685412'}},
   },
   {
     id: '12',

@@ -32,10 +32,15 @@ type UserTaskDetails = {
   allowOverride?: boolean;
 };
 
+type IncidentDetails = {
+  key: string;
+};
+
 export type MockAuditLogEntry = AuditLogEntry & {
   details?: {
     variable?: VariableDetails;
     userTask?: UserTaskDetails;
+    incident?: IncidentDetails;
   };
   // Indicates the operation was applied to multiple process instances
   isMultiInstanceOperation?: boolean;
@@ -109,6 +114,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     isMultiInstanceOperation: true,
     affectedInstancesCount: 5,
     batchOperationId: '2251799813688013',
+    details: {incident: {key: '2251799813685247'}},
   },
   // Failed single instance operation
   {
@@ -164,6 +170,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     isMultiInstanceOperation: true,
     affectedInstancesCount: 7,
     batchOperationId: '2251799813688016',
+    details: {incident: {key: '2251799813685198'}},
   },
   {
     id: '17',
@@ -450,6 +457,33 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     startTimestamp: new Date(Date.now() - 900).toISOString(),
     user: 'Olivia Operator',
   },
+  // Single-instance RESOLVE_INCIDENT with incident key
+  {
+    id: '22a',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '123',
+    tenantId: 'default',
+    operationType: 'RESOLVE_INCIDENT',
+    operationState: 'success',
+    startTimestamp: new Date(Date.now() - 180).toISOString(),
+    user: 'Incident Resolver',
+    details: {incident: {key: '2251799813685301'}},
+  },
+  // Failed RESOLVE_INCIDENT with incident key
+  {
+    id: '22b',
+    processDefinitionName: 'Payment Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '456',
+    tenantId: 'default',
+    operationType: 'RESOLVE_INCIDENT',
+    operationState: 'fail',
+    startTimestamp: new Date(Date.now() - 250).toISOString(),
+    user: 'Support Agent',
+    errorMessage: 'Incident could not be resolved: timeout while evaluating expression.',
+    details: {incident: {key: '2251799813685412'}},
+  },
   // CREATE_PROCESS_INSTANCE example
   {
     id: '21',
@@ -506,6 +540,7 @@ export const mockOperationLog: MockAuditLogEntry[] = [
     operationState: 'success',
     startTimestamp: new Date(Date.now() - 65000).toISOString(),
     user: 'John Doe',
+    details: {incident: {key: '2251799813685123'}},
   },
   // AI Agent examples
   {

@@ -22,7 +22,8 @@ import {
   Tooltip,
 } from '@carbon/react';
 import {Information, CheckmarkOutline, Error} from '@carbon/react/icons';
-import {User, Api, Bot} from '@carbon/icons-react';
+import {User, Api} from '@carbon/icons-react';
+import AiAgentIcon from 'modules/components/Icon/ai-agent-icon.svg?react';
 import {formatDate} from 'modules/utils/date';
 import {DetailsModal} from './DetailsModal';
 import {mockOperationLog} from './mocks';
@@ -132,7 +133,7 @@ const OperationsLogTable: React.FC = observer(() => {
       case 'client':
         return Api;
       case 'agent':
-        return Bot;
+        return AiAgentIcon;
       default:
         return User;
     }
@@ -167,7 +168,7 @@ const OperationsLogTable: React.FC = observer(() => {
             )
           : []
       ).map((entry: MockAuditLogEntry) => {
-        // Determine property display for variable operations
+        // Determine property display (match structure from AuditLog)
         let propertyDisplay: React.ReactNode = '-';
         if (
           entry.operationType === 'ADD_VARIABLE' ||
@@ -182,11 +183,51 @@ const OperationsLogTable: React.FC = observer(() => {
                     fontSize: 'var(--cds-label-01-font-size)',
                     lineHeight: 'var(--cds-label-01-line-height)',
                     color: 'var(--cds-text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Variable name
                 </div>
-                {variableName}
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {variableName}
+                </div>
+              </div>
+            );
+          }
+        } else if (entry.operationType === 'RESOLVE_INCIDENT') {
+          const incidentKey = entry.details?.incident?.key;
+          if (incidentKey) {
+            propertyDisplay = (
+              <div>
+                <div
+                  style={{
+                    fontSize: 'var(--cds-label-01-font-size)',
+                    lineHeight: 'var(--cds-label-01-line-height)',
+                    color: 'var(--cds-text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Incident key
+                </div>
+                <div
+                  style={{
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {incidentKey}
+                </div>
               </div>
             );
           }
@@ -209,7 +250,7 @@ const OperationsLogTable: React.FC = observer(() => {
                   return 'User';
               }
             };
-            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <Bot size={16} />;
+            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <AiAgentIcon width={16} height={16} />;
             return (
               <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
                 <Tooltip align="top" description={getActorTypeLabel(actorType)}>
@@ -264,6 +305,12 @@ const OperationsLogTable: React.FC = observer(() => {
         .operations-log-table .cds--popover[role='tooltip'] .cds--popover-content {
           padding-top: var(--cds-spacing-02);
           padding-bottom: var(--cds-spacing-02);
+        }
+        .operations-log-table thead {
+          position: sticky;
+          top: 0;
+          z-index: 1;
+          background-color: var(--cds-layer);
         }
       `}</style>
       <div
@@ -370,6 +417,13 @@ const OperationsLogTable: React.FC = observer(() => {
                                   <Information size={16} />
                                 </button>
                               </Stack>
+                            </TableCell>
+                          );
+                        }
+                        if (cell.info.header === 'property') {
+                          return (
+                            <TableCell key={cell.id} data-testid="cell-property">
+                              {rowData?.property ?? cell.value}
                             </TableCell>
                           );
                         }

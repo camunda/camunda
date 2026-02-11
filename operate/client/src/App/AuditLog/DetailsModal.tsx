@@ -199,6 +199,20 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     let detailsContent: React.ReactNode = null;
 
     switch (entry.operationType) {
+      case 'RESOLVE_INCIDENT': {
+        const incidentKey = entry.details?.incident?.key;
+        detailsContent =
+          incidentKey != null ? (
+            <DataTable
+              headers={[
+                {header: 'Property', key: 'property'},
+                {header: 'Value', key: 'value'},
+              ]}
+              rows={[{id: 'incidentKey', property: 'Incident key', value: incidentKey}]}
+            />
+          ) : null;
+        break;
+      }
       case 'ADD_VARIABLE':
       case 'UPDATE_VARIABLE': {
         const variable = entry.details?.variable;
@@ -242,7 +256,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
 
     return (
       <div>
-        <Subtitle>Operation changes</Subtitle>
+        <Subtitle>Properties</Subtitle>
         {detailsContent}
       </div>
     );
@@ -267,7 +281,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
           >
             {entry.batchOperationId}
           </CodeSnippet>
-          <span style={{fontStyle: 'italic'}}>Multiple process instances</span>
+          <span style={{fontStyle: 'italic'}}>Multiple instances</span>
           <Button
             kind="ghost"
             size="sm"
@@ -360,7 +374,6 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
               alignItems: 'center',
             }}
           >
-            <span>{entry.processDefinitionName}</span>
             {entry.processInstanceKey && (
               <CodeSnippet
                 type="inline"
@@ -371,6 +384,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                 {entry.processInstanceKey}
               </CodeSnippet>
             )}
+            <span style={{ fontStyle: 'italic' }}>{entry.processDefinitionName}</span>
             {entry.processInstanceKey && (
               <Button
                 kind="ghost"

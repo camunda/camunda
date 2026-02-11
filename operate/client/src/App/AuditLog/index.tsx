@@ -23,9 +23,9 @@ import {formatDate} from 'modules/utils/date';
 import {getSortParams} from 'modules/utils/filter';
 import {PAGE_TITLE} from 'modules/constants';
 import {Information, CheckmarkOutline, Error} from '@carbon/react/icons';
-import {User, Api, Bot} from '@carbon/icons-react';
+import {User, Api} from '@carbon/icons-react';
+import AiAgentIcon from 'modules/components/Icon/ai-agent-icon.svg?react';
 import {DetailsModal} from './DetailsModal';
-import {StatusIndicator} from './StatusIndicator';
 import type {MockAuditLogEntry} from 'modules/mocks/auditLog';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {FiltersPanel} from 'modules/components/FiltersPanel';
@@ -301,12 +301,16 @@ const AuditLog: React.FC = () => {
                   onClick={(e: React.MouseEvent) => e.preventDefault()}
                   style={{
                     fontSize: '0.75rem',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {mockEntry.batchOperationId}
                 </Link>
               )}
-              <div style={{fontStyle: 'italic'}}>Multiple process instances</div>
+              <div style={{fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>Multiple instances</div>
             </div>
           );
         } else if (
@@ -327,6 +331,9 @@ const AuditLog: React.FC = () => {
                     style={{
                       fontSize: '0.75rem',
                       color: 'var(--cds-text-secondary)',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {resourceKey}
@@ -337,13 +344,17 @@ const AuditLog: React.FC = () => {
                     onClick={(e: React.MouseEvent) => e.preventDefault()}
                     style={{
                       fontSize: '0.75rem',
+                      display: 'block',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
                     }}
                   >
                     {resourceKey}
                   </Link>
                 )
               )}
-              <div style={{fontStyle: 'italic'}}>{entry.processDefinitionName}</div>
+              <div style={{fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{entry.processDefinitionName}</div>
             </div>
           );
         } else if (entry.processDefinitionName) {
@@ -356,12 +367,16 @@ const AuditLog: React.FC = () => {
                   onClick={(e: React.MouseEvent) => e.preventDefault()}
                   style={{
                     fontSize: '0.75rem',
+                    display: 'block',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   {entry.processInstanceKey}
                 </Link>
               )}
-              <div style={{fontStyle: 'italic'}}>{entry.processDefinitionName}</div>
+              <div style={{fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>{entry.processDefinitionName}</div>
             </div>
           );
         } else {
@@ -383,11 +398,39 @@ const AuditLog: React.FC = () => {
                     fontSize: 'var(--cds-label-01-font-size)',
                     lineHeight: 'var(--cds-label-01-line-height)',
                     color: 'var(--cds-text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   Variable name
                 </div>
+                <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
                   {variableName}
+                </div>
+              </div>
+            );
+          }
+        } else if (entry.operationType === 'RESOLVE_INCIDENT') {
+          const incidentKey = mockEntry.details?.incident?.key;
+          if (incidentKey) {
+            propertyDisplay = (
+              <div>
+                <div
+                  style={{
+                    fontSize: 'var(--cds-label-01-font-size)',
+                    lineHeight: 'var(--cds-label-01-line-height)',
+                    color: 'var(--cds-text-secondary)',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  Incident key
+                </div>
+                <div style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                  {incidentKey}
+                </div>
               </div>
             );
           }
@@ -412,7 +455,14 @@ const AuditLog: React.FC = () => {
             const color = isSuccess
               ? 'var(--cds-support-success)'
               : 'var(--cds-support-error)';
-            return <Icon size={16} style={{color}} />;
+            const tooltipText = isSuccess ? 'Successful' : 'Failed';
+            return (
+              <Tooltip align="top-right" description={tooltipText}>
+                <div style={{display: 'inline-flex', alignItems: 'center'}}>
+                  <Icon size={16} style={{color}} />
+                </div>
+              </Tooltip>
+            );
           })(),
           processes: processesDisplay,
           property: propertyDisplay,
@@ -428,22 +478,24 @@ const AuditLog: React.FC = () => {
                   return 'User';
               }
             };
-            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <Bot size={16} />;
+            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <AiAgentIcon width={16} height={16} />;
             return (
-              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
-                <Tooltip align="top" description={getActorTypeLabel(actorType)}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)', minWidth: 0}}>
+                <Tooltip align="top-left" description={getActorTypeLabel(actorType)}>
                   <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
                     {icon}
                   </div>
                 </Tooltip>
-                <CodeSnippet
-                  type="inline"
-                  title="Click to copy"
-                  aria-label="Click to copy"
-                  feedback="Copied to clipboard"
-                >
-                  {formatUsername(entry.user)}
-                </CodeSnippet>
+                <span style={{overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', minWidth: 0}}>
+                  <CodeSnippet
+                    type="inline"
+                    title="Click to copy"
+                    aria-label="Click to copy"
+                    feedback="Copied to clipboard"
+                  >
+                    {formatUsername(entry.user)}
+                  </CodeSnippet>
+                </span>
               </div>
             );
           })() : '-',
@@ -591,6 +643,23 @@ const AuditLog: React.FC = () => {
               .audit-log-table-container .cds--popover[role='tooltip'] .cds--popover-content {
                 padding-top: var(--cds-spacing-02);
                 padding-bottom: var(--cds-spacing-02);
+              }
+              .audit-log-table-container th[data-testid*="Reference to entity"],
+              .audit-log-table-container td[data-testid*="Reference to entity"],
+              .audit-log-table-container th[data-testid*="processes"],
+              .audit-log-table-container td[data-testid*="processes"],
+              .audit-log-table-container thead tr th:nth-child(4),
+              .audit-log-table-container tbody tr td:nth-child(4) {
+                max-width: 176px;
+                overflow: hidden;
+              }
+              .audit-log-table-container th[data-testid*="Actor"],
+              .audit-log-table-container td[data-testid*="Actor"],
+              .audit-log-table-container th[data-testid*="user"],
+              .audit-log-table-container td[data-testid*="user"],
+              .audit-log-table-container thead tr th:nth-child(6),
+              .audit-log-table-container tbody tr td:nth-child(6) {
+                max-width: 176px;
               }
             `}</style>
             <SortableTable
