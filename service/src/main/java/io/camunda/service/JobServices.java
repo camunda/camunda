@@ -165,6 +165,16 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
                 .getJobTypeStatistics(query));
   }
 
+  public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
+      final JobTypeStatisticsQuery query) {
+    final var authJobSearchClient =
+        jobSearchClient.withSecurityContext(
+            securityContextProvider.provideSecurityContext(
+                authentication, Authorization.of(a -> a.system().readJobMetric())));
+
+    return authJobSearchClient.getJobTypeStatistics(query);
+  }
+
   public record ActivateJobsRequest(
       String type,
       int maxJobsToActivate,
