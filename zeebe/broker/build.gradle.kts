@@ -64,15 +64,16 @@ dependencies {
     api(libs.org.agrona.agrona)
     implementation(libs.org.apache.commons.commons.lang3)
     testImplementation(libs.org.springframework.boot.spring.boot)
-    testImplementation(project(":zeebe-atomix-cluster"))
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-atomix-cluster", configuration = "tests"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":zeebe-bpmn-model"))
     testImplementation(project(":camunda-client-java"))
-    testImplementation(project(":zeebe-logstreams"))
+    testImplementation(project(":zeebe-logstreams", configuration = "tests"))
+    testImplementation(project(":zeebe-util", configuration = "tests"))
     testImplementation(project(":zeebe-protocol-test-util"))
     testImplementation(project(":zeebe-test-util"))
     testImplementation(project(":zeebe-exporter-test"))
-    testImplementation(project(":zeebe-workflow-engine"))
+    testImplementation(project(":zeebe-workflow-engine", configuration = "tests"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.net.bytebuddy.byte.buddy)
     testImplementation(libs.org.assertj.assertj.core)
@@ -98,6 +99,16 @@ description = "Zeebe Broker"
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
     from(sourceSets["test"].output)
+}
+
+val tests by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    extendsFrom(configurations["testRuntimeClasspath"])
+}
+
+artifacts {
+    add("tests", testsJar)
 }
 
 (publishing.publications["maven"] as MavenPublication).artifact(testsJar)

@@ -23,7 +23,7 @@ dependencies {
     testImplementation(project(":operate-webapp"))
     testImplementation(project(":camunda-qa-util"))
     testImplementation(project(":zeebe-test-util"))
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(project(":camunda-schema-manager"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.api)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.engine)
