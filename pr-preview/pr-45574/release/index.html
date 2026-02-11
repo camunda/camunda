@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-45574/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-45574/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-45574/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45574/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45574/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-45574/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-45574/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-45574/assets/js/runtime~main.1d1bcbb6.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-45574/assets/js/main.f12ec1d9.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45574/assets/js/runtime~main.2cb36fcd.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45574/assets/js/main.187c835d.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -392,32 +392,22 @@
 <ul>
 <li class=""><strong>Purpose</strong>: Lock in the feature scope for the upcoming minor release</li>
 <li class=""><strong>Timing</strong>: Occurs with the <strong>last alpha</strong> before the minor release (e.g., for <code>8.9.0</code>, this would be <code>8.9.0-alpha5</code>)</li>
-<li class=""><strong>What Changes</strong>:<!-- -->
-<ul>
+<li class=""><strong>What Changes</strong>:</li>
 <li class="">✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end</li>
 <li class="">❌ No new features, scope extensions, or risky changes after this point</li>
 <li class="">✅ Bug fixes, stabilization work, and E2E testing continue</li>
-</ul>
-</li>
-<li class=""><strong>Notification Process</strong>: Send email to engineering teams with:<!-- -->
-<ul>
+<li class=""><strong>Notification Process</strong>: Send email to engineering teams with:</li>
 <li class=""><strong>Subject</strong>: <code>Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor &lt;version&gt; - Feature Freeze</code></li>
-<li class=""><strong>Body</strong>:<!-- -->
-<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Hey all,</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">This appointment marks the feature freeze for the camunda/camunda repository: &lt;minor_version&gt; (minor).</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">&lt;last_alpha_version&gt; is the last alpha before the minor and defines the scope of what will ship in &lt;minor_version&gt;. Any new features or scope changes must be merged before this point to make it into the minor.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">After this date, we focus on bug fixing, stabilization, and end-to-end testing for &lt;minor_version&gt;. New features should target future alphas/minors instead.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Overall release manager is &lt;release_manager_name&gt;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">Have a nice week!</span><br></span></code></pre></div></div>
-</li>
+<li class=""><strong>Body</strong>:</li>
 </ul>
-</li>
-</ul>
+<div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">Hey all,</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        This appointment marks the feature freeze for the camunda/camunda repository: &lt;minor_version&gt; (minor).</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        &lt;last_alpha_version&gt; is the last alpha before the minor and defines the scope of what will ship in &lt;minor_version&gt;. Any new features or scope changes must be merged before this point to make it into the minor.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        After this date, we focus on bug fixing, stabilization, and end-to-end testing for &lt;minor_version&gt;. New features should target future alphas/minors instead.</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        Overall release manager is &lt;release_manager_name&gt;</span><br></span><span class="token-line" style="color:#393A34"><span class="token plain" style="display:inline-block"></span><br></span><span class="token-line" style="color:#393A34"><span class="token plain">        Have a nice week!</span><br></span></code></pre></div></div>
 <p><strong>🚫 Code Freeze (Minor Releases)</strong></p>
 <ul>
 <li class=""><strong>Purpose</strong>: Minimize code changes to ensure release stability</li>
 <li class=""><strong>Timing</strong>: On the day of the official minor release start date</li>
-<li class=""><strong>What Changes</strong>:<!-- -->
-<ul>
+<li class=""><strong>What Changes</strong>:</li>
 <li class="">✅ Only <strong>critical</strong> changes allowed (release blockers, severe regressions, security issues)</li>
 <li class="">❌ Non-critical changes deferred to future alphas or patch releases</li>
-</ul>
-</li>
 <li class=""><strong>Coordination</strong>: Scheduled via dedicated calendar invite managed by respective teams</li>
 </ul>
 <p><strong>📅 Important References</strong></p>
