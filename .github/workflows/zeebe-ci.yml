@@ -54,7 +54,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
-          minimus: true
+          minimus: ${{ matrix.os != 'macos' && matrix.os != 'windows' }}
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
         with:
@@ -333,6 +333,8 @@ jobs:
           push: true
       - name: Verify Docker image
         uses: ./.github/actions/verify-platform-docker
+        # Skip verification on fork PRs as there public base images are used that don't match our golden labels
+        if: github.event_name != 'pull_request' || !github.event.pull_request.head.repo.fork
         with:
           imageName: ${{ env.LOCAL_DOCKER_IMAGE }}
           date: ${{ steps.build-zeebe-docker.outputs.date }}
