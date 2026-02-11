@@ -39,10 +39,10 @@ dependencies {
     api(libs.com.fasterxml.jackson.core.jackson.databind)
     api(project(":camunda-search-client"))
     api(project(":camunda-search-domain"))
-    testImplementation(project(":zeebe-scheduler"))
-    testImplementation(project(":zeebe-logstreams"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
+    testImplementation(project(":zeebe-logstreams", configuration = "tests"))
     testImplementation(project(":zeebe-protocol-asserts"))
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.junit.junit)
     testImplementation(libs.org.junit.vintage.junit.vintage.engine)
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
@@ -56,7 +56,7 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.junit.jupiter)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
-    testImplementation(project(":zeebe-logstreams"))
+    testImplementation(project(":zeebe-logstreams", configuration = "tests"))
     testImplementation(libs.org.openjdk.jmh.jmh.core)
     testImplementation(libs.org.openjdk.jmh.jmh.generator.annprocess)
     testImplementation(libs.org.instancio.instancio.core)
@@ -68,6 +68,16 @@ description = "Zeebe Workflow Engine"
 val testsJar by tasks.registering(Jar::class) {
     archiveClassifier = "tests"
     from(sourceSets["test"].output)
+}
+
+val tests by configurations.creating {
+    isCanBeConsumed = true
+    isCanBeResolved = false
+    extendsFrom(configurations["testRuntimeClasspath"])
+}
+
+artifacts {
+    add("tests", testsJar)
 }
 
 (publishing.publications["maven"] as MavenPublication).artifact(testsJar)

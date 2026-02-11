@@ -30,8 +30,8 @@ dependencies {
     testImplementation(libs.org.mockito.mockito.core)
     testImplementation(libs.org.awaitility.awaitility)
     testImplementation(libs.org.junit.platform.junit.platform.commons.x1)
-    testImplementation(project(":zeebe-logstreams"))
-    testImplementation(project(":zeebe-scheduler"))
+    testImplementation(project(":zeebe-logstreams", configuration = "tests"))
+    testImplementation(project(":zeebe-scheduler", configuration = "tests"))
     testImplementation(libs.org.junit.jupiter.junit.jupiter.params)
 }
 
