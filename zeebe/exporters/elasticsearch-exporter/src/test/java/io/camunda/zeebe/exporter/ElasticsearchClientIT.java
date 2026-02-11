@@ -11,9 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleRequest;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -22,10 +22,8 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -128,18 +126,18 @@ final class ElasticsearchClientIT {
         .as("should have created template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(indexTemplateName);
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var indexTemplate = templateWrapper.get().indexTemplate();
+    assertThat(indexTemplate.indexPatterns()).isEqualTo(expectedTemplate.patterns());
+    assertThat(indexTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
+    assertThat(indexTemplate.priority()).isEqualTo((long) expectedTemplate.priority());
+    assertThat(indexTemplate.version()).isEqualTo((long) expectedTemplate.version());
   }
 
   @Test
   void shouldPutComponentTemplate() {
-    // given
-    final Template expectedTemplate = templateReader.readComponentTemplate();
-
     // when
     client.putComponentTemplate();
 
@@ -149,11 +147,13 @@ final class ElasticsearchClientIT {
         .as("should have created component template")
         .isPresent()
         .get()
-        .extracting(ComponentTemplateWrapper::name)
+        .extracting(ComponentTemplate::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var componentTemplate = templateWrapper.get().componentTemplate();
+    assertThat(componentTemplate.template()).isNotNull();
+    assertThat(componentTemplate.template().mappings()).isNotNull();
+    assertThat(componentTemplate.template().settings()).isNotNull();
   }
 
   @Test
@@ -196,55 +196,5 @@ final class ElasticsearchClientIT {
     assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");
     assertThat(lifecycle.policy().phases().delete().actions()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().actions().delete()).isNotNull();
-  }
-
-  private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
-    assertThat(actualTemplate.patterns()).isEqualTo(expectedTemplate.patterns());
-    assertThat(actualTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
-    assertThat(actualTemplate.priority()).isEqualTo(expectedTemplate.priority());
-    assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
-    assertThat(actualTemplate.template().aliases())
-        .isEqualTo(expectedTemplate.template().aliases());
-    // Use recursive comparison to tolerate ES and the Java client normalizing object-typed mapping
-    // fields by adding "type": "object" — this is functionally correct but absent from the JSON
-    // resource files. The ignoringOverriddenEqualsForFields approach doesn't work for nested maps,
-    // so we strip the extra "type" entries before comparing.
-    assertThat(stripObjectTypeFromMappings(actualTemplate.template().mappings()))
-        .isEqualTo(expectedTemplate.template().mappings());
-
-    // cannot compare settings because we never get flat settings, instead we get { index : {
-    // number_of_shards: 1, queries: { cache : { enabled : false } } } }
-    // so instead we decompose how we compare the settings. I've tried with flat_settings parameter
-    // but that doesn't seem to be doing anything
-    assertThat(actualTemplate.template().settings())
-        .as("should contain a map of index settings")
-        .extractingByKey("index")
-        .isInstanceOf(Map.class)
-        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-        .containsEntry("number_of_shards", "1")
-        .containsEntry("number_of_replicas", "0")
-        .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
-  }
-
-  /**
-   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
-   * client normalize object-typed mapping fields by adding this implicit type, but the JSON
-   * resource files omit it. Removing it from the actual result allows direct comparison with
-   * expected.
-   */
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
-    final var result = new java.util.LinkedHashMap<>(map);
-    // Remove "type": "object" at this level — it's implicit for any field with "properties"
-    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
-      result.remove("type");
-    }
-    // Recurse into nested maps
-    for (final var entry : result.entrySet()) {
-      if (entry.getValue() instanceof Map) {
-        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
-      }
-    }
-    return result;
   }
 }

@@ -10,16 +10,10 @@ package io.camunda.zeebe.exporter;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import org.elasticsearch.client.Request;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
@@ -37,8 +31,6 @@ public class SchemaManagerIT {
   private static final ElasticsearchExporterConfiguration CONFIG =
       new ElasticsearchExporterConfiguration();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
-
   @BeforeAll
   static void setup() {
     CONFIG.url = "http://" + CONTAINER.getHttpHostAddress();
@@ -47,7 +39,7 @@ public class SchemaManagerIT {
   @Test
   public void shouldUseVersionedComponentTemplateForIndexTemplates() throws IOException {
     // given
-    final var restClient = RestClientFactory.ofRestClient(CONFIG);
+    final var highLevelClient = RestClientFactory.of(CONFIG);
     final var esClient = new ElasticsearchClient(CONFIG, new SimpleMeterRegistry());
 
     // when
@@ -72,38 +64,21 @@ public class SchemaManagerIT {
 
     // then
     // 8.6.0 component template exists
-    final var request = new Request("GET", "/_component_template/" + CONFIG.index.prefix + "*");
-    final var response = restClient.performRequest(request);
-    final var componentTemplateInElasticsearch =
-        MAPPER.readValue(response.getEntity().getContent().readAllBytes(), JsonNode.class);
-
-    assertThat(componentTemplateInElasticsearch.at("/component_templates"))
-        .anySatisfy(
-            node ->
-                assertThat(node.at("/name").asText()).isEqualTo("zeebe-record-" + upgradedVersion));
+    final var componentTemplateResponse =
+        highLevelClient.cluster().getComponentTemplate(b -> b.name(CONFIG.index.prefix + "*"));
+    assertThat(componentTemplateResponse.componentTemplates())
+        .anySatisfy(ct -> assertThat(ct.name()).isEqualTo("zeebe-record-" + upgradedVersion));
 
     // all 8.6.0 index templates are composed of the new index template
-    final var templateReq = new Request("GET", "/_index_template/*" + upgradedVersion + "*");
-    final var templateRes = restClient.performRequest(templateReq);
-    final var indexTemplates =
-        MAPPER.readValue(templateRes.getEntity().getContent().readAllBytes(), JsonNode.class);
-
-    assertThat(indexTemplates.at("/index_templates").size()).isGreaterThan(0);
-    assertThat(indexTemplates.at("/index_templates"))
+    final var indexTemplateResponse =
+        highLevelClient.indices().getIndexTemplate(b -> b.name("*" + upgradedVersion + "*"));
+    assertThat(indexTemplateResponse.indexTemplates()).isNotEmpty();
+    assertThat(indexTemplateResponse.indexTemplates())
         .allSatisfy(
-            node -> {
-              final JsonNode composedOfNode = node.at("/index_template/composed_of");
-              assertThat(composedOfNode.isArray()).isTrue();
+            item ->
+                assertThat(item.indexTemplate().composedOf())
+                    .contains("zeebe-record-" + upgradedVersion));
 
-              // Convert ArrayNode to List<String> for easier assertion
-              final List<String> stringList = new ArrayList<>();
-              final ArrayNode arrayNode = (ArrayNode) composedOfNode;
-              for (final JsonNode element : arrayNode) {
-                if (element.isTextual()) {
-                  stringList.add(element.asText());
-                }
-              }
-              assertThat(stringList).contains("zeebe-record-" + upgradedVersion);
-            });
+    highLevelClient._transport().close();
   }
 }

@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import java.io.IOException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -21,6 +22,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.BasicHttpContext;
 import org.elasticsearch.client.Node;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -36,7 +38,8 @@ final class RestClientFactoryTest {
     config.url = "http://localhost:9201,https://localhost:9202";
 
     // when
-    final var client = RestClientFactory.ofRestClient(config);
+    final var esClient = RestClientFactory.of(config);
+    final var client = extractRestClient(esClient);
 
     // then
     assertThat(client.getNodes())
@@ -54,7 +57,8 @@ final class RestClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = RestClientFactory.ofRestClient(config);
+    final var esClient = RestClientFactory.of(config);
+    final var client = extractRestClient(esClient);
     client
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
@@ -74,7 +78,8 @@ final class RestClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = RestClientFactory.ofRestClient(config);
+    final var esClient = RestClientFactory.of(config);
+    final var client = extractRestClient(esClient);
     client
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
@@ -89,11 +94,12 @@ final class RestClientFactoryTest {
   void shouldApplyRequestInterceptorsInOrder() throws IOException {
     // given
     final var context = new BasicHttpContext();
-    try (final var client =
-        RestClientFactory.ofRestClient(
+    final var esClient =
+        RestClientFactory.of(
             config,
             (req, ctx) -> ctx.setAttribute("foo", "bar"),
-            (req, ctx) -> ctx.setAttribute("foo", "baz"))) {
+            (req, ctx) -> ctx.setAttribute("foo", "baz"));
+    try (final var client = extractRestClient(esClient)) {
 
       // when
       client
@@ -104,6 +110,11 @@ final class RestClientFactoryTest {
 
     // then
     assertThat(context.getAttribute("foo")).isEqualTo("baz");
+  }
+
+  private static RestClient extractRestClient(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient esClient) {
+    return ((RestClientTransport) esClient._transport()).restClient();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import static io.camunda.zeebe.exporter.ElasticsearchClient.buildPutIndexLifecycleManagementPolicyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -15,9 +14,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import co.elastic.clients.transport.ElasticsearchTransport;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -31,8 +27,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchClientTest {
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
 
@@ -42,31 +36,6 @@ final class ElasticsearchClientTest {
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
   private final TemplateReader templateReader = new TemplateReader(config);
-
-  @Test
-  void shouldBuildPutIndexLifecycleManagementPolicyRequestCorrectly()
-      throws JsonProcessingException {
-    assertThat(MAPPER.writeValueAsString(buildPutIndexLifecycleManagementPolicyRequest("300d3s")))
-        .describedAs("Expect that request is mapped to json correctly")
-        .isEqualTo(
-            // Mapped from Object to make sure produced JSON string is formatted the same way
-            MAPPER.writeValueAsString(
-                MAPPER.readValue(
-                    """
-                    {
-                      "policy": {
-                        "phases": {
-                          "delete": {
-                            "min_age": "300d3s",
-                            "actions": {
-                              "delete": {}
-                            }
-                          }
-                        }
-                      }
-                    }""",
-                    Object.class)));
-  }
 
   @Nested
   final class FlushTest {

@@ -42,16 +42,6 @@ final class RestClientFactory {
     return new co.elastic.clients.elasticsearch.ElasticsearchClient(transport);
   }
 
-  /**
-   * Returns a raw {@link RestClient} for cases where the low-level client is needed directly (e.g.
-   * test utilities).
-   */
-  static RestClient ofRestClient(
-      final ElasticsearchExporterConfiguration config,
-      final HttpRequestInterceptor... interceptors) {
-    return INSTANCE.createRestClient(config, interceptors);
-  }
-
   private RestClient createRestClient(
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
