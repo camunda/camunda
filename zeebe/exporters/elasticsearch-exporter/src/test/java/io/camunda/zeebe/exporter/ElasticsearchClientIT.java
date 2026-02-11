@@ -228,8 +228,9 @@ final class ElasticsearchClientIT {
 
   /**
    * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
-   * client normalize object-typed mapping fields by adding this implicit type, but the JSON resource
-   * files omit it. Removing it from the actual result allows direct comparison with expected.
+   * client normalize object-typed mapping fields by adding this implicit type, but the JSON
+   * resource files omit it. Removing it from the actual result allows direct comparison with
+   * expected.
    */
   @SuppressWarnings("unchecked")
   private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
