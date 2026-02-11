@@ -44,11 +44,21 @@ message ActivateJobsRequest {
   int64 requestTimeout = 6;
   // a list of IDs of tenants for which to activate jobs
   repeated string tenantIds = 7;
+  // the tenant filtering strategy - determines whether to use provided tenant IDs or assigned tenant IDs
+  TenantFilter tenantFilter = 8;
 }
 
 message ActivateJobsResponse {
   // list of activated jobs
   repeated ActivatedJob jobs = 1;
+}
+
+// Describes the tenant filtering strategy for job activation
+enum TenantFilter {
+  // Use the tenant IDs provided in the request
+  PROVIDED = 0;
+  // Use the tenant IDs assigned to the authenticated user/identity
+  ASSIGNED = 1;
 }
 
 message ActivatedJob {
