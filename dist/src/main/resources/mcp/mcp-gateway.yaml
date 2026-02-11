@@ -1,18 +1,9 @@
+# MCP gateway configuration - using programmatic bean registration
+# Spring AI auto-configuration is disabled in favor of custom McpServersConfiguration
 spring:
   ai:
     mcp:
       server:
-        enabled: true
-        name: Camunda 8 Orchestration API MCP Server
-        version: '${project.version}'
-        type: sync
-        protocol: stateless
+        enabled: false
         annotation-scanner:
-          enabled: true
-        streamable-http:
-          mcp-endpoint: /mcp/cluster
-        capabilities:
-          completion: false
-          prompt: false
-          resource: false
-          tool: true
+          enabled: false
