@@ -85,3 +85,5 @@ cmd/renovate/renovate*/
 scripts/codeowners-utils/output/
 
 __pycache__/
+build/
+build-cache/
