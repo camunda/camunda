@@ -31,19 +31,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Elasticsearch 8 - Supported versions: 8.16.6 (min) to 8.19.10 (max)
-          - database-name: "Elasticsearch 8.16.6"
+          # Elasticsearch 8 - Supported versions: 8.19.0 (min) to 8.19.10 (max)
+          - database-name: "Elasticsearch 8.19.0"
             database-type: "elasticsearch"
-            database-image-version: "8.16.6"
+            database-image-version: "8.19.0"
             it-database-type: "es"
           - database-name: "Elasticsearch 8.19.10"
             database-type: "elasticsearch"
             database-image-version: "8.19.10"
             it-database-type: "es"
-          # Elasticsearch 9 - Supported versions: 9.0.0 (min) to 9.3.0 (max)
-          - database-name: "Elasticsearch 9.0.0"
+          # Elasticsearch 9 - Supported versions: 9.2.0 (min) to 9.3.0 (max)
+          - database-name: "Elasticsearch 9.2.0"
             database-type: "elasticsearch"
-            database-image-version: "9.0.0"
+            database-image-version: "9.2.0"
             it-database-type: "es"
             job-name-suffix: "9"
           - database-name: "Elasticsearch 9.3.0"
@@ -51,15 +51,26 @@ jobs:
             database-image-version: "9.3.0"
             it-database-type: "es"
             job-name-suffix: "9"
-          # OpenSearch 2 - Supported versions: 2.17.0 (min) to 2.19.4 (max)
-          - database-name: "OpenSearch 2.17.0"
+          # OpenSearch 2 - Supported versions: 2.19.0 (min) to 2.19.4 (max)
+          - database-name: "OpenSearch 2.19.0"
             database-type: "opensearch"
-            database-image-version: "2.17.0"
+            database-image-version: "2.19.0"
             it-database-type: "os"
           - database-name: "OpenSearch 2.19.4"
             database-type: "opensearch"
             database-image-version: "2.19.4"
             it-database-type: "os"
+          # OpenSearch 3 - Supported versions: 3.4.0 (min) to 3.5.0 (max)
+          - database-name: "OpenSearch 3.4.0"
+            database-type: "opensearch"
+            database-image-version: "3.4.0"
+            it-database-type: "os"
+            job-name-suffix: "3"
+          - database-name: "OpenSearch 3.5.0"
+            database-type: "opensearch"
+            database-image-version: "3.5.0"
+            it-database-type: "os"
+            job-name-suffix: "3"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
