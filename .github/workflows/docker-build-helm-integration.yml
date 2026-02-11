@@ -95,7 +95,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./operate/client
-          package-manager: "npm"
       - name: Upload Operate frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -124,7 +123,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./tasklist/client
-          package-manager: "npm"
       - name: Upload Tasklist frontend artifact
         uses: actions/upload-artifact@v4
         with:
@@ -153,7 +151,6 @@ jobs:
       - uses: ./.github/actions/build-frontend
         with:
           directory: ./identity/client
-          package-manager: "npm"
       - name: Upload Identity frontend artifact
         uses: actions/upload-artifact@v4
         with:
