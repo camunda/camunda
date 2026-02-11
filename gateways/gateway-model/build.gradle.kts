@@ -6,14 +6,107 @@ plugins {
     id("buildlogic.openapi-spring-conventions")
 }
 
+val openapiDir = "${project.rootDir}/zeebe/gateway-protocol/src/main/proto/v2"
+
 // Configure OpenAPI generation for this module (advanced configuration)
 openApiGenerate {
     modelPackage.set("io.camunda.gateway.protocol.model")
 }
 
-// Note: Maven had two executions (advanced and simple).
-// The simple execution uses a different model package: io.camunda.gateway.protocol.model.simple
-// and different type mappings. This may need to be handled with a custom task.
+// Second OpenAPI generation: "simple" models with simplified type mappings
+val openApiGenerateSimple by tasks.registering(org.openapitools.generator.gradle.plugin.tasks.GenerateTask::class) {
+    generatorName.set("spring")
+    inputSpec.set("${openapiDir}/rest-api.yaml")
+    outputDir.set("${project.layout.buildDirectory.get()}/generated/openapi-simple")
+    modelPackage.set("io.camunda.gateway.protocol.model.simple")
+
+    globalProperties.set(mapOf(
+        "models" to "",
+        "apis" to "false",
+        "supportingFiles" to "false"
+    ))
+
+    typeMappings.set(mapOf(
+        "OffsetDateTime" to "String",
+        "ProcessInstanceModificationActivateInstructionAncestorElementInstanceKey" to "String",
+        "ResourceKey" to "String",
+        "ElementInstanceKey" to "String",
+        "AuditLogEntityKeyFilterProperty" to "String",
+        "AuditLogKeyFilterProperty" to "String",
+        "BasicStringFilterProperty" to "String",
+        "DecisionDefinitionKeyFilterProperty" to "String",
+        "DecisionEvaluationInstanceKeyFilterProperty" to "String",
+        "DecisionEvaluationKeyFilterProperty" to "String",
+        "DecisionRequirementsKeyFilterProperty" to "String",
+        "DeploymentKeyFilterProperty" to "String",
+        "ElementInstanceKeyFilterProperty" to "String",
+        "FormKeyFilterProperty" to "String",
+        "IntegerFilterProperty" to "Integer",
+        "JobKeyFilterProperty" to "String",
+        "MessageSubscriptionKeyFilterProperty" to "String",
+        "ProcessDefinitionKeyFilterProperty" to "String",
+        "ProcessInstanceKeyFilterProperty" to "String",
+        "ResourceKeyFilterProperty" to "String",
+        "ScopeKeyFilterProperty" to "String",
+        "StringFilterProperty" to "String",
+        "VariableKeyFilterProperty" to "String",
+        "DateTimeFilterProperty" to "SimpleDateTimeFilterProperty",
+        "AuditLogActorTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogActorTypeEnum",
+        "AuditLogResultFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogResultEnum",
+        "BatchOperationItemStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationItemStateEnum",
+        "BatchOperationStateFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationStateEnum",
+        "BatchOperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.BatchOperationTypeEnum",
+        "CategoryFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogCategoryEnum",
+        "ClusterVariableScopeFilterProperty" to "io.camunda.gateway.protocol.model.ClusterVariableScopeEnum",
+        "DecisionInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.DecisionInstanceStateEnum",
+        "EntityTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogEntityTypeEnum",
+        "ElementInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ElementInstanceStateEnum",
+        "IncidentErrorTypeFilterProperty" to "io.camunda.gateway.protocol.model.IncidentErrorTypeEnum",
+        "IncidentStateFilterProperty" to "io.camunda.gateway.protocol.model.IncidentStateEnum",
+        "JobKindFilterProperty" to "io.camunda.gateway.protocol.model.JobKindEnum",
+        "JobListenerEventTypeFilterProperty" to "io.camunda.gateway.protocol.model.JobListenerEventTypeEnum",
+        "JobStateFilterProperty" to "io.camunda.gateway.protocol.model.JobStateEnum",
+        "MessageSubscriptionStateFilterProperty" to "io.camunda.gateway.protocol.model.MessageSubscriptionStateEnum",
+        "ProcessInstanceStateFilterProperty" to "io.camunda.gateway.protocol.model.ProcessInstanceStateEnum",
+        "OperationTypeFilterProperty" to "io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum",
+        "UserTaskStateFilterProperty" to "io.camunda.gateway.protocol.model.UserTaskStateEnum"
+    ))
+
+    skipValidateSpec.set(true)
+
+    // Map ElementInstanceKey import to String (see convention plugin for explanation)
+    importMappings.set(mapOf(
+        "ElementInstanceKey" to "java.lang.String"
+    ))
+
+    openapiNormalizer.set(mapOf(
+        "REF_AS_PARENT_IN_ALLOF" to "true"
+    ))
+
+    configOptions.set(mapOf(
+        "additionalModelTypeAnnotations" to "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)",
+        "serializationLibrary" to "jackson",
+        "library" to "spring-boot",
+        "jdk8" to "true",
+        "openApiNullable" to "false",
+        "useEnumCaseInsensitive" to "true",
+        "useOneOfInterfaces" to "false",
+        "useSpringBoot3" to "true",
+        "sourceFolder" to "src/main/java"
+    ))
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir("${project.layout.buildDirectory.get()}/generated/openapi-simple/src/main/java")
+        }
+    }
+}
+
+tasks.named("compileJava") {
+    dependsOn(openApiGenerateSimple)
+}
 
 dependencies {
     api(libs.org.springframework.spring.core)
