@@ -10,6 +10,7 @@ package io.camunda.tasklist.zeebeimport;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doNothing;
@@ -19,6 +20,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.esotericsoftware.kryo.io.KryoBufferOverflowException;
 import io.camunda.tasklist.JacksonConfig;
 import io.camunda.tasklist.entities.meta.ImportPositionEntity;
 import io.camunda.tasklist.exceptions.PersistenceException;
@@ -242,6 +244,90 @@ public class ImportListenerOpenSearchTest extends NoBeansTest {
     final List<Integer> batchSizes =
         batches.stream().map(b -> b.getHits().size()).collect(Collectors.toList());
     assertEquals(List.of(2, 2, 1), batchSizes);
+  }
+
+  @Test
+  public void testLargeVarSmallerThanEstimationBufferIsSuccessful() throws Exception {
+    final String indexName = "some_name-8.7.0_";
+    final StringBuilder sb = new StringBuilder();
+    // Create a real Hit with a large variable, but lower than limit (<5MB)
+    for (int i = 0; i < 4.5 * 1024 * 1024; i++) {
+      sb.append("a");
+    }
+    // Use a Map for the source, not a JSON string
+    final Map<String, Object> sourceMap =
+        Map.of(
+            "position", 12345,
+            "sequence", 67890,
+            "variables", sb.toString());
+    final Hit largeHit = new Hit.Builder<>().index(indexName).source(sourceMap).build();
+
+    final ImportBatch importBatchOpenSearch =
+        new ImportBatchOpenSearch(
+            1, ImportValueType.PROCESS_INSTANCE, Arrays.asList(largeHit), indexName);
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
+    final ImportJob importJob =
+        beanFactory.getBean(ImportJobOpenSearch.class, importBatchOpenSearch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(importBatchProcessor);
+      doNothing().when(importBatchProcessor).performImport(importBatchOpenSearch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // when the job is executed
+    importJob.call();
+
+    // then
+    assertTrue(importListener.isFinishedCalled());
+    assertFalse(importListener.isFailedCalled());
+    assertEquals(importListener.getImportBatch(), importBatchOpenSearch);
+  }
+
+  @Test
+  public void testVarsLargerThanEstimationBufferFails() throws Exception {
+    final String indexName = "some_name-8.7.0_";
+    final StringBuilder sb = new StringBuilder();
+    // Create a real SearchHit with a large variable (>5MB)
+    for (int i = 0; i < 5.5 * 1024 * 1024; i++) {
+      sb.append("a");
+    }
+    // Use a Map for the source, not a JSON string
+    final Map<String, Object> sourceMap =
+        Map.of(
+            "position", 12345,
+            "sequence", 67890,
+            "variables", sb.toString());
+    final Hit largeHit = new Hit.Builder<>().index(indexName).source(sourceMap).build();
+
+    final ImportBatch importBatchOpenSearch =
+        new ImportBatchOpenSearch(
+            1, ImportValueType.PROCESS_INSTANCE, Arrays.asList(largeHit), indexName);
+    final ImportPositionEntity previousPosition =
+        new ImportPositionEntity().setAliasName("alias").setPartitionId(1).setPosition(0);
+    final ImportJob importJob =
+        beanFactory.getBean(ImportJobOpenSearch.class, importBatchOpenSearch, previousPosition);
+
+    // mock import methods
+    try {
+      when(importBatchProcessorFactory.getImportBatchProcessor(anyString()))
+          .thenReturn(importBatchProcessor);
+      doNothing().when(importBatchProcessor).performImport(importBatchOpenSearch);
+    } catch (final PersistenceException e) {
+      // ignore
+    }
+
+    // then
+    assertThrows(
+        KryoBufferOverflowException.class,
+        () -> {
+          importJob.call();
+        });
+    verify(importBatchProcessor, times(0)).performImport(importBatchOpenSearch);
   }
 
   @Component
