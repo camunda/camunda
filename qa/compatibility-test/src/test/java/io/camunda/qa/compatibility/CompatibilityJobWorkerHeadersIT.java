@@ -10,10 +10,9 @@ package io.camunda.qa.compatibility;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.CustomHeaders;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.util.Map;
@@ -61,28 +60,24 @@ class CompatibilityJobWorkerHeadersIT {
         .containsEntry("x-source", "compatibility");
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({HeadersJobWorker.class, CompatibilityTestSupportConfiguration.class})
-  static class TestApplication {}
-
   @Component
   public static class HeadersJobWorker {
 
     private final AtomicReference<Map<String, String>> lastHeaders = new AtomicReference<>();
 
-    @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
-      lastHeaders.set(job.getCustomHeaders());
-      jobClient
-          .newCompleteCommand(job.getKey())
-          .variables(Map.of("headersReceived", true))
-          .send()
-          .join();
+    @JobWorker(type = JOB_TYPE)
+    public Map<String, Object> handleJob(@CustomHeaders final Map<String, String> headers) {
+      lastHeaders.set(headers);
+      return Map.of("headersReceived", true);
     }
 
     Map<String, String> getLastHeaders() {
       return lastHeaders.get();
     }
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({HeadersJobWorker.class, CompatibilityTestSupportConfiguration.class})
+  static class TestApplication {}
 }

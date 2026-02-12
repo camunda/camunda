@@ -11,9 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.util.Map;
@@ -64,24 +62,24 @@ class CompatibilityJobWorkerIT {
     assertThat(tracker.getCompletedJobs()).isEqualTo(1);
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({JobWorkerTracker.class, CompatibilityTestSupportConfiguration.class})
-  static class TestApplication {}
-
   @Component
   public static class JobWorkerTracker {
 
     private final AtomicInteger completedJobs = new AtomicInteger(0);
 
-    @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
-      jobClient.newCompleteCommand(job.getKey()).variables(Map.of("status", "done")).send().join();
+    @JobWorker(type = JOB_TYPE)
+    public Map<String, Object> handleJob() {
       completedJobs.incrementAndGet();
+      return Map.of("status", "done");
     }
 
     int getCompletedJobs() {
       return completedJobs.get();
     }
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({JobWorkerTracker.class, CompatibilityTestSupportConfiguration.class})
+  static class TestApplication {}
 }

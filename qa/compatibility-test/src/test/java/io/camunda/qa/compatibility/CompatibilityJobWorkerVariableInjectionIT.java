@@ -12,9 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.Variable;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.util.Map;
@@ -63,33 +61,27 @@ class CompatibilityJobWorkerVariableInjectionIT {
     assertThat(worker.getLastPayloadName()).isEqualTo("camunda");
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({VariableInjectionWorker.class, CompatibilityTestSupportConfiguration.class})
-  static class TestApplication {}
-
   @Component
   public static class VariableInjectionWorker {
 
     private final AtomicReference<String> lastPayloadName = new AtomicReference<>();
 
-    @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(
-        final JobClient jobClient,
-        final ActivatedJob job,
+    @JobWorker(type = JOB_TYPE)
+    public Map<String, Object> handleJob(
         @Variable(name = "count") final int count,
         @Variable(name = "payload") final Map<String, Object> payload) {
       lastPayloadName.set((String) payload.get("name"));
 
-      jobClient
-          .newCompleteCommand(job.getKey())
-          .variables(Map.of("injected", count == 5, "payloadName", payload.get("name")))
-          .send()
-          .join();
+      return Map.of("injected", count == 5, "payloadName", payload.get("name"));
     }
 
     String getLastPayloadName() {
       return lastPayloadName.get();
     }
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({VariableInjectionWorker.class, CompatibilityTestSupportConfiguration.class})
+  static class TestApplication {}
 }
