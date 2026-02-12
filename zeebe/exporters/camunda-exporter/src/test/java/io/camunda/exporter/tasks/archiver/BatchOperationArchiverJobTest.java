@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -31,11 +32,13 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
   private final TestRepository repository = new TestRepository();
   private final BatchOperationTemplate batchOperationTemplate =
       new BatchOperationTemplate("", true);
+  private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
   private final BatchOperationArchiverJob job =
-      new BatchOperationArchiverJob(repository, batchOperationTemplate, metrics, LOGGER, executor);
+      new BatchOperationArchiverJob(
+          repository, batchOperationTemplate, metrics, LOGGER, executor, List.of(auditLogTemplate));
 
   @BeforeEach
   void setUp() {
