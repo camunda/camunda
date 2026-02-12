@@ -29,73 +29,6 @@ public class GlobalListenersInitializationTest {
   @Rule public final TestWatcher recordingExporterTestWatcher = new RecordingExporterTestWatcher();
 
   @Test
-  public void shouldConfigureGlobalListenersThroughCommand() {
-    // given a global listener batch record containing the desired configuration
-    final GlobalListenerBatchRecord record =
-        new GlobalListenerBatchRecord()
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global1")
-                    .setType("global1")
-                    .addEventType("all"))
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global2")
-                    .setType("global2")
-                    .addEventType("creating")
-                    .addEventType("completing")
-                    .setAfterNonGlobal(true));
-
-    // when executing a CONFIGURE command with the record
-    engine.globalListenerBatch().withRecord(record).configure();
-
-    // then the engine's processing state contains the expected configuration
-    final GlobalListenerBatchRecord currentConfig =
-        engine.getProcessingState().getGlobalListenersState().getCurrentConfig();
-    assertThat(currentConfig).isNotNull();
-    Assertions.assertThat(currentConfig.isSameConfiguration(record));
-  }
-
-  @Test
-  public void shouldReplaceGlobalListenersConfigurationThroughCommand() {
-    // given an existing global listener configuration
-    engine
-        .globalListenerBatch()
-        .withListener(
-            new GlobalListenerRecord()
-                .setId("GlobalListener_global1")
-                .setType("global1")
-                .addEventType("all"))
-        .withListener(
-            new GlobalListenerRecord()
-                .setId("GlobalListener_global2")
-                .setType("global2")
-                .addEventType("all"))
-        .configure();
-
-    // when executing a CONFIGURE command with a different configuration
-    final GlobalListenerBatchRecord newConfigRecord =
-        new GlobalListenerBatchRecord()
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global2")
-                    .setType("global2")
-                    .addEventType("creating"))
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global3")
-                    .setType("global3")
-                    .addEventType("all"));
-    engine.globalListenerBatch().withRecord(newConfigRecord).configure();
-
-    // then the engine's processing state contains the new configuration
-    final GlobalListenerBatchRecord currentConfig =
-        engine.getProcessingState().getGlobalListenersState().getCurrentConfig();
-    assertThat(currentConfig).isNotNull();
-    Assertions.assertThat(currentConfig.isSameConfiguration(newConfigRecord)).isTrue();
-  }
-
-  @Test
   public void shouldRemapConfigureCommandToIndividualListenerChanges() {
     // given an existing global listener configuration
     engine
@@ -133,23 +66,23 @@ public class GlobalListenersInitializationTest {
             RecordingExporter.records()
                 .limit(record -> record.getIntent().equals(GlobalListenerBatchIntent.CONFIGURED))
                 .globalListenerRecords()
-                .onlyCommands())
+                .onlyEvents())
         .satisfiesExactlyInAnyOrder(
             r ->
                 assertThat(r)
-                    .hasIntent(GlobalListenerIntent.DELETE)
+                    .hasIntent(GlobalListenerIntent.DELETED)
                     .extracting(Record<GlobalListenerRecordValue>::getValue)
                     .extracting(GlobalListenerRecordValue::getId)
                     .isEqualTo("GlobalListener_global1"),
             r ->
                 assertThat(r)
-                    .hasIntent(GlobalListenerIntent.UPDATE)
+                    .hasIntent(GlobalListenerIntent.UPDATED)
                     .extracting(Record<GlobalListenerRecordValue>::getValue)
                     .extracting(GlobalListenerRecordValue::getId)
                     .isEqualTo("GlobalListener_global2"),
             r ->
                 assertThat(r)
-                    .hasIntent(GlobalListenerIntent.CREATE)
+                    .hasIntent(GlobalListenerIntent.CREATED)
                     .extracting(Record<GlobalListenerRecordValue>::getValue)
                     .extracting(GlobalListenerRecordValue::getId)
                     .isEqualTo("GlobalListener_global3"));

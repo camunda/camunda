@@ -24,7 +24,6 @@ public final class GlobalListenerUpdatedApplier
 
   @Override
   public void applyState(final long eventKey, final GlobalListenerRecord value) {
-    globalListenersState.updateConfigKey(eventKey);
     globalListenersState.update(value);
   }
 }
