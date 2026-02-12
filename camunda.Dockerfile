@@ -38,8 +38,6 @@ RUN --mount=type=cache,target=/root/.m2,rw \
     ./mvnw -B -am -pl dist package -T1C -D skipChecks -D skipTests && \
     mv dist/target/camunda-zeebe .
 
-
-### Extract camunda from distball ###
 # hadolint ignore=DL3006,DL3007
 FROM ${BASE_IMAGE}@${BASE_DIGEST} AS distball
 
