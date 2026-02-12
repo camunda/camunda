@@ -17,11 +17,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 @Controller
-public class IdentityClientConfigController {
+public class AdminClientConfigController {
 
-  private static final Logger LOG = LoggerFactory.getLogger(IdentityClientConfigController.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AdminClientConfigController.class);
 
   private static final String IS_OIDC = "isOidc";
   private static final String IS_CAMUNDA_GROUPS_ENABLED = "isCamundaGroupsEnabled";
@@ -35,7 +36,7 @@ public class IdentityClientConfigController {
   private final String clientConfigAsJS;
   private final ObjectMapper objectMapper;
 
-  public IdentityClientConfigController(final SecurityConfiguration securityConfiguration) {
+  public AdminClientConfigController(final SecurityConfiguration securityConfiguration) {
     objectMapper = new ObjectMapper();
     clientConfigAsJS = generateClientConfig(securityConfiguration);
   }
@@ -80,14 +81,10 @@ public class IdentityClientConfigController {
         || oidcConfig.getGroupsClaim().isEmpty();
   }
 
-  /**
-   * Redirects legacy /identity/config.js to /admin/config.js.
-   *
-   * <p>TODO(#44427): This can be removed after sufficient migration period (Epic #44427).
-   */
-  @GetMapping(path = "/identity/config.js")
+  @GetMapping(path = "/admin/config.js", produces = "text/javascript;charset=UTF-8")
+  @ResponseBody
   @Hidden
-  public String redirectToAdminConfig() {
-    return "redirect:/admin/config.js";
+  public String getClientConfig() {
+    return clientConfigAsJS;
   }
 }

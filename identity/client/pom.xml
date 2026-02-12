@@ -22,6 +22,13 @@
 
   <build>
     <resources>
+      <!-- Primary: New admin path (Epic #44427) -->
+      <resource>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/admin</targetPath>
+        <directory>dist</directory>
+      </resource>
+      <!-- Legacy: Keep identity path for backward compatibility during migration -->
+      <!-- TODO(#44427): Remove this resource block after migration period -->
       <resource>
         <targetPath>${project.build.outputDirectory}/META-INF/resources/identity</targetPath>
         <directory>dist</directory>

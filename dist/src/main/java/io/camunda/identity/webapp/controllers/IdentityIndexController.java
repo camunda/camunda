@@ -7,6 +7,8 @@
  */
 package io.camunda.identity.webapp.controllers;
 
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
+
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,29 +32,38 @@ public class IdentityIndexController {
     this.webappsRequestForwardManager = webappsRequestForwardManager;
   }
 
+  /**
+   * Redirects legacy /identity routes to /admin sub-path.
+   *
+   * <p>This redirect ensures backward compatibility for existing deployments, bookmarks, and
+   * documentation that reference /identity URLs.
+   *
+   * <p>Uses 302 (temporary) redirect during migration period.
+   *
+   * <p>TODO(#44427): Consider changing to 301 (permanent) after migration stabilizes.
+   *
+   * <p>TODO(#44427): This can be removed after sufficient migration period (Epic #44427).
+   */
   @GetMapping({"/identity", "/identity/", "/identity/index.html"})
-  public String identity(final Model model) throws IOException {
-    model.addAttribute("contextPath", context.getContextPath() + "/identity/");
-    return "identity/index";
+  public String redirectIdentityRoot(final HttpServletRequest request) {
+    return "redirect:/admin" + getRequestedUrl(request).replaceFirst("^/identity", "");
   }
 
   /**
-   * Forwards SPA routes to index.html, excluding static assets.
+   * Redirects all legacy /identity/* routes to /admin/*.
    *
-   * <p>The regex pattern uses negative lookahead to prevent matching paths starting with "assets":
+   * <p>Excludes assets as they are handled by static resource handlers.
    *
-   * <ul>
-   *   <li>{@code (?!assets)} - excludes "assets"
-   *   <li>{@code .*} - matches any other path segment
-   * </ul>
-   *
-   * <p>This exclusion is necessary because PathPatternParser (Spring Framework 6+) gives controller
-   * mappings higher precedence than static resource handlers. Without this pattern, requests like
-   * {@code /operate/assets/index.css} would be forwarded to index.html instead of being served as
-   * static files.
+   * <p>TODO(#44427): This can be removed after sufficient migration period (Epic #44427).
    */
   @RequestMapping(value = {"/identity/{path:^(?!assets).*}", "/identity/{path:^(?!assets).*}/**"})
-  public String forwardToIdentity(final HttpServletRequest request) {
-    return webappsRequestForwardManager.forward(request, "identity");
+  public String redirectIdentityRoutes(final HttpServletRequest request) {
+    return "redirect:/admin" + getRequestedUrl(request).replaceFirst("^/identity", "");
+  }
+
+  @GetMapping({"/tst", "/tst/", "/tst/index.html"})
+  public String identity(final Model model) throws IOException {
+    model.addAttribute("contextPath", context.getContextPath() + "/tst/");
+    return "tst/index";
   }
 }

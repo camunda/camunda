@@ -169,6 +169,7 @@ public class WebSecurityConfig {
           "/login/**",
           "/logout",
           "/identity/**",
+          "/admin/**",
           "/operate/**",
           "/tasklist/**",
           "/",
