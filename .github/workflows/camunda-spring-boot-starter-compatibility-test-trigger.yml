@@ -1,0 +1,21 @@
+# description: trigger workflow to run the camunda-spring-boot-starter-compatibility-test.yml workflow on a schedule
+# type: CI
+# owner: @camunda/camunda-ex
+name: Camunda Spring Boot Starter Compatibility Tests - stable/8.8
+
+on:
+  schedule:
+    # Run daily at 02:00 UTC
+    - cron: "0 2 * * *"
+
+jobs:
+  trigger-action-on-production:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger action on the production branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh workflow run .github/workflows/camunda-spring-boot-starter-compatibility-test.yml \
+            --ref stable/8.8 \
+            --repo ${{ github.repository }}
