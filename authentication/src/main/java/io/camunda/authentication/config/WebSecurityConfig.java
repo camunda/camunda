@@ -943,7 +943,10 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
