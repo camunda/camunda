@@ -469,6 +469,57 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   }
 
   @Test
+  void shouldCreateProcessInstancesWithResultAndCustomRequestTimeout() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final var mockResponse =
+        new ProcessInstanceResultRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(123L)
+            .setTenantId("tenantId");
+
+    when(authenticationProvider.getCamundaAuthentication())
+        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "awaitCompletion": true,
+                "requestTimeout": 600000,
+                "tenantId": "tenantId"
+            }""";
+
+    // when / then
+    final ResponseSpec response =
+        webClient
+            .post()
+            .uri(PROCESS_INSTANCES_START_URL)
+            .accept(MediaType.APPLICATION_JSON)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(request)
+            .exchange()
+            .expectStatus()
+            .isOk();
+
+    response
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(EXPECTED_START_RESPONSE, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.awaitCompletion()).isTrue();
+    assertThat(capturedRequest.requestTimeout()).isEqualTo(600000L);
+  }
+
+  @Test
   void shouldRejectCreateProcessInstancesIfNoBpmnProcessIdOrProcessDefinitionKeyAreProvided() {
     // given
     final var request =
