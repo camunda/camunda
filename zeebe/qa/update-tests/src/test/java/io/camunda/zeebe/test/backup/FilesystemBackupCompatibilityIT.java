@@ -11,13 +11,12 @@ import io.camunda.configuration.Camunda;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.zeebe.containers.ZeebeContainer;
+import io.zeebe.containers.ZeebeHostData;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Map;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
@@ -28,7 +27,8 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  *
  * <p>A host temporary directory is bind-mounted into the old broker container so that both the
  * container (writing the backup) and the in-process restore app (reading it) share the same storage
- * path.
+ * path. The container is configured to run as the host user so that file ownership matches and no
+ * special cleanup is needed.
  */
 @Testcontainers
 @ZeebeIntegration
@@ -36,34 +36,12 @@ final class FilesystemBackupCompatibilityIT implements BackupCompatibilityAccept
   private static final String CONTAINER_BACKUP_PATH = "/usr/local/zeebe/backup";
   private static final Network NETWORK = Network.newNetwork();
 
-  private static @TempDir Path backupDir;
+  private final Path dataDir;
+  private final Path backupDir;
 
-  @BeforeAll
-  static void makeBackupDirAccessible() throws IOException {
-    // The container runs as user 'camunda' (uid 1001), but @TempDir is owned by the host user
-    // with mode 700. We need to make it world-accessible so the container process can write to it.
-    Files.setPosixFilePermissions(backupDir, PosixFilePermissions.fromString("rwxrwxrwx"));
-  }
-
-  @AfterAll
-  static void makeBackupDirDeletable() throws IOException, InterruptedException {
-    // Files created by the container are owned by uid 1001 and cannot be deleted by the host user.
-    // Run a short-lived container as root to recursively fix permissions so @TempDir cleanup works.
-    final var proc =
-        new ProcessBuilder(
-                "docker",
-                "run",
-                "--rm",
-                "-v",
-                backupDir.toAbsolutePath() + ":/data",
-                "alpine:3",
-                "chmod",
-                "-R",
-                "a+rwX",
-                "/data")
-            .inheritIO()
-            .start();
-    proc.waitFor();
+  FilesystemBackupCompatibilityIT(@TempDir final Path backupDir, @TempDir final Path dataDir) {
+    this.dataDir = dataDir;
+    this.backupDir = backupDir;
   }
 
   @Override
@@ -91,7 +69,22 @@ final class FilesystemBackupCompatibilityIT implements BackupCompatibilityAccept
 
   @Override
   public void customizeOldBroker(final ZeebeContainer broker) {
-    broker.withFileSystemBind(
-        backupDir.toAbsolutePath().toString(), CONTAINER_BACKUP_PATH, BindMode.READ_WRITE);
+    // Run the container as the host user so that files written by the container are owned by the
+    // same UID as the host process. This avoids bind-mount permission issues and removes the
+    // need for any post-test permission cleanup.
+    final int uid;
+    final int gid;
+    try {
+      uid = (int) Files.getAttribute(backupDir, "unix:uid");
+      gid = (int) Files.getAttribute(backupDir, "unix:gid");
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
+
+    broker
+        .withCreateContainerCmdModifier(cmd -> cmd.withUser(uid + ":" + gid))
+        .withZeebeData(new ZeebeHostData(dataDir.toAbsolutePath().toString()))
+        .withFileSystemBind(
+            backupDir.toAbsolutePath().toString(), CONTAINER_BACKUP_PATH, BindMode.READ_WRITE);
   }
 }
