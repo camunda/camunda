@@ -66,6 +66,8 @@ public class Starter extends App {
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
+  // Optimize evaluation meter
+  private OptimizeEvaluationMeter optimizeEvaluationMeter;
 
   Starter(final AppCfg config) {
     super(config);
@@ -89,11 +91,16 @@ public class Starter extends App {
     if (config.isPerformReadBenchmarks()) {
       setupDataReadMeter(client);
     }
-
     deployProcess(client, starterCfg);
 
     if (config.isPerformReadBenchmarks()) {
       dataReadMeter.start();
+    }
+
+    // Initialize Optimize report metrics if configured
+    if (config.isEnableOptimizeReportMetric()) {
+      setupOptimizeEvaluationMeter();
+      optimizeEvaluationMeter.start();
     }
 
     // setup to start instances on given rate
@@ -120,6 +127,10 @@ public class Starter extends App {
                       LOG.error("Shutdown executor service was interrupted", e);
                     }
                   }
+                  // Shutdown Optimize if running
+                  if (optimizeEvaluationMeter != null) {
+                    optimizeEvaluationMeter.close();
+                  }
                 }));
 
     // wait for starter to finish
@@ -140,6 +151,11 @@ public class Starter extends App {
 
     if (config.isPerformReadBenchmarks()) {
       dataReadMeter.close();
+    }
+
+    // Cleanup Optimize if running
+    if (optimizeEvaluationMeter != null) {
+      optimizeEvaluationMeter.close();
     }
   }
 
@@ -376,6 +392,11 @@ public class Starter extends App {
       // otherwise continue forever
       return () -> true;
     }
+  }
+
+  private void setupOptimizeEvaluationMeter() {
+    LOG.info("Setting up Optimize report evaluation meter");
+    optimizeEvaluationMeter = new OptimizeEvaluationMeter(config.getOptimize());
   }
 
   public static void main(final String[] args) {

@@ -2,6 +2,7 @@ namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.10
 enable_optimize ?= __ENABLE_OPTIMIZE__
+enable_optimize_report_metric ?= false
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -35,6 +36,11 @@ platform_values += --set elasticsearch.enabled=false
 endif
 endif
 
+# Override Optimize redirectUrl when report metric is enabled
+ifeq ($(enable_optimize_report_metric),true)
+platform_values += --set global.identity.auth.optimize.redirectUrl=http://optimize
+endif
+
 # Platform values with stable configuration
 platform_values_stable := $(platform_values) -f values-stable.yaml
 
@@ -42,10 +48,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
+install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter enable-optimize-report-metric
 
 .PHONY: install-stable
-install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter enable-optimize-report-metric
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
@@ -134,6 +140,17 @@ setup-leader-balancer:
 	else \
 		echo "Leader balancer cronjob already exists"; \
 	fi
+
+# Patch the existing starter deployment with Optimize env vars when report metric is enabled
+.PHONY: enable-optimize-report-metric
+enable-optimize-report-metric:
+ifeq ($(enable_optimize_report_metric),true)
+	@echo "Patching deployment with Optimize config in namespace $(namespace)..."
+	kubectl patch deployment starter -n $(namespace) --type='json' -p='[{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"ENABLE_OPTIMIZE_REPORT_METRIC","value":"true"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_BASE_URL","value":"http://optimize"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_KEYCLOAK_URL","value":"http://keycloak"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_REALM","value":"camunda-platform"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_CLIENT_ID","value":"optimize"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_CLIENT_SECRET","valueFrom":{"secretKeyRef":{"name":"camunda-credentials","key":"identity-optimize-client-token"}}}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_USERNAME","value":"demo"}},{"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"OPTIMIZE_PASSWORD","valueFrom":{"secretKeyRef":{"name":"camunda-credentials","key":"identity-firstuser-password"}}}}]'
+	@echo "Optimize report metric enabled on starter. Pod will restart automatically."
+else
+	@echo "Skipping Optimize report metric configuration (enable_optimize_report_metric=$(enable_optimize_report_metric))"
+endif
 
 # Generates templates from the Camunda Platform helm chart
 .PHONY: template

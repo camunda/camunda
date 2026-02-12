@@ -75,6 +75,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metric:
+        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports and expose response time metrics via Prometheus.'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -149,6 +154,11 @@ on:
         type: boolean
         required: false
         default: true
+      enable-optimize-report-metric:
+        description: 'Enable Optimize report evaluation metrics. When enabled, the load tester will periodically evaluate Optimize dashboards and reports and expose response time metrics via Prometheus.'
+        type: boolean
+        required: false
+        default: false
       build-frontend:
         description: 'Build the frontend as part of the load test image build'
         type: boolean
@@ -478,7 +488,9 @@ jobs:
                             --set global.image.repository=${{ env.IMAGE_REPOSITORY }} \
                             --set global.image.pullSecrets[0].name=harbor-registry \
                             --set global.extraEnvVars[0].name=CONFIG_FORCE_app_performReadBenchmarks \
-                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}}"
+                            --set global.extraEnvVars[0].value=${{inputs.perform-read-benchmarks}} \
+                            --set global.extraEnvVars[1].name=ENABLE_OPTIMIZE_REPORT_METRIC \
+                            --set global.extraEnvVars[1].value=${{inputs.enable-optimize-report-metric}}"
 
           # Append scenario load-test-load configuration and custom inputs
           load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
@@ -518,7 +530,8 @@ jobs:
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="$additional_platform_config" \
-            additional_load_test_configuration="$load_test_config"
+            additional_load_test_configuration="$load_test_config" \
+            enable_optimize_report_metric=${{ inputs.enable-optimize-report-metric }}
       - name: Summarize platform deployment
         if: success()
         run: |
