@@ -10,10 +10,12 @@ package io.camunda.zeebe.engine.processing.identity;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
 import io.camunda.security.validation.IdentifierValidator;
+import io.camunda.security.validation.RoleValidator;
 import io.camunda.security.validation.TenantValidator;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.IdentitySetupInitializer;
+import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
@@ -29,7 +31,9 @@ public final class IdentitySetupProcessors {
       final SecurityConfiguration securityConfig,
       final EngineConfiguration config) {
     final IdentifierValidator identifierValidator =
-        new IdentifierValidator(securityConfig.getCompiledIdValidationPattern());
+        new IdentifierValidator(
+            securityConfig.getCompiledIdValidationPattern(),
+            securityConfig.getCompiledGroupIdValidationPattern());
     typedRecordProcessors
         .onCommand(
             ValueType.IDENTITY_SETUP,
@@ -40,6 +44,7 @@ public final class IdentitySetupProcessors {
                 securityConfig,
                 config.isEnableIdentitySetup(),
                 new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator)),
-                new TenantConfigurer(new TenantValidator(identifierValidator))));
+                new TenantConfigurer(new TenantValidator(identifierValidator)),
+                new RoleConfigurer(new RoleValidator(identifierValidator))));
   }
 }

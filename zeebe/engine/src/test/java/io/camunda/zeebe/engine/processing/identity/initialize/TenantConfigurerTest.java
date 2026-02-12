@@ -43,7 +43,7 @@ class TenantConfigurerTest {
           Collections.emptyList());
 
   private static final TenantValidator VALIDATOR =
-      new TenantValidator(new IdentifierValidator(Pattern.compile(".*")));
+      new TenantValidator(new IdentifierValidator(Pattern.compile(".*"), Pattern.compile(".*")));
   private static final TenantConfigurer CONFIGURER = new TenantConfigurer(VALIDATOR);
 
   @Test
