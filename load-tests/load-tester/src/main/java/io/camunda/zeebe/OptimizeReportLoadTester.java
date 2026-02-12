@@ -16,14 +16,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.SecureRandom;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
 
 public class OptimizeReportLoadTester {
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeReportLoadTester.class);
@@ -41,8 +39,6 @@ public class OptimizeReportLoadTester {
   private String accessToken;
   private long tokenExpiresAt;
   private String cookies = "";
-  private String codeVerifier;
-  private String codeChallenge;
 
   public OptimizeReportLoadTester(
       final String optimizeBaseUrl,
@@ -75,35 +71,15 @@ public class OptimizeReportLoadTester {
   public void authenticateWithAuthorizationCodeFlow() throws Exception {
     cookies = "";
 
-    // Only generate PKCE if no client secret (public client)
-    final boolean usePKCE = (clientSecret == null || clientSecret.isEmpty());
-    if (usePKCE) {
-      generatePKCE();
-    }
-
     // Step 1: Get authorization URL - this will redirect to login page
-    final String authUrlFormat =
-        usePKCE
-            ? "%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email&code_challenge=%s&code_challenge_method=S256"
-            : "%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email";
-
     final String authUrl =
-        usePKCE
-            ? String.format(
-                authUrlFormat,
-                keycloakBaseUrl,
-                realm,
-                URLEncoder.encode(clientId, StandardCharsets.UTF_8),
-                URLEncoder.encode(
-                    optimizeBaseUrl + "/api/authentication/callback", StandardCharsets.UTF_8),
-                URLEncoder.encode(codeChallenge, StandardCharsets.UTF_8))
-            : String.format(
-                authUrlFormat,
-                keycloakBaseUrl,
-                realm,
-                URLEncoder.encode(clientId, StandardCharsets.UTF_8),
-                URLEncoder.encode(
-                    optimizeBaseUrl + "/api/authentication/callback", StandardCharsets.UTF_8));
+        String.format(
+            "%s/auth/realms/%s/protocol/openid-connect/auth?client_id=%s&redirect_uri=%s&response_type=code&scope=openid+email",
+            keycloakBaseUrl,
+            realm,
+            URLEncoder.encode(clientId, StandardCharsets.UTF_8),
+            URLEncoder.encode(
+                optimizeBaseUrl + "/api/authentication/callback", StandardCharsets.UTF_8));
 
     LOG.info("Getting Keycloak login page...");
     final HttpRequest authRequest = HttpRequest.newBuilder().uri(URI.create(authUrl)).GET().build();
@@ -202,19 +178,6 @@ public class OptimizeReportLoadTester {
     LOG.info("Successfully authenticated with Keycloak");
   }
 
-  private void generatePKCE() throws Exception {
-    // Generate code verifier (43-128 characters)
-    final SecureRandom secureRandom = new SecureRandom();
-    final byte[] codeVerifierBytes = new byte[32];
-    secureRandom.nextBytes(codeVerifierBytes);
-    codeVerifier = Base64.getUrlEncoder().withoutPadding().encodeToString(codeVerifierBytes);
-
-    // Generate code challenge (SHA256 hash of verifier)
-    final MessageDigest digest = MessageDigest.getInstance("SHA-256");
-    final byte[] hash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
-    codeChallenge = Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
-  }
-
   private void updateCookies(final HttpResponse<String> response) {
     final var setCookieHeaders = response.headers().allValues("Set-Cookie");
     if (!setCookieHeaders.isEmpty()) {
@@ -252,7 +215,7 @@ public class OptimizeReportLoadTester {
     final String tokenUrl =
         String.format("%s/auth/realms/%s/protocol/openid-connect/token", keycloakBaseUrl, realm);
 
-    // Build form data - include client_secret if provided, otherwise use PKCE
+    // Build form data with client secret
     final StringBuilder formDataBuilder = new StringBuilder();
     formDataBuilder.append("grant_type=authorization_code");
     formDataBuilder
@@ -266,20 +229,9 @@ public class OptimizeReportLoadTester {
         .append(
             URLEncoder.encode(
                 optimizeBaseUrl + "/api/authentication/callback", StandardCharsets.UTF_8));
-
-    if (clientSecret != null && !clientSecret.isEmpty()) {
-      // Confidential client - use client secret
-      formDataBuilder
-          .append("&client_secret=")
-          .append(URLEncoder.encode(clientSecret, StandardCharsets.UTF_8));
-      LOG.info("Using client secret for token exchange");
-    } else {
-      // Public client - use PKCE
-      formDataBuilder
-          .append("&code_verifier=")
-          .append(URLEncoder.encode(codeVerifier, StandardCharsets.UTF_8));
-      LOG.info("Using PKCE for token exchange");
-    }
+    formDataBuilder
+        .append("&client_secret=")
+        .append(URLEncoder.encode(clientSecret, StandardCharsets.UTF_8));
 
     final HttpRequest request =
         HttpRequest.newBuilder()
@@ -393,6 +345,76 @@ public class OptimizeReportLoadTester {
         "management", response.statusCode(), responseTime, response.body());
   }
 
+  /**
+   * Parses the dashboard response body to extract report IDs from tiles.
+   *
+   * @param dashboardResponseBody the JSON response body from the dashboard API
+   * @return a list of report IDs found in the dashboard tiles
+   * @throws Exception if JSON parsing fails
+   */
+  public List<String> extractReportIdsFromDashboard(final String dashboardResponseBody)
+      throws Exception {
+    final List<String> reportIds = new java.util.ArrayList<>();
+    final JsonNode rootNode = OBJECT_MAPPER.readTree(dashboardResponseBody);
+
+    // Check if tiles array exists
+    if (rootNode.has("tiles") && rootNode.get("tiles").isArray()) {
+      for (final JsonNode tile : rootNode.get("tiles")) {
+        // Extract reportId from tile.id
+        if (tile.has("id")) {
+          final String reportId = tile.get("id").asText();
+          reportIds.add(reportId);
+          LOG.info("Found report ID in dashboard: {}", reportId);
+        }
+      }
+    }
+
+    LOG.info("Extracted {} report IDs from dashboard", reportIds.size());
+    return reportIds;
+  }
+
+  /**
+   * Evaluates the management dashboard and then evaluates all reports contained within it.
+   *
+   * @return a result containing dashboard metrics and all report evaluation results
+   * @throws Exception if any request fails
+   */
+  public DashboardWithReportsResult evaluateDashboardWithReports() throws Exception {
+    // Step 1: Evaluate the dashboard
+    final DashboardEvaluationResult dashboardResult = evaluateManagementDashboard();
+
+    if (!dashboardResult.isSuccess()) {
+      throw new RuntimeException(
+          String.format(
+              "Dashboard evaluation failed with status %d", dashboardResult.getStatusCode()));
+    }
+
+    // Step 2: Extract report IDs from dashboard response
+    final List<String> reportIds =
+        extractReportIdsFromDashboard(dashboardResult.getResponseBody());
+
+    // Step 3: Evaluate each report
+    final List<ReportEvaluationResult> reportResults = new java.util.ArrayList<>();
+    for (final String reportId : reportIds) {
+      LOG.info("Evaluating report: {}", reportId);
+      try {
+        final ReportEvaluationResult reportResult = evaluateReport(reportId);
+        reportResults.add(reportResult);
+        LOG.info(
+            "Report {} evaluated in {}ms - Status: {}",
+            reportId,
+            reportResult.getResponseTimeMs(),
+            reportResult.getStatusCode());
+      } catch (final Exception e) {
+        LOG.error("Failed to evaluate report {}", reportId, e);
+        // Create a failed result
+        reportResults.add(new ReportEvaluationResult(reportId, 0, 0, e.getMessage()));
+      }
+    }
+
+    return new DashboardWithReportsResult(dashboardResult, reportResults);
+  }
+
   /** Example usage. */
   public static void main(final String[] args) {
     try {
@@ -406,19 +428,16 @@ public class OptimizeReportLoadTester {
               "demo",
               "demo-optimize-secret");
 
-      // Authenticate using authorization code flow (simulates browser login)
       tester.authenticateWithAuthorizationCodeFlow();
 
-      // Evaluate management dashboard
-      final DashboardEvaluationResult dashboardResult = tester.evaluateManagementDashboard();
-      System.out.println("Dashboard result: " + dashboardResult);
-      System.out.println("Dashboard response time: " + dashboardResult.getResponseTimeMs() + "ms");
+      // Evaluate dashboard and all its reports
+      final DashboardWithReportsResult result = tester.evaluateDashboardWithReports();
 
-      // Evaluate a report
-      final String reportId = "184e2de4-492d-47e5-a24a-68bce83381b8";
-      final ReportEvaluationResult reportResult = tester.evaluateReport(reportId);
-      System.out.println("Report result: " + reportResult);
-      System.out.println("Report response time: " + reportResult.getResponseTimeMs() + "ms");
+      System.out.println("Dashboard load time: " + result.getDashboardResult().getResponseTimeMs() + "ms");
+      for (final ReportEvaluationResult report : result.getReportResults()) {
+          System.out.println("Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
+      }
+      System.out.println("Total time: " + result.getTotalResponseTimeMs() + "ms");
 
     } catch (final Exception e) {
       LOG.error("Load test failed", e);
@@ -514,6 +533,57 @@ public class OptimizeReportLoadTester {
       return String.format(
           "ReportEvaluationResult{reportId='%s', statusCode=%d, responseTimeMs=%d, success=%b}",
           reportId, statusCode, responseTimeMs, isSuccess());
+    }
+  }
+
+  /** Result object containing dashboard and all its reports evaluation metrics. */
+  public static class DashboardWithReportsResult {
+    private final DashboardEvaluationResult dashboardResult;
+    private final List<ReportEvaluationResult> reportResults;
+
+    public DashboardWithReportsResult(
+        final DashboardEvaluationResult dashboardResult,
+        final List<ReportEvaluationResult> reportResults) {
+      this.dashboardResult = dashboardResult;
+      this.reportResults = reportResults;
+    }
+
+    public DashboardEvaluationResult getDashboardResult() {
+      return dashboardResult;
+    }
+
+    public List<ReportEvaluationResult> getReportResults() {
+      return reportResults;
+    }
+
+    public long getTotalResponseTimeMs() {
+      long total = dashboardResult.getResponseTimeMs();
+      for (final ReportEvaluationResult reportResult : reportResults) {
+        total += reportResult.getResponseTimeMs();
+      }
+      return total;
+    }
+
+    public boolean isAllSuccess() {
+      if (!dashboardResult.isSuccess()) {
+        return false;
+      }
+      for (final ReportEvaluationResult reportResult : reportResults) {
+        if (!reportResult.isSuccess()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "DashboardWithReportsResult{dashboard=%s, reports=%d, totalTimeMs=%d, allSuccess=%b}",
+          dashboardResult.getDashboardType(),
+          reportResults.size(),
+          getTotalResponseTimeMs(),
+          isAllSuccess());
     }
   }
 }
