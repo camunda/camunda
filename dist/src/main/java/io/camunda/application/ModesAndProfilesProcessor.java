@@ -15,6 +15,7 @@ import java.util.Set;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.SpringApplicationRunListener;
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext;
+import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 
@@ -57,26 +58,26 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     System.out.println("Started Camunda using mode: " + getMode().toUpperCase());
 
     if (isInsecure()) {
-      setProperty("zeebe.broker.gateway.security.enabled", "false", true); // embedded gateway
-      setProperty("zeebe.gateway.security.enabled", "false", true); // dedicated gateway
-      setProperty("camunda.security.authentication.unprotected-api", "true", true);
-      setProperty("camunda.security.authentication.authorizations.enabled", "false", true);
+      setProperty("zeebe.broker.gateway.security.enabled", false); // embedded gateway
+      setProperty("zeebe.gateway.security.enabled", false); // dedicated gateway
+      setProperty("camunda.security.authentication.unprotected-api", true);
+      setProperty("camunda.security.authentication.authorizations.enabled", false);
     }
 
     switch (getMode().toLowerCase()) {
       case "broker" -> {
         configureProfilesForBrokerMode();
-        setProperty("zeebe.broker.gateway.enable", "false", true);
-        setProperty("camunda.webapps.enabled", "false", true);
+        setProperty("zeebe.broker.gateway.enable", false);
+        setProperty("camunda.webapps.enabled", false);
       }
       case "gateway" -> {
         configureProfilesForGatewayMode();
-        setProperty("camunda.webapps.enabled", "true");
+        setProperty("camunda.webapps.enabled", true);
       }
       case "all-in-one" -> {
         configureProfilesForAllInOneMode();
-        setProperty("zeebe.broker.gateway.enable", "true", true);
-        setProperty("camunda.webapps.enabled", "true");
+        setProperty("zeebe.broker.gateway.enable", true);
+        setProperty("camunda.webapps.enabled", true);
       }
       default -> {
         throw new IllegalStateException(
@@ -119,18 +120,8 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     return Boolean.parseBoolean(environment.getProperty(CAMUNDA_DEVELOPMENT_PROPERTY, "false"));
   }
 
-  private void setProperty(final String key, final String value, final boolean highPriority) {
-    final MapPropertySource propertySource = new MapPropertySource("modeProps", Map.of(key, value));
-    if (highPriority) {
-      environment.getSystemProperties().put(key, value);
-      environment.getPropertySources().addFirst(propertySource);
-    } else {
-      environment.getPropertySources().addLast(propertySource);
-    }
-  }
-
-  private void setProperty(final String key, final String value) {
-    setProperty(key, value, false);
+  private void setProperty(final String key, final Object value) {
+    DefaultPropertiesPropertySource.addOrMerge(Map.of(key, value), environment.getPropertySources());
   }
 
   private void configureProfilesForAllInOneMode() {
