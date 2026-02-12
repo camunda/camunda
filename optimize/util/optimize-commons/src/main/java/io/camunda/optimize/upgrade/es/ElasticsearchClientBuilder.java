@@ -42,6 +42,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.ssl.SSLContexts;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
@@ -291,8 +292,10 @@ public class ElasticsearchClientBuilder {
   }
 
   private static void addPreemptiveProxyAuthInterceptor(
-      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder,
-      final ProxyConfiguration proxyConfig) {
+      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
+    if (proxyConfig == null) {
+      return;
+    }
     if (proxyConfig.getUsername() != null
         && !proxyConfig.getUsername().isEmpty()
         && proxyConfig.getPassword() != null
