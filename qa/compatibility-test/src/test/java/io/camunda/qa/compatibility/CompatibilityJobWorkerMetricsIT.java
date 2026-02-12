@@ -11,9 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
@@ -68,17 +66,17 @@ class CompatibilityJobWorkerMetricsIT {
     assertThat(handledCounter.count()).isGreaterThanOrEqualTo(1.0);
   }
 
+  @Component
+  public static class MetricsWorker {
+
+    @JobWorker(type = JOB_TYPE)
+    public void handleJob() {
+      // do nothing, just complete the job to trigger metrics recording
+    }
+  }
+
   @SpringBootConfiguration
   @EnableAutoConfiguration
   @Import({MetricsWorker.class, CompatibilityTestSupportConfiguration.class})
   static class TestApplication {}
-
-  @Component
-  public static class MetricsWorker {
-
-    @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
-      jobClient.newCompleteCommand(job.getKey()).send().join();
-    }
-  }
 }

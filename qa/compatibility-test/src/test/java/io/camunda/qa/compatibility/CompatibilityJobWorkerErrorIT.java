@@ -11,12 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
+import io.camunda.client.exception.CamundaError;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -64,22 +62,17 @@ class CompatibilityJobWorkerErrorIT {
         .hasCompletedElementsInOrder("start", "errorBoundary", "errorEnd");
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({ErrorJobWorker.class, CompatibilityTestSupportConfiguration.class})
-  static class TestApplication {}
-
   @Component
   public static class ErrorJobWorker {
 
     @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
-      jobClient
-          .newThrowErrorCommand(job.getKey())
-          .errorCode(ERROR_CODE)
-          .variables(Map.of("errorHandled", true))
-          .send()
-          .join();
+    public void handleJob() {
+      throw CamundaError.bpmnError(ERROR_CODE, "error");
     }
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({ErrorJobWorker.class, CompatibilityTestSupportConfiguration.class})
+  static class TestApplication {}
 }

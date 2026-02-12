@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.time.Duration;
@@ -72,15 +70,15 @@ class CompatibilityJobWorkerOverridesIT {
         .containsExactly("tenant-a", "tenant-b");
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({OverrideWorker.class, CompatibilityTestSupportConfiguration.class})
-  static class TestApplication {}
-
   @Component
   public static class OverrideWorker {
 
     @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {}
+    public void handleJob() {}
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({OverrideWorker.class, CompatibilityTestSupportConfiguration.class})
+  static class TestApplication {}
 }

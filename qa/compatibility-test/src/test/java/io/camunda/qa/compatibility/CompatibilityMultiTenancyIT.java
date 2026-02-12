@@ -9,9 +9,7 @@ package io.camunda.qa.compatibility;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
-import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import org.junit.jupiter.api.Test;
@@ -26,10 +24,13 @@ import org.springframework.stereotype.Component;
     classes = CompatibilityMultiTenancyIT.TestApplication.class,
     properties = {
       "spring.main.web-application-type=none",
-      "camunda.process-test.multi-tenancy-enabled=true",
-      "camunda.client.auth.method=basic",
-      "camunda.client.auth.username=demo",
-      "camunda.client.auth.password=demo"
+      "io.camunda.process.test.multi-tenancy-enabled=true",
+      "io.camunda.process.test.camunda-env-vars."
+          + "CAMUNDA_SECURITY_INITIALIZATION_TENANTS_0_TENANTID=tenant1",
+      "io.camunda.process.test.camunda-env-vars."
+          + "CAMUNDA_SECURITY_INITIALIZATION_TENANTS_0_NAME=Tenant 1",
+      "io.camunda.process.test.camunda-env-vars."
+          + "CAMUNDA_SECURITY_INITIALIZATION_TENANTS_0_USERS=demo"
     })
 @CamundaSpringProcessTest
 class CompatibilityMultiTenancyIT {
@@ -37,7 +38,7 @@ class CompatibilityMultiTenancyIT {
   private static final String PROCESS_ID = "compatibilityTenantProcess";
   private static final String JOB_TYPE = "compatibility-tenant-worker";
   private static final String BPMN_RESOURCE = "bpmn/compatibility-tenant.bpmn";
-  private static final String TENANT_ID = "<default>";
+  private static final String TENANT_ID = "tenant1";
 
   @Autowired private CamundaClient camundaClient;
 
@@ -62,17 +63,17 @@ class CompatibilityMultiTenancyIT {
     CamundaAssert.assertThat(processInstance).isCompleted();
   }
 
+  @Component
+  public static class TenantWorker {
+
+    @JobWorker(type = JOB_TYPE, tenantIds = TENANT_ID)
+    public void handleJob() {
+      // do nothing, just complete the job
+    }
+  }
+
   @SpringBootConfiguration
   @EnableAutoConfiguration
   @Import({TenantWorker.class, CompatibilityTestSupportConfiguration.class})
   static class TestApplication {}
-
-  @Component
-  public static class TenantWorker {
-
-    @JobWorker(type = JOB_TYPE, autoComplete = false, tenantIds = TENANT_ID)
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
-      jobClient.newCompleteCommand(job.getKey()).send().join();
-    }
-  }
 }

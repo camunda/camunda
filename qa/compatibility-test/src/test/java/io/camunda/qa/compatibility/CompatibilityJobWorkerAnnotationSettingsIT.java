@@ -11,8 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.time.Duration;
@@ -101,15 +99,6 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
         .contains("foo");
   }
 
-  @SpringBootConfiguration
-  @EnableAutoConfiguration
-  @Import({
-    AnnotationSettingsWorker.class,
-    ForceFetchAllWorker.class,
-    CompatibilityTestSupportConfiguration.class
-  })
-  static class TestApplication {}
-
   @Component
   public static class AnnotationSettingsWorker {
 
@@ -126,7 +115,7 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
         enabled = {true},
         autoComplete = {false},
         fetchVariables = {"foo", "bar"})
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {}
+    public void handleJob() {}
   }
 
   @Component
@@ -135,6 +124,15 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
     @JobWorker(
         type = FORCE_FETCH_JOB_TYPE,
         fetchVariables = {"foo"})
-    public void handleJob(final JobClient jobClient, final ActivatedJob job) {}
+    public void handleJob() {}
   }
+
+  @SpringBootConfiguration
+  @EnableAutoConfiguration
+  @Import({
+    AnnotationSettingsWorker.class,
+    ForceFetchAllWorker.class,
+    CompatibilityTestSupportConfiguration.class
+  })
+  static class TestApplication {}
 }
