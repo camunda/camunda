@@ -22,6 +22,7 @@ import io.camunda.operate.entities.ProcessEntity;
 import io.camunda.operate.entities.listview.FlowNodeInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.operate.entities.listview.ProcessInstanceState;
+import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
@@ -38,9 +39,12 @@ import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.stream.Collectors;
+import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 public class IncidentStatisticsIT extends OperateAbstractIT {
 
@@ -58,10 +62,16 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockBean private PermissionsService permissionsService;
-  private Random random = new Random();
+  @MockitoSpyBean private OperateProperties operateProperties;
+  private final Random random = new Random();
 
-  private String tenantId1 = "tenant1";
-  private String tenantId2 = "tenant2";
+  private final String tenantId1 = "tenant1";
+  private final String tenantId2 = "tenant2";
+
+  @After
+  public void resetMock() {
+    Mockito.reset(operateProperties);
+  }
 
   @Test
   public void testAbsentProcessDoesntThrowExceptions() throws Exception {
@@ -129,6 +139,22 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                     && s.getTenantId().equals(tenantId1)
                     && s.getInstancesWithActiveIncidentsCount() == 1L
                     && (s.getVersion() == 1 || s.getVersion() == 2));
+  }
+
+  @Test
+  public void testIncidentStatisticsByErrorWithLimit() throws Exception {
+    // Given
+    when(operateProperties.getMaxIncidentSearchGroups()).thenReturn(1);
+    createData();
+
+    // When
+    final List<IncidentsByErrorMsgStatisticsDto> response = requestIncidentsByError();
+
+    // Then
+    assertThat(response).hasSize(1);
+    final IncidentsByErrorMsgStatisticsDto incidentsByErrorStat = response.get(0);
+    assertThat(incidentsByErrorStat.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
+    assertThat(incidentsByErrorStat.getProcesses()).hasSize(1);
   }
 
   @Test
@@ -344,7 +370,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .containsExactly(ORDER_BPMN_PROCESS_ID);
   }
 
-  private void assertNoInstancesProcess(IncidentByProcessStatisticsDto process, int version) {
+  private void assertNoInstancesProcess(
+      final IncidentByProcessStatisticsDto process, final int version) {
     assertThat(process.getVersion()).isEqualTo(version);
     assertThat(process.getActiveInstancesCount()).isEqualTo(0);
     assertThat(process.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
@@ -353,7 +380,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(process.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
   }
 
-  private void assertLoanProcess(IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
+  private void assertLoanProcess(final IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
     assertThat(loanProcessGroup.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
     assertThat(loanProcessGroup.getTenantId()).isEqualTo(tenantId1);
     assertThat(loanProcessGroup.getProcessName()).isEqualTo(LOAN_PROCESS_NAME + "1");
@@ -373,7 +400,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(loanProcessProcessStatistic.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
   }
 
-  private void assertOrderProcess(IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
+  private void assertOrderProcess(final IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
     // assert Order process group
     assertThat(orderProcessGroup.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(orderProcessGroup.getTenantId()).isEqualTo(tenantId2);
@@ -392,7 +419,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(orderProcess.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
   }
 
-  private void assertDemoProcess(IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
+  private void assertDemoProcess(final IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
     // assert Demo process group
     assertThat(demoProcessGroup.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(demoProcessGroup.getTenantId()).isEqualTo(tenantId1);
@@ -543,7 +570,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     searchTestRule.persistNew(entities.toArray(new OperateEntity[entities.size()]));
   }
 
-  private void createNoInstancesProcessData(int versionCount) {
+  private void createNoInstancesProcessData(final int versionCount) {
     createProcessVersions(
             NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount, tenantId2)
         .forEach(processVersion -> searchTestRule.persistNew(processVersion));
@@ -573,16 +600,16 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
 
   private List<OperateEntity> createIncidents(
       final ProcessInstanceForListViewEntity processInstance,
-      int activeIncidentsCount,
-      int resolvedIncidentsCount) {
+      final int activeIncidentsCount,
+      final int resolvedIncidentsCount) {
     return createIncidents(processInstance, activeIncidentsCount, resolvedIncidentsCount, false);
   }
 
   private List<OperateEntity> createIncidents(
       final ProcessInstanceForListViewEntity processInstance,
-      int activeIncidentsCount,
-      int resolvedIncidentsCount,
-      boolean withOtherMsg) {
+      final int activeIncidentsCount,
+      final int resolvedIncidentsCount,
+      final boolean withOtherMsg) {
     final List<OperateEntity> entities = new ArrayList<>();
     for (int i = 0; i < activeIncidentsCount; i++) {
       final FlowNodeInstanceForListViewEntity activityInstance =
