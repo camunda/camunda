@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -60,24 +61,41 @@ public abstract class ApiServices<T extends ApiServices<T>> {
     return sendBrokerRequestWithFullResponse(brokerRequest).thenApply(BrokerResponse::getResponse);
   }
 
+  protected <R> CompletableFuture<R> sendBrokerRequest(
+      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout)
+        .thenApplyAsync(BrokerResponse::getResponse);
+  }
+
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest) {
     brokerRequest.setAuthorization(authentication.token());
+    return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse());
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+    brokerRequest.setAuthorization(authentication.token());
     return brokerClient
-        .sendRequest(brokerRequest)
-        .handleAsync(
-            (response, error) -> {
-              if (error != null) {
-                throw new CamundaServiceException(error);
-              }
-              if (response.isError()) {
-                throw new CamundaServiceException(response.getError());
-              }
-              if (response.isRejection()) {
-                throw new CamundaServiceException(response.getRejection());
-              }
-              return response;
-            });
+        .sendRequest(brokerRequest, requestTimeout)
+        .handleAsync(handleBrokerResponse());
+  }
+
+  private <R>
+      java.util.function.BiFunction<BrokerResponse<R>, Throwable, BrokerResponse<R>>
+          handleBrokerResponse() {
+    return (response, error) -> {
+      if (error != null) {
+        throw new CamundaServiceException(error);
+      }
+      if (response.isError()) {
+        throw new CamundaServiceException(response.getError());
+      }
+      if (response.isRejection()) {
+        throw new CamundaServiceException(response.getRejection());
+      }
+      return response;
+    };
   }
 
   protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {
