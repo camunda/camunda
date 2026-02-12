@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-45656/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-45656/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-45656/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.16f237bf.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-45656/assets/js/main.5aae4715.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.9a155461.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/main.7d414bba.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -404,8 +404,8 @@
 </li>
 <li class=""><strong>Bug Fix Handling During Alpha Release</strong>:<!-- -->
 <ul>
-<li class="">⚠️ <strong>Important</strong>: Bug fixes should be backported to <code>stable/&lt;minor&gt;</code> after the last alpha release branch (<code>release-&lt;version&gt;-alpha&lt;N&gt;</code>) to be included in the minor release</li>
-<li class="">Critical bug fixes should be backported to <code>stable/&lt;minor&gt;</code> and alpha release branch and may trigger a new Release Candidate</li>
+<li class="">⚠️ <strong>Important</strong>: Any bug fixes merged to <code>main</code> after the last alpha release branch (<code>release-&lt;version&gt;-alpha&lt;N&gt;</code>) has been created must be backported to <code>stable/&lt;minor&gt;</code> to be included in the minor release</li>
+<li class="">Critical bug fixes merged after that point should be backported to both <code>stable/&lt;minor&gt;</code> and the active alpha release branch and may trigger a new Release Candidate</li>
 </ul>
 </li>
 <li class=""><strong>Notification Process</strong>: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:</li>
