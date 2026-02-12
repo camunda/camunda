@@ -1,0 +1,460 @@
+# description: Daily compatibility tests for Camunda Process Test across runtime versions
+# type: CI
+# owner: @camunda/camunda-ex
+name: Camunda Process Test Compatibility Tests
+
+on:
+  schedule:
+    # Runs at 02:00 every day https://crontab.guru/#0_2_*_*_*
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      cpt_version:
+        description: 'CPT version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        required: false
+        type: string
+      runtime_version:
+        description: 'Runtime version to test (e.g., 8.8.0 or 8.9.0-SNAPSHOT). Leave empty to test all versions.'
+        required: false
+        type: string
+      skip_cache:
+        description: 'Skip version cache and retest all combinations'
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  prepare-versions:
+    name: Prepare Version Matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    outputs:
+      matrix: ${{ steps.create-matrix.outputs.matrix }}
+      is-main: ${{ steps.branch-info.outputs.is-main }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0  # Fetch all history for git tags
+
+      - name: Get branch information
+        id: branch-info
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
+
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "is-main=true" >> "$GITHUB_OUTPUT"
+            echo "stable-version=" >> "$GITHUB_OUTPUT"
+          else
+            echo "is-main=false" >> "$GITHUB_OUTPUT"
+            # Extract version from stable/8.x branch name
+            if [[ "$BRANCH_NAME" =~ ^stable/([0-9]+\.[0-9]+)$ ]]; then
+              STABLE_VERSION="${BASH_REMATCH[1]}"
+              echo "stable-version=$STABLE_VERSION" >> "$GITHUB_OUTPUT"
+            else
+              echo "WARN: No main or stable branch detected"
+            fi
+          fi
+
+      - name: Get current version from pom.xml
+        id: pom-version
+        run: |
+          # Extract version from root pom.xml
+          POM_VERSION=$(./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout)
+          echo "pom-version=$POM_VERSION" >> "$GITHUB_OUTPUT"
+          echo "Current pom.xml version: $POM_VERSION"
+
+      - name: Get versions from git tags
+        id: get-versions
+        run: |
+          # Get all version tags (format: 8.x.y)
+          ALL_TAGS=$(git tag -l '[0-9]*.[0-9]*.[0-9]*' | sort -V)
+
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+          IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
+
+          if [[ "$IS_MAIN" == "true" ]]; then
+            # On main, use only the snapshot version from pom as the tag
+            FILTERED_TAGS=""
+          else
+            # Filter tags >= stable version (e.g., >= 8.8.0)
+            FILTERED_TAGS=""
+            SKIPPED_COUNT=0
+            FILTERED_COUNT=0
+            for tag in $ALL_TAGS; do
+              # Skip alpha/beta/rc releases (format: 8.x.x-alpha1, 8.x.x-rc1)
+              if [[ "$tag" =~ -alpha|-beta|-rc ]]; then
+                SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                continue
+              fi
+
+              # Extract major.minor from tag
+              if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+                TAG_MAJOR="${BASH_REMATCH[1]}"
+                TAG_MINOR="${BASH_REMATCH[2]}"
+
+                # Compare versions
+                IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+
+                if (( TAG_MAJOR > STABLE_MAJOR )) || \
+                   (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= STABLE_MINOR )); then
+                  FILTERED_TAGS+="$tag"$'\n'
+                  FILTERED_COUNT=$((FILTERED_COUNT + 1))
+                fi
+              fi
+            done
+          fi
+
+          # Save filtered tags
+          echo "$FILTERED_TAGS" > /tmp/filtered_tags.txt
+          FILTERED_COUNT=$(echo "$FILTERED_TAGS" | grep -c -v '^$' || echo "0")
+          echo "Filtered tags:"
+          cat /tmp/filtered_tags.txt
+
+      - name: Create version lists
+        id: create-lists
+        run: |
+          FILTERED_TAGS=$(grep -v '^$' /tmp/filtered_tags.txt || true)
+          IS_MAIN="${{ steps.branch-info.outputs.is-main }}"
+
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+
+          if [[ "$IS_MAIN" == "true" ]]; then
+            NEXT_SNAPSHOT="SNAPSHOT"
+          elif [[ -n "$STABLE_VERSION" ]]; then
+            IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+            NEXT_MINOR=$((STABLE_MINOR + 1))
+            if echo "$FILTERED_TAGS" | grep -q "^${STABLE_MAJOR}\\.${NEXT_MINOR}\\."; then
+              NEXT_SNAPSHOT="${STABLE_MAJOR}.${NEXT_MINOR}.0-SNAPSHOT"
+            else
+              NEXT_SNAPSHOT="SNAPSHOT"
+            fi
+          else
+            NEXT_SNAPSHOT="SNAPSHOT"
+          fi
+
+          echo "next-snapshot=$NEXT_SNAPSHOT" >> "$GITHUB_OUTPUT"
+
+          # Create CLIENT_LIST: all versions + snapshot (if not on main)
+          CLIENT_LIST=""
+          CLIENT_COUNT=0
+          if [[ -n "$FILTERED_TAGS" ]]; then
+            for tag in $FILTERED_TAGS; do
+              CLIENT_LIST+="$tag"$'\n'
+              CLIENT_COUNT=$((CLIENT_COUNT + 1))
+            done
+          fi
+
+          if [[ "$IS_MAIN" != "true" ]]; then
+            CLIENT_LIST+="$NEXT_SNAPSHOT"$'\n'
+          else
+            CLIENT_LIST="$NEXT_SNAPSHOT"$'\n'
+          fi
+
+          echo "$CLIENT_LIST" > /tmp/client_list.txt
+          echo "CLIENT_LIST:"
+          cat /tmp/client_list.txt
+
+          # Create SERVER_LIST: versions from next minor onwards + snapshot (if not on main)
+          SERVER_LIST=""
+          STABLE_VERSION="${{ steps.branch-info.outputs.stable-version }}"
+
+          if [[ -n "$STABLE_VERSION" ]]; then
+            # Parse stable version to get next minor
+            IFS='.' read -r STABLE_MAJOR STABLE_MINOR <<< "$STABLE_VERSION"
+            NEXT_MINOR=$((STABLE_MINOR + 1))
+
+            SERVER_COUNT=0
+            if [[ -n "$FILTERED_TAGS" ]]; then
+              for tag in $FILTERED_TAGS; do
+                if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+                  TAG_MAJOR="${BASH_REMATCH[1]}"
+                  TAG_MINOR="${BASH_REMATCH[2]}"
+
+                  if (( TAG_MAJOR > STABLE_MAJOR )) || \
+                     (( TAG_MAJOR == STABLE_MAJOR && TAG_MINOR >= NEXT_MINOR )); then
+                    SERVER_LIST+="$tag"$'\n'
+                    SERVER_COUNT=$((SERVER_COUNT + 1))
+                  fi
+                fi
+              done
+            fi
+          else
+            # On main, SERVER_LIST same as CLIENT_LIST
+            SERVER_LIST="$CLIENT_LIST"
+          fi
+
+          if [[ "$IS_MAIN" != "true" ]]; then
+            SERVER_LIST+="$NEXT_SNAPSHOT"$'\n'
+          fi
+
+          echo "$SERVER_LIST" > /tmp/server_list.txt
+          echo "SERVER_LIST:"
+          cat /tmp/server_list.txt
+
+      - name: Download tested combinations artifact
+        id: download-tested
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: cpt-compatibility-tested-combinations
+          path: /tmp/cpt-compatibility-state-download
+
+      - name: Load tested combinations
+        id: load-tested
+        run: |
+          mkdir -p /tmp/cpt-compatibility-state
+
+          if [[ "${{ inputs.skip_cache }}" == "true" ]]; then
+            touch /tmp/cpt-compatibility-state/tested-combinations.txt
+            echo "Skipping cache - will test all combinations"
+          elif [[ -f /tmp/cpt-compatibility-state-download/tested-combinations.txt ]]; then
+            cp /tmp/cpt-compatibility-state/tested-combinations.txt /tmp/cpt-compatibility-state/tested-combinations.txt
+            echo "Loaded $(wc -l < /tmp/cpt-compatibility-state/tested-combinations.txt) previously tested combinations"
+          else
+            touch /tmp/cpt-compatibility-state/tested-combinations.txt
+            echo "No previous test history found - starting fresh"
+          fi
+
+      - name: Create version matrix
+        id: create-matrix
+        run: |
+          CLIENT_VERSION="${{ inputs.cpt_version }}"
+          SERVER_VERSION="${{ inputs.runtime_version }}"
+
+          if [[ -n "$CLIENT_VERSION" ]] && [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing specific versions - Client: $CLIENT_VERSION, Server: $SERVER_VERSION"
+            MATRIX_JSON=$(jq -nc --arg client "$CLIENT_VERSION" --arg server "$SERVER_VERSION" '{"include": [{"client": $client, "server": $server}]}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$CLIENT_VERSION" ]]; then
+            echo "Manual trigger: Testing client version $CLIENT_VERSION against all servers"
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
+            MATRIX_ITEMS="[]"
+            for server in $SERVER_LIST; do
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$CLIENT_VERSION"'", "server": "'"$server"'"}]')
+            done
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          elif [[ -n "$SERVER_VERSION" ]]; then
+            echo "Manual trigger: Testing server version $SERVER_VERSION with all clients"
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
+            MATRIX_ITEMS="[]"
+            for client in $CLIENT_LIST; do
+              MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$SERVER_VERSION"'"}]')
+            done
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+          else
+            CLIENT_LIST=$(grep -v '^$' /tmp/client_list.txt)
+            SERVER_LIST=$(grep -v '^$' /tmp/server_list.txt)
+            SKIP_CACHE="${{ inputs.skip_cache }}"
+
+            MATRIX_ITEMS="[]"
+            ADDED_COUNT=0
+            SKIPPED_COUNT=0
+
+            for client in $CLIENT_LIST; do
+              for server in $SERVER_LIST; do
+                COMBO="$client-$server"
+
+                # Skip if combination already tested (unless skip_cache is true or server is snapshot)
+                if [[ "$SKIP_CACHE" != "true" ]]; then
+                  if grep -q "^$COMBO$" /tmp/cpt-compatibility-state/tested-combinations.txt 2>/dev/null; then
+                    if [[ "$server" != *"-SNAPSHOT" ]]; then
+                      SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
+                      continue
+                    fi
+                  fi
+                fi
+
+                MATRIX_ITEMS=$(echo "$MATRIX_ITEMS" | jq -c '. += [{"client": "'"$client"'", "server": "'"$server"'"}]')
+                ADDED_COUNT=$((ADDED_COUNT + 1))
+              done
+            done
+
+            echo "Matrix contains $ADDED_COUNT combinations (skipped $SKIPPED_COUNT already tested)"
+            MATRIX_JSON=$(jq -nc --argjson items "$MATRIX_ITEMS" '{"include": $items}')
+            echo "matrix=$MATRIX_JSON" >> "$GITHUB_OUTPUT"
+            echo "Generated matrix:"
+            echo "$MATRIX_JSON" | jq '.'
+          fi
+
+  run-cpt-tests:
+    name: Test CPT ${{ matrix.client }} -> Runtime ${{ matrix.server }}
+    needs: prepare-versions
+    if: needs.prepare-versions.outputs.matrix != '{"include":[]}'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
+    steps:
+      - name: Checkout Camunda (main for SNAPSHOT)
+        if: matrix.client == 'SNAPSHOT'
+        uses: actions/checkout@v6
+
+      - name: Checkout Camunda
+        if: matrix.client != 'SNAPSHOT'
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.client }}
+
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Install zeebe-parent only
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            install
+            -f parent/pom.xml
+            -DskipTests
+            -DskipITs
+            -DskipUTs
+            -DskipChecks
+
+      - name: Run compatibility tests
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: >-
+            verify
+            -f testing/pom.xml
+            -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
+            -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.server }}
+            -DfailIfNoTests=false
+
+      - name: Record tested combination
+        if: success()
+        run: |
+          mkdir -p cpt-test-results
+          echo "${{ matrix.client }}-${{ matrix.server }}" >> cpt-test-results/tested.txt
+
+      - name: Upload tested combinations
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: tested-combo-${{ matrix.client }}-${{ matrix.server }}
+          path: cpt-test-results/tested.txt
+          retention-days: 30
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: run-cpt-tests (cpt=${{ matrix.client }}, runtime=${{ matrix.server }})
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  save-tested-combinations:
+    name: Save Tested Combinations
+    needs: [prepare-versions, run-cpt-tests]
+    if: always() && needs.prepare-versions.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all tested combinations
+        uses: actions/download-artifact@v4
+        with:
+          pattern: tested-combo-*
+          path: cpt-test-results
+          merge-multiple: true
+
+      - name: Merge tested combinations
+        run: |
+          mkdir -p cpt-compatibility-state
+          touch cpt-compatibility-state/tested-combinations.txt
+
+          if [[ -d cpt-test-results ]]; then
+            cat cpt-test-results/*.txt >> cpt-compatibility-state/tested-combinations.txt 2>/dev/null || true
+          fi
+
+          sort -u cpt-compatibility-state/tested-combinations.txt -o cpt-compatibility-state/tested-combinations.txt
+
+          echo "All tested combinations:"
+          cat cpt-compatibility-state/tested-combinations.txt
+
+      - name: Upload combined results
+        uses: actions/upload-artifact@v4
+        with:
+          name: cpt-compatibility-tested-combinations
+          path: cpt-compatibility-state/tested-combinations.txt
+          retention-days: 90
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [prepare-versions, run-cpt-tests]
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Notify failure
+        uses: slackapi/slack-github-action@v2.1.1
+        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        env:
+          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+        with:
+          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+           {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Camunda Process Test Compatibility Tests Failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
