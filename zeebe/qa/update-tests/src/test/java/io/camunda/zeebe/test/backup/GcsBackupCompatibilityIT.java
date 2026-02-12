@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe.it.cluster.backup;
+package io.camunda.zeebe.test.backup;
 
 import com.google.cloud.storage.BucketInfo;
 import io.camunda.configuration.Camunda;
