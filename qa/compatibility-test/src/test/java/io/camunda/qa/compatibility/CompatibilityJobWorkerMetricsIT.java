@@ -13,10 +13,12 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.worker.metrics.MicrometerJobWorkerMetricsBuilder.Names;
+import io.camunda.client.metrics.JobHandlerMetrics;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -64,6 +66,39 @@ class CompatibilityJobWorkerMetricsIT {
     assertThat(handledCounter).isNotNull();
     assertThat(activatedCounter.count()).isGreaterThanOrEqualTo(1.0);
     assertThat(handledCounter.count()).isGreaterThanOrEqualTo(1.0);
+
+    // Spring Boot Starter metrics: camunda.job.invocations (counter with action tags)
+    final Counter invocationActivated =
+        meterRegistry
+            .find(JobHandlerMetrics.Name.INVOCATION.asString())
+            .tag(JobHandlerMetrics.Tag.TYPE.asString(), JOB_TYPE)
+            .tag(
+                JobHandlerMetrics.Tag.ACTION.asString(),
+                JobHandlerMetrics.Action.ACTIVATED.asString())
+            .counter();
+    final Counter invocationCompleted =
+        meterRegistry
+            .find(JobHandlerMetrics.Name.INVOCATION.asString())
+            .tag(JobHandlerMetrics.Tag.TYPE.asString(), JOB_TYPE)
+            .tag(
+                JobHandlerMetrics.Tag.ACTION.asString(),
+                JobHandlerMetrics.Action.COMPLETED.asString())
+            .counter();
+
+    assertThat(invocationActivated).isNotNull();
+    assertThat(invocationCompleted).isNotNull();
+    assertThat(invocationActivated.count()).isGreaterThanOrEqualTo(1.0);
+    assertThat(invocationCompleted.count()).isGreaterThanOrEqualTo(1.0);
+
+    // Spring Boot Starter metrics: camunda.job.execution-time (timer)
+    final Timer executionTimer =
+        meterRegistry
+            .find(JobHandlerMetrics.Name.EXECUTION_TIME.asString())
+            .tag(JobHandlerMetrics.Tag.TYPE.asString(), JOB_TYPE)
+            .timer();
+
+    assertThat(executionTimer).isNotNull();
+    assertThat(executionTimer.count()).isGreaterThanOrEqualTo(1);
   }
 
   @Component
