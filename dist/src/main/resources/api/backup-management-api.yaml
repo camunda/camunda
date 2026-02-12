@@ -500,6 +500,10 @@ components:
       description: Response body for take backup
       type: object
       properties:
+        backupId:
+          description: The ID of the backup that has been scheduled
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
         message:
           description: A message indicating backup has been triggered
           type: string
