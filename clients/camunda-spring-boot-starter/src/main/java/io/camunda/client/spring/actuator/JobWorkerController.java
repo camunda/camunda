@@ -16,7 +16,7 @@
 package io.camunda.client.spring.actuator;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
+import io.camunda.client.annotation.value.SourceAware;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.jobhandling.JobWorkerChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;

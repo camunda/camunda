@@ -16,8 +16,8 @@
 package io.camunda.zeebe.spring.client.annotation.value;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.List;

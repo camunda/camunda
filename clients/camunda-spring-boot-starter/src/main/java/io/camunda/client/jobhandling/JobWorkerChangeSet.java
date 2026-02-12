@@ -18,8 +18,8 @@ package io.camunda.client.jobhandling;
 import static java.util.function.Predicate.not;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.ArrayList;

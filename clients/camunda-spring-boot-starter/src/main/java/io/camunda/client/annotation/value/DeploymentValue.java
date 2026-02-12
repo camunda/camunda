@@ -21,13 +21,13 @@ import java.util.Objects;
 public final class DeploymentValue {
   private final List<String> resources;
   private final String tenantId;
-  private final boolean ownJarOnly;
+  private SourceAware<Boolean> ownJarOnly;
   private final Class<?> source;
 
   public DeploymentValue(
       final List<String> resources,
       final String tenantId,
-      final boolean ownJarOnly,
+      final SourceAware<Boolean> ownJarOnly,
       final Class<?> source) {
     this.resources = resources;
     this.tenantId = tenantId;
@@ -43,8 +43,12 @@ public final class DeploymentValue {
     return tenantId;
   }
 
-  public boolean isOwnJarOnly() {
+  public SourceAware<Boolean> getOwnJarOnly() {
     return ownJarOnly;
+  }
+
+  public void setOwnJarOnly(final SourceAware<Boolean> ownJarOnly) {
+    this.ownJarOnly = ownJarOnly;
   }
 
   public Class<?> getSource() {
@@ -62,9 +66,9 @@ public final class DeploymentValue {
       return false;
     }
     final DeploymentValue that = (DeploymentValue) o;
-    return ownJarOnly == that.ownJarOnly
-        && Objects.equals(resources, that.resources)
+    return Objects.equals(resources, that.resources)
         && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(ownJarOnly, that.ownJarOnly)
         && Objects.equals(source, that.source);
   }
 

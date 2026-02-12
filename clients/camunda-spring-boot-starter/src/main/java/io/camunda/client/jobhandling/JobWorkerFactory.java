@@ -17,8 +17,8 @@ package io.camunda.client.jobhandling;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;

@@ -16,7 +16,7 @@
 package io.camunda.client.annotation.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
@@ -304,104 +304,5 @@ public class JobWorkerValue {
         + ", type="
         + type
         + '}';
-  }
-
-  public sealed interface SourceAware<T> {
-    T value();
-
-    int priority();
-
-    boolean generated();
-
-    record Empty<T>() implements SourceAware<T> {
-
-      @Override
-      public T value() {
-        return null;
-      }
-
-      @Override
-      public int priority() {
-        return 0;
-      }
-
-      @Override
-      public boolean generated() {
-        return true;
-      }
-    }
-
-    record GeneratedFromMethodInfo<T>(T value) implements SourceAware<T> {
-
-      @Override
-      public int priority() {
-        return 1;
-      }
-
-      @Override
-      public boolean generated() {
-        return true;
-      }
-    }
-
-    record FromDefaultProperty<T>(T value) implements SourceAware<T> {
-      @Override
-      public int priority() {
-        return 2;
-      }
-
-      @Override
-      public boolean generated() {
-        return false;
-      }
-    }
-
-    record FromAnnotation<T>(T value) implements SourceAware<T> {
-      @Override
-      public int priority() {
-        return 3;
-      }
-
-      @Override
-      public boolean generated() {
-        return false;
-      }
-    }
-
-    record FromOverrideProperty<T>(T value) implements SourceAware<T> {
-      @Override
-      public int priority() {
-        return 4;
-      }
-
-      @Override
-      public boolean generated() {
-        return false;
-      }
-    }
-
-    record FromRuntimeOverride<T>(T value, SourceAware<T> original) implements SourceAware<T> {
-      @Override
-      public int priority() {
-        return 5;
-      }
-
-      @Override
-      public boolean generated() {
-        return false;
-      }
-    }
-
-    record FromLegacy<T>(T value) implements SourceAware<T> {
-      @Override
-      public int priority() {
-        return -1;
-      }
-
-      @Override
-      public boolean generated() {
-        return false;
-      }
-    }
   }
 }

@@ -28,7 +28,7 @@ public @interface Deployment {
 
   String tenantId() default "";
 
-  boolean ownJarOnly() default false;
+  boolean[] ownJarOnly() default {};
 
   @Documented
   @Inherited

@@ -17,8 +17,14 @@ package io.camunda.client.spring.properties;
 
 public class CamundaClientDeploymentProperties {
 
-  /** Indicates if deployment uses the `@Deployment` annotation. */
+  /** Indicates if the `@Deployment` annotation is processed. */
   private boolean enabled = true;
+
+  /**
+   * Indicates if the resources selected by the deployment annotation have to reside in the same jar
+   * as the annotated class.
+   */
+  private boolean ownJarOnly = false;
 
   public boolean isEnabled() {
     return enabled;
@@ -28,8 +34,21 @@ public class CamundaClientDeploymentProperties {
     this.enabled = enabled;
   }
 
+  public boolean isOwnJarOnly() {
+    return ownJarOnly;
+  }
+
+  public void setOwnJarOnly(final boolean ownJarOnly) {
+    this.ownJarOnly = ownJarOnly;
+  }
+
   @Override
   public String toString() {
-    return "CamundaClientDeploymentProperties{" + "enabled=" + enabled + '}';
+    return "CamundaClientDeploymentProperties{"
+        + "enabled="
+        + enabled
+        + ", ownJarOnly="
+        + ownJarOnly
+        + '}';
   }
 }
