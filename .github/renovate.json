@@ -110,6 +110,15 @@
       ]
     },
     {
+      "description": "Disable lockfile maintenance for npm package managers.",
+      "matchManagers": [
+        "npm"
+      ],
+      "lockFileMaintenance": {
+        "enabled": false
+      }
+    },
+    {
       "description": "Identify updates related to backend dependencies.",
       "matchManagers": [
         "maven"
