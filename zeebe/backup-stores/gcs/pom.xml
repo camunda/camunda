@@ -58,6 +58,11 @@
     </dependency>
 
     <dependency>
+      <groupId>com.google.api</groupId>
+      <artifactId>api-common</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.fasterxml.jackson.datatype</groupId>
       <artifactId>jackson-datatype-jdk8</artifactId>
     </dependency>
@@ -170,8 +175,10 @@
             -->
             <ignoredUsedUndeclaredDependency>com.google.auth:*</ignoredUsedUndeclaredDependency>
             <ignoredUsedUndeclaredDependency>com.google.apis:*</ignoredUsedUndeclaredDependency>
-            <ignoredUsedUndeclaredDependency>com.google.api:*</ignoredUsedUndeclaredDependency>
           </ignoredUsedUndeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <ignoredNonTestScopedDependency>com.google.api:*</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
     </plugins>
