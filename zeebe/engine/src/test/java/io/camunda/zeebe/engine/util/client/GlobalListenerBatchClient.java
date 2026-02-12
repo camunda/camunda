@@ -38,6 +38,11 @@ public final class GlobalListenerBatchClient {
     return this;
   }
 
+  public GlobalListenerBatchClient withRecord(final GlobalListenerBatchRecord record) {
+    globalListenerBatchRecord.copyFrom(record);
+    return this;
+  }
+
   public Record<GlobalListenerBatchRecordValue> configure() {
     final long position =
         writer.writeCommand(GlobalListenerBatchIntent.CONFIGURE, globalListenerBatchRecord);

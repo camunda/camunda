@@ -54,12 +54,7 @@ public final class GlobalListenersInitializer implements StreamProcessorLifecycl
         Objects.requireNonNullElse(
             globalListenersState.getCurrentConfig(), new GlobalListenerBatchRecord());
 
-    final GlobalListenerBatchRecord oldRecord = new GlobalListenerBatchRecord();
-    oldRecord.copyFrom(storedListeners);
-    // Ignore key for equality check
-    oldRecord.setGlobalListenerBatchKey(-1L);
-
-    if (oldRecord.equals(configuredListeners)) {
+    if (storedListeners.isSameConfiguration(configuredListeners)) {
       return;
     }
 

@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.globallistener;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
-import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.Record;
@@ -48,38 +47,31 @@ public class GlobalListenersInitializationTest {
                     .setAfterNonGlobal(true));
 
     // when executing a CONFIGURE command with the record
-    engine.writeRecords(
-        RecordToWrite.command().globalListenerBatch(GlobalListenerBatchIntent.CONFIGURE, record));
-    RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED).await();
+    engine.globalListenerBatch().withRecord(record).configure();
 
     // then the engine's processing state contains the expected configuration
     final GlobalListenerBatchRecord currentConfig =
         engine.getProcessingState().getGlobalListenersState().getCurrentConfig();
     assertThat(currentConfig).isNotNull();
-    // set key on record to be able to compare
-    record.setGlobalListenerBatchKey(currentConfig.getGlobalListenerBatchKey());
-    assertThat(currentConfig).isEqualTo(record);
+    Assertions.assertThat(currentConfig.isSameConfiguration(record));
   }
 
   @Test
   public void shouldReplaceGlobalListenersConfigurationThroughCommand() {
     // given an existing global listener configuration
-    final GlobalListenerBatchRecord originalConfigRecord =
-        new GlobalListenerBatchRecord()
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global1")
-                    .setType("global1")
-                    .addEventType("all"))
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global2")
-                    .setType("global2")
-                    .addEventType("all"));
-    engine.writeRecords(
-        RecordToWrite.command()
-            .globalListenerBatch(GlobalListenerBatchIntent.CONFIGURE, originalConfigRecord));
-    RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED).await();
+    engine
+        .globalListenerBatch()
+        .withListener(
+            new GlobalListenerRecord()
+                .setId("GlobalListener_global1")
+                .setType("global1")
+                .addEventType("all"))
+        .withListener(
+            new GlobalListenerRecord()
+                .setId("GlobalListener_global2")
+                .setType("global2")
+                .addEventType("all"))
+        .configure();
 
     // when executing a CONFIGURE command with a different configuration
     final GlobalListenerBatchRecord newConfigRecord =
@@ -94,40 +86,31 @@ public class GlobalListenersInitializationTest {
                     .setId("GlobalListener_global3")
                     .setType("global3")
                     .addEventType("all"));
-    RecordingExporter.reset();
-    engine.writeRecords(
-        RecordToWrite.command()
-            .globalListenerBatch(GlobalListenerBatchIntent.CONFIGURE, newConfigRecord));
-    RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED).await();
+    engine.globalListenerBatch().withRecord(newConfigRecord).configure();
 
     // then the engine's processing state contains the new configuration
     final GlobalListenerBatchRecord currentConfig =
         engine.getProcessingState().getGlobalListenersState().getCurrentConfig();
     assertThat(currentConfig).isNotNull();
-    // set key on record to be able to compare
-    newConfigRecord.setGlobalListenerBatchKey(currentConfig.getGlobalListenerBatchKey());
-    assertThat(currentConfig).isEqualTo(newConfigRecord);
+    Assertions.assertThat(currentConfig.isSameConfiguration(newConfigRecord)).isTrue();
   }
 
   @Test
   public void shouldRemapConfigureCommandToIndividualListenerChanges() {
     // given an existing global listener configuration
-    final GlobalListenerBatchRecord originalConfigRecord =
-        new GlobalListenerBatchRecord()
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global1")
-                    .setType("global1")
-                    .addEventType("all"))
-            .addListener(
-                new GlobalListenerRecord()
-                    .setId("GlobalListener_global2")
-                    .setType("global2")
-                    .addEventType("all"));
-    engine.writeRecords(
-        RecordToWrite.command()
-            .globalListenerBatch(GlobalListenerBatchIntent.CONFIGURE, originalConfigRecord));
-    RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED).await();
+    engine
+        .globalListenerBatch()
+        .withListener(
+            new GlobalListenerRecord()
+                .setId("GlobalListener_global1")
+                .setType("global1")
+                .addEventType("all"))
+        .withListener(
+            new GlobalListenerRecord()
+                .setId("GlobalListener_global2")
+                .setType("global2")
+                .addEventType("all"))
+        .configure();
 
     // when executing a CONFIGURE command with a different configuration
     final GlobalListenerBatchRecord newConfigRecord =
@@ -143,9 +126,7 @@ public class GlobalListenersInitializationTest {
                     .setType("global3")
                     .addEventType("all"));
     RecordingExporter.reset();
-    engine.writeRecords(
-        RecordToWrite.command()
-            .globalListenerBatch(GlobalListenerBatchIntent.CONFIGURE, newConfigRecord));
+    engine.globalListenerBatch().withRecord(newConfigRecord).configure();
 
     // then individual listener create/update/delete commands were written
     Assertions.assertThat(
