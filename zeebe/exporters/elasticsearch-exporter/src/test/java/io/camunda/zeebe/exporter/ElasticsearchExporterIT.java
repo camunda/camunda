@@ -132,6 +132,7 @@ final class ElasticsearchExporterIT {
     testClient.deleteIndexTemplates();
     testClient.deleteComponentTemplates();
     CloseHelper.quietCloseAll(testClient);
+    exporter.close();
   }
 
   @AfterAll
@@ -507,6 +508,7 @@ final class ElasticsearchExporterIT {
     private void configureExporter(
         final Consumer<ElasticsearchExporterConfiguration> configurator) {
       configurator.accept(config);
+      exporter.close();
       exporter.configure(exporterTestContext);
       exporter.open(controller);
     }
@@ -584,6 +586,9 @@ final class ElasticsearchExporterIT {
           .extracting(IndexState::settings)
           .as("should have settings")
           .isNotNull()
+          .extracting(s -> s.index())
+          .as("should have index settings")
+          .isNotNull()
           .extracting(s -> s.lifecycle())
           .as("should have lifecycle config")
           .isNotNull()
@@ -601,10 +606,14 @@ final class ElasticsearchExporterIT {
           .as("should have settings")
           .isNotNull()
           .satisfies(
-              settings ->
-                  assertThat(settings.lifecycle())
+              settings -> {
+                final var indexSettings = settings.index();
+                if (indexSettings != null) {
+                  assertThat(indexSettings.lifecycle())
                       .as("Lifecycle policy should not be configured")
-                      .isNull());
+                      .isNull();
+                }
+              });
     }
   }
 }

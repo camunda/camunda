@@ -12,6 +12,8 @@ import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.indices.IndexState;
 import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
@@ -25,6 +27,8 @@ import java.util.Optional;
  * closeable resource.
  */
 final class TestClient implements CloseableSilently {
+  private static final ObjectMapper MAPPER =
+      new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private final ElasticsearchExporterConfiguration config;
   private final ElasticsearchClient esClient;
@@ -33,7 +37,11 @@ final class TestClient implements CloseableSilently {
   TestClient(final ElasticsearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
     this.config = config;
     this.indexRouter = indexRouter;
-    esClient = ElasticsearchClientFactory.of(config);
+
+    // Create the ES client with the ZeebeProtocolModule so that Record<?> can be deserialized
+    // from Elasticsearch responses. The production ElasticsearchClientFactory uses a plain
+    // ObjectMapper which cannot deserialize the Record interface.
+    esClient = ElasticsearchClientFactory.of(config, MAPPER);
   }
 
   @SuppressWarnings("rawtypes")
