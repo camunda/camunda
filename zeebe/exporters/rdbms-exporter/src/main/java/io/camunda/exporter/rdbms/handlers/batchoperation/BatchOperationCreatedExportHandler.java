@@ -18,7 +18,11 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationIntent;
 import io.camunda.zeebe.protocol.record.value.BatchOperationCreationRecordValue;
+<<<<<<< HEAD
 import io.camunda.zeebe.util.DateUtil;
+=======
+import io.camunda.zeebe.util.SemanticVersion;
+>>>>>>> ccac7d20 (fix: align RDBMS BatchOperation CREATED event handling with with ES/OS handler)
 
 /**
  * Exports a batch operation creation record to the database. Where the creation in the db just
@@ -58,9 +62,14 @@ public class BatchOperationCreatedExportHandler
     final String batchOperationKey = String.valueOf(record.getKey());
     return new BatchOperationDbModel.Builder()
         .batchOperationKey(batchOperationKey)
-        .state(BatchOperationState.ACTIVE)
+        .state(BatchOperationState.CREATED)
         .operationType(BatchOperationType.valueOf(value.getBatchOperationType().name()))
+<<<<<<< HEAD
         .startDate(DateUtil.toOffsetDateTime(record.getTimestamp()))
+=======
+        .actorType(actorInfo.type())
+        .actorId(actorInfo.id())
+>>>>>>> ccac7d20 (fix: align RDBMS BatchOperation CREATED event handling with with ES/OS handler)
         .build();
   }
 }
