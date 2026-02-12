@@ -195,19 +195,9 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public int write(final MutableDirectBuffer buffer, int offset) {
-    final int initialOffset = offset;
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
         .key(key)
         .operationReference(operationReference)
@@ -216,6 +206,6 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .putValue(value, 0, value.capacity())
         .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
 
-    return bodyEncoder.limit() - initialOffset;
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 }
