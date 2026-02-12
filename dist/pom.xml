@@ -205,6 +205,17 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>azure-eventhub-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-db-rdbms</artifactId>
     </dependency>
 
