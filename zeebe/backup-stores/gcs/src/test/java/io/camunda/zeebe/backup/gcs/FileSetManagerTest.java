@@ -20,41 +20,45 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 final class FileSetManagerTest {
   @Test
-  void shouldSaveFileSet() throws IOException {
+  void shouldSaveFileSet(@TempDir final Path tempDir) throws IOException {
     // given
     final var mockClient = mock(Storage.class);
     final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
     final var namedFileSet =
-        new NamedFileSetImpl(
-            Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
+        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
 
     // when
     manager.save(backupIdentifier, "filesetName", namedFileSet);
 
     // then
-    verify(mockClient).createFrom(any(), eq(Path.of("file1")), any());
-    verify(mockClient).createFrom(any(), eq(Path.of("file2")), any());
+    verify(mockClient, times(2)).createFrom(any(), any(InputStream.class), any());
   }
 
   @Test
-  void shouldThrowExceptionOnSaveFileSet() throws IOException {
+  void shouldThrowExceptionOnSaveFileSet(@TempDir final Path tempDir) throws IOException {
     // given
     final var mockClient = mock(Storage.class);
     final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
     final var namedFileSet =
-        new NamedFileSetImpl(
-            Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
-    when(mockClient.createFrom(any(), any(Path.class), any()))
+        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
+    when(mockClient.createFrom(any(), any(InputStream.class), any()))
         .thenThrow(new StorageException(412, "expected"));
 
     // when throw
