@@ -77,10 +77,10 @@ jobs:
         if: steps.is-fork.outputs.is-fork != 'true'
         uses: hashicorp/vault-action@v3.0.0
         with:
-          url: ${{ fromJSON(secrets).VAULT_ADDR }}
+          url: ${{ secrets.VAULT_ADDR }}
           method: approle
-          roleId: ${{ fromJSON(secrets).VAULT_ROLE_ID }}
-          secretId: ${{ fromJSON(secrets).VAULT_SECRET_ID }}
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
             secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
 
