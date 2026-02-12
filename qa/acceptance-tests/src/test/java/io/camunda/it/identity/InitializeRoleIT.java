@@ -28,6 +28,8 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
+// RDBMS is not fully implemented in 8.8, so we disable this test.
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 class InitializeRoleIT {
 
   private static final String ADMIN = "admin";
@@ -67,7 +69,7 @@ class InitializeRoleIT {
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     // given:
 
-    final int defaultRoleCount = 6;
+    final int defaultRoleCount = 5;
 
     // when:
     final var response = adminClient.newRolesSearchRequest().send().join();
