@@ -17,11 +17,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.List;
 
 public class OptimizeReportLoadTester {
   private static final Logger LOG = LoggerFactory.getLogger(OptimizeReportLoadTester.class);
@@ -390,8 +390,7 @@ public class OptimizeReportLoadTester {
     }
 
     // Step 2: Extract report IDs from dashboard response
-    final List<String> reportIds =
-        extractReportIdsFromDashboard(dashboardResult.getResponseBody());
+    final List<String> reportIds = extractReportIdsFromDashboard(dashboardResult.getResponseBody());
 
     // Step 3: Evaluate each report
     final List<ReportEvaluationResult> reportResults = new java.util.ArrayList<>();
@@ -433,9 +432,11 @@ public class OptimizeReportLoadTester {
       // Evaluate dashboard and all its reports
       final DashboardWithReportsResult result = tester.evaluateDashboardWithReports();
 
-      System.out.println("Dashboard load time: " + result.getDashboardResult().getResponseTimeMs() + "ms");
+      System.out.println(
+          "Dashboard load time: " + result.getDashboardResult().getResponseTimeMs() + "ms");
       for (final ReportEvaluationResult report : result.getReportResults()) {
-          System.out.println("Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
+        System.out.println(
+            "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
       }
       System.out.println("Total time: " + result.getTotalResponseTimeMs() + "ms");
 
