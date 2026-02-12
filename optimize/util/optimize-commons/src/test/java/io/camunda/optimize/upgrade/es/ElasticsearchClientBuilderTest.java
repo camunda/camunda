@@ -18,6 +18,8 @@ import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConn
 import io.camunda.optimize.upgrade.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import org.apache.http.HttpHost;
@@ -142,6 +144,116 @@ class ElasticsearchClientBuilderTest {
     final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo")).isNull();
+  }
+
+  @Test
+  void buildClientWithProxyEnabledDoesNotFail() {
+    // given
+    final BasicHttpContext context = new BasicHttpContext();
+    final ConfigurationService config = Mockito.mock(ConfigurationService.class);
+    final ElasticSearchConfiguration esConfig = Mockito.mock(ElasticSearchConfiguration.class);
+    final DatabaseConnection connection = Mockito.mock(DatabaseConnection.class);
+    final DatabaseConnectionNodeConfiguration host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(true, "proxy.example.com", 8080, false, null, null);
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getElasticSearchConfiguration()).thenReturn(esConfig);
+    Mockito.when(esConfig.getProxyConfig()).thenReturn(proxyConfig);
+    Mockito.when(esConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(esConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(esConfig.getConnection()).thenReturn(connection);
+
+    // when
+    final ElasticsearchClient extendedClient =
+        ElasticsearchClientBuilder.build(config, new ObjectMapper(), new PluginRepository());
+    ((RestClientTransport) extendedClient._transport())
+        .restClient()
+        .getHttpClient()
+        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+
+    // then - no exception thrown, client was built successfully with proxy
+    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
+    Assertions.assertThat(reqWrapper).isNotNull();
+    // No proxy auth header since no credentials were configured
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization")).isNull();
+  }
+
+  @Test
+  void buildClientWithProxyAuthSetsProxyAuthorizationHeader() {
+    // given
+    final BasicHttpContext context = new BasicHttpContext();
+    final ConfigurationService config = Mockito.mock(ConfigurationService.class);
+    final ElasticSearchConfiguration esConfig = Mockito.mock(ElasticSearchConfiguration.class);
+    final DatabaseConnection connection = Mockito.mock(DatabaseConnection.class);
+    final DatabaseConnectionNodeConfiguration host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(true, "proxy.example.com", 8080, false, "proxyUser", "proxyPass");
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getElasticSearchConfiguration()).thenReturn(esConfig);
+    Mockito.when(esConfig.getProxyConfig()).thenReturn(proxyConfig);
+    Mockito.when(esConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(esConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(esConfig.getConnection()).thenReturn(connection);
+
+    // when
+    final ElasticsearchClient extendedClient =
+        ElasticsearchClientBuilder.build(config, new ObjectMapper(), new PluginRepository());
+    ((RestClientTransport) extendedClient._transport())
+        .restClient()
+        .getHttpClient()
+        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+
+    // then
+    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
+    Assertions.assertThat(reqWrapper).isNotNull();
+    final String expectedEncoded =
+        Base64.getEncoder().encodeToString("proxyUser:proxyPass".getBytes(StandardCharsets.UTF_8));
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization").getValue())
+        .isEqualTo("Basic " + expectedEncoded);
+  }
+
+  @Test
+  void buildClientWithProxyDisabledHasNoProxyAuthorizationHeader() {
+    // given
+    final BasicHttpContext context = new BasicHttpContext();
+    final ConfigurationService config = Mockito.mock(ConfigurationService.class);
+    final ElasticSearchConfiguration esConfig = Mockito.mock(ElasticSearchConfiguration.class);
+    final DatabaseConnection connection = Mockito.mock(DatabaseConnection.class);
+    final DatabaseConnectionNodeConfiguration host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    // Proxy disabled, even though credentials are set - should not add header
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(false, "proxy.example.com", 8080, false, "proxyUser", "proxyPass");
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getElasticSearchConfiguration()).thenReturn(esConfig);
+    Mockito.when(esConfig.getProxyConfig()).thenReturn(proxyConfig);
+    Mockito.when(esConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(esConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(esConfig.getConnection()).thenReturn(connection);
+
+    // when
+    final ElasticsearchClient extendedClient =
+        ElasticsearchClientBuilder.build(config, new ObjectMapper(), new PluginRepository());
+    ((RestClientTransport) extendedClient._transport())
+        .restClient()
+        .getHttpClient()
+        .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
+
+    // then
+    final HttpRequestWrapper reqWrapper = (HttpRequestWrapper) context.getAttribute("http.request");
+    Assertions.assertThat(reqWrapper).isNotNull();
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization")).isNull();
   }
 
   private static final class NoopCallback implements FutureCallback<HttpResponse> {

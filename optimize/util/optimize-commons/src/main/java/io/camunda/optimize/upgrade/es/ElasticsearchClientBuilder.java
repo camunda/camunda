@@ -23,10 +23,12 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -138,6 +140,7 @@ public class ElasticsearchClientBuilder {
                 proxyConfig.getHost(),
                 proxyConfig.getPort(),
                 proxyConfig.isSslEnabled() ? HTTPS : HTTP));
+        addPreemptiveProxyAuthInterceptor(httpClientBuilder, proxyConfig);
       }
 
       if (configurationService.getElasticSearchConfiguration().getSkipHostnameVerification()) {
@@ -285,5 +288,28 @@ public class ElasticsearchClientBuilder {
           .toList();
     }
     return List.of();
+  }
+
+  private static void addPreemptiveProxyAuthInterceptor(
+      final org.apache.http.impl.nio.client.HttpAsyncClientBuilder builder,
+      final ProxyConfiguration proxyConfig) {
+    if (proxyConfig.getUsername() != null
+        && !proxyConfig.getUsername().isEmpty()
+        && proxyConfig.getPassword() != null
+        && !proxyConfig.getPassword().isEmpty()) {
+      final String encoded =
+          Base64.getEncoder()
+              .encodeToString(
+                  (proxyConfig.getUsername() + ":" + proxyConfig.getPassword())
+                      .getBytes(StandardCharsets.UTF_8));
+      final String proxyAuthHeaderValue = "Basic " + encoded;
+      builder.addInterceptorFirst(
+          (HttpRequestInterceptor)
+              (request, context) -> {
+                if (!request.containsHeader("Proxy-Authorization")) {
+                  request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+                }
+              });
+    }
   }
 }

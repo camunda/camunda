@@ -297,6 +297,20 @@ opensearch:
         httpPort: ${CAMUNDA_OPTIMIZE_OPENSEARCH_HTTP_PORT:9200}
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_OPENSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
+    # HTTP forward proxy configuration
+    proxy:
+      # whether an HTTP proxy should be used for requests to OpenSearch
+      enabled: false
+      # the host of the proxy to use
+      host: null
+      # the port of the proxy to use
+      port: null
+      # whether this proxy is using a secured connection
+      sslEnabled: false
+      # optional username for proxy authentication
+      username: null
+      # optional password for proxy authentication
+      password: null
     # Configuration relating to OS backup
   backup:
     # The repository name in which the backups should be stored
@@ -408,6 +422,10 @@ es:
       port: null
       # whether this proxy is using a secured connection
       sslEnabled: false
+      # optional username for proxy authentication
+      username: null
+      # optional password for proxy authentication
+      password: null
     # Determines whether the hostname verification should be skipped
     skipHostnameVerification: ${CAMUNDA_OPTIMIZE_ELASTICSEARCH_CONNECTION_SKIP_HOSTNAME_VERIFICATION:false}
   # Configuration relating to ES backup
