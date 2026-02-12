@@ -16,6 +16,7 @@ import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
@@ -30,6 +31,9 @@ import java.util.stream.Collectors;
 @ExcludeAuthorizationCheck
 public final class GlobalListenerBatchConfigureProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerBatchRecord> {
+
+  private static final String CONFIG_EXISTS_ERROR_MESSAGE =
+      "Expected to update the global listeners configuration, but a configuration with the same key '%d' is already applied";
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
@@ -75,9 +79,18 @@ public final class GlobalListenerBatchConfigureProcessor
   @Override
   public void processDistributedCommand(final TypedRecord<GlobalListenerBatchRecord> command) {
     final var record = command.getValue();
-    // Apply the configuration changes defined in the record, which were determined by the leader
-    // when the command was first processed and included in the record before distribution
-    applyConfiguration(record);
+
+    // Idempotency check: if the provided configuration has already been applied to the state,
+    // we can skip applying it again.
+    final var currentConfigKey = globalListenersState.getCurrentConfigKey();
+    if (currentConfigKey != null && record.getGlobalListenerBatchKey() == currentConfigKey) {
+      final var message = CONFIG_EXISTS_ERROR_MESSAGE.formatted(currentConfigKey);
+      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+    } else {
+      // Apply the configuration changes defined in the record, which were determined by the leader
+      // when the command was first processed and included in the record before distribution
+      applyConfiguration(record);
+    }
 
     distributionBehavior.acknowledgeCommand(command);
   }
