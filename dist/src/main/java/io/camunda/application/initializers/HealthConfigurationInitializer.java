@@ -7,14 +7,12 @@
  */
 package io.camunda.application.initializers;
 
-import static io.camunda.application.initializers.PropertiesHelper.loadListProperty;
-
 import io.camunda.application.Profile;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +20,6 @@ import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.env.Environment;
-import org.springframework.core.env.MapPropertySource;
 
 /**
  * Collects and configures the readiness group depending on which applications/profiles are
@@ -48,8 +45,6 @@ public class HealthConfigurationInitializer
       "management.endpoint.health.group.status.include";
   private static final String HEALTH_GROUP_LIVENESS_PROPERTY =
       "management.endpoint.health.group.liveness.include";
-  private static final String HEALTH_GROUP_STARTUP_PROPERTY =
-      "management.endpoint.health.group.startup.include";
 
   @Value("camunda.mode")
   private String camundaMode;
@@ -80,27 +75,16 @@ public class HealthConfigurationInitializer
     // --- Gateway Properties ---
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
-      final Set<String> startupGroup = loadListProperty(environment, HEALTH_GROUP_STARTUP_PROPERTY);
-      startupGroup.add(INDICATOR_GATEWAY_STARTED);
-      environment
-          .getPropertySources()
-          .addFirst( // NOTE: addFirst is necessary.
-              new MapPropertySource(
-                  "gatewayHealthIndicatorProperties",
-                  Map.of(
-                      "management.health.defaults.enabled",
-                      "true",
-                      HEALTH_GROUP_STARTUP_PROPERTY,
-                      String.join(",", startupGroup))));
-
+      propertyMap.put("management.health.defaults.enabled", true);
+      propertyMap.put(
+          "management.endpoint.health.group.startup.include", INDICATOR_GATEWAY_STARTED);
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
 
-      final Set<String> livenessGroup =
-          loadListProperty(environment, HEALTH_GROUP_LIVENESS_PROPERTY);
+      final Set<String> livenessGroup = new HashSet<>();
       livenessGroup.add("livenessGatewayClusterAwareness");
       livenessGroup.add("livenessGatewayPartitionLeaderAwareness");
       livenessGroup.add("livenessMemory");
-      propertyMap.put(HEALTH_GROUP_LIVENESS_PROPERTY, String.join(",", livenessGroup));
+      propertyMap.put(HEALTH_GROUP_LIVENESS_PROPERTY, livenessGroup);
       propertyMap.put("management.endpoint.health.group.liveness.show-details", "always");
 
       propertyMap.put(
@@ -120,9 +104,7 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.endpoint.health.logging.slow-indicator-threshold", "10s");
 
       /* Configure broker status indicator */
-      final Set<String> healthGroup = loadListProperty(environment, HEALTH_GROUP_STATUS_PROPERTY);
-      healthGroup.add("brokerStatus");
-      propertyMap.put(HEALTH_GROUP_STATUS_PROPERTY, String.join(",", healthGroup));
+      propertyMap.put(HEALTH_GROUP_STATUS_PROPERTY, "brokerStatus");
       propertyMap.put("management.endpoint.health.group.status.show-components", "never");
       propertyMap.put("management.endpoint.health.group.status.show-details", "never");
 

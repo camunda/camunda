@@ -32,11 +32,11 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   public ModesAndProfilesProcessor(SpringApplication application, String[] args) {
     this.application = application;
 
-    if (application.getMainApplicationClass() == null) {
+    final Class mainClass = application.getMainApplicationClass();
+    if (mainClass == null) {
       this.isStandaloneCamunda = false;
     } else {
-      this.isStandaloneCamunda =
-          "StandaloneCamunda".equals(application.getMainApplicationClass().getSimpleName());
+      this.isStandaloneCamunda = StandaloneCamunda.class.equals(mainClass);
     }
   }
 
