@@ -21,6 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.Deployment;
 import io.camunda.client.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.SourceAware.Empty;
+import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
+import io.camunda.client.annotation.value.SourceAware.FromLegacy;
 import io.camunda.client.bean.BeanInfo;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,7 +44,7 @@ public class ReadDeploymentValueTest {
         new DeploymentValue(
             Collections.singletonList("classpath*:/1.bpmn"),
             null,
-            false,
+            new Empty<>(),
             WithSingleClassPathResource.class);
 
     // when
@@ -61,7 +64,7 @@ public class ReadDeploymentValueTest {
         new DeploymentValue(
             Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"),
             null,
-            false,
+            new Empty<>(),
             WithMultipleClassPathResource.class);
 
     // when
@@ -89,7 +92,8 @@ public class ReadDeploymentValueTest {
     // given
     final BeanInfo classInfo = beanInfo(new WithSingleClassPathResourceLegacy());
     final DeploymentValue expectedDeploymentValue =
-        new DeploymentValue(Collections.singletonList("classpath*:/1.bpmn"), null, false, null);
+        new DeploymentValue(
+            Collections.singletonList("classpath*:/1.bpmn"), null, new FromLegacy<>(false), null);
 
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
@@ -105,7 +109,10 @@ public class ReadDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithMultipleClassPathResourceLegacy());
     final DeploymentValue expectedDeploymentValue =
         new DeploymentValue(
-            Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"), null, false, null);
+            Arrays.asList("classpath*:/1.bpmn", "classpath*:/2.bpmn"),
+            null,
+            new FromLegacy<>(false),
+            null);
 
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
@@ -120,7 +127,10 @@ public class ReadDeploymentValueTest {
     final BeanInfo classInfo = beanInfo(new WithOwnJarOnly());
     final DeploymentValue expectedDeploymentValue =
         new DeploymentValue(
-            Collections.singletonList("classpath*:/1.bpmn"), null, true, WithOwnJarOnly.class);
+            Collections.singletonList("classpath*:/1.bpmn"),
+            null,
+            new FromAnnotation<>(true),
+            WithOwnJarOnly.class);
     // when
     final List<DeploymentValue> valueForClass = getDeploymentValues(classInfo);
 

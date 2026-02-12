@@ -23,8 +23,8 @@ import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.annotation.value.VariableValue;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.DocumentReferenceResponse;
@@ -444,12 +444,16 @@ public class AnnotationUtil {
 
   private static DeploymentValue fromAnnotation(
       final Deployment deploymentAnnotation, final Class<?> annotatedClass) {
+    final SourceAware<Boolean> ownJarOnly =
+        deploymentAnnotation.ownJarOnly().length == 0
+            ? new Empty<>()
+            : new FromAnnotation<>(deploymentAnnotation.ownJarOnly()[0]);
     return new DeploymentValue(
         Arrays.asList(deploymentAnnotation.resources()),
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
             : deploymentAnnotation.tenantId(),
-        deploymentAnnotation.ownJarOnly(),
+        ownJarOnly,
         annotatedClass);
   }
 
@@ -468,7 +472,7 @@ public class AnnotationUtil {
         StringUtils.isEmpty(deploymentAnnotation.tenantId())
             ? null
             : deploymentAnnotation.tenantId(),
-        false,
+        new FromLegacy<>(false),
         null);
   }
 

@@ -20,6 +20,7 @@ import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Decision;
@@ -29,6 +30,7 @@ import io.camunda.client.api.response.Form;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.event.CamundaPostDeploymentSpringEvent;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -49,18 +51,27 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   private final ApplicationEventPublisher publisher;
   private final Function<BeanInfo, List<DeploymentValue>> deploymentValuesExtractor;
   private final ResourcePatternResolver resourcePatternResolver;
+  private final CamundaClientProperties camundaClientProperties;
 
   public DeploymentAnnotationProcessor(
       final ApplicationEventPublisher publisher,
       final Function<BeanInfo, List<DeploymentValue>> deploymentValuesExtractor,
-      final ResourcePatternResolver resourcePatternResolver) {
+      final ResourcePatternResolver resourcePatternResolver,
+      final CamundaClientProperties camundaClientProperties) {
     this.publisher = publisher;
     this.deploymentValuesExtractor = deploymentValuesExtractor;
     this.resourcePatternResolver = resourcePatternResolver;
+    this.camundaClientProperties = camundaClientProperties;
   }
 
-  public DeploymentAnnotationProcessor(final ApplicationEventPublisher publisher) {
-    this(publisher, AnnotationUtil::getDeploymentValues, new PathMatchingResourcePatternResolver());
+  public DeploymentAnnotationProcessor(
+      final ApplicationEventPublisher publisher,
+      final CamundaClientProperties camundaClientProperties) {
+    this(
+        publisher,
+        AnnotationUtil::getDeploymentValues,
+        new PathMatchingResourcePatternResolver(),
+        camundaClientProperties);
   }
 
   @Override
@@ -72,6 +83,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
   public void configureFor(final BeanInfo beanInfo) {
     final List<DeploymentValue> extractedDeploymentValues =
         deploymentValuesExtractor.apply(beanInfo);
+    extractedDeploymentValues.forEach(this::overrideFromProperties);
     if (!extractedDeploymentValues.isEmpty()) {
       LOGGER.debug("Configuring deployments: {}", extractedDeploymentValues);
       deploymentValues.addAll(extractedDeploymentValues);
@@ -93,16 +105,22 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     // noop for deployment
   }
 
+  private void overrideFromProperties(final DeploymentValue deploymentValue) {
+    final FromDefaultProperty<Boolean> defaultProperty =
+        new FromDefaultProperty<>(camundaClientProperties.getDeployment().isOwnJarOnly());
+    if (deploymentValue.getOwnJarOnly().priority() < defaultProperty.priority()) {
+      deploymentValue.setOwnJarOnly(defaultProperty);
+    }
+  }
+
   private DeploymentEvent deploy(
       final CamundaClient camundaClient, final DeploymentValue deploymentValue) {
     final String tenantId = deploymentValue.getTenantId();
+    final boolean ownJarOnly = deploymentValue.getOwnJarOnly().value();
     final List<Resource> resources =
         deploymentValue.getResources().stream()
             .flatMap(r -> Arrays.stream(getResources(r)))
-            .filter(
-                r ->
-                    !deploymentValue.isOwnJarOnly()
-                        || comeFromSameJar(deploymentValue.getSource(), r))
+            .filter(r -> !ownJarOnly || comeFromSameJar(deploymentValue.getSource(), r))
             .distinct()
             .toList();
     if (resources.isEmpty()) {
