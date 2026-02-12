@@ -52,8 +52,7 @@ final class ElasticsearchClientFactory {
       final ObjectMapper objectMapper,
       final HttpRequestInterceptor... interceptors) {
     final var restClient = INSTANCE.createRestClient(config, interceptors);
-    final var transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
     return new ElasticsearchClient(transport);
   }
 
