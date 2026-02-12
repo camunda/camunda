@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-45656/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-45656/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-45656/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.9a155461.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-45656/assets/js/main.7d414bba.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.b5c2cc31.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/main.45a70653.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -315,17 +315,33 @@
 <li class="">Ensure all expected SNAPSHOT artifacts are produced correctly.</li>
 </ul>
 </li>
-<li class=""><a href="https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf" target="_blank" rel="noopener noreferrer" class="">Configure <code>unified-ci-merges-stable-branches</code> branch protection ruleset</a> to include new <code>stable/8.x</code> branch<!-- -->
+</ol>
+<blockquote>
+<p>![NOTE]</p>
+<blockquote>
+<p>For 8.9.0 we would like to try this other approach</p>
+<ul>
+<li class=""><strong>Branch Strategy</strong>: To allow continuous bug fix integration during the alpha release process, consider creating <code>stable/&gt; &lt;minor&gt;</code> branch from <code>main</code> early, then creating the alpha release branch from <code>stable/&lt;minor&gt;</code> instead of directly from <code>main</code></li>
+<li class="">This allows non-critical bug fixes to be merged into <code>stable/&lt;minor&gt;</code> while the alpha release candidate is being processed</li>
+<li class="">Critical fixes can still be backported to the active alpha release branch if a new RC is needed</li>
+<li class=""><strong>Bug Fix Handling During Alpha Release</strong>:</li>
+<li class="">⚠️ <strong>Important</strong>: Any bug fixes merged to <code>main</code> after the last alpha release branch (<code>release-&lt;version&gt;-alpha&lt;N&gt;</code>) has been created must be backported to <code>stable/&lt;minor&gt;</code> to be included in the minor release</li>
+<li class="">Critical bug fixes merged after that point should be backported to both <code>stable/&lt;minor&gt;</code> and the active alpha release branch and may trigger a new Release Candidate</li>
+</ul>
+<ol start="3">
+<li class=""><a href="https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf" target="_blank" rel="noopener noreferrer" class="">Configure <code>unified-ci-merges-stable-branches</code> branch protection ruleset</a> to include new <code>stable/8.x</code> branch</li>
+</ol>
 <ul>
 <li class="">This may need temporary admin permissions for the initial manual push of the new branch.</li>
 </ul>
-</li>
-<li class="">Bump configured versions in upgrade tests of the previous minor version to <code>8.x</code>
+<ol start="4">
+<li class="">Bump configured versions in upgrade tests of the previous minor version to <code>8.x</code></li>
+</ol>
 <ul>
 <li class="">TODO: add references to known upgrade tests if possible</li>
 </ul>
-</li>
-</ol>
+</blockquote>
+</blockquote>
 <p>Also, we have to do similar steps for the <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">ZPT repository</a> in coordination with stakeholders from Camunda Ex team:</p>
 <ol>
 <li class="">Creating <code>stable/8.x</code> release branch from <code>main</code>, to enforce code freeze</li>
@@ -396,18 +412,6 @@
 <li class="">✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end</li>
 <li class="">❌ No new features, scope extensions, or risky changes after this point</li>
 <li class="">✅ Bug fixes, stabilization work, and E2E testing continue</li>
-<li class=""><strong>Branch Strategy</strong>: To allow continuous bug fix integration during the alpha release process, consider creating <code>stable/&lt;minor&gt;</code> branch from <code>main</code> early, then creating the alpha release branch from <code>stable/&lt;minor&gt;</code> instead of directly from <code>main</code>
-<ul>
-<li class="">This allows non-critical bug fixes to be merged into <code>stable/&lt;minor&gt;</code> while the alpha release candidate is being processed</li>
-<li class="">Critical fixes can still be backported to the active alpha release branch if a new RC is needed</li>
-</ul>
-</li>
-<li class=""><strong>Bug Fix Handling During Alpha Release</strong>:<!-- -->
-<ul>
-<li class="">⚠️ <strong>Important</strong>: Any bug fixes merged to <code>main</code> after the last alpha release branch (<code>release-&lt;version&gt;-alpha&lt;N&gt;</code>) has been created must be backported to <code>stable/&lt;minor&gt;</code> to be included in the minor release</li>
-<li class="">Critical bug fixes merged after that point should be backported to both <code>stable/&lt;minor&gt;</code> and the active alpha release branch and may trigger a new Release Candidate</li>
-</ul>
-</li>
 <li class=""><strong>Notification Process</strong>: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:</li>
 <li class=""><strong>Subject</strong>: <code>Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor &lt;version&gt; - Feature Freeze</code></li>
 <li class=""><strong>Body</strong>:</li>
