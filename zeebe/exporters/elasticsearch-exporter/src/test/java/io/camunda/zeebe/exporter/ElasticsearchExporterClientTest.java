@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter;
 
-import static io.camunda.zeebe.exporter.ElasticsearchExporterClient.buildPutIndexLifecycleManagementPolicyRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -18,13 +17,12 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleRequest;
+import co.elastic.clients.elasticsearch.ilm.PutLifecycleResponse;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateRequest;
 import co.elastic.clients.elasticsearch.indices.PutIndexTemplateResponse;
 import co.elastic.clients.transport.ElasticsearchTransport;
 import co.elastic.clients.transport.TransportOptions;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
@@ -42,9 +40,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class ElasticsearchExporterClientTest {
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
-
   private static final int PARTITION_ID = 1;
 
   private final ProtocolFactory factory = new ProtocolFactory();
@@ -82,28 +77,40 @@ final class ElasticsearchExporterClientTest {
   }
 
   @Test
-  void shouldBuildPutIndexLifecycleManagementPolicyRequestCorrectly()
-      throws JsonProcessingException {
-    assertThat(MAPPER.writeValueAsString(buildPutIndexLifecycleManagementPolicyRequest("300d3s")))
-        .describedAs("Expect that request is mapped to json correctly")
-        .isEqualTo(
-            // Mapped from Object to make sure produced JSON string is formatted the same way
-            MAPPER.writeValueAsString(
-                MAPPER.readValue(
-                    """
-                    {
-                      "policy": {
-                        "phases": {
-                          "delete": {
-                            "min_age": "300d3s",
-                            "actions": {
-                              "delete": {}
-                            }
-                          }
-                        }
-                      }
-                    }""",
-                    Object.class)));
+  void shouldBuildPutIndexLifecycleManagementPolicyRequestCorrectly() throws IOException {
+    // given
+    config.retention.setEnabled(true);
+    config.retention.setMinimumAge("300d3s");
+    config.retention.setPolicyName("test-ilm-policy");
+
+    final var transport = mock(ElasticsearchTransport.class);
+    final var putLifecycleResponse = PutLifecycleResponse.of(b -> b.acknowledged(true));
+    final AtomicReference<PutLifecycleRequest> requestCaptor =
+        mockTransportResponse(transport, putLifecycleResponse);
+    final var esClient = new ElasticsearchClient(transport);
+    final var client =
+        new ElasticsearchExporterClient(
+            config,
+            bulkRequest,
+            esClient,
+            indexRouter,
+            templateReader,
+            new ElasticsearchMetrics(new SimpleMeterRegistry()));
+
+    // when
+    client.putIndexLifecycleManagementPolicy();
+
+    // then
+    final var capturedRequest = requestCaptor.get();
+    assertThat(capturedRequest).isNotNull();
+    assertThat(capturedRequest.name()).isEqualTo("test-ilm-policy");
+
+    final var deletePhase = capturedRequest.policy().phases().delete();
+    assertThat(deletePhase).isNotNull();
+    assertThat(deletePhase.minAge()).isNotNull();
+    assertThat(deletePhase.minAge().time()).isEqualTo("300d3s");
+    assertThat(deletePhase.actions()).isNotNull();
+    assertThat(deletePhase.actions().delete()).isNotNull();
   }
 
   @ParameterizedTest(name = "{0}")

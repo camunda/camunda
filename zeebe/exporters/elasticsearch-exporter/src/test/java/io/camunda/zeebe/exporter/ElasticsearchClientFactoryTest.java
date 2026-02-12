@@ -9,6 +9,8 @@ package io.camunda.zeebe.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import java.io.IOException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -21,6 +23,7 @@ import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.concurrent.FutureCallback;
 import org.apache.http.protocol.BasicHttpContext;
 import org.elasticsearch.client.Node;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -30,16 +33,21 @@ final class ElasticsearchClientFactoryTest {
   private final ElasticsearchExporterConfiguration config =
       new ElasticsearchExporterConfiguration();
 
+  private static RestClient extractRestClient(final ElasticsearchClient client) {
+    return ((RestClientTransport) client._transport()).restClient();
+  }
+
   @Test
   void shouldConfigureMultipleHosts() {
     // given
     config.url = "http://localhost:9201,https://localhost:9202";
 
     // when
-    final var client = ElasticsearchClientFactory.ofRestClient(config);
+    final var esClient = ElasticsearchClientFactory.of(config);
+    final var restClient = extractRestClient(esClient);
 
     // then
-    assertThat(client.getNodes())
+    assertThat(restClient.getNodes())
         .hasSize(2)
         .map(Node::getHost)
         .containsExactly(
@@ -54,8 +62,9 @@ final class ElasticsearchClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = ElasticsearchClientFactory.ofRestClient(config);
-    client
+    final var esClient = ElasticsearchClientFactory.of(config);
+    final var restClient = extractRestClient(esClient);
+    restClient
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
 
@@ -74,8 +83,9 @@ final class ElasticsearchClientFactoryTest {
     final var context = new BasicHttpContext();
 
     // when
-    final var client = ElasticsearchClientFactory.ofRestClient(config);
-    client
+    final var esClient = ElasticsearchClientFactory.of(config);
+    final var restClient = extractRestClient(esClient);
+    restClient
         .getHttpClient()
         .execute(HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);
 
@@ -89,14 +99,15 @@ final class ElasticsearchClientFactoryTest {
   void shouldApplyRequestInterceptorsInOrder() throws IOException {
     // given
     final var context = new BasicHttpContext();
-    try (final var client =
-        ElasticsearchClientFactory.ofRestClient(
+    final var esClient =
+        ElasticsearchClientFactory.of(
             config,
             (req, ctx) -> ctx.setAttribute("foo", "bar"),
-            (req, ctx) -> ctx.setAttribute("foo", "baz"))) {
+            (req, ctx) -> ctx.setAttribute("foo", "baz"));
+    try (final var restClient = extractRestClient(esClient)) {
 
       // when
-      client
+      restClient
           .getHttpClient()
           .execute(
               HttpHost.create("localhost:9200"), new HttpGet(), context, NoopCallback.INSTANCE);

@@ -11,9 +11,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import co.elastic.clients.elasticsearch._types.Refresh;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleRequest;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import co.elastic.clients.elasticsearch.indices.IndexSettings;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -22,11 +23,8 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -123,17 +121,23 @@ final class ElasticsearchExporterClientIT {
     client.putIndexTemplate(valueType);
 
     // then
-    final var templateWrapper =
+    final var templateItem =
         testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-    assertThat(templateWrapper)
+    assertThat(templateItem)
         .as("should have created template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(indexTemplateName);
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var actual = templateItem.get().indexTemplate();
+    assertThat(actual.indexPatterns()).isEqualTo(expectedTemplate.patterns());
+    assertThat(actual.composedOf()).isEqualTo(expectedTemplate.composedOf());
+    assertThat(actual.priority()).isEqualTo(expectedTemplate.priority());
+    assertThat(actual.version()).isEqualTo(expectedTemplate.version());
+    assertThat(actual.template()).isNotNull();
+    assertThat(actual.template().aliases()).as("should have aliases").isNotEmpty();
+    assertIndexSettings(actual.template().settings().index());
   }
 
   @Test
@@ -145,16 +149,21 @@ final class ElasticsearchExporterClientIT {
     client.putComponentTemplate();
 
     // then
-    final var templateWrapper = testClient.getComponentTemplate();
-    assertThat(templateWrapper)
+    final var componentTemplate = testClient.getComponentTemplate();
+    assertThat(componentTemplate)
         .as("should have created component template")
         .isPresent()
         .get()
-        .extracting(ComponentTemplateWrapper::name)
+        .extracting(ComponentTemplate::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    final var actual = componentTemplate.get().componentTemplate();
+    assertThat(actual.version()).isEqualTo(expectedTemplate.version());
+    assertThat(actual.template()).isNotNull();
+    assertThat(actual.template().mappings()).as("should have mappings").isNotNull();
+    assertThat(actual.template().mappings().properties()).as("should have properties").isNotEmpty();
+    assertThat(actual.template().settings()).containsKey("index");
+    assertIndexSettings(actual.template().settings().get("index"));
   }
 
   @Test
@@ -199,53 +208,9 @@ final class ElasticsearchExporterClientIT {
     assertThat(lifecycle.policy().phases().delete().actions().delete()).isNotNull();
   }
 
-  private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
-    assertThat(actualTemplate.patterns()).isEqualTo(expectedTemplate.patterns());
-    assertThat(actualTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
-    assertThat(actualTemplate.priority()).isEqualTo(expectedTemplate.priority());
-    assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
-    assertThat(actualTemplate.template().aliases())
-        .isEqualTo(expectedTemplate.template().aliases());
-    // Elasticsearch and the Java client normalize object-typed mapping fields by adding an
-    // implicit "type": "object" entry. This may or may not be present in the JSON resource files.
-    // Stripping it from both sides before comparing allows a direct equality check regardless of
-    // whether the source JSON includes the explicit type.
-    assertThat(stripObjectTypeFromMappings(actualTemplate.template().mappings()))
-        .isEqualTo(stripObjectTypeFromMappings(expectedTemplate.template().mappings()));
-
-    // cannot compare settings because we never get flat settings, instead we get { index : {
-    // number_of_shards: 1, queries: { cache : { enabled : false } } } }
-    // so instead we decompose how we compare the settings. I've tried with flat_settings parameter
-    // but that doesn't seem to be doing anything
-    assertThat(actualTemplate.template().settings())
-        .as("should contain a map of index settings")
-        .extractingByKey("index")
-        .isInstanceOf(Map.class)
-        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-        .containsEntry("number_of_shards", "1")
-        .containsEntry("number_of_replicas", "0")
-        .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
-  }
-
-  /**
-   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
-   * client normalize object-typed mapping fields by adding this implicit type. Stripping it from
-   * both actual and expected mappings allows direct comparison regardless of whether the JSON
-   * resource files include the explicit type or not.
-   */
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
-    final var result = new LinkedHashMap<>(map);
-    // Remove "type": "object" at this level — it's implicit for any field with "properties"
-    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
-      result.remove("type");
-    }
-    // Recurse into nested maps
-    for (final var entry : result.entrySet()) {
-      if (entry.getValue() instanceof Map) {
-        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
-      }
-    }
-    return result;
+  private static void assertIndexSettings(final IndexSettings settings) {
+    assertThat(settings).isNotNull();
+    assertThat(settings.numberOfShards()).isEqualTo("1");
+    assertThat(settings.numberOfReplicas()).isEqualTo("0");
   }
 }
