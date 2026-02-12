@@ -56,6 +56,15 @@ Run Gradle in parallel with Maven for faster builds on the Camunda monorepo (~12
 14. **Added `PreviousVersion.java` template generation** to `optimize/upgrade/build.gradle.kts` using `Sync` + `ReplaceTokens` with value `8.8.0` from `optimize/pom.xml`'s `<project.previousVersion>` property
 15. **Added `ElementInstanceKey` to `String` type mapping** in both convention plugin and gateway-model simple task (though the `importMappings` approach was what actually fixed the compilation)
 16. **Added 3 OpenAPI generation tasks to `dist/build.gradle.kts`**: `openApiGenerateBackups` (backup-management-api.yaml → `io.camunda.management.backups`), `openApiGenerateCluster` (cluster-api.yaml → `io.camunda.zeebe.management.cluster`), `openApiGenerateExporter` (exporter-api.yaml → `io.camunda.zeebe.management.cluster`)
+17. **Added Spring Boot Gradle plugin to `dist`** and removed redundant Spring Boot dependency blocks; added plugin alias to TOML
+18. **Consolidated OpenAPI generation output in `dist`** to avoid duplicate model generation
+19. **Added test-jar configurations** for `zeebe/scheduler`, `zeebe/snapshot`, `zeebe/gateway`, `zeebe/logstreams`, `zeebe/broker`, `zeebe/engine`, `zeebe/util`, `zeebe/backup-stores/testkit`
+20. **Updated Gradle test dependencies to use test-jar configuration** for test fixtures (e.g., `zeebe-atomix-cluster`, `zeebe-gateway-grpc`, `zeebe-transport`, `zeebe-gateway-rest`, `zeebe-stream-platform`, `zeebe-restore`, `zeebe-broker`, `zeebe-qa/integration-tests`, `qa/acceptance-tests`, backup stores)
+21. **Added JDK opens for tests** in `buildlogic.java-conventions.gradle.kts` to allow Agrona UnsafeBuffer access (`java.io`, `java.nio`, `jdk.internal.misc`, `sun.nio.ch`)
+22. **Switched `zeebe-protocol-asserts` to AssertJ Gradle plugin** and wired entry points (standard + soft), with RecordAssert generic patch; marked generator task not compatible with configuration cache
+23. **Fixed zeebe-scheduler test failure** by isolating SBE tool from runtime classpath: added `sbeTool` configuration in `buildlogic.sbe-conventions.gradle.kts` and used it for `generateSbe` so Agrona 2.4.0 is not forced into runtime
+24. **Added Mockito JUnit extension dependency** to `zeebe/backup-stores/gcs`
+25. **Created `zeebe-test-classpath-deps.md`** to track test-jar dependencies from Maven for review and to keep Gradle aligned
 
 ### In Progress — Where We Left Off
 - **`:camunda-zeebe:compileJava` was building** when the session was interrupted. The 3 OpenAPI generation tasks were added to `dist/build.gradle.kts` but the build was not yet verified. Need to run `./gradlew :camunda-zeebe:compileJava` (or full `./gradlew build -x test`) to confirm it passes and find the next errors.
