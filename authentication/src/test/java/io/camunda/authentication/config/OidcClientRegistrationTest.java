@@ -10,7 +10,6 @@ package io.camunda.authentication.config;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 
 class OidcClientRegistrationTest {

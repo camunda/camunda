@@ -21,7 +21,7 @@ import org.springframework.security.oauth2.core.ClientAuthenticationMethod;
 public final class ClientRegistrationFactory {
   private static final Logger LOGGER = LoggerFactory.getLogger(ClientRegistrationFactory.class);
 
-  private static final String DEFAULT_REDIRECT_URI = "{baseUrl}/sso-callback";
+  private static final String DEFAULT_REDIRECT_URI = "{baseUrl}" + WebSecurityConfig.REDIRECT_URI;
 
   private ClientRegistrationFactory() {}
 
@@ -46,10 +46,11 @@ public final class ClientRegistrationFactory {
       builder.clientSecret(configuration.getClientSecret());
     }
 
-    if (configuration.getRedirectUri() == null) {
+    final var redirectUri = configuration.getRedirectUri();
+    if (redirectUri == null || redirectUri.isBlank()) {
       builder.redirectUri(DEFAULT_REDIRECT_URI);
     } else {
-      builder.redirectUri(configuration.getRedirectUri());
+      builder.redirectUri(redirectUri);
     }
 
     if (configuration.getAuthorizationUri() != null) {
