@@ -17,7 +17,6 @@ import org.springframework.boot.SpringApplicationRunListener;
 import org.springframework.boot.bootstrap.ConfigurableBootstrapContext;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
-import org.springframework.core.env.MapPropertySource;
 
 public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
 
@@ -25,6 +24,8 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   private static final String CAMUNDA_INSECURE_PROPERTY = "camunda.insecure";
   private static final String CAMUNDA_DEVELOPMENT_PROPERTY = "camunda.development";
   private static final Set<String> VALID_MODES = Set.of("all-in-one", "broker", "gateway");
+  private static final String EMBEDDED_GATEWAY_ENABLED_PROPERTY = "zeebe.broker.gateway.enable";
+  private static final String WEBAPPS_ENABLED_PROPERTY = "camunda.webapps.enabled";
 
   private ConfigurableEnvironment environment;
   private final boolean isStandaloneCamunda;
@@ -67,17 +68,17 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     switch (getMode().toLowerCase()) {
       case "broker" -> {
         configureProfilesForBrokerMode();
-        setProperty("zeebe.broker.gateway.enable", false);
-        setProperty("camunda.webapps.enabled", false);
+        setProperty(EMBEDDED_GATEWAY_ENABLED_PROPERTY, false);
+        setProperty(WEBAPPS_ENABLED_PROPERTY, false);
       }
       case "gateway" -> {
         configureProfilesForGatewayMode();
-        setProperty("camunda.webapps.enabled", true);
+        setProperty(WEBAPPS_ENABLED_PROPERTY, true);
       }
       case "all-in-one" -> {
         configureProfilesForAllInOneMode();
-        setProperty("zeebe.broker.gateway.enable", true);
-        setProperty("camunda.webapps.enabled", true);
+        setProperty(EMBEDDED_GATEWAY_ENABLED_PROPERTY, true);
+        setProperty(WEBAPPS_ENABLED_PROPERTY, true);
       }
       default -> {
         throw new IllegalStateException(
@@ -91,12 +92,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     environment.setActiveProfiles(profiles.toArray(new String[0]));
 
     // also expose as property for consistency / logging / downstream readers
-    environment
-        .getPropertySources()
-        .addFirst(
-            new MapPropertySource(
-                "camundaActiveProfiles",
-                Map.of(ACTIVE_PROFILES_PROPERTY_NAME, String.join(",", profiles))));
+    setProperty(ACTIVE_PROFILES_PROPERTY_NAME, profiles);
   }
 
   private void configureWithProfiles() {
@@ -121,7 +117,8 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   }
 
   private void setProperty(final String key, final Object value) {
-    DefaultPropertiesPropertySource.addOrMerge(Map.of(key, value), environment.getPropertySources());
+    DefaultPropertiesPropertySource.addOrMerge(
+        Map.of(key, value), environment.getPropertySources());
   }
 
   private void configureProfilesForAllInOneMode() {
