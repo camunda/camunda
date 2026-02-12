@@ -646,6 +646,36 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldActivateBatchOperation(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(
+            writer, b -> b.state(BatchOperationState.CREATED).startDate(null).endDate(null));
+
+    // when
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().activate(batchOperation.batchOperationKey(), startDate);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    assertThat(updatedBatchOperation.items())
+        .singleElement()
+        .satisfies(
+            batchOperationEntity -> {
+              assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
+              assertThat(batchOperationEntity.startDate())
+                  .isCloseTo(startDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+              assertThat(batchOperationEntity.endDate()).isNull();
+            });
+  }
+
+  @TestTemplate
   public void shouldFindBatchOperationByKey(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
 
