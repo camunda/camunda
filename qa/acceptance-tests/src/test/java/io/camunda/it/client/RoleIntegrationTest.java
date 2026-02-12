@@ -208,13 +208,16 @@ public class RoleIntegrationTest {
     // Verify it was created
     Awaitility.await()
         .untilAsserted(
-            () ->
-                assertThat(camundaClient.newAuthorizationSearchRequest().send().join().items())
-                    .anyMatch(
-                        auth ->
-                            auth.getResourceId().equals("resourceId")
-                                && auth.getResourceType().equals(ResourceType.RESOURCE)
-                                && auth.getOwnerId().equals(roleId)));
+            () -> {
+              final var items = camundaClient.newAuthorizationSearchRequest().send().join().items();
+              assertThat(items).isNotEmpty();
+              assertThat(items)
+                  .anyMatch(
+                      auth ->
+                          "resourceId".equals(auth.getResourceId())
+                              && auth.getResourceType().equals(ResourceType.RESOURCE)
+                              && auth.getOwnerId().equals(roleId));
+            });
 
     camundaClient.newDeleteRoleCommand(roleId).send().join();
 
@@ -228,13 +231,16 @@ public class RoleIntegrationTest {
 
     Awaitility.await("Authorization is deleted")
         .untilAsserted(
-            () ->
-                assertThat(camundaClient.newAuthorizationSearchRequest().send().join().items())
-                    .noneMatch(
-                        auth ->
-                            auth.getResourceId().equals("resourceId")
-                                && auth.getResourceType().equals(ResourceType.RESOURCE)
-                                && auth.getOwnerId().equals(roleId)));
+            () -> {
+              final var items = camundaClient.newAuthorizationSearchRequest().send().join().items();
+              assertThat(items).isNotEmpty();
+              assertThat(items)
+                  .noneMatch(
+                      auth ->
+                          "resourceId".equals(auth.getResourceId())
+                              && auth.getResourceType().equals(ResourceType.RESOURCE)
+                              && auth.getOwnerId().equals(roleId));
+            });
   }
 
   private static void createRole(
