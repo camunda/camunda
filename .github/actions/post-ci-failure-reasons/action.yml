@@ -74,6 +74,8 @@ runs:
         echo "Found **${JOB_COUNT}** unsuccessful job(s)" | tee -a "$COMMENT_FILE"
         echo "" | tee -a "$COMMENT_FILE"
 
+        PRIORITY_CANCELLED=false
+
         # Collect annotations for each unsuccessful job
         for JOB_ID in $UNSUCCESSFUL_JOBS; do
           JOB_INFO=$(echo "$JOBS_JSON" | jq -r ".jobs[] | select(.id == $JOB_ID)")
@@ -90,6 +92,19 @@ runs:
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/${{ github.repository }}/check-runs/$JOB_ID/annotations?per_page=100")
+
+          HAS_PRIORITY_CANCELLATION=$(echo "$ANNOTATIONS" | jq -sR '
+            try (
+              fromjson
+                | [.[]? | select(.annotation_level == "failure" and (.message | contains("Canceling since a higher priority waiting request")))]
+                | length
+              ) catch 0
+          ')
+
+          if [ "$HAS_PRIORITY_CANCELLATION" -gt 0 ]; then
+            PRIORITY_CANCELLED=true
+            break # No need to check further jobs - we will skip comment creation entirely in this case
+          fi
 
           ANNOTATION_COUNT=$(echo "$ANNOTATIONS" | jq '. | length')
 
@@ -115,6 +130,11 @@ runs:
 
         # Set output for next step
         echo "comment-file=$COMMENT_FILE" >> "$GITHUB_OUTPUT"
+
+        if [ "$PRIORITY_CANCELLED" = true ]; then
+          echo "ℹ️ Skipping comment creation due to higher priority workflow cancellations."
+          echo "comment-file=" >> "$GITHUB_OUTPUT"
+        fi
 
         exit 0  # Don't fail the step
 
