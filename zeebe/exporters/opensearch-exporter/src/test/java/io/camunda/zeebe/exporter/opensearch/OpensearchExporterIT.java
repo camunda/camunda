@@ -40,11 +40,12 @@ import java.util.Optional;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -69,18 +70,44 @@ final class OpensearchExporterIT {
       TestSearchContainers.createDefaultOpensearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
-  private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
+  private static OpensearchExporterConfiguration config;
+  private static ExporterTestController controller;
+  private static OpensearchExporter exporter;
+  private static RecordIndexRouter indexRouter;
+  private static TestClient testClient;
+  private static ExporterTestContext exporterTestContext;
+  private static String previousTestMethod = null;
   // omit authorizations since they are removed from the records during serialization
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
-  private final ExporterTestController controller = new ExporterTestController();
-  private final OpensearchExporter exporter = new OpensearchExporter();
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
-
-  private TestClient testClient;
-  private ExporterTestContext exporterTestContext;
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach(final TestInfo testInfo) {
+    // to avoid constantly creating and re-creating indexes/templates
+    // we will only delete and re-create after each test method - not have each
+    // actual test.  This means the tests using @ParameterizedTest can
+    // execute _much_ faster
+    final String currentTestMethod = getTestMethod(testInfo);
+    if (!currentTestMethod.equals(previousTestMethod)) {
+      if (previousTestMethod != null) {
+        deletedIndices();
+      }
+      setup();
+      previousTestMethod = currentTestMethod;
+    }
+  }
+
+  static String getTestMethod(final TestInfo testInfo) {
+    return testInfo.getTestClass().orElseThrow()
+        + "."
+        + testInfo.getTestMethod().orElseThrow().getName();
+  }
+
+  static void setup() {
+    config = new OpensearchExporterConfiguration();
+    controller = new ExporterTestController();
+    exporter = new OpensearchExporter();
+    indexRouter = new RecordIndexRouter(config.index);
+
     config.url = CONTAINER.getHttpHostAddress();
     config.setIncludeEnabledRecords(true);
     config.index.setNumberOfShards(1);
@@ -101,12 +128,16 @@ final class OpensearchExporterIT {
     exporter.open(controller);
   }
 
-  @AfterEach
-  void afterEach() {
+  static void deletedIndices() {
     testClient.deleteIndices();
     testClient.deleteIndexTemplates();
     testClient.deleteComponentTemplates();
     CloseHelper.quietCloseAll(testClient);
+  }
+
+  @AfterAll
+  static void afterAll() {
+    deletedIndices();
   }
 
   @ParameterizedTest(name = "{0}")
