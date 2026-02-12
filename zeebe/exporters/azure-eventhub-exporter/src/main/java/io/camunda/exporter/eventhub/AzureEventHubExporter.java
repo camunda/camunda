@@ -16,6 +16,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Controller;
+import io.camunda.zeebe.exporter.filter.DefaultRecordFilter;
 import io.camunda.zeebe.protocol.record.Record;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -46,6 +47,10 @@ public class AzureEventHubExporter implements Exporter {
     configuration =
         context.getConfiguration().instantiate(AzureEventHubExporterConfiguration.class);
     configuration.validate();
+    
+    // Set up record filtering to only export events (not commands or rejections)
+    context.setFilter(new DefaultRecordFilter(configuration));
+    
     log.info(
         "Azure Event Hub exporter configured for Event Hub: {}", configuration.getEventHubName());
   }

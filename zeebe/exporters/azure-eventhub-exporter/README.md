@@ -9,6 +9,7 @@ This exporter allows you to stream Zeebe events (process instances, jobs, incide
 ## Features
 
 - Exports Zeebe records as JSON events to Azure Event Hub
+- **Exports only events by default** - filters out commands and command rejections
 - Configurable batching for efficient event delivery
 - Automatic retry on failures
 - Support for Azure Event Hub connection strings
@@ -46,6 +47,33 @@ ZEEBE_BROKER_EXPORTERS_AZUREEVENTHUB_ARGS_BATCHINTERVALMS=1000
 - `eventHubName` (string, required): The name of the Event Hub to send events to.
 - `maxBatchSize` (integer, optional): Maximum number of events to batch before sending (default: 100).
 - `batchIntervalMs` (long, optional): Time interval in milliseconds to flush events if batch size is not reached (default: 1000).
+
+#### Record Type Filtering
+
+By default, the exporter only exports **events** and filters out commands and command rejections. You can customize this behavior:
+
+```yaml
+zeebe:
+  broker:
+    exporters:
+      azure-eventhub:
+        className: io.camunda.exporter.eventhub.AzureEventHubExporter
+        args:
+          connectionString: "..."
+          eventHubName: "your-event-hub-name"
+          index:
+            event: true        # Export events (default: true)
+            command: false     # Export commands (default: false)
+            rejection: false   # Export command rejections (default: false)
+```
+
+Or via environment variables:
+
+```bash
+ZEEBE_BROKER_EXPORTERS_AZUREEVENTHUB_ARGS_INDEX_EVENT=true
+ZEEBE_BROKER_EXPORTERS_AZUREEVENTHUB_ARGS_INDEX_COMMAND=false
+ZEEBE_BROKER_EXPORTERS_AZUREEVENTHUB_ARGS_INDEX_REJECTION=false
+```
 
 ## Azure Event Hub Setup
 

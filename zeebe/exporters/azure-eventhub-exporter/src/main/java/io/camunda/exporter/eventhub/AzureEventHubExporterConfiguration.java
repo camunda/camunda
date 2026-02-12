@@ -7,7 +7,13 @@
  */
 package io.camunda.exporter.eventhub;
 
-public class AzureEventHubExporterConfiguration {
+import io.camunda.zeebe.exporter.filter.FilterConfiguration;
+import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.ValueType;
+import java.util.Collections;
+import java.util.List;
+
+public class AzureEventHubExporterConfiguration implements FilterConfiguration {
 
   // Connection settings
   private String connectionString;
@@ -16,6 +22,9 @@ public class AzureEventHubExporterConfiguration {
   // Batch settings
   private int maxBatchSize = 100;
   private long batchIntervalMs = 1000L;
+
+  // Filter settings
+  private final IndexConfiguration index = new IndexConfiguration();
 
   public String getConnectionString() {
     return connectionString;
@@ -66,6 +75,80 @@ public class AzureEventHubExporterConfiguration {
     }
     if (batchIntervalMs <= 0) {
       throw new IllegalArgumentException("Batch interval must be greater than 0");
+    }
+  }
+
+  @Override
+  public boolean shouldIndexValueType(final ValueType valueType) {
+    // Accept all value types by default
+    return true;
+  }
+
+  @Override
+  public boolean shouldIndexRequiredValueType(final ValueType valueType) {
+    // No required value types filtering for this exporter
+    return false;
+  }
+
+  @Override
+  public boolean shouldIndexRecordType(final RecordType recordType) {
+    return switch (recordType) {
+      case EVENT -> index.event;
+      case COMMAND -> index.command;
+      case COMMAND_REJECTION -> index.rejection;
+      default -> false;
+    };
+  }
+
+  @Override
+  public IndexConfig filterIndexConfig() {
+    return index;
+  }
+
+  public static class IndexConfiguration implements IndexConfig {
+    // Record type filters - default to exporting only events
+    public boolean event = true;
+    public boolean command = false;
+    public boolean rejection = false;
+
+    @Override
+    public List<String> getVariableNameInclusionExact() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionStartWith() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableNameInclusionEndWith() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionExact() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionStartWith() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableNameExclusionEndWith() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableValueTypeInclusion() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public List<String> getVariableValueTypeExclusion() {
+      return Collections.emptyList();
     }
   }
 }
