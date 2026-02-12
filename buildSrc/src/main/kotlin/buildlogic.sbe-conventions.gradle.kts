@@ -25,7 +25,7 @@ val generateSbe = tasks.register<JavaExec>("generateSbe") {
     description = "Generate Java code from SBE message schemas"
 
     mainClass.set("uk.co.real_logic.sbe.SbeTool")
-    classpath = configurations.runtimeClasspath.get()
+    classpath = configurations.getByName("sbeTool")
 
     val outputDir = layout.buildDirectory.dir("generated-sources/sbe")
     val workingDir = layout.buildDirectory.dir("generated-sources")
@@ -61,9 +61,14 @@ val generateSbe = tasks.register<JavaExec>("generateSbe") {
     }
 }
 
-// Add SBE tool to runtime classpath for code generation
+// Add SBE tool to dedicated configuration for code generation
+val sbeTool by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
 dependencies {
-    implementation("uk.co.real-logic:sbe-tool:1.37.1")
+    sbeTool("uk.co.real-logic:sbe-tool:1.37.1")
 }
 
 // Add generated sources to the source set
