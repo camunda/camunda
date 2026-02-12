@@ -72,19 +72,15 @@ public final class GlobalListenerCreateProcessor
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
     final var record = command.getValue();
 
-    globalListenersState
-        .getGlobalListener(record.getListenerType(), record.getId())
-        .ifPresentOrElse(
-            listener -> {
-              final var message =
-                  LISTENER_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
-              writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
-            },
-            () ->
-                writers
-                    .state()
-                    .appendFollowUpEvent(command.getKey(), GlobalListenerIntent.CREATED, record));
-
+    final var listener =
+        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
+    if (listener != null) {
+      final var message =
+          LISTENER_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
+      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+    } else {
+      writers.state().appendFollowUpEvent(command.getKey(), GlobalListenerIntent.CREATED, record);
+    }
     distributionBehavior.acknowledgeCommand(command);
   }
 

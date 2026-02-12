@@ -18,6 +18,13 @@ public interface MutableGlobalListenersState extends GlobalListenersState {
 
   void delete(final GlobalListenerRecord record);
 
+  /**
+   * Change the key of the current global listeners configuration. This key is used to link the
+   * current configuration to the stored versions of the configuration, e.g. when pinning a
+   * configuration version to a user task. Every time the configuration is changed (e.g. by
+   * creating/updating/deleting a global listener), the configuration key should be updated to a new
+   * value.
+   */
   void updateConfigKey(final long key);
 
   /**

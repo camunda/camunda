@@ -71,19 +71,15 @@ public final class GlobalListenerDeleteProcessor
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
     final var record = command.getValue();
 
-    globalListenersState
-        .getGlobalListener(record.getListenerType(), record.getId())
-        .ifPresentOrElse(
-            listener ->
-                writers
-                    .state()
-                    .appendFollowUpEvent(command.getKey(), GlobalListenerIntent.DELETED, record),
-            () -> {
-              final var message =
-                  LISTENER_NOT_EXISTS_ERROR_MESSAGE.formatted(
-                      record.getListenerType(), record.getId());
-              writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, message);
-            });
+    final var listener =
+        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
+    if (listener != null) {
+      writers.state().appendFollowUpEvent(command.getKey(), GlobalListenerIntent.DELETED, record);
+    } else {
+      final var message =
+          LISTENER_NOT_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
+      writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, message);
+    }
     distributionBehavior.acknowledgeCommand(command);
   }
 

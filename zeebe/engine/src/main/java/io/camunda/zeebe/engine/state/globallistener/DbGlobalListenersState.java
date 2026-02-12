@@ -23,7 +23,6 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 import org.agrona.collections.MutableBoolean;
 
 public final class DbGlobalListenersState implements MutableGlobalListenersState {
@@ -91,11 +90,11 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   public GlobalListenerBatchRecord getCurrentConfig() {
     // Retrieve configuration key
     final var configKey = getCurrentConfigKey();
-    if (configKey.isEmpty()) {
+    if (configKey == null) {
       return null;
     }
     final var currentConfig = new GlobalListenerBatchRecord();
-    currentConfig.setGlobalListenerBatchKey(configKey.get());
+    currentConfig.setGlobalListenerBatchKey(configKey);
 
     // Retrieve listeners list
     final List<GlobalListenerRecord> currentListeners = new ArrayList<>();
@@ -114,16 +113,22 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   }
 
   @Override
-  public Optional<Long> getCurrentConfigKey() {
-    return Optional.ofNullable(currentConfigKeyColumnFamily.get(key)).map(DbLong::getValue);
+  public Long getCurrentConfigKey() {
+    final var configKey = currentConfigKeyColumnFamily.get(key);
+    if (configKey == null) {
+      return null;
+    }
+    return configKey.getValue();
   }
 
   @Override
   public GlobalListenerBatchRecord getVersionedConfig(final long versionKey) {
     this.versionKey.wrapLong(versionKey);
-    return Optional.ofNullable(versionedConfigColumnFamily.get(this.versionKey))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners)
-        .orElse(null);
+    final var versionedConfig = versionedConfigColumnFamily.get(this.versionKey);
+    if (versionedConfig == null) {
+      return null;
+    }
+    return versionedConfig.getGlobalListeners();
   }
 
   @Override
@@ -148,12 +153,15 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   }
 
   @Override
-  public Optional<GlobalListenerRecord> getGlobalListener(
+  public GlobalListenerRecord getGlobalListener(
       final GlobalListenerType listenerType, final String id) {
     this.listenerType.setValue(listenerType);
     listenerId.wrapString(id);
-    return Optional.ofNullable(globalListenersColumnFamily.get(listenerTypeAndIdKey))
-        .map(PersistedGlobalListener::getGlobalListener);
+    final var persistedListener = globalListenersColumnFamily.get(listenerTypeAndIdKey);
+    if (persistedListener == null) {
+      return null;
+    }
+    return persistedListener.getGlobalListener();
   }
 
   @Override

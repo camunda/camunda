@@ -32,6 +32,11 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
 
+  /**
+   * Comparator to sort global listeners by priority in descending order, and then by id in
+   * ascending order. Used when listing global listeners to ensure a deterministic order, and to
+   * execute listeners in the correct order based on their priority.
+   */
   public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
       Comparator.comparingInt(GlobalListenerRecord::getPriority)
           .reversed()

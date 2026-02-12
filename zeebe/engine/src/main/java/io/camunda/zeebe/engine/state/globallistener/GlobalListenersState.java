@@ -11,7 +11,6 @@ package io.camunda.zeebe.engine.state.globallistener;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
-import java.util.Optional;
 
 public interface GlobalListenersState {
 
@@ -21,9 +20,9 @@ public interface GlobalListenersState {
   /**
    * Gets the current global listeners configuration key.
    *
-   * @return the current configuration key, or {@link Optional#empty()} if no configuration is set
+   * @return the current configuration key, or {@code null} if no configuration is set
    */
-  Optional<Long> getCurrentConfigKey();
+  Long getCurrentConfigKey();
 
   /**
    * Gets a stored copy of a global listeners configuration, possibly different from the current
@@ -58,9 +57,8 @@ public interface GlobalListenersState {
    *
    * @param listenerType the type of listener being retrieved
    * @param id the identifier of the listener
-   * @return the global listener for the given version listener type and id, or {@link
-   *     Optional#empty()} if not found
+   * @return the global listener for the given version listener type and id, or {@code null} if not
+   *     found
    */
-  Optional<GlobalListenerRecord> getGlobalListener(
-      final GlobalListenerType listenerType, final String id);
+  GlobalListenerRecord getGlobalListener(final GlobalListenerType listenerType, final String id);
 }
