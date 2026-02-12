@@ -16,6 +16,8 @@ public final class OptimizeCfg {
   private String username = getEnvOrDefault("OPTIMIZE_USERNAME", "demo");
   private String password = getEnvOrDefault("OPTIMIZE_PASSWORD", "demo");
   private String reportId;
+  private int evaluationIntervalSeconds = 600; // Default: 10 minutes
+  private int durationLimit = 0; // 0 means run forever
 
   private static String getEnvOrDefault(final String envVar, final String defaultValue) {
     final String value = System.getenv(envVar);
@@ -84,5 +86,21 @@ public final class OptimizeCfg {
 
   public void setReportId(final String reportId) {
     this.reportId = reportId;
+  }
+
+  public int getEvaluationIntervalSeconds() {
+    return evaluationIntervalSeconds;
+  }
+
+  public void setEvaluationIntervalSeconds(final int evaluationIntervalSeconds) {
+    this.evaluationIntervalSeconds = evaluationIntervalSeconds;
+  }
+
+  public int getDurationLimit() {
+    return durationLimit;
+  }
+
+  public void setDurationLimit(final int durationLimit) {
+    this.durationLimit = durationLimit;
   }
 }
