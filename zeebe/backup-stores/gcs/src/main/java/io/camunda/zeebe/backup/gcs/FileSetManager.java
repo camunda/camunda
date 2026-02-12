@@ -12,6 +12,9 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
+import com.google.cloud.storage.transfermanager.ParallelUploadConfig;
+import com.google.cloud.storage.transfermanager.TransferManager;
+import com.google.cloud.storage.transfermanager.TransferStatus;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
@@ -21,6 +24,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
@@ -39,23 +43,76 @@ final class FileSetManager {
   private static final String PATH_FORMAT = "%scontents/%s/%s/%s/%s/";
 
   private final Storage client;
+  private final TransferManager transferManager;
   private final BucketInfo bucketInfo;
   private final String basePath;
 
-  FileSetManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
+  FileSetManager(
+      final Storage client,
+      final TransferManager transferManager,
+      final BucketInfo bucketInfo,
+      final String basePath) {
     this.client = client;
+    this.transferManager = transferManager;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
   }
 
-  void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
+  /**
+   * Uploads snapshot files in parallel using the GCS {@link TransferManager}. Snapshot files are
+   * immutable, so the Path-based upload (which reads the file twice for CRC32C verification) is
+   * safe.
+   */
+  void saveSnapshot(
+      final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
+    final var prefix = fileSetPath(id, fileSetName);
+    final var namedFiles = fileSet.namedFiles();
+    final var pathToName =
+        namedFiles.entrySet().stream()
+            .collect(
+                Collectors.toMap(e -> e.getValue().toAbsolutePath().toString(), Map.Entry::getKey));
+    final var paths = namedFiles.values().stream().toList();
+
+    final var uploadConfig =
+        ParallelUploadConfig.newBuilder()
+            .setBucketName(bucketInfo.getName())
+            .setUploadBlobInfoFactory(
+                (bucketName, fileName) ->
+                    BlobInfo.newBuilder(bucketName, prefix + pathToName.get(fileName))
+                        .setContentType("application/octet-stream")
+                        .build())
+            .setSkipIfExists(true)
+            .build();
+
+    try {
+      final var uploadJob = transferManager.uploadFiles(paths, uploadConfig);
+      for (final var result : uploadJob.getUploadResults()) {
+        if (result.getStatus() != TransferStatus.SUCCESS
+            && result.getStatus() != TransferStatus.SKIPPED) {
+          throw result.getException();
+        }
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    } catch (final RuntimeException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * Uploads segment files sequentially using an InputStream-based approach. Segment files may be
+   * modified during upload, so we use InputStream to prevent the GCS client from reading the file
+   * twice (once for CRC32C checksum, once for upload) which would cause checksum mismatches.
+   *
+   * @see <a href="https://github.com/camunda/camunda/issues/45636">#45636</a>
+   */
+  void saveSegments(
+      final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
     for (final var namedFile : fileSet.namedFiles().entrySet()) {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
-      // Use InputStream instead of Path to prevent the GCS client from reading the file
-      // twice (once for CRC32C checksum, once for upload). Log segments may be modified
-      // during upload, causing checksum mismatches.
-      // See https://github.com/camunda/camunda/issues/45636
       try (final var inputStream = Files.newInputStream(filePath)) {
         client.createFrom(
             blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
