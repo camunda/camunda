@@ -19,6 +19,7 @@ import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.stream.Collectors;
 
@@ -51,9 +52,13 @@ final class FileSetManager {
     for (final var namedFile : fileSet.namedFiles().entrySet()) {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
-      try {
+      // Use InputStream instead of Path to prevent the GCS client from reading the file
+      // twice (once for CRC32C checksum, once for upload). Log segments may be modified
+      // during upload, causing checksum mismatches.
+      // See https://github.com/camunda/camunda/issues/45636
+      try (final var inputStream = Files.newInputStream(filePath)) {
         client.createFrom(
-            blobInfo(id, fileSetName, fileName), filePath, BlobWriteOption.doesNotExist());
+            blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }
