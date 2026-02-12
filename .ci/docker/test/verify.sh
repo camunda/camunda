@@ -56,15 +56,32 @@ fi
 imageName="${1}"
 arch="${2:-amd64}"
 
-# Check that the image exists
-if ! imageInfo="$(docker inspect "${imageName}")"; then
-  echo >&2 "No known Docker image ${imageName} exists; did you pass the right name?"
+# Get the platform-specific digest from the manifest index
+# This works with Docker CLI v29+ and avoids the need to pull platform-specific images separately
+platformDigest=$(docker buildx imagetools inspect "${imageName}" --raw | jq -r --arg arch "${arch}" '.manifests[] | select(.platform.architecture == $arch and .platform.os == "linux") | .digest')
+
+if [ -z "${platformDigest}" ] || [ "${platformDigest}" == "null" ]; then
+  echo >&2 "Could not find platform linux/${arch} in manifest for ${imageName}"
   exit 1
 fi
 
-actualArchitecture=$(echo "${imageInfo}" | jq '.[0].Architecture')
-if [ "$actualArchitecture" != "\"$arch\"" ]; then
-  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected \"$arch\"."
+imageRef="${imageName%:*}@${platformDigest}"
+echo "Verifying platform linux/${arch} using ${imageRef}"
+
+# Pull the platform-specific image by digest and inspect it
+if ! docker pull "${imageRef}" > /dev/null; then
+  echo >&2 "Failed to pull ${imageRef}"
+  exit 1
+fi
+
+if ! imageInfo="$(docker inspect "${imageRef}")"; then
+  echo >&2 "No known Docker image ${imageRef} exists; did you pass the right name?"
+  exit 1
+fi
+
+actualArchitecture=$(echo "${imageInfo}" | jq -r '.[0].Architecture')
+if [ "$actualArchitecture" != "$arch" ]; then
+  echo >&2 "The local Docker image ${imageName} has the wrong architecture ${actualArchitecture}, expected ${arch}."
   exit 1
 fi
 
