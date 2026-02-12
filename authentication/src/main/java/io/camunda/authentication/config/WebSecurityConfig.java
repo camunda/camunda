@@ -51,6 +51,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +61,9 @@ import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
@@ -162,27 +166,7 @@ public class WebSecurityConfig {
           "/tasklist/new/**",
           "/favicon.ico");
   private static final String SPRING_DEFAULT_UI_CSS = "/default-ui.css";
-  public static final Set<String> WEBAPP_PATHS =
-      Set.of(
-          "/login/**",
-          "/logout",
-          "/identity/**",
-          "/operate/**",
-          "/tasklist/**",
-          "/",
-          "/sso-callback/**",
-          "/oauth2/authorization/**",
-          // old Tasklist and Operate webapps routes
-          "/processes",
-          "/processes/*",
-          "/{regex:[\\d]+}", // user task id
-          "/processes/*/start",
-          "/new/*",
-          "/decisions",
-          "/decisions/*",
-          "/instances",
-          "/instances/*",
-          SPRING_DEFAULT_UI_CSS);
+
   private static final Logger LOG = LoggerFactory.getLogger(WebSecurityConfig.class);
   // Used for chains that grant unauthenticated access, always comes first.
   private static final int ORDER_UNPROTECTED = 0;
@@ -195,9 +179,56 @@ public class WebSecurityConfig {
   private static final KeyValues CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS =
       KeyValues.of("domain", "identity");
 
+  @Value("${camunda.webapps.tasklist.ui-enabled:true}")
+  private boolean tasklistUiEnabled;
+
+  @Value("${camunda.webapps.operate.ui-enabled:true}")
+  private boolean operateUiEnabled;
+
+  @Value("${camunda.webapps.identity.ui-enabled:true}")
+  private boolean identityUiEnabled;
+
   @Bean
   public SecurityObservationSettings defaultSecurityObservations() {
     return SecurityObservationSettings.withDefaults().build();
+  }
+
+  @Bean
+  @Qualifier("webappPaths")
+  public Set<String> webappPaths() {
+    final Set<String> paths =
+        new HashSet(
+            Set.of(
+                "/login/**",
+                "/logout",
+                "/",
+                "/sso-callback/**",
+                "/oauth2/authorization/**",
+                // old Tasklist and Operate webapps routes
+                "/processes",
+                "/processes/*",
+                "/{regex:[\\d]+}", // user task id
+                "/processes/*/start",
+                "/new/*",
+                "/decisions",
+                "/decisions/*",
+                "/instances",
+                "/instances/*",
+                SPRING_DEFAULT_UI_CSS));
+
+    if (tasklistUiEnabled) {
+      paths.add("/tasklist/**");
+    }
+
+    if (operateUiEnabled) {
+      paths.add("/operate/**");
+    }
+
+    if (identityUiEnabled) {
+      paths.add("/identity/**");
+    }
+
+    return Set.copyOf(paths);
   }
 
   @Bean
@@ -439,6 +470,10 @@ public class WebSecurityConfig {
   @ConditionalOnSecondaryStorageEnabled
   public static class BasicConfiguration {
 
+    @Autowired
+    @Qualifier("webappPaths")
+    Set<String> webappPaths;
+
     private final SecurityConfiguration securityConfiguration;
 
     public BasicConfiguration(final SecurityConfiguration securityConfiguration) {
@@ -540,7 +575,7 @@ public class WebSecurityConfig {
       LOG.info("Web Applications Login/Logout is setup.");
       final var filterChainBuilder =
           httpSecurity
-              .securityMatcher(WEBAPP_PATHS.toArray(String[]::new))
+              .securityMatcher(webappPaths.toArray(String[]::new))
               // webapps are accessible without any authentication required
               // reasoning: in basic auth setups, we redirect to the login page
               // on client side; for that to happen, we first need to deliver
@@ -593,6 +628,10 @@ public class WebSecurityConfig {
   @Configuration
   @ConditionalOnAuthenticationMethod(AuthenticationMethod.OIDC)
   public static class OidcConfiguration {
+
+    @Autowired
+    @Qualifier("webappPaths")
+    Set<String> webappPaths;
 
     private final SecurityConfiguration securityConfiguration;
 
@@ -891,7 +930,7 @@ public class WebSecurityConfig {
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
-              .securityMatcher(WEBAPP_PATHS.toArray(new String[0]))
+              .securityMatcher(webappPaths.toArray(new String[0]))
               .authorizeHttpRequests(
                   (authorizeHttpRequests) ->
                       authorizeHttpRequests

@@ -123,18 +123,8 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
 
   private void configureProfilesForAllInOneMode() {
     final Set<String> profiles =
-        new HashSet<>(
-            Set.of(
-                Profile.BROKER.getId(),
-                Profile.TASKLIST.getId(),
-                Profile.OPERATE.getId(),
-                Profile.IDENTITY.getId(),
-                Profile.CONSOLIDATED_AUTH.getId()));
-
-    if (isDevelopment()) {
-      profiles.add(Profile.DEVELOPMENT.getId());
-    }
-
+        new HashSet<>(Set.of(Profile.BROKER.getId(), Profile.CONSOLIDATED_AUTH.getId()));
+    prepareOptionalProfiles(profiles);
     setupActiveProfiles(profiles);
   }
 
@@ -149,19 +139,41 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     setupActiveProfiles(profiles);
   }
 
-  private void configureProfilesForGatewayMode() {
-    final Set<String> profiles =
-        new HashSet<>(
-            Set.of(
-                Profile.GATEWAY.getId(),
-                Profile.OPERATE.getId(),
-                Profile.IDENTITY.getId(),
-                Profile.TASKLIST.getId()));
-
+  private void prepareOptionalProfiles(final Set<String> profiles) {
     if (isDevelopment()) {
       profiles.add(Profile.DEVELOPMENT.getId());
     }
 
+    if (isTasklistEnabled()) {
+      profiles.add(Profile.TASKLIST.getId());
+    }
+
+    if (isOperateEnabled()) {
+      profiles.add(Profile.OPERATE.getId());
+    }
+
+    if (isIdentityEnabled()) {
+      profiles.add(Profile.IDENTITY.getId());
+    }
+  }
+
+  private void configureProfilesForGatewayMode() {
+    final Set<String> profiles = new HashSet<>(Set.of(Profile.GATEWAY.getId()));
+    prepareOptionalProfiles(profiles);
     setupActiveProfiles(profiles);
+  }
+
+  private boolean isTasklistEnabled() {
+    return Boolean.parseBoolean(
+        environment.getProperty("camunda.webapps.tasklist.enabled", "true"));
+  }
+
+  private boolean isOperateEnabled() {
+    return Boolean.parseBoolean(environment.getProperty("camunda.webapps.operate.enabled", "true"));
+  }
+
+  private boolean isIdentityEnabled() {
+    return Boolean.parseBoolean(
+        environment.getProperty("camunda.webapps.identity.enabled", "true"));
   }
 }

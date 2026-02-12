@@ -23,6 +23,7 @@ import java.util.Set;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.core.env.ConfigurableEnvironment;
 
 public class WebappsConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -56,39 +57,25 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.check-template-location", true);
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
-      if (activeProfiles.contains(OPERATE.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPERATE.getId());
-      } else if (activeProfiles.contains(TASKLIST.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
-      } else if (activeProfiles.contains(IDENTITY.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
-      }
       propertyMap.put(CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY, isLoginDelegated(context));
       propertyMap.put(
           SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
     }
 
+    // locations and home page
+
     final Set<String> locations = new HashSet<>();
     locations.add(DEFAULT_RESOURCES_LOCATION);
-
-    // Tasklist Properties
-
-    if (activeProfiles.contains(TASKLIST.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
-      if (activeProfiles.contains(STANDALONE.getId())) {
-        propertyMap.putAll(
-            Map.of(
-                AUTHORIZATIONS_ENABLED_PROPERTY,
-                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
-                MULTITENANCY_CHECKSENABLED_PROPERTY,
-                "${camunda.tasklist.multiTenancy.enabled:false}"));
-      }
-    }
+    String defaultWebapp = null;
 
     // Operate Properties
 
     if (activeProfiles.contains(OPERATE.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "operate/");
+      if (isOperateUiEnabled(environment)) {
+        locations.add(DEFAULT_RESOURCES_LOCATION + "operate/");
+        defaultWebapp = OPERATE.getId();
+      }
+
       if (activeProfiles.contains(STANDALONE.getId())) {
         propertyMap.putAll(
             Map.of(
@@ -99,15 +86,41 @@ public class WebappsConfigurationInitializer
       }
     }
 
-    // Identity Properties
+    // Tasklist Properties
 
-    if (activeProfiles.contains(IDENTITY.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
+    if (activeProfiles.contains(TASKLIST.getId())) {
+      if (isTasklistUiEnabled(environment)) {
+        locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
+        if (defaultWebapp == null) {
+          defaultWebapp = TASKLIST.getId();
+        }
+      }
+
+      if (activeProfiles.contains(STANDALONE.getId())) {
+        propertyMap.putAll(
+            Map.of(
+                AUTHORIZATIONS_ENABLED_PROPERTY,
+                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
+                MULTITENANCY_CHECKSENABLED_PROPERTY,
+                "${camunda.tasklist.multiTenancy.enabled:false}"));
+      }
     }
 
-    // Store locations and merge everything
+    // Identity Properties
+
+    if (activeProfiles.contains(IDENTITY.getId()) && isIdentityUiEnabled(environment)) {
+      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
+      if (defaultWebapp == null) {
+        defaultWebapp = IDENTITY.getId();
+      }
+    }
+
+    // Store locations, default homepage and merge everything
 
     propertyMap.put(RESOURCES_LOCATION_PROPERTY, locations);
+    if (defaultWebapp != null) {
+      propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, defaultWebapp);
+    }
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }
 
@@ -116,5 +129,28 @@ public class WebappsConfigurationInitializer
     final var authenticationMethod = AuthenticationMethod.parse(authenticationMethodProperty);
     return authenticationMethod.isPresent()
         && AuthenticationMethod.OIDC.equals(authenticationMethod.get());
+  }
+
+  private boolean isWebappUiEnabled(
+      final ConfigurableEnvironment environment, final String webapp) {
+    final boolean webappEnabled =
+        Boolean.parseBoolean(
+            environment.getProperty("camunda.webapps." + webapp + ".enabled", "true"));
+    final boolean webappUiEnabled =
+        Boolean.parseBoolean(
+            environment.getProperty("camunda.webapps." + webapp + ".ui-enabled", "true"));
+    return webappEnabled && webappUiEnabled;
+  }
+
+  private boolean isOperateUiEnabled(final ConfigurableEnvironment environment) {
+    return isWebappUiEnabled(environment, OPERATE.getId());
+  }
+
+  private boolean isTasklistUiEnabled(final ConfigurableEnvironment environment) {
+    return isWebappUiEnabled(environment, TASKLIST.getId());
+  }
+
+  private boolean isIdentityUiEnabled(final ConfigurableEnvironment environment) {
+    return isWebappUiEnabled(environment, IDENTITY.getId());
   }
 }
