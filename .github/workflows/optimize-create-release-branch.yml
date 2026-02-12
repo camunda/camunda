@@ -1,4 +1,5 @@
 # type: Release
+# DEPRECATED: This workflow is deprecated and should be removed when 8.7 reaches EOL in favor of Monorepo Release Process camunda/40184.
 name: Optimize Create Release Branch
 on:
   workflow_dispatch:
