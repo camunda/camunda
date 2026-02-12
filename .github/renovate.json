@@ -48,9 +48,126 @@
       "enabled": false
     },
     {
+<<<<<<< HEAD
       "matchManagers": ["maven"],
       "matchPackagePrefixes": ["org.opensearch.client", "org.elasticsearch", "co.elastic"],
       "matchUpdateTypes": ["minor", "major"],
+=======
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "dockerfile",
+        "maven-wrapper",
+        "github-actions",
+        "nvm",
+        "helmv3"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
+    },
+    {
+      "description": "Identify updates related to builds, tooling, etc. that should be routed to Monorepo DevOps team.",
+      "matchManagers": [
+        "custom.regex"
+      ],
+      "matchFileNames": [
+        ".github/**"
+      ],
+      "addLabels": [
+        "area/build",
+        "component/build-pipeline"
+      ]
+    },
+    {
+      "description": "Identify updates related to frontend dependencies.",
+      "matchManagers": [
+        "npm"
+      ],
+      "addLabels": [
+        "area/frontend"
+      ]
+    },
+    {
+      "description": "Disable lockfile maintenance for npm package managers.",
+      "matchManagers": [
+        "npm"
+      ],
+      "lockFileMaintenance": {
+        "enabled": false
+      }
+    },
+    {
+      "description": "Identify updates related to backend dependencies.",
+      "matchManagers": [
+        "maven"
+      ],
+      "addLabels": [
+        "area/backend"
+      ]
+    },
+    {
+      "description": "Docker base image updates are usually security-relevant, get those first (prio 10)",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "Dockerfile",
+        "camunda.Dockerfile",
+        "operate.Dockerfile",
+        "optimize.Dockerfile",
+        "tasklist.Dockerfile"
+      ],
+      "prPriority": 10
+    },
+    {
+      "matchManagers": [
+        "maven"
+      ],
+      "matchPackageNames": [
+        "org.opensearch.client**",
+        "org.elasticsearch**",
+        "co.elastic**"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "major"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Disable camunda/keycloak digest updates in optimize e2e setup. Digests newer than 3eba291 break the Identity SDK token exchange, causing the auth callback to hang indefinitely. Must be re-evaluated when the Identity SDK compatibility issue is resolved.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchFileNames": [
+        "optimize/client/docker-compose.yml",
+        "optimize/docker-compose.ccsm-with-optimize.yml",
+        "optimize/docker-compose.ccsm-without-optimize.yml",
+        ".github/actions/compose/docker-compose.smoketest.yml"
+      ],
+      "matchPackageNames": [
+        "camunda/keycloak"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Big (major+minor) updates are done manually due to alignment/breaking changes.",
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchPackageNames": [
+        "elasticsearch",
+        "docker.elastic.co/elasticsearch/elasticsearch",
+        "opensearchproject/opensearch",
+        "eclipse-temurin",
+        "reg.mini.dev/1212/openjre-base"
+      ],
+      "matchUpdateTypes": [
+        "major",
+        "minor"
+      ],
+>>>>>>> ed51a626 (ci: disable lockfile maintenance for npm package managers)
       "enabled": false
     },
     {
