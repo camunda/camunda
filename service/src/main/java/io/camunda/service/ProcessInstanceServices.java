@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationTerminateInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -99,6 +100,11 @@ public final class ProcessInstanceServices
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
+    }
+
+    // Use custom request timeout if provided, otherwise use default
+    if (request.requestTimeout() != null && request.requestTimeout() > 0) {
+      return sendBrokerRequest(brokerRequest, Duration.ofMillis(request.requestTimeout()));
     }
     return sendBrokerRequest(brokerRequest);
   }
