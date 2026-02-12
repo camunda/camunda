@@ -341,18 +341,6 @@ class ElasticsearchExporterClient implements AutoCloseable {
                         "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
                         errors.size(), errorType, errors.get(0).error().reason())));
     return collectedErrors;
-  private static List<String> collectBulkErrors(final BulkResponse bulkResponse) {
-    final var collectedErrors = new ArrayList<String>();
-    bulkResponse.items().stream()
-        .filter(item -> item.error() != null)
-        .collect(Collectors.groupingBy(item -> item.error().type()))
-        .forEach(
-            (errorType, errors) ->
-                collectedErrors.add(
-                    String.format(
-                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
-                        errors.size(), errorType, errors.get(0).error().reason())));
-    return collectedErrors;
   }
 
   private static final class BulkErrorCollector implements BulkListener<Void> {

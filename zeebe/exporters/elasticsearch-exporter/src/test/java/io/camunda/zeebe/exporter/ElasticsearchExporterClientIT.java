@@ -22,10 +22,12 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import org.agrona.CloseHelper;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -226,27 +228,6 @@ final class ElasticsearchExporterClientIT {
         .containsEntry("number_of_shards", "1")
         .containsEntry("number_of_replicas", "0")
         .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
-  }
-
-  /**
-   * Strips {@code "type": "object"} entries from mapping properties recursively. ES and the Java
-   * client normalize object-typed mapping fields by adding this implicit type, but the JSON resource
-   * files omit it. Removing it from the actual result allows direct comparison with expected.
-   */
-  @SuppressWarnings("unchecked")
-  private static Map<String, Object> stripObjectTypeFromMappings(final Map<String, Object> map) {
-    final var result = new java.util.LinkedHashMap<>(map);
-    // Remove "type": "object" at this level — it's implicit for any field with "properties"
-    if ("object".equals(result.get("type")) && result.containsKey("properties")) {
-      result.remove("type");
-    }
-    // Recurse into nested maps
-    for (final var entry : result.entrySet()) {
-      if (entry.getValue() instanceof Map) {
-        entry.setValue(stripObjectTypeFromMappings((Map<String, Object>) entry.getValue()));
-      }
-    }
-    return result;
   }
 
   /**
