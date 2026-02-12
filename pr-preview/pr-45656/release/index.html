@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">Release Process | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="Release Process | Camunda Platform"><meta data-rh="true" name="description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><meta data-rh="true" property="og:description" content="This document will become a knowledge base around the C8 monorepo release process and help Camundi to maintain the process. It primarily focuses on the release process of Zeebe and the C8 webapps after they included with the monorepo merger (Camunda 8.6+)."><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-45656/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-45656/release/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Release Process","item":"https://camunda.github.io/camunda/pr-preview/pr-45656/release"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-45656/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.b5c2cc31.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-45656/assets/js/main.45a70653.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/runtime~main.bd3ce4b6.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-45656/assets/js/main.5c5a0e4a.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -316,18 +316,14 @@
 </ul>
 </li>
 </ol>
-<blockquote>
-<p>![NOTE]</p>
-<blockquote>
-<p>For 8.9.0 we would like to try this other approach</p>
-<ul>
+<div class="theme-admonition theme-admonition-note admonition_xJq3 alert alert--secondary"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 14 16"><path fill-rule="evenodd" d="M6.3 5.69a.942.942 0 0 1-.28-.7c0-.28.09-.52.28-.7.19-.18.42-.28.7-.28.28 0 .52.09.7.28.18.19.28.42.28.7 0 .28-.09.52-.28.7a1 1 0 0 1-.7.3c-.28 0-.52-.11-.7-.3zM8 7.99c-.02-.25-.11-.48-.31-.69-.2-.19-.42-.3-.69-.31H6c-.27.02-.48.13-.69.31-.2.2-.3.44-.31.69h1v3c.02.27.11.5.31.69.2.2.42.31.69.31h1c.27 0 .48-.11.69-.31.2-.19.3-.42.31-.69H8V7.98v.01zM7 2.3c-3.14 0-5.7 2.54-5.7 5.68 0 3.14 2.56 5.7 5.7 5.7s5.7-2.55 5.7-5.7c0-3.15-2.56-5.69-5.7-5.69v.01zM7 .98c3.86 0 7 3.14 7 7s-3.14 7-7 7-7-3.12-7-7 3.14-7 7-7z"></path></svg></span>note</div><div class="admonitionContent_BuS1"><p>For 8.9.0 we would like to try this other approach</p><ul>
 <li class=""><strong>Branch Strategy</strong>: To allow continuous bug fix integration during the alpha release process, consider creating <code>stable/&gt; &lt;minor&gt;</code> branch from <code>main</code> early, then creating the alpha release branch from <code>stable/&lt;minor&gt;</code> instead of directly from <code>main</code></li>
 <li class="">This allows non-critical bug fixes to be merged into <code>stable/&lt;minor&gt;</code> while the alpha release candidate is being processed</li>
 <li class="">Critical fixes can still be backported to the active alpha release branch if a new RC is needed</li>
 <li class=""><strong>Bug Fix Handling During Alpha Release</strong>:</li>
 <li class="">⚠️ <strong>Important</strong>: Any bug fixes merged to <code>main</code> after the last alpha release branch (<code>release-&lt;version&gt;-alpha&lt;N&gt;</code>) has been created must be backported to <code>stable/&lt;minor&gt;</code> to be included in the minor release</li>
 <li class="">Critical bug fixes merged after that point should be backported to both <code>stable/&lt;minor&gt;</code> and the active alpha release branch and may trigger a new Release Candidate</li>
-</ul>
+</ul></div></div>
 <ol start="3">
 <li class=""><a href="https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf" target="_blank" rel="noopener noreferrer" class="">Configure <code>unified-ci-merges-stable-branches</code> branch protection ruleset</a> to include new <code>stable/8.x</code> branch</li>
 </ol>
@@ -340,8 +336,6 @@
 <ul>
 <li class="">TODO: add references to known upgrade tests if possible</li>
 </ul>
-</blockquote>
-</blockquote>
 <p>Also, we have to do similar steps for the <a href="https://github.com/camunda/zeebe-process-test" target="_blank" rel="noopener noreferrer" class="">ZPT repository</a> in coordination with stakeholders from Camunda Ex team:</p>
 <ol>
 <li class="">Creating <code>stable/8.x</code> release branch from <code>main</code>, to enforce code freeze</li>
@@ -388,20 +382,15 @@
 </ul>
 </li>
 </ul>
-<blockquote>
-<p>[!WARNING]</p>
-<ul>
+<div class="theme-admonition theme-admonition-warning admonition_xJq3 alert alert--warning"><div class="admonitionHeading_Gvgb"><span class="admonitionIcon_Rf37"><svg viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>warning</div><div class="admonitionContent_BuS1"><ul>
 <li class=""><strong>Manual Step Required:</strong> Two manual updates are needed:</li>
-</ul>
-<ol>
+</ul><ol>
 <li class="">Before cutting a new stable branch (performing the first minor release X.Y.0), set <code>project.previousVersion</code> in the <a href="https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47" target="_blank" rel="noopener noreferrer" class="">Optimize root <code>pom.xml</code></a> to the previous minor version (e.g., for 8.9.0 release, set to <code>8.8.0</code>).</li>
 <li class="">After cutting the stable branch, bump <code>project.previousVersion</code> in the <a href="https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47" target="_blank" rel="noopener noreferrer" class="">Optimize root <code>pom.xml</code></a> on main to prepare for the next minor version line (e.g., after 8.9.0 release, update main to <code>8.9.0</code> for future 8.10.x alphas).</li>
-</ol>
-<ul>
+</ol><ul>
 <li class="">The release workflow validates <code>project.previousVersion</code> for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.</li>
 <li class=""><strong>Action:</strong> Monitor completion of <a href="https://github.com/camunda/camunda/issues/40258" target="_blank" rel="noopener noreferrer" class="">issue #40258</a> to automate this step and eliminate the manual requirement.</li>
-</ul>
-</blockquote>
+</ul></div></div>
 <h3 class="anchor anchorTargetStickyNavbar_Vzrq" id="feature-freeze-vs-code-freeze-minor-releases">Feature Freeze vs Code Freeze (Minor Releases)<a href="#feature-freeze-vs-code-freeze-minor-releases" class="hash-link" aria-label="Direct link to Feature Freeze vs Code Freeze (Minor Releases)" title="Direct link to Feature Freeze vs Code Freeze (Minor Releases)" translate="no">​</a></h3>
 <p>For C8 monorepo minor releases, we enforce two distinct stages to ensure quality and predictable delivery:</p>
 <p><strong>🔒 Feature Freeze (Minor Releases)</strong></p>
