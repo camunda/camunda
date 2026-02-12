@@ -1,3 +1,8 @@
+camunda:
+  client:
+    # Workaround for integration tests
+    prefer-rest-over-grpc: false
+
 logging:
   level:
     root: info
