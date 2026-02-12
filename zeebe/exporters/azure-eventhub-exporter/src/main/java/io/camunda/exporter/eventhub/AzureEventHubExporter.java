@@ -60,10 +60,7 @@ public class AzureEventHubExporter implements Exporter {
     this.controller = controller;
 
     try {
-      producerClient =
-          new EventHubClientBuilder()
-              .connectionString(configuration.getConnectionString(), configuration.getEventHubName())
-              .buildProducerClient();
+      producerClient = createProducerClient();
 
       scheduleDelayedFlush();
       log.info("Azure Event Hub exporter opened successfully");
@@ -71,6 +68,12 @@ public class AzureEventHubExporter implements Exporter {
       closeProducerClient();
       throw new RuntimeException("Failed to open Azure Event Hub exporter", ex);
     }
+  }
+
+  protected EventHubProducerClient createProducerClient() {
+    return new EventHubClientBuilder()
+        .connectionString(configuration.getConnectionString(), configuration.getEventHubName())
+        .buildProducerClient();
   }
 
   @Override
@@ -100,40 +103,38 @@ public class AzureEventHubExporter implements Exporter {
     }
 
     try {
-      final EventDataBatch eventBatch = producerClient.createBatch();
       final List<Record<?>> recordsToExport = new ArrayList<>(recordBuffer);
       recordBuffer.clear();
+      
+      EventDataBatch currentBatch = producerClient.createBatch();
 
       for (final Record<?> record : recordsToExport) {
         final String recordJson = record.toJson();
         final EventData eventData = new EventData(recordJson);
 
-        if (!eventBatch.tryAdd(eventData)) {
-          // If the batch is full, send it and create a new batch
-          if (eventBatch.getCount() > 0) {
-            producerClient.send(eventBatch);
-            log.debug("Sent batch of {} events to Azure Event Hub", eventBatch.getCount());
+        if (!currentBatch.tryAdd(eventData)) {
+          // Current batch is full, send it and create a new batch
+          if (currentBatch.getCount() > 0) {
+            producerClient.send(currentBatch);
+            log.debug("Sent batch of {} events to Azure Event Hub", currentBatch.getCount());
           }
 
-          // Create a new batch and add the current event
-          final EventDataBatch newBatch = producerClient.createBatch();
-          if (!newBatch.tryAdd(eventData)) {
+          // Create a new batch and try to add the current event
+          currentBatch = producerClient.createBatch();
+          if (!currentBatch.tryAdd(eventData)) {
             log.warn(
                 "Event at position {} is too large to fit in a batch, skipping",
                 record.getPosition());
-          } else {
-            producerClient.send(newBatch);
-            log.debug("Sent single event to Azure Event Hub");
           }
         }
 
         lastExportedPosition = record.getPosition();
       }
 
-      // Send any remaining events in the batch
-      if (eventBatch.getCount() > 0) {
-        producerClient.send(eventBatch);
-        log.debug("Sent final batch of {} events to Azure Event Hub", eventBatch.getCount());
+      // Send any remaining events in the final batch
+      if (currentBatch.getCount() > 0) {
+        producerClient.send(currentBatch);
+        log.debug("Sent final batch of {} events to Azure Event Hub", currentBatch.getCount());
       }
 
       controller.updateLastExportedRecordPosition(lastExportedPosition);
