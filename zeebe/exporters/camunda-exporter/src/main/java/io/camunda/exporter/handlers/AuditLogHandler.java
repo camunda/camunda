@@ -21,6 +21,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -119,6 +120,7 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setOperationType(mapOperationType(log))
         .setActorType(mapActorType(log))
         .setActorId(log.getActor().actorId())
+        .setAgentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
         .setTenantScope(mapTenantScope(log))
         .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
         .setBatchOperationKey(log.getBatchOperationKey())
