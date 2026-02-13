@@ -15,29 +15,25 @@ import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
-import io.camunda.client.api.search.enums.ProcessInstanceState;
-import io.camunda.client.api.search.response.DecisionInstanceState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.sort.ProcessInstanceSort;
-import io.camunda.zeebe.DataReadMeter.ReadQuery;
 import io.camunda.zeebe.config.AppCfg;
 import io.camunda.zeebe.config.StarterCfg;
-import io.camunda.zeebe.util.BoundedQueue;
+import io.camunda.zeebe.read.DataReadMeter;
+import io.camunda.zeebe.read.DataReadMeterQueryProvider;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.Timer;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.CountDownLatch;
@@ -46,6 +42,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,15 +62,14 @@ public class Starter extends App {
   private ProcessInstanceStartMeter processInstanceStartMeter;
   private DataReadMeter dataReadMeter;
   private final AtomicLong businessKey = new AtomicLong(0);
+  private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
+  private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
+      new AtomicReference<>(Instant.now());
   private long benchmarkProcessDefinitionKey;
-
-  private final BoundedQueue<Long> lastProcessInstances;
 
   Starter(final AppCfg config) {
     super(config);
     starterCfg = config.getStarter();
-    // store the keys of the process instances started in the last minute
-    lastProcessInstances = new BoundedQueue<>(config.getStarter().getRate() * 60);
   }
 
   @Override
@@ -82,6 +78,11 @@ public class Starter extends App {
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
     final CamundaClient client = createCamundaClient();
+
+    // init - check for topology and deploy process
+    printTopology(client);
+    deployProcess(client, starterCfg);
+
     if (config.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter(client);
     }
@@ -89,10 +90,6 @@ public class Starter extends App {
     if (config.isPerformReadBenchmarks()) {
       setupDataReadMeter(client);
     }
-
-    // init - check for topology and deploy process
-    printTopology(client);
-    deployProcess(client, starterCfg);
 
     // setup to start instances on given rate
     final CountDownLatch countDownLatch = new CountDownLatch(1);
@@ -169,104 +166,10 @@ public class Starter extends App {
     LOG.info("Starting read benchmark queries");
     dataReadMeter = new DataReadMeter(registry, Executors.newScheduledThreadPool(2));
 
-    final List<ReadQuery> queries =
-        List.of(
-            new ReadQuery(
-                "process_instances_active",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newProcessInstanceSearchRequest()
-                        .filter(
-                            f ->
-                                f.processDefinitionId(starterCfg.getProcessId())
-                                    .orFilters(
-                                        List.of(
-                                            f1 -> f1.state(ProcessInstanceState.ACTIVE),
-                                            f1 -> f1.hasIncident(true))))
-                        .sort(ProcessInstanceSort::startDate)
-                        .page(p -> p.limit(100))),
-            new ReadQuery(
-                "process_instance_by_business_key",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newProcessInstanceSearchRequest()
-                        .filter(
-                            f ->
-                                // search for the process instance started a minute ago
-                                f.variables(
-                                    Map.of(
-                                        starterCfg.getBusinessKey(),
-                                        businessKey.get() - starterCfg.getRate() * 60L)))
-                        .sort(ProcessInstanceSort::startDate)
-                        .page(p -> p.limit(100))),
-            new ReadQuery(
-                "process_instance_by_key",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newProcessInstanceGetRequest(
-                        Optional.ofNullable(lastProcessInstances.first()).orElse(0L))),
-            new ReadQuery(
-                "process_definition_statistics",
-                Duration.ofSeconds(30),
-                c -> c.newProcessDefinitionInstanceStatisticsRequest().page(p -> p.limit(100))),
-            new ReadQuery(
-                "process_definition_element_statistics",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newProcessDefinitionElementStatisticsRequest(benchmarkProcessDefinitionKey)
-                        .filter(
-                            f ->
-                                f.state(
-                                    s ->
-                                        s.in(
-                                            List.of(
-                                                ProcessInstanceState.ACTIVE,
-                                                ProcessInstanceState.COMPLETED))))),
-            new ReadQuery(
-                "incident_by_error_statistics",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newIncidentProcessInstanceStatisticsByErrorRequest()
-                        .page(p -> p.limit(100))
-                        .sort(s -> s.activeInstancesWithErrorCount().desc())),
-            new ReadQuery(
-                "audit_log_by_process_instance_key",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newAuditLogSearchRequest()
-                        .filter(
-                            f ->
-                                f.processInstanceKey(
-                                    Optional.ofNullable(lastProcessInstances.first())
-                                        .orElse(0L)
-                                        .toString()))
-                        .page(p -> p.limit(100))
-                        .sort(s -> s.timestamp().desc())),
-            new ReadQuery(
-                "audit_log_by_category",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newAuditLogSearchRequest()
-                        .filter(f -> f.category(AuditLogCategoryEnum.DEPLOYED_RESOURCES))
-                        .page(p -> p.limit(100))
-                        .sort(s -> s.timestamp().desc())),
-            new ReadQuery(
-                "decision_instance_list",
-                Duration.ofSeconds(30),
-                c ->
-                    c.newDecisionInstanceSearchRequest()
-                        .filter(
-                            f ->
-                                f.state(
-                                    d ->
-                                        d.in(
-                                            List.of(
-                                                DecisionInstanceState.EVALUATED,
-                                                DecisionInstanceState.FAILED))))
-                        .page(p -> p.limit(100))
-                        .sort(s -> s.evaluationDate().desc())));
-
-    dataReadMeter.start(client, queries);
+    dataReadMeter.start(
+        client,
+        DataReadMeterQueryProvider.getDefaultQueries(
+            starterCfg, businessKey, benchmarkProcessDefinitionKey, lastProcessInstanceKey));
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -349,8 +252,14 @@ public class Starter extends App {
             })
         .thenApply(
             (response) -> {
-              if (config.isPerformReadBenchmarks()) {
-                lastProcessInstances.add(response.getProcessInstanceKey());
+              // this is not totally threadsafe but good enough for our purpose
+              if (config.isPerformReadBenchmarks()
+                  && lastProcessInstanceKeyTimestamp
+                      .get()
+                      .plus(1, ChronoUnit.MINUTES)
+                      .isBefore(Instant.now())) {
+                lastProcessInstanceKeyTimestamp.set(Instant.now());
+                lastProcessInstanceKey.set(response.getProcessInstanceKey());
               }
               return response;
             });

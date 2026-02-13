@@ -5,10 +5,11 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.read;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.FinalCommandStep;
+import io.camunda.zeebe.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -65,29 +66,21 @@ public class DataReadMeter implements AutoCloseable {
 
   private void executeQuery(final ReadQuery query, final CamundaClient client, final Timer timer) {
     final long startTime = System.nanoTime();
-    query
-        .queryFunction()
-        .apply(client)
-        .send()
-        .whenComplete(
-            (result, error) -> {
-              final long durationNanos = System.nanoTime() - startTime;
-              timer.record(durationNanos, TimeUnit.NANOSECONDS);
+    try {
+      // to limit parallel executions, we limit the scheduling frequency and execute synchronously
+      // this might lead to less data points if a query execution takes longer than the scheduling
+      // interval, but it prevents piling up of executions and thus influencing the actual load-test
+      query.queryFunction().apply(client).send().join();
+      final long durationNanos = System.nanoTime() - startTime;
+      timer.record(durationNanos, TimeUnit.NANOSECONDS);
+      LOG.debug(
+          "Read query '{}' executed in {} ms",
+          query.name(),
+          TimeUnit.NANOSECONDS.toMillis(durationNanos));
 
-              if (error != null) {
-                LOG.error("Error while executing read query '{}'", query.name(), error);
-              } else {
-                LOG.debug(
-                    "Read query '{}' executed in {} ms",
-                    query.name(),
-                    TimeUnit.NANOSECONDS.toMillis(durationNanos));
-              }
-            });
-  }
-
-  /** Stops the periodic execution of read queries. */
-  public void stop() {
-    close();
+    } catch (final Exception e) {
+      LOG.warn("Error while executing read query '{}'", query.name(), e);
+    }
   }
 
   @Override

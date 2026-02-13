@@ -27,6 +27,7 @@ public class ConfigTest {
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
     assertThat(appCfg.isMonitorDataAvailability()).isTrue();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(250);
+    assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
 
     // authentication
     final var authCfg = appCfg.getAuth();
@@ -82,7 +83,7 @@ public class ConfigTest {
     assertThat(appCfg.getMonitoringPort()).isEqualTo(9600);
     assertThat(appCfg.isMonitorDataAvailability()).isFalse();
     assertThat(appCfg.getMonitorDataAvailabilityInterval()).hasMillis(50);
-    assertThat(appCfg.isPerformReadBenchmarks()).isFalse();
+    assertThat(appCfg.isPerformReadBenchmarks()).isTrue();
 
     // authentication
     final var authCfg = appCfg.getAuth();

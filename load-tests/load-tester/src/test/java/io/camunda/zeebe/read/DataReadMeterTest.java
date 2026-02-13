@@ -5,10 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.zeebe;
+package io.camunda.zeebe.read;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -16,8 +15,9 @@ import static org.mockito.Mockito.when;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
-import io.camunda.zeebe.DataReadMeter.ReadQuery;
+import io.camunda.zeebe.StarterLatencyMetricsDoc;
 import io.camunda.zeebe.StarterLatencyMetricsDoc.StarterMetricKeyNames;
+import io.camunda.zeebe.read.DataReadMeter.ReadQuery;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
@@ -80,33 +80,6 @@ final class DataReadMeterTest {
             .timer();
 
     assertThat(timer.totalTime(TimeUnit.NANOSECONDS)).isPositive();
-    meter.close();
-    meter = null;
-  }
-
-  @Test
-  void shouldRecordLatencyEvenWhenQueryFails() {
-    final var commandStep = mock(FinalCommandStep.class);
-    when(commandStep.send())
-        .thenReturn(TestCamundaFuture.failed(new IllegalStateException("boom")));
-
-    final ReadQuery query = new ReadQuery("readFailure", Duration.ofMillis(5), c -> commandStep);
-
-    assertThatCode(() -> meter.start(mock(CamundaClient.class), List.of(query)))
-        .doesNotThrowAnyException();
-
-    await()
-        .atMost(Duration.ofSeconds(1))
-        .untilAsserted(
-            () ->
-                assertThat(
-                        meterRegistry
-                            .get(StarterLatencyMetricsDoc.READ_BENCHMARK.getName())
-                            .tag(StarterMetricKeyNames.QUERY_NAME.asString(), "readFailure")
-                            .timer()
-                            .count())
-                    .isGreaterThanOrEqualTo(2));
-
     meter.close();
     meter = null;
   }
