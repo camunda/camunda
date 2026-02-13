@@ -1145,27 +1145,69 @@ class RdbmsExporterIT {
   @Test
   public void shouldExportBatchOperationCreatedRecord() {
     // given
+    final Record<BatchOperationCreationRecordValue> record =
+        RecordFixtures.FACTORY.generateRecord(
+            ValueType.BATCH_OPERATION_CREATION,
+            r ->
+                r.withIntent(BatchOperationIntent.CREATED)
+                    .withTimestamp(System.currentTimeMillis()));
+    final long batchOperationKey = record.getKey();
     final var batchOperationCreationRecord =
-        givenBatchOperationCreationExported(
+        ImmutableRecord.<BatchOperationCreationRecordValue>builder()
+            .from(record)
+            .withValue(
+                ImmutableBatchOperationCreationRecordValue.builder()
+                    .from(record.getValue())
+                    .withBatchOperationKey(batchOperationKey)
+                    .withBatchOperationType(
+                        io.camunda.zeebe.protocol.record.value.BatchOperationType
+                            .MIGRATE_PROCESS_INSTANCE)
+                    .build())
+            .build();
+
+    // when
+    exporter.export(batchOperationCreationRecord);
+
+    // then
+    final var batchOperation =
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
+    assertThat(batchOperation)
+        .hasValueSatisfying(
+            entity -> {
+              assertThat(entity.state()).isEqualTo(BatchOperationState.CREATED);
+              assertThat(entity.startDate()).isNull();
+              assertThat(entity.operationType())
+                  .isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+              assertThat(entity.batchOperationKey()).isEqualTo(String.valueOf(batchOperationKey));
+            });
+  }
+
+  @Test
+  public void shouldExportBatchOperationActivatedRecord() {
+    // given
+    final var batchOperationKey =
+        givenBatchOperationCreatedAndActivated(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.MIGRATE_PROCESS_INSTANCE);
 
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader()
-            .findOne(String.valueOf(batchOperationCreationRecord.getKey()));
-    assertThat(batchOperation).isNotEmpty();
-    assertThat(batchOperation.get().operationType())
-        .isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
-    assertThat(batchOperation.get().state()).isEqualTo(BatchOperationState.ACTIVE);
-    assertThat(batchOperation.get().operationsTotalCount()).isEqualTo(0L);
-    assertThat(batchOperation.get().operationsCompletedCount()).isEqualTo(0L);
-    assertThat(batchOperation.get().operationsFailedCount()).isEqualTo(0L);
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
+    assertThat(batchOperation)
+        .hasValueSatisfying(
+            entity -> {
+              assertThat(entity.operationType())
+                  .isEqualTo(BatchOperationType.MIGRATE_PROCESS_INSTANCE);
+              assertThat(entity.state()).isEqualTo(BatchOperationState.ACTIVE);
+              assertThat(entity.startDate()).isNotNull();
+              assertThat(entity.operationsTotalCount()).isEqualTo(0L);
+              assertThat(entity.operationsCompletedCount()).isEqualTo(0L);
+              assertThat(entity.operationsFailedCount()).isEqualTo(0L);
+            });
   }
 
   @Test
   public void shouldExportBatchOperationChunkRecord() {
-    final var batchOperationCreationRecord =
-        givenBatchOperationCreationExported(
+    final var batchOperationKey =
+        givenBatchOperationCreatedAndActivated(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.MODIFY_PROCESS_INSTANCE);
 
     final var itemKey = 9043L;
@@ -1179,11 +1221,11 @@ class RdbmsExporterIT {
             .from(record)
             .withIntent(BatchOperationChunkIntent.CREATE)
             .withTimestamp(System.currentTimeMillis())
-            .withBatchOperationReference(batchOperationCreationRecord.getKey())
+            .withBatchOperationReference(batchOperationKey)
             .withValue(
                 ImmutableBatchOperationChunkRecordValue.builder()
                     .from(record.getValue())
-                    .withBatchOperationKey(batchOperationCreationRecord.getKey())
+                    .withBatchOperationKey(batchOperationKey)
                     .withItems(
                         List.of(
                             ImmutableBatchOperationItemValue.builder()
@@ -1198,9 +1240,7 @@ class RdbmsExporterIT {
 
     // then
     final var batchOperation =
-        rdbmsService
-            .getBatchOperationReader()
-            .findOne(String.valueOf(batchOperationCreationRecord.getKey()));
+        rdbmsService.getBatchOperationReader().findOne(String.valueOf(batchOperationKey));
     assertThat(batchOperation).isNotEmpty();
     assertThat(batchOperation.get().operationType())
         .isEqualTo(BatchOperationType.MODIFY_PROCESS_INSTANCE);
@@ -1224,8 +1264,8 @@ class RdbmsExporterIT {
   public void
       shouldUpsertBatchOperationItemForProcessInstanceHistoryDeletionThatRelatesToBatchOperation() {
     // given
-    final var batchOperationCreationRecord =
-        givenBatchOperationCreationExported(
+    final var batchOperationKey =
+        givenBatchOperationCreatedAndActivated(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     final var resourceKey = 1153L;
@@ -1233,7 +1273,7 @@ class RdbmsExporterIT {
         withBatchOperationReference(
             FIXTURES.getHistoryDeletionRecord(
                 HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.PROCESS_INSTANCE),
-            batchOperationCreationRecord.getKey());
+            batchOperationKey);
 
     // when
     exporter.export(deletionRecord);
@@ -1254,8 +1294,8 @@ class RdbmsExporterIT {
   public void
       shouldUpsertBatchOperationItemForDecisionInstanceHistoryDeletionThatRelatesToBatchOperation() {
     // given
-    final var batchOperationCreationRecord =
-        givenBatchOperationCreationExported(
+    final var batchOperationKey =
+        givenBatchOperationCreatedAndActivated(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.DELETE_DECISION_INSTANCE);
 
     final var resourceKey = 1154L;
@@ -1263,7 +1303,7 @@ class RdbmsExporterIT {
         withBatchOperationReference(
             FIXTURES.getHistoryDeletionRecord(
                 HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.DECISION_INSTANCE),
-            batchOperationCreationRecord.getKey());
+            batchOperationKey);
 
     // when
     exporter.export(deletionRecord);
@@ -1283,8 +1323,8 @@ class RdbmsExporterIT {
   @Test
   public void shouldUpsertBatchOperationItemForResolvedIncidentThatRelatesToBatchOperation() {
     // given
-    final var batchOperationCreationRecord =
-        givenBatchOperationCreationExported(
+    final var batchOperationKey =
+        givenBatchOperationCreatedAndActivated(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.RESOLVE_INCIDENT);
 
     final var incidentKey = 1142L;
@@ -1299,7 +1339,7 @@ class RdbmsExporterIT {
                 processInstanceKey,
                 rootProcessInstanceKey,
                 elementInstanceKey),
-            batchOperationCreationRecord.getKey());
+            batchOperationKey);
 
     // when
     exporter.export(incidentRecord);
@@ -1423,7 +1463,7 @@ class RdbmsExporterIT {
     return ((ProcessInstanceRecordValue) record.getValue()).getRootProcessInstanceKey();
   }
 
-  private ImmutableRecord<BatchOperationCreationRecordValue> givenBatchOperationCreationExported(
+  private long givenBatchOperationCreatedAndActivated(
       final io.camunda.zeebe.protocol.record.value.BatchOperationType batchOperationType) {
     final Record<BatchOperationCreationRecordValue> record =
         RecordFixtures.FACTORY.generateRecord(ValueType.BATCH_OPERATION_CREATION);
@@ -1439,9 +1479,14 @@ class RdbmsExporterIT {
                     .withBatchOperationType(batchOperationType)
                     .build())
             .build();
+    final long batchOperationKey = batchOperationCreationRecord.getKey();
+    final var batchOperationInitializationRecord =
+        FIXTURES.getBatchOperationInitializedRecord(batchOperationKey);
 
     exporter.export(batchOperationCreationRecord);
-    return batchOperationCreationRecord;
+    exporter.export(batchOperationInitializationRecord);
+
+    return batchOperationKey;
   }
 
   private <T extends RecordValue> Record<T> withBatchOperationReference(
