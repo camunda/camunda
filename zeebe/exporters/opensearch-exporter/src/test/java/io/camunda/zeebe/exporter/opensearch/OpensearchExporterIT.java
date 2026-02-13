@@ -316,7 +316,7 @@ final class OpensearchExporterIT {
     final var ismTemplate = policy.ismTemplate().getFirst();
     assertThat(ismTemplate.indexPatterns())
         .as("Has 1 configured index pattern")
-        .containsOnly(config.index.prefix + "*");
+        .containsOnly(config.index.prefix + "_*");
     assertThat(ismTemplate.priority()).as("Has low priority").isEqualTo(1);
   }
 
