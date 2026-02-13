@@ -293,7 +293,12 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkAddISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "/_plugins/_ism/add/" + configuration.index.prefix + "*");
+          new Request(
+              "POST",
+              "/_plugins/_ism/add/"
+                  + configuration.index.prefix
+                  + RecordIndexRouter.INDEX_DELIMITER
+                  + "*");
       final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, IndexPolicyResponse.class);
@@ -306,7 +311,12 @@ public class OpensearchClient implements AutoCloseable {
   public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
     try {
       final var request =
-          new Request("POST", "/_plugins/_ism/remove/" + configuration.index.prefix + "*");
+          new Request(
+              "POST",
+              "/_plugins/_ism/remove/"
+                  + configuration.index.prefix
+                  + RecordIndexRouter.INDEX_DELIMITER
+                  + "*");
       final var response = sendRequest(request, IndexPolicyResponse.class);
       return !response.failures();
     } catch (final IOException e) {
@@ -330,7 +340,8 @@ public class OpensearchClient implements AutoCloseable {
             configuration.retention.getPolicyDescription(),
             ISM_INITIAL_STATE,
             List.of(initialState, deleteState),
-            new IsmTemplate(List.of(configuration.index.prefix + "*"), 1));
+            new IsmTemplate(
+                List.of(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*"), 1));
     return new PutIndexStateManagementPolicyRequest(policy);
   }
 
