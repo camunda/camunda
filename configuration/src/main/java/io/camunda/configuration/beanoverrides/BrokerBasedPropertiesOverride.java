@@ -735,6 +735,7 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setBasePath(gcs.getBasePath());
     gcsBackupStoreConfig.setHost(gcs.getHost());
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
+    gcsBackupStoreConfig.setMaxConcurrentTransfers(gcs.getMaxConcurrentTransfers());
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }

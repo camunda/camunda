@@ -61,6 +61,9 @@ public class Gcs {
    */
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
+  /** Maximum number of concurrent file transfers (uploads and downloads) using virtual threads. */
+  private int maxConcurrentTransfers = 8;
+
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
         PREFIX + ".bucket-name",
@@ -111,6 +114,14 @@ public class Gcs {
 
   public void setAuth(final GcsBackupStoreAuth auth) {
     this.auth = auth;
+  }
+
+  public int getMaxConcurrentTransfers() {
+    return maxConcurrentTransfers;
+  }
+
+  public void setMaxConcurrentTransfers(final int maxConcurrentTransfers) {
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
   }
 
   public enum GcsBackupStoreAuth {
