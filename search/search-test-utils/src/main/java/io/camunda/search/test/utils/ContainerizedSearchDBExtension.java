@@ -9,7 +9,6 @@ package io.camunda.search.test.utils;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Suppliers;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.search.connect.configuration.DatabaseConfig;
 import io.camunda.search.connect.es.ElasticsearchConnector;
@@ -18,7 +17,7 @@ import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -115,36 +114,35 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
   record ContainerAndClient<T extends GenericContainer<?>, C>(T container, C client) {}
 
   static class LazySearchContainer<T extends GenericContainer<?>, C> implements AutoCloseable {
-    private final AtomicReference<ContainerAndClient<T, C>> containerAndClient =
-        new AtomicReference<>();
-    private final Supplier<ContainerAndClient<T, C>> containerAndClientCreator;
+    private final ReentrantLock lock = new ReentrantLock();
+    private final Supplier<T> containerSupplier;
+    private final Function<T, C> clientCreator;
     private final ClientCloser<C> clientCloser;
+    private ContainerAndClient<T, C> containerAndClient;
 
     public LazySearchContainer(
         final Supplier<T> containerSupplier,
         final Function<T, C> clientCreator,
         final ClientCloser<C> clientCloser) {
-      // using the memoize supplier to ensure we only create one container instance
-      containerAndClientCreator =
-          Suppliers.memoize(
-              () -> {
-                final var container = containerSupplier.get();
-                container.start();
-                final var client = clientCreator.apply(container);
-                return new ContainerAndClient<>(container, client);
-              });
+      this.containerSupplier = containerSupplier;
+      this.clientCreator = clientCreator;
       this.clientCloser = clientCloser;
     }
 
     @Override
     public void close() throws IOException {
-      final var containerAndClient = this.containerAndClient.get();
-      if (containerAndClient != null) {
-        try {
-          clientCloser.close(containerAndClient.client());
-        } finally {
-          containerAndClient.container().stop();
+      lock.lock();
+      try {
+        if (containerAndClient != null) {
+          try {
+            clientCloser.close(containerAndClient.client());
+          } finally {
+            containerAndClient.container().stop();
+          }
         }
+      } finally {
+        containerAndClient = null;
+        lock.unlock();
       }
     }
 
@@ -157,7 +155,23 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
     }
 
     private ContainerAndClient<T, C> getContainerAndClient() {
-      return containerAndClient.updateAndGet(previous -> containerAndClientCreator.get());
+      lock.lock();
+      try {
+        if (containerAndClient == null) {
+          final var container = containerSupplier.get();
+          container.start();
+          try {
+            final var client = clientCreator.apply(container);
+            containerAndClient = new ContainerAndClient<>(container, client);
+          } catch (final Exception e) {
+            container.stop();
+            throw new RuntimeException("Failed to create client for search container", e);
+          }
+        }
+        return containerAndClient;
+      } finally {
+        lock.unlock();
+      }
     }
   }
 
