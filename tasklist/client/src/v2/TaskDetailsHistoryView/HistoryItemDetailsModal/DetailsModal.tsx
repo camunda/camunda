@@ -14,8 +14,15 @@ import {
   StructuredListCell,
   StructuredListRow,
   StructuredListWrapper,
+  Tooltip,
 } from '@carbon/react';
-import {EventSchedule, UserAvatar} from '@carbon/react/icons';
+import {
+  EventSchedule,
+  UserAvatar,
+  Application,
+  Unknown,
+  Bot,
+} from '@carbon/react/icons';
 import {useTranslation} from 'react-i18next';
 import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatDate} from 'common/dates/formatDate';
@@ -29,9 +36,23 @@ type Props = {
   auditLog: AuditLogItem;
 };
 
+const getActorTypeIcon = (actorType: AuditLogItem['actorType']) => {
+  switch (actorType) {
+    case 'USER':
+      return <UserAvatar aria-label="User" />;
+    case 'CLIENT':
+      return <Application aria-label="Client application" />;
+    case 'ANONYMOUS':
+    case 'UNKNOWN':
+    default:
+      return <Unknown aria-label="Unknown" />;
+  }
+};
+
 const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
   const {t} = useTranslation();
-  const {operationType, actorId, timestamp} = auditLog;
+  const {operationType, actorId, actorType, agentElementId, timestamp} =
+    auditLog;
 
   return (
     <ComposedModal size="md" open onClose={onClose}>
@@ -42,11 +63,25 @@ const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
             <StructuredListRow className={styles.verticallyAlignedRow}>
               <StructuredListCell className={styles.firstColumn}>
                 <div className={styles.iconText}>
-                  <UserAvatar />
+                  {getActorTypeIcon(actorType)}
                   {t('taskDetailsHistoryModalActor')}
                 </div>
               </StructuredListCell>
-              <StructuredListCell>{actorId}</StructuredListCell>
+              <StructuredListCell>
+                <div className={styles.iconText}>
+                  {actorId}
+                  {agentElementId && (
+                    <Tooltip
+                      description={`Agent: ${agentElementId}`}
+                      align="bottom"
+                    >
+                      <span className={styles.agentIcon}>
+                        <Bot aria-label="Agent" />
+                      </span>
+                    </Tooltip>
+                  )}
+                </div>
+              </StructuredListCell>
             </StructuredListRow>
             <StructuredListRow className={styles.verticallyAlignedRow}>
               <StructuredListCell noWrap className={styles.firstColumn}>

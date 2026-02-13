@@ -44,6 +44,7 @@ import {
 import {Information} from '@carbon/react/icons';
 import {formatDate} from 'common/dates/formatDate';
 import {ColumnHeader} from './ColumnHeader';
+import {CellActor} from './CellActor';
 import {getOperationTypeTranslationKey} from './getOperationTypeTranslationKey';
 import {getSortParams} from './sortUtils';
 import styles from './styles.module.scss';
@@ -174,7 +175,7 @@ const TaskDetailsHistoryView: React.FC = () => {
       auditLogs.map((log) => ({
         id: log.auditLogKey,
         operation: t(getOperationTypeTranslationKey(log.operationType)),
-        actor: log.actorId,
+        actor: <CellActor item={log} />,
         time: formatDate(log.timestamp),
         details: log.auditLogKey,
       })),

@@ -62,6 +62,17 @@ const DatePickerWrapper = styled.div`
   }
 `;
 
+const ActorCell = styled.div`
+  display: flex;
+  align-items: center;
+  gap: var(--cds-spacing-02);
+`;
+
+const AgentIcon = styled.span`
+  display: inline-flex;
+  cursor: help;
+`;
+
 export {
   OperationLogName,
   SuccessIcon,
@@ -70,4 +81,6 @@ export {
   ColumnRightPadding,
   CenteredRow,
   DatePickerWrapper,
+  ActorCell,
+  AgentIcon,
 };

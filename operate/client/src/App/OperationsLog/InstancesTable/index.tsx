@@ -216,7 +216,7 @@ const InstancesTable: React.FC = observer(() => {
             }
           />
         ),
-        user: item.actorId,
+        user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
       })) || [],

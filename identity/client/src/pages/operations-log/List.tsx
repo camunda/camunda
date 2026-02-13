@@ -22,6 +22,8 @@ import {
   ColumnRightPadding,
   CenteredRow,
   DatePickerWrapper,
+  ActorCell,
+  AgentIcon,
 } from "./components/styled";
 import {
   Button,
@@ -35,11 +37,19 @@ import {
   Section,
   Stack,
   TextInput,
+  Tooltip,
 } from "@carbon/react";
+import {
+  UserAvatar,
+  Application,
+  Unknown,
+  Bot,
+} from "@carbon/react/icons";
 import {
   AuditLogEntityType,
   AuditLogOperationType,
   AuditLogResult,
+  AuditLogActorType,
   auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
@@ -83,6 +93,19 @@ const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
   "MAPPING_RULE",
   "TENANT",
 ] as const;
+
+const getActorTypeIcon = (actorType: AuditLogActorType) => {
+  switch (actorType) {
+    case "USER":
+      return <UserAvatar aria-label="User" />;
+    case "CLIENT":
+      return <Application aria-label="Client application" />;
+    case "ANONYMOUS":
+    case "UNKNOWN":
+    default:
+      return <Unknown aria-label="Unknown" />;
+  }
+};
 
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
@@ -332,7 +355,22 @@ const List: FC = () => {
                   </OperationLogName>
                 ),
                 appliedTo: log.entityKey,
-                actorId: log.actorId,
+                actorId: (
+                  <ActorCell>
+                    {getActorTypeIcon(log.actorType)}
+                    {log.actorId}
+                    {log.agentElementId && (
+                      <Tooltip
+                        description={`Agent: ${log.agentElementId}`}
+                        align="bottom"
+                      >
+                        <AgentIcon>
+                          <Bot aria-label="Agent" />
+                        </AgentIcon>
+                      </Tooltip>
+                    )}
+                  </ActorCell>
+                ),
                 timestamp: new Date(log.timestamp).toLocaleString(),
               })) || []
             }

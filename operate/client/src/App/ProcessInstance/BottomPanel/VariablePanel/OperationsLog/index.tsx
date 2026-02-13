@@ -20,7 +20,13 @@ import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable'
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
 import {Information} from '@carbon/react/icons';
-import {Button} from '@carbon/react';
+import {Button, Tooltip} from '@carbon/react';
+import {
+  UserAvatar,
+  Application,
+  Unknown,
+  Bot,
+} from '@carbon/react/icons';
 import {notificationsStore} from 'modules/stores/notifications';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
@@ -35,6 +41,19 @@ import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstan
 
 type Props = {
   isVisible: boolean;
+};
+
+const getActorTypeIcon = (actorType: AuditLog['actorType']) => {
+  switch (actorType) {
+    case 'USER':
+      return <UserAvatar aria-label="User" />;
+    case 'CLIENT':
+      return <Application aria-label="Client application" />;
+    case 'ANONYMOUS':
+    case 'UNKNOWN':
+    default:
+      return <Unknown aria-label="Unknown" />;
+  }
 };
 
 const headerColumns = [
@@ -158,7 +177,22 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
             {spaceAndCapitalize(item.result.toString())}
           </OperationLogName>
         ),
-        user: item.actorId,
+        user: (
+          <OperationLogName>
+            {getActorTypeIcon(item.actorType)}
+            {item.actorId}
+            {item.agentElementId && (
+              <Tooltip
+                description={`Agent: ${item.agentElementId}`}
+                align="bottom"
+              >
+                <span style={{display: 'inline-flex', cursor: 'help'}}>
+                  <Bot aria-label="Agent" />
+                </span>
+              </Tooltip>
+            )}
+          </OperationLogName>
+        ),
         timestamp: formatDate(item.timestamp),
         comment: (
           <Button
