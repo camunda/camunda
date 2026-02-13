@@ -535,7 +535,8 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     operationState: 'success',
     startTimestamp: '2024-01-14T16:20:00.000+0000',
     endTimestamp: '2024-01-14T16:20:01.000+0000',
-    user: 'AI Assistant Bot',
+    user: 'copilot-agent',
+    agentElementId: 'Activity_OrderReview',
     details: {
       variable: {
         name: 'recommendation',
@@ -560,7 +561,8 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     operationState: 'success',
     startTimestamp: '2024-01-14T15:10:00.000+0000',
     endTimestamp: '2024-01-14T15:10:01.000+0000',
-    user: 'AI Agent',
+    user: 'camunda-ai-assistant',
+    agentElementId: 'Activity_RiskAssessment',
     details: {
       variable: {
         name: 'riskScore',
@@ -586,7 +588,8 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
     operationState: 'success',
     startTimestamp: '2024-01-14T14:00:00.000+0000',
     endTimestamp: '2024-01-14T14:02:30.000+0000',
-    user: 'Robot Assistant',
+    user: 'workflow-automation-bot',
+    agentElementId: 'Activity_ModifyProcess',
     errorMessage: 'Failed to add variable: Variable name contains invalid characters.',
     details: {
       variable: {
@@ -598,6 +601,49 @@ export const mockAuditLogEntries: MockAuditLogEntry[] = [
         },
       },
     },
+  },
+  // AI Agent example - Complete user task
+  {
+    id: 'ai-agent-complete-1',
+    processDefinitionName: 'Order Process',
+    processDefinitionVersion: 1,
+    processInstanceKey: '2251799813685302',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'COMPLETE_USER_TASK',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-14T13:30:00.000+0000',
+    endTimestamp: '2024-01-14T13:30:05.000+0000',
+    user: 'ml-inference-agent',
+    agentElementId: 'UserTask_ApproveOrder',
+    details: {
+      variable: {
+        name: 'approvalStatus',
+        newValue: 'approved',
+        scope: {
+          id: 'approveOrder',
+          name: 'Approve Order',
+        },
+      },
+    },
+  },
+  // AI Agent example - Resolve incident
+  {
+    id: 'ai-agent-resolve-1',
+    processDefinitionName: 'Claims Process',
+    processDefinitionVersion: 2,
+    processInstanceKey: '2251799813685303',
+    processInstanceState: 'ACTIVE',
+    tenantId: '<default>',
+    operationType: 'RESOLVE_INCIDENT',
+    operationEntity: 'PROCESS_INSTANCE',
+    operationState: 'success',
+    startTimestamp: '2024-01-14T12:15:00.000+0000',
+    endTimestamp: '2024-01-14T12:15:30.000+0000',
+    user: 'smart-recovery-bot',
+    agentElementId: 'ServiceTask_ValidateClaim',
+    details: {incident: {key: '2251799813685500'}},
   },
   // Update variable - Fulfillment Process
   {

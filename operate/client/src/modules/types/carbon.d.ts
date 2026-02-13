@@ -37,7 +37,8 @@ declare module '@carbon/react' {
       | 'top-left'
       | 'top'
       | 'top-right';
-    description: string;
+    children?: React.ReactNode;
+    description?: string | React.ReactNode;
   }
 
   declare class TooltipComponent extends React.Component<TooltipProps> {}

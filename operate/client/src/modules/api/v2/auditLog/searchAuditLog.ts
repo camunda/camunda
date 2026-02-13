@@ -70,6 +70,7 @@ export type AuditLogEntry = {
   endTimestamp?: string;
   user: string;
   comment?: string;
+  agentElementId?: string;
 };
 
 // Search Filters

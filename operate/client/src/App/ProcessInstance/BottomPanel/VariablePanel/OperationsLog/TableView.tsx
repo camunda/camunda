@@ -250,22 +250,42 @@ const OperationsLogTable: React.FC = observer(() => {
                   return 'User';
               }
             };
+            const getTooltipContent = (): React.ReactNode => {
+              const label = getActorTypeLabel(actorType);
+              if (actorType === 'agent' && entry.agentElementId) {
+                return (
+                  <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
+                    <span>{label}</span>
+                    <CodeSnippet
+                      type="inline"
+                      hideCopyButton
+                      wrapText
+                      className="tooltip-agent-element-snippet"
+                    >
+                      {entry.agentElementId}
+                    </CodeSnippet>
+                  </div>
+                );
+              }
+              return label;
+            };
             const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <AiAgentIcon width={16} height={16} />;
             return (
-              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
-                <Tooltip align="top" description={getActorTypeLabel(actorType)}>
+              <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)', minWidth: 0, maxWidth: '100%'}}>
+                <Tooltip align="top" description={getTooltipContent()}>
                   <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
                     {icon}
                   </div>
                 </Tooltip>
-                <CodeSnippet
-                  type="inline"
-                  title="Click to copy"
-                  aria-label="Click to copy"
-                  feedback="Copied to clipboard"
-                >
-                  {formatUsername(entry.user)}
-                </CodeSnippet>
+                <span className="actor-value-cell" style={{minWidth: 0, maxWidth: '100%', overflow: 'hidden', display: 'block'}} title={formatUsername(entry.user)}>
+                  <CodeSnippet
+                    type="inline"
+                    hideCopyButton
+                    aria-label="Actor"
+                  >
+                    {formatUsername(entry.user)}
+                  </CodeSnippet>
+                </span>
               </div>
             );
           })() : '-',
@@ -305,12 +325,35 @@ const OperationsLogTable: React.FC = observer(() => {
         .operations-log-table .cds--popover[role='tooltip'] .cds--popover-content {
           padding-top: var(--cds-spacing-02);
           padding-bottom: var(--cds-spacing-02);
+          white-space: normal;
+          max-width: 320px;
+        }
+        .cds--popover[role='tooltip'] .tooltip-agent-element-snippet.cds--snippet--inline {
+          background-color: rgba(0, 0, 0, 0.4);
+          color: var(--cds-text-on-color);
+        }
+        .cds--popover[role='tooltip'] .tooltip-agent-element-snippet.cds--snippet--inline code {
+          color: inherit;
         }
         .operations-log-table thead {
           position: sticky;
           top: 0;
           z-index: 1;
           background-color: var(--cds-layer);
+        }
+        .operations-log-table thead tr th:nth-child(4),
+        .operations-log-table tbody tr td:nth-child(4) {
+          max-width: 176px;
+        }
+        .operations-log-table .actor-value-cell .cds--snippet--inline {
+          max-width: 100%;
+        }
+        .operations-log-table .actor-value-cell .cds--snippet--inline code {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+          display: block;
+          max-width: 100%;
         }
       `}</style>
       <div
