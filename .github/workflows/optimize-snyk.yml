@@ -1,0 +1,244 @@
+# description: This workflow scans Optimize Docker images with Snyk and uploads snapshots to the Snyk servers
+# type: Project Management
+# owner: @camunda/team-optimize
+name: Optimize Snyk
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The project version; defaults to the version as defined by the root POM
+        required: false
+        type: string
+      target:
+        description: Allows overriding the project target reference directly; defaults to the current branch
+        required: false
+        type: string
+      dockerImage:
+        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, builds image locally using release artifacts.
+        required: false
+        type: string
+      monitor:
+        description: Upload Snyk snapshot instead of test
+        required: false
+        type: boolean
+        default: false
+      build:
+        description: Whether to build the Docker image locally instead of using a remote image
+        required: false
+        type: boolean
+        default: false
+      useMinorVersion:
+        description: Uses the major and minor version only for target and version
+        required: false
+        type: boolean
+        default: false
+      ref:
+        description: The reference to checkout
+        required: false
+        type: string
+  workflow_call:
+    secrets:
+      SNYK_TOKEN:
+        required: true
+    inputs:
+      version:
+        description: The project version; defaults to the version as defined by the root POM
+        required: false
+        type: string
+      target:
+        description: Allows overriding the project target reference directly; defaults to the current branch
+        required: false
+        type: string
+      dockerImage:
+        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, builds image locally using release artifacts.
+        required: false
+        type: string
+      monitor:
+        description: Upload Snyk snapshot instead of test
+        required: false
+        type: boolean
+        default: false
+      build:
+        description: Whether to build the Docker image locally instead of using a remote image
+        required: false
+        type: boolean
+        default: false
+      useMinorVersion:
+        description: Uses the major and minor version only for target and version
+        required: false
+        type: boolean
+        default: false
+      ref:
+        description: The reference to checkout
+        required: false
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  scan:
+    name: Snyk Scan
+    timeout-minutes: 15
+    runs-on: gcp-perf-core-8-default
+    permissions:
+      security-events: write # required to upload SARIF files
+    steps:
+      - name: Install Snyk CLI
+        uses: snyk/actions/setup@master
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/setup-build
+        with:
+          dockerhub-readonly: true
+          maven-cache-key-modifier: snyk
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+      # Prepares the bash environment for the step which will actually run Snyk, to avoid mixing too
+      # much the GitHub Action contexts/syntax and bash itself.
+      - name: Build Snyk Environment
+        id: info
+        run: |
+          set -x
+
+          if [ -n "${{ inputs.target }}" ]; then
+             TARGET="${{ inputs.target }}"
+          else
+            TARGET="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
+          fi
+          export TARGET
+          
+          if [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            # shellcheck disable=SC2016
+            VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
+          fi
+          export VERSION
+          
+          if [[ "${VERSION}" == *-SNAPSHOT ]]; then
+            VERSION_TAG="development"
+            LIFECYCLE="development"
+          else
+            # For production releases (monitor=true), version tag uses underscores instead of dots/dashes, e.g. 8_9_0 or 8_9_0_alpha1
+            if [[ "${{ inputs.monitor }}" == "true" ]]; then
+              VERSION_TAG="${VERSION//[.-]/_}"
+            else
+              # For test-only, use simple version since no tag is uploaded to Snyk
+              VERSION_TAG="${VERSION}"
+            fi
+            LIFECYCLE="production"
+          fi
+          export VERSION_TAG
+          export LIFECYCLE
+
+          # Use inputs.dockerImage if present; otherwise infer from version and default repository camunda/optimize
+          if [ -n "${{ inputs.dockerImage }}" ]; then
+            DOCKER_IMAGE="${{ inputs.dockerImage }}"
+          else
+            DOCKER_IMAGE="camunda/optimize:${VERSION}"
+          fi
+          export DOCKER_IMAGE
+
+          # IMPORTANT: apply useMinorVersion BEFORE composing SNYK_ARGS, like Zeebe
+          if [[ '${{ inputs.useMinorVersion }}' == 'true' ]]; then
+            TARGET="$(echo "$VERSION" | sed -E -e 's/\.[^.]*$//')"
+            export TARGET
+          fi
+
+          {
+            echo "SNYK_ARGS=" \
+              "--show-vulnerable-paths=all" \
+              "--severity-threshold=high" \
+              "--org=team-optimize" \
+              "--project-lifecycle=${LIFECYCLE}" \
+              "--project-tags=version=${VERSION_TAG}" \
+              "--target-reference=${TARGET}"
+            echo "TARGET=${TARGET}"
+            echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}"
+            echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}"
+            echo "DOCKER_IMAGE=${DOCKER_IMAGE}"
+            echo "VERSION=${VERSION}"
+          } >> "$GITHUB_ENV"
+      # Build Optimize Docker image locally if needed (for dry runs when image isn't published)
+      - name: Download Release Artifacts
+        if: ${{ inputs.build }}
+        uses: actions/download-artifact@v7
+        with:
+          name: release-artifacts-${{ env.VERSION }}
+      - name: Build Optimize Docker Image locally
+        if: ${{ inputs.build }}
+        uses: ./.github/actions/build-platform-docker
+        with:
+          repository: camunda/optimize
+          version: ${{ env.VERSION }}
+          # Use a placeholder revision since we're building locally for scanning
+          revision: "local-scan"
+          push: false
+          distball: camunda-optimize-${{ env.VERSION }}-production.tar.gz
+          platforms: linux/amd64
+          dockerfile: optimize.Dockerfile
+          debug: 'true'
+      - name: Run Snyk (Optimize Docker image)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        # This step scans the Optimize Docker image in Snyk (team-optimize org).
+        # If we later want to scan additional artifacts (e.g., Maven modules), they
+        # should be added in a separate step.
+        run: |
+          set -e
+          mkdir -p sarif-results || true
+
+          PROJECT_NAME="optimize(${TARGET}):Dockerfile"
+
+          # Optional SARIF output, same pattern as Zeebe
+          function output() {
+            local sarif="$1"
+            local name="$2"
+            [ "${sarif}" == 'true' ] && echo "--sarif-file-output=sarif-results/${name}.sarif"
+          }
+
+          function ensureExists() {
+            local projectFile="$1"
+            if [ ! -f "${projectFile}" ]; then
+              echo "Cannot find project file to scan: [ ${projectFile} ]"
+              exit 1
+            fi
+          }
+
+          # Print out command if debug logging is enabled
+          set -x
+
+          # The `container` command does not yet support setting a target reference, as this is a beta
+          # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
+          ensureExists "optimize.Dockerfile"
+          # shellcheck disable=SC2086,SC2046,SC2153
+          snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" \
+            --file=optimize.Dockerfile \
+            --project-name="${PROJECT_NAME}" \
+            ${SNYK_ARGS} $(output "${SARIF}" 'docker')
+      - name: Code Scanning summary
+        if: ${{ ! inputs.monitor }}
+        run: |
+          PR_NUMBER=$(echo "$GITHUB_REF" | awk 'BEGIN { FS = "/" } ; { print $3 }')
+          export PR_NUMBER
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+            ## Result Links
+            - [Snyk projects](https://app.snyk.io/org/team-optimize/projects)
+          EOF
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

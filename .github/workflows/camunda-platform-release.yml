@@ -942,6 +942,7 @@ jobs:
   # - With releaseProcessDryRun=true: Runs security tests instead of monitoring (E2E testing mode)
   # - When either flag is active: Builds Docker images locally since they won't be pushed to registry
   # Uses concurrency control to prevent multiple Snyk jobs from running simultaneously for the same version
+  # Note: This job scans the main Zeebe/Camunda components. For Optimize-specific scanning, see snyk-optimize job below.
   snyk:
     name: Snyk Monitor
     needs: [ zeebe-docker, release ]
@@ -962,6 +963,28 @@ jobs:
       build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/zeebe:{0}', inputs.releaseVersion) }}
     secrets: inherit
+
+  snyk-optimize:
+    name: Snyk Monitor Optimize
+    needs: [ optimize-docker, release ]
+    # Only for stable releases (no '-' in version), and only when Optimize is part of the release
+    if: ${{ !contains(inputs.releaseVersion, '-') && inputs.includeOptimize }}
+    concurrency:
+      group: release-snyk-optimize-${{ inputs.releaseVersion }}
+      cancel-in-progress: false
+    uses: ./.github/workflows/optimize-snyk.yml
+    with:
+      # Can't reference env.RELEASE_BRANCH directly due to https://github.com/actions/runner/issues/2372
+      ref: ${{ needs.release.outputs.releaseBranch }}
+      version: ${{ inputs.releaseVersion }}
+      useMinorVersion: true
+      # In real releases, we use monitor=true; in any dry-run mode, we want test only
+      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      # the docker image will not be pushed during a dry-run, so we need to build it locally
+      build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
+      dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/optimize:{0}', inputs.releaseVersion) }}
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
@@ -1173,7 +1196,7 @@ jobs:
   notify-on-success:
     name: Send Slack notification on success
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, snyk-optimize, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release succeeded
     if: ${{ always() && (
@@ -1185,6 +1208,7 @@ jobs:
       (needs.optimize-docker.result == 'success' || needs.optimize-docker.result == 'skipped') &&
       needs.camunda-docker.result == 'success' &&
       (needs.snyk.result == 'success' || needs.snyk.result == 'skipped') &&
+      (needs.snyk-optimize.result == 'success' || needs.snyk-optimize.result == 'skipped') &&
       (needs.fossa-release.result == 'success' || needs.fossa-release.result == 'skipped')
       ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
@@ -1224,7 +1248,7 @@ jobs:
   notify-if-failed:
     name: Send Slack notification on failure
     runs-on: ubuntu-latest
-    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, fossa-release]
+    needs: [release, github, zeebe-docker, operate-docker, tasklist-docker, optimize-docker, camunda-docker, snyk, snyk-optimize, fossa-release]
     # if it's a dry run => no slack notification (remove noise in slack due to manual testing)
     # else => send slack notification as an actual release failed
     if: ${{ always() && (
@@ -1236,6 +1260,7 @@ jobs:
         needs.optimize-docker.result == 'failure' ||
         needs.camunda-docker.result == 'failure' ||
         needs.snyk.result == 'failure' ||
+        needs.snyk-optimize.result == 'failure' ||
         needs.fossa-release.result == 'failure'
         ) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
     timeout-minutes: 5
