@@ -42,8 +42,8 @@ const AppHeader = ({ hideNavLinks = false }) => {
     <C3Navigation
       toggleAppbar={(isAppBarOpen) => setIsAppBarOpen(isAppBarOpen)}
       app={{
-        name: "Identity",
-        ariaLabel: "Identity",
+        name: "Admin",
+        ariaLabel: "Admin",
         routeProps: {
           to: "/",
         },
