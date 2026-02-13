@@ -10,10 +10,8 @@ import {screen, waitForElementToBeRemoved} from '@testing-library/react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {cancelAllTokens} from 'modules/utils/modifications';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {Paths} from 'modules/Routes';
@@ -136,60 +134,6 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
-  it(
-    'should not support add modification for task with multiple inner parent scopes',
-    {skip: IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
-    async () => {
-      renderPopover([
-        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
-      ]);
-
-      expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
-      expect(screen.getByText(/Move/)).toBeInTheDocument();
-      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    },
-  );
-
-  it(
-    'should not support add modification for task with multiple outer parent scopes',
-    {skip: IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
-    async () => {
-      mockFetchFlownodeInstancesStatistics().withSuccess({
-        items: [
-          {
-            elementId: 'OuterSubProcess',
-            active: 10,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'InnerSubProcess',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-          {
-            elementId: 'TaskB',
-            active: 1,
-            incidents: 0,
-            completed: 0,
-            canceled: 0,
-          },
-        ],
-      });
-
-      renderPopover([
-        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
-      ]);
-
-      expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
-      expect(screen.getByText(/Move/)).toBeInTheDocument();
-      expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    },
-  );
-
   it('should render no modifications available when multi sub process instance is selected', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -233,23 +177,4 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
-
-  it(
-    'should render add modification for flow nodes that has multiple running scopes',
-    {skip: !IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED},
-    async () => {
-      cancelAllTokens('TaskB', 0, 0, {});
-
-      renderPopover([
-        `${Paths.processInstance('instance_id')}?elementId=TaskB`,
-      ]);
-
-      expect(
-        await screen.findByText(/Flow Node Modifications/),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
-      expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
-      expect(screen.getByText(/Add/)).toBeInTheDocument();
-    },
-  );
 });

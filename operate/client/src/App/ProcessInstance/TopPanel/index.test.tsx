@@ -27,8 +27,6 @@ import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetc
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {open} from 'modules/mocks/diagrams';
-import {mockNestedSubprocess} from 'modules/mocks/mockNestedSubprocess';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -639,48 +637,4 @@ describe('TopPanel', () => {
       ancestorScopeType: 'sourceParent',
     });
   });
-
-  /* eslint-disable vitest/no-standalone-expect -- eslint doesn't understand dynamically skipped tests */
-  (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED ? it : it.skip)(
-    'should display parent selection banner when trying to add a token on a flow node that has multiple scopes',
-    async () => {
-      mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-
-      processInstanceDetailsStore.init({id: 'active_instance'});
-
-      mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-      const {user} = render(<TopPanel />, {
-        wrapper: getWrapper(),
-      });
-
-      modificationsStore.enableModificationMode();
-
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'user_task',
-        },
-      );
-
-      await user.click(
-        await screen.findByTitle(/Add single flow node instance/),
-      );
-
-      expect(
-        await screen.findByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
-        ),
-      ).toBeInTheDocument();
-
-      await user.click(screen.getByRole('button', {name: 'Discard'}));
-
-      expect(
-        screen.queryByText(
-          /Flow node has multiple parent scopes. Please select parent node from Instance History to Add./i,
-        ),
-      ).not.toBeInTheDocument();
-    },
-  );
-  /* eslint-enable vitest/no-standalone-expect */
 });

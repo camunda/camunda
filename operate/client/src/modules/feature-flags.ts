@@ -6,6 +6,4 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED = false;
-
-export {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED};
+export {};

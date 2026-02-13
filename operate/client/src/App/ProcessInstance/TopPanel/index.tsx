@@ -318,17 +318,6 @@ const TopPanel: React.FC = observer(() => {
         hasSelectedElementMultipleRunningInstances && (
           <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
-      {modificationsStore.state.status === 'adding-token' &&
-        businessObjects && (
-          <ModificationInfoBanner
-            text="Flow node has multiple parent scopes. Please select parent node from Instance History to Add."
-            button={{
-              onClick: () =>
-                modificationsStore.finishAddingToken(businessObjects),
-              label: 'Discard',
-            }}
-          />
-        )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>
           {processDefinitionData?.xml !== undefined &&

@@ -177,6 +177,32 @@ jobs:
           fi
           rm -rf c8run_temp "${c8run_asset}"
 
+      - name: Remove Elasticsearch from bundle (Unix)
+        if: matrix.platform.platform_id != 'windows-x86_64'
+        run: |
+          cd bundle
+          c8run_folder="c8run-${C8RUN_VERSION}"
+          
+          # Parse major.minor version components for comparison (e.g., "8.9.0" -> major=8, minor=9)
+          if [[ "${C8RUN_VERSION}" =~ ^([0-9]+)\.([0-9]+) ]]; then
+            version_major="${BASH_REMATCH[1]}"
+            version_minor="${BASH_REMATCH[2]}"
+            
+            # Only remove Elasticsearch for versions >= 8.9.0:
+            # (major > 8) OR (major == 8 AND minor >= 9)
+            if [ "${version_major}" -gt 8 ] || { [ "${version_major}" -eq 8 ] && [ "${version_minor}" -ge 9 ]; }; then
+              echo "Version ${C8RUN_VERSION} is >= 8.9.0, removing Elasticsearch..."
+              # Remove all elasticsearch-* directories from the c8run folder
+              rm -rf "${c8run_folder}"/elasticsearch-*
+              echo "Elasticsearch removed successfully"
+            else
+              echo "Version ${C8RUN_VERSION} is < 8.9.0, keeping Elasticsearch"
+            fi
+          else
+            echo "Warning: Unable to parse C8RUN_VERSION='${C8RUN_VERSION}' (expected MAJOR.MINOR[.PATCH])."
+            echo "Keeping Elasticsearch by default."
+          fi
+
       - name: Extract c8run archive (Windows)
         if: matrix.platform.platform_id == 'windows-x86_64'
         shell: pwsh
@@ -201,6 +227,34 @@ jobs:
           }
           Remove-Item -Recurse -Force "c8run_temp"
           Remove-Item -Force $c8runAsset
+
+      - name: Remove Elasticsearch from bundle (Windows)
+        if: matrix.platform.platform_id == 'windows-x86_64'
+        shell: pwsh
+        run: |
+          cd bundle
+          $c8runFolder = "c8run-${env:C8RUN_VERSION}"
+          
+          # Parse major.minor version components for comparison (e.g., "8.9.0" -> major=8, minor=9)
+          $version = $env:C8RUN_VERSION
+          if ($version -match '^(\d+)\.(\d+)') {
+            $major = [int]$matches[1]
+            $minor = [int]$matches[2]
+            
+            # Only remove Elasticsearch for versions >= 8.9.0:
+            # (major > 8) OR (major == 8 AND minor >= 9)
+            if ($major -gt 8 -or ($major -eq 8 -and $minor -ge 9)) {
+              Write-Host "Version ${version} is >= 8.9.0, removing Elasticsearch..."
+              # Remove all elasticsearch-* directories from the c8run folder
+              Get-ChildItem -Path $c8runFolder -Directory -Filter "elasticsearch-*" | Remove-Item -Recurse -Force
+              Write-Host "Elasticsearch removed successfully"
+            } else {
+              Write-Host "Version ${version} is < 8.9.0, keeping Elasticsearch"
+            }
+          } else {
+            Write-Host "Warning: Unable to parse C8RUN_VERSION='${version}' (expected MAJOR.MINOR[.PATCH])."
+            Write-Host "Keeping Elasticsearch by default."
+          }
 
       - name: Download Camunda Modeler
         env:

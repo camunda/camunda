@@ -8,7 +8,6 @@
 
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {getFirstMultiInstanceParent} from 'modules/bpmn-js/utils/isWithinMultiInstance';
-import {IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED} from 'modules/feature-flags';
 import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
 import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -67,11 +66,7 @@ const useAppendableFlowNodes = () => {
 
       // Add token
       if (status !== 'moving-token') {
-        if (IS_ADD_TOKEN_WITH_ANCESTOR_KEY_SUPPORTED) {
-          return flowNode.hasMultipleScopes || flowNode.hasSingleScope;
-        } else {
-          return flowNode.hasSingleScope && !flowNode.hasMultipleScopes;
-        }
+        return flowNode.hasSingleScope && !flowNode.hasMultipleScopes;
       }
 
       // Moving token is allowed for 1 scope
