@@ -154,6 +154,7 @@ jobs:
     permissions: { }
     outputs:
       load-test-load: ${{ steps.config.outputs.load-test-load }}
+      platform-config: ${{ steps.config.outputs.platform-config }}
     steps:
       - name: Calculate configuration based on scenario
         id: config
@@ -168,20 +169,25 @@ jobs:
           case "$scenario" in
             latency)
               echo "load-test-load=--set starter.rate=1 --set workers.worker.replicas=1" >> "$GITHUB_OUTPUT"
+              echo "platform-config=" >> "$GITHUB_OUTPUT"
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              echo "platform-config=" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
               echo "load-test-load=--set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn" >> "$GITHUB_OUTPUT"
+              echo "platform-config=" >> "$GITHUB_OUTPUT"
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
+              echo "platform-config=--set-string orchestration.env[0].name=ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS --set orchestration.env[0].value=false --set-string orchestration.env[1].name=ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS --set orchestration.env[1].value=false" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
               echo "load-test-load=${{ inputs.load-test-load }}" >> "$GITHUB_OUTPUT"
+              echo "platform-config=" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "Error: Unknown scenario '$scenario'"
@@ -368,9 +374,20 @@ jobs:
             load_test_config="$load_test_config ${{ needs.calculate-scenario-config.outputs.load-test-load }}"
           fi
 
+          # Build platform configuration
+          platform_config="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}"
+          # Append scenario-specific platform configuration if not empty
+          if [[ -n "${{ needs.calculate-scenario-config.outputs.platform-config }}" ]]; then
+            platform_config="$platform_config ${{ needs.calculate-scenario-config.outputs.platform-config }}"
+          fi
+          # Append user-provided platform configuration if not empty
+          if [[ -n "${{ inputs.platform-helm-values }}" ]]; then
+            platform_config="$platform_config ${{ inputs.platform-helm-values }}"
+          fi
+
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="$platform_config" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()
