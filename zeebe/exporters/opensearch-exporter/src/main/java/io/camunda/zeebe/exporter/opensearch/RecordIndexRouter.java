@@ -16,9 +16,9 @@ import java.time.format.DateTimeFormatter;
 
 /** Computes the name of the index, alias, or search pattern for a record or its value type. */
 final class RecordIndexRouter {
+  public static final String INDEX_DELIMITER = "_";
   private static final DateTimeFormatter DEFAULT_FORMATTER =
       DateTimeFormatter.ofPattern("yyyy-MM-dd").withZone(ZoneOffset.UTC);
-  private static final String INDEX_DELIMITER = "_";
   private static final String ALIAS_DELIMITER = "-";
 
   private final DateTimeFormatter formatter;
