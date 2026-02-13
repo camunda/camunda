@@ -14,7 +14,6 @@ import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.time.Duration;
-import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
@@ -44,30 +43,17 @@ class CompatibilityJobWorkerOverridesIT {
 
   @Test
   void shouldApplyDefaultsAndOverridesForJobWorker() {
-    final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(JOB_TYPE);
+    final JobWorkerValue jobWorkerValue =
+        jobWorkerManager.findJobWorkerConfigByType(JOB_TYPE).get();
 
-    assertThat(jobWorkerValue.getTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromOverrideProperty.class);
-    assertThat(jobWorkerValue.getTimeout().value()).isEqualTo(Duration.ofSeconds(12));
+    assertThat(jobWorkerValue.getTimeout()).isEqualTo(Duration.ofSeconds(12));
+    assertThat(jobWorkerValue.getPollInterval()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(jobWorkerValue.getMaxRetries()).isEqualTo(3);
+    assertThat(jobWorkerValue.getMaxJobsActive()).isEqualTo(10);
 
-    assertThat(jobWorkerValue.getPollInterval())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromOverrideProperty.class);
-    assertThat(jobWorkerValue.getPollInterval().value()).isEqualTo(Duration.ofSeconds(2));
-
-    assertThat(jobWorkerValue.getMaxRetries())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromOverrideProperty.class);
-    assertThat(jobWorkerValue.getMaxRetries().value()).isEqualTo(3);
-
-    assertThat(jobWorkerValue.getMaxJobsActive())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromDefaultProperty.class);
-    assertThat(jobWorkerValue.getMaxJobsActive().value()).isEqualTo(10);
-
-    final List<JobWorkerValue.SourceAware<String>> tenantIds = jobWorkerValue.getTenantIds();
+    final var tenantIds = jobWorkerValue.getTenantIds();
     assertThat(tenantIds).hasSize(2);
-    assertThat(tenantIds)
-        .allMatch(JobWorkerValue.SourceAware.FromOverrideProperty.class::isInstance);
-    assertThat(tenantIds.stream().map(JobWorkerValue.SourceAware::value).toList())
-        .containsExactly("tenant-a", "tenant-b");
+    assertThat(tenantIds).containsExactly("tenant-a", "tenant-b");
   }
 
   @Component

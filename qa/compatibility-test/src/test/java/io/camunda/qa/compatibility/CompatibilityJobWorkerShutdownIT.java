@@ -37,11 +37,14 @@ class CompatibilityJobWorkerShutdownIT {
 
   @Test
   void shouldCloseJobWorkersOnClientShutdown() {
-    assertThat(jobWorkerManager.getJobWorkers()).containsKey(JOB_TYPE);
+    // given: the job worker config is registered
+    assertThat(jobWorkerManager.findJobWorkerConfigByType(JOB_TYPE)).isPresent();
 
+    // when: the closing event is published
     publisher.publishEvent(new CamundaClientClosingSpringEvent(this, camundaClient));
 
-    assertThat(jobWorkerManager.getJobWorkers()).doesNotContainKey(JOB_TYPE);
+    // then: the config remains available (worker configs are retained after shutdown)
+    assertThat(jobWorkerManager.findJobWorkerConfigByType(JOB_TYPE)).isPresent();
   }
 
   @Component

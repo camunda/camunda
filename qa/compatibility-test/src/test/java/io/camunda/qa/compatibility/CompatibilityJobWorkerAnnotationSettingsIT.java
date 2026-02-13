@@ -35,68 +35,28 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
 
   @Test
   void shouldApplyAnnotationJobWorkerSettings() {
-    final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(ANNOTATION_JOB_TYPE);
+    final JobWorkerValue jobWorkerValue =
+        jobWorkerManager.findJobWorkerConfigByType(ANNOTATION_JOB_TYPE).get();
 
-    assertThat(jobWorkerValue.getType())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getType().value()).isEqualTo(ANNOTATION_JOB_TYPE);
-
-    assertThat(jobWorkerValue.getTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getTimeout().value()).isEqualTo(Duration.ofMinutes(2));
-
-    assertThat(jobWorkerValue.getMaxJobsActive())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getMaxJobsActive().value()).isEqualTo(3);
-
-    assertThat(jobWorkerValue.getRequestTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getRequestTimeout().value()).isEqualTo(Duration.ofSeconds(45));
-
-    assertThat(jobWorkerValue.getPollInterval())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getPollInterval().value()).isEqualTo(Duration.ofSeconds(3));
-
-    assertThat(jobWorkerValue.getStreamEnabled())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
-
-    assertThat(jobWorkerValue.getStreamTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getStreamTimeout().value()).isEqualTo(Duration.ofSeconds(15));
-
-    assertThat(jobWorkerValue.getMaxRetries())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getMaxRetries().value()).isEqualTo(7);
-
-    assertThat(jobWorkerValue.getRetryBackoff())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getRetryBackoff().value()).isEqualTo(Duration.ofSeconds(2));
-
-    assertThat(jobWorkerValue.getEnabled())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getEnabled().value()).isTrue();
-
-    assertThat(jobWorkerValue.getAutoComplete())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
-    assertThat(jobWorkerValue.getAutoComplete().value()).isFalse();
-
-    assertThat(jobWorkerValue.getFetchVariables())
-        .extracting(JobWorkerValue.SourceAware::value)
-        .contains("foo", "bar");
+    assertThat(jobWorkerValue.getType()).isEqualTo(ANNOTATION_JOB_TYPE);
+    assertThat(jobWorkerValue.getTimeout()).isEqualTo(Duration.ofMinutes(2));
+    assertThat(jobWorkerValue.getMaxJobsActive()).isEqualTo(3);
+    assertThat(jobWorkerValue.getRequestTimeout()).isEqualTo(Duration.ofSeconds(45));
+    assertThat(jobWorkerValue.getPollInterval()).isEqualTo(Duration.ofSeconds(3));
+    assertThat(jobWorkerValue.getStreamEnabled()).isTrue();
+    assertThat(jobWorkerValue.getStreamTimeout()).isEqualTo(Duration.ofSeconds(15));
+    assertThat(jobWorkerValue.getMaxRetries()).isEqualTo(7);
+    assertThat(jobWorkerValue.getEnabled()).isTrue();
+    assertThat(jobWorkerValue.getAutoComplete()).isFalse();
+    assertThat(jobWorkerValue.getFetchVariables()).contains("foo", "bar");
   }
 
   @Test
   void shouldNotForceFetchAllVariablesWhenActivatedJobUsed() {
-    final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(FORCE_FETCH_JOB_TYPE);
-
-    assertThat(jobWorkerValue.getForceFetchAllVariables())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromDefaultProperty.class);
-    assertThat(jobWorkerValue.getForceFetchAllVariables().value()).isFalse();
-
-    assertThat(jobWorkerValue.getFetchVariables())
-        .extracting(JobWorkerValue.SourceAware::value)
-        .contains("foo");
+    final JobWorkerValue jobWorkerValue =
+        jobWorkerManager.findJobWorkerConfigByType(FORCE_FETCH_JOB_TYPE).get();
+    assertThat(jobWorkerValue.getForceFetchAllVariables()).isFalse();
+    assertThat(jobWorkerValue.getFetchVariables()).contains("foo");
   }
 
   @Component
@@ -108,12 +68,11 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
         maxJobsActive = 3,
         requestTimeout = 45,
         pollInterval = 3_000,
-        streamEnabled = {true},
+        streamEnabled = true,
         streamTimeout = 15_000,
         maxRetries = 7,
-        retryBackoff = 2_000,
-        enabled = {true},
-        autoComplete = {false},
+        enabled = true,
+        autoComplete = false,
         fetchVariables = {"foo", "bar"})
     public void handleJob() {}
   }

@@ -11,12 +11,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.JobWorker;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.ProcessInstanceEvent;
-import io.camunda.client.exception.CamundaError;
+import io.camunda.client.api.worker.JobClient;
 import io.camunda.process.test.api.CamundaAssert;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import java.time.Duration;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -64,9 +63,9 @@ class CompatibilityJobWorkerFailureIT {
     private final AtomicInteger failedJobs = new AtomicInteger(0);
 
     @JobWorker(type = JOB_TYPE, autoComplete = false)
-    public void handleJob() {
+    public void handleJob(final JobClient jobClient, final ActivatedJob job) {
       failedJobs.incrementAndGet();
-      throw CamundaError.jobError("boom", Map.of(), 0, Duration.ofSeconds(10));
+      jobClient.newFailCommand(job.getKey()).retries(0).errorMessage("boom").send().join();
     }
 
     int getFailedJobs() {

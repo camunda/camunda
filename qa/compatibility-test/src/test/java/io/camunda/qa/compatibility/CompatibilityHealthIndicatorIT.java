@@ -14,8 +14,8 @@ import io.camunda.process.test.api.CamundaSpringProcessTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringBootConfiguration;
+import org.springframework.boot.actuate.health.Status;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.health.contributor.Status;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 
