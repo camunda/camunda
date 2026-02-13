@@ -34,7 +34,7 @@ jobs:
   prepare-versions:
     name: Prepare Version Matrix
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 120
     permissions:
       contents: read
     outputs:
@@ -209,9 +209,9 @@ jobs:
       - name: Download tested combinations artifact
         id: download-tested
         continue-on-error: true
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
-          name: process-test-compatibility-tested-combinations
+          name: spring-compatibility-tested-combinations
           path: /tmp/compatibility-state-download
 
       - name: Load tested combinations
@@ -352,7 +352,7 @@ jobs:
         if: success()
         uses: actions/upload-artifact@v6
         with:
-          name: process-test-tested-combo-${{ matrix.client }}-${{ matrix.server }}
+          name: spring-tested-combo-${{ matrix.client }}-${{ matrix.server }}
           path: compatibility-test-results/tested.txt
           retention-days: 30
 
@@ -379,9 +379,9 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download all tested combinations
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
-          pattern: process-test-tested-combo-*
+          pattern: spring-tested-combo-*
           path: compatibility-test-results
           merge-multiple: true
 
@@ -402,9 +402,9 @@ jobs:
           cat compatibility-state/tested-combinations.txt
 
       - name: Upload combined results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
-          name: process-test-compatibility-tested-combinations
+          name: spring-compatibility-tested-combinations
           path: compatibility-state/tested-combinations.txt
           retention-days: 90
 
