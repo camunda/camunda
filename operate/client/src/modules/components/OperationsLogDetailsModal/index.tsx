@@ -93,11 +93,25 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           <VerticallyAlignedRow>
             <FirstColumn>
               <IconText>
-                <UserAvatar />
+                {getActorTypeIcon(auditLog.actorType)}
                 Actor
               </IconText>
             </FirstColumn>
-            <StructuredListCell>{auditLog.actorId}</StructuredListCell>
+            <StructuredListCell>
+              <IconText>
+                {auditLog.actorId}
+                {auditLog.agentElementId && (
+                  <Tooltip
+                    description={`Agent: ${auditLog.agentElementId}`}
+                    align="bottom"
+                  >
+                    <span style={{display: 'inline-flex', cursor: 'help'}}>
+                      <Bot aria-label="Agent" />
+                    </span>
+                  </Tooltip>
+                )}
+              </IconText>
+            </StructuredListCell>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
