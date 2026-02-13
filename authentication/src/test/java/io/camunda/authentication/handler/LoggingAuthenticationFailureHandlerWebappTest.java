@@ -71,7 +71,7 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "camunda.security.authentication.oidc.assertion.keystore.keyPassword=password",
       "camunda.security.authentication.oidc.resource=https://api.example.com/app1/, https://api.example.com/app2/",
       // Enable secondary storage to activate the webapp security filter chain
-      "camunda.database.type=rdbms",
+      "camunda.data.secondary-storage.type=rdbms",
       "logging.level.io.camunda.authentication.config=DEBUG",
       "logging.level.org.springframework.security=TRACE",
     })
