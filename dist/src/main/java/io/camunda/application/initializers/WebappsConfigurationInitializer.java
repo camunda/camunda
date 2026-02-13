@@ -103,6 +103,7 @@ public class WebappsConfigurationInitializer
 
     if (activeProfiles.contains(IDENTITY.getId())) {
       locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
+      locations.add(DEFAULT_RESOURCES_LOCATION + "admin/");
     }
 
     // Store locations and merge everything

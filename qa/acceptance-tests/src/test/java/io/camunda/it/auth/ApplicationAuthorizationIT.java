@@ -78,7 +78,7 @@ class ApplicationAuthorizationIT {
       HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
 
   @ParameterizedTest
-  @ValueSource(strings = {"operate", "identity"})
+  @ValueSource(strings = {"operate", "admin"})
   void accessComponentUserWithoutComponentAccessNotAllowed(
       final String appName, @Authenticated(RESTRICTED) final CamundaClient restrictedClient)
       throws IOException, URISyntaxException, InterruptedException {
@@ -99,7 +99,7 @@ class ApplicationAuthorizationIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"operate", "identity", "tasklist"})
+  @ValueSource(strings = {"operate", "admin", "tasklist"})
   void accessComponentNoUserAllowed(
       final String componentName, @Authenticated(ADMIN) final CamundaClient client)
       throws IOException, URISyntaxException, InterruptedException {
@@ -172,7 +172,7 @@ class ApplicationAuthorizationIT {
   }
 
   @ParameterizedTest
-  @ValueSource(strings = {"operate", "identity", "tasklist"})
+  @ValueSource(strings = {"operate", "admin", "tasklist"})
   void accessComponentUserWithComponentWildcardAccessAllowed(
       final String componentName, @Authenticated(ADMIN) final CamundaClient adminClient)
       throws IOException, URISyntaxException, InterruptedException {
