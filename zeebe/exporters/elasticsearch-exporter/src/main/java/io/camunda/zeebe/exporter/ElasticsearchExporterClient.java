@@ -302,7 +302,9 @@ class ElasticsearchExporterClient implements AutoCloseable {
               .indices()
               .putSettings(
                   b ->
-                      b.index(configuration.index.prefix + "*")
+                      // camunda exporter indexes have a slightly different format (dash instead of
+                      // underscore after prefix) so using that to avoid accidentally updating them
+                      b.index(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*")
                           .allowNoIndices(true)
                           .withJson(new StringReader(json)));
       return response.acknowledged();

@@ -208,6 +208,41 @@ final class ElasticsearchExporterClientIT {
     assertThat(lifecycle.policy().phases().delete().actions().delete()).isNotNull();
   }
 
+  @Test
+  void shouldBulkPutIndexLifecycleSettingsWithoutAlteringCamundaExporterIndexesWithSamePrefix()
+      throws IOException {
+    // given
+    final var esClient = testClient.getEsClient();
+    final var ownedIndexName =
+        indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
+            + "_2024-01-01";
+    // camunda exporter indexes have a slightly different format
+    final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
+    esClient.indices().create(b -> b.index(ownedIndexName));
+    esClient.indices().create(b -> b.index(camundaExporterIndexName));
+
+    // when
+    client.bulkPutIndexLifecycleSettings("zeebe-record-retention-policy");
+
+    // then
+    assertThat(getIndexLifecycleName(ownedIndexName)).isEqualTo("zeebe-record-retention-policy");
+    assertThat(getIndexLifecycleName(camundaExporterIndexName)).isNull();
+  }
+
+  private String getIndexLifecycleName(final String index) throws IOException {
+    final var maybeIndexState = testClient.getIndexSettings(index);
+    assertThat(maybeIndexState).isPresent();
+    final var indexState = maybeIndexState.get();
+    final var indexSettings = indexState.settings();
+    assertThat(indexState.settings()).isNotNull();
+    assertThat(indexState.settings().index()).isNotNull();
+    final var lifecycle = indexSettings.index().lifecycle();
+    if (lifecycle == null) {
+      return null;
+    }
+    return lifecycle.name();
+  }
+
   private static void assertIndexSettings(final IndexSettings settings) {
     assertThat(settings).isNotNull();
     assertThat(settings.numberOfShards()).isEqualTo("1");
