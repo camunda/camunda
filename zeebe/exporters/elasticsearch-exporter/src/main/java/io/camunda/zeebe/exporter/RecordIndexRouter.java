@@ -58,13 +58,14 @@ final class RecordIndexRouter {
     return config.prefix + ALIAS_DELIMITER + valueTypeToString(valueType);
   }
 
+  /** Returns the index for this value type, minus the version and current date. */
+  String unversionedIndexPrefixForValueType(final ValueType valueType) {
+    return config.prefix + INDEX_DELIMITER + valueTypeToString(valueType);
+  }
+
   /** Returns the index for this value type, minus the current date. */
   String indexPrefixForValueType(final ValueType valueType, final String version) {
-    return config.prefix
-        + INDEX_DELIMITER
-        + valueTypeToString(valueType)
-        + INDEX_DELIMITER
-        + version;
+    return unversionedIndexPrefixForValueType(valueType) + INDEX_DELIMITER + version;
   }
 
   /**

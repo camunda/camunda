@@ -55,7 +55,13 @@ public class ElasticsearchExporterSchemaManager {
 
   private void updateRetentionPolicyForExistingIndices() {
     final boolean acknowledged;
+    final var configuredPolicyName = configuration.retention.getPolicyName();
     if (configuration.retention.isEnabled()) {
+      client.updatendexLifecycleSettings(configuredPolicyName, configuredPolicyName);
+    } else {
+      client.updatendexLifecycleSettings(configuredPolicyName, null);
+    }
+    /*if (configuration.retention.isEnabled()) {
       acknowledged = client.bulkPutIndexLifecycleSettings(configuration.retention.getPolicyName());
     } else {
       acknowledged = client.bulkPutIndexLifecycleSettings(null);
@@ -63,7 +69,7 @@ public class ElasticsearchExporterSchemaManager {
 
     if (!acknowledged) {
       LOG.warn("Failed to acknowledge the the update of retention policy for existing indices");
-    }
+    }*/
   }
 
   private void createIndexTemplates(final String version) {
