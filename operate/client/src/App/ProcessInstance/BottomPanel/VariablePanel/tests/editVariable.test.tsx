@@ -13,17 +13,11 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {
-  getWrapper,
-  mockProcessInstance,
-  mockProcessInstanceDeprecated,
-} from './mocks';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {getWrapper, mockProcessInstance} from './mocks';
+import {createVariable} from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
 import {notificationsStore} from 'modules/stores/notifications';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockVariables} from './index.setup';
@@ -39,14 +33,9 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const instanceMock = createInstance({id: '1'});
-
 describe('Edit variable', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess(mockVariables);
@@ -75,12 +64,8 @@ describe('Edit variable', () => {
     };
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -152,7 +137,6 @@ describe('Edit variable', () => {
     mockSearchVariables().withSuccess(mockVariables);
     mockGetVariable().withSuccess(mockVariables.items[0]!);
     mockGetVariable().withSuccess(mockVariables.items[0]!);
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -200,7 +184,6 @@ describe('Edit variable', () => {
     mockGetVariable().withSuccess(mockVariables.items[0]!);
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -237,15 +220,8 @@ describe('Edit variable', () => {
     mockGetVariable().withSuccess(mockVariables.items[0]!);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
 
     vi.useFakeTimers({shouldAdvanceTime: true});
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -330,7 +306,6 @@ describe('Edit variable', () => {
         totalItems: 1,
       },
     });
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -398,7 +373,6 @@ describe('Edit variable', () => {
         totalItems: 1,
       },
     });
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -460,8 +434,6 @@ describe('Edit variable', () => {
       },
     });
 
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
@@ -491,15 +463,9 @@ describe('Edit variable', () => {
     ).not.toBeInTheDocument();
   });
 
-  // TODO: fix test with #44450
-  it.skip('should load full value on focus during modification mode if it was truncated', async () => {
+  it('should load full value on focus during modification mode if it was truncated', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
     mockFetchProcessDefinitionXml().withSuccess('');
-
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
       items: [
@@ -563,9 +529,7 @@ describe('Edit variable', () => {
     expect(screen.getByTestId('edit-variable-value')).toHaveValue('123456');
   });
 
-  // TODO: fix test with #44450
-  it.skip('should load full value on json viewer click during modification mode if it was truncated', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
+  it('should load full value on json viewer click during modification mode if it was truncated', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess({
       items: [
@@ -638,10 +602,7 @@ describe('Edit variable', () => {
     );
   });
 
-  // TODO: fix test with #44450
-  it.skip('should have JSON editor when editing a Variable', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
+  it('should have JSON editor when editing a Variable', async () => {
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
@@ -685,11 +646,7 @@ describe('Edit variable', () => {
 
   it('should allow editing a variable with dots in modification mode', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
     mockFetchProcessDefinitionXml().withSuccess('');
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
       items: [
@@ -746,7 +703,6 @@ describe('Edit variable', () => {
       ...mockProcessInstance,
       state: 'TERMINATED',
     });
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
