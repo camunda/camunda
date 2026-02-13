@@ -366,6 +366,11 @@ jobs:
           path: cpt-test-results/tested.txt
           retention-days: 30
 
+      - name: Upload test artifacts
+        uses: ./.github/actions/collect-test-artifacts
+        with:
+          name: 'cpt compatibility tests - client ${{ matrix.client }} server ${{ matrix.server }}'
+
       - name: Observe build status
         if: always()
         continue-on-error: true
