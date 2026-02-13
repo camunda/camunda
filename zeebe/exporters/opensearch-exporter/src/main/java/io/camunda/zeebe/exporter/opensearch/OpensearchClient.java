@@ -12,18 +12,8 @@ import io.camunda.zeebe.exporter.opensearch.dto.AddPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
-import io.camunda.zeebe.exporter.opensearch.dto.DeleteStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
@@ -32,14 +22,24 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.http.entity.EntityTemplate;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.ism.Action;
+import org.opensearch.client.opensearch.ism.ActionDelete;
+import org.opensearch.client.opensearch.ism.DeletePolicyRequest;
+import org.opensearch.client.opensearch.ism.DeletePolicyResponse;
+import org.opensearch.client.opensearch.ism.IsmTemplate;
+import org.opensearch.client.opensearch.ism.Policy;
+import org.opensearch.client.opensearch.ism.PutPolicyRequest;
+import org.opensearch.client.opensearch.ism.PutPolicyResponse;
+import org.opensearch.client.opensearch.ism.States;
+import org.opensearch.client.opensearch.ism.Transition;
 
 public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
@@ -257,42 +257,22 @@ public class OpensearchClient implements AutoCloseable {
   }
 
   public boolean createIndexStateManagementPolicy() {
-    return putIndexStateManagementPolicy(Collections.emptyMap());
+    return putIndexStateManagementPolicy(null, null);
   }
 
   public boolean updateIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
-    final var queryParameters =
-        Map.of("if_seq_no", seqNo.toString(), "if_primary_term", primaryTerm.toString());
-    return putIndexStateManagementPolicy(queryParameters);
+    return putIndexStateManagementPolicy(seqNo, primaryTerm);
   }
 
   public boolean deleteIndexStateManagementPolicy() {
     try {
-      final var request =
-          new Request(
-              "DELETE", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
+      final DeletePolicyRequest request =
+          DeletePolicyRequest.builder().policyId(configuration.retention.getPolicyName()).build();
 
-      final var response = sendRequest(request, DeleteStateManagementPolicyResponse.class);
-      return response.result().equals(DeleteStateManagementPolicyResponse.DELETED);
+      final DeletePolicyResponse response = openSearchClient.ism().deletePolicy(request);
+      return response.result().equals(Result.Deleted);
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to delete index state management policy", e);
-    }
-  }
-
-  private boolean putIndexStateManagementPolicy(final Map<String, String> queryParameters) {
-    try {
-      final var request =
-          new Request("PUT", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
-
-      queryParameters.forEach(request::addParameter);
-
-      final var requestEntity = createPutIndexManagementPolicyRequest();
-      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
-
-      final var response = sendRequest(request, PutIndexStateManagementPolicyResponse.class);
-      return response.policy() != null;
-    } catch (final IOException e) {
-      throw new OpensearchExporterException("Failed to put index state management policy", e);
     }
   }
 
@@ -330,32 +310,67 @@ public class OpensearchClient implements AutoCloseable {
     }
   }
 
-  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest() {
-    final var initialState =
-        new State(
-            ISM_INITIAL_STATE,
-            Collections.emptyList(),
-            List.of(
-                new Transition(
-                    ISM_DELETE_STATE, new Conditions(configuration.retention.getMinimumAge()))));
-    final var deleteState =
-        new State(
-            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
-    final var policy =
-        new Policy(
-            configuration.retention.getPolicyDescription(),
-            ISM_INITIAL_STATE,
-            List.of(initialState, deleteState),
-            new IsmTemplate(
-                List.of(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*"), 1));
-    return new PutIndexStateManagementPolicyRequest(policy);
-  }
-
   private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
     final var response = client.performRequest(request);
     // buffer the complete response in memory before parsing it; this will give us a better error
     // message which contains the raw response should the deserialization fail
     final var responseBody = response.getEntity().getContent().readAllBytes();
     return MAPPER.readValue(responseBody, responseType);
+  }
+
+  private boolean putIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
+    try {
+      final PutPolicyRequest request =
+          PutPolicyRequest.of(
+              req -> {
+                req.policyId(configuration.retention.getPolicyName());
+                req.policy(getIsmPolicy());
+
+                if (seqNo != null) {
+                  req.ifSeqNo(seqNo.longValue());
+                }
+
+                if (primaryTerm != null) {
+                  req.ifPrimaryTerm(primaryTerm);
+                }
+
+                return req;
+              });
+
+      final PutPolicyResponse response = openSearchClient.ism().putPolicy(request);
+
+      return response.policy() != null;
+    } catch (final IOException e) {
+      throw new OpensearchExporterException("Failed to put index state management policy", e);
+    }
+  }
+
+  private Policy getIsmPolicy() {
+    final States initialState =
+        States.builder()
+            .name(ISM_INITIAL_STATE)
+            .transitions(
+                Transition.builder()
+                    .stateName(ISM_DELETE_STATE)
+                    .conditions(
+                        "min_index_age", JsonData.of(configuration.retention.getMinimumAge()))
+                    .build())
+            .build();
+    final States deleteState =
+        States.builder()
+            .name(ISM_DELETE_STATE)
+            .actions(Action.builder().delete(ActionDelete._INSTANCE).build())
+            .build();
+
+    final IsmTemplate ismTemplate =
+        IsmTemplate.builder().indexPatterns(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER +"*").priority(1).build();
+
+    return Policy.builder()
+        .policyId(configuration.retention.getPolicyName())
+        .description(configuration.retention.getPolicyDescription())
+        .defaultState(ISM_INITIAL_STATE)
+        .states(List.of(initialState, deleteState))
+        .ismTemplate(ismTemplate)
+        .build();
   }
 }
