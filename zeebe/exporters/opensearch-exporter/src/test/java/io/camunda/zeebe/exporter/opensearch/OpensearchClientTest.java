@@ -41,6 +41,7 @@ import org.mockito.ArgumentCaptor;
 import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
+import org.opensearch.client.opensearch.OpenSearchClient;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class OpensearchClientTest {
@@ -49,6 +50,7 @@ final class OpensearchClientTest {
 
   private static final int PARTITION_ID = 1;
 
+  private final OpenSearchClient openSearchClient = mock(OpenSearchClient.class);
   private final RestClient restClient = mock(RestClient.class);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
@@ -60,6 +62,7 @@ final class OpensearchClientTest {
       new OpensearchClient(
           config,
           bulkRequest,
+          openSearchClient,
           restClient,
           indexRouter,
           templateReader,
