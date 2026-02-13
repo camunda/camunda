@@ -978,6 +978,9 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getActorType())
         .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
+    ofNullable(filter.getAgentElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::agentElementIdOperations);
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);

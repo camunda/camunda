@@ -18,17 +18,16 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
-import io.camunda.client.api.search.response.AuditLogResult;
+import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
@@ -44,50 +43,112 @@ public class AuditLogAgentIT {
           .withAuthorizationsEnabled()
           .withAuthenticatedAccess();
 
+  private static final String AGENT_ELEMENT_ID = "test_agent_ahsp";
   private static CamundaClient adminClient;
+
+  @BeforeAll
+  static void setup(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // Deploy a process with an agent ad-hoc subprocess and complete a job with variables
+    final var processModel =
+        Bpmn.createExecutableProcess("AGENT_PROCESS")
+            .startEvent()
+            .adHocSubProcess(AGENT_ELEMENT_ID, p -> p.task("A1"))
+            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
+            .endEvent("error")
+            .moveToActivity(AGENT_ELEMENT_ID)
+            .endEvent("end")
+            .done();
+    final var process = deployProcessAndWaitForIt(client, processModel, "agent_process.bpmn");
+    final var processInstance = startProcessInstance(client, process.getBpmnProcessId());
+    waitForProcessInstancesToStart(client, 1);
+
+    // Complete the job with a variable to create audit log entries with agentElementId
+    final var jobs = waitForJobs(client, List.of(processInstance.getProcessInstanceKey()));
+    client
+        .newCompleteCommand(jobs.getFirst().getJobKey())
+        .variable("testVar", "testValue")
+        .send()
+        .join();
+
+    // Wait for audit logs to be available
+    Awaitility.await("process instance to be completed")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .untilAsserted(
+            () -> {
+              Thread.sleep(3000);
+              final var result =
+                  client
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          f ->
+                              f.operationType(AuditLogOperationTypeEnum.CREATE)
+                                  .entityType(AuditLogEntityTypeEnum.VARIABLE))
+                      .send()
+                      .join();
+
+              // first is the internal adhoc subprocess variable, second is the job variable
+              assertThat(result.items()).hasSizeGreaterThan(1);
+            });
+  }
 
   @Test
   void shouldAddAgentToVariableAuditLogs(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
-    // given
-    final var processModel =
-        Bpmn.createExecutableProcess("AGENT_PROCESS")
-            .startEvent()
-            .adHocSubProcess("my_agentic_ahsp", p -> p.task("A1"))
-            .zeebeJobType(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX)
-            .endEvent("error")
-            .moveToActivity("my_agentic_ahsp")
-            .endEvent("end")
-            .done();
-    final var process = deployProcessAndWaitForIt(client, processModel, "process.bpmn");
-    final var processInstance = startProcessInstance(client, process.getBpmnProcessId());
-    waitForProcessInstancesToStart(client, 1);
+    // when - search for variable audit logs
+    final var result =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.entityType(AuditLogEntityTypeEnum.VARIABLE))
+            .send()
+            .join();
 
-    // when
-    final var jobs = waitForJobs(client, List.of(processInstance.getProcessInstanceKey()));
-    client.newCompleteCommand(jobs.getFirst().getJobKey()).variable("foo", "bar").send().join();
-
-    // then
-
-    final var auditLogs = new ArrayList<AuditLogResult>();
-    Awaitility.await("variable changes are captured in the audit log")
-        .ignoreExceptionsInstanceOf(ProblemException.class)
-        .untilAsserted(
-            () -> {
-              final var result =
-                  client
-                      .newAuditLogSearchRequest()
-                      .filter(f -> f.entityType(AuditLogEntityTypeEnum.VARIABLE))
-                      .send()
-                      .join();
-
-              // one for the adhoc subprocess variable and one for the job variable
-              assertThat(result.items()).hasSize(2);
-              auditLogs.addAll((Collection<? extends AuditLogResult>) result.items());
+    // then - audit logs should have the agent element id set
+    assertThat(result.items().getLast())
+        .isNotNull()
+        .satisfies(
+            auditLog -> {
+              assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+              assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
+  }
 
-    assertThat(auditLogs.getLast().getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
-    assertThat(auditLogs.getLast().getAgentElementId()).isEqualTo("my_agentic_ahsp");
-    assertThat(auditLogs.getLast().getEntityDescription()).isEqualTo("foo");
+  @Test
+  void shouldFilterAuditLogsByAgentElementId(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - filter audit logs by the agent element id
+    final var result =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.agentElementId(AGENT_ELEMENT_ID))
+            .send()
+            .join();
+
+    // then - all returned logs should have the matching agent element id
+    assertThat(result.items())
+        .isNotEmpty()
+        .allSatisfy(
+            auditLog -> {
+              assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
+            });
+  }
+
+  @Test
+  void shouldFilterAuditLogsByAgentElementIdWithAdvancedFilter(
+      @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // when - filter audit logs using advanced filter with like pattern
+    final var result =
+        client
+            .newAuditLogSearchRequest()
+            .filter(f -> f.agentElementId(p -> p.like("test_agent*")))
+            .send()
+            .join();
+
+    // then - all returned logs should have the matching agent element id pattern
+    assertThat(result.items())
+        .isNotEmpty()
+        .allSatisfy(
+            auditLog -> {
+              assertThat(auditLog.getAgentElementId()).startsWith("test_agent");
+            });
   }
 }

@@ -171,6 +171,12 @@
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
+      <if test="filter.agentElementIdOperations != null and !filter.agentElementIdOperations.isEmpty()">
+        <foreach collection="filter.agentElementIdOperations" item="operation">
+          AND AGENT_ELEMENT_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
       <if test="filter.tenantIdOperations != null and !filter.tenantIdOperations.isEmpty()">
         <foreach collection="filter.tenantIdOperations" item="operation">
           AND TENANT_ID
