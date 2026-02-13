@@ -86,7 +86,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   private final ReplayMetrics replayMetrics;
   private final List<RecordProcessor> recordProcessors;
   private final int partitionId;
-  private String currentStateDescription = "idle";
+  private final EventDescription currentStateDescription = new EventDescription("idle");
 
   public ReplayStateMachine(
       final List<RecordProcessor> recordProcessors,
@@ -185,7 +185,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
         onRecordsReplayed();
 
       } else {
-        currentStateDescription = "awaiting record to replay";
+        currentStateDescription.status("awaiting record to replay");
         currentState = State.AWAIT_RECORD;
       }
 
@@ -230,7 +230,11 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
       readMetadata(currentEvent);
       final var currentTypedEvent = readRecordValue(currentEvent);
       LOG.trace("Replaying event {}: {}", currentTypedEvent.getPosition(), currentTypedEvent);
-      currentStateDescription = "replaying event %s".formatted(typedEvent);
+      currentStateDescription.set(
+          "replaying event",
+          currentTypedEvent.getPosition(),
+          currentTypedEvent.getIntent(),
+          currentTypedEvent.getValueType());
 
       final var processor =
           recordProcessors.stream()
@@ -254,6 +258,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
     // source position (pointer). This means the last source position is equal to the last processed
     // position by the processing state machine, which we can backfill after replay.
     final var lastProcessedPosition = lastSourceEventPosition;
+    currentStateDescription.status("replay finished");
 
     // The replay state machine reads all records, but only applies the events.
     // The last read record position can be used as lastWrittenPosition in order to
@@ -274,6 +279,8 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
    */
   private void onRecordReplayed(final LoggedEvent currentEvent) {
     replayMetrics.event();
+    // release the reference to the event as soon as possible
+    currentStateDescription.status("awaiting record to replay");
     final var sourceEventPosition = currentEvent.getSourceEventPosition();
     final var currentPosition = currentEvent.getPosition();
     final var currentRecordKey = currentEvent.getKey();
@@ -327,7 +334,7 @@ public final class ReplayStateMachine implements LogRecordAwaiter {
   }
 
   String describeCurrentState() {
-    return currentStateDescription;
+    return currentStateDescription.toString();
   }
 
   public void close() {

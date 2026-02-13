@@ -158,7 +158,7 @@ public final class ProcessingStateMachine {
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
-  private String currentStateDescription = "idle";
+  private final EventDescription currentStateDescription = new EventDescription("idle");
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -196,7 +196,7 @@ public final class ProcessingStateMachine {
   }
 
   String describeCurrentState() {
-    return currentStateDescription;
+    return currentStateDescription.toString();
   }
 
   private void skipRecord() {
@@ -207,7 +207,11 @@ public final class ProcessingStateMachine {
   }
 
   void markProcessingCompleted() {
-    currentStateDescription = String.format("finished processing '%s %s'", currentRecord, metadata);
+    currentStateDescription.set(
+        "finished processing",
+        currentRecord.getPosition(),
+        metadata.getIntent(),
+        metadata.getValueType());
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -263,7 +267,8 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
-    currentStateDescription = String.format("processing '%s %s'", currentRecord, metadata);
+    currentStateDescription.set(
+        "processing", currentRecord.getPosition(), metadata.getIntent(), metadata.getValueType());
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -774,10 +779,11 @@ public final class ProcessingStateMachine {
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
     if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
-      currentStateDescription =
-          String.format(
-              "in error handling phase %s for '%s %s'",
-              errorHandlingPhase, currentRecord, metadata);
+      currentStateDescription.set(
+          "in error handling phase " + errorHandlingPhase,
+          currentRecord.getPosition(),
+          metadata.getIntent(),
+          metadata.getValueType());
     }
     this.errorHandlingPhase = errorHandlingPhase;
     processingMetrics.errorHandlingPhase(errorHandlingPhase);
