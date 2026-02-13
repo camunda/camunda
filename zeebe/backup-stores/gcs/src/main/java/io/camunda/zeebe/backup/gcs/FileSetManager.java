@@ -28,6 +28,10 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
+
+  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
+  public static final String SEGMENTS_FILESET_NAME = "segments";
+
   /**
    * The path format consists of the following elements:
    *
@@ -63,9 +67,8 @@ final class FileSetManager {
    * immutable, so the Path-based upload (which reads the file twice for CRC32C verification) is
    * safe.
    */
-  void saveSnapshot(
-      final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
-    final var prefix = fileSetPath(id, fileSetName);
+  void saveSnapshot(final BackupIdentifier id, final NamedFileSet fileSet) {
+    final var prefix = fileSetPath(id, SNAPSHOT_FILESET_NAME);
     final var namedFiles = fileSet.namedFiles();
     final var pathToName =
         namedFiles.entrySet().stream()
@@ -108,14 +111,15 @@ final class FileSetManager {
    *
    * @see <a href="https://github.com/camunda/camunda/issues/45636">#45636</a>
    */
-  void saveSegments(
-      final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
+  void saveSegments(final BackupIdentifier id, final NamedFileSet fileSet) {
     for (final var namedFile : fileSet.namedFiles().entrySet()) {
       final var fileName = namedFile.getKey();
       final var filePath = namedFile.getValue();
       try (final var inputStream = Files.newInputStream(filePath)) {
         client.createFrom(
-            blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+            blobInfo(id, SEGMENTS_FILESET_NAME, fileName),
+            inputStream,
+            BlobWriteOption.doesNotExist());
       } catch (final IOException e) {
         throw new UncheckedIOException(e);
       }

@@ -47,8 +47,6 @@ public final class GcsBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
@@ -86,8 +84,8 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           final var persistedManifest = manifestManager.createInitialManifest(backup);
           try {
-            fileSetManager.saveSnapshot(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
-            fileSetManager.saveSegments(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
+            fileSetManager.saveSnapshot(backup.id(), backup.snapshot());
+            fileSetManager.saveSegments(backup.id(), backup.segments());
             manifestManager.completeManifest(persistedManifest);
           } catch (final Exception e) {
             manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
@@ -122,8 +120,8 @@ public final class GcsBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           manifestManager.deleteManifest(id);
-          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+          fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
+          fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
         },
         executor);
   }
@@ -144,10 +142,10 @@ public final class GcsBackupStore implements BackupStore {
               final var completed = manifest.asCompleted();
               final var snapshot =
                   fileSetManager.restore(
-                      id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
+                      id, FileSetManager.SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
               final var segments =
                   fileSetManager.restore(
-                      id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
+                      id, FileSetManager.SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
               yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
             }
           };

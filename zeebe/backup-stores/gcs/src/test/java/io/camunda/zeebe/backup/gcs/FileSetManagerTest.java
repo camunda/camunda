@@ -69,7 +69,7 @@ final class FileSetManagerTest {
         .thenReturn(uploadJob);
 
     // when
-    manager.saveSnapshot(backupIdentifier, "filesetName", namedFileSet);
+    manager.saveSnapshot(backupIdentifier, namedFileSet);
 
     // then
     verify(transferManager).uploadFiles(anyList(), any(ParallelUploadConfig.class));
@@ -100,8 +100,7 @@ final class FileSetManagerTest {
         .thenReturn(uploadJob);
 
     // when throw
-    Assertions.assertThatThrownBy(
-            () -> manager.saveSnapshot(backupIdentifier, "filesetName", namedFileSet))
+    Assertions.assertThatThrownBy(() -> manager.saveSnapshot(backupIdentifier, namedFileSet))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
@@ -116,7 +115,7 @@ final class FileSetManagerTest {
         new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
 
     // when
-    manager.saveSegments(backupIdentifier, "filesetName", namedFileSet);
+    manager.saveSegments(backupIdentifier, namedFileSet);
 
     // then
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
@@ -135,8 +134,7 @@ final class FileSetManagerTest {
         .thenThrow(new StorageException(412, "expected"));
 
     // when throw
-    Assertions.assertThatThrownBy(
-            () -> manager.saveSegments(backupIdentifier, "filesetName", namedFileSet))
+    Assertions.assertThatThrownBy(() -> manager.saveSegments(backupIdentifier, namedFileSet))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
