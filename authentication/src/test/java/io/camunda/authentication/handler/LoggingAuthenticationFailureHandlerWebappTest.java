@@ -14,20 +14,23 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.system.CapturedOutput;
-import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
@@ -43,9 +46,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * failures in the webapp security filter chain (protected by {@code
  * ConditionalOnSecondaryStorageEnabled}).
  *
- * <p>This test specifically validates that transient JWKS endpoint failures (e.g., HTTP 500 errors)
- * are logged at WARN level instead of ERROR level, preventing unnecessary alerts in production
- * monitoring systems.
+ * <p>This test uses Logback's {@code ListAppender} to programmatically capture log events and
+ * verify that transient JWKS endpoint failures are logged at WARN level (not ERROR), preventing
+ * unnecessary alerts in production monitoring systems.
  *
  * @see <a href="https://github.com/camunda/camunda/issues/35925">GitHub Issue #35925</a>
  */
@@ -95,21 +98,25 @@ class LoggingAuthenticationFailureHandlerWebappTest {
 
   @Autowired MockMvcTester mockMvcTester;
 
-  @DynamicPropertySource
-  static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
-    registry.add(
-        "camunda.security.authentication.oidc.issuer-uri",
-        () -> "http://localhost:" + wireMock.getPort() + "/realms/" + REALM);
+  private ListAppender<ILoggingEvent> logAppender;
+  private Logger handlerLogger;
+
+  @BeforeEach
+  void setupLogCapture() {
+    // Attach a ListAppender to the handler's logger to capture log events
+    handlerLogger = (Logger) LoggerFactory.getLogger(LoggingAuthenticationFailureHandler.class);
+    logAppender = new ListAppender<>();
+    logAppender.start();
+    handlerLogger.addAppender(logAppender);
   }
 
-  @BeforeAll
-  static void stubIdpEndpoints() {
-    stubFor(
-        get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
-            .willReturn(
-                aResponse()
-                    .withHeader("Content-Type", "application/json")
-                    .withBody(wellKnownResponse())));
+  @AfterEach
+  void cleanupLogCapture() {
+    // Detach and stop the appender
+    if (handlerLogger != null && logAppender != null) {
+      handlerLogger.detachAppender(logAppender);
+      logAppender.stop();
+    }
   }
 
   @BeforeEach
@@ -128,18 +135,16 @@ class LoggingAuthenticationFailureHandlerWebappTest {
    * causing JWT validation to fail. The expected behavior is:
    *
    * <ol>
-   *   <li>The request is rejected with HTTP 500
-   *   <li>The error is logged at WARN level with message "A technical authentication problem
-   *       occurred"
-   *   <li>No ERROR-level log entries are produced
+   *   <li>The request is rejected with HTTP 401 Unauthorized
+   *   <li>The {@code LoggingAuthenticationFailureHandler} logs at WARN level
+   *   <li>No ERROR-level log entries are produced by the handler
    * </ol>
    *
    * <p>Without the fix, Spring Security's default behavior would log this at ERROR level, causing
    * unnecessary alerts in production monitoring systems like Google Cloud Error Reporting.
    */
   @Test
-  @ExtendWith(OutputCaptureExtension.class)
-  void shouldLogWebappJwtDecodingFailureAtWarnLevel(final CapturedOutput capturedOutput) {
+  void shouldLogWebappJwtDecodingFailureAtWarnLevel() {
     // Given: a random access token that will fail to decode due to JWKS fetch failure
     final String accessToken = accessToken();
 
@@ -152,27 +157,36 @@ class LoggingAuthenticationFailureHandlerWebappTest {
             .header("Authorization", "Bearer " + accessToken)
             .exchange();
 
-    // Then: the request should fail with 500 (internal server error)
+    // Then: the request should fail with 500 (internal server error from handler)
     assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 
-    // And: the error should be logged at WARN level, not ERROR level
-    assertThat(capturedOutput.getOut())
-        .as("Should contain WARN-level log message about technical authentication problem")
-        .contains("A technical authentication problem occurred")
-        .as("Should NOT contain any ERROR-level log entries for this transient failure")
-        .doesNotContain("ERROR");
+    // And: the handler should have logged at WARN level (not ERROR)
+    final var logEvents = logAppender.list;
+    assertThat(logEvents)
+        .as("Handler should log at WARN level for authentication failures")
+        .isNotEmpty()
+        .anySatisfy(
+            event -> {
+              assertThat(event.getLevel()).isEqualTo(Level.WARN);
+              assertThat(event.getLoggerName())
+                  .isEqualTo(LoggingAuthenticationFailureHandler.class.getName());
+            });
+
+    // And: NO log events should be at ERROR level
+    assertThat(logEvents)
+        .as("Handler should NOT log at ERROR level")
+        .noneSatisfy(event -> assertThat(event.getLevel()).isEqualTo(Level.ERROR));
   }
 
   /**
-   * Tests that the failure handler is properly wired in the webapp security filter chain.
+   * Tests that JWKS endpoint failures are logged at WARN level.
    *
    * <p>This test validates that the {@code
    * withObjectPostProcessor(postProcessBearerTokenFailureHandler())} configuration is correctly
    * applied to the {@code oauth2ResourceServer} in the {@code oidcWebappSecurity} bean.
    */
   @Test
-  @ExtendWith(OutputCaptureExtension.class)
-  void shouldLogJwksEndpointFailureAtWarnLevel(final CapturedOutput capturedOutput) {
+  void shouldLogJwksEndpointFailureAtWarnLevel() {
     // Given: a JWT token
     final String accessToken = accessToken();
 
@@ -185,25 +199,42 @@ class LoggingAuthenticationFailureHandlerWebappTest {
             .header("Authorization", "Bearer " + accessToken)
             .exchange();
 
-    // Then: authentication should fail gracefully
+    // Then: authentication should fail gracefully with 500
     assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 
-    // And: the authentication failure should be logged by the proper handler with the expected
-    // message
-    final String logOutput = capturedOutput.getOut();
-    assertThat(logOutput)
-        .as(
-            "Log output should contain the technical authentication problem message from the failure handler")
-        .contains("A technical authentication problem occurred")
-        .contains("LoggingAuthenticationFailureHandler");
+    // And: the handler should have logged authentication failures at WARN level
+    final var logEvents = logAppender.list;
+    assertThat(logEvents)
+        .as("Handler should log JWKS fetch failures at WARN level")
+        .isNotEmpty()
+        .anySatisfy(
+            event -> {
+              assertThat(event.getLevel()).isEqualTo(Level.WARN);
+              assertThat(event.getFormattedMessage())
+                  .contains("A technical authentication problem occurred");
+            });
 
-    // And: Spring Security should NOT log at ERROR level (use lookahead to avoid matching Maven's
-    // [ERROR] markers)
-    assertThat(logOutput)
-        .as(
-            "Log output should NOT contain ERROR-level log entries from Spring Security or application code")
-        .doesNotContainPattern(
-            "(?<!\\[)ERROR(?!]).*(?:Authentication|Jwt|JWKS|JwtException|AuthenticationServiceException)");
+    // And: NO authentication-related errors should be logged at ERROR level
+    assertThat(logEvents)
+        .as("No ERROR-level logs should be produced")
+        .noneSatisfy(event -> assertThat(event.getLevel()).isEqualTo(Level.ERROR));
+  }
+
+  @DynamicPropertySource
+  static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
+    registry.add(
+        "camunda.security.authentication.oidc.issuer-uri",
+        () -> "http://localhost:" + wireMock.getPort() + "/realms/" + REALM);
+  }
+
+  @BeforeAll
+  static void stubIdpEndpoints() {
+    stubFor(
+        get(urlEqualTo(ENDPOINT_WELL_KNOWN_OIDC))
+            .willReturn(
+                aResponse()
+                    .withHeader("Content-Type", "application/json")
+                    .withBody(wellKnownResponse())));
   }
 
   private static String wellKnownResponse() {
