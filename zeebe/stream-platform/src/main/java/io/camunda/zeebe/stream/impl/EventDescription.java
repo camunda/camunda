@@ -38,6 +38,7 @@ public class EventDescription {
       }
     } catch (final InterruptedException e) {
       // ignore it, it's just for reporting
+      Thread.currentThread().interrupt();
     } finally {
       lock.unlock();
     }
@@ -54,6 +55,7 @@ public class EventDescription {
       }
     } catch (final InterruptedException e) {
       // ignore it, it's just for reporting
+      Thread.currentThread().interrupt();
     } finally {
       lock.unlock();
     }
@@ -74,6 +76,7 @@ public class EventDescription {
       }
     } catch (final InterruptedException e) {
       // ignore it, it's just for reporting
+      Thread.currentThread().interrupt();
       return FAILED_TO_ACQUIRE_LOCK;
     } finally {
       lock.unlock();
