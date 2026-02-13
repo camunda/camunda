@@ -105,7 +105,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
     final var groupByProcessKeys =
-        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, termsAggSize);
+        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
     final var errorMessage =
         topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH), 1);
     final var groupByErrorMessageHash =

@@ -158,7 +158,7 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     assertThat(response).hasSize(1);
     final IncidentsByErrorMsgStatisticsDto incidentsByErrorStat = response.get(0);
     assertThat(incidentsByErrorStat.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
-    assertThat(incidentsByErrorStat.getProcesses()).hasSize(1);
+    assertThat(incidentsByErrorStat.getProcesses()).hasSize(2);
   }
 
   @Test
