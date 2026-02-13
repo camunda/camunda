@@ -317,10 +317,10 @@ jobs:
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io'}}
+          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || ''}}
           --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io'}}
+          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || ''}}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
