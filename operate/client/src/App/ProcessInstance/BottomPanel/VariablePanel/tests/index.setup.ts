@@ -8,7 +8,7 @@
 
 import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const mockvariables: QueryVariablesResponseBody = {
+const mockVariables: QueryVariablesResponseBody = {
   items: [
     {
       value: '"CNT-1211132-0223222"',
@@ -43,4 +43,4 @@ const mockvariables: QueryVariablesResponseBody = {
   },
 };
 
-export {mockvariables};
+export {mockVariables};

@@ -26,7 +26,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockvariables} from './index.setup';
+import {mockVariables} from './index.setup';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
 import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
@@ -49,7 +49,7 @@ describe('Edit variable', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
   });
 
@@ -148,10 +148,10 @@ describe('Edit variable', () => {
   });
 
   it('should show/hide edit variable inputs', async () => {
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
@@ -196,10 +196,10 @@ describe('Edit variable', () => {
   });
 
   it('should disable save button when nothing is changed', async () => {
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     const {user} = render(
@@ -231,10 +231,10 @@ describe('Edit variable', () => {
   });
 
   it('should validate when editing variables', async () => {
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
-    mockGetVariable().withSuccess(mockvariables.items[0]!);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
+    mockGetVariable().withSuccess(mockVariables.items[0]!);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstanceDeprecated().withSuccess(

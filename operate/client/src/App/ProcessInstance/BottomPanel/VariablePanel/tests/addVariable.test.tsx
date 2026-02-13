@@ -12,7 +12,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
-import {mockvariables} from './index.setup';
+import {mockVariables} from './index.setup';
 import {VariablePanel} from '../index';
 
 describe('Add variable', () => {
@@ -26,8 +26,8 @@ describe('Add variable', () => {
   it('should show/hide add variable inputs', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -86,8 +86,8 @@ describe('Add variable', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -141,8 +141,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -249,8 +249,8 @@ describe('Add variable', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -275,7 +275,7 @@ describe('Add variable', () => {
       screen.getByRole('textbox', {
         name: /name/i,
       }),
-      mockvariables.items[0]!.name,
+      mockVariables.items[0]!.name,
     );
 
     expect(
@@ -344,8 +344,8 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -416,11 +416,11 @@ describe('Add variable', () => {
   });
 
   it('clicking edit variables while add mode is open, should not display a validation error', async () => {
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -448,8 +448,8 @@ describe('Add variable', () => {
   it('should not exit add variable state when user presses Enter', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -501,8 +501,8 @@ describe('Add variable', () => {
       ...mockProcessInstance,
       state: 'TERMINATED',
     });
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -528,8 +528,8 @@ describe('Add variable', () => {
   it('should have JSON editor when adding a new Variable', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
