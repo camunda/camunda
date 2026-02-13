@@ -182,7 +182,9 @@ jobs:
               ;;
             max)
               echo "load-test-load=--set starter.rate=300" >> "$GITHUB_OUTPUT"
-              echo "platform-config=--set-string orchestration.env[0].name=ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEPRECONDITIONS --set-string orchestration.env[0].value=false --set-string orchestration.env[1].name=ZEEBE_BROKER_EXPERIMENTAL_CONSISTENCYCHECKS_ENABLEFOREIGNKEYCHECKS --set-string orchestration.env[1].value=false" >> "$GITHUB_OUTPUT"
+              # For max scenario, load additional values file that disables consistency checks
+              # This file will be copied to the namespace directory by newLoadTest.sh
+              echo "platform-config=-f camunda-platform-values-max-scenario.yaml" >> "$GITHUB_OUTPUT"
               ;;
             custom)
               # Use the provided load-test-load inputs
