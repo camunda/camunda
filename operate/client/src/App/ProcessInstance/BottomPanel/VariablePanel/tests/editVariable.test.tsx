@@ -110,7 +110,7 @@ describe('Edit variable', () => {
       expect(saveButton).toBeEnabled();
     });
 
-    mockUpdateElementInstanceVariables('1').withDelay(null as unknown as never);
+    mockUpdateElementInstanceVariables('1').withDelay(null);
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
