@@ -44,6 +44,11 @@
 
     <dependency>
       <groupId>org.opensearch.client</groupId>
+      <artifactId>opensearch-java</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.opensearch.client</groupId>
       <artifactId>opensearch-rest-client</artifactId>
     </dependency>
 
@@ -127,6 +132,11 @@
       <artifactId>micrometer-core</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>jakarta.json</groupId>
+      <artifactId>jakarta.json-api</artifactId>
+    </dependency>
+
     <!-- Test dependencies -->
 
     <dependency>
@@ -156,12 +166,6 @@
     <dependency>
       <groupId>org.opensearch</groupId>
       <artifactId>opensearch-testcontainers</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.opensearch.client</groupId>
-      <artifactId>opensearch-java</artifactId>
       <scope>test</scope>
     </dependency>
 
