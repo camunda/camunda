@@ -65,6 +65,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
+      <version>${camunda.client.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
