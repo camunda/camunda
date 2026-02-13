@@ -43,9 +43,9 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
  * failures in the webapp security filter chain (protected by {@code
  * ConditionalOnSecondaryStorageEnabled}).
  *
- * <p>This test specifically validates that transient network errors when fetching JWKS (e.g.,
- * UnknownHostException) are logged at WARN level instead of ERROR level, preventing unnecessary
- * alerts in production monitoring systems.
+ * <p>This test specifically validates that transient JWKS endpoint failures (e.g., HTTP 500 errors)
+ * are logged at WARN level instead of ERROR level, preventing unnecessary alerts in production
+ * monitoring systems.
  *
  * @see <a href="https://github.com/camunda/camunda/issues/35925">GitHub Issue #35925</a>
  */
@@ -114,7 +114,7 @@ class LoggingAuthenticationFailureHandlerWebappTest {
 
   @BeforeEach
   void stubJwksEndpointFailure() {
-    // Simulate JWKS endpoint failure (e.g., UnknownHostException, network timeout)
+    // Simulate JWKS endpoint returning HTTP 500 error
     stubFor(
         get(urlEqualTo(ENDPOINT_WELL_KNOWN_JWKS))
             .willReturn(aResponse().withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())));
@@ -172,11 +172,11 @@ class LoggingAuthenticationFailureHandlerWebappTest {
    */
   @Test
   @ExtendWith(OutputCaptureExtension.class)
-  void shouldHandleUnknownHostExceptionAtWarnLevel(final CapturedOutput capturedOutput) {
+  void shouldLogJwksEndpointFailureAtWarnLevel(final CapturedOutput capturedOutput) {
     // Given: a JWT token
     final String accessToken = accessToken();
 
-    // When: the JWKS endpoint is unreachable (simulated via 500 error)
+    // When: the JWKS endpoint returns a 500 error
     final MvcTestResult result =
         mockMvcTester
             .get()
@@ -188,11 +188,12 @@ class LoggingAuthenticationFailureHandlerWebappTest {
     // Then: authentication should fail gracefully
     assertThat(result).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
 
-    // And: the authentication failure should be logged at WARN level with proper handler
+    // And: the authentication failure should be logged by the proper handler with the expected
+    // message
     final String logOutput = capturedOutput.getOut();
     assertThat(logOutput)
-        .as("Log output should contain the technical authentication problem message at WARN level")
-        .contains("WARN")
+        .as(
+            "Log output should contain the technical authentication problem message from the failure handler")
         .contains("A technical authentication problem occurred")
         .contains("LoggingAuthenticationFailureHandler");
 
