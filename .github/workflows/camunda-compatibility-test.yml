@@ -150,10 +150,11 @@ jobs:
           if [[ -n "$FILTERED_TAGS" ]]; then
             for tag in $FILTERED_TAGS; do
               if [[ -n "$STABLE_VERSION" ]]; then
-                # On stable branches, only include tags matching the stable minor
+                # On stable branches, only include tags matching the stable major and minor
                 if [[ "$tag" =~ ^([0-9]+)\.([0-9]+)\. ]]; then
+                  TAG_MAJOR="${BASH_REMATCH[1]}"
                   TAG_MINOR="${BASH_REMATCH[2]}"
-                  if (( TAG_MINOR != STABLE_MINOR )); then
+                  if (( TAG_MAJOR != STABLE_MAJOR || TAG_MINOR != STABLE_MINOR )); then
                     continue
                   fi
                 fi
@@ -274,8 +275,8 @@ jobs:
               for server in $SERVER_LIST; do
                 COMBO="$client-$server"
 
-                # Skip SNAPSHOT client vs SNAPSHOT server - not a compatibility test
-                if [[ "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
+                # Skip SNAPSHOT client vs SNAPSHOT server - not a compatibility test (except on main)
+                if [[ "$GITHUB_REF_NAME" != "main" && "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
                   SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                   continue
                 fi
