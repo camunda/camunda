@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.Set;
 
@@ -16,6 +18,12 @@ public sealed interface BackupRange {
   long lastCheckpointId();
 
   boolean contains(Interval<Long> other);
+
+  Interval<Long> checkpointInterval();
+
+  default Interval<Instant> timeInterval(final CheckpointIdGenerator generator) {
+    return checkpointInterval().map(generator::toInstant);
+  }
 
   /** A complete backup range without deletions. */
   record Complete(Interval<Long> checkpointInterval) implements BackupRange {

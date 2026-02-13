@@ -12,6 +12,8 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageOptions;
+import com.google.cloud.storage.transfermanager.TransferManager;
+import com.google.cloud.storage.transfermanager.TransferManagerConfig;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -45,12 +47,11 @@ public final class GcsBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
-  public static final String SNAPSHOT_FILESET_NAME = "snapshot";
-  public static final String SEGMENTS_FILESET_NAME = "segments";
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
+  private final TransferManager transferManager;
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
@@ -65,7 +66,12 @@ public final class GcsBackupStore implements BackupStore {
     this.client = client;
     executor = Executors.newWorkStealingPool(4);
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
-    fileSetManager = new FileSetManager(client, bucketInfo, basePath);
+    transferManager =
+        TransferManagerConfig.newBuilder()
+            .setStorageOptions(client.getOptions())
+            .build()
+            .getService();
+    fileSetManager = new FileSetManager(client, transferManager, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -78,8 +84,8 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           final var persistedManifest = manifestManager.createInitialManifest(backup);
           try {
-            fileSetManager.save(backup.id(), SNAPSHOT_FILESET_NAME, backup.snapshot());
-            fileSetManager.save(backup.id(), SEGMENTS_FILESET_NAME, backup.segments());
+            fileSetManager.saveSnapshot(backup.id(), backup.snapshot());
+            fileSetManager.saveSegments(backup.id(), backup.segments());
             manifestManager.completeManifest(persistedManifest);
           } catch (final Exception e) {
             manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
@@ -114,8 +120,8 @@ public final class GcsBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           manifestManager.deleteManifest(id);
-          fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
-          fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+          fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
+          fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
         },
         executor);
   }
@@ -136,10 +142,10 @@ public final class GcsBackupStore implements BackupStore {
               final var completed = manifest.asCompleted();
               final var snapshot =
                   fileSetManager.restore(
-                      id, SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
+                      id, FileSetManager.SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
               final var segments =
                   fileSetManager.restore(
-                      id, SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
+                      id, FileSetManager.SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
               yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
             }
           };
@@ -212,6 +218,7 @@ public final class GcsBackupStore implements BackupStore {
               executor.shutdownNow();
             }
             client.close();
+            transferManager.close();
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }

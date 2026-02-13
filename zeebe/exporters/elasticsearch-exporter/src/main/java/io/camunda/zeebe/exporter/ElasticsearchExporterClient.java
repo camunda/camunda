@@ -8,6 +8,7 @@
 package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkOperation;
@@ -15,12 +16,6 @@ import co.elastic.clients.util.BinaryData;
 import co.elastic.clients.util.ContentType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Actions;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Delete;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.DeleteAction;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Phases;
-import io.camunda.zeebe.exporter.dto.PutIndexLifecycleManagementPolicyRequest.Policy;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -269,16 +264,21 @@ class ElasticsearchExporterClient implements AutoCloseable {
 
   public boolean putIndexLifecycleManagementPolicy() {
     try {
-      final var requestEntity =
-          buildPutIndexLifecycleManagementPolicyRequest(configuration.retention.getMinimumAge());
-      final var json = MAPPER.writeValueAsString(requestEntity);
+      final var minimumAge = configuration.retention.getMinimumAge();
       final var response =
           esClient
               .ilm()
               .putLifecycle(
                   b ->
                       b.name(configuration.retention.getPolicyName())
-                          .withJson(new StringReader(json)));
+                          .policy(
+                              p ->
+                                  p.phases(
+                                      ph ->
+                                          ph.delete(
+                                              d ->
+                                                  d.minAge(Time.of(t -> t.time(minimumAge)))
+                                                      .actions(a -> a.delete(del -> del))))));
       return response.acknowledged();
     } catch (final IOException e) {
       throw new ElasticsearchExporterException(
@@ -309,12 +309,6 @@ class ElasticsearchExporterClient implements AutoCloseable {
     } catch (final IOException e) {
       throw new ElasticsearchExporterException("Failed to update indices lifecycle settings", e);
     }
-  }
-
-  static PutIndexLifecycleManagementPolicyRequest buildPutIndexLifecycleManagementPolicyRequest(
-      final String minimumAge) {
-    return new PutIndexLifecycleManagementPolicyRequest(
-        new Policy(new Phases(new Delete(minimumAge, new Actions(new DeleteAction())))));
   }
 
   private static List<String> collectBulkErrors(final BulkResponse bulkResponse) {

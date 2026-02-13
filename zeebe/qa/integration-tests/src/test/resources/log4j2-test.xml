@@ -16,6 +16,7 @@
     <Logger name="io.atomix.cluster.messaging" level="info"/>
     <Logger name="io.atomix.cluster.protocol" level="debug"/>
     <Logger name="io.atomix.raft" level="debug"/>
+    <logger name="io.camunda.zeebe.restore" level="debug"/>
 
     <Root level="info">
       <AppenderRef ref="Console"/>

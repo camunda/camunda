@@ -23,12 +23,14 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +45,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -983,5 +986,148 @@ public class JobControllerTest extends RestControllerTest {
         .isBadRequest();
 
     verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldDefaultTenantFilterToProvidedWhenNotSpecified() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantIds": ["tenant-a"]
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should default to PROVIDED when tenantFilter is not specified")
+        .isEqualTo(TenantFilter.PROVIDED);
+    assertThat(capturedRequest.tenantIds()).containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldPassAssignedTenantFilterWithEmptyTenantIdsList() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantFilter": "ASSIGNED"
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should pass ASSIGNED filter through to service layer")
+        .isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(capturedRequest.tenantIds())
+        .describedAs("Tenant IDs should be empty when ASSIGNED filter is used")
+        .isEmpty();
+  }
+
+  @Test
+  void shouldPassAssignedTenantFilterWithEmptyTenantIdsListWhenTenantIdsSupplied() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantIds": ["tenant-a", "tenant-b"],
+          "tenantFilter": "ASSIGNED"
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should pass ASSIGNED filter through to service layer")
+        .isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(capturedRequest.tenantIds())
+        .describedAs("Tenant IDs should be empty when ASSIGNED filter is used")
+        .isEmpty();
   }
 }

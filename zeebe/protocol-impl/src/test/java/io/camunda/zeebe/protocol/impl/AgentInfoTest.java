@@ -11,43 +11,72 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 final class AgentInfoTest {
 
-  @Test
-  void shouldEncodeDecodeAgentInfo() {
-    // given
-    final AgentInfo info = new AgentInfo().setId(1234L).setName("foo");
+  @Nested
+  class EncodeDecodeTests {
+    @Test
+    void shouldEncodeDecodeAgentInfo() {
+      // given
+      final AgentInfo info = new AgentInfo().setElementId("foo");
 
-    // when
-    encodeDecode(info);
+      // when
+      encodeDecode(info);
 
-    // then
-    assertThat(info.getId()).isEqualTo(1234L);
-    assertThat(info.getName()).isEqualTo("foo");
+      // then
+      assertThat(info.getElementId()).isEqualTo("foo");
+    }
+
+    @Test
+    void shouldEncodeDecodeEmptyAgentInfo() {
+      // given
+      final AgentInfo info = new AgentInfo();
+
+      // when
+      encodeDecode(info);
+
+      // then
+      assertThat(info.getElementId()).isEqualTo("");
+    }
+
+    private void encodeDecode(final AgentInfo info) {
+      // encode
+      final UnsafeBuffer buffer = new UnsafeBuffer(new byte[info.getLength()]);
+      info.write(buffer, 0);
+
+      // decode
+      info.reset();
+      info.wrap(buffer, 0, buffer.capacity());
+    }
   }
 
-  @Test
-  void shouldEncodeDecodeEmptyAgentInfo() {
-    // given
-    final AgentInfo info = new AgentInfo();
+  @Nested
+  class OfTests {
+    @Test
+    void shouldReturnNullWhenOfCalledWithNull() {
+      // when
+      final AgentInfo result = AgentInfo.of(null);
 
-    // when
-    encodeDecode(info);
+      // then
+      assertThat(result).isNull();
+    }
 
-    // then
-    assertThat(info.getId()).isEqualTo(-1L);
-    assertThat(info.getName()).isEqualTo("");
-  }
+    @Test
+    void shouldCopyAgentInfoWhenOfCalledWithNonNull() {
+      // given
+      final AgentInfo original = new AgentInfo();
+      original.setElementId("test-element-id");
 
-  private void encodeDecode(final AgentInfo info) {
-    // encode
-    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[info.getLength()]);
-    info.write(buffer, 0);
+      // when
+      final AgentInfo copy = AgentInfo.of(original);
 
-    // decode
-    info.reset();
-    info.wrap(buffer, 0, buffer.capacity());
+      // then
+      assertThat(copy).isNotNull();
+      assertThat(copy).isNotSameAs(original);
+      assertThat(copy.getElementId()).isEqualTo(original.getElementId());
+    }
   }
 }

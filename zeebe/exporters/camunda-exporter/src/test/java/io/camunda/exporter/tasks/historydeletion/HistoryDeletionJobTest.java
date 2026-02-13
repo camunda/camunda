@@ -20,6 +20,8 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -47,6 +49,8 @@ final class HistoryDeletionJobTest {
   private ListViewTemplate listViewTemplate;
   private ProcessIndex processIndex;
   private DecisionInstanceTemplate decisionInstanceTemplate;
+  private DecisionRequirementsIndex decisionRequirementsIndex;
+  private DecisionIndex decisionIndex;
 
   @BeforeEach
   void setUp() {
@@ -63,6 +67,9 @@ final class HistoryDeletionJobTest {
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
     decisionInstanceTemplate =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+    decisionRequirementsIndex =
+        resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
+    decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
   }
 
@@ -486,5 +493,204 @@ final class HistoryDeletionJobTest {
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(),
             List.of(processInstanceEntity.getId(), decisionInstanceEntity.getId()));
+  }
+
+  @Test
+  void shouldDeleteDecisionRequirementsHistory() {
+    // given
+    final var entity1 =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var entity2 =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity1, entity2))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            decisionIndex.getFullQualifiedName(),
+            DecisionIndex.DECISION_REQUIREMENTS_KEY,
+            List.of(entity1.getResourceKey(), entity2.getResourceKey()));
+    verify(repository)
+        .deleteDocumentsById(
+            decisionRequirementsIndex.getFullQualifiedName(),
+            List.of(
+                String.valueOf(entity1.getResourceKey()),
+                String.valueOf(entity2.getResourceKey())));
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
+  }
+
+  @Test
+  void shouldNotDeleteFromDeletionIndexIfDecisionRequirementsDeletionFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(
+            eq(decisionRequirementsIndex.getFullQualifiedName()), anyList()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new RuntimeException("Failed deleting decision requirements")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository, never())
+        .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
+  }
+
+  @Test
+  void shouldNotDeleteFromDeletionIndexIfDecisionDeletionFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(
+            eq(decisionIndex.getFullQualifiedName()), anyString(), anyList()))
+        .thenReturn(
+            CompletableFuture.failedFuture(new RuntimeException("Failed deleting decision")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository, never())
+        .deleteDocumentsById(eq(decisionRequirementsIndex.getFullQualifiedName()), any());
+    verify(repository, never())
+        .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
+  }
+
+  @Test
+  void shouldDeleteDecisionRequirementsIfProcessInstanceDeletionFailed() {
+    // given
+    final var processInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var decisionRequirementsEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(
+                    List.of(processInstanceEntity, decisionRequirementsEntity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsByField(
+            listViewTemplate.getIndexPattern(),
+            ListViewTemplate.PROCESS_INSTANCE_KEY,
+            List.of(processInstanceEntity.getResourceKey())))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new RuntimeException("Failed deleting process instance")));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            decisionIndex.getFullQualifiedName(),
+            DecisionIndex.DECISION_REQUIREMENTS_KEY,
+            List.of(decisionRequirementsEntity.getResourceKey()));
+    verify(repository)
+        .deleteDocumentsById(
+            decisionRequirementsIndex.getFullQualifiedName(),
+            List.of(String.valueOf(decisionRequirementsEntity.getResourceKey())));
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(),
+            List.of(decisionRequirementsEntity.getId()));
+  }
+
+  @Test
+  void shouldDeleteDecisionInstanceIfDecisionRequirementsDeletionFailed() {
+    // given
+    final var decisionInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var decisionRequirementsEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(
+                    List.of(decisionInstanceEntity, decisionRequirementsEntity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.deleteDocumentsById(
+            eq(decisionRequirementsIndex.getFullQualifiedName()), anyList()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new RuntimeException("Failed deleting decision requirements")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .deleteDocumentsByField(
+            decisionInstanceTemplate.getIndexPattern(),
+            DecisionInstanceTemplate.KEY,
+            List.of(decisionInstanceEntity.getResourceKey()));
+    verify(repository)
+        .deleteDocumentsById(
+            historyDeletionIndex.getFullQualifiedName(), List.of(decisionInstanceEntity.getId()));
   }
 }

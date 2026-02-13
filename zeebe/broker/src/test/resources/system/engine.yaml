@@ -40,3 +40,5 @@ zeebe:
               afterNonGlobal: true
         expression:
           timeout: 2s
+        processInstanceCreation:
+          businessIdUniquenessEnabled: true

@@ -40,11 +40,11 @@ public class DeleteDecisionDefinitionHistoryTest {
 
     // when
     final var deletedEvent =
-        ENGINE.historyDeletion().decisionDefinition(decisionRequirementsKey).delete();
+        ENGINE.historyDeletion().decisionRequirements(decisionRequirementsKey).delete();
 
     // then
     assertThat(deletedEvent.getValue())
         .hasResourceKey(decisionRequirementsKey)
-        .hasResourceType(HistoryDeletionType.DECISION_DEFINITION);
+        .hasResourceType(HistoryDeletionType.DECISION_REQUIREMENTS);
   }
 }

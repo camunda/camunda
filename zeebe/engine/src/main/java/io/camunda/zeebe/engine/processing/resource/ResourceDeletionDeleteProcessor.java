@@ -415,7 +415,7 @@ public class ResourceDeletionDeleteProcessor
                 HistoryDeletionIntent.DELETE,
                 new HistoryDeletionRecord()
                     .setResourceKey(decisionRequirementsKey)
-                    .setResourceType(HistoryDeletionType.DECISION_DEFINITION));
+                    .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS));
     commandWriter.appendFollowUpCommand(
         eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
 

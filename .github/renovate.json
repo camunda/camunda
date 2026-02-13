@@ -154,6 +154,7 @@
       ],
       "matchPackageNames": [
         "elasticsearch",
+        "docker.elastic.co/elasticsearch/elasticsearch",
         "opensearchproject/opensearch",
         "eclipse-temurin",
         "reg.mini.dev/1212/openjre-base"

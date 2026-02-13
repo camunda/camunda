@@ -18,13 +18,13 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@camunda/camunda-api-zod-schemas": "0.0.37",
+    "@camunda/camunda-api-zod-schemas": "0.0.38",
     "@camunda/camunda-composite-components": "0.21.4",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
     "fuse.js": "7.1.0",
-    "i18next": "25.8.5",
+    "i18next": "25.8.6",
     "mobx-react-lite": "4.1.1",
     "react": "18.3.1",
     "react-debounced": "1.1.3",

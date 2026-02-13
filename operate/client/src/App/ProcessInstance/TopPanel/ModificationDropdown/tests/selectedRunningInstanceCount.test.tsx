@@ -6,15 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {act, screen} from 'modules/testing-library';
+import {screen} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
 import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {Paths} from 'modules/Routes';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',
@@ -28,8 +29,7 @@ const mockProcessInstance: ProcessInstance = {
   hasIncident: false,
 };
 
-// TODO: fix test with #44451
-describe.skip('selectedRunningInstanceCount', () => {
+describe('selectedRunningInstanceCount', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
@@ -117,22 +117,19 @@ describe.skip('selectedRunningInstanceCount', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
   });
 
   it('should not render when there are no running instances selected', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     modificationsStore.enableModificationMode();
 
-    renderPopover();
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'StartEvent_1',
-        },
-      );
-    });
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=StartEvent_1`,
+    ]);
 
     expect(
       await screen.findByText(/Flow Node Modifications/),
@@ -149,20 +146,13 @@ describe.skip('selectedRunningInstanceCount', () => {
 
     modificationsStore.enableModificationMode();
 
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-7`,
+    ]);
 
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-7',
-        },
-      );
-    });
 
     expect(
       await screen.findByText(/Flow Node Modifications/),

@@ -724,7 +724,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     if: ${{ inputs.includeOptimize }}
-    permissions: {}  # GITHUB_TOKEN unused in this job
+    permissions:
+      contents: "write"
+      id-token: "write"
     services:
       # Local registry is used as multi arch images cannot be loaded locally but only pushed to a
       # registry. As we want to verify the images first before pushing them to dockerhub though,
@@ -736,6 +738,7 @@ jobs:
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/optimize
       DOCKER_IMAGE: camunda/optimize
+      DOCKER_INFOSEC_REGISTRY_IMAGE: europe-west1-docker.pkg.dev/team-infosec/camunda/optimize-8
     steps:
       - uses: actions/checkout@v6
         with:
@@ -763,6 +766,19 @@ jobs:
           registry: reg.mini.dev
           username: minimus
           password: ${{ steps.secrets.outputs.minimus-token }}
+      - id: "auth"
+        name: "Authenticate to Google Cloud"
+        uses: "google-github-actions/auth@v3"
+        with:
+          token_format: "access_token"
+          workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
+          service_account: "github-actions-camunda@team-infosec.iam.gserviceaccount.com"
+      - name: Login to infosec registry
+        uses: docker/login-action@v3
+        with:
+          registry: europe-west1-docker.pkg.dev
+          username: oauth2accesstoken
+          password: ${{ steps.auth.outputs.access_token }}
       - name: Download Release Artifacts
         uses: actions/download-artifact@v7
         with:
@@ -816,6 +832,19 @@ jobs:
           command: |
             docker -D buildx imagetools create \
               --tag ${{ env.DOCKER_IMAGE }}:latest \
+              ${{ steps.build-optimize-docker.outputs.image }}
+      - name: Sync Optimize Docker Image to Internal Registry
+        if: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+        # see https://docs.docker.com/build/ci/github-actions/examples/#copy-images-between-registries
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          retry_on: error
+          retry_wait_seconds: 15
+          timeout_minutes: 10
+          command: |
+            docker -D buildx imagetools create \
+              --tag ${{ env.DOCKER_INFOSEC_REGISTRY_IMAGE }}:${{ env.RELEASE_VERSION }} \
               ${{ steps.build-optimize-docker.outputs.image }}
       - name: Observe build status
         if: always()

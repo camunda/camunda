@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
+import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -103,6 +104,26 @@ public class AuthInfo extends UnpackedObject {
       return new JwtDecoder(token).decode().getClaims();
     }
     return getClaims();
+  }
+
+  public static AuthInfo of(final AuthInfo info) {
+    if (info == null) {
+      return null;
+    }
+
+    final var auth = new AuthInfo();
+    auth.copyFrom(info);
+    return auth;
+  }
+
+  public boolean hasAnyClaims() {
+    switch (getFormat()) {
+      case JWT:
+        return authDataProp.getValue() != null && authDataProp.getValue().capacity() > 0;
+      default:
+        return claimsProp.getValue() != null
+            && !DocumentValue.EMPTY_DOCUMENT.equals(claimsProp.getValue());
+    }
   }
 
   public enum AuthDataFormat {

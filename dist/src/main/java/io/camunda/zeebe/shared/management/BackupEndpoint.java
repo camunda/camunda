@@ -383,6 +383,7 @@ public final class BackupEndpoint {
       final long backupId) {
     return new WebEndpointResponse<>(
         new TakeBackupRuntimeResponse()
+            .backupId(backupId)
             .message(
                 "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
                     .formatted(backupId, backupId)),

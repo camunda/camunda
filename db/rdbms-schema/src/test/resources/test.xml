@@ -34,6 +34,10 @@
     <createIndex tableName="${prefix}PROCESS_DEFINITION" indexName="${prefix}IDX_PROCESS_DEFINITION_ID">
       <column name="PROCESS_DEFINITION_ID" />
     </createIndex>
+
+    <sql dbms="mariadb">
+      CREATE INDEX ${prefix}PROCESS_DEFINITION_TENANT ON ${prefix}PROCESS_DEFINITION (TENANT_ID);
+    </sql>
   </changeSet>
 
   <changeSet id="create_process_instance_table" author="cthiel">

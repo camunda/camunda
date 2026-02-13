@@ -36,7 +36,7 @@ import org.junit.jupiter.api.Test;
  * tests verify that backups follow a rolling window pattern and that old backups and range markers
  * are properly deleted.
  */
-public interface BackupRetentionAcceptance {
+public interface BackupRetentionAcceptance extends ClockSupport {
   int PARTITION_COUNT = 3;
   int BROKER_COUNT = 3;
   int REPLICATION_FACTOR = 3;
@@ -60,6 +60,7 @@ public interface BackupRetentionAcceptance {
   @Test
   default void shouldMaintainRollingWindowAndDeleteOldBackupsWithRangeMarkers() {
 
+    pinClock(getTestCluster());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     final List<Long> backupIds = new ArrayList<>();
 
@@ -92,6 +93,7 @@ public interface BackupRetentionAcceptance {
   }
 
   default long awaitNewBackup(final long previousBackup) {
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Backup is created")
         .atMost(Duration.ofSeconds(30))

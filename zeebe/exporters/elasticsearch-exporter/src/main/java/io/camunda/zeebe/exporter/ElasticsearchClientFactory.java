@@ -39,20 +39,21 @@ final class ElasticsearchClientFactory {
   static ElasticsearchClient of(
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
-    final var restClient = INSTANCE.createRestClient(config, interceptors);
-    final var transport =
-        new RestClientTransport(restClient, new JacksonJsonpMapper(new ObjectMapper()));
-    return new ElasticsearchClient(transport);
+    return of(config, new ObjectMapper(), interceptors);
   }
 
   /**
-   * Returns a raw {@link RestClient} for cases where the low-level client is needed directly (e.g.
-   * test utilities).
+   * Returns a {@link ElasticsearchClient} instance using the given {@link ObjectMapper} for JSON
+   * serialization/deserialization. This allows callers to customize the mapper, e.g. to register
+   * additional modules for deserializing specific types.
    */
-  static RestClient ofRestClient(
+  static ElasticsearchClient of(
       final ElasticsearchExporterConfiguration config,
+      final ObjectMapper objectMapper,
       final HttpRequestInterceptor... interceptors) {
-    return INSTANCE.createRestClient(config, interceptors);
+    final var restClient = INSTANCE.createRestClient(config, interceptors);
+    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
+    return new ElasticsearchClient(transport);
   }
 
   private RestClient createRestClient(

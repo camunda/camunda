@@ -48,9 +48,10 @@ import io.camunda.exporter.rdbms.handlers.VariableExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationChunkExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationCreatedExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.BatchOperationLifecycleManagementExportHandler;
-import io.camunda.exporter.rdbms.handlers.batchoperation.HistoryDeletionBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.DecisionInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.IncidentBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceCancellationBatchOperationExportHandler;
+import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceHistoryDeletionBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceMigrationBatchOperationExportHandler;
 import io.camunda.exporter.rdbms.handlers.batchoperation.ProcessInstanceModificationBatchOperationExportHandler;
 import io.camunda.search.entities.BatchOperationType;
@@ -104,7 +105,8 @@ public class RdbmsExporterWrapper implements Exporter {
     config.validate(); // throws exception if configuration is invalid
 
     final int partitionId = context.getPartitionId();
-    final var rdbmsWriterConfig = config.createRdbmsWriterConfig(partitionId);
+    final var rdbmsWriterConfig =
+        config.createRdbmsWriterConfig(partitionId, vendorDatabaseProperties);
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =
@@ -313,10 +315,16 @@ public class RdbmsExporterWrapper implements Exporter {
             rdbmsWriters.getBatchOperationWriter(), batchOperationCache));
     builder.withHandler(
         ValueType.HISTORY_DELETION,
-        new HistoryDeletionBatchOperationExportHandler(
+        new ProcessInstanceHistoryDeletionBatchOperationExportHandler(
             rdbmsWriters.getBatchOperationWriter(),
             batchOperationCache,
             BatchOperationType.DELETE_PROCESS_INSTANCE));
+    builder.withHandler(
+        ValueType.HISTORY_DELETION,
+        new DecisionInstanceHistoryDeletionBatchOperationExportHandler(
+            rdbmsWriters.getBatchOperationWriter(),
+            batchOperationCache,
+            BatchOperationType.DELETE_DECISION_INSTANCE));
   }
 
   private void registerAuditLogHandlers(

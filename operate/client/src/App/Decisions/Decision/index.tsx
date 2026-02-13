@@ -89,8 +89,8 @@ const Decision: React.FC = observer(() => {
         )}
         {definitionSelection.kind === 'single-version' && (
           <DecisionOperations
-            decisionDefinitionKey={
-              definitionSelection.definition.decisionDefinitionKey
+            decisionRequirementsKey={
+              definitionSelection.definition.decisionRequirementsKey
             }
             decisionName={definitionSelection.definition.name}
             decisionVersion={definitionSelection.definition.version}

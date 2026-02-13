@@ -38,16 +38,11 @@ import org.immutables.value.Value;
 @ImmutableProtocol(builder = ImmutableAgent.Builder.class)
 public interface Agent {
   /**
-   * Returns the unique identifier of this agent.
+   * Returns the elementId that the agent is associated with
    *
-   * @return the agent's unique ID
-   */
-  long getId();
-
-  /**
-   * Returns the name of this agent.
+   * <p>for example, the id of the adhoc subprocess that represents the agent in the process model.
    *
-   * @return the agent's name
+   * @return the elementId
    */
-  String getName();
+  String getElementId();
 }

@@ -20,5 +20,5 @@
   "org.opencontainers.image.version": $VERSION,
   "io.minimus.images.galleryURL": "https://images.minimus.io/gallery/images/1212/openjre-base",
   "io.minimus.images.line": "21",
-  "io.minimus.images.version": "21.0.9-dev"
+  "io.minimus.images.version": "21.0.10-dev"
 }

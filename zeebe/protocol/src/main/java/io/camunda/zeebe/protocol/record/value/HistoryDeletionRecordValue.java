@@ -31,7 +31,7 @@ public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
    *   <li>{@link HistoryDeletionType#PROCESS_INSTANCE}: the process instance key
    *   <li>{@link HistoryDeletionType#PROCESS_DEFINITION}: the process definition key
    *   <li>{@link HistoryDeletionType#DECISION_INSTANCE}: the decision instance key
-   *   <li>{@link HistoryDeletionType#DECISION_DEFINITION}: the decision definition key
+   *   <li>{@link HistoryDeletionType#DECISION_REQUIREMENTS}: the decision requirements key
    * </ul>
    *
    * @return the key of the resource

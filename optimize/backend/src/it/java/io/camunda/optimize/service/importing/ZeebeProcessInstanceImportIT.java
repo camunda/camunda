@@ -12,6 +12,14 @@ import static io.camunda.optimize.service.util.importing.ZeebeConstants.ZEEBE_DE
 import static io.camunda.optimize.util.ZeebeBpmnModels.ACTIVATE_ELEMENTS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.ADHOC_SUB_PROCESS;
 import static io.camunda.optimize.util.ZeebeBpmnModels.COMPENSATION_EVENT_TASK;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_INTERMEDIATE_CATCH;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_INTERRUPTING_BOUNDARY;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_INT_SUB_PROCESS;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_NON_INTERRUPTING_BOUNDARY;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_NON_INT_SUB_PROCESS;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_PROCESS_SERVICE_TASK_1;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_PROCESS_SERVICE_TASK_2;
+import static io.camunda.optimize.util.ZeebeBpmnModels.CONDITIONAL_START_EVENT;
 import static io.camunda.optimize.util.ZeebeBpmnModels.CONVERGING_GATEWAY;
 import static io.camunda.optimize.util.ZeebeBpmnModels.DIVERGING_GATEWAY;
 import static io.camunda.optimize.util.ZeebeBpmnModels.END_EVENT;
@@ -43,6 +51,7 @@ import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayPro
 import static io.camunda.optimize.util.ZeebeBpmnModels.createInclusiveGatewayProcessWithConverging;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createLoopingProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createProcessWith83SignalEvents;
+import static io.camunda.optimize.util.ZeebeBpmnModels.createProcessWithConditionalEvents;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSendTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleServiceTaskProcess;
 import static io.camunda.optimize.util.ZeebeBpmnModels.createSimpleUserTaskProcess;
@@ -791,6 +800,54 @@ public class ZeebeProcessInstanceImportIT extends AbstractCCSMIT {
                 assertThat(instance.getFlowNodeInstances())
                     .extracting(FlowNodeInstanceDto::getFlowNodeId)
                     .contains(START_EVENT, ADHOC_SUB_PROCESS, TASK, END_EVENT));
+  }
+
+  @EnabledIf("isZeebeVersion89_OrLater")
+  @Test
+  public void importZeebeProcessInstanceData_processContainsConditionalEvents() {
+    // given
+    final Process deployedProcess =
+        zeebeExtension.deployProcess(createProcessWithConditionalEvents());
+    final long processInstanceKey =
+        zeebeExtension.startProcessInstanceByConditionalEvaluation(
+            deployedProcess.getProcessDefinitionKey(), Map.of("triggerStart", true));
+
+    // when
+    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_PROCESS_SERVICE_TASK_1);
+    zeebeExtension.addVariablesToScope(
+        processInstanceKey, Map.of("triggerBoundaryNonInt", true), false);
+    zeebeExtension.addVariablesToScope(
+        processInstanceKey, Map.of("triggerSubProcessNonInt", true), false);
+    zeebeExtension.completeTaskForInstanceWithJobType(SERVICE_TASK);
+    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_INTERMEDIATE_CATCH);
+    zeebeExtension.addVariablesToScope(
+        processInstanceKey, Map.of("triggerIntermediate", true), false);
+    waitUntilInstanceRecordWithElementIdExported(CONDITIONAL_PROCESS_SERVICE_TASK_2);
+    zeebeExtension.addVariablesToScope(
+        processInstanceKey, Map.of("triggerBoundaryInt", true), false);
+    waitUntilInstanceRecordWithElementIdExported("serviceTaskAfterBoundary");
+    zeebeExtension.addVariablesToScope(
+        processInstanceKey, Map.of("triggerSubProcessInt", true), false);
+    waitUntilInstanceRecordWithElementIdExported("interruptingSubProcessEnd");
+
+    importAllZeebeEntitiesFromScratch();
+
+    // then
+    assertThat(databaseIntegrationTestExtension.getAllProcessInstances())
+        .singleElement()
+        .satisfies(
+            instance ->
+                assertThat(instance.getFlowNodeInstances())
+                    .extracting(FlowNodeInstanceDto::getFlowNodeId)
+                    .contains(
+                        CONDITIONAL_START_EVENT,
+                        CONDITIONAL_PROCESS_SERVICE_TASK_1,
+                        CONDITIONAL_NON_INTERRUPTING_BOUNDARY,
+                        CONDITIONAL_NON_INT_SUB_PROCESS,
+                        CONDITIONAL_INTERMEDIATE_CATCH,
+                        CONDITIONAL_PROCESS_SERVICE_TASK_2,
+                        CONDITIONAL_INTERRUPTING_BOUNDARY,
+                        CONDITIONAL_INT_SUB_PROCESS));
   }
 
   // Test backwards compatibility for default tenantID applied when importing records pre multi

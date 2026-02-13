@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockApplyDeleteDefinitionOperation} from 'modules/mocks/api/decisions/operations';
 import {decisionDefinitionStore} from 'modules/stores/decisionDefinition';
 import {
   fireEvent,
@@ -20,7 +19,10 @@ import {DecisionOperations} from '.';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {operationsStore} from 'modules/stores/operations';
 import {notificationsStore} from 'modules/stores/notifications';
-import type {OperationEntity} from 'modules/types/operate';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {MemoryRouter} from 'react-router-dom';
+import {mockDeleteResource} from 'modules/mocks/api/v2/resource/deleteResource';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -28,16 +30,7 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const mockOperation: OperationEntity = {
-  id: '2251799813687094',
-  name: 'Delete MyDecisionDefinition - Version 1',
-  type: 'DELETE_DECISION_DEFINITION',
-  startDate: '2023-02-16T14:23:45.306+0100',
-  endDate: null,
-  instancesCount: 10,
-  operationsTotalCount: 10,
-  operationsFinishedCount: 0,
-};
+const mockQueryClient = getMockQueryClient();
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -52,16 +45,25 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       operationsStore.reset();
     };
   }, []);
-  return <>{children}</>;
+
+  return (
+    <QueryClientProvider client={mockQueryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
 };
 
 describe('<DecisionOperations />', () => {
+  afterEach(() => {
+    mockQueryClient.clear();
+  });
+
   it('should open modal and show content', async () => {
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -89,13 +91,13 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should apply delete definition operation', async () => {
-    mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -114,19 +116,23 @@ describe('<DecisionOperations />', () => {
 
     await user.click(screen.getByRole('button', {name: /danger Delete/}));
 
-    await waitFor(() =>
-      expect(operationsStore.state.operations).toEqual([mockOperation]),
-    );
+    await waitFor(() => {
+      expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+        kind: 'success',
+        title: 'Operation created',
+        isDismissable: true,
+      });
+    });
   });
 
   it('should show notification on operation error', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(500);
+    mockDeleteResource().withServerError(500);
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -155,13 +161,13 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should show notification on operation auth error', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(403);
+    mockDeleteResource().withServerError(403);
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -189,13 +195,13 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should disable button and show spinner when delete operation is triggered', async () => {
-    mockApplyDeleteDefinitionOperation().withSuccess(mockOperation);
+    mockDeleteResource().withSuccess({});
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -241,13 +247,13 @@ describe('<DecisionOperations />', () => {
       .spyOn(global.console, 'error')
       .mockImplementation(() => {});
 
-    mockApplyDeleteDefinitionOperation().withNetworkError();
+    mockDeleteResource().withNetworkError();
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );
@@ -286,13 +292,13 @@ describe('<DecisionOperations />', () => {
   });
 
   it('should show warning when clicking apply without confirmation', async () => {
-    mockApplyDeleteDefinitionOperation().withServerError(500);
+    mockDeleteResource().withServerError(500);
 
     const {user} = render(
       <DecisionOperations
         decisionName="myDecision"
         decisionVersion={2}
-        decisionDefinitionKey="2251799813687094"
+        decisionRequirementsKey="2251799813687000"
       />,
       {wrapper: Wrapper},
     );

@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -78,6 +79,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         new BrokerActivateJobsRequest(request.type())
             .setMaxJobsToActivate(request.maxJobsToActivate())
             .setTenantIds(request.tenantIds())
+            .setTenantFilter(request.tenantFilter())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
@@ -153,6 +155,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
       String type,
       int maxJobsToActivate,
       List<String> tenantIds,
+      TenantFilter tenantFilter,
       long timeout,
       String worker,
       List<String> fetchVariable,

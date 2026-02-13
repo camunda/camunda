@@ -29,6 +29,8 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   private List<String> variableValueTypeInclusion = List.of();
   private List<String> variableValueTypeExclusion = List.of();
 
+  private boolean optimizeModeEnabled = false;
+
   // --- fluent setters -------------------------------------------------------
 
   public TestIndexConfig withVariableNameInclusionExact(final List<String> names) {
@@ -68,6 +70,11 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
 
   public TestIndexConfig withVariableValueTypeExclusion(final List<String> typeExclusion) {
     variableValueTypeExclusion = typeExclusion != null ? typeExclusion : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withOptimizeModeEnabled(final boolean optimizeModeEnabled) {
+    this.optimizeModeEnabled = optimizeModeEnabled;
     return this;
   }
 
@@ -111,5 +118,10 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   @Override
   public List<String> getVariableValueTypeExclusion() {
     return variableValueTypeExclusion;
+  }
+
+  @Override
+  public boolean isOptimizeModeEnabled() {
+    return optimizeModeEnabled;
   }
 }

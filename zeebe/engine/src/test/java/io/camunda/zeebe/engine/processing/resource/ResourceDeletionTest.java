@@ -914,7 +914,7 @@ public class ResourceDeletionTest {
     followUpCommandHistoryDeletionType(
         drgKey,
         BatchOperationType.DELETE_DECISION_INSTANCE,
-        HistoryDeletionType.DECISION_DEFINITION,
+        HistoryDeletionType.DECISION_REQUIREMENTS,
         "\"decisionRequirementsKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]");
 
     // Wait for batch operation to complete
@@ -926,7 +926,7 @@ public class ResourceDeletionTest {
         .containsExactlyInAnyOrder(
             tuple(decisionInstanceKey1, HistoryDeletionType.DECISION_INSTANCE),
             tuple(decisionInstanceKey2, HistoryDeletionType.DECISION_INSTANCE),
-            tuple(drgKey, HistoryDeletionType.DECISION_DEFINITION));
+            tuple(drgKey, HistoryDeletionType.DECISION_REQUIREMENTS));
   }
 
   private long deployDrg(final String drgResource) {

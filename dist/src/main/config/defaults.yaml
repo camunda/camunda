@@ -279,9 +279,11 @@ camunda: # Type: io.camunda.configuration.Camunda
       # latency between brokers is high, it would help to set a higher timeout here.
       snapshot-request-timeout: null # Type: Duration, Env: CAMUNDA_CLUSTER_RAFT_SNAPSHOTREQUESTTIMEOUT
     
+    receive-on-legacy-subject: true # Type: Boolean, Env: CAMUNDA_CLUSTER_RECEIVEONLEGACYSUBJECT
     # The number of replicas for each partition in the cluster. The replication factor cannot be greater
     # than the number of nodes in the cluster.
     replication-factor: 1 # Type: Integer, Env: CAMUNDA_CLUSTER_REPLICATIONFACTOR
+    send-on-legacy-subject: true # Type: Boolean, Env: CAMUNDA_CLUSTER_SENDONLEGACYSUBJECT
     # The number of nodes in the cluster.
     size: 1 # Type: Integer, Env: CAMUNDA_CLUSTER_SIZE
   
@@ -606,6 +608,14 @@ camunda: # Type: io.camunda.configuration.Camunda
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROCESSCACHE_DATABASENAME
         
+        proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
+          enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_ENABLED
+          host: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_HOST
+          password: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_PASSWORD
+          port: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_PORT
+          ssl-enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_SSLENABLED
+          username: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_PROXY_USERNAME
+        
         # What default refresh interval we will use for all indices
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_REFRESHINTERVAL
         # Per-index refresh interval overrides.
@@ -684,6 +694,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         process-cache: # Type: io.camunda.configuration.Cache  
           cache-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_CACHENAME
           database-name: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROCESSCACHE_DATABASENAME
+        
+        proxy: # Type: io.camunda.search.connect.configuration.ProxyConfiguration  
+          enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_ENABLED
+          host: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_HOST
+          password: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_PASSWORD
+          port: null # Type: Integer, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_PORT
+          ssl-enabled: null # Type: Boolean, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_SSLENABLED
+          username: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_PROXY_USERNAME
         
         # What default refresh interval we will use for all indices
         refresh-interval: null # Type: String, Env: CAMUNDA_DATA_SECONDARYSTORAGE_OPENSEARCH_REFRESHINTERVAL
@@ -815,6 +833,7 @@ camunda: # Type: io.camunda.configuration.Camunda
     index-prefix: null # Type: String, Env: CAMUNDA_DATABASE_INDEXPREFIX
     interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_DATABASE_INTERCEPTORPLUGINS
     password: null # Type: String, Env: CAMUNDA_DATABASE_PASSWORD
+    proxy: null # Type: io.camunda.search.connect.configuration.ProxyConfiguration, Env: CAMUNDA_DATABASE_PROXY
     retention: # Type: io.camunda.configuration.beans.LegacySearchEngineRetentionProperties  
       apply-policy-job-interval: null # Type: Duration, Env: CAMUNDA_DATABASE_RETENTION_APPLYPOLICYJOBINTERVAL
       enabled: null # Type: Boolean, Env: CAMUNDA_DATABASE_RETENTION_ENABLED
@@ -873,6 +892,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       index-prefix: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_INDEXPREFIX
       interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_OPERATE_ELASTICSEARCH_INTERCEPTORPLUGINS
       password: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PASSWORD
+      proxy: # Type: io.camunda.operate.property.ProxyProperties  
+        enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_PROXY_USERNAME
+      
       socket-timeout: null # Type: Integer, Env: CAMUNDA_OPERATE_ELASTICSEARCH_SOCKETTIMEOUT
       ssl: # Type: io.camunda.operate.property.SslProperties  
         certificate-path: null # Type: String, Env: CAMUNDA_OPERATE_ELASTICSEARCH_SSL_CERTIFICATEPATH
@@ -911,6 +938,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_OPERATE_OPENSEARCH_INTERCEPTORPLUGINS
       os-date-format: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_OSDATEFORMAT
       password: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_PASSWORD
+      proxy: # Type: io.camunda.operate.property.ProxyProperties  
+        enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_PROXY_USERNAME
+      
       socket-timeout: null # Type: Integer, Env: CAMUNDA_OPERATE_OPENSEARCH_SOCKETTIMEOUT
       ssl: # Type: io.camunda.operate.property.SslProperties  
         certificate-path: null # Type: String, Env: CAMUNDA_OPERATE_OPENSEARCH_SSL_CERTIFICATEPATH
@@ -1054,6 +1089,14 @@ camunda: # Type: io.camunda.configuration.Camunda
         # Allows configuring command redistribution retry interval. This is the initial interval used when
         # retrying command distributions that have not been acknowledged.
         redistribution-interval: null # Type: Duration, Env: CAMUNDA_PROCESSING_ENGINE_DISTRIBUTION_REDISTRIBUTIONINTERVAL
+      
+      process-instance-creation: # Type: io.camunda.configuration.ProcessInstanceCreation  
+        # Whether to enable business id uniqueness check when creating process instances using a BusinessId.
+        # If enabled, the broker will check if there is already an existing active root process instance with
+        # the same business id and reject the creation if there is.
+        # This is disabled by default, but can be enabled to prevent duplicate process instances with the same
+        # business id from being created.
+        business-id-uniqueness-enabled: false # Type: Boolean, Env: CAMUNDA_PROCESSING_ENGINE_PROCESSINSTANCECREATION_BUSINESSIDUNIQUENESSENABLED
     
     flow-control: # Type: io.camunda.configuration.FlowControl  
       request: # Type: io.camunda.configuration.Limit  
@@ -1246,6 +1289,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_INTERCEPTORPLUGINS
       max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_MAXTERMSCOUNT
       password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PASSWORD
+      proxy: # Type: io.camunda.tasklist.property.ProxyProperties  
+        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_PROXY_USERNAME
+      
       socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SOCKETTIMEOUT
       ssl: # Type: io.camunda.tasklist.property.SslProperties  
         certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_ELASTICSEARCH_SSL_CERTIFICATEPATH
@@ -1280,6 +1331,14 @@ camunda: # Type: io.camunda.configuration.Camunda
       interceptor-plugins: null # Type: List<io.camunda.search.connect.plugin.PluginConfiguration>, Env: CAMUNDA_TASKLIST_OPENSEARCH_INTERCEPTORPLUGINS
       max-terms-count: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_MAXTERMSCOUNT
       password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PASSWORD
+      proxy: # Type: io.camunda.tasklist.property.ProxyProperties  
+        enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_ENABLED
+        host: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_HOST
+        password: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PASSWORD
+        port: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_PORT
+        ssl-enabled: null # Type: Boolean, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_SSLENABLED
+        username: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_PROXY_USERNAME
+      
       socket-timeout: null # Type: Integer, Env: CAMUNDA_TASKLIST_OPENSEARCH_SOCKETTIMEOUT
       ssl: # Type: io.camunda.tasklist.property.SslProperties  
         certificate-path: null # Type: String, Env: CAMUNDA_TASKLIST_OPENSEARCH_SSL_CERTIFICATEPATH

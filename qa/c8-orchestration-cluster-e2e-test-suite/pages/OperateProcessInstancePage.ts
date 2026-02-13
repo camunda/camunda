@@ -75,6 +75,27 @@ class OperateProcessInstancePage {
   readonly instanceHeaderSkeleton: Locator;
   readonly viewAllCalledInstancesLink: Locator;
   readonly viewParentInstanceLink: Locator;
+  readonly incidentIconsInHistory: Locator;
+  private variableValueCellLocator: (name: string) => Locator;
+  private variableButtonsCellLocator: (name: string) => Locator;
+  readonly existingVariableByName: (name: string) => {
+    name: Locator;
+    value: Locator;
+    editVariableModal: {
+      button: Locator;
+      exitButton: Locator;
+      saveButton: Locator;
+      valueInputField: Locator;
+      jsonEditorButton: Locator;
+      valueErrorMessage?: Locator;
+      jsonEditorModal: {
+        header: Locator;
+        cancelButton: Locator;
+        applyButton: Locator;
+        inputField: Locator;
+      };
+    };
+  };
 
   constructor(page: Page) {
     this.page = page;
@@ -191,6 +212,75 @@ class OperateProcessInstancePage {
     this.executionCountToggleLabel = this.page.locator(
       '#toggle-execution-count_label',
     );
+    this.variableValueCellLocator = (name: string) =>
+      this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(1);
+    this.variableButtonsCellLocator = (name: string) =>
+      this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(2);
+    this.incidentIconsInHistory = this.instanceHistory
+      .getByRole('treeitem')
+      .getByTestId('INCIDENT-icon');
+
+    this.existingVariableByName = (name: string) => ({
+      name: this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(0),
+      value: this.variableValueCellLocator(name),
+      editVariableModal: {
+        button: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Edit variable ${name}`,
+        }),
+        exitButton: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Exit edit mode`,
+        }),
+        saveButton: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Save variable`,
+        }),
+        valueInputField:
+          this.variableValueCellLocator(name).getByPlaceholder('Value'),
+        jsonEditorButton: this.variableValueCellLocator(name).getByRole(
+          'button',
+          {name: `Open JSON editor modal`},
+        ),
+        valueErrorMessage: this.variableValueCellLocator(name).locator(
+          '[id="value-error-msg"]',
+        ),
+        jsonEditorModal: {
+          header: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('heading'),
+          cancelButton: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('button', {name: 'Cancel'}),
+          applyButton: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('button', {name: 'Apply'}),
+          inputField: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('textbox'),
+        },
+      },
+    });
+  }
+
+  async checkExistingVariableErrorMessageText(
+    variableName: string,
+    message:
+      | 'Name should be unique'
+      | 'Value has to be filled'
+      | 'Name has to be filled'
+      | 'Value has to be JSON',
+  ) {
+    const errorMessage =
+      this.existingVariableByName(variableName).editVariableModal
+        .valueErrorMessage;
+    await expect(errorMessage!).toHaveText(message);
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {

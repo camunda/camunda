@@ -1114,4 +1114,81 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_variable_name_index" author="camunda">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_NAME">
+      <column name="VAR_NAME"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- audit logs are always sorted by timestamp, so we add this index as a fallback
+  when no other index is selective enough to prevent full-table-scans -->
+  <changeSet id="create_audit_log_timestamp_index" author="camunda">
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_TIMESTAMP">
+      <column name="TIMESTAMP"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- CATEGORY is already covered in other index -->
+  <changeSet id="drop_audit_log_category_index" author="camunda">
+    <dropIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CATEGORY"/>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE process instances -->
+  <changeSet id="create_process_instance_state_active_index" author="camunda">
+    <sql dbms="mysql,mariadb,h2">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
+
+  <!-- Default sort column for process_instance is start_date so we index it to enable index-sort-scans -->
+  <changeSet id="create_index_process_instance_start_date" author="camunda">
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_START_DATE">
+      <column name="START_DATE" />
+    </createIndex>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE flow node instances -->
+  <changeSet id="create_flow_node_instance_state_active_index" author="camunda">
+    <sql dbms="mysql,mariadb,h2">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE incidents -->
+  <changeSet id="create_incident_state_active_index" author="camunda">
+    <sql dbms="mariadb,mysql,h2">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
 </databaseChangeLog>

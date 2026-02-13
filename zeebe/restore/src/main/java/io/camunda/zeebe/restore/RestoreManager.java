@@ -129,17 +129,20 @@ public class RestoreManager implements CloseableSilently {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
 
     final var exportedPositions = exportedPositions(partitionCount).join();
+    LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var interval = Interval.closed(from, to);
     final var restoreInfos =
         rangeResolver
-            .getRestoreInfoForAllPartitions(interval, partitionCount, exportedPositions, executor)
+            .getRestoreInfoForAllPartitions(
+                interval, partitionCount, exportedPositions, checkpointIdGenerator, executor)
             .join();
 
     LOG.info(
-        "Restoring RDBMS backups in range [{},{}] to global checkpoint {}",
+        "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
         from,
         to,
-        restoreInfos.globalCheckpointId());
+        restoreInfos.globalCheckpointId(),
+        restoreInfos.backupsByPartitionId());
 
     restore(restoreInfos.backupsByPartitionId(), validateConfig, ignoreFilesInTarget);
   }

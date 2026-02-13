@@ -34,7 +34,10 @@
       <artifactId>sql-formatter</artifactId>
       <scope>compile</scope>
     </dependency>
-
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+    </dependency>
     <!-- test -->
     <dependency>
       <groupId>org.junit.jupiter</groupId>

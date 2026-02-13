@@ -49,6 +49,9 @@ public class GlobalListenersInitializationTest {
     RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED).await();
 
     // then the engine's processing state contains the expected configuration
+    // Note: we access the engine's processing state directly,
+    // this requires us to pause processing to avoid concurrency problems
+    engine.pauseProcessing(1);
     final GlobalListenerBatchRecord currentConfig =
         engine.getProcessingState().getGlobalListenersState().getCurrentConfig();
     assertThat(currentConfig).isNotNull();

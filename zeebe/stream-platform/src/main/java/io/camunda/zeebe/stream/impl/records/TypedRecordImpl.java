@@ -18,12 +18,13 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
 
-public final class TypedRecordImpl implements TypedRecord {
+public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   private final int partitionId;
   private LoggedEvent rawEvent;
   private RecordMetadata metadata;
@@ -156,6 +157,12 @@ public final class TypedRecordImpl implements TypedRecord {
   @JsonIgnore
   public int getLength() {
     return metadata.getLength() + value.getLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getRawLength() {
+    return rawEvent.getLength();
   }
 
   @Override

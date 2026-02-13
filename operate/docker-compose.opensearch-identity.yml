@@ -25,7 +25,7 @@ services:
       - "9601:9600" # re
   postgres:
     container_name: postgres
-    image: postgres:18.1-alpine
+    image: postgres:18.2-alpine
     ports:
       - "5432:5432"
     environment:

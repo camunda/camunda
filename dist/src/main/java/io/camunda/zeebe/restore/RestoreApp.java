@@ -11,6 +11,8 @@ import io.camunda.application.MainSupport;
 import io.camunda.application.Profile;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration;
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
+import io.camunda.configuration.Camunda;
+import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -77,6 +79,7 @@ public class RestoreApp implements ApplicationRunner {
 
   @Autowired
   public RestoreApp(
+      final Camunda camunda,
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
       @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
@@ -90,6 +93,10 @@ public class RestoreApp implements ApplicationRunner {
       final PreRestoreAction preRestoreAction) {
     this.configuration = configuration;
     this.backupStore = backupStore;
+    if (exporterPositionMapper == null
+        && camunda.getData().getSecondaryStorage().getType() == SecondaryStorageType.rdbms) {
+      throw new IllegalStateException("RDBMS-aware restore requires ExporterPositionMapper");
+    }
     this.exporterPositionMapper = exporterPositionMapper;
     this.restoreConfiguration = restoreConfiguration;
     this.meterRegistry = meterRegistry;

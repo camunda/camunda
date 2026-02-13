@@ -1219,21 +1219,52 @@ class RdbmsExporterIT {
   }
 
   @Test
-  public void shouldUpsertBatchOperationItemForHistoryDeletionThatRelatesToBatchOperation() {
+  public void
+      shouldUpsertBatchOperationItemForProcessInstanceHistoryDeletionThatRelatesToBatchOperation() {
     // given
     final var batchOperationCreationRecord =
         givenBatchOperationCreationExported(
             io.camunda.zeebe.protocol.record.value.BatchOperationType.DELETE_PROCESS_INSTANCE);
 
     final var resourceKey = 1153L;
-    final var incidentRecord =
+    final var deletionRecord =
         withBatchOperationReference(
             FIXTURES.getHistoryDeletionRecord(
                 HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.PROCESS_INSTANCE),
             batchOperationCreationRecord.getKey());
 
     // when
-    exporter.export(incidentRecord);
+    exporter.export(deletionRecord);
+
+    // then
+    final var results = searchBatchOperationItems(resourceKey);
+    final var items = results.items();
+    assertThat(items).hasSize(1);
+    final var item = items.getFirst();
+    assertThat(item.itemKey()).isEqualTo(resourceKey);
+    assertThat(item.processInstanceKey()).isEqualTo(resourceKey);
+    assertThat(item.rootProcessInstanceKey()).isNull();
+    assertThat(item.operationType()).isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    assertThat(item.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+  }
+
+  @Test
+  public void
+      shouldUpsertBatchOperationItemForDecisionInstanceHistoryDeletionThatRelatesToBatchOperation() {
+    // given
+    final var batchOperationCreationRecord =
+        givenBatchOperationCreationExported(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.DELETE_DECISION_INSTANCE);
+
+    final var resourceKey = 1154L;
+    final var deletionRecord =
+        withBatchOperationReference(
+            FIXTURES.getHistoryDeletionRecord(
+                HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.DECISION_INSTANCE),
+            batchOperationCreationRecord.getKey());
+
+    // when
+    exporter.export(deletionRecord);
 
     // then
     final var results = searchBatchOperationItems(resourceKey);
@@ -1243,7 +1274,7 @@ class RdbmsExporterIT {
     assertThat(item.itemKey()).isEqualTo(resourceKey);
     assertThat(item.processInstanceKey()).isNull();
     assertThat(item.rootProcessInstanceKey()).isNull();
-    assertThat(item.operationType()).isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    assertThat(item.operationType()).isEqualTo(BatchOperationType.DELETE_DECISION_INSTANCE);
     assertThat(item.state()).isEqualTo(BatchOperationItemState.COMPLETED);
   }
 

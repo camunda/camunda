@@ -426,7 +426,7 @@ class BatchOperationStatusHandlerTest {
 
     ProcessInstanceHistoryDeletionOperationHandlerTest() {
       super(
-          new HistoryDeletionBatchOperationExportHandler(
+          new ProcessInstanceHistoryDeletionBatchOperationExportHandler(
               batchOperationWriter,
               batchOperationCache,
               BatchOperationType.DELETE_PROCESS_INSTANCE));
@@ -445,7 +445,10 @@ class BatchOperationStatusHandlerTest {
       final var record = createSuccessRecord();
       final var processInstanceKey = handler.getProcessInstanceKey(record);
 
-      assertThat(processInstanceKey).isEqualTo(-1);
+      assertThat(processInstanceKey)
+          .isPresent()
+          .get()
+          .isEqualTo(record.getValue().getResourceKey());
     }
 
     @Override
@@ -474,6 +477,64 @@ class BatchOperationStatusHandlerTest {
                       ImmutableHistoryDeletionRecordValue.builder()
                           .from(factory.generateObject(HistoryDeletionRecordValue.class))
                           .withResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                          .build()));
+    }
+  }
+
+  @Nested
+  class DecisionInstanceHistoryDeletionOperationHandlerTest
+      extends AbstractOperationStatusHandlerTest<HistoryDeletionRecordValue> {
+
+    DecisionInstanceHistoryDeletionOperationHandlerTest() {
+      super(
+          new DecisionInstanceHistoryDeletionBatchOperationExportHandler(
+              batchOperationWriter,
+              batchOperationCache,
+              BatchOperationType.DELETE_DECISION_INSTANCE));
+    }
+
+    @Override
+    void shouldExtractCorrectItemKey() {
+      final var record = createSuccessRecord();
+      final var itemKey = handler.getItemKey(record);
+
+      assertThat(itemKey).isEqualTo(record.getValue().getResourceKey());
+    }
+
+    @Override
+    void shouldExtractCorrectProcessInstanceKey() {
+      final var record = createSuccessRecord();
+      final var processInstanceKey = handler.getProcessInstanceKey(record);
+
+      assertThat(processInstanceKey).isEmpty();
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createSuccessRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withIntent(HistoryDeletionIntent.DELETED)
+                  .withBatchOperationReference(batchOperationKey)
+                  .withValue(
+                      ImmutableHistoryDeletionRecordValue.builder()
+                          .from(factory.generateObject(HistoryDeletionRecordValue.class))
+                          .withResourceType(HistoryDeletionType.DECISION_INSTANCE)
+                          .build()));
+    }
+
+    @Override
+    Record<HistoryDeletionRecordValue> createFailureRecord() {
+      return factory.generateRecord(
+          ValueType.HISTORY_DELETION,
+          b ->
+              b.withRejectionType(RejectionType.PROCESSING_ERROR)
+                  .withIntent(HistoryDeletionIntent.DELETE)
+                  .withBatchOperationReference(batchOperationKey)
+                  .withValue(
+                      ImmutableHistoryDeletionRecordValue.builder()
+                          .from(factory.generateObject(HistoryDeletionRecordValue.class))
+                          .withResourceType(HistoryDeletionType.DECISION_INSTANCE)
                           .build()));
     }
   }

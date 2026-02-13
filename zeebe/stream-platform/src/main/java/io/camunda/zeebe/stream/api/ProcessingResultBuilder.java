@@ -18,7 +18,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.util.Either;
 
 /** Builder to compose the processing result */
-public interface ProcessingResultBuilder {
+public interface ProcessingResultBuilder extends ProcessingSession {
 
   /**
    * Appends a record to the result

@@ -7,15 +7,9 @@
  */
 
 import {render} from 'modules/testing-library';
-import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {createInstance} from 'modules/testUtils';
-import {createRef, useEffect} from 'react';
+import {createRef} from 'react';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {ModificationDropdown} from '../index';
-import {modificationsStore} from 'modules/stores/modifications';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -25,12 +19,6 @@ const getWrapper = (
   initialEntries: React.ComponentProps<typeof MemoryRouter>['initialEntries'],
 ) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      initializeStores();
-
-      return resetStores;
-    }, []);
-
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
         <QueryClientProvider client={getMockQueryClient()}>
@@ -66,24 +54,6 @@ const renderPopover = (
       wrapper: getWrapper(initialEntries),
     },
   );
-};
-
-const initializeStores = () => {
-  flowNodeSelectionStore.init();
-  processInstanceDetailsStore.setProcessInstance(
-    createInstance({
-      id: PROCESS_INSTANCE_ID,
-      state: 'ACTIVE',
-      processId: 'processId',
-    }),
-  );
-};
-
-const resetStores = () => {
-  flowNodeSelectionStore.reset();
-  processInstanceDetailsStore.reset();
-  modificationsStore.reset();
-  flowNodeMetaDataStore.reset();
 };
 
 export {renderPopover};

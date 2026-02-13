@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.38
+
+### 🚀 Enhancements
+
+- update zod schema for audit log endpoint with related entity fields and description ([#45669](https://github.com/camunda/camunda/pull/45669))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
 ## v0.0.37
 
 ### 🚀 Enhancements

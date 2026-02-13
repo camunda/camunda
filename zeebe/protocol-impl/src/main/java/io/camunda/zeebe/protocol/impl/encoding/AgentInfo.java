@@ -9,7 +9,6 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.UnpackedObject;
-import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -19,38 +18,26 @@ import org.agrona.concurrent.UnsafeBuffer;
 /** */
 public class AgentInfo extends UnpackedObject implements Agent {
 
-  private final LongProperty idProp = new LongProperty("id", -1L);
-  private final StringProperty nameProp = new StringProperty("name", "");
+  private final StringProperty elementIdProp = new StringProperty("elementId", "");
 
   public AgentInfo() {
-    super(2);
-    declareProperty(idProp).declareProperty(nameProp);
+    super(1);
+    declareProperty(elementIdProp);
   }
 
   @Override
-  public long getId() {
-    return idProp.getValue();
+  public String getElementId() {
+    return BufferUtil.bufferAsString(elementIdProp.getValue());
   }
 
-  public AgentInfo setId(final long agentId) {
-    idProp.setValue(agentId);
-    return this;
-  }
-
-  @Override
-  public String getName() {
-    return BufferUtil.bufferAsString(nameProp.getValue());
-  }
-
-  public AgentInfo setName(final String agentName) {
-    nameProp.setValue(agentName);
+  public AgentInfo setElementId(final String elementId) {
+    elementIdProp.setValue(elementId);
     return this;
   }
 
   @Override
   public void reset() {
-    idProp.reset();
-    nameProp.setValue("");
+    elementIdProp.setValue("");
   }
 
   @Override
@@ -81,7 +68,7 @@ public class AgentInfo extends UnpackedObject implements Agent {
 
   public static AgentInfo of(final Agent agent) {
     if (agent != null) {
-      return new AgentInfo().setId(agent.getId()).setName(agent.getName());
+      return new AgentInfo().setElementId(agent.getElementId());
     } else {
       return null;
     }

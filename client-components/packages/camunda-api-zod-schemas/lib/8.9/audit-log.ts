@@ -89,6 +89,9 @@ const auditLogSchema = z.object({
 	deploymentKey: z.string().optional(),
 	formKey: z.string().optional(),
 	resourceKey: z.string().optional(),
+	relatedEntityKey: z.string().optional(),
+	relatedEntityType: auditLogEntityTypeSchema.optional(),
+	entityDescription: z.string().optional(),
 });
 type AuditLog = z.infer<typeof auditLogSchema>;
 
@@ -109,6 +112,8 @@ const auditLogFilterSchema = z
 		deploymentKey: advancedStringFilterSchema.optional(),
 		formKey: advancedStringFilterSchema.optional(),
 		resourceKey: advancedStringFilterSchema.optional(),
+		relatedEntityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
+		entityDescription: advancedStringFilterSchema.optional(),
 	})
 	.partial();
 

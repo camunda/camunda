@@ -188,7 +188,7 @@ final class JsonSerializableToJsonTest {
               final int requestStreamId = 1;
 
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
-              final AgentInfo agentInfo = new AgentInfo().setId(123L).setName("agent-name");
+              final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
 
               recordMetadata
                   .intent(intent)
@@ -252,8 +252,7 @@ final class JsonSerializableToJsonTest {
                     "foo" : "bar"
                   },
                   "agent": {
-                    "id": 123,
-                    "name": "agent-name"
+                    "elementId": "agent-element"
                   },
                   "recordVersion": 10,
                   "operationReference": 1234,

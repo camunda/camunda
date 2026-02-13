@@ -12,12 +12,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings.Index;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings.Settings;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import co.elastic.clients.elasticsearch.indices.IndexState;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -134,6 +132,7 @@ final class ElasticsearchExporterIT {
     testClient.deleteIndexTemplates();
     testClient.deleteComponentTemplates();
     CloseHelper.quietCloseAll(testClient);
+    exporter.close();
   }
 
   @AfterAll
@@ -257,7 +256,7 @@ final class ElasticsearchExporterIT {
         .as("should have created index template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(expectedIndexTemplateName);
   }
 
@@ -276,7 +275,7 @@ final class ElasticsearchExporterIT {
         .as("should have created the component template")
         .isPresent()
         .get()
-        .extracting(ComponentTemplateWrapper::name)
+        .extracting(ComponentTemplate::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
@@ -478,7 +477,7 @@ final class ElasticsearchExporterIT {
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(item -> item.indexTemplate().priority())
           .isEqualTo((long) priority);
     }
 
@@ -498,7 +497,7 @@ final class ElasticsearchExporterIT {
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(item -> item.indexTemplate().priority())
           .isEqualTo(20L); // default priority is 20
     }
 
@@ -509,6 +508,7 @@ final class ElasticsearchExporterIT {
     private void configureExporter(
         final Consumer<ElasticsearchExporterConfiguration> configurator) {
       configurator.accept(config);
+      exporter.close();
       exporter.configure(exporterTestContext);
       exporter.open(controller);
     }
@@ -578,32 +578,42 @@ final class ElasticsearchExporterIT {
       assertThat(secondRecordIndexName).contains("8.7.0");
     }
 
-    private void assertIndexSettingsHasLifecyclePolicy(
-        final Optional<IndexSettings> indexSettings) {
-      assertThat(indexSettings)
+    private void assertIndexSettingsHasLifecyclePolicy(final Optional<IndexState> indexState) {
+      assertThat(indexState)
           .as("should have found the index")
           .isPresent()
           .get()
-          .extracting(IndexSettings::settings)
-          .extracting(Settings::index)
-          .extracting(Index::lifecycle)
+          .extracting(IndexState::settings)
+          .as("should have settings")
+          .isNotNull()
+          .extracting(s -> s.index())
+          .as("should have index settings")
+          .isNotNull()
+          .extracting(s -> s.lifecycle())
           .as("should have lifecycle config")
           .isNotNull()
-          .extracting(IndexSettings.Lifecycle::name)
+          .extracting(l -> l.name())
           .isEqualTo(config.retention.getPolicyName());
     }
 
     private static void assertIndexSettingsHasNoLifecyclePolicy(
-        final Optional<IndexSettings> indexSettings) {
-      assertThat(indexSettings)
+        final Optional<IndexState> indexState) {
+      assertThat(indexState)
           .as("should have found the index")
           .isPresent()
           .get()
-          .extracting(IndexSettings::settings)
-          .extracting(Settings::index)
-          .extracting(Index::lifecycle)
-          .as("Lifecycle policy should not be configured")
-          .isNull();
+          .extracting(IndexState::settings)
+          .as("should have settings")
+          .isNotNull()
+          .satisfies(
+              settings -> {
+                final var indexSettings = settings.index();
+                if (indexSettings != null) {
+                  assertThat(indexSettings.lifecycle())
+                      .as("Lifecycle policy should not be configured")
+                      .isNull();
+                }
+              });
     }
   }
 }

@@ -39,6 +39,17 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class JobRecord extends UnifiedRecordValue implements JobRecordValue {
 
+  /**
+   * The worker type prefix for Camunda Agentic AI jobs that are set in Camunda Connectors.
+   *
+   * <p>For 8.9 this is accepted as limitation that all agentic jobs must have this prefix in order
+   * to be categorized as agentic jobs.
+   *
+   * <p>In the future, we might want to introduce a more robust way of identifying agentic jobs
+   */
+  public static final String IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX =
+      "io.camunda.agenticai:aiagent";
+
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
   public static final String RETRIES = "retries";
   public static final String TIMEOUT = "timeout";
@@ -47,7 +58,6 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   private static final String CUSTOM_HEADERS = "customHeaders";
   private static final String VARIABLES = "variables";
   private static final String ERROR_MESSAGE = "errorMessage";
-
   // Static StringValue keys to avoid memory waste
   private static final StringValue TYPE_KEY = new StringValue(TYPE);
   private static final StringValue WORKER_KEY = new StringValue("worker");
@@ -535,5 +545,10 @@ public final class JobRecord extends UnifiedRecordValue implements JobRecordValu
   public JobRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
     return this;
+  }
+
+  @JsonIgnore
+  public boolean isAgentic() {
+    return getType().startsWith(IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
   }
 }

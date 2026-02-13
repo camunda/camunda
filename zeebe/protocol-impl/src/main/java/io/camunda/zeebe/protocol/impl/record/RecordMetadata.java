@@ -51,7 +51,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
-  private Optional<AgentInfo> agent = Optional.empty();
+  private AgentInfo agent;
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -122,11 +122,10 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     final int agentLength = decoder.agentLength();
     if (agentLength > 0) {
+      agent = new AgentInfo();
       final var agentBuffer = new UnsafeBuffer();
       decoder.wrapAgent(agentBuffer);
-      final var agentInfo = agent.orElseGet(AgentInfo::new);
-      agentInfo.wrap(agentBuffer);
-      agent = Optional.of(agentInfo);
+      agent.wrap(agentBuffer);
     } else {
       decoder.skipAgent();
     }
@@ -140,7 +139,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.authorizationHeaderLength()
         + authorization.getLength()
         + RecordMetadataEncoder.agentHeaderLength()
-        + agent.map(AgentInfo::getLength).orElse(0);
+        + (agent != null ? agent.getLength() : 0);
   }
 
   @Override
@@ -179,8 +178,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
     encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
 
-    agent.ifPresentOrElse(
-        a -> encoder.putAgent(a.toDirectBuffer(), 0, a.getLength()), () -> encoder.agent(""));
+    if (agent != null) {
+      encoder.putAgent(agent.toDirectBuffer(), 0, agent.getLength());
+    } else {
+      encoder.agent("");
+    }
   }
 
   public long getRequestId() {
@@ -277,11 +279,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public AgentInfo getAgent() {
-    return agent.orElse(null);
+    return agent;
   }
 
   public RecordMetadata agent(final AgentInfo agent) {
-    this.agent = Optional.ofNullable(agent);
+    this.agent = agent;
     return this;
   }
 
@@ -332,7 +334,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
-    agent = Optional.empty();
+    agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -377,7 +379,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
-        && agent.equals(that.agent)
+        && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -415,7 +417,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
     }
-    if (agent.isPresent()) {
+    if (agent != null) {
       builder.append(", agent=").append(agent);
     }
 

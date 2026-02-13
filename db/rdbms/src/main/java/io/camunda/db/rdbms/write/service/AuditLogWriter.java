@@ -26,6 +26,7 @@ public class AuditLogWriter extends RootProcessInstanceDependant implements Rdbm
 
   private final ExecutionQueue executionQueue;
   private final AuditLogMapper mapper;
+  private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
 
   public AuditLogWriter(
@@ -36,13 +37,14 @@ public class AuditLogWriter extends RootProcessInstanceDependant implements Rdbm
     super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
+    this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
   }
 
   public void create(final AuditLogDbModel auditLog) {
     // standalone decisions are completed on evaluation and should be cleaned up based on the
     // decision instance TTL
-    final AuditLogDbModel finalAuditLog;
+    AuditLogDbModel finalAuditLog;
     if (AuditLogEntityType.DECISION.equals(auditLog.entityType())
         && (auditLog.processInstanceKey() == null || auditLog.processInstanceKey() == -1L)
         && auditLog.historyCleanupDate() == null) {
@@ -53,6 +55,10 @@ public class AuditLogWriter extends RootProcessInstanceDependant implements Rdbm
     } else {
       finalAuditLog = auditLog;
     }
+
+    final var charColumnBytes = vendorDatabaseProperties.charColumnMaxBytes();
+    final var userCharColumnSize = vendorDatabaseProperties.userCharColumnSize();
+    finalAuditLog = finalAuditLog.truncateEntityDescription(userCharColumnSize, charColumnBytes);
 
     final var wasMerged =
         executionQueue.tryMergeWithExistingQueueItem(

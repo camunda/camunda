@@ -17,6 +17,7 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Instant;
@@ -33,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The {@code BackupRangeResolver} class provides methods to resolve backup ranges and backup
@@ -42,6 +45,7 @@ import java.util.stream.Stream;
  */
 public final class BackupRangeResolver {
 
+  private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
   private final BackupStore store;
 
   public BackupRangeResolver(final BackupStore store) {
@@ -56,6 +60,7 @@ public final class BackupRangeResolver {
       final Interval<Instant> interval,
       final int partitionCount,
       final Map<Integer, Long> exportedPositions,
+      final CheckpointIdGenerator checkpointIdGenerator,
       final Executor executor) {
     // Verify that exportedPositions is available for all partitions
     final var errors =
@@ -79,7 +84,10 @@ public final class BackupRangeResolver {
                 CompletableFuture.supplyAsync(
                     () ->
                         getInformationPerPartition(
-                            partition, interval, exportedPositions.get(partition)),
+                            partition,
+                            interval,
+                            exportedPositions.get(partition),
+                            checkpointIdGenerator),
                     executor))
         .thenApply(
             restoreInfos -> {
@@ -93,7 +101,10 @@ public final class BackupRangeResolver {
   }
 
   public PartitionRestoreInfo getInformationPerPartition(
-      final int partition, final Interval<Instant> interval, final long exporterPosition) {
+      final int partition,
+      final Interval<Instant> interval,
+      final long exporterPosition,
+      final CheckpointIdGenerator checkpointIdGenerator) {
     final var rangeMarkers = store.rangeMarkers(partition).join();
     final var ranges = BackupRanges.fromMarkers(rangeMarkers);
 
@@ -103,8 +114,14 @@ public final class BackupRangeResolver {
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "No complete backup range found for partition %d in interval %s, ranges=%s"
-                            .formatted(partition, interval, ranges)));
+                        "No complete backup range found for partition %d in interval %s, ranges=%s, timeInterval=%s"
+                            .formatted(
+                                partition,
+                                interval,
+                                ranges,
+                                ranges.stream()
+                                    .map(r -> r.timeInterval(checkpointIdGenerator))
+                                    .toList())));
 
     // Retrieve all BackupStatus in the BackupRange
     // note that all backups must be retrieved as we only know the extremes, not every backup inside
@@ -122,8 +139,11 @@ public final class BackupRangeResolver {
 
     final var filteredBackups =
         backups.stream().filter(bs -> bs.id().checkpointId() >= safeStart).toList();
-    return new PartitionRestoreInfo(
-        partition, safeStart, exporterPosition, statusInterval.getLeft(), filteredBackups);
+    final var restoreInfo =
+        new PartitionRestoreInfo(
+            partition, safeStart, exporterPosition, statusInterval.getLeft(), filteredBackups);
+    LOG.info("Resolved restore info for partition {} = {}", partition, restoreInfo);
+    return restoreInfo;
   }
 
   /**
@@ -185,8 +205,21 @@ public final class BackupRangeResolver {
             .collect(
                 Collectors.toMap(bs -> bs.id().checkpointId(), Function.identity(), (a, b) -> a));
     final var completedBackups = completedBackupsMap.values().stream().sorted().toList();
-    return interval.smallestCover(
-        completedBackups, bs -> bs.descriptor().get().checkpointTimestamp());
+    LOG.debug(
+        "Found {} completed backups for partition {} in range {}: {}",
+        completedBackups.size(),
+        partitionId,
+        statusInterval,
+        completedBackups);
+    final var selectedBackups =
+        interval.smallestCover(completedBackups, bs -> bs.descriptor().get().checkpointTimestamp());
+    LOG.debug(
+        "Selected {} backups for partition {} in range {}: {}",
+        selectedBackups.size(),
+        partitionId,
+        statusInterval,
+        selectedBackups);
+    return selectedBackups;
   }
 
   /**

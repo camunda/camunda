@@ -28,6 +28,9 @@ public class Camunda {
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
 
+  @NestedConfigurationProperty
+  private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
+
   public Cluster getCluster() {
     return cluster;
   }
@@ -90,5 +93,13 @@ public class Camunda {
 
   public void setExpression(final Expression expression) {
     this.expression = expression;
+  }
+
+  public ProcessInstanceCreation getProcessInstanceCreation() {
+    return processInstanceCreation;
+  }
+
+  public void setProcessInstanceCreation(final ProcessInstanceCreation processInstanceCreation) {
+    this.processInstanceCreation = processInstanceCreation;
   }
 }

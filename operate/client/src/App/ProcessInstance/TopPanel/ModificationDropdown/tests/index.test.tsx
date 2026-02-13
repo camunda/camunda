@@ -10,16 +10,14 @@ import {screen, waitForElementToBeRemoved} from 'modules/testing-library';
 import {mockProcessWithEventBasedGateway} from 'modules/mocks/mockProcessWithEventBasedGateway';
 import {modificationsStore} from 'modules/stores/modifications';
 import {renderPopover} from './mocks';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {incidentFlowNodeMetaData} from 'modules/mocks/metadata';
 import {open} from 'modules/mocks/diagrams';
-import {act} from 'react';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {fetchMetaData, init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {Paths} from 'modules/Routes';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
 const statisticsData = [
   {
@@ -80,8 +78,7 @@ const statisticsData = [
   },
 ];
 
-// TODO: fix test with #44451
-describe.skip('Modification Dropdown', () => {
+describe('Modification Dropdown', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'ResizeObserver',
@@ -135,10 +132,14 @@ describe.skip('Modification Dropdown', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('diagramForModifications.bpmn'),
     );
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {totalItems: 0},
+    });
     modificationsStore.enableModificationMode();
   });
 
-  it('should not support add modification for events attached to event based gateway', async () => {
+  it('should not support add modification for non-selectable events attached to event based gateway', async () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -183,78 +184,116 @@ describe.skip('Modification Dropdown', () => {
       mockProcessWithEventBasedGateway,
     );
 
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=message_intermediate_catch_non_selectable`,
+    ]);
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'message_intermediate_catch_non_selectable',
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
 
-    act(() => {
-      selectFlowNode(
-        {},
+  it('should support add modification for selectable events attached to event based gateway', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
         {
-          flowNodeId: 'message_intermediate_catch_selectable',
+          elementId: 'message_intermediate_catch_selectable',
+          active: 1,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
         },
-      );
+      ],
     });
+
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=message_intermediate_catch_selectable`,
+    ]);
 
     expect(await screen.findByText(/Add/)).toBeInTheDocument();
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
+  });
 
-    act(() => {
-      selectFlowNode(
-        {},
+  it('should not support add modification for non-selectable timer events attached to event based gateway', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
         {
-          flowNodeId: 'timer_intermediate_catch_non_selectable',
+          elementId: 'timer_intermediate_catch_non_selectable',
+          active: 1,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
         },
-      );
+      ],
     });
 
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=timer_intermediate_catch_non_selectable`,
+    ]);
+
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
+  });
 
-    act(() => {
-      selectFlowNode(
-        {},
+  it('should support add modification for selectable message throw events', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
         {
-          flowNodeId: 'message_intermediate_throw_selectable',
+          elementId: 'message_intermediate_throw_selectable',
+          active: 1,
+          canceled: 0,
+          incidents: 0,
+          completed: 0,
         },
-      );
+      ],
     });
+
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=message_intermediate_throw_selectable`,
+    ]);
 
     expect(await screen.findByText(/Add/)).toBeInTheDocument();
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
+  });
 
-    act(() => {
-      selectFlowNode(
-        {},
+  it('should support add modification for selectable timer events', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
         {
-          flowNodeId: 'timer_intermediate_catch_selectable',
+          elementId: 'timer_intermediate_catch_selectable',
+          active: 0,
+          canceled: 0,
+          incidents: 1,
+          completed: 0,
         },
-      );
+      ],
     });
 
-    expect(screen.getByText(/Flow Node Modifications/)).toBeInTheDocument();
-    expect(screen.getByText(/Add/)).toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithEventBasedGateway,
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=timer_intermediate_catch_selectable`,
+    ]);
+
+    expect(await screen.findByText(/Add/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
 
@@ -277,19 +316,13 @@ describe.skip('Modification Dropdown', () => {
         /Move all running instances in this flow node to another target/,
       ),
     ).not.toBeInTheDocument();
+  });
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-1',
-        },
-      );
-    });
+  it('should render dropdown with all options when a flow node is selected', async () => {
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
+    ]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(
       await screen.findByTitle(/Add single flow node instance/),
     ).toHaveTextContent(/Add/);
@@ -306,20 +339,9 @@ describe.skip('Modification Dropdown', () => {
   });
 
   it('should not render dropdown when moving token', async () => {
-    const {user} = renderPopover();
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-1',
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
+    const {user} = renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
+    ]);
 
     await user.click(await screen.findByText(/Move all/));
 
@@ -329,60 +351,30 @@ describe.skip('Modification Dropdown', () => {
   });
 
   it('should only render add option for completed flow nodes', async () => {
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-3`,
+    ]);
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-3',
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
   });
 
   it('should only render move and cancel options for boundary events', async () => {
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=message-boundary`,
+    ]);
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'message-boundary',
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
 
   it('should render unsupported flow node type for non modifiable flow nodes', async () => {
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=boundary-event`,
+    ]);
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'boundary-event',
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(
       await screen.findByText(/Unsupported flow node type/),
     ).toBeInTheDocument();
@@ -396,131 +388,81 @@ describe.skip('Modification Dropdown', () => {
       open('diagramForModifications.bpmn'),
     );
 
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=multi-instance-subprocess&isMultiInstanceBody=true`,
+    ]);
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'multi-instance-subprocess',
-          isMultiInstance: true,
-        },
-      );
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Add/)).toBeInTheDocument();
     expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'multi-instance-subprocess',
-          isMultiInstance: false,
-        },
-      );
-    });
-
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
-    expect(screen.getByText(/Cancel/)).toBeInTheDocument();
   });
 
-  it('should display spinner when loading meta data', async () => {
-    init('process-instance', statisticsData);
-
-    renderPopover();
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    act(() => {
-      selectFlowNode(
-        {},
+  it('should not support move operation for non-multi-instance sub processes', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
         {
-          flowNodeId: 'service-task-1',
-          flowNodeInstanceId: 'some-instance-key',
+          elementId: 'multi-instance-subprocess',
+          active: 0,
+          canceled: 0,
+          incidents: 1,
+          completed: 0,
         },
-      );
+      ],
     });
+
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=multi-instance-subprocess`,
+    ]);
+
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+  });
+
+  it('should display spinner when loading element instance data', async () => {
+    mockFetchElementInstance('some-instance-key').withSuccess({
+      elementInstanceKey: 'some-instance-key',
+      elementId: 'service-task-1',
+      elementName: 'Service Task 1',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1&elementInstanceKey=some-instance-key`,
+    ]);
 
     expect(screen.getByTestId('dropdown-spinner')).toBeInTheDocument();
     await waitForElementToBeRemoved(screen.queryByTestId('dropdown-spinner'));
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
-    expect(await screen.findByText(/Move instance/)).toBeInTheDocument();
-    expect(screen.getByText(/Cancel instance/)).toBeInTheDocument();
   });
 
   it('should support cancel instance when flow node has 1 running instance', async () => {
-    renderPopover();
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-7`,
+    ]);
 
-    // select a flow node that has 1 running instance
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-7',
-        },
-      );
-    });
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    act(() => {
-      fetchMetaData(statisticsData, 'process-instance', {
-        flowNodeId: 'service-task-7',
-      });
-    });
-
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
-    expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
+    expect(await screen.findByText(/Cancel/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
+  });
 
-    // select a flow node that has more than 1 running instances
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-1',
-        },
-      );
-    });
+  it('should support cancel all when flow node has multiple running instances', async () => {
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
+    ]);
 
-    expect(
-      await screen.findByText(/Flow Node Modifications/),
-    ).toBeInTheDocument();
     expect(await screen.findByText(/Cancel all/)).toBeInTheDocument();
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'service-task-1',
-          flowNodeInstanceId: 'some-instance-id',
-        },
-      );
-    });
-
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
-
-    act(() => {
-      fetchMetaData(statisticsData, 'process-instance', {
-        flowNodeId: 'service-task-1',
-        flowNodeInstanceId: 'some-instance-id',
-      });
-    });
-
-    expect(await screen.findByText(/Cancel instance/)).toBeInTheDocument();
-    expect(screen.getByText(/Move/)).toBeInTheDocument();
-    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
 });

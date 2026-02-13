@@ -18,10 +18,10 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.Optional;
 
-public class HistoryDeletionBatchOperationExportHandler
+public class ProcessInstanceHistoryDeletionBatchOperationExportHandler
     extends RdbmsBatchOperationStatusExportHandler<HistoryDeletionRecordValue> {
 
-  public HistoryDeletionBatchOperationExportHandler(
+  public ProcessInstanceHistoryDeletionBatchOperationExportHandler(
       final BatchOperationWriter batchOperationWriter,
       final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache,
       final BatchOperationType relevantOperationType) {
@@ -41,7 +41,7 @@ public class HistoryDeletionBatchOperationExportHandler
 
   @Override
   Optional<Long> getProcessInstanceKey(final Record<HistoryDeletionRecordValue> record) {
-    return Optional.empty();
+    return Optional.of(record.getValue().getResourceKey());
   }
 
   @Override

@@ -88,12 +88,11 @@ import org.springframework.context.annotation.Profile;
 @DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
 
+  public static final String RDBMS_EXPORTER_NAME = "rdbms";
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
-  private static final String RDBMS_EXPORTER_NAME = "rdbms";
-
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
@@ -217,6 +216,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromDistribution(override);
     populateFromBatchOperations(override);
     populateFromExpression(override);
+    populateFromProcessInstanceCreation(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -1024,5 +1024,17 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
+  }
+
+  private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .getProcessInstanceCreation()
+        .setBusinessIdUniquenessEnabled(
+            unifiedConfiguration
+                .getCamunda()
+                .getProcessInstanceCreation()
+                .isBusinessIdUniquenessEnabled());
   }
 }

@@ -45,5 +45,7 @@ public interface FilterConfiguration {
     List<String> getVariableValueTypeInclusion();
 
     List<String> getVariableValueTypeExclusion();
+
+    boolean isOptimizeModeEnabled();
   }
 }

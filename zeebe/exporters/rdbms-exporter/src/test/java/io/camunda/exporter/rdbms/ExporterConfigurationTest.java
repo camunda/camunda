@@ -7,8 +7,12 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -403,5 +407,49 @@ class ExporterConfigurationTest {
 
     assertThatThrownBy(configuration::validate)
         .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldSetBatchSizesToOneWhenVendorDoesNotSupportInsertBatching() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
+    configuration.getInsertBatching().setMaxJobInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(25);
+
+    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
+    when(vendorProps.supportsInsertBatching()).thenReturn(false);
+
+    // when
+    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+
+    // then
+    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldUseBatchSizesFromConfigWhenVendorSupportsInsertBatching() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
+    configuration.getInsertBatching().setMaxJobInsertBatchSize(30);
+    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(35);
+
+    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
+    when(vendorProps.supportsInsertBatching()).thenReturn(true);
+
+    // when
+    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+
+    // then
+    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
+    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(50);
+    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(30);
+    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(35);
   }
 }

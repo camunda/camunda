@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -336,15 +337,31 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
 
-    List<String> tenantIds = grpcRequest.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+    final List<String> tenantIds;
+    final var tenantFilter =
+        switch (grpcRequest.getTenantFilter()) {
+          case ASSIGNED -> {
+            // When ASSIGNED, tenant IDs will be determined from authorized tenants, not from
+            // request
+            tenantIds = List.of();
+            yield TenantFilter.ASSIGNED;
+          }
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("ActivateJobs", grpcRequest.getTenantIdsList());
+            yield TenantFilter.PROVIDED;
+          }
+          case UNRECOGNIZED ->
+              throw new IllegalArgumentException(
+                  "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+        };
 
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
-        .setTenantIds(tenantIds);
+        .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter);
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(

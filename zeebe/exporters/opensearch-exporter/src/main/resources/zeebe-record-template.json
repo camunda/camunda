@@ -57,11 +57,7 @@
         "agent": {
           "type": "object",
           "properties": {
-            "id": {
-              "type": "long",
-              "index": false
-            },
-            "name": {
+            "elementId": {
               "type": "keyword",
               "index": false
             }

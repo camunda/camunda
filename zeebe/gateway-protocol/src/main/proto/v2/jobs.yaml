@@ -300,6 +300,13 @@ components:
           type: array
           items:
             $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        tenantFilter:
+          allOf:
+            - $ref: '#/components/schemas/TenantFilterEnum'
+          description: >
+            The tenant filtering strategy - determines whether to use provided tenant IDs or
+            assigned tenant IDs from the authenticated principal's authorized tenants.
+          default: PROVIDED
       required:
         - type
         - timeout
@@ -935,6 +942,17 @@ components:
           nullable: true
 
     ## Enums
+
+    TenantFilterEnum:
+      description: >
+        The tenant filtering strategy for job activation.
+        Determines whether to use tenant IDs provided in the request or tenant IDs
+        assigned to the authenticated principal.
+      type: string
+      enum:
+        - PROVIDED
+        - ASSIGNED
+      default: PROVIDED
 
     JobStateEnum:
       description: The state of the job.

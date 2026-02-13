@@ -11,11 +11,14 @@ import static org.mockserver.integration.ClientAndServer.startClientAndServer;
 
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
+import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.db.DatabaseConnection;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.upgrade.util.TestPlugin;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -208,6 +211,131 @@ class OpenSearchClientBuilderTest {
     final var reqWrapper = context.getRequest();
 
     Assertions.assertThat(reqWrapper.getFirstHeader("foo")).isNull();
+  }
+
+  @Test
+  void buildClientWithProxyEnabledDoesNotFail() throws Exception {
+    final var context = new HttpClientContext();
+    final var config = Mockito.mock(ConfigurationService.class);
+    final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
+    final var connection = Mockito.mock(DatabaseConnection.class);
+    final var host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(true, "localhost", 8090, false, null, null);
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getOpenSearchConfiguration()).thenReturn(osConfig);
+    Mockito.when(osConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(osConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(osConfig.getConnection()).thenReturn(connection);
+    Mockito.when(osConfig.getProxyConfig()).thenReturn(proxyConfig);
+
+    final var extendedClient =
+        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(config, new PluginRepository());
+
+    final var client =
+        getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
+    final var asyncResp =
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+
+    try {
+      asyncResp.get(2000, TimeUnit.MILLISECONDS);
+    } catch (final Exception e) {
+      // ignore as we don't really care about the outcome
+    }
+
+    // then - no exception thrown, client was built successfully with proxy
+    final var reqWrapper = context.getRequest();
+    Assertions.assertThat(reqWrapper).isNotNull();
+    // No proxy auth header since no credentials were configured
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization")).isNull();
+  }
+
+  @Test
+  void buildClientWithProxyAuthSetsProxyAuthorizationHeader() throws Exception {
+    final var context = new HttpClientContext();
+    final var config = Mockito.mock(ConfigurationService.class);
+    final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
+    final var connection = Mockito.mock(DatabaseConnection.class);
+    final var host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(true, "localhost", 8090, false, "proxyUser", "proxyPass");
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getOpenSearchConfiguration()).thenReturn(osConfig);
+    Mockito.when(osConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(osConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(osConfig.getConnection()).thenReturn(connection);
+    Mockito.when(osConfig.getProxyConfig()).thenReturn(proxyConfig);
+
+    final var extendedClient =
+        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(config, new PluginRepository());
+
+    final var client =
+        getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
+    final var asyncResp =
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+
+    try {
+      asyncResp.get(2000, TimeUnit.MILLISECONDS);
+    } catch (final Exception e) {
+      // ignore as we don't really care about the outcome
+    }
+
+    // then
+    final var reqWrapper = context.getRequest();
+    Assertions.assertThat(reqWrapper).isNotNull();
+    final String expectedEncoded =
+        Base64.getEncoder().encodeToString("proxyUser:proxyPass".getBytes(StandardCharsets.UTF_8));
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization").getValue())
+        .isEqualTo("Basic " + expectedEncoded);
+  }
+
+  @Test
+  void buildClientWithProxyDisabledHasNoProxyAuthorizationHeader() throws Exception {
+    final var context = new HttpClientContext();
+    final var config = Mockito.mock(ConfigurationService.class);
+    final var osConfig = Mockito.mock(OpenSearchConfiguration.class);
+    final var connection = Mockito.mock(DatabaseConnection.class);
+    final var host = new DatabaseConnectionNodeConfiguration();
+    host.setHost("localhost");
+    host.setHttpPort(9876);
+    // Proxy disabled, even though credentials are set - should not add header
+    final ProxyConfiguration proxyConfig =
+        new ProxyConfiguration(false, "localhost", 8090, false, "proxyUser", "proxyPass");
+    final Map<String, PluginConfiguration> pluginConfigurations = Map.of();
+
+    Mockito.when(config.getOpenSearchConfiguration()).thenReturn(osConfig);
+    Mockito.when(osConfig.getInterceptorPlugins()).thenReturn(pluginConfigurations);
+    Mockito.when(connection.getAwsEnabled()).thenReturn(false);
+    Mockito.when(osConfig.getConnectionNodes()).thenReturn(List.of(host));
+    Mockito.when(osConfig.getConnection()).thenReturn(connection);
+    Mockito.when(osConfig.getProxyConfig()).thenReturn(proxyConfig);
+
+    final var extendedClient =
+        OpenSearchClientBuilder.buildOpenSearchClientFromConfig(config, new PluginRepository());
+
+    final var client =
+        getOpensearchApacheClient(((ApacheHttpClient5Transport) extendedClient._transport()));
+    final var asyncResp =
+        client.execute(SimpleHttpRequest.create("GET", BASE_URL), context, NoopCallback.INSTANCE);
+
+    try {
+      asyncResp.get(2000, TimeUnit.MILLISECONDS);
+    } catch (final Exception e) {
+      // ignore as we don't really care about the outcome
+    }
+
+    // then
+    final var reqWrapper = context.getRequest();
+    Assertions.assertThat(reqWrapper).isNotNull();
+    Assertions.assertThat(reqWrapper.getFirstHeader("Proxy-Authorization")).isNull();
   }
 
   private static CloseableHttpAsyncClient getOpensearchApacheClient(

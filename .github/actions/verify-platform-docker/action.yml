@@ -47,6 +47,5 @@ runs:
         declare -a platforms=(${PLATFORMS_RAW//,/ })
 
         for platform in "${platforms[@]}"; do
-          docker pull --platform "$platform" "${{ inputs.imageName }}:${VERSION}"
           ${PWD}/.ci/docker/test/verify.sh "${{ inputs.imageName }}:${VERSION}" "$(echo $platform | cut -d '/' -f 2)"
         done

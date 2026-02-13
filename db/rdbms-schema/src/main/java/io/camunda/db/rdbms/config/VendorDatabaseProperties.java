@@ -43,10 +43,18 @@ public class VendorDatabaseProperties {
 
   private static final String DISABLE_FK_BEFORE_TRUNCATE = "disableFkBeforeTruncate";
 
+  /**
+   * Optional property to indicate whether the database vendor supports insert batching (INSERT INTO
+   * (..) VALUES (..), (..), (..)). Oracle 19c and earlier versions do not support this syntax. If
+   * not set, defaults to true (batching is supported).
+   */
+  private static final String SUPPORTS_INSERT_BATCHING = "supportsInsertBatching";
+
   private final Properties properties;
 
   private final int variableValuePreviewSize;
   private final boolean disableFkBeforeTruncate;
+  private final boolean supportsInsertBatching;
   private final Integer charColumnMaxBytes;
   private final int userCharColumnSize;
   private final int errorMessageSize;
@@ -89,6 +97,11 @@ public class VendorDatabaseProperties {
     }
     disableFkBeforeTruncate =
         Boolean.parseBoolean(properties.getProperty(DISABLE_FK_BEFORE_TRUNCATE));
+
+    // Default to true if not specified (for backward compatibility)
+    supportsInsertBatching =
+        !properties.containsKey(SUPPORTS_INSERT_BATCHING)
+            || Boolean.parseBoolean(properties.getProperty(SUPPORTS_INSERT_BATCHING));
   }
 
   public int variableValuePreviewSize() {
@@ -117,5 +130,9 @@ public class VendorDatabaseProperties {
 
   public int treePathSize() {
     return treePathSize;
+  }
+
+  public boolean supportsInsertBatching() {
+    return supportsInsertBatching;
   }
 }

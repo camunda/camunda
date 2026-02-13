@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.BackupRangeResolver.GlobalRestoreInfo;
@@ -55,6 +56,7 @@ final class BackupRangeResolverTest {
 
   private TestBackupStore store;
   private BackupRangeResolver resolver;
+  private final CheckpointIdGenerator checkIdGenerator = new CheckpointIdGenerator();
 
   @BeforeEach
   void setUp() {
@@ -464,7 +466,11 @@ final class BackupRangeResolverTest {
     final var value =
         resolver
             .getRestoreInfoForAllPartitions(
-                Interval.closed(from, to), partitionCount, exportedPositions, DIRECT_EXECUTOR)
+                Interval.closed(from, to),
+                partitionCount,
+                exportedPositions,
+                checkIdGenerator,
+                DIRECT_EXECUTOR)
             .join();
     return value;
   }
@@ -616,12 +622,6 @@ final class BackupRangeResolverTest {
     }
 
     @Override
-    public CompletableFuture<BackupStatusCode> markFailed(
-        final BackupIdentifier id, final String failureReason) {
-      return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
-    }
-
-    @Override
     public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
       return CompletableFuture.completedFuture(
           rangeMarkersByPartition.getOrDefault(partitionId, List.of()));
@@ -647,6 +647,12 @@ final class BackupRangeResolverTest {
     @Override
     public CompletableFuture<Void> closeAsync() {
       return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<BackupStatusCode> markFailed(
+        final BackupIdentifier id, final String failureReason) {
+      return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
     }
 
     private BackupStatusImpl toStatus(final Backup backup) {

@@ -58,6 +58,7 @@ public final class EngineConfiguration {
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
+  public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
 
   private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
   private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
@@ -93,10 +94,22 @@ public final class EngineConfiguration {
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
-
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
+
+  /**
+   * Controls uniqueness enforcement of business IDs across active process instances.
+   *
+   * <ul>
+   *   <li><b>Disabled (default):</b> Multiple active process instances can share the same business
+   *       ID. No tracking or validation is performed.
+   *   <li><b>Enabled:</b> Creating a process instance with a business ID that is already in use by
+   *       an active process instance will be rejected. Business IDs of process instances created
+   *       before enabling this setting are not tracked, so duplicates with those are not detected.
+   * </ul>
+   */
+  private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -415,6 +428,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setExpressionEvaluationTimeout(
       final Duration expressionEvaluationTimeout) {
     this.expressionEvaluationTimeout = expressionEvaluationTimeout;
+    return this;
+  }
+
+  public boolean isBusinessIdUniquenessEnabled() {
+    return businessIdUniquenessEnabled;
+  }
+
+  public EngineConfiguration setBusinessIdUniquenessEnabled(
+      final boolean businessIdUniquenessEnabled) {
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     return this;
   }
 }

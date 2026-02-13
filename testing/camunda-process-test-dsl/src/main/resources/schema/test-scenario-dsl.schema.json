@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://camunda.com/schema/20251202/test-scenario-dsl.schema.json",
+  "$id": "https://camunda.org/schema/test-scenario-dsl/1.0/test-scenario-dsl.schema.json",
   "title": "Test Scenario DSL",
   "description": "A test scenario with test cases to validate the business process.",
   "type": "object",
@@ -16,7 +16,7 @@
   "required": [
     "testCases"
   ],
-  "additionalProperties": true,
+  "additionalProperties": false,
   "definitions": {
     "TestCase": {
       "description": "A test case with instructions to validate the business process.",
@@ -27,7 +27,7 @@
           "type": "string"
         },
         "description": {
-          "description": "The description of the test case.",
+          "description": "The description of the test case. Optional.",
           "type": "string"
         },
         "instructions": {
@@ -42,7 +42,7 @@
         "name",
         "instructions"
       ],
-      "additionalProperties": true
+      "additionalProperties": false
     },
     "TestCaseInstruction": {
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
@@ -141,11 +141,12 @@
           "$ref": "#/definitions/ProcessDefinitionSelector"
         },
         "variables": {
-          "description": "The variables to create the process instance with.",
-          "type": "object"
+          "description": "The variables to create the process instance with. Optional.",
+          "type": "object",
+          "additionalProperties": true
         },
         "startInstructions": {
-          "description": "The instructions to execute when starting the process instance.",
+          "description": "The instructions to execute when starting the process instance. Optional.",
           "type": "array",
           "items": {
             "type": "object",
@@ -162,7 +163,7 @@
           }
         },
         "runtimeInstructions": {
-          "description": "The instructions to affect the runtime behavior of the process instance.",
+          "description": "The instructions to affect the runtime behavior of the process instance. Optional.",
           "type": "array",
           "items": {
             "oneOf": [
@@ -210,8 +211,9 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to broadcast with the signal.",
-          "type": "object"
+          "description": "The variables to broadcast with the signal. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -279,25 +281,26 @@
           "$ref": "#/definitions/DecisionSelector"
         },
         "output": {
-          "description": "The expected output of the decision."
+          "description": "The expected output of the decision. Can be any JSON type. Optional."
         },
         "matchedRules": {
-          "description": "The expected matched rule indexes.",
+          "description": "The expected matched rule indexes. Optional.",
           "type": "array",
           "items": {
             "type": "integer"
           }
         },
         "notMatchedRules": {
-          "description": "The expected not matched rule indexes.",
+          "description": "The expected not matched rule indexes. Optional.",
           "type": "array",
           "items": {
             "type": "integer"
           }
         },
         "noMatchedRules": {
-          "description": "Whether to assert that no rules were matched.",
-          "type": "boolean"
+          "description": "Whether to assert that no rules were matched. Defaults to false.",
+          "type": "boolean",
+          "default": false
         }
       },
       "required": [
@@ -320,11 +323,12 @@
           "$ref": "#/definitions/UserTaskSelector"
         },
         "variables": {
-          "description": "The variables to set when completing the user task. Ignored if useExampleData is true.",
-          "type": "object"
+          "description": "The variables to set when completing the user task. Ignored if useExampleData is true. Optional.",
+          "type": "object",
+          "additionalProperties": true
         },
         "useExampleData": {
-          "description": "Whether to complete the user task with example data from the BPMN element. If true, the variables property is ignored.",
+          "description": "Whether to complete the user task with example data from the BPMN element. If true, the variables property is ignored. Defaults to false.",
           "type": "boolean",
           "default": false
         }
@@ -349,7 +353,7 @@
           "$ref": "#/definitions/ProcessInstanceSelector"
         },
         "state": {
-          "description": "The expected state of the process instance.",
+          "description": "The expected state of the process instance. Optional.",
           "type": "string",
           "enum": [
             "IS_ACTIVE",
@@ -359,7 +363,7 @@
           ]
         },
         "hasActiveIncidents": {
-          "description": "Whether the process instance has active incidents.",
+          "description": "Whether the process instance has active incidents. Optional.",
           "type": "boolean"
         }
       },
@@ -431,7 +435,7 @@
           "type": "string"
         },
         "correlationKey": {
-          "description": "The correlation key of the message.",
+          "description": "The correlation key of the message. Optional.",
           "type": "string"
         }
       },
@@ -467,7 +471,7 @@
           ]
         },
         "amount": {
-          "description": "The expected amount of element instances in the given state.",
+          "description": "The expected amount of element instances in the given state. Defaults to 1.",
           "type": "integer",
           "minimum": 1,
           "default": 1
@@ -564,7 +568,7 @@
           "$ref": "#/definitions/UserTaskSelector"
         },
         "state": {
-          "description": "The expected state of the user task.",
+          "description": "The expected state of the user task. Optional.",
           "type": "string",
           "enum": [
             "IS_CREATED",
@@ -574,34 +578,34 @@
           ]
         },
         "assignee": {
-          "description": "The expected assignee of the user task.",
+          "description": "The expected assignee of the user task. Optional.",
           "type": "string"
         },
         "candidateGroups": {
-          "description": "The expected candidate groups of the user task.",
+          "description": "The expected candidate groups of the user task. Optional.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "priority": {
-          "description": "The expected priority of the user task.",
+          "description": "The expected priority of the user task. Optional.",
           "type": "integer"
         },
         "elementId": {
-          "description": "The expected element ID of the user task.",
+          "description": "The expected element ID of the user task. Optional.",
           "type": "string"
         },
         "name": {
-          "description": "The expected name of the user task.",
+          "description": "The expected name of the user task. Optional.",
           "type": "string"
         },
         "dueDate": {
-          "description": "The expected due date of the user task in ISO-8601 format.",
+          "description": "The expected due date of the user task in ISO-8601 format. Optional.",
           "type": "string"
         },
         "followUpDate": {
-          "description": "The expected follow-up date of the user task in ISO-8601 format.",
+          "description": "The expected follow-up date of the user task in ISO-8601 format. Optional.",
           "type": "string"
         }
       },
@@ -625,8 +629,9 @@
           "$ref": "#/definitions/JobSelector"
         },
         "variables": {
-          "description": "The variables to complete the job with. Defaults to an empty map.",
-          "type": "object"
+          "description": "The variables to complete the job with. Optional.",
+          "type": "object",
+          "additionalProperties": true
         },
         "useExampleData": {
           "description": "Whether to complete the job with example data from the BPMN element. This property has precedence over variables. Defaults to false.",
@@ -655,7 +660,8 @@
         },
         "variables": {
           "description": "The variables to complete the job with. Optional.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "activateElements": {
           "description": "The elements to activate in the ad-hoc sub-process. Optional.",
@@ -669,7 +675,8 @@
               },
               "variables": {
                 "description": "The variables to set when activating the element. Optional.",
-                "type": "object"
+                "type": "object",
+                "additionalProperties": true
               }
             },
             "required": [
@@ -722,33 +729,33 @@
           "type": "object",
           "properties": {
             "assignee": {
-              "description": "The assignee of the task.",
+              "description": "The assignee of the task. Optional.",
               "type": "string"
             },
             "dueDate": {
-              "description": "The due date of the task.",
+              "description": "The due date of the task. Optional.",
               "type": "string"
             },
             "followUpDate": {
-              "description": "The follow up date of the task.",
+              "description": "The follow up date of the task. Optional.",
               "type": "string"
             },
             "candidateUsers": {
-              "description": "The candidate users of the task.",
+              "description": "The candidate users of the task. Optional.",
               "type": "array",
               "items": {
                 "type": "string"
               }
             },
             "candidateGroups": {
-              "description": "The candidate groups of the task.",
+              "description": "The candidate groups of the task. Optional.",
               "type": "array",
               "items": {
                 "type": "string"
               }
             },
             "priority": {
-              "description": "The priority of the task.",
+              "description": "The priority of the task. Optional.",
               "type": "integer"
             }
           },
@@ -874,19 +881,20 @@
           "type": "string"
         },
         "correlationKey": {
-          "description": "The correlation key of the message.",
+          "description": "The correlation key of the message. Optional.",
           "type": "string"
         },
         "variables": {
-          "description": "The variables to publish with the message.",
-          "type": "object"
+          "description": "The variables to publish with the message. Optional.",
+          "type": "object",
+          "additionalProperties": true
         },
         "timeToLive": {
-          "description": "The time-to-live of the message in milliseconds.",
+          "description": "The time-to-live of the message in milliseconds. Optional.",
           "type": "integer"
         },
         "messageId": {
-          "description": "The message ID for uniqueness.",
+          "description": "The message ID for uniqueness. Optional.",
           "type": "string"
         }
       },
@@ -910,12 +918,13 @@
           "type": "string"
         },
         "correlationKey": {
-          "description": "The correlation key of the message.",
+          "description": "The correlation key of the message. Optional.",
           "type": "string"
         },
         "variables": {
-          "description": "The variables to correlate with the message.",
-          "type": "object"
+          "description": "The variables to correlate with the message. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -978,8 +987,9 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set as the decision output.",
-          "type": "object"
+          "description": "The variables to set as the decision output. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1002,8 +1012,9 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to set for the mocked child process.",
-          "type": "object"
+          "description": "The variables to set for the mocked child process. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1026,11 +1037,12 @@
           "type": "string"
         },
         "variables": {
-          "description": "The variables to complete the job with.",
-          "type": "object"
+          "description": "The variables to complete the job with. Optional.",
+          "type": "object",
+          "additionalProperties": true
         },
         "useExampleData": {
-          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored.",
+          "description": "Whether to use example data from the BPMN element. If true, the variables property is ignored. Defaults to false.",
           "type": "boolean",
           "default": false
         }
@@ -1055,19 +1067,20 @@
           "$ref": "#/definitions/ProcessInstanceSelector"
         },
         "elementSelector": {
-          "description": "The selector to identify the element for local variables.",
+          "description": "The selector to identify the element for local variables. Optional.",
           "$ref": "#/definitions/ElementSelector"
         },
         "variableNames": {
-          "description": "The expected variable names.",
+          "description": "The expected variable names. Optional.",
           "type": "array",
           "items": {
             "type": "string"
           }
         },
         "variables": {
-          "description": "The expected variables with their values.",
-          "type": "object"
+          "description": "The expected variables with their values. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1087,7 +1100,8 @@
         },
         "variables": {
           "description": "The variables to evaluate the conditional start events with.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1114,12 +1128,13 @@
           "type": "string"
         },
         "errorMessage": {
-          "description": "The error message to include when throwing the error.",
+          "description": "The error message to include when throwing the error. Optional.",
           "type": "string"
         },
         "variables": {
-          "description": "The variables to include when throwing the error.",
-          "type": "object"
+          "description": "The variables to include when throwing the error. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1161,8 +1176,9 @@
           "$ref": "#/definitions/DecisionDefinitionSelector"
         },
         "variables": {
-          "description": "The variables to evaluate the decision with.",
-          "type": "object"
+          "description": "The variables to evaluate the decision with. Optional.",
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1214,7 +1230,8 @@
         },
         "variables": {
           "description": "The variables to set when throwing the error. Optional.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         }
       },
       "required": [
@@ -1239,7 +1256,8 @@
         },
         "variables": {
           "description": "The variables to create or update.",
-          "type": "object"
+          "type": "object",
+          "additionalProperties": true
         },
         "elementSelector": {
           "description": "The selector to identify the element for local variables. Optional.",

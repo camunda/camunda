@@ -216,12 +216,12 @@ final class BackupEndpointTest {
       // then
       verify(requestHandler, times(2)).takeBackup();
       assertThat(firstBackup.getStatus()).isEqualTo(202);
-      var msg = ((TakeBackupRuntimeResponse) firstBackup.getBody()).getMessage();
-      final var backupId1 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
+      final var firstBody = (TakeBackupRuntimeResponse) firstBackup.getBody();
+      final var backupId1 = firstBody.getBackupId();
 
       assertThat(secondBackup.getStatus()).isEqualTo(202);
-      msg = ((TakeBackupRuntimeResponse) secondBackup.getBody()).getMessage();
-      final var backupId2 = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
+      final var secondBody = (TakeBackupRuntimeResponse) secondBackup.getBody();
+      final var backupId2 = secondBody.getBackupId();
 
       assertThat(backupId2).isGreaterThan(backupId1);
       assertThat(Instant.ofEpochMilli(backupId2))
@@ -262,8 +262,8 @@ final class BackupEndpointTest {
       // then
       verify(requestHandler, times(1)).takeBackup(anyLong());
       assertThat(response.getStatus()).isEqualTo(202);
-      final var msg = ((TakeBackupRuntimeResponse) response.getBody()).getMessage();
-      final var backupId = Long.parseLong(msg.replaceAll(".*id (\\d+).*", "$1"));
+      final var body = (TakeBackupRuntimeResponse) response.getBody();
+      final var backupId = body.getBackupId();
 
       final var actualTimestamp = backupId - offset;
 

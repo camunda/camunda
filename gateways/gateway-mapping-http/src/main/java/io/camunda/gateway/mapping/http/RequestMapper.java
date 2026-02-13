@@ -79,6 +79,7 @@ import io.camunda.gateway.protocol.model.SetVariableRequest;
 import io.camunda.gateway.protocol.model.SignalBroadcastRequest;
 import io.camunda.gateway.protocol.model.SourceElementIdInstruction;
 import io.camunda.gateway.protocol.model.SourceElementInstanceKeyInstruction;
+import io.camunda.gateway.protocol.model.TenantFilterEnum;
 import io.camunda.gateway.protocol.model.UseSourceParentKeyInstruction;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskCompletionRequest;
@@ -118,6 +119,7 @@ import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstan
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.Either;
 import jakarta.servlet.http.Part;
 import java.io.IOException;
@@ -125,6 +127,7 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -203,27 +206,23 @@ public class RequestMapper {
   public static Either<ProblemDetail, ActivateJobsRequest> toJobsActivationRequest(
       final JobActivationRequest activationRequest, final boolean multiTenancyEnabled) {
 
-    final Either<ProblemDetail, List<String>> validationResponse =
-        validateTenantIds(
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds),
-                multiTenancyEnabled,
-                "Activate Jobs")
-            .flatMap(
-                tenantIds ->
-                    validateJobActivationRequest(activationRequest)
-                        .map(Either::<ProblemDetail, List<String>>left)
-                        .orElseGet(() -> Either.right(tenantIds)));
+    final var tenantFilter = convertTenantFilter(activationRequest.getTenantFilter());
 
-    return validationResponse.map(
-        tenantIds ->
-            new ActivateJobsRequest(
-                activationRequest.getType(),
-                activationRequest.getMaxJobsToActivate(),
-                tenantIds,
-                activationRequest.getTimeout(),
-                getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
-                getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
-                getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout)));
+    // Validate job activation request
+    final var jobValidationError = validateJobActivationRequest(activationRequest);
+    if (jobValidationError.isPresent()) {
+      return Either.left(jobValidationError.get());
+    }
+
+    // Resolve and validate tenant IDs based on filter
+    final Either<ProblemDetail, List<String>> tenantIdsResult =
+        resolveTenantIds(activationRequest, tenantFilter, multiTenancyEnabled);
+    if (tenantIdsResult.isLeft()) {
+      return Either.left(tenantIdsResult.getLeft());
+    }
+
+    return Either.right(
+        buildActivateJobsRequest(activationRequest, tenantIdsResult.get(), tenantFilter));
   }
 
   public static FailJobRequest toJobFailRequest(
@@ -913,6 +912,54 @@ public class RequestMapper {
                 getKeyOrDefault(
                     request, ConditionalEvaluationInstruction::getProcessDefinitionKey, -1L),
                 request.getVariables()));
+  }
+
+  private static TenantFilter convertTenantFilter(final TenantFilterEnum gatewayFilter) {
+    if (gatewayFilter == null) {
+      return TenantFilter.PROVIDED;
+    }
+
+    return switch (gatewayFilter) {
+      case TenantFilterEnum.ASSIGNED -> TenantFilter.ASSIGNED;
+      case TenantFilterEnum.PROVIDED -> TenantFilter.PROVIDED;
+    };
+  }
+
+  private static Either<ProblemDetail, List<String>> resolveTenantIds(
+      final JobActivationRequest activationRequest,
+      final TenantFilter tenantFilter,
+      final boolean multiTenancyEnabled) {
+
+    if (tenantFilter == TenantFilter.ASSIGNED) {
+      if (!multiTenancyEnabled) {
+        return Either.left(
+            GatewayErrorMapper.createProblemDetail(
+                HttpStatus.BAD_REQUEST,
+                "Expected to handle request Activate Jobs with ASSIGNED tenant filter, but multi-tenancy is disabled",
+                INVALID_ARGUMENT.name()));
+      }
+      return Either.right(Collections.emptyList());
+    }
+
+    final List<String> providedTenantIds =
+        getStringListOrEmpty(activationRequest, JobActivationRequest::getTenantIds);
+    return validateTenantIds(providedTenantIds, multiTenancyEnabled, "Activate Jobs");
+  }
+
+  private static ActivateJobsRequest buildActivateJobsRequest(
+      final JobActivationRequest activationRequest,
+      final List<String> tenantIds,
+      final TenantFilter tenantFilter) {
+
+    return new ActivateJobsRequest(
+        activationRequest.getType(),
+        activationRequest.getMaxJobsToActivate(),
+        tenantIds,
+        tenantFilter,
+        activationRequest.getTimeout(),
+        getStringOrEmpty(activationRequest, JobActivationRequest::getWorker),
+        getStringListOrEmpty(activationRequest, JobActivationRequest::getFetchVariable),
+        getLongOrZero(activationRequest, JobActivationRequest::getRequestTimeout));
   }
 
   private static List<ProcessInstanceModificationActivateInstruction>

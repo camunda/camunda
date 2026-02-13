@@ -163,7 +163,7 @@ public final class ProcessingStateMachine {
   private final ScheduledCommandCache scheduledCommandCache;
   private volatile ErrorHandlingPhase errorHandlingPhase = ErrorHandlingPhase.NO_ERROR;
   private final ControllableStreamClock clock;
-  private String currentStateDescription = "idle";
+  private final EventDescription currentStateDescription = new EventDescription("idle");
 
   public ProcessingStateMachine(
       final StreamProcessorContext context,
@@ -201,7 +201,7 @@ public final class ProcessingStateMachine {
   }
 
   String describeCurrentState() {
-    return currentStateDescription;
+    return currentStateDescription.toString();
   }
 
   private void skipRecord() {
@@ -212,7 +212,11 @@ public final class ProcessingStateMachine {
   }
 
   void markProcessingCompleted() {
-    currentStateDescription = String.format("finished processing '%s %s'", currentRecord, metadata);
+    currentStateDescription.set(
+        "finished processing",
+        currentRecord.getPosition(),
+        metadata.getIntent(),
+        metadata.getValueType());
     inProcessing = false;
     if (onErrorRetries > 0) {
       onErrorRetries = 0;
@@ -268,7 +272,8 @@ public final class ProcessingStateMachine {
 
     metadata.reset();
     loggedEvent.readMetadata(metadata);
-    currentStateDescription = String.format("processing '%s %s'", currentRecord, metadata);
+    currentStateDescription.set(
+        "processing", currentRecord.getPosition(), metadata.getIntent(), metadata.getValueType());
 
     try {
       // Here we need to get the current time, since we want to calculate
@@ -347,12 +352,7 @@ public final class ProcessingStateMachine {
   private void batchProcessing(final TypedRecord<?> initialCommand) {
     // propagate the operation reference from the initial command to the processingResultBuilder to
     // be appended to the followup events
-    final var processingResultBuilder =
-        new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents,
-            initialCommand.getOperationReference(),
-            initialCommand.getBatchOperationReference(),
-            initialCommand.getAuthorizations());
+    final var processingResultBuilder = newProcessingResultBuilder(initialCommand);
     var lastProcessingResultSize = 0;
 
     // It might be that we reached the batch size limit during processing a command.
@@ -550,11 +550,7 @@ public final class ProcessingStateMachine {
   private void tryRejectingIfUserCommand(final String errorMessage) {
     final var rejectionReason = errorMessage != null ? errorMessage : "";
     final ProcessingResultBuilder processingResultBuilder =
-        new BufferedProcessingResultBuilder(
-            logStreamWriter::canWriteEvents,
-            typedCommand.getOperationReference(),
-            typedCommand.getBatchOperationReference(),
-            typedCommand.getAuthorizations());
+        newProcessingResultBuilder(typedCommand);
     final var errorRecord = new ErrorRecord();
     errorRecord.initErrorRecord(
         new CommandRejectionException(rejectionReason), currentRecord.getPosition());
@@ -595,11 +591,7 @@ public final class ProcessingStateMachine {
     zeebeDbTransaction.run(
         () -> {
           final ProcessingResultBuilder processingResultBuilder =
-              new BufferedProcessingResultBuilder(
-                  logStreamWriter::canWriteEvents,
-                  typedCommand.getOperationReference(),
-                  typedCommand.getBatchOperationReference(),
-                  typedCommand.getAuthorizations());
+              newProcessingResultBuilder(typedCommand);
           currentProcessingResult =
               currentProcessor.onProcessingError(
                   processingException, typedCommand, processingResultBuilder);
@@ -796,13 +788,33 @@ public final class ProcessingStateMachine {
 
   private void updateErrorHandlingPhase(final ErrorHandlingPhase errorHandlingPhase) {
     if (errorHandlingPhase != ErrorHandlingPhase.NO_ERROR) {
-      currentStateDescription =
-          String.format(
-              "in error handling phase %s for '%s %s'",
-              errorHandlingPhase, currentRecord, metadata);
+      currentStateDescription.set(
+          "in error handling phase " + errorHandlingPhase,
+          currentRecord.getPosition(),
+          metadata.getIntent(),
+          metadata.getValueType());
     }
     this.errorHandlingPhase = errorHandlingPhase;
     processingMetrics.errorHandlingPhase(errorHandlingPhase);
+  }
+
+  private BufferedProcessingResultBuilder newProcessingResultBuilder(final TypedRecord<?> command) {
+
+    final var builder = new BufferedProcessingResultBuilder(logStreamWriter::canWriteEvents);
+
+    builder.appendOperationReferenceToFollowUps(command.getOperationReference());
+    builder.appendBatchOperationReferenceToFollowUps(command.getBatchOperationReference());
+
+    // Ensure auth information is forwarded also to all follow-up commands & events
+    // e.g. to attribute changes to the right actor in the audit log
+    builder.appendAuthInfoToFollowUps(command.getAuthInfo());
+
+    // Ensure agent information is forwarded also to all follow-up commands & events
+    // event when they are processed in a separate batch
+    // e.g. to have the full agent trail in the audit log
+    builder.appendAgentInfoToFollowUps(command.getAgent());
+
+    return builder;
   }
 
   private record BatchProcessingStepResult(

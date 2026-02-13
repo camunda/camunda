@@ -13,6 +13,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.anyRequestedFor;
 import static com.github.tomakehurst.wiremock.client.WireMock.anyUrl;
 import static com.github.tomakehurst.wiremock.client.WireMock.equalTo;
 
+import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
@@ -21,6 +22,7 @@ import java.util.Base64;
 import org.apache.http.HttpHost;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.protocol.BasicHttpContext;
+import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -149,10 +151,15 @@ final class ElasticsearchClientFactoryProxyTest {
                     .withBody(CLUSTER_INFO_RESPONSE)));
   }
 
+  private static RestClient extractRestClient(
+      final co.elastic.clients.elasticsearch.ElasticsearchClient client) {
+    return ((RestClientTransport) client._transport()).restClient();
+  }
+
   private void sendRequest() {
-    try (final var client = ElasticsearchClientFactory.ofRestClient(config)) {
+    try (final var restClient = extractRestClient(ElasticsearchClientFactory.of(config))) {
       final var context = new BasicHttpContext();
-      client
+      restClient
           .getHttpClient()
           .execute(HttpHost.create("http://192.0.2.1:9200"), new HttpGet("/"), context, null)
           .get();

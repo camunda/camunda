@@ -12,15 +12,56 @@ import {deploy, createSingleInstance} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp, hideModificationHelperModal} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 type ProcessInstance = {
   processInstanceKey: string;
 };
 
 let instanceWithoutAnIncident: ProcessInstance;
+let embeddedSubprocessInstance: ProcessInstance;
+
+const activityNode = 'Node';
+const activityFirstSubprocess = 'FirstSubprocess';
+const activityCollectMoney = 'CollectMoney';
+const validJSONValue1 = {
+  employeeId: {
+    value: 'E123',
+    type: 'String',
+  },
+  employeeName: {
+    value: 'Alice Smith',
+    type: 'String',
+  },
+  employeeEmail: {
+    value: 'alice@example.com',
+    type: 'String',
+  },
+  employeeRole: {
+    value: 'Developer',
+    type: 'String',
+  },
+  documentsVerified: {
+    value: true,
+    type: 'Boolean',
+  },
+  startDate: {
+    value: '2025-08-01',
+    type: 'String',
+  },
+};
+const validJSONValue2 = {
+  employeeId: {
+    value: 'E123',
+    type: 'String',
+  },
+};
 
 test.beforeAll(async () => {
-  await deploy(['./resources/withoutIncidentsProcess_v_1.bpmn']);
+  await deploy([
+    './resources/withoutIncidentsProcess_v_1.bpmn',
+    './resources/EmbeddedSubprocess.bpmn',
+  ]);
 
   instanceWithoutAnIncident = await createSingleInstance(
     'withoutIncidentsProcess',
@@ -28,6 +69,16 @@ test.beforeAll(async () => {
     {
       test: 123,
       foo: 'bar',
+    },
+  );
+
+  embeddedSubprocessInstance = await createSingleInstance(
+    'Process_EmbeddedSubprocess',
+    1,
+    {
+      meow: 0,
+      testVariableNumber: 123,
+      testVariableString: 'bar',
     },
   );
 
@@ -201,6 +252,382 @@ test.describe('Process Instance Modifications', () => {
       await expect(
         operateProcessInstancePage.getEditVariableFieldSelector('foo'),
       ).toHaveValue('"bar"');
+    });
+  });
+
+  test('Verify Variables functionality in Modification mode', async ({
+    operateProcessInstancePage,
+    page,
+    operateProcessInstanceViewModificationModePage,
+  }) => {
+    await test.step('Navigate to embedded subprocess instance', async () => {
+      await operateProcessInstancePage.gotoProcessInstancePage({
+        id: embeddedSubprocessInstance.processInstanceKey,
+      });
+    });
+
+    await test.step('Verify initial variables are visible', async () => {
+      await expect(
+        operateProcessInstancePage.getVariableTestId('testVariableString'),
+      ).toBeVisible();
+      await expect(
+        operateProcessInstancePage.getVariableTestId('testVariableNumber'),
+      ).toBeVisible();
+    });
+
+    await test.step('Enter modification mode and verify variables are not editable', async () => {
+      await operateProcessInstancePage.enterModificationMode();
+      await expect(operateProcessInstancePage.addVariableButton).toBeHidden();
+      await expect(operateProcessInstancePage.existingVariableByName('testVariableString').editVariableModal.button).toBeHidden();
+    });
+
+    await test.step('Select an element from the process diagram and verify variables are not addable', async () => {
+      await operateProcessInstanceViewModificationModePage.clickFlowNode(
+        activityNode,
+      );
+      await expect(operateProcessInstancePage.addVariableButton).toBeHidden();
+    });
+
+    await test.step('Add a token to the element and verify variables are changeable', async () => {
+      await operateProcessInstanceViewModificationModePage.addTokenToFlowNode(
+        activityCollectMoney,
+      );
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
+        activityCollectMoney,
+        1,
+      );
+
+      await expect(operateProcessInstancePage.addVariableButton).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
+          'testVariableString',
+        ),
+      ).toBeEnabled();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
+          'testVariableNumber',
+        ),
+      ).toBeEnabled();
+    });
+
+    await test.step('Change process-level variable and undo changes and verify results', async () => {
+      await operateProcessInstanceViewModificationModePage.editVariableValue(
+        'testVariableNumber',
+        '1',
+      );
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableModificationText(
+          'testVariableNumber',
+        ),
+      ).toBeVisible();
+
+      await operateProcessInstanceViewModificationModePage.undoModification();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
+          'testVariableNumber',
+        ),
+      ).toHaveValue('123');
+    });
+
+    await test.step('Add variable on process-level and verify warning appeared', async () => {
+      await operateProcessInstanceViewModificationModePage.addNewVariable(
+        '0',
+        'testVariableNumber',
+        '7',
+      );
+      await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
+        0,
+        'Name should be unique',
+        'name',
+      );
+      await expect(
+        operateProcessInstanceViewModificationModePage.newVariableByIndex(0)
+          .nameErrorMessage!,
+      ).toBeVisible();
+      await operateProcessInstanceViewModificationModePage
+        .newVariableByIndex(0)
+        .name.fill('testNewMeowVariable');
+      await page.keyboard.press('Tab');
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getAddVariableModificationText(
+          'testNewMeowVariable',
+        ),
+      ).toBeVisible();
+    });
+
+    await test.step('Select the newly added token from the Instance History and verify the Add Variable button is visible in the Variables panel for the selected token (element level).', async () => {
+      const newNestedParentName = `${activityFirstSubprocess}, this flow node instance is planned to be added`;
+      await operateProcessInstancePage.expandTreeItemInHistory(
+        newNestedParentName,
+      );
+      const addedTokenInHistory = `${activityCollectMoney}, this flow node instance is planned to be added`;
+      await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
+
+      await expect(
+        operateProcessInstanceViewModificationModePage.noVariablesText,
+      ).toBeVisible();
+      await expect(operateProcessInstancePage.addVariableButton).toBeVisible();
+
+      await operateProcessInstanceViewModificationModePage.addNewVariable(
+        '0',
+        '',
+        '"addedValue"',
+      );
+      await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
+        0,
+        'Name has to be filled',
+        'name',
+      );
+      await operateProcessInstanceViewModificationModePage
+        .newVariableByIndex(0)
+        .name.fill('testLocalVariable');
+      await page.keyboard.press('Tab');
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getAddVariableModificationText(
+          'testLocalVariable',
+        ),
+      ).toBeVisible();
+
+      await operateProcessInstanceViewModificationModePage.addNewVariable(
+        '1',
+        'testEmptyVariable',
+        '',
+      );
+      await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
+        1,
+        'Value has to be filled',
+        'value',
+      );
+    });
+
+    await test.step('Update variable value in JSON editor modal window and verify results', async () => {
+      await operateProcessInstanceViewModificationModePage
+        .newVariableByIndex(1)
+        .value.fill('meow');
+      await operateProcessInstanceViewModificationModePage.checkNewVariableErrorMessageText(
+        1,
+        'Value has to be JSON',
+        'value',
+      );
+      await operateProcessInstanceViewModificationModePage.editNewVariableJSONInModal(
+        1,
+        JSON.stringify(validJSONValue1),
+      );
+      
+      await expect(
+        operateProcessInstanceViewModificationModePage.newVariableByIndex(1)
+          .value,
+      ).toHaveValue(JSON.stringify(validJSONValue1));
+
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getAddVariableModificationText(
+          'testEmptyVariable',
+        ),
+      ).toBeVisible();
+    });
+
+    await test.step('Update variable value for existing variable in JSON editor modal window and verify results', async () => {
+      await operateProcessInstancePage.navigateToRootScope();
+
+      await operateProcessInstanceViewModificationModePage.editExistingVariableJSONInModal(
+        'testVariableString',
+        JSON.stringify(validJSONValue2),
+      );
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableFieldSelector(
+          'testVariableString',
+        ),
+      ).toHaveValue(JSON.stringify(validJSONValue2));
+
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getEditVariableModificationText(
+          'testVariableString',
+        ),
+      ).toBeVisible();
+    });
+
+    await test.step('Check that a variable that hasn\'t been added yet can be removed with "trash bin" icon', async () => {
+      await operateProcessInstanceViewModificationModePage.addNewVariable(
+        '0',
+        'testVariableToRemove',
+        '"to be removed"',
+      );
+      await operateProcessInstanceViewModificationModePage
+        .newVariableByIndex(0)
+        .deleteButton.click();
+
+      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+      for (let i = 0; ; i++) {
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+          );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableName = await row.nameValue.innerText();
+        expect(variableName).not.toContain('testVariableToRemove');
+      }
+      await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
+    });
+
+    await test.step('Check that a variable that hasn\'t been added yet can be removed from "Apply Modifications" window', async () => {
+      await operateProcessInstanceViewModificationModePage.addNewVariable(
+        '0',
+        'testVariableToMeow',
+        '"meow"',
+      );
+
+      await expect(
+        operateProcessInstanceViewModificationModePage.lastAddedModificationText,
+      ).toBeVisible();
+      await expect(
+        operateProcessInstanceViewModificationModePage.getAddVariableModificationText(
+          'testVariableToMeow',
+        ),
+      ).toBeVisible();
+
+      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+
+      let variableModificationFound = false;
+
+      for (let i = 0; ; i++) {
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+          );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableNameValue = await row.nameValue.innerText();
+        if (variableNameValue === 'testVariableToMeow: "meow"') {
+          await expect(row.nameValue).toHaveText('testVariableToMeow: "meow"');
+          await row.deleteVariableModificationButton.click();
+          variableModificationFound = true;
+          break;
+        }
+      }
+      expect(variableModificationFound).toBeTruthy();
+
+      for (let i = 0; ; i++) {
+        const row =
+          operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
+            i,
+        );
+        if (!(await row.nameValue.isVisible())) {
+          break;
+        }
+        const variableName = await row.nameValue.innerText();
+    
+        expect(variableName).not.toContain('testVariableToMeow');
+      }
+
+      await operateProcessInstanceViewModificationModePage.clickCancelButtonDialog();
+    });
+
+    await test.step('Apply modifications and verify variable values in the instance', async () => {
+      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+      await operateProcessInstanceViewModificationModePage.clickApplyButtonModificationsDialog();
+
+      await expect(
+        operateProcessInstanceViewModificationModePage.modificationModeText,
+      ).toBeHidden();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.existingVariableByName(
+              'testNewMeowVariable',
+            ).name,
+          ).toBeVisible({timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      expect(
+        await operateProcessInstancePage
+          .existingVariableByName('testNewMeowVariable')
+          .value.innerText(),
+      ).toContain('7');
+      expect(
+        await operateProcessInstancePage
+          .existingVariableByName('testVariableString')
+          .value.innerText(),
+      ).toContain(JSON.stringify(validJSONValue2));
+
+      const newNestedParentName = activityFirstSubprocess;
+      await operateProcessInstancePage.expandTreeItemInHistory(
+        newNestedParentName,
+      );
+      await operateProcessInstancePage.clickInstanceHistoryElement(
+        activityCollectMoney,
+      );
+      await expect(
+        operateProcessInstancePage.existingVariableByName('testLocalVariable')
+          .name,
+      ).toBeVisible();
+      expect(
+        await operateProcessInstancePage
+          .existingVariableByName('testLocalVariable')
+          .value.innerText(),
+      ).toContain('"addedValue"');
+      await expect(
+        operateProcessInstancePage.existingVariableByName('testLocalVariable')
+          .name,
+      ).toBeVisible();
+      expect(
+        await operateProcessInstancePage
+          .existingVariableByName('testEmptyVariable')
+          .value.innerText(),
+      ).toContain(JSON.stringify(validJSONValue1));
+    });
+
+    await test.step("Check that an existing variable can't be deleted:", async () => {
+      await operateProcessInstancePage.navigateToRootScope();
+      await operateProcessInstancePage.clickEditVariableButton(
+        'testVariableNumber',
+      );
+      await operateProcessInstancePage.clearVariableValueInput();
+      await page.keyboard.press('Tab');
+      await operateProcessInstancePage.checkExistingVariableErrorMessageText(
+        'testVariableNumber',
+        'Value has to be JSON',
+      );
+      await expect(
+        operateProcessInstancePage.saveVariableButton,
+      ).toBeDisabled();
+      await operateProcessInstancePage.fillVariableValueInput('1');
+      await expect(operateProcessInstancePage.saveVariableButton).toBeEnabled();
+      await operateProcessInstancePage.saveVariableButton.click();
+
+      await page.reload();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.existingVariableByName(
+              'testVariableNumber',
+            ).value,
+          ).toHaveText('1', {timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
     });
   });
 

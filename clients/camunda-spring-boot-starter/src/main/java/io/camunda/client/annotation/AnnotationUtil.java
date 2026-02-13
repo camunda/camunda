@@ -18,6 +18,7 @@ package io.camunda.client.annotation;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
@@ -136,7 +137,9 @@ public class AnnotationUtil {
   }
 
   public static boolean isDeployment(final BeanInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(Deployment.class) || isDeploymentLegacy(beanInfo);
+    return beanInfo.hasClassAnnotation(Deployments.class)
+        || beanInfo.hasClassAnnotation(Deployment.class)
+        || isDeploymentLegacy(beanInfo);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
@@ -391,11 +394,19 @@ public class AnnotationUtil {
   public static List<DeploymentValue> getDeploymentValues(final BeanInfo beanInfo) {
     if (isDeployment(beanInfo)) {
       final List<DeploymentValue> values = new ArrayList<>();
+      values.addAll(getDeploymentValuesFromRepeatable(beanInfo));
       values.addAll(getDeploymentValuesInternal(beanInfo));
       values.addAll(getDeploymentResourcesLegacy(beanInfo));
       return values;
     }
     return Collections.emptyList();
+  }
+
+  private static List<DeploymentValue> getDeploymentValuesFromRepeatable(final BeanInfo beanInfo) {
+    return beanInfo.getAnnotation(Deployments.class).stream()
+        .flatMap(d -> Arrays.stream(d.value()))
+        .map(AnnotationUtil::fromAnnotation)
+        .toList();
   }
 
   private static List<DeploymentValue> getDeploymentValuesInternal(final BeanInfo beanInfo) {

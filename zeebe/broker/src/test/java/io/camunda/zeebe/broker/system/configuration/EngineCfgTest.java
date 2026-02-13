@@ -61,6 +61,8 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS);
     assertThat(configuration.getGlobalListeners().userTask()).isEmpty();
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
+    assertThat(configuration.isBusinessIdUniquenessEnabled())
+        .isEqualTo(EngineConfiguration.DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED);
   }
 
   @Test
@@ -96,6 +98,7 @@ final class EngineCfgTest {
     assertListenerCfg(
         taskListeners.get(1), "test2", new String[] {"assigning", "canceling"}, "2", true);
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(2));
+    assertThat(configuration.isBusinessIdUniquenessEnabled()).isTrue();
   }
 
   void assertListenerCfg(
