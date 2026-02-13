@@ -65,7 +65,7 @@ export default defineConfig(
           changeOrigin: true,
         },
         [configPath]: {
-          target: "http://localhost:8080/identity",
+          target: "http://localhost:8080/admin",
           changeOrigin: true,
         },
       },

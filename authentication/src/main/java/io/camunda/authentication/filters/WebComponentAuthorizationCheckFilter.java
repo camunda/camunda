@@ -28,7 +28,7 @@ public class WebComponentAuthorizationCheckFilter extends OncePerRequestFilter {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(WebComponentAuthorizationCheckFilter.class);
-  private static final List<String> WEB_COMPONENTS = List.of("identity", "operate", "tasklist");
+  private static final List<String> WEB_COMPONENTS = List.of("admin", "operate", "tasklist");
   private static final List<String> STATIC_RESOURCES =
       List.of(".css", ".js", ".js.map", ".jpg", ".png", "woff2", ".ico", ".svg");
   final UrlPathHelper urlPathHelper = new UrlPathHelper();
