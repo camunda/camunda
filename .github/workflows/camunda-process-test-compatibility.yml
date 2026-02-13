@@ -348,6 +348,7 @@ jobs:
           parameters: >-
             verify
             -f testing/pom.xml
+            -DskipUTs
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
             -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.server }}
             -DfailIfNoTests=false
