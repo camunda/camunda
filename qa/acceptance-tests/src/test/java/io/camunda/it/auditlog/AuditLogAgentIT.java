@@ -108,6 +108,8 @@ public class AuditLogAgentIT {
         .satisfies(
             auditLog -> {
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
+              assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
+              assertThat(auditLog.getEntityDescription()).isEqualTo("testVar");
               assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
   }
