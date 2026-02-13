@@ -130,6 +130,7 @@ public class OpensearchClientIT {
         new OpensearchClient(
             searchDB.config(),
             searchDB.bulkRequest(),
+            OpensearchConnector.of(searchDB.config()).createClient(),
             RestClientFactory.of(searchDB.config(), true),
             searchDB.indexRouter(),
             searchDB.templateReader(),

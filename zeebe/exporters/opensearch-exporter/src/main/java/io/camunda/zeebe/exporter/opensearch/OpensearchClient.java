@@ -45,6 +45,7 @@ public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
   public static final String ISM_DELETE_STATE = "delete";
   private static final ObjectMapper MAPPER = new ObjectMapper();
+  org.opensearch.client.opensearch.OpenSearchClient openSearchClient;
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
@@ -58,6 +59,7 @@ public class OpensearchClient implements AutoCloseable {
     this(
         configuration,
         new BulkIndexRequest(),
+        OpensearchConnector.of(configuration).createClient(),
         RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
@@ -71,6 +73,7 @@ public class OpensearchClient implements AutoCloseable {
     this(
         configuration,
         new BulkIndexRequest(),
+        OpensearchConnector.of(configuration).createClient(),
         restClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
@@ -80,12 +83,14 @@ public class OpensearchClient implements AutoCloseable {
   OpensearchClient(
       final OpensearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
+      final org.opensearch.client.opensearch.OpenSearchClient openSearchClient,
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
       final OpensearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
+    this.openSearchClient = openSearchClient;
     this.client = client;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
@@ -95,6 +100,7 @@ public class OpensearchClient implements AutoCloseable {
   @Override
   public void close() throws IOException {
     client.close();
+    openSearchClient._transport().close();
   }
 
   /**
