@@ -4,6 +4,9 @@
 name: Camunda Process Test Compatibility Tests
 
 on:
+  push:
+    branches:
+      - nicpuppa/fix-workflow
   schedule:
     # Runs at 02:00 every day https://crontab.guru/#0_2_*_*_*
     - cron: '0 2 * * *'
@@ -47,7 +50,8 @@ jobs:
       - name: Get branch information
         id: branch-info
         run: |
-          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          # TODO: Remove this hack - simulating stable/8.8 for testing
+          BRANCH_NAME="stable/8.8"
           echo "branch-name=$BRANCH_NAME" >> "$GITHUB_OUTPUT"
 
           if [[ "$BRANCH_NAME" == "main" ]]; then
@@ -342,6 +346,13 @@ jobs:
             -DskipITs
             -DskipUTs
             -DskipChecks
+
+      - name: Verify Docker image availability
+        run: |
+          echo "Pulling camunda/camunda:${{ matrix.server }}..."
+          docker pull "camunda/camunda:${{ matrix.server }}"
+          echo "Image pulled successfully."
+          docker inspect "camunda/camunda:${{ matrix.server }}" --format '{{.Id}} {{.RepoTags}}'
 
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
