@@ -54,7 +54,10 @@ const BatchOperations: React.FC = () => {
   ];
 
   const {data, error, isError, isLoading, isFetched, isFetching} =
-    usePaginatedBatchOperations({sort}, {page, pageSize});
+    usePaginatedBatchOperations(
+      {sort, filter: {operationType: {$neq: 'DELETE_DECISION_DEFINITION'}}},
+      {page, pageSize},
+    );
 
   const operations = useMemo(() => data?.items ?? [], [data]);
   const totalItems = data?.page.totalItems ?? 0;
