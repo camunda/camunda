@@ -268,9 +268,15 @@ class ElasticsearchClient implements AutoCloseable {
 
   public boolean bulkPutIndexLifecycleSettings(final String policyName) {
     try {
+      // camunda exporter indexes have a slightly different format (dash instead of underscore after
+      // prefix) so using that to avoid accidentally updating them
       final var request =
           new Request(
-              "PUT", "/" + configuration.index.prefix + "*/_settings?allow_no_indices=true");
+              "PUT",
+              "/"
+                  + configuration.index.prefix
+                  + RecordIndexRouter.INDEX_DELIMITER
+                  + "*/_settings?allow_no_indices=true");
       final var requestEntity = new PutIndexSettingsRequest(new Index(new Lifecycle(policyName)));
       request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
       final var response = sendRequest(request, PutIndexSettingsResponse.class);
