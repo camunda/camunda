@@ -119,7 +119,7 @@ public class IncidentStatisticsReader extends AbstractReader
             .subAggregation(
                 terms(GROUP_BY_PROCESS_KEYS)
                     .field(IncidentTemplate.PROCESS_DEFINITION_KEY)
-                    .size(termsAggSize)
+                    .size(ElasticsearchUtil.TERMS_AGG_SIZE)
                     .subAggregation(
                         cardinality(UNIQ_PROCESS_INSTANCES)
                             .field(IncidentTemplate.PROCESS_INSTANCE_KEY)));
