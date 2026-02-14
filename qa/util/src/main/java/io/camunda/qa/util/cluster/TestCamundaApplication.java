@@ -175,7 +175,7 @@ public final class TestCamundaApplication extends TestSpringApplication<TestCamu
         .withAdditionalProfile(Profile.BROKER)
         .withAdditionalProfile(Profile.OPERATE)
         .withAdditionalProfile(Profile.TASKLIST)
-        .withAdditionalProfile(Profile.IDENTITY)
+        .withAdditionalProfile(Profile.ADMIN)
         .withAdditionalInitializer(new WebappsConfigurationInitializer())
         .withAdditionalInitializer(new McpGatewayInitializer());
   }

@@ -7,6 +7,7 @@
  */
 package io.camunda.application.initializers;
 
+import static io.camunda.application.Profile.ADMIN;
 import static io.camunda.application.Profile.IDENTITY;
 import static io.camunda.application.Profile.OPERATE;
 import static io.camunda.application.Profile.TASKLIST;
@@ -31,7 +32,7 @@ public class WebappsConfigurationInitializer
   private static final String SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY =
       "server.servlet.session.cookie.name";
   private static final Set<String> WEBAPPS_PROFILES =
-      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId());
+      Set.of(OPERATE.getId(), TASKLIST.getId(), IDENTITY.getId(), ADMIN.getId());
 
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
@@ -46,8 +47,9 @@ public class WebappsConfigurationInitializer
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPERATE.getId());
       } else if (activeProfiles.contains(TASKLIST.getId())) {
         propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
-      } else if (activeProfiles.contains(IDENTITY.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, IDENTITY.getId());
+      } else if (activeProfiles.contains(IDENTITY.getId())
+          || activeProfiles.contains(ADMIN.getId())) {
+        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, ADMIN.getId());
       }
       propertyMap.put(CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY, isLoginDelegated(context));
       propertyMap.put(
