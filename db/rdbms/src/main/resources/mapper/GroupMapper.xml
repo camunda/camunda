@@ -52,8 +52,10 @@ SELECT
     FROM ${prefix}GROUP_MEMBER gm
     JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
     LEFT JOIN ${prefix}GROUP_ g_member ON gm.ENTITY_TYPE = 'GROUP' AND gm.ENTITY_ID = g_member.GROUP_ID
-    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
-    AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilterConditions"/>
+      AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
+    </where>
   </select>
 
   <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery"
@@ -69,8 +71,10 @@ SELECT
     FROM ${prefix}GROUP_MEMBER gm
     JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
     LEFT JOIN ${prefix}GROUP_ g_member ON gm.ENTITY_TYPE = 'GROUP' AND gm.ENTITY_ID = g_member.GROUP_ID
-    <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
-    AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilterConditions"/>
+      AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -132,23 +136,27 @@ SELECT
 
   <sql id="searchMemberFilter">
     <where>
-      <!-- authorization filters -->
-      <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
-        AND g.GROUP_ID IN
-        <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
-          close=")">
-          #{resourceId}
-        </foreach>
-      </if>
-
-      <if test="filter.groupId != null">
-        AND g.GROUP_ID = #{filter.groupId}
-      </if>
-
-      <if test="filter.memberType != null">
-        AND gm.ENTITY_TYPE = #{filter.memberType}
-      </if>
+      <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilterConditions"/>
     </where>
+  </sql>
+
+  <sql id="searchMemberFilterConditions">
+    <!-- authorization filters -->
+    <if test="authorizedResourceIds != null and !authorizedResourceIds.isEmpty()">
+      AND g.GROUP_ID IN
+      <foreach collection="authorizedResourceIds" item="resourceId" open="(" separator=","
+        close=")">
+        #{resourceId}
+      </foreach>
+    </if>
+
+    <if test="filter.groupId != null">
+      AND g.GROUP_ID = #{filter.groupId}
+    </if>
+
+    <if test="filter.memberType != null">
+      AND gm.ENTITY_TYPE = #{filter.memberType}
+    </if>
   </sql>
 
   <resultMap id="groupResultMap" type="io.camunda.db.rdbms.write.domain.GroupDbModel">

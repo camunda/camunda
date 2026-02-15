@@ -21,8 +21,10 @@
     FROM ${prefix}ROLE_MEMBER rm
     JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
     LEFT JOIN ${prefix}GROUP_ g ON rm.ENTITY_TYPE = 'GROUP' AND rm.ENTITY_ID = g.GROUP_ID
-    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
-    AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilterConditions"/>
+      AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
+    </where>
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"
@@ -69,8 +71,10 @@ FROM (
     FROM ${prefix}ROLE_MEMBER rm
     JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
     LEFT JOIN ${prefix}GROUP_ g ON rm.ENTITY_TYPE = 'GROUP' AND rm.ENTITY_ID = g.GROUP_ID
-    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
-    AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
+    <where>
+      <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilterConditions"/>
+      AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
+    </where>
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
@@ -125,14 +129,18 @@ FROM (
 
   <sql id="searchMemberFilter">
     <where>
-      <if test="filter.roleId != null">
-        AND r.ROLE_ID = #{filter.roleId}
-      </if>
-
-      <if test="filter.memberType != null">
-        AND rm.ENTITY_TYPE = #{filter.memberType}
-      </if>
+      <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilterConditions"/>
     </where>
+  </sql>
+
+  <sql id="searchMemberFilterConditions">
+    <if test="filter.roleId != null">
+      AND r.ROLE_ID = #{filter.roleId}
+    </if>
+
+    <if test="filter.memberType != null">
+      AND rm.ENTITY_TYPE = #{filter.memberType}
+    </if>
   </sql>
 
   <resultMap id="roleResultMap" type="io.camunda.db.rdbms.write.domain.RoleDbModel">
