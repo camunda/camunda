@@ -163,7 +163,7 @@ public class GroupsByTenantIT {
     // when - delete one of the groups (not the tenant assignment, but the actual group)
     camundaClient.newDeleteGroupCommand(group2Id).send().join();
 
-    // wait for the group to be deleted
+    // wait for the group to be deleted from primary storage
     Awaitility.await("Group should be deleted")
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
@@ -172,15 +172,19 @@ public class GroupsByTenantIT {
                   .isInstanceOf(ProblemException.class);
             });
 
-    // then - searching for groups in the tenant should:
-    // 1. Not throw an error
-    // 2. Return only the existing group (group1Id)
-    // 3. Filter out the deleted group (group2Id)
-    final List<TenantGroup> groupsAfterDeletion =
-        camundaClient.newGroupsByTenantSearchRequest(testTenantId).send().join().items();
-
-    assertThat(groupsAfterDeletion).hasSize(1);
-    assertThat(groupsAfterDeletion).extracting(TenantGroup::getGroupId).containsExactly(group1Id);
-    assertThat(groupsAfterDeletion).extracting(TenantGroup::getGroupId).doesNotContain(group2Id);
+    // then - wait for RDBMS exporter to process the deletion and verify:
+    // 1. No error is thrown
+    // 2. Only the existing group (group1Id) is returned
+    // 3. The deleted group (group2Id) is filtered out
+    Awaitility.await("Deleted group should be filtered out from tenant group search")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final List<TenantGroup> groups =
+                  camundaClient.newGroupsByTenantSearchRequest(testTenantId).send().join().items();
+              assertThat(groups).hasSize(1);
+              assertThat(groups).extracting(TenantGroup::getGroupId).containsExactly(group1Id);
+              assertThat(groups).extracting(TenantGroup::getGroupId).doesNotContain(group2Id);
+            });
   }
 }
