@@ -7,7 +7,35 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.ObjectBuilderDeserializer;
+import org.opensearch.client.json.ObjectDeserializer;
+import org.opensearch.client.util.ObjectBuilder;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
-public record PutIndexTemplateResponse(boolean acknowledged) {}
+public record PutIndexTemplateResponse(boolean acknowledged) {
+
+  public static final JsonpDeserializer<PutIndexTemplateResponse> _DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(
+          PutIndexTemplateResponse.Builder::new, PutIndexTemplateResponse::setupDeserializer);
+
+  private static void setupDeserializer(final ObjectDeserializer<Builder> deserializer) {
+    deserializer.add(
+        PutIndexTemplateResponse.Builder::acknowledged,
+        JsonpDeserializer.booleanDeserializer(),
+        "acknowledged");
+  }
+
+  static class Builder implements ObjectBuilder<PutIndexTemplateResponse> {
+    private Boolean acknowledged;
+
+    public PutIndexTemplateResponse.Builder acknowledged(final Boolean acknowledged) {
+      this.acknowledged = acknowledged;
+      return this;
+    }
+
+    @Override
+    public PutIndexTemplateResponse build() {
+      return new PutIndexTemplateResponse(Boolean.TRUE.equals(acknowledged));
+    }
+  }
+}
