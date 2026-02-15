@@ -51,7 +51,9 @@ SELECT
     SELECT COUNT(*)
     FROM ${prefix}GROUP_MEMBER gm
     JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
+    LEFT JOIN ${prefix}GROUP_ g_member ON gm.ENTITY_TYPE = 'GROUP' AND gm.ENTITY_ID = g_member.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
+    AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
   </select>
 
   <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.GroupMemberDbQuery"
@@ -66,7 +68,9 @@ SELECT
     gm.ENTITY_TYPE
     FROM ${prefix}GROUP_MEMBER gm
     JOIN ${prefix}GROUP_ g ON g.GROUP_ID = gm.GROUP_ID
+    LEFT JOIN ${prefix}GROUP_ g_member ON gm.ENTITY_TYPE = 'GROUP' AND gm.ENTITY_ID = g_member.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.GroupMapper.searchMemberFilter"/>
+    AND (gm.ENTITY_TYPE != 'GROUP' OR g_member.GROUP_ID IS NOT NULL)
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>

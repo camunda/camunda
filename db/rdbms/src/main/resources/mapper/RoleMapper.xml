@@ -20,7 +20,9 @@
     SELECT COUNT(*)
     FROM ${prefix}ROLE_MEMBER rm
     JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    LEFT JOIN ${prefix}GROUP_ g ON rm.ENTITY_TYPE = 'GROUP' AND rm.ENTITY_ID = g.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
+    AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"
@@ -66,7 +68,9 @@ FROM (
     rm.ENTITY_TYPE
     FROM ${prefix}ROLE_MEMBER rm
     JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+    LEFT JOIN ${prefix}GROUP_ g ON rm.ENTITY_TYPE = 'GROUP' AND rm.ENTITY_ID = g.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
+    AND (rm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>

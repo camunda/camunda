@@ -36,7 +36,9 @@
     SELECT COUNT(*)
     FROM ${prefix}TENANT_MEMBER tm
     JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
+    LEFT JOIN ${prefix}GROUP_ g ON tm.ENTITY_TYPE = 'GROUP' AND tm.ENTITY_ID = g.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
+    AND (tm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
   </select>
 
   <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery"
@@ -51,7 +53,9 @@
     tm.ENTITY_TYPE
     FROM ${prefix}TENANT_MEMBER tm
     JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
+    LEFT JOIN ${prefix}GROUP_ g ON tm.ENTITY_TYPE = 'GROUP' AND tm.ENTITY_ID = g.GROUP_ID
     <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
+    AND (tm.ENTITY_TYPE != 'GROUP' OR g.GROUP_ID IS NOT NULL)
     ) t
     <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>

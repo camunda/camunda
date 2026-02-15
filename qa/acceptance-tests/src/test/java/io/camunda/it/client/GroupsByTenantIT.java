@@ -125,4 +125,62 @@ public class GroupsByTenantIT {
         .hasMessageContaining("Failed with code 404: 'Not Found'")
         .hasMessageContaining(ERROR_ENTITY_BY_ID_NOT_FOUND.formatted("Group", "id", "someGroupId"));
   }
+
+  @Test
+  void shouldHandleDeletedGroupGracefully() {
+    // given - create a new tenant and assign two groups to it
+    final String testTenantId = Strings.newRandomValidTenantId();
+    final String group1Id = "testGroup1-" + Strings.newRandomValidIdentityId();
+    final String group2Id = "testGroup2-" + Strings.newRandomValidIdentityId();
+
+    camundaClient.newCreateTenantCommand().tenantId(testTenantId).name("testTenant").send().join();
+    camundaClient.newCreateGroupCommand().groupId(group1Id).name("Group 1").send().join();
+    camundaClient.newCreateGroupCommand().groupId(group2Id).name("Group 2").send().join();
+
+    camundaClient
+        .newAssignGroupToTenantCommand()
+        .groupId(group1Id)
+        .tenantId(testTenantId)
+        .send()
+        .join();
+    camundaClient
+        .newAssignGroupToTenantCommand()
+        .groupId(group2Id)
+        .tenantId(testTenantId)
+        .send()
+        .join();
+
+    // wait for groups to appear
+    Awaitility.await("Groups should appear in tenant group search")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              final List<TenantGroup> groups =
+                  camundaClient.newGroupsByTenantSearchRequest(testTenantId).send().join().items();
+              assertThat(groups).hasSize(2);
+            });
+
+    // when - delete one of the groups (not the tenant assignment, but the actual group)
+    camundaClient.newDeleteGroupCommand(group2Id).send().join();
+
+    // wait for the group to be deleted
+    Awaitility.await("Group should be deleted")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              assertThatThrownBy(() -> camundaClient.newGroupGetRequest(group2Id).send().join())
+                  .isInstanceOf(ProblemException.class);
+            });
+
+    // then - searching for groups in the tenant should:
+    // 1. Not throw an error
+    // 2. Return only the existing group (group1Id)
+    // 3. Filter out the deleted group (group2Id)
+    final List<TenantGroup> groupsAfterDeletion =
+        camundaClient.newGroupsByTenantSearchRequest(testTenantId).send().join().items();
+
+    assertThat(groupsAfterDeletion).hasSize(1);
+    assertThat(groupsAfterDeletion).extracting(TenantGroup::getGroupId).containsExactly(group1Id);
+    assertThat(groupsAfterDeletion).extracting(TenantGroup::getGroupId).doesNotContain(group2Id);
+  }
 }
