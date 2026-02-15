@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+// import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponseOLD;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
@@ -56,7 +58,7 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
-
+  final OpensearchClient opensearchClient;
   private final OpensearchExporterConfiguration config;
   private final RestClient restClient;
   private final OpenSearchClient osClient;
@@ -74,6 +76,8 @@ final class TestClient implements CloseableSilently {
     this.indexRouter = indexRouter;
     this.restClient = restClient;
     osClient = new OpenSearchClient(createTransport(config));
+
+    opensearchClient = new OpensearchClient(config, Metrics.globalRegistry, osClient, restClient);
   }
 
   @SuppressWarnings("rawtypes")
@@ -120,16 +124,8 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  GetIndexStateManagementPolicyResponse getIndexStateManagementPolicy() {
-    try {
-      final var request =
-          new Request("GET", "/_plugins/_ism/policies/" + config.retention.getPolicyName());
-      final var response = restClient.performRequest(request);
-      return MAPPER.readValue(
-          response.getEntity().getContent(), GetIndexStateManagementPolicyResponse.class);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
+    return opensearchClient.getIndexStateManagementPolicy();
   }
 
   void putIndexStateManagementPolicy(final String minimumAge) {
@@ -143,7 +139,7 @@ final class TestClient implements CloseableSilently {
                 return req;
               });
 
-      osClient.ism().putPolicy(request);
+      opensearchClient.putIndexStateManagementPolicy(request);
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put index state management policy", e);
     }
@@ -239,7 +235,12 @@ final class TestClient implements CloseableSilently {
 
   private void decoratePolicyVersionSeq(final PutPolicyRequest.Builder builder) {
     try {
-      final GetIndexStateManagementPolicyResponse policy = getIndexStateManagementPolicy();
+      final Optional<GetIndexStateManagementPolicyResponse> maybePolicy =
+          getIndexStateManagementPolicy();
+      if (maybePolicy.isEmpty()) {
+        return;
+      }
+      final GetIndexStateManagementPolicyResponse policy = maybePolicy.get();
       builder.ifSeqNo(policy.seqNo().longValue());
       builder.ifPrimaryTerm(policy.primaryTerm());
     } catch (final Exception e) {
