@@ -22,6 +22,7 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,17 +30,22 @@ import org.apache.http.entity.EntityTemplate;
 import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.Result;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
 import org.opensearch.client.opensearch.ism.DeletePolicyRequest;
 import org.opensearch.client.opensearch.ism.DeletePolicyResponse;
+import org.opensearch.client.opensearch.ism.GetPolicyRequest;
 import org.opensearch.client.opensearch.ism.IsmTemplate;
+import org.opensearch.client.opensearch.ism.OpenSearchIsmClient;
 import org.opensearch.client.opensearch.ism.Policy;
 import org.opensearch.client.opensearch.ism.PutPolicyRequest;
-import org.opensearch.client.opensearch.ism.PutPolicyResponse;
 import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
+import org.opensearch.client.transport.Endpoint;
+import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 
 public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
@@ -74,6 +80,21 @@ public class OpensearchClient implements AutoCloseable {
         configuration,
         new BulkIndexRequest(),
         OpensearchConnector.of(configuration).createClient(),
+        restClient,
+        new RecordIndexRouter(configuration.index),
+        new TemplateReader(configuration.index),
+        new OpensearchMetrics(meterRegistry));
+  }
+
+  OpensearchClient(
+      final OpensearchExporterConfiguration configuration,
+      final MeterRegistry meterRegistry,
+      final OpenSearchClient openSearchClient,
+      final RestClient restClient) {
+    this(
+        configuration,
+        new BulkIndexRequest(),
+        openSearchClient,
         restClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
@@ -248,9 +269,11 @@ public class OpensearchClient implements AutoCloseable {
 
   Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
     try {
-      final var request =
-          new Request("GET", "/_plugins/_ism/policies/" + configuration.retention.getPolicyName());
-      return Optional.of(sendRequest(request, GetIndexStateManagementPolicyResponse.class));
+      final GetPolicyRequest request =
+          GetPolicyRequest.builder().policyId(configuration.retention.getPolicyName()).build();
+      final GetIndexStateManagementPolicyResponse response =
+          OpensearchIsmPolicyClientWrapper.getIsmPolicyResponse(openSearchClient.ism(), request);
+      return Optional.ofNullable(response);
     } catch (final IOException e) {
       return Optional.empty();
     }
@@ -337,12 +360,23 @@ public class OpensearchClient implements AutoCloseable {
                 return req;
               });
 
-      final PutPolicyResponse response = openSearchClient.ism().putPolicy(request);
+      // the response of a PUT request is the same as for a GET request, so we can reuse the
+      // response
+      final GetIndexStateManagementPolicyResponse response =
+          OpensearchIsmPolicyClientWrapper.putIsmPolicyResponse(openSearchClient.ism(), request);
 
       return response.policy() != null;
     } catch (final IOException e) {
       throw new OpensearchExporterException("Failed to put index state management policy", e);
     }
+  }
+
+  boolean putIndexStateManagementPolicy(final PutPolicyRequest request) throws IOException {
+    // the response of a PUT request is the same as for a GET request, so we can reuse the
+    // response
+    final GetIndexStateManagementPolicyResponse response =
+        OpensearchIsmPolicyClientWrapper.putIsmPolicyResponse(openSearchClient.ism(), request);
+    return response.policy() != null;
   }
 
   private Policy getIsmPolicy() {
@@ -372,5 +406,71 @@ public class OpensearchClient implements AutoCloseable {
         .states(List.of(initialState, deleteState))
         .ismTemplate(ismTemplate)
         .build();
+  }
+
+  private static class OpensearchIsmPolicyClientWrapper {
+
+    public static final Endpoint<
+            GetPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
+        _GET_ENDPOINT =
+            new SimpleEndpoint<>(
+                // Request method
+                request -> "GET",
+                // Request path
+                request -> {
+                  StringBuilder buf = new StringBuilder();
+                  buf.append("/_plugins/_ism/policies/");
+                  SimpleEndpoint.pathEncode(request.policyId(), buf);
+                  return buf.toString();
+                },
+                SimpleEndpoint.emptyMap(), // query parameters, none used
+                SimpleEndpoint.emptyMap(), // headers, none used
+                false,
+                GetIndexStateManagementPolicyResponse._DESERIALIZER);
+
+    public static final Endpoint<
+            PutPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
+        _PUT_ENDPOINT =
+            new SimpleEndpoint<>(
+                // Request method
+                request -> "PUT",
+                // Request path
+                request -> {
+                  StringBuilder buf = new StringBuilder();
+                  buf.append("/_plugins/_ism/policies/");
+                  SimpleEndpoint.pathEncode(request.policyId(), buf);
+                  return buf.toString();
+                },
+                request -> {
+                  // add seq_no and primary_term as query parameters
+                  final var params = new HashMap<String, String>();
+                  if (request.ifSeqNo() != null) {
+                    params.put("if_seq_no", request.ifSeqNo().toString());
+                  }
+                  if (request.ifPrimaryTerm() != null) {
+                    params.put("if_primary_term", request.ifPrimaryTerm().toString());
+                  }
+                  return params;
+                },
+                SimpleEndpoint.emptyMap(), // headers, none used
+                true, // include request body in request
+                // the response is the same as for the GET request, so we can reuse the deserializer
+                GetIndexStateManagementPolicyResponse._DESERIALIZER);
+
+    public static GetIndexStateManagementPolicyResponse getIsmPolicyResponse(
+        final OpenSearchIsmClient openSearchIsmClient, final GetPolicyRequest request)
+        throws IOException {
+      return openSearchIsmClient
+          ._transport()
+          .performRequest(request, _GET_ENDPOINT, openSearchIsmClient._transportOptions());
+    }
+
+    public static GetIndexStateManagementPolicyResponse putIsmPolicyResponse(
+        final OpenSearchIsmClient openSearchIsmClient, final PutPolicyRequest request)
+        throws IOException {
+      return openSearchIsmClient
+          ._transport()
+          .performRequest(request, _PUT_ENDPOINT, openSearchIsmClient._transportOptions());
+    }
   }
 }

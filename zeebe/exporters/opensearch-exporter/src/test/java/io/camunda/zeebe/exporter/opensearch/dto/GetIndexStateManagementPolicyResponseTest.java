@@ -7,18 +7,17 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
-import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_INITIAL_STATE;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.exporter.opensearch.OpensearchClient;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
-import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy;
-import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.IsmTemplate;
-import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.State;
-import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.State.Transition;
-import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.State.Transition.Conditions;
-import java.util.Collections;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.IsmPolicyResponse;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.IsmPolicyResponse.Builder;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.IsmTemplate;
 import java.util.List;
 import org.junit.jupiter.api.Test;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.opensearch.ism.States;
 
 final class GetIndexStateManagementPolicyResponseTest {
 
@@ -115,17 +114,27 @@ final class GetIndexStateManagementPolicyResponseTest {
       final String description,
       final String minimumAge,
       final String indexPattern) {
-    final Policy policy =
-        new Policy(
-            name,
-            description,
-            ISM_INITIAL_STATE,
-            List.of(
-                new State(
-                    ISM_INITIAL_STATE,
-                    Collections.emptyList(),
-                    List.of(new Transition("delete", new Conditions(minimumAge))))),
-            List.of(new IsmTemplate(List.of(indexPattern), 1)));
-    return new GetIndexStateManagementPolicyResponse(policy, 1, 1);
+    final States deleteState =
+        States.builder()
+            .name(OpensearchClient.ISM_INITIAL_STATE)
+            .transitions(
+                t -> t.stateName("delete").conditions("min_index_age", JsonData.of(minimumAge)))
+            .build();
+
+    final IsmPolicyResponse policyResponse =
+        new Builder()
+            .policyId(name)
+            .description(description)
+            .defaultState(OpensearchClient.ISM_INITIAL_STATE)
+            .states(List.of(deleteState))
+            .ismTemplates(
+                List.of(
+                    new IsmTemplate.Builder()
+                        .priority(1)
+                        .indexPatterns(List.of(indexPattern))
+                        .build()))
+            .build();
+
+    return new GetIndexStateManagementPolicyResponse(policyResponse, 1, 1);
   }
 }
