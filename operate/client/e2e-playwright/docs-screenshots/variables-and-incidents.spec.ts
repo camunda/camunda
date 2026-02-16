@@ -54,7 +54,7 @@ test.describe('variables and incidents', () => {
           ],
           page: {totalItems: 1},
         },
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'Gateway_1qlqb7o',
@@ -95,7 +95,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         elementInstances: orderProcessInstance.incidentState.elementInstances,
-        statisticsV2: orderProcessInstance.incidentState.statisticsV2,
+        statistics: orderProcessInstance.incidentState.statistics,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentState.variables,
@@ -172,7 +172,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetailV2: orderProcessInstance.incidentState.detailV2,
         callHierarchy: orderProcessInstance.incidentState.callHierarchy,
         elementInstances: orderProcessInstance.incidentState.elementInstances,
-        statisticsV2: orderProcessInstance.incidentState.statisticsV2,
+        statistics: orderProcessInstance.incidentState.statistics,
         sequenceFlows: orderProcessInstance.incidentState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.incidentState.sequenceFlowsV2,
         variables: orderProcessInstance.incidentResolvedState.variables,
@@ -232,7 +232,7 @@ test.describe('variables and incidents', () => {
         callHierarchy: orderProcessInstance.incidentResolvedState.callHierarchy,
         elementInstances:
           orderProcessInstance.incidentResolvedState.elementInstances,
-        statisticsV2: orderProcessInstance.incidentResolvedState.statisticsV2,
+        statistics: orderProcessInstance.incidentResolvedState.statistics,
         sequenceFlows: orderProcessInstance.incidentResolvedState.sequenceFlows,
         sequenceFlowsV2:
           orderProcessInstance.incidentResolvedState.sequenceFlowsV2,
@@ -258,7 +258,7 @@ test.describe('variables and incidents', () => {
         processInstanceDetailV2: orderProcessInstance.completedState.detailV2,
         callHierarchy: orderProcessInstance.completedState.callHierarchy,
         elementInstances: orderProcessInstance.completedState.elementInstances,
-        statisticsV2: orderProcessInstance.completedState.statisticsV2,
+        statistics: orderProcessInstance.completedState.statistics,
         sequenceFlows: orderProcessInstance.completedState.sequenceFlows,
         sequenceFlowsV2: orderProcessInstance.completedState.sequenceFlowsV2,
         variables: orderProcessInstance.completedState.variables,

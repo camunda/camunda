@@ -13,6 +13,7 @@ import {Container, InlineNotification, Button} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 
 type Props = {
   sourceFlowNodeId?: string;
@@ -28,8 +29,13 @@ const BatchModificationNotification: React.FC<Props> = observer(
       processDefinitionKey,
     });
 
+    const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
     const {data: instancesCount = 0} = useInstancesCount(
-      {},
+      {
+        filter: {
+          processInstanceKey: processInstanceKeyFilter,
+        },
+      },
       processDefinitionKey,
       sourceFlowNodeId,
     );

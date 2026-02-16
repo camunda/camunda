@@ -419,7 +419,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       },
     ],
   },
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'eventBasedGateway',

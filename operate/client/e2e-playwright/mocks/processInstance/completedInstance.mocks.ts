@@ -86,7 +86,7 @@ const completedInstance: InstanceMock = {
     ],
     page: {totalItems: 3},
   },
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'EndEvent_02qhg5x',

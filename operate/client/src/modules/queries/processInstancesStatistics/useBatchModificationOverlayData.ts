@@ -15,7 +15,6 @@ import type {
   GetProcessDefinitionStatisticsRequestBody,
   GetProcessDefinitionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
-import {getSelectedProcessInstancesFilter} from './filters';
 
 function batchModificationOverlayParser(params: {
   sourceFlowNodeId?: string;
@@ -58,18 +57,9 @@ function useBatchModificationOverlayData(
   processDefinitionKey?: string,
   enabled: boolean = true,
 ) {
-  const processInstanceKey = getSelectedProcessInstancesFilter();
-  const parsedPayload = {
-    ...payload,
-    filter: {
-      ...payload.filter,
-      processInstanceKey,
-    },
-  };
-
   return useQuery(
     useProcessInstancesStatisticsOptions<OverlayData[]>(
-      parsedPayload,
+      payload,
       batchModificationOverlayParser(params),
       processDefinitionKey,
       enabled,

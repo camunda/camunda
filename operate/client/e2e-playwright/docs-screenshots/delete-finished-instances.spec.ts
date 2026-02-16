@@ -14,7 +14,7 @@ import {
   mockResponses as mockProcessesResponses,
   mockNewDeleteOperation,
   mockFinishedOrderProcessInstances,
-  mockStatisticsV2,
+  mockStatistics,
   mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {
@@ -42,7 +42,7 @@ test.describe('delete finished instances', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockFinishedOrderProcessInstances,
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),
@@ -109,7 +109,7 @@ test.describe('delete finished instances', () => {
           items: [mockNewDeleteOperation, ...mockBatchOperations.items],
         },
         processInstances: processInstancesMock,
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),
@@ -160,7 +160,7 @@ test.describe('delete finished instances', () => {
         processInstanceDetailV2: completedOrderProcessInstance.detailV2,
         callHierarchy: completedOrderProcessInstance.callHierarchy,
         elementInstances: completedOrderProcessInstance.elementInstances,
-        statisticsV2: completedOrderProcessInstance.statisticsV2,
+        statistics: completedOrderProcessInstance.statistics,
         sequenceFlows: completedOrderProcessInstance.sequenceFlows,
         sequenceFlowsV2: completedOrderProcessInstance.sequenceFlowsV2,
         xml: completedOrderProcessInstance.xml,
