@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.filter.config.TestConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -341,6 +342,54 @@ final class DefaultRecordFilterTest {
         .isTrue();
   }
 
+  @Test
+  void shouldApplyBpmnProcessIdInclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.PROCESS_INSTANCE);
+
+    configuration.filterIndexConfig().withBpmnProcessIdInclusion(List.of("order-process"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var included = processInstanceRecord("order-process");
+    final var other = processInstanceRecord("payment-process");
+
+    // when / then
+    assertThat(filter.acceptRecord(included))
+        .as("Records for included BPMN process id should be accepted")
+        .isTrue();
+    assertThat(filter.acceptRecord(other))
+        .as("Records for non-included BPMN process id should be rejected")
+        .isFalse();
+  }
+
+  @Test
+  void shouldApplyBpmnProcessIdExclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.PROCESS_INSTANCE);
+
+    configuration.filterIndexConfig().withBpmnProcessIdExclusion(List.of("deprecated-process"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var excluded = processInstanceRecord("deprecated-process");
+    final var other = processInstanceRecord("active-process");
+
+    // when / then
+    assertThat(filter.acceptRecord(excluded))
+        .as("Records for excluded BPMN process id should be rejected")
+        .isFalse();
+    assertThat(filter.acceptRecord(other))
+        .as("Records for other BPMN process ids should be accepted")
+        .isTrue();
+  }
+
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
@@ -361,6 +410,23 @@ final class DefaultRecordFilterTest {
     when(record.getValue()).thenReturn(value);
     when(value.getName()).thenReturn(name);
     when(value.getValue()).thenReturn(rawValue);
+
+    return record;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<ProcessInstanceRecordValue> processInstanceRecord(
+      final String bpmnProcessId) {
+
+    final Record<ProcessInstanceRecordValue> record =
+        (Record<ProcessInstanceRecordValue>) mock(Record.class);
+    final var value = mock(ProcessInstanceRecordValue.class);
+
+    when(record.getRecordType()).thenReturn(RecordType.EVENT);
+    when(record.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(record.getBrokerVersion()).thenReturn("8.9.0");
+    when(record.getValue()).thenReturn(value);
+    when(value.getBpmnProcessId()).thenReturn(bpmnProcessId);
 
     return record;
   }

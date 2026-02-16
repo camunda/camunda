@@ -262,6 +262,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     // optimize mode
     private boolean optimizeModeEnabled = false;
 
+    // BPMN process id filters
+    private List<String> bpmnProcessIdInclusion = new ArrayList<>();
+    private List<String> bpmnProcessIdExclusion = new ArrayList<>();
+
     public Integer getNumberOfShards() {
       return numberOfShards;
     }
@@ -327,12 +331,30 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     }
 
     @Override
+    public List<String> getBpmnProcessIdInclusion() {
+      return List.copyOf(bpmnProcessIdInclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdExclusion() {
+      return List.copyOf(bpmnProcessIdExclusion);
+    }
+
+    @Override
     public boolean isOptimizeModeEnabled() {
       return optimizeModeEnabled;
     }
 
     public void setOptimizeModeEnabled(final boolean optimizeModeEnabled) {
       this.optimizeModeEnabled = optimizeModeEnabled;
+    }
+
+    public void setBpmnProcessIdExclusion(final List<String> bpmnProcessIdExclusion) {
+      this.bpmnProcessIdExclusion = bpmnProcessIdExclusion;
+    }
+
+    public void setBpmnProcessIdInclusion(final List<String> bpmnProcessIdInclusion) {
+      this.bpmnProcessIdInclusion = bpmnProcessIdInclusion;
     }
 
     public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
@@ -480,6 +502,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + variableValueTypeExclusion
           + ", optimizeModeEnabled="
           + optimizeModeEnabled
+          + ", bpmnProcessIdInclusion="
+          + bpmnProcessIdInclusion
+          + ", bpmnProcessIdExclusion="
+          + bpmnProcessIdExclusion
           + '}';
     }
   }

@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -25,6 +26,9 @@ import io.camunda.zeebe.util.Either;
 @ExcludeAuthorizationCheck
 public final class GlobalListenerCreateProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
+
+  private static final String LISTENER_EXISTS_ERROR_MESSAGE =
+      "Expected to create a global %s listener with id '%s', but a listener with the same id was found";
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
@@ -66,9 +70,17 @@ public final class GlobalListenerCreateProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
-    writers
-        .state()
-        .appendFollowUpEvent(command.getKey(), GlobalListenerIntent.CREATED, command.getValue());
+    final var record = command.getValue();
+
+    final var listener =
+        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
+    if (listener != null) {
+      final var message =
+          LISTENER_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
+      writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
+    } else {
+      writers.state().appendFollowUpEvent(command.getKey(), GlobalListenerIntent.CREATED, record);
+    }
     distributionBehavior.acknowledgeCommand(command);
   }
 

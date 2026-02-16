@@ -22,10 +22,13 @@
             "globalListenerBatchKey": {
               "type": "long"
             },
-            "taskListeners": {
+            "listeners": {
               "type": "nested",
               "dynamic": "strict",
               "properties": {
+                "globalListenerKey": {
+                  "type": "long"
+                },
                 "id": {
                   "type": "keyword"
                 },
@@ -51,6 +54,15 @@
                   "type": "keyword"
                 }
               }
+            },
+            "createdListenerKeys": {
+              "type": "long"
+            },
+            "updatedListenerKeys": {
+              "type": "long"
+            },
+            "deletedListenerKeys": {
+              "type": "long"
             }
           }
         }

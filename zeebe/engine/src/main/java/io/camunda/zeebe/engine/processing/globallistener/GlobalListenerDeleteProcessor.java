@@ -17,6 +17,7 @@ import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -25,6 +26,8 @@ import io.camunda.zeebe.util.Either;
 @ExcludeAuthorizationCheck
 public final class GlobalListenerDeleteProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
+  private static final String LISTENER_NOT_EXISTS_ERROR_MESSAGE =
+      "Expected to delete a global %s listener with id '%s', but it was not found";
 
   private final KeyGenerator keyGenerator;
   private final Writers writers;
@@ -66,9 +69,17 @@ public final class GlobalListenerDeleteProcessor
 
   @Override
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
-    writers
-        .state()
-        .appendFollowUpEvent(command.getKey(), GlobalListenerIntent.DELETED, command.getValue());
+    final var record = command.getValue();
+
+    final var listener =
+        globalListenersState.getGlobalListener(record.getListenerType(), record.getId());
+    if (listener != null) {
+      writers.state().appendFollowUpEvent(command.getKey(), GlobalListenerIntent.DELETED, record);
+    } else {
+      final var message =
+          LISTENER_NOT_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
+      writers.rejection().appendRejection(command, RejectionType.NOT_FOUND, message);
+    }
     distributionBehavior.acknowledgeCommand(command);
   }
 

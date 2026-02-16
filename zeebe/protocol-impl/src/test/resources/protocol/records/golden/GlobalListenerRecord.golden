@@ -13,6 +13,7 @@ import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -29,10 +31,20 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
-  private static final String EMPTY_STRING = "";
 
-  private final StringProperty idProp = new StringProperty("id", EMPTY_STRING);
-  private final StringProperty typeProp = new StringProperty("type", EMPTY_STRING);
+  /**
+   * Comparator to sort global listeners by priority in descending order, and then by id in
+   * ascending order. Used when listing global listeners to ensure a deterministic order, and to
+   * execute listeners in the correct order based on their priority.
+   */
+  public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
+      Comparator.comparingInt(GlobalListenerRecord::getPriority)
+          .reversed()
+          .thenComparing(GlobalListenerRecord::getId);
+
+  private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
+  private final StringProperty idProp = new StringProperty("id", "");
+  private final StringProperty typeProp = new StringProperty("type", "");
   private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
   private final ArrayProperty<StringValue> eventTypesProp =
       new ArrayProperty<>("eventTypes", StringValue::new);
@@ -44,8 +56,9 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
       new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
 
   public GlobalListenerRecord() {
-    super(8);
-    declareProperty(idProp)
+    super(9);
+    declareProperty(globalListenerKeyProp)
+        .declareProperty(idProp)
         .declareProperty(typeProp)
         .declareProperty(retriesProp)
         .declareProperty(eventTypesProp)
@@ -53,6 +66,16 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
         .declareProperty(listenerTypeProp);
+  }
+
+  @Override
+  public Long getGlobalListenerKey() {
+    return globalListenerKeyProp.getValue();
+  }
+
+  public GlobalListenerRecord setGlobalListenerKey(final Long key) {
+    globalListenerKeyProp.setValue(key);
+    return this;
   }
 
   @Override

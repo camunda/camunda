@@ -29,6 +29,9 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   private List<String> variableValueTypeInclusion = List.of();
   private List<String> variableValueTypeExclusion = List.of();
 
+  private List<String> bpmnProcessIdInclusion = List.of();
+  private List<String> bpmnProcessIdExclusion = List.of();
+
   private boolean optimizeModeEnabled = false;
 
   // --- fluent setters -------------------------------------------------------
@@ -78,6 +81,16 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
     return this;
   }
 
+  public TestIndexConfig withBpmnProcessIdInclusion(final List<String> bpmnProcessIds) {
+    bpmnProcessIdInclusion = bpmnProcessIds != null ? bpmnProcessIds : List.of();
+    return this;
+  }
+
+  public TestIndexConfig withBpmnProcessIdExclusion(final List<String> bpmnProcessIds) {
+    bpmnProcessIdExclusion = bpmnProcessIds != null ? bpmnProcessIds : List.of();
+    return this;
+  }
+
   // --- FilterConfiguration.IndexConfig -------------------------------------
 
   @Override
@@ -118,6 +131,16 @@ public final class TestIndexConfig implements FilterConfiguration.IndexConfig {
   @Override
   public List<String> getVariableValueTypeExclusion() {
     return variableValueTypeExclusion;
+  }
+
+  @Override
+  public List<String> getBpmnProcessIdInclusion() {
+    return bpmnProcessIdInclusion;
+  }
+
+  @Override
+  public List<String> getBpmnProcessIdExclusion() {
+    return bpmnProcessIdExclusion;
   }
 
   @Override

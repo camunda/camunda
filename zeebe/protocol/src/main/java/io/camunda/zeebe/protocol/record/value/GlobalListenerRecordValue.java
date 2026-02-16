@@ -32,7 +32,15 @@ import org.immutables.value.Value;
 public interface GlobalListenerRecordValue extends RecordValue {
 
   /**
-   * Returns the unique identifier of the global listener.
+   * Returns the unique key of the global listener.
+   *
+   * @return the global listener's unique key
+   */
+  Long getGlobalListenerKey();
+
+  /**
+   * Returns the identifier of the global listener. This ID, together with the listener type,
+   * uniquely identifies the listener across the cluster.
    *
    * <p>This ID is used to reference and manage the listener through APIs.
    *

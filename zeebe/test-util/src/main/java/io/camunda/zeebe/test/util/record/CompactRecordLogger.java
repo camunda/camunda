@@ -1834,7 +1834,7 @@ public class CompactRecordLogger {
       summary.append("key: ").append(shortenKey(value.getGlobalListenerBatchKey())).append(" ");
     }
     summary.append(
-        value.getTaskListeners().stream()
+        value.getListeners().stream()
             .map(this::summarizeGlobalListener)
             .collect(Collectors.joining("; ", "taskListeners: {", "}")));
     return summary.toString();

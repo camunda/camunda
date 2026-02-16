@@ -760,7 +760,7 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .globalListenerBatch()
-                        .withTaskListener(
+                        .withListener(
                             new GlobalListenerRecord()
                                 .setId("GlobalListener_global1")
                                 .setType("global1")
@@ -776,7 +776,7 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .globalListener()
-                        .withId("my-listener")
+                        .withId("my-listener-to-create")
                         .withType("job1")
                         .withEventType("all")
                         .create()),
@@ -790,14 +790,14 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-update")
                       .withType("job1")
                       .withEventType("all")
                       .create();
 
                   return ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-update")
                       .withType("job2")
                       .withEventType("creating")
                       .withEventType("updating")
@@ -813,11 +813,11 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-delete")
                       .withType("job1")
                       .withEventType("all")
                       .create();
-                  return ENGINE.globalListener().withId("my-listener").delete();
+                  return ENGINE.globalListener().withId("my-listener-to-delete").delete();
                 }),
             GlobalListenerDeleteProcessor.class
           },
