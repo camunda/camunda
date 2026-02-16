@@ -20,12 +20,13 @@ const useHasMultipleInstances = () => {
     isSelectedInstanceMultiInstanceBody,
     selectedElementId,
     selectedElementInstanceKey,
+    resolvedElementInstance,
   } = useProcessInstanceElementSelection();
   const elementInstancesCount = useElementInstancesCount(
     selectedElementId ?? undefined,
   );
 
-  if (isSelectedInstanceMultiInstanceBody) {
+  if (isSelectedInstanceMultiInstanceBody && resolvedElementInstance !== null) {
     return false;
   }
 
