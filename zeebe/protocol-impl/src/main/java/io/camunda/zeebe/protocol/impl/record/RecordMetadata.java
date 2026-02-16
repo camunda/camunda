@@ -167,8 +167,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    final var authorizationBuffer = authorization.toDirectBuffer();
-    encoder.putAuthorization(authorizationBuffer, 0, authorizationBuffer.capacity());
+    {
+      final var authInfoHeaderPosition = encoder.limit();
+      final var length =
+          authorization.write(
+              buffer, authInfoHeaderPosition + RecordMetadataEncoder.authorizationHeaderLength());
+      buffer.putInt(authInfoHeaderPosition, length, RecordMetadataEncoder.BYTE_ORDER);
+      encoder.limit(
+          authInfoHeaderPosition + RecordMetadataEncoder.authorizationHeaderLength() + length);
+    }
 
     if (agent != null) {
       final var bb = agent.toDirectBuffer();
