@@ -141,6 +141,7 @@ final class ElasticsearchExporterIT {
   @AfterAll
   static void afterAll() {
     deletedIndices();
+    previousTestMethod = null;
   }
 
   @ParameterizedTest(name = "{0}")
