@@ -34,7 +34,7 @@ public class McpServerConfigurationIT {
     @Test
     public void mcpInitializeRequestReturnsInitializationResponse() {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER, "/mcp/cluster")) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -69,7 +69,7 @@ public class McpServerConfigurationIT {
     @Test
     public void mcpInitializeRequestReturnsInitializationResponse() {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER, "/mcp/cluster")) {
 
         final var initializeResult = mcpClient.initialize();
         assertThat(initializeResult).isNotNull();
@@ -87,7 +87,7 @@ public class McpServerConfigurationIT {
     @Test
     public void mcpInitializeRequestReturnsNotFoundResponse() {
       try (final McpSyncClient mcpClient =
-          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER)) {
+          createMcpClient(TEST_INSTANCE, DEFAULT_REQUEST_CUSTOMIZER, "/mcp/cluster")) {
 
         final Throwable throwable = catchThrowable(mcpClient::initialize);
         assertThat(throwable.getCause())

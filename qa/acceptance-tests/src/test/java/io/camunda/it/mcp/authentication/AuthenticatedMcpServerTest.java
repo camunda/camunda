@@ -9,15 +9,17 @@ package io.camunda.it.mcp.authentication;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 abstract class AuthenticatedMcpServerTest extends McpServerAuthenticationTest {
 
-  @Test
-  void failsOnUnauthenticatedRequest() {
+  @ParameterizedTest
+  @MethodSource("testClients")
+  void failsOnUnauthenticatedRequest(final String endpoint) {
     assertThatThrownBy(
             () -> {
-              try (final var client = createMcpClient(testInstance(), null)) {
+              try (final var client = getMcpClient(endpoint, DEFAULT_REQUEST_CUSTOMIZER)) {
                 client.listTools();
               }
             })
