@@ -96,11 +96,15 @@ export class Visual implements IVisual {
     private bpmnViewer: any;
     private formattingSettings: VisualFormattingSettingsModel;
     private formattingSettingsService: FormattingSettingsService;
+    private currentBpmnXml: string;
+    private heatmapData: Map<string, number>;
 
     constructor(options: VisualConstructorOptions) {
         console.log('BPMN Visual constructor', options);
         this.formattingSettingsService = new FormattingSettingsService();
         this.target = options.element;
+        this.currentBpmnXml = DEFAULT_BPMN_XML;
+        this.heatmapData = new Map();
         
         if (document) {
             // Create container for BPMN diagram
@@ -129,6 +133,9 @@ export class Visual implements IVisual {
             // Fit diagram to viewport
             const canvas = this.bpmnViewer.get('canvas');
             canvas.zoom('fit-viewport');
+            
+            // Apply heatmap if data is available
+            this.applyHeatmap();
             
             console.log('BPMN diagram rendered successfully');
         } catch (err) {
@@ -159,6 +166,104 @@ export class Visual implements IVisual {
         }
     }
 
+    private getHeatmapColor(value: number, minValue: number, maxValue: number): string {
+        // Normalize value to 0-1 range
+        const normalized = maxValue > minValue ? (value - minValue) / (maxValue - minValue) : 0;
+        
+        // Create color gradient from white -> yellow -> orange -> red
+        if (normalized < 0.33) {
+            // White to yellow
+            const intensity = normalized / 0.33;
+            const r = 255;
+            const g = 255;
+            const b = Math.round(255 * (1 - intensity));
+            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+        } else if (normalized < 0.66) {
+            // Yellow to orange
+            const intensity = (normalized - 0.33) / 0.33;
+            const r = 255;
+            const g = Math.round(255 * (1 - intensity * 0.35));
+            const b = 0;
+            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+        } else {
+            // Orange to red
+            const intensity = (normalized - 0.66) / 0.34;
+            const r = 255;
+            const g = Math.round(165 * (1 - intensity));
+            const b = 0;
+            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+        }
+    }
+
+    private applyHeatmap() {
+        if (!this.bpmnViewer || this.heatmapData.size === 0) {
+            return;
+        }
+
+        try {
+            const overlays = this.bpmnViewer.get('overlays');
+            const elementRegistry = this.bpmnViewer.get('elementRegistry');
+            
+            // Clear existing overlays
+            overlays.clear();
+            
+            // Find min and max values for color scaling
+            let minValue = Number.MAX_VALUE;
+            let maxValue = Number.MIN_VALUE;
+            
+            this.heatmapData.forEach((count) => {
+                if (count < minValue) minValue = count;
+                if (count > maxValue) maxValue = count;
+            });
+            
+            // Apply overlays to each flow node with execution data
+            this.heatmapData.forEach((count, flowNodeId) => {
+                const element = elementRegistry.get(flowNodeId);
+                
+                if (element) {
+                    const color = this.getHeatmapColor(count, minValue, maxValue);
+                    
+                    // Create overlay HTML
+                    const overlayHtml = document.createElement('div');
+                    overlayHtml.className = 'heatmap-overlay';
+                    overlayHtml.style.backgroundColor = color;
+                    overlayHtml.style.padding = '4px 8px';
+                    overlayHtml.style.borderRadius = '3px';
+                    overlayHtml.style.border = '1px solid rgba(0,0,0,0.2)';
+                    overlayHtml.style.fontSize = '11px';
+                    overlayHtml.style.fontWeight = 'bold';
+                    overlayHtml.style.color = '#333';
+                    overlayHtml.style.whiteSpace = 'nowrap';
+                    overlayHtml.textContent = count.toString();
+                    
+                    // Add overlay to element
+                    overlays.add(flowNodeId, {
+                        position: {
+                            top: -5,
+                            right: -5
+                        },
+                        html: overlayHtml
+                    });
+                    
+                    // Also color the element itself
+                    const gfx = elementRegistry.getGraphics(flowNodeId);
+                    if (gfx) {
+                        const shape = gfx.querySelector('rect, circle, polygon, path');
+                        if (shape) {
+                            shape.setAttribute('fill', color);
+                            shape.setAttribute('stroke', '#000');
+                            shape.setAttribute('stroke-width', '2');
+                        }
+                    }
+                }
+            });
+            
+            console.log('Heatmap applied successfully');
+        } catch (err) {
+            console.error('Error applying heatmap:', err);
+        }
+    }
+
     public update(options: VisualUpdateOptions) {
         this.formattingSettings = this.formattingSettingsService.populateFormattingSettingsModel(
             VisualFormattingSettingsModel, 
@@ -169,21 +274,70 @@ export class Visual implements IVisual {
         
         // Check if data is provided
         const dataViews = options.dataViews;
-        if (dataViews && dataViews.length > 0 && dataViews[0].categorical) {
-            const categorical = dataViews[0].categorical;
+        if (dataViews && dataViews.length > 0) {
+            let bpmnXmlUpdated = false;
+            let heatmapDataUpdated = false;
             
-            // Try to get BPMN XML from data
-            if (categorical.categories && categorical.categories.length > 0) {
-                const category = categorical.categories[0];
-                if (category.values && category.values.length > 0) {
-                    const bpmnXml = category.values[0] as string;
+            // Process all data views
+            dataViews.forEach(dataView => {
+                if (dataView.categorical) {
+                    const categorical = dataView.categorical;
                     
-                    // Check if it looks like XML
-                    if (bpmnXml && typeof bpmnXml === 'string' && bpmnXml.trim().startsWith('<?xml')) {
-                        this.renderBpmn(bpmnXml);
-                        return;
+                    // Check for BPMN XML data
+                    if (categorical.categories && categorical.categories.length > 0) {
+                        const category = categorical.categories[0];
+                        
+                        // Check if this is BPMN XML data
+                        if (category.source && category.source.roles && category.source.roles['bpmnXml']) {
+                            if (category.values && category.values.length > 0) {
+                                const bpmnXml = category.values[0] as string;
+                                
+                                // Check if it looks like XML
+                                if (bpmnXml && typeof bpmnXml === 'string' && bpmnXml.trim().startsWith('<?xml')) {
+                                    if (bpmnXml !== this.currentBpmnXml) {
+                                        this.currentBpmnXml = bpmnXml;
+                                        this.renderBpmn(bpmnXml);
+                                        bpmnXmlUpdated = true;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Check if this is flow node ID data with execution counts
+                        if (category.source && category.source.roles && category.source.roles['flowNodeId']) {
+                            const newHeatmapData = new Map<string, number>();
+                            
+                            // Extract flow node IDs
+                            const flowNodeIds = category.values;
+                            
+                            // Extract execution counts
+                            if (categorical.values && categorical.values.length > 0) {
+                                const executionCounts = categorical.values[0].values;
+                                
+                                // Build heatmap data map
+                                for (let i = 0; i < flowNodeIds.length; i++) {
+                                    const nodeId = flowNodeIds[i] as string;
+                                    const count = executionCounts[i] as number;
+                                    
+                                    if (nodeId && !isNaN(count)) {
+                                        newHeatmapData.set(nodeId, count);
+                                    }
+                                }
+                                
+                                // Update heatmap data if changed
+                                if (newHeatmapData.size > 0) {
+                                    this.heatmapData = newHeatmapData;
+                                    heatmapDataUpdated = true;
+                                }
+                            }
+                        }
                     }
                 }
+            });
+            
+            // Apply heatmap if data was updated but BPMN wasn't re-rendered
+            if (heatmapDataUpdated && !bpmnXmlUpdated) {
+                this.applyHeatmap();
             }
         }
         
