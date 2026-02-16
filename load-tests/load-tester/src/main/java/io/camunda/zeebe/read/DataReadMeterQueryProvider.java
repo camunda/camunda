@@ -69,14 +69,7 @@ public class DataReadMeterQueryProvider {
             Duration.ofSeconds(30),
             c ->
                 c.newProcessDefinitionElementStatisticsRequest(benchmarkProcessDefinitionKey)
-                    .filter(
-                        f ->
-                            f.state(
-                                s ->
-                                    s.in(
-                                        List.of(
-                                            ProcessInstanceState.ACTIVE,
-                                            ProcessInstanceState.COMPLETED))))),
+                    .filter(f -> f.state(s -> s.in(List.of(ProcessInstanceState.ACTIVE))))),
         new ReadQuery(
             "incident_by_error_statistics",
             Duration.ofSeconds(30),
