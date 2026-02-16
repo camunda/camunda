@@ -32,7 +32,6 @@ import io.camunda.operate.schema.templates.ListViewTemplate;
 import io.camunda.operate.store.ProcessStore;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.ConversionUtils;
-import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.reader.IncidentStatisticsReader;
 import io.camunda.operate.webapp.reader.ProcessReader;
 import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
@@ -111,7 +110,7 @@ public class OpensearchIncidentStatisticsReader implements IncidentStatisticsRea
     final var uniqueProcessInstances =
         cardinalityAggregation(IncidentTemplate.PROCESS_INSTANCE_KEY);
     final var groupByProcessKeys =
-        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, ElasticsearchUtil.TERMS_AGG_SIZE);
+        termAggregation(IncidentTemplate.PROCESS_DEFINITION_KEY, TERMS_AGG_SIZE);
     final var errorMessage =
         topHitsAggregation(List.of(IncidentTemplate.ERROR_MSG, IncidentTemplate.ERROR_MSG_HASH), 1);
     final var groupByErrorMessageHash =
