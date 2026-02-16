@@ -23,18 +23,25 @@ import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
 import org.apache.commons.compress.compressors.gzip.GzipParameters;
 
 final class FileSetManager {
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final String BATCH_ZIP_NAME = "_batch.zip";
+  private static final long SIZE_THRESHOLD = 1024 * 1024; // 1 MiB
 
   /**
    * The path format consists of the following elements:
@@ -77,21 +84,52 @@ final class FileSetManager {
    * the GCS client from reading the file twice (once for CRC32C checksum, once for upload) which
    * could cause checksum mismatches if the file is modified during upload.
    *
+   * <p>Small files (< 1 MiB) are batched into a single zip archive to reduce roundtrips. Large
+   * files are uploaded individually with gzip compression.
+   *
    * <p>Concurrency is limited by a semaphore to avoid resource exhaustion.
    *
    * @see <a href="https://github.com/camunda/camunda/issues/45636">#45636</a>
    */
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
-    final var uploadFutures =
-        fileSet.namedFiles().entrySet().stream()
-            .map(
-                namedFile ->
-                    schedule(
-                        () -> {
-                          upload(id, fileSetName, namedFile.getKey(), namedFile.getValue());
-                          return null;
-                        }))
-            .toList();
+    // Partition files by size
+    final var smallFiles = new HashMap<String, Path>();
+    final var largeFiles = new HashMap<String, Path>();
+
+    for (final var entry : fileSet.namedFiles().entrySet()) {
+      try {
+        final var fileSize = Files.size(entry.getValue());
+        if (fileSize < SIZE_THRESHOLD) {
+          smallFiles.put(entry.getKey(), entry.getValue());
+        } else {
+          largeFiles.put(entry.getKey(), entry.getValue());
+        }
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+
+    final var uploadFutures = new ArrayList<CompletableFuture<Void>>();
+
+    // Upload batch of small files as a single zip if any exist
+    if (!smallFiles.isEmpty()) {
+      uploadFutures.add(
+          schedule(
+              () -> {
+                uploadBatch(id, fileSetName, smallFiles);
+                return null;
+              }));
+    }
+
+    // Upload large files individually with compression
+    for (final var entry : largeFiles.entrySet()) {
+      uploadFutures.add(
+          schedule(
+              () -> {
+                upload(id, fileSetName, entry.getKey(), entry.getValue());
+                return null;
+              }));
+    }
 
     // Wait for all uploads to complete
     CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
@@ -126,13 +164,51 @@ final class FileSetManager {
       final String fileName,
       final Path filePath) {
     try {
-      if (Files.size(filePath) < 1024 * 1024) {
+      if (Files.size(filePath) < SIZE_THRESHOLD) {
         uploadUncompressedFile(id, fileSetName, fileName, filePath);
       } else {
         uploadCompressedFile(id, fileSetName, fileName, filePath);
       }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  /**
+   * Creates a zip archive containing all small files and uploads it as a single blob. This reduces
+   * the number of roundtrips to GCS when dealing with many small files. Uses piped streams to avoid
+   * writing to disk.
+   *
+   * @param id Backup identifier
+   * @param fileSetName Name of the file set (e.g., "snapshot", "segments")
+   * @param files Map of file names to file paths to be batched
+   */
+  private void uploadBatch(
+      final BackupIdentifier id, final String fileSetName, final Map<String, Path> files) {
+    try (final var zipOutput = new PipedOutputStream();
+        final var zipInputStream = new PipedInputStream(zipOutput, 128 * 1024)) {
+      // Create the zip in a separate thread, feeding it to the piped output stream
+      executor.execute(
+          () -> {
+            try (final var zipOutputStream = new ZipOutputStream(zipOutput)) {
+              for (final var entry : files.entrySet()) {
+                final var zipEntry = new ZipEntry(entry.getKey());
+                zipOutputStream.putNextEntry(zipEntry);
+                Files.copy(entry.getValue(), zipOutputStream);
+                zipOutputStream.closeEntry();
+              }
+            } catch (final IOException e) {
+              throw new UncheckedIOException("Failed to create batch zip", e);
+            }
+          });
+
+      // Upload the zip directly from the piped input stream
+      client.createFrom(
+          blobInfo(id, fileSetName, BATCH_ZIP_NAME).build(),
+          zipInputStream,
+          BlobWriteOption.doesNotExist());
+    } catch (final IOException e) {
+      throw new UncheckedIOException("Failed to upload batch zip", e);
     }
   }
 
@@ -190,16 +266,47 @@ final class FileSetManager {
   }
 
   /**
-   * Downloads files in parallel using virtual threads. Concurrency is limited by the same semaphore
-   * used for uploads to avoid resource exhaustion.
+   * Downloads files in parallel using virtual threads. Checks for a batch zip file first and
+   * extracts it if present. Falls back to individual file downloads for backward compatibility.
+   * Concurrency is limited by the same semaphore used for uploads to avoid resource exhaustion.
    */
   NamedFileSet restore(
       final BackupIdentifier id,
       final String filesetName,
       final FileSet fileSet,
       final Path targetFolder) {
+    final var pathByName = new HashMap<String, Path>();
+
+    // Check if batch zip exists (for new-style backups)
+    final var batchBlobId = blobInfo(id, filesetName, BATCH_ZIP_NAME).build().getBlobId();
+    if (client.get(batchBlobId) != null) {
+      // Download and extract batch zip
+      final var downloadFuture =
+          schedule(
+              () -> {
+                try {
+                  // Create temporary file for the zip download
+                  final var zipFile = Files.createTempFile("backup-batch-restore-", ".zip");
+                  try {
+                    client.downloadTo(batchBlobId, zipFile);
+                    final var extractedFiles = extractZipArchive(zipFile, targetFolder);
+                    return extractedFiles;
+                  } finally {
+                    // Clean up temp zip file
+                    Files.deleteIfExists(zipFile);
+                  }
+                } catch (final IOException e) {
+                  throw new UncheckedIOException("Failed to download and extract batch zip", e);
+                }
+              });
+
+      pathByName.putAll(downloadFuture.join());
+    }
+
+    // Download remaining files individually (large files or old-style backups)
     final var downloadFutures =
         fileSet.files().stream()
+            .filter(namedFile -> !pathByName.containsKey(namedFile.name()))
             .collect(
                 Collectors.toMap(
                     NamedFile::name,
@@ -211,9 +318,7 @@ final class FileSetManager {
     CompletableFuture.allOf(downloadFutures.values().toArray(new CompletableFuture[0])).join();
 
     // Collect results
-    final var pathByName =
-        downloadFutures.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().join()));
+    downloadFutures.forEach((name, future) -> pathByName.put(name, future.join()));
 
     return new NamedFileSetImpl(pathByName);
   }
@@ -237,5 +342,28 @@ final class FileSetManager {
       final BackupIdentifier id, final String fileSetName, final String fileName) {
     return BlobInfo.newBuilder(bucketInfo, fileSetPath(id, fileSetName) + fileName)
         .setContentType("application/octet-stream");
+  }
+
+  /**
+   * Extracts a zip archive to the target folder.
+   *
+   * @param zipFile Path to the zip file to extract
+   * @param targetFolder Folder where files should be extracted
+   * @return Map of file names to extracted file paths
+   */
+  private Map<String, Path> extractZipArchive(final Path zipFile, final Path targetFolder)
+      throws IOException {
+    final var extractedFiles = new HashMap<String, Path>();
+    try (final var zipInputStream = new ZipInputStream(Files.newInputStream(zipFile))) {
+      ZipEntry entry;
+      while ((entry = zipInputStream.getNextEntry()) != null) {
+        final var fileName = entry.getName();
+        final var outputPath = targetFolder.resolve(fileName);
+        Files.copy(zipInputStream, outputPath);
+        extractedFiles.put(fileName, outputPath);
+        zipInputStream.closeEntry();
+      }
+    }
+    return extractedFiles;
   }
 }

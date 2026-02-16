@@ -91,9 +91,8 @@ public class GcsBucketIT {
     Assertions.assertThat(blobs)
         .extracting(Blob::getName)
         .containsExactlyInAnyOrder(
-            "contents/2/3/1/segments/segmentFile1",
-            "contents/2/3/1/snapshot/snapshotFile1",
-            "contents/2/3/1/snapshot/snapshotFile2",
+            "contents/2/3/1/segments/_batch.zip",
+            "contents/2/3/1/snapshot/_batch.zip",
             "manifests/2/3/1/manifest.json");
   }
 
@@ -138,9 +137,8 @@ public class GcsBucketIT {
     Assertions.assertThat(blobs)
         .extracting(Blob::getName)
         .containsExactlyInAnyOrder(
-            "root/contents/2/3/1/segments/segmentFile1",
-            "root/contents/2/3/1/snapshot/snapshotFile1",
-            "root/contents/2/3/1/snapshot/snapshotFile2",
+            "root/contents/2/3/1/segments/_batch.zip",
+            "root/contents/2/3/1/snapshot/_batch.zip",
             "root/manifests/2/3/1/manifest.json");
   }
 }
