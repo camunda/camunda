@@ -22,6 +22,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -29,6 +30,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.ActivateJobsResponseImpl;
 import io.camunda.client.protocol.rest.JobActivationRequest;
 import io.camunda.client.protocol.rest.JobActivationResult;
+import io.camunda.client.protocol.rest.TenantFilterEnum;
 import io.camunda.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -60,6 +62,7 @@ public final class ActivateJobsCommandImpl
 
   private final Set<String> defaultTenantIds;
   private final Set<String> customTenantIds;
+  private TenantFilter tenantFilter;
   private final CamundaClientConfiguration config;
 
   public ActivateJobsCommandImpl(
@@ -82,6 +85,7 @@ public final class ActivateJobsCommandImpl
     useRest = config.preferRestOverGrpc();
     defaultTenantIds = new HashSet<>(config.getDefaultJobWorkerTenantIds());
     customTenantIds = new HashSet<>();
+    tenantFilter = config.getDefaultJobWorkerTenantFilter();
   }
 
   @Override
@@ -152,14 +156,20 @@ public final class ActivateJobsCommandImpl
 
   @Override
   public CamundaFuture<ActivateJobsResponse> send() {
+    grpcRequestObjectBuilder.setTenantFilter(
+        GatewayOuterClass.TenantFilter.valueOf(tenantFilter.name()));
+    httpRequestObject.setTenantFilter(TenantFilterEnum.valueOf(tenantFilter.name()));
+
     grpcRequestObjectBuilder.clearTenantIds();
     httpRequestObject.setTenantIds(new ArrayList<>());
-    if (customTenantIds.isEmpty()) {
-      grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
-      httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));
-    } else {
-      grpcRequestObjectBuilder.addAllTenantIds(customTenantIds);
-      httpRequestObject.setTenantIds(new ArrayList<>(customTenantIds));
+    if (tenantFilter == TenantFilter.PROVIDED) {
+      if (customTenantIds.isEmpty()) {
+        grpcRequestObjectBuilder.addAllTenantIds(defaultTenantIds);
+        httpRequestObject.setTenantIds(new ArrayList<>(defaultTenantIds));
+      } else {
+        grpcRequestObjectBuilder.addAllTenantIds(customTenantIds);
+        httpRequestObject.setTenantIds(new ArrayList<>(customTenantIds));
+      }
     }
 
     if (useRest) {
@@ -222,5 +232,11 @@ public final class ActivateJobsCommandImpl
   @Override
   public ActivateJobsCommandStep3 tenantIds(final String... tenantIds) {
     return tenantIds(Arrays.asList(tenantIds));
+  }
+
+  @Override
+  public ActivateJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
+    return this;
   }
 }

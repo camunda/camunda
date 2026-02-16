@@ -23,6 +23,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
@@ -164,6 +165,12 @@ public final class StreamJobsCommandImpl
   @Override
   public StreamJobsCommandStep3 tenantIds(final String... tenantIds) {
     return tenantIds(Arrays.asList(tenantIds));
+  }
+
+  @Override
+  public StreamJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
+    // TODO: https://github.com/camunda/camunda/issues/45356
+    return this;
   }
 
   private void consumeJob(final GatewayOuterClass.ActivatedJob job) {
