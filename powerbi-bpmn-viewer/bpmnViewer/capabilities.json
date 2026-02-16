@@ -1,0 +1,28 @@
+{
+    "dataRoles": [
+        {
+            "displayName": "BPMN XML",
+            "name": "bpmnXml",
+            "kind": "Grouping",
+            "description": "BPMN 2.0 XML definition to render"
+        }
+    ],
+    "objects": {},
+    "dataViewMappings": [
+        {
+            "categorical": {
+                "categories": {
+                    "for": {
+                        "in": "bpmnXml"
+                    },
+                    "dataReductionAlgorithm": {
+                        "top": {
+                            "count": 1
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "privileges": []
+}
