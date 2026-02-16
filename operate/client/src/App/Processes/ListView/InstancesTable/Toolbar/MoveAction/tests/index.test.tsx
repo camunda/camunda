@@ -80,7 +80,7 @@ describe('<MoveAction />', () => {
     expect(moveButton).toBeDisabled();
     expect(moveButton).toHaveAttribute(
       'title',
-      'You can only move flow node instances in active or incident state.',
+      'You can only move element instances in active or incident state.',
     );
   });
 

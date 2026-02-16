@@ -26,7 +26,7 @@ const runningOrderProcessInstance: InstanceMock = {
   },
   callHierarchy: [],
   xml: openFile('./e2e-playwright/mocks/resources/orderProcess.bpmn'),
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'checkPayment',

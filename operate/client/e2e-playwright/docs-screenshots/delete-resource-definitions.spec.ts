@@ -43,7 +43,7 @@ test.describe.skip('delete resource definitions', () => {
           items: [],
           page: {totalItems: 0},
         },
-        statisticsV2: {
+        statistics: {
           items: [],
         },
         processXml: openFile(

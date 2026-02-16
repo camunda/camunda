@@ -111,7 +111,7 @@ describe('Filters', () => {
       screen.getByLabelText('Version', {selector: 'button'}),
     ).toHaveTextContent('1');
 
-    expect(screen.getByLabelText('Flow Node')).toHaveValue('Service Task 1');
+    expect(screen.getByLabelText('Element')).toHaveValue('Service Task 1');
 
     expect(screen.getByDisplayValue(MOCK_PARAMS.ids)).toBeInTheDocument();
 
@@ -219,7 +219,7 @@ describe('Filters', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('combobox', {
-          name: 'Flow Node',
+          name: 'Element',
         }),
       ).toBeEnabled(),
     );
@@ -234,7 +234,7 @@ describe('Filters', () => {
     ).toBeDisabled();
     expect(
       screen.getByRole('combobox', {
-        name: 'Flow Node',
+        name: 'Element',
       }),
     ).toHaveValue('');
     expect(screen.getByRole('checkbox', {name: 'Active'})).not.toBeChecked();
@@ -320,7 +320,7 @@ describe('Filters', () => {
     await waitFor(() =>
       expect(
         screen.getByRole('combobox', {
-          name: 'Flow Node',
+          name: 'Element',
         }),
       ).toBeEnabled(),
     );

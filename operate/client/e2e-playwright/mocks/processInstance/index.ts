@@ -29,7 +29,7 @@ type InstanceMock = {
   detailV2: ProcessInstance;
   callHierarchy: GetProcessInstanceCallHierarchyResponseBody;
   elementInstances: QueryElementInstancesResponseBody;
-  statisticsV2: GetProcessDefinitionStatisticsResponseBody;
+  statistics: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows: SequenceFlowsDto;
   sequenceFlowsV2: GetProcessInstanceSequenceFlowsResponseBody;
   variables: Variable[];
@@ -43,7 +43,7 @@ function mockResponses({
   processInstanceDetailV2,
   callHierarchy,
   elementInstances,
-  statisticsV2,
+  statistics,
   sequenceFlows,
   sequenceFlowsV2,
   variables,
@@ -56,7 +56,7 @@ function mockResponses({
   processInstanceDetailV2?: ProcessInstance;
   callHierarchy?: GetProcessInstanceCallHierarchyResponseBody;
   elementInstances?: QueryElementInstancesResponseBody;
-  statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
+  statistics?: GetProcessDefinitionStatisticsResponseBody;
   sequenceFlows?: SequenceFlowsDto;
   sequenceFlowsV2?: GetProcessInstanceSequenceFlowsResponseBody;
   variables?: Variable[];
@@ -118,8 +118,8 @@ function mockResponses({
 
     if (route.request().url().includes('statistics/element-instances')) {
       return route.fulfill({
-        status: statisticsV2 === undefined ? 400 : 200,
-        body: JSON.stringify(statisticsV2),
+        status: statistics === undefined ? 400 : 200,
+        body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
         },

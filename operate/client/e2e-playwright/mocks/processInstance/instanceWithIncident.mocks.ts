@@ -360,7 +360,7 @@ const instanceWithIncident: InstanceMock = {
       },
     ],
   },
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'StartEvent_1',

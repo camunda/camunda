@@ -158,7 +158,7 @@ describe('Interaction with other fields during validation', () => {
     expect(screen.getByText(ERRORS.ids)).toBeInTheDocument();
   });
 
-  it('validation for Process, Version and Flow Node fields should not affect other fields validation errors', async () => {
+  it('validation for Process, Version and Element fields should not affect other fields validation errors', async () => {
     const {user} = render(<Filters />, {
       wrapper: getWrapper(),
     });
