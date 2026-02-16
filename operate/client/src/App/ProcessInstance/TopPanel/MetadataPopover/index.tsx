@@ -47,7 +47,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     selectedElementId ?? undefined,
   );
 
-  if (isSelectedInstanceMultiInstanceBody) {
+  if (isSelectedInstanceMultiInstanceBody && resolvedElementInstance !== null) {
     elementInstancesCount = 1;
   }
   const incidentCount =
