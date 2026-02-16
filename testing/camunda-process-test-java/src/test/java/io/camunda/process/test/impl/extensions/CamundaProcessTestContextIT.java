@@ -42,6 +42,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.io.ByteArrayInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -302,6 +303,49 @@ public class CamundaProcessTestContextIT {
     assertThatProcessInstance(processInstanceEvent).isCompleted();
     assertThatProcessInstance(processInstanceEvent).hasCompletedElements("success-end");
     assertThatProcessInstance(processInstanceEvent).hasVariables(variables);
+  }
+
+  @Test
+  void shouldMockChildProcessWithVariableSupplier() {
+    // given: a parent process with a multi-instance call activity
+    final String childProcessId = "child-process";
+    final String parentVariableName = "item";
+    final String childVariableName = "result";
+
+    deployProcessModel(
+        Bpmn.createExecutableProcess("parent-process")
+            .startEvent()
+            .callActivity(
+                "call-activity",
+                c ->
+                    c.zeebeProcessId(childProcessId)
+                        .zeebeOutputExpression(childVariableName, childVariableName)
+                        .multiInstance()
+                        .zeebeInputCollectionExpression("[1,2]")
+                        .zeebeInputElement(parentVariableName)
+                        .zeebeOutputCollection("results")
+                        .zeebeOutputElementExpression(childVariableName))
+            .endEvent()
+            .done());
+
+    // the child process returns a dynamic variable based on the parent variable
+    processTestContext.mockChildProcess(
+        childProcessId,
+        parentVariables ->
+            Collections.singletonMap(
+                childVariableName, 2 * (int) parentVariables.get(parentVariableName)));
+
+    // when
+    final ProcessInstanceEvent processInstanceEvent =
+        client
+            .newCreateInstanceCommand()
+            .bpmnProcessId("parent-process")
+            .latestVersion()
+            .send()
+            .join();
+
+    // then: verify the child process mock using the multi-instance output collection variable
+    assertThatProcessInstance(processInstanceEvent).hasVariable("results", Arrays.asList(2, 4));
   }
 
   @Test

@@ -66,6 +66,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import org.camunda.bpm.model.dmn.Dmn;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Decision;
@@ -250,6 +251,41 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
 
     final String resourceName = childProcessId + ".bpmn";
     client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+  }
+
+  @Override
+  public void mockChildProcess(
+      final String childProcessId,
+      final Function<Map<String, Object>, Map<String, Object>> variablesSupplier) {
+
+    final String variableSupplierJobType = "variableSupplier_" + childProcessId;
+    final BpmnModelInstance processModel =
+        Bpmn.createExecutableProcess(childProcessId)
+            .startEvent()
+            .serviceTask("variableSupplier", t -> t.zeebeJobType(variableSupplierJobType))
+            .endEvent()
+            .done();
+
+    LOGGER.debug("Mock: Deploy a child process '{}' with variables supplier", childProcessId);
+
+    try (final CamundaClient client = createClient()) {
+      final String resourceName = childProcessId + ".bpmn";
+      client.newDeployResourceCommand().addProcessModel(processModel, resourceName).send().join();
+    }
+
+    mockJobWorker(variableSupplierJobType)
+        .withHandler(
+            (jobClient, job) -> {
+              final Map<String, Object> inputVariables = job.getVariablesAsMap();
+              final Map<String, Object> outputVariables = variablesSupplier.apply(inputVariables);
+
+              LOGGER.debug(
+                  "Mock: Complete child process '{}' with variables {}",
+                  childProcessId,
+                  outputVariables);
+
+              jobClient.newCompleteCommand(job.getKey()).variables(outputVariables).send().join();
+            });
   }
 
   @Override
@@ -575,6 +611,60 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
   }
 
   @Override
+  public void updateVariables(
+      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi -> {
+          LOGGER.debug(
+              "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
+              processInstanceSelector.describe(),
+              pi.getProcessInstanceKey(),
+              variables);
+
+          client
+              .newSetVariablesCommand(pi.getProcessInstanceKey())
+              .variables(variables)
+              .send()
+              .join();
+        });
+  }
+
+  @Override
+  public void updateLocalVariables(
+      final ProcessInstanceSelector processInstanceSelector,
+      final ElementSelector elementSelector,
+      final Map<String, Object> variables) {
+    final CamundaClient client = createClient();
+
+    awaitProcessInstance(
+        processInstanceSelector,
+        client,
+        pi ->
+            awaitElementInstance(
+                pi.getProcessInstanceKey(),
+                elementSelector,
+                client,
+                ei -> {
+                  LOGGER.debug(
+                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
+                      elementSelector.describe(),
+                      ei.getElementInstanceKey(),
+                      pi.getProcessInstanceKey(),
+                      variables);
+
+                  client
+                      .newSetVariablesCommand(ei.getElementInstanceKey())
+                      .variables(variables)
+                      .send()
+                      .join();
+                }));
+  }
+
+  @Override
   public void completeJobOfUserTaskListener(
       final JobSelector jobSelector, final Consumer<CompleteUserTaskJobResultStep1> jobResult) {
     final CamundaClient client = createClient();
@@ -722,60 +812,6 @@ public class CamundaProcessTestContextImpl implements CamundaProcessTestContext 
         .stream()
         .filter(incidentSelector::test)
         .findFirst();
-  }
-
-  @Override
-  public void updateVariables(
-      final ProcessInstanceSelector processInstanceSelector, final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-
-    awaitProcessInstance(
-        processInstanceSelector,
-        client,
-        pi -> {
-          LOGGER.debug(
-              "Update variables for process instance [{}, processInstanceKey: '{}'] with variables {}",
-              processInstanceSelector.describe(),
-              pi.getProcessInstanceKey(),
-              variables);
-
-          client
-              .newSetVariablesCommand(pi.getProcessInstanceKey())
-              .variables(variables)
-              .send()
-              .join();
-        });
-  }
-
-  @Override
-  public void updateLocalVariables(
-      final ProcessInstanceSelector processInstanceSelector,
-      final ElementSelector elementSelector,
-      final Map<String, Object> variables) {
-    final CamundaClient client = createClient();
-
-    awaitProcessInstance(
-        processInstanceSelector,
-        client,
-        pi ->
-            awaitElementInstance(
-                pi.getProcessInstanceKey(),
-                elementSelector,
-                client,
-                ei -> {
-                  LOGGER.debug(
-                      "Update local variables for element [{}, elementInstanceKey: '{}'] in process instance [processInstanceKey: '{}'] with variables {}",
-                      elementSelector.describe(),
-                      ei.getElementInstanceKey(),
-                      pi.getProcessInstanceKey(),
-                      variables);
-
-                  client
-                      .newSetVariablesCommand(ei.getElementInstanceKey())
-                      .variables(variables)
-                      .send()
-                      .join();
-                }));
   }
 
   private Optional<ProcessInstance> findProcessInstance(
