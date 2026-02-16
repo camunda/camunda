@@ -150,7 +150,7 @@ public class OpensearchClientIT {
     // given
 
     // when
-    createISMPolicyIfNeeded();
+    recreateISMPolicyIfNeeded();
 
     // then
     final var ismPolicyResponse = SEARCH_DB.client().getIndexStateManagementPolicy();
@@ -177,7 +177,7 @@ public class OpensearchClientIT {
     // camunda exporter indexes have a slightly different format
     final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
 
-    createISMPolicyIfNeeded();
+    recreateISMPolicyIfNeeded();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -205,7 +205,7 @@ public class OpensearchClientIT {
         indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
             + "_2024-01-01";
 
-    createISMPolicyIfNeeded();
+    recreateISMPolicyIfNeeded();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -226,11 +226,12 @@ public class OpensearchClientIT {
         .untilAsserted(() -> assertThat(getISMPolicyIdForIndex(osClient, ownedIndexName)).isNull());
   }
 
-  private static void createISMPolicyIfNeeded() {
+  private static void recreateISMPolicyIfNeeded() {
     final var policyOptional = SEARCH_DB.client().getIndexStateManagementPolicy();
-    if (policyOptional.isEmpty()) {
-      SEARCH_DB.client().createIndexStateManagementPolicy();
+    if (!policyOptional.isEmpty()) {
+      SEARCH_DB.client().deleteIndexStateManagementPolicy();
     }
+    SEARCH_DB.client().createIndexStateManagementPolicy();
   }
 
   private String getISMPolicyIdForIndex(final OpenSearchClient osClient, final String indexName)
