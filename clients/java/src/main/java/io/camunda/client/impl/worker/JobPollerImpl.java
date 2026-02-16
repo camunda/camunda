@@ -16,6 +16,7 @@
 package io.camunda.client.impl.worker;
 
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.Loggers;
@@ -39,6 +40,7 @@ public final class JobPollerImpl implements JobPoller {
   private final Duration timeout;
   private final List<String> fetchVariables;
   private final List<String> tenantIds;
+  private final TenantFilter tenantFilter;
 
   private int maxJobsToActivate;
 
@@ -56,6 +58,7 @@ public final class JobPollerImpl implements JobPoller {
       final Duration timeout,
       final List<String> fetchVariables,
       final List<String> tenantIds,
+      final TenantFilter tenantFilter,
       final int maxJobsToActivate) {
     this.requestTimeout = requestTimeout;
     this.jobClient = jobClient;
@@ -64,6 +67,7 @@ public final class JobPollerImpl implements JobPoller {
     this.timeout = timeout;
     this.fetchVariables = fetchVariables;
     this.tenantIds = tenantIds;
+    this.tenantFilter = tenantFilter;
     this.maxJobsToActivate = maxJobsToActivate;
   }
 
@@ -110,8 +114,9 @@ public final class JobPollerImpl implements JobPoller {
             .jobType(jobType)
             .maxJobsToActivate(maxJobsToActivate)
             .timeout(timeout)
+            .workerName(workerName)
             .tenantIds(tenantIds)
-            .workerName(workerName);
+            .tenantFilter(tenantFilter);
     if (fetchVariables != null) {
       activateCommand.fetchVariables(fetchVariables);
     }

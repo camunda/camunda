@@ -62,13 +62,13 @@ public final class JobWorkerBuilderImpl
   private List<String> fetchVariables;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
+  private TenantFilter tenantFilter;
   private BackoffSupplier backoffSupplier;
   private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
-  private TenantFilter tenantFilter;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
@@ -89,8 +89,8 @@ public final class JobWorkerBuilderImpl
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
-    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     customTenantIds = new ArrayList<>();
+    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -217,6 +217,7 @@ public final class JobWorkerBuilderImpl
             timeout,
             fetchVariables,
             getTenantIds(),
+            tenantFilter,
             maxJobsActive);
 
     final Executor jobExecutor;
