@@ -308,7 +308,7 @@ public class OpensearchClient implements AutoCloseable {
     }
   }
 
-  public boolean bulkRemoveISMPolicyToAllZeebeIndices() {
+  public boolean bulkRemoveISMPolicyFromAllZeebeIndices() {
     try {
       final var request =
           new Request(
