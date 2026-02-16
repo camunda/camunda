@@ -338,12 +338,8 @@ jobs:
 
       - name: Override spring client version for compatibility testing
         run: |
-          # Inject the specific spring client version into the POM to override the inherited version
-          ./mvnw -pl qa/compatibility-test versions:use-dep-version \
-            -Dincludes=io.camunda:camunda-spring-boot-starter \
-            -DdepVersion=${{ matrix.client }} \
-            -DforceVersion=true \
-            -DgenerateBackupPoms=false
+          # Inject an explicit <version> on camunda-spring-boot-starter to override the parent-managed version
+          sed -i '/<artifactId>camunda-spring-boot-starter<\/artifactId>/a\      <version>${{ matrix.client }}<\/version>' qa/compatibility-test/pom.xml
 
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
