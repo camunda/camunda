@@ -159,6 +159,10 @@ public class ConfigurationService {
 
   public ConfigurationService(
       final String[] configLocations, final ConfigurationValidator configurationValidator) {
+    if (LOG.isDebugEnabled()) {
+      LOG.debug(
+          "Creating ConfigurationService with locations: {}", Arrays.toString(configLocations));
+    }
     final List<InputStream> configStreams = getLocationsAsInputStream(configLocations);
     configJsonContext =
         parseConfigFromLocations(configStreams)

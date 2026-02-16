@@ -75,9 +75,11 @@ public final class ConfigurationUtil {
       return getStreamOfClasspathFile(pathToFile);
     }
 
-    final String errorMessage =
-        String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
-    throw new OptimizeConfigurationException(errorMessage);
+    // return an empty stream
+    LOGGER.debug(
+        "Could not find or do not have permissions to read file [{}], returning empty stream",
+        pathToFile);
+    return InputStream.nullInputStream();
   }
 
   public static void ensureGreaterThanZero(final int value) {
@@ -97,7 +99,7 @@ public final class ConfigurationUtil {
   public static List<InputStream> getLocationsAsInputStream(final String[] locationsToUse) {
     final List<InputStream> sources = new ArrayList<>();
     for (final String location : locationsToUse) {
-      final InputStream inputStream = wrapInputStream(location);
+      final InputStream inputStream = resolvePathToStream(location);
       if (inputStream != null) {
         sources.add(inputStream);
       }
