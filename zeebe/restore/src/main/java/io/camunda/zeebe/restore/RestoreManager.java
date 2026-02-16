@@ -112,12 +112,12 @@ public class RestoreManager implements CloseableSilently {
 
   public void restore(
       final Instant from,
-      @Nullable final Instant to,
+      final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     if (exporterPositionMapper == null) {
-      restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
+      restoreTimeRange(from, to, validateConfig, ignoreFilesInTarget);
     } else {
       restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
     }
@@ -125,7 +125,7 @@ public class RestoreManager implements CloseableSilently {
 
   private void restoreRdbms(
       final Instant from,
-      @Nullable final Instant to,
+      final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
@@ -137,7 +137,7 @@ public class RestoreManager implements CloseableSilently {
     final var restoreInfos =
         rangeResolver
             .getRestoreInfoForAllPartitions(
-                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
+                interval, partitionCount, exportedPositions, checkpointIdGenerator, executor)
             .join();
 
     LOG.info(

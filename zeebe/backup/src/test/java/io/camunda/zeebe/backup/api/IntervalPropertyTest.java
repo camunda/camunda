@@ -20,6 +20,8 @@ import net.jqwik.api.Combinators;
 import net.jqwik.api.ForAll;
 import net.jqwik.api.Property;
 import net.jqwik.api.Provide;
+import net.jqwik.api.Tuple;
+import org.jspecify.annotations.NonNull;
 
 /**
  * Property-based tests for {@link Interval} that verify mathematical properties hold for all valid
@@ -29,8 +31,9 @@ final class IntervalPropertyTest {
 
   // ==================== Arbitrary Providers ====================
 
+  /** Generates bounded intervals with non-null start and end. */
   @Provide
-  Arbitrary<Interval<Integer>> intervals() {
+  Arbitrary<Interval<@NonNull Integer>> boundedIntervals() {
     final var start = Arbitraries.integers().between(-1000, 1000);
     final var length = Arbitraries.integers().between(0, 500);
     final var startInclusive = Arbitraries.of(true, false);
@@ -46,6 +49,44 @@ final class IntervalPropertyTest {
               }
               return new Interval<>(s, si, end, ei);
             });
+  }
+
+  /** Generates left-unbounded intervals: (-infinity, end]. */
+  @Provide
+  Arbitrary<Interval<Integer>> leftUnboundedIntervals() {
+    final var end = Arbitraries.integers().between(-1000, 1000);
+    final var endInclusive = Arbitraries.of(true, false);
+
+    return Combinators.combine(end, endInclusive).as((e, ei) -> new Interval<>(null, false, e, ei));
+  }
+
+  /** Generates right-unbounded intervals: [start, +infinity). */
+  @Provide
+  Arbitrary<Interval<Integer>> rightUnboundedIntervals() {
+    final var start = Arbitraries.integers().between(-1000, 1000);
+    final var startInclusive = Arbitraries.of(true, false);
+
+    return Combinators.combine(start, startInclusive)
+        .as((s, si) -> new Interval<>(s, si, null, false));
+  }
+
+  /** Generates fully unbounded intervals: (-infinity, +infinity). */
+  @Provide
+  Arbitrary<Interval<Integer>> fullyUnboundedIntervals() {
+    return Arbitraries.just(new Interval<>(null, false, null, false));
+  }
+
+  /**
+   * Generates all types of intervals: bounded, left-unbounded, right-unbounded, and fully
+   * unbounded. The distribution is weighted to include ~20% unbounded intervals.
+   */
+  @Provide
+  Arbitrary<Interval<Integer>> intervals() {
+    return Arbitraries.frequencyOf(
+        Tuple.of(8, boundedIntervals()),
+        Tuple.of(1, leftUnboundedIntervals()),
+        Tuple.of(1, rightUnboundedIntervals()),
+        Tuple.of(1, fullyUnboundedIntervals()));
   }
 
   @Provide
@@ -239,8 +280,8 @@ final class IntervalPropertyTest {
   }
 
   @Property(tries = 100)
-  void mapPreservesBoundBehavior(@ForAll("intervals") final Interval<Integer> a) {
-    // Mapping should preserve the bound behavior
+  void mapPreservesBoundBehavior(@ForAll("boundedIntervals") final Interval<Integer> a) {
+    // Mapping should preserve the bound behavior (only for bounded intervals)
     final var mapped = a.map(x -> x * 2L);
 
     // Start bound behavior preserved
@@ -265,18 +306,24 @@ final class IntervalPropertyTest {
   // ==================== Contains Value ====================
 
   @Property(tries = 100)
-  void containsValueAtStartDependsOnInclusiveness(@ForAll("intervals") final Interval<Integer> a) {
+  void containsValueAtStartDependsOnInclusiveness(
+      @ForAll("boundedIntervals") final Interval<Integer> a) {
+    // Only test for bounded intervals where start is non-null
     assertThat(a.contains(a.start())).isEqualTo(a.startInclusive());
   }
 
   @Property(tries = 100)
-  void containsValueAtEndDependsOnInclusiveness(@ForAll("intervals") final Interval<Integer> a) {
+  void containsValueAtEndDependsOnInclusiveness(
+      @ForAll("boundedIntervals") final Interval<Integer> a) {
+    // Only test for bounded intervals where end is non-null
     assertThat(a.contains(a.end())).isEqualTo(a.endInclusive());
   }
 
   @Property(tries = 100)
   void valuesOutsideIntervalAreNeverContained(
-      @ForAll("intervals") final Interval<Integer> a, @ForAll("values") final Integer value) {
+      @ForAll("boundedIntervals") final Interval<Integer> a,
+      @ForAll("values") final Integer value) {
+    // Only test for bounded intervals where bounds are non-null
     if (value < a.start() || value > a.end()) {
       assertThat(a.contains(value)).isFalse();
     }
@@ -284,7 +331,9 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void valuesStrictlyInsideIntervalAreAlwaysContained(
-      @ForAll("intervals") final Interval<Integer> a, @ForAll("values") final Integer value) {
+      @ForAll("boundedIntervals") final Interval<Integer> a,
+      @ForAll("values") final Integer value) {
+    // Only test for bounded intervals where bounds are non-null
     if (value > a.start() && value < a.end()) {
       assertThat(a.contains(value)).isTrue();
     }
@@ -363,9 +412,10 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void smallestCoverContainsAllPointsWithinIntervalWhenCoverExists(
-      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("boundedIntervals") final Interval<Integer> query,
       @ForAll("sortedPoints") final List<Integer> points) {
     // When a cover exists, all points within the interval must be in the result
+    // Only test for bounded intervals where bounds are non-null
     final var result = query.smallestCover(points);
 
     if (!result.isEmpty()) {
@@ -381,10 +431,11 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void smallestCoverIsEmptyWhenPointsCannotCover(
-      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("boundedIntervals") final Interval<Integer> query,
       @ForAll("sortedPoints") final List<Integer> points) {
     // A cover exists iff there is at least one point at-or-before start
     // AND at least one point at-or-after end
+    // Only test for bounded intervals where bounds are non-null
     final var hasStartCoverage = points.stream().anyMatch(p -> p.compareTo(query.start()) <= 0);
     final var hasEndCoverage = points.stream().anyMatch(p -> p.compareTo(query.end()) >= 0);
     final var canCover = hasStartCoverage && hasEndCoverage;
@@ -421,8 +472,9 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void smallestCoverIncludesAtMostOnePointBeforeStart(
-      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("boundedIntervals") final Interval<Integer> query,
       @ForAll("sortedPoints") final List<Integer> points) {
+    // Only test for bounded intervals where start is non-null
     final var result = query.smallestCover(points);
 
     // Count points before interval start in result
@@ -435,8 +487,9 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void smallestCoverIncludesAtMostOnePointAfterEnd(
-      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("boundedIntervals") final Interval<Integer> query,
       @ForAll("sortedPoints") final List<Integer> points) {
+    // Only test for bounded intervals where end is non-null
     final var result = query.smallestCover(points);
 
     // Count points after interval end in result
@@ -449,8 +502,9 @@ final class IntervalPropertyTest {
 
   @Property(tries = 100)
   void smallestCoverNeighborOnlyIncludedWhenNoExactMatch(
-      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("boundedIntervals") final Interval<Integer> query,
       @ForAll("sortedPoints") final List<Integer> points) {
+    // Only test for bounded intervals where bounds are non-null
     final var result = query.smallestCover(points);
     final var withinPoints =
         points.stream()
@@ -570,5 +624,94 @@ final class IntervalPropertyTest {
           .describedAs("Intersection of %s (container) and %s (contained) should be %s", a, b, b)
           .contains(b);
     }
+  }
+
+  // ==================== Unbounded Interval Properties ====================
+
+  @Property(tries = 100)
+  void fullyUnboundedContainsAllBoundedIntervals(
+      @ForAll("fullyUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("boundedIntervals") final Interval<Integer> bounded) {
+    // (-infinity, +infinity) contains any bounded interval
+    assertThat(unbounded.contains(bounded)).isTrue();
+  }
+
+  @Property(tries = 100)
+  void fullyUnboundedContainsAllValues(
+      @ForAll("fullyUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("values") final Integer value) {
+    // (-infinity, +infinity) contains any value
+    assertThat(unbounded.contains(value)).isTrue();
+  }
+
+  @Property(tries = 100)
+  void leftUnboundedContainsValuesUpToEnd(
+      @ForAll("leftUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("values") final Integer value) {
+    // (-infinity, end] or (-infinity, end) contains values up to end
+    final var expected =
+        unbounded.endInclusive() ? value <= unbounded.end() : value < unbounded.end();
+    assertThat(unbounded.contains(value)).isEqualTo(expected);
+  }
+
+  @Property(tries = 100)
+  void rightUnboundedContainsValuesFromStart(
+      @ForAll("rightUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("values") final Integer value) {
+    // [start, +infinity) or (start, +infinity) contains values from start
+    final var expected =
+        unbounded.startInclusive() ? value >= unbounded.start() : value > unbounded.start();
+    assertThat(unbounded.contains(value)).isEqualTo(expected);
+  }
+
+  @Property(tries = 100)
+  void rightUnboundedIsNeverBeforeAnyInterval(
+      @ForAll("rightUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("intervals") final Interval<Integer> other) {
+    // An interval extending to +infinity is never before another interval
+    assertThat(unbounded.isBefore(other)).isFalse();
+  }
+
+  @Property(tries = 100)
+  void leftUnboundedIsNeverAfterAnyInterval(
+      @ForAll("leftUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("intervals") final Interval<Integer> other) {
+    // An interval extending to -infinity is never after another interval
+    assertThat(unbounded.isAfter(other)).isFalse();
+  }
+
+  @Property(tries = 100)
+  void fullyUnboundedAlwaysOverlaps(
+      @ForAll("fullyUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("intervals") final Interval<Integer> other) {
+    // (-infinity, +infinity) overlaps with everything
+    assertThat(unbounded.overlapsWith(other)).isTrue();
+  }
+
+  @Property(tries = 100)
+  void mapPreservesNullBounds(@ForAll("intervals") final Interval<Integer> a) {
+    final var mapped = a.map(x -> x * 2L);
+    // Null bounds should remain null after mapping
+    assertThat(mapped.start() == null).isEqualTo(a.start() == null);
+    assertThat(mapped.end() == null).isEqualTo(a.end() == null);
+  }
+
+  @Property(tries = 100)
+  void unboundedToStringUsesInfinityNotation(
+      @ForAll("leftUnboundedIntervals") final Interval<Integer> left,
+      @ForAll("rightUnboundedIntervals") final Interval<Integer> right,
+      @ForAll("fullyUnboundedIntervals") final Interval<Integer> fully) {
+    assertThat(left.toString()).contains("-infinity");
+    assertThat(right.toString()).contains("infinity").doesNotContain("-infinity");
+    assertThat(fully.toString()).contains("-infinity").contains("infinity");
+  }
+
+  @Property(tries = 100)
+  void smallestCoverWithUnboundedAlwaysCoversNonEmptyPoints(
+      @ForAll("fullyUnboundedIntervals") final Interval<Integer> unbounded,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // Fully unbounded interval should always have a cover if points is non-empty
+    final var result = unbounded.smallestCover(points);
+    assertThat(result).isEqualTo(points);
   }
 }

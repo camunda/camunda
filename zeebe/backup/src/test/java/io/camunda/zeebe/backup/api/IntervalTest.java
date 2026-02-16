@@ -57,20 +57,6 @@ public class IntervalTest {
       assertThat(interval.contains(5)).isTrue();
     }
 
-    @Test
-    void shouldThrowWhenStartIsNull() {
-      assertThatThrownBy(() -> new Interval<>(null, 5))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("start must not be null");
-    }
-
-    @Test
-    void shouldThrowWhenEndIsNull() {
-      assertThatThrownBy(() -> new Interval<>(1, null))
-          .isInstanceOf(NullPointerException.class)
-          .hasMessageContaining("end must not be null");
-    }
-
     @ParameterizedTest
     @CsvSource({"false, true", "true, false", "false, false"})
     void shouldThrowWhenEqualBoundsNotFullyInclusive(
@@ -751,6 +737,92 @@ public class IntervalTest {
       final var expected =
           expectedBracket(startInclusive, true) + "1, 10" + expectedBracket(endInclusive, false);
       assertThat(interval.toString()).isEqualTo(expected);
+    }
+  }
+
+  /**
+   * Basic smoke tests for unbounded intervals (null bounds). Comprehensive property-based testing
+   * for unbounded intervals is done in {@link IntervalPropertyTest}.
+   */
+  @Nested
+  class UnboundedIntervals {
+
+    @Test
+    void nullStartRepresentsNegativeInfinity() {
+      final var interval = new Interval<>(null, false, 10, true);
+
+      assertThat(interval.contains(Integer.MIN_VALUE)).isTrue();
+      assertThat(interval.contains(10)).isTrue();
+      assertThat(interval.contains(11)).isFalse();
+      assertThat(interval.toString()).isEqualTo("(-infinity, 10]");
+    }
+
+    @Test
+    void nullEndRepresentsPositiveInfinity() {
+      final var interval = new Interval<>(5, true, null, false);
+
+      assertThat(interval.contains(4)).isFalse();
+      assertThat(interval.contains(5)).isTrue();
+      assertThat(interval.contains(Integer.MAX_VALUE)).isTrue();
+      assertThat(interval.toString()).isEqualTo("[5, infinity)");
+    }
+
+    @Test
+    void fullyUnboundedIntervalContainsEverything() {
+      final var interval = new Interval<Integer>(null, false, null, false);
+
+      assertThat(interval.contains(Integer.MIN_VALUE)).isTrue();
+      assertThat(interval.contains(Integer.MAX_VALUE)).isTrue();
+      assertThat(interval.contains(Interval.closed(-1000, 1000))).isTrue();
+      assertThat(interval.toString()).isEqualTo("(-infinity, infinity)");
+    }
+
+    @Test
+    void mapPreservesNullBounds() {
+      final var interval = new Interval<>(null, false, 10, true);
+      final var mapped = interval.map(x -> x * 2L);
+
+      assertThat(mapped.start()).isNull();
+      assertThat(mapped.end()).isEqualTo(20L);
+    }
+
+    @Test
+    void intersectionNarrowsUnboundedIntervals() {
+      final var leftUnbounded = new Interval<>(null, false, 10, true);
+      final var rightUnbounded = new Interval<>(5, true, null, false);
+
+      final var result = Interval.intersection(List.of(leftUnbounded, rightUnbounded));
+
+      assertThat(result).isPresent();
+      assertThat(result.get()).isEqualTo(Interval.closed(5, 10));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+      // null start = unbounded
+      "true,  false, true",
+      // null end = unbounded
+      "false, true,  true",
+      // both null = unbounded
+      "true,  true,  true",
+      // both non-null = bounded
+      "false, false, false"
+    })
+    void isUnboundedReturnsTrueWhenEitherBoundIsNull(
+        final boolean nullStart, final boolean nullEnd, final boolean expectedUnbounded) {
+      final Integer start = nullStart ? null : 1;
+      final Integer end = nullEnd ? null : 10;
+      final var interval = new Interval<>(start, true, end, true);
+
+      assertThat(interval.isUnbounded()).isEqualTo(expectedUnbounded);
+    }
+
+    @Test
+    void smallestCoverWithUnboundedIntervalsIncludesAllRelevantPoints() {
+      final var fullyUnbounded = new Interval<Integer>(null, false, null, false);
+      final var points = List.of(1, 3, 5, 7, 9);
+
+      assertThat(fullyUnbounded.smallestCover(points)).containsExactly(1, 3, 5, 7, 9);
     }
   }
 }

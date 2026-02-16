@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -486,7 +487,11 @@ final class BackupRangeResolverTest {
       final Map<Integer, Long> exportedPositions) {
     return resolver
         .getRestoreInfoForAllPartitions(
-            from, to, partitionCount, exportedPositions, checkIdGenerator, DIRECT_EXECUTOR)
+            Interval.closed(from, to),
+            partitionCount,
+            exportedPositions,
+            checkIdGenerator,
+            DIRECT_EXECUTOR)
         .join();
   }
 
