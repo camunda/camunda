@@ -332,6 +332,105 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
+      - name: Resolve connectors Docker image version
+        id: connectors-version
+        # Connectors-bundle Docker images don't have a 1:1 version match with Camunda
+        # (e.g. Camunda 8.8.11 may exist but connectors-bundle only goes up to 8.8.7).
+        # Resolution strategy:
+        #   0. SNAPSHOT server  → use SNAPSHOT connectors
+        #   1. Exact match      → use connectors-bundle:<server-version> if the tag exists
+        #   2. Latest patch     → find the highest connectors-bundle:<major.minor.x> tag
+        #   3. Fallback         → use SNAPSHOT connectors
+        run: |
+          SERVER_VERSION="${{ matrix.server }}"
+
+          # If server is SNAPSHOT, use SNAPSHOT for connectors too
+          if [[ "$SERVER_VERSION" == "SNAPSHOT" || "$SERVER_VERSION" == *"-SNAPSHOT" ]]; then
+            echo "version=SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "Connectors version: SNAPSHOT (matching SNAPSHOT server)"
+            exit 0
+          fi
+
+          # Check if the exact version exists for connectors-bundle
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" --retry 3 --retry-delay 5 --max-time 10 \
+            "https://hub.docker.com/v2/repositories/camunda/connectors-bundle/tags/${SERVER_VERSION}")
+
+          if [[ "$HTTP_STATUS" == "200" ]]; then
+            echo "version=$SERVER_VERSION" >> "$GITHUB_OUTPUT"
+            echo "Connectors version: $SERVER_VERSION (exact match found)"
+            exit 0
+          elif [[ "$HTTP_STATUS" != "404" ]]; then
+            echo "::warning::Docker Hub returned unexpected status $HTTP_STATUS when checking connectors-bundle:${SERVER_VERSION}, falling back to SNAPSHOT"
+            echo "version=SNAPSHOT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "No exact connectors-bundle tag for $SERVER_VERSION (404), finding latest matching major.minor..."
+
+          # Extract major.minor from server version
+          if [[ "$SERVER_VERSION" =~ ^([0-9]+\.[0-9]+)\. ]]; then
+            MAJOR_MINOR="${BASH_REMATCH[1]}"
+          else
+            echo "::warning::Cannot parse server version $SERVER_VERSION, falling back to SNAPSHOT"
+            echo "version=SNAPSHOT" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Query Docker Hub for the latest connectors-bundle tag with the same major.minor,
+          # paginating through all results to handle versions with many patch releases
+          LATEST_TAG=$(python3 -c "
+          import json, re, sys, urllib.request, urllib.error
+
+          major_minor = '${MAJOR_MINOR}'
+          prefix = major_minor + '.'
+          base_url = 'https://hub.docker.com/v2/repositories/camunda/connectors-bundle/tags/'
+          url = base_url + '?page_size=100&ordering=-name'
+          tags = []
+          pages_fetched = 0
+          max_pages = 10  # safety limit
+
+          while url and pages_fetched < max_pages:
+              pages_fetched += 1
+              try:
+                  req = urllib.request.Request(url, headers={'Accept': 'application/json'})
+                  with urllib.request.urlopen(req, timeout=15) as resp:
+                      data = json.loads(resp.read().decode())
+              except (urllib.error.URLError, json.JSONDecodeError, ValueError) as e:
+                  print(f'ERROR: failed to fetch tags (page {pages_fetched}): {e}', file=sys.stderr)
+                  sys.exit(1)
+
+              if 'results' not in data:
+                  print('ERROR: unexpected response structure, missing results key', file=sys.stderr)
+                  sys.exit(1)
+
+              for r in data['results']:
+                  name = r.get('name', '')
+                  if name.startswith(prefix) and re.match(r'^[0-9]+\.[0-9]+\.[0-9]+$', name):
+                      parts = name.split('.')
+                      tags.append((int(parts[0]), int(parts[1]), int(parts[2]), name))
+
+              # If we already found tags and the next page would be for older versions,
+              # we can stop early since results are ordered by name descending
+              url = data.get('next')
+              if tags and url:
+                  # Check if last result on this page is already below our major.minor
+                  last_name = data['results'][-1].get('name', '') if data['results'] else ''
+                  if last_name and not last_name.startswith(major_minor[0]):
+                      break
+
+          if tags:
+              tags.sort(reverse=True)
+              print(tags[0][3])
+          ") || true
+
+          if [[ -n "$LATEST_TAG" ]]; then
+            echo "version=$LATEST_TAG" >> "$GITHUB_OUTPUT"
+            echo "Connectors version: $LATEST_TAG (latest for $MAJOR_MINOR.x)"
+          else
+            echo "::warning::No connectors-bundle tag found for $MAJOR_MINOR.x, falling back to SNAPSHOT"
+            echo "version=SNAPSHOT" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Install zeebe-parent only
         uses: ./.github/actions/run-maven
         with:
@@ -343,7 +442,7 @@ jobs:
             -DskipUTs
             -DskipChecks
 
-      - name: Determine API version override
+      - name: Determine Docker API version override
         id: api-version
         run: |
           CLIENT_VERSION="${{ matrix.client }}"
@@ -370,7 +469,7 @@ jobs:
             -f testing/pom.xml
             -DskipUTs
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
-            -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.server }}
+            -Dio.camunda.process.test.connectorsDockerImageVersion=${{ steps.connectors-version.outputs.version }}
             -DfailIfNoTests=false
             ${{ steps.api-version.outputs.extra-props }}
 
