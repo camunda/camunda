@@ -35,12 +35,22 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.URISyntaxException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import javax.net.ssl.SSLContext;
 import org.agrona.CloseHelper;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
+import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
+import org.apache.hc.client5.http.ssl.TrustAllStrategy;
 import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.opensearch.client.Request;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
@@ -267,10 +277,33 @@ final class TestClient implements CloseableSilently {
 
   private OpenSearchTransport createTransport(final OpensearchExporterConfiguration config) {
     try {
+      final SSLContext sslContext =
+          SSLContextBuilder.create().loadTrustMaterial(null, new TrustAllStrategy()).build();
+      final TlsStrategy tlsStrategy =
+          ClientTlsStrategyBuilder.create().setSslContext(sslContext).buildAsync();
+      final var credentialsProvider =
+          new org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider();
+      if (config.hasAuthenticationPresent()) {
+        credentialsProvider.setCredentials(
+            new org.apache.hc.client5.http.auth.AuthScope(null, -1),
+            new org.apache.hc.client5.http.auth.UsernamePasswordCredentials(
+                config.getAuthentication().getUsername(),
+                config.getAuthentication().getPassword().toCharArray()));
+      }
+      final PoolingAsyncClientConnectionManager connectionManager =
+          PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
       return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(config.url))
           .setMapper(new JacksonJsonpMapper(MAPPER))
+          .setHttpClientConfigCallback(
+              httpClientBuilder ->
+                  httpClientBuilder
+                      .setConnectionManager(connectionManager)
+                      .setDefaultCredentialsProvider(credentialsProvider))
           .build();
-    } catch (final URISyntaxException e) {
+    } catch (final URISyntaxException
+        | NoSuchAlgorithmException
+        | KeyStoreException
+        | KeyManagementException e) {
       throw new RuntimeException(e);
     }
   }
