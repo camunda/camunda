@@ -20,17 +20,10 @@ import {
   GlobalTaskListener,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
-
-type FormData = {
-  id: string;
-  type: string;
-  eventTypes: EventTypeOption[];
-  retries: number;
-  afterNonGlobal: boolean;
-  priority: number;
-};
-
-const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;
+import {
+  FormData,
+  LISTENER_TYPE_PATTERN,
+} from "src/pages/global-task-listeners";
 
 const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   open,
