@@ -43,9 +43,15 @@ final class TemplateReaderTest {
         .as("component template has no need for aliases")
         .isNullOrEmpty();
     assertThat(template.template().settings())
-        .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
-        .containsEntry("index.queries.cache.enabled", false);
+        .containsEntry(
+            "index",
+            Map.of(
+                "number_of_shards",
+                "1",
+                "number_of_replicas",
+                "0",
+                "queries",
+                Map.of("cache", Map.of("enabled", false))));
   }
 
   @Test
@@ -123,9 +129,15 @@ final class TemplateReaderTest {
         .containsExactlyEntriesOf(Map.of("alias", Collections.emptyMap()));
     assertThat(template.priority()).isEqualTo(20);
     assertThat(template.template().settings())
-        .containsEntry("number_of_shards", 1)
-        .containsEntry("number_of_replicas", 0)
-        .containsEntry("index.queries.cache.enabled", false);
+        .containsEntry(
+            "index",
+            Map.of(
+                "number_of_shards",
+                "1",
+                "number_of_replicas",
+                "0",
+                "queries",
+                Map.of("cache", Map.of("enabled", false))));
   }
 
   @Test

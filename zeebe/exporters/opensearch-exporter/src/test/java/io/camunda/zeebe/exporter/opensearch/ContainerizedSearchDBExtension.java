@@ -58,6 +58,8 @@ public class ContainerizedSearchDBExtension extends SearchDBExtension {
     config.url = opensearchContainer.getHttpHostAddress();
     config.getAuthentication().setUsername(opensearchContainer.getUsername());
     config.getAuthentication().setPassword(PASSWORD);
+    config.getSecurity().setEnabled(true);
+    config.getSecurity().setSelfSigned(true);
     testClient = new TestClient(config, indexRouter);
     client =
         new OpensearchClient(

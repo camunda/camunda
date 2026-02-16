@@ -16,8 +16,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
-// import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponseOLD;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
@@ -28,30 +26,19 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
-import java.security.KeyManagementException;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.net.ssl.SSLContext;
 import org.agrona.CloseHelper;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManager;
-import org.apache.hc.client5.http.impl.nio.PoolingAsyncClientConnectionManagerBuilder;
-import org.apache.hc.client5.http.ssl.ClientTlsStrategyBuilder;
-import org.apache.hc.client5.http.ssl.TrustAllStrategy;
-import org.apache.hc.core5.http.HttpHost;
-import org.apache.hc.core5.http.nio.ssl.TlsStrategy;
-import org.apache.hc.core5.ssl.SSLContextBuilder;
 import org.opensearch.client.Request;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.indices.GetIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.GetIndexTemplateResponse;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
 import org.opensearch.client.opensearch.ism.IsmTemplate;
@@ -59,8 +46,6 @@ import org.opensearch.client.opensearch.ism.Policy;
 import org.opensearch.client.opensearch.ism.PutPolicyRequest;
 import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
-import org.opensearch.client.transport.OpenSearchTransport;
-import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
 
 /**
  * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
@@ -76,17 +61,22 @@ final class TestClient implements CloseableSilently {
   private final RecordIndexRouter indexRouter;
 
   TestClient(final OpensearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
-    this(config, indexRouter, RestClientFactory.of(config, true));
+    this(
+        config,
+        indexRouter,
+        RestClientFactory.of(config, true),
+        OpensearchConnector.of(config.withObjectMapper(MAPPER)).createClient());
   }
 
   TestClient(
       final OpensearchExporterConfiguration config,
       final RecordIndexRouter indexRouter,
-      final RestClient restClient) {
+      final RestClient restClient,
+      final OpenSearchClient osClient) {
     this.config = config;
     this.indexRouter = indexRouter;
     this.restClient = restClient;
-    osClient = new OpenSearchClient(createTransport(config));
+    this.osClient = osClient;
 
     opensearchClient = new OpensearchClient(config, Metrics.globalRegistry, osClient, restClient);
   }
@@ -103,15 +93,14 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType, final String version) {
+  Optional<IndexTemplateItem> getIndexTemplate(final ValueType valueType, final String version) {
     try {
-      final var request =
-          new Request(
-              "GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType, version));
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), IndexTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
+      final GetIndexTemplateRequest request =
+          GetIndexTemplateRequest.builder()
+              .name(indexRouter.indexPrefixForValueType(valueType, version))
+              .build();
+      final GetIndexTemplateResponse response = osClient.indices().getIndexTemplate(request);
+      return response.indexTemplates().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -231,39 +220,6 @@ final class TestClient implements CloseableSilently {
         return;
       }
       throw new UncheckedIOException(e);
-    }
-  }
-
-  private OpenSearchTransport createTransport(final OpensearchExporterConfiguration config) {
-    try {
-      final SSLContext sslContext =
-          SSLContextBuilder.create().loadTrustMaterial(null, new TrustAllStrategy()).build();
-      final TlsStrategy tlsStrategy =
-          ClientTlsStrategyBuilder.create().setSslContext(sslContext).buildAsync();
-      final var credentialsProvider =
-          new org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider();
-      if (config.hasAuthenticationPresent()) {
-        credentialsProvider.setCredentials(
-            new org.apache.hc.client5.http.auth.AuthScope(null, -1),
-            new org.apache.hc.client5.http.auth.UsernamePasswordCredentials(
-                config.getAuthentication().getUsername(),
-                config.getAuthentication().getPassword().toCharArray()));
-      }
-      final PoolingAsyncClientConnectionManager connectionManager =
-          PoolingAsyncClientConnectionManagerBuilder.create().setTlsStrategy(tlsStrategy).build();
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(config.url))
-          .setMapper(new JacksonJsonpMapper(MAPPER))
-          .setHttpClientConfigCallback(
-              httpClientBuilder ->
-                  httpClientBuilder
-                      .setConnectionManager(connectionManager)
-                      .setDefaultCredentialsProvider(credentialsProvider))
-          .build();
-    } catch (final URISyntaxException
-        | NoSuchAlgorithmException
-        | KeyStoreException
-        | KeyManagementException e) {
-      throw new RuntimeException(e);
     }
   }
 

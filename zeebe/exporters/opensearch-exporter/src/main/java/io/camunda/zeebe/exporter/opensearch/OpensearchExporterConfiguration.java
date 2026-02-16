@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -35,6 +37,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   private final ProxyConfiguration proxy = new ProxyConfiguration();
   private final SecurityConfiguration security = new SecurityConfiguration();
   private boolean includeEnabledRecords = false;
+  @JsonIgnore // ensure this doesn't get injected when creating the config during serialization
+  private ObjectMapper objectMapper = new ObjectMapper();
 
   public String getUrl() {
     return url;
@@ -72,6 +76,27 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
   public List<PluginConfiguration> getInterceptorPlugins() {
     return interceptorPlugins;
+  }
+
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
+  }
+
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  public void setObjectMapper(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public OpensearchExporterConfiguration withObjectMapper(final ObjectMapper objectMapper) {
+    setObjectMapper(objectMapper);
+    return this;
   }
 
   @Override
@@ -179,14 +204,6 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   @Override
   public IndexConfig filterIndexConfig() {
     return index;
-  }
-
-  public boolean getIsIncludeEnabledRecords() {
-    return includeEnabledRecords;
-  }
-
-  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
-    this.includeEnabledRecords = includeEnabledRecords;
   }
 
   public static class IndexConfiguration implements IndexConfig {

@@ -13,7 +13,6 @@ import static org.awaitility.Awaitility.await;
 
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
@@ -49,6 +48,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -249,12 +249,13 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    final var template = testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-    assertThat(template)
+    final var maybeTemplate =
+        testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+    assertThat(maybeTemplate)
         .as("should have created index template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(expectedIndexTemplateName);
   }
 
@@ -656,13 +657,13 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template =
+      final var maybeTemplate =
           testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
-      assertThat(template)
+      assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(template -> template.indexTemplate().priority())
           .isEqualTo((long) priority);
     }
 
@@ -676,13 +677,13 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template =
+      final var maybeTemplate =
           testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
-      assertThat(template)
+      assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(template -> template.indexTemplate().priority())
           .isEqualTo(20L); // default priority is 20
     }
 

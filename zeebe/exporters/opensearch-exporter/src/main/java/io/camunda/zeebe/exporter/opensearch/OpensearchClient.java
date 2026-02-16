@@ -32,7 +32,9 @@ import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
 import org.opensearch.client.opensearch.ism.DeletePolicyRequest;
@@ -186,13 +188,20 @@ public class OpensearchClient implements AutoCloseable {
 
   public boolean putIndexTemplate(final ValueType valueType, final String version) {
     final String templateName = indexRouter.indexPrefixForValueType(valueType, version);
-    final Template template =
-        templateReader.readIndexTemplate(
+    final PutIndexTemplateRequest request =
+        templateReader.getPutIndexTemplateRequest(
+            templateName,
             valueType,
             indexRouter.searchPatternForValueType(valueType, version),
             indexRouter.aliasNameForValueType(valueType));
 
-    return putIndexTemplate(templateName, template);
+    try {
+      final org.opensearch.client.opensearch.indices.PutIndexTemplateResponse response =
+          openSearchClient.indices().putIndexTemplate(request);
+      return response.acknowledged();
+    } catch (final OpenSearchException | IOException e) {
+      throw new OpensearchExporterException("Failed to put index template", e);
+    }
   }
 
   /**
@@ -237,18 +246,6 @@ public class OpensearchClient implements AutoCloseable {
     throw new OpensearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
-  private boolean putIndexTemplate(final String templateName, final Template template) {
-    try {
-      final var request = new Request("PUT", "/_index_template/" + templateName);
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
-      return response.acknowledged();
-    } catch (final IOException e) {
-      throw new OpensearchExporterException("Failed to put index template", e);
-    }
-  }
-
   private boolean putComponentTemplate(final Template template) {
     try {
       final var request =
@@ -274,7 +271,7 @@ public class OpensearchClient implements AutoCloseable {
       final GetIndexStateManagementPolicyResponse response =
           OpensearchIsmPolicyClientWrapper.getIsmPolicyResponse(openSearchClient.ism(), request);
       return Optional.ofNullable(response);
-    } catch (final IOException e) {
+    } catch (final OpenSearchException | IOException e) {
       return Optional.empty();
     }
   }
@@ -366,7 +363,7 @@ public class OpensearchClient implements AutoCloseable {
           OpensearchIsmPolicyClientWrapper.putIsmPolicyResponse(openSearchClient.ism(), request);
 
       return response.policy() != null;
-    } catch (final IOException e) {
+    } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to put index state management policy", e);
     }
   }
