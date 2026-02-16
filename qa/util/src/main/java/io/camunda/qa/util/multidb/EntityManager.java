@@ -39,6 +39,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.awaitility.Awaitility;
@@ -258,19 +259,19 @@ public final class EntityManager {
     LOGGER.debug("Awaiting visibility of all entities and permissions");
     awaitSearchVisibility(
         "users",
-        wrap(defaultClient.newUsersSearchRequest()),
+        () -> wrap(defaultClient.newUsersSearchRequest()),
         extractField(User::getUsername),
         users.keySet());
 
     awaitSearchVisibility(
         "permissions",
-        wrap(defaultClient.newAuthorizationSearchRequest()),
+        () -> wrap(defaultClient.newAuthorizationSearchRequest()),
         this::toPermissionIdentifiers,
         createdPermissionIdentifiers);
 
     awaitSearchVisibility(
         "groups",
-        wrap(defaultClient.newGroupsSearchRequest()),
+        () -> wrap(defaultClient.newGroupsSearchRequest()),
         extractField(Group::getGroupId),
         groups.keySet());
 
@@ -295,13 +296,13 @@ public final class EntityManager {
 
     awaitSearchVisibility(
         "mapping rules",
-        wrap(defaultClient.newMappingRulesSearchRequest()),
+        () -> wrap(defaultClient.newMappingRulesSearchRequest()),
         extractField(MappingRule::getMappingRuleId),
         mappingRules.keySet());
 
     awaitSearchVisibility(
         "roles",
-        wrap(defaultClient.newRolesSearchRequest()),
+        () -> wrap(defaultClient.newRolesSearchRequest()),
         extractField(Role::getRoleId),
         roles.keySet());
 
@@ -386,11 +387,10 @@ public final class EntityManager {
       final EntityType entityType) {
     final var expectedIds =
         membershipList.stream().map(Membership::memberId).collect(Collectors.toSet());
-    final var search = membershipSearch.searchFactory().apply(membershipId);
     final var idExtractor = membershipSearch.idExtractor();
     awaitSearchVisibility(
         alias + " (entityType=" + entityType + ", id=" + membershipId + ")",
-        search,
+        () -> membershipSearch.searchFactory().apply(membershipId),
         extractField(idExtractor),
         expectedIds);
   }
@@ -401,12 +401,13 @@ public final class EntityManager {
 
   private <T> void awaitSearchVisibility(
       final String alias,
-      final SearchWithLimit<T> search,
+      final Supplier<SearchWithLimit<T>> searchSupplier,
       final Function<T, Stream<String>> idsExtractor,
       final Set<String> expected) {
     if (expected.isEmpty()) {
       return;
     }
+    final var search = searchSupplier.get();
     Awaitility.await(alias)
         .timeout(CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY)
         .untilAsserted(
