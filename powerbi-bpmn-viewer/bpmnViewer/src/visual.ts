@@ -31,6 +31,8 @@ import "./../style/visual.less";
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 // @ts-ignore - bpmn-js doesn't have proper TypeScript definitions for the Viewer export
 import BpmnViewer from "bpmn-js/lib/Viewer";
+// @ts-ignore - heatmap.js doesn't have proper TypeScript definitions
+import HeatmapJS from "heatmap.js";
 /* eslint-enable @typescript-eslint/ban-ts-comment */
 
 import VisualConstructorOptions = powerbi.extensibility.visual.VisualConstructorOptions;
@@ -38,6 +40,15 @@ import VisualUpdateOptions = powerbi.extensibility.visual.VisualUpdateOptions;
 import IVisual = powerbi.extensibility.visual.IVisual;
 
 import { VisualFormattingSettingsModel } from "./settings";
+
+// Heatmap configuration constants (based on Optimize implementation)
+const ACTIVITY_DENSITY = 20;  // Distance between heat points in an activity
+const ACTIVITY_RADIUS = 50;   // Blur radius for activity heat points
+const ACTIVITY_VALUE_MODIFIER = 0.125;  // Value multiplier for activities
+const VALUE_SHIFT = 0.17;     // Minimum heat value (for non-zero elements)
+const COOLNESS = 2.5;         // Overall heat intensity reduction
+const EDGE_BUFFER = 75;       // Extra space around diagram
+const RESOLUTION = 4;         // Resolution divisor for performance
 
 // Default BPMN XML to render
 const DEFAULT_BPMN_XML = `<?xml version="1.0" encoding="UTF-8"?>
@@ -98,6 +109,7 @@ export class Visual implements IVisual {
     private formattingSettingsService: FormattingSettingsService;
     private currentBpmnXml: string;
     private heatmapData: Map<string, number>;
+    private heatmapOverlay: SVGImageElement | null;
 
     constructor(options: VisualConstructorOptions) {
         console.log('BPMN Visual constructor', options);
@@ -105,6 +117,7 @@ export class Visual implements IVisual {
         this.target = options.element;
         this.currentBpmnXml = DEFAULT_BPMN_XML;
         this.heatmapData = new Map();
+        this.heatmapOverlay = null;
         
         if (document) {
             // Create container for BPMN diagram
@@ -166,100 +179,132 @@ export class Visual implements IVisual {
         }
     }
 
-    private getHeatmapColor(value: number, minValue: number, maxValue: number): string {
-        // Normalize value to 0-1 range
-        const normalized = maxValue > minValue ? (value - minValue) / (maxValue - minValue) : 0;
-        
-        // Create color gradient from light blue -> yellow -> orange -> red
-        // Using lighter opacity for overlay effect
-        if (normalized < 0.33) {
-            // Light blue to yellow (low activity)
-            const intensity = normalized / 0.33;
-            const r = Math.round(173 + (255 - 173) * intensity);
-            const g = Math.round(216 + (255 - 216) * intensity);
-            const b = Math.round(230 * (1 - intensity));
-            return `rgba(${r}, ${g}, ${b}, 0.6)`;
-        } else if (normalized < 0.66) {
-            // Yellow to orange (medium activity)
-            const intensity = (normalized - 0.33) / 0.33;
-            const r = 255;
-            const g = Math.round(255 - 90 * intensity);
-            const b = 0;
-            return `rgba(${r}, ${g}, ${b}, 0.6)`;
-        } else {
-            // Orange to red (high activity)
-            const intensity = (normalized - 0.66) / 0.34;
-            const r = 255;
-            const g = Math.round(165 * (1 - intensity));
-            const b = 0;
-            return `rgba(${r}, ${g}, ${b}, 0.6)`;
-        }
-    }
-
     private applyHeatmap() {
         if (!this.bpmnViewer || this.heatmapData.size === 0) {
             return;
         }
 
         try {
-            const overlays = this.bpmnViewer.get('overlays');
-            const elementRegistry = this.bpmnViewer.get('elementRegistry');
+            const canvas = this.bpmnViewer.get('canvas');
+            const viewport = canvas._viewport;
             
-            // Clear existing overlays
-            overlays.clear();
+            // Remove existing heatmap overlay if present
+            if (this.heatmapOverlay && viewport.contains(this.heatmapOverlay)) {
+                viewport.removeChild(this.heatmapOverlay);
+                this.heatmapOverlay = null;
+            }
             
-            // Find min and max values for color scaling
-            let minValue = Number.MAX_VALUE;
-            let maxValue = Number.MIN_VALUE;
+            // Generate heatmap image
+            const heatmapImage = this.generateHeatmap();
             
-            this.heatmapData.forEach((count) => {
-                if (count < minValue) minValue = count;
-                if (count > maxValue) maxValue = count;
-            });
-            
-            // Apply overlays to each flow node with execution data
-            this.heatmapData.forEach((count, flowNodeId) => {
-                const element = elementRegistry.get(flowNodeId);
-                
-                if (element && element.width && element.height) {
-                    const color = this.getHeatmapColor(count, minValue, maxValue);
-                    
-                    // Create full-sized overlay that covers the entire element
-                    const overlayHtml = document.createElement('div');
-                    overlayHtml.className = 'heatmap-overlay';
-                    overlayHtml.style.width = `${element.width}px`;
-                    overlayHtml.style.height = `${element.height}px`;
-                    overlayHtml.style.backgroundColor = color;
-                    overlayHtml.style.display = 'flex';
-                    overlayHtml.style.alignItems = 'center';
-                    overlayHtml.style.justifyContent = 'center';
-                    overlayHtml.style.borderRadius = '4px';
-                    overlayHtml.style.pointerEvents = 'none';
-                    
-                    // Add execution count text in the center
-                    const countText = document.createElement('span');
-                    countText.style.fontSize = '14px';
-                    countText.style.fontWeight = 'bold';
-                    countText.style.color = '#000';
-                    countText.style.textShadow = '0 0 3px #fff, 0 0 3px #fff';
-                    countText.textContent = count.toString();
-                    overlayHtml.appendChild(countText);
-                    
-                    // Add overlay positioned at top-left of element to cover it completely
-                    overlays.add(flowNodeId, {
-                        position: {
-                            top: 0,
-                            left: 0
-                        },
-                        html: overlayHtml
-                    });
-                }
-            });
-            
-            console.log('Heatmap applied successfully');
+            if (heatmapImage) {
+                // Add heatmap overlay to viewport
+                viewport.appendChild(heatmapImage);
+                this.heatmapOverlay = heatmapImage;
+                console.log('Heatmap applied successfully');
+            }
         } catch (err) {
             console.error('Error applying heatmap:', err);
         }
+    }
+
+    private generateHeatmap(): SVGImageElement | null {
+        try {
+            const dimensions = this.getDimensions();
+            const heatmapData = this.generateHeatmapData(dimensions);
+            
+            if (heatmapData.length === 0) {
+                return null;
+            }
+            
+            // Create heatmap using heatmap.js
+            const container = document.createElement('div');
+            container.style.width = dimensions.width / RESOLUTION + 'px';
+            container.style.height = dimensions.height / RESOLUTION + 'px';
+            container.style.position = 'absolute';
+            document.body.appendChild(container);
+            
+            const heatmapInstance = HeatmapJS.create({ container });
+            
+            // Find max value for normalization
+            const maxValue = Math.max(...heatmapData.map(d => d.value));
+            
+            // Normalize and set data
+            const normalizedData = heatmapData.map(({x, y, value, radius}) => ({
+                x: Math.round(x),
+                y: Math.round(y),
+                radius,
+                value: (VALUE_SHIFT + (value / maxValue) * (1 - VALUE_SHIFT)) / COOLNESS
+            }));
+            
+            heatmapInstance.setData({
+                min: 0,
+                max: 1,
+                data: normalizedData
+            });
+            
+            // Get data URL and cleanup
+            const dataURL = heatmapInstance.getDataURL();
+            document.body.removeChild(container);
+            
+            // Create SVG image element
+            const imageElement = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+            imageElement.setAttributeNS(null, 'x', dimensions.x.toString());
+            imageElement.setAttributeNS(null, 'y', dimensions.y.toString());
+            imageElement.setAttributeNS(null, 'width', dimensions.width.toString());
+            imageElement.setAttributeNS(null, 'height', dimensions.height.toString());
+            imageElement.setAttributeNS('http://www.w3.org/1999/xlink', 'xlink:href', dataURL);
+            imageElement.setAttributeNS(null, 'style', 'opacity: 0.8; pointer-events: none;');
+            
+            return imageElement;
+        } catch (err) {
+            console.error('Error generating heatmap:', err);
+            return null;
+        }
+    }
+
+    private getDimensions() {
+        const canvas = this.bpmnViewer.get('canvas');
+        const activeLayer = canvas.getActiveLayer();
+        const bbox = activeLayer.getBBox();
+        
+        return {
+            width: bbox.width + 2 * EDGE_BUFFER,
+            height: bbox.height + 2 * EDGE_BUFFER,
+            x: bbox.x - EDGE_BUFFER,
+            y: bbox.y - EDGE_BUFFER
+        };
+    }
+
+    private generateHeatmapData(dimensions: any) {
+        const data: any[] = [];
+        const elementRegistry = this.bpmnViewer.get('elementRegistry');
+        const { x: xOffset, y: yOffset } = dimensions;
+        
+        this.heatmapData.forEach((count, flowNodeId) => {
+            const element = elementRegistry.get(flowNodeId);
+            
+            if (!element || !element.width || !element.height) {
+                return;
+            }
+            
+            // Distribute multiple heat points across the element area
+            // This creates a smooth coverage similar to Optimize
+            for (let i = 0; i < element.width + ACTIVITY_DENSITY / 2; i += ACTIVITY_DENSITY) {
+                for (let j = 0; j < element.height + ACTIVITY_DENSITY / 2; j += ACTIVITY_DENSITY) {
+                    const value = count === 0 ? Number.EPSILON : count;
+                    
+                    data.push({
+                        x: (element.x + i - xOffset) / RESOLUTION,
+                        y: (element.y + j - yOffset) / RESOLUTION,
+                        value: value * ACTIVITY_VALUE_MODIFIER,
+                        radius: ACTIVITY_RADIUS / RESOLUTION
+                    });
+                }
+            }
+        });
+        
+        return data;
     }
 
     public update(options: VisualUpdateOptions) {

@@ -46,7 +46,7 @@ To display execution heatmap on the diagram:
 
 1. Bind your flow node ID field to the "Flow Node ID" data role
 2. Bind your execution count field to the "Execution Count" data role
-3. The visual will automatically overlay the diagram elements with colored heatmap based on execution frequency
+3. The visual will automatically generate a smooth heatmap overlay based on execution frequency
 
 **Example Data Structure:**
 ```
@@ -59,10 +59,11 @@ EndEvent_1    | 750
 ```
 
 The visual will:
-- Overlay each element with a semi-transparent colored rectangle covering the entire element
-- Display the execution count as centered text on each overlay
-- Use a color gradient: light blue (lowest) → yellow → orange → red (highest)
+- Generate a smooth, gradient-based heatmap using the heatmap.js library (same as Camunda Optimize)
+- Create heat gradients that flow naturally across the diagram
+- Use blur/radius effects for smooth color transitions
 - Provide clear visual indication of process execution patterns and bottlenecks
+- Apply colors from cool (blue/green) for low activity to hot (yellow/orange/red) for high activity
 
 ## Development
 
