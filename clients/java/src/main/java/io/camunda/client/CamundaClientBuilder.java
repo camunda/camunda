@@ -81,7 +81,7 @@ public interface CamundaClientBuilder {
 
   /**
    * The behavior to adopt when filtering jobs during activation by a given worker. See {@link
-   * TenantFilter} for possible values.
+   * TenantFilter} for possible values. The default value is {@link TenantFilter#PROVIDED}.
    *
    * @param tenantFilter the default filter to use for all workers
    */

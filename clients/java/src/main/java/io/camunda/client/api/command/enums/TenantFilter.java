@@ -36,5 +36,30 @@ public enum TenantFilter {
    * io.camunda.client.api.command.CommandWithOneOrMoreTenantsStep#tenantIds(java.util.List)} or
    * client defaults), and only jobs associated with those tenants, if any, will be activated.
    */
-  PROVIDED
+  PROVIDED;
+
+  /**
+   * Converts a string value to a TenantFilter enum, handling case-insensitive input and trimming
+   * whitespace.
+   *
+   * @param value the string representation of the tenant filter
+   * @return the corresponding TenantFilter enum value
+   * @throws IllegalArgumentException if the value doesn't match any TenantFilter value
+   */
+  public static TenantFilter from(final String value) {
+    if (value == null) {
+      throw new IllegalArgumentException(
+          "Tenant filter value cannot be null. Expected 'ASSIGNED' or 'PROVIDED'");
+    }
+
+    final String normalizedValue = value.trim().toUpperCase();
+    try {
+      return TenantFilter.valueOf(normalizedValue);
+    } catch (final IllegalArgumentException e) {
+      throw new IllegalArgumentException(
+          String.format(
+              "Invalid tenant filter value: '%s'. Expected 'ASSIGNED' or 'PROVIDED' (case-insensitive)",
+              value));
+    }
+  }
 }

@@ -23,7 +23,6 @@ import static io.camunda.client.ClientProperties.DEFAULT_TENANT_ID;
 import static io.camunda.client.ClientProperties.GRPC_ADDRESS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_EXECUTION_THREADS;
 import static io.camunda.client.ClientProperties.JOB_WORKER_MAX_JOBS_ACTIVE;
-import static io.camunda.client.ClientProperties.JOB_WORKER_TENANT_FILTER;
 import static io.camunda.client.ClientProperties.KEEP_ALIVE;
 import static io.camunda.client.ClientProperties.MAX_MESSAGE_SIZE;
 import static io.camunda.client.ClientProperties.MAX_METADATA_SIZE;
@@ -117,7 +116,7 @@ public final class CamundaClientBuilderImpl
   private String defaultTenantId = CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
   private List<String> defaultJobWorkerTenantIds =
       Collections.singletonList(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
-  private TenantFilter defaultTenantFilter = TenantFilter.PROVIDED;
+  private TenantFilter defaultJobWorkerTenantFilter = TenantFilter.PROVIDED;
   private int jobWorkerMaxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
   private int numJobWorkerExecutionThreads = DEFAULT_NUM_JOB_WORKER_EXECUTION_THREADS;
   private String defaultJobWorkerName = DEFAULT_JOB_WORKER_NAME_VAR;
@@ -164,7 +163,7 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public TenantFilter getDefaultJobWorkerTenantFilter() {
-    return defaultTenantFilter;
+    return defaultJobWorkerTenantFilter;
   }
 
   @Override
@@ -361,8 +360,8 @@ public final class CamundaClientBuilderImpl
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
-        value -> defaultJobWorkerTenantFilter(TenantFilter.valueOf(value)),
-        JOB_WORKER_TENANT_FILTER);
+        value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
+        io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -503,7 +502,7 @@ public final class CamundaClientBuilderImpl
 
   @Override
   public CamundaClientBuilder defaultJobWorkerTenantFilter(final TenantFilter tenantFilter) {
-    defaultTenantFilter = tenantFilter;
+    defaultJobWorkerTenantFilter = tenantFilter;
     return this;
   }
 
@@ -656,15 +655,15 @@ public final class CamundaClientBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder defaultJobWorkerExceptionHandler(
-      final JobExceptionHandler jobExceptionHandler) {
-    this.jobExceptionHandler = jobExceptionHandler;
+  public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
+    maxHttpConnections = maxConnections;
     return this;
   }
 
   @Override
-  public CamundaClientBuilder maxHttpConnections(final int maxConnections) {
-    maxHttpConnections = maxConnections;
+  public CamundaClientBuilder defaultJobWorkerExceptionHandler(
+      final JobExceptionHandler jobExceptionHandler) {
+    this.jobExceptionHandler = jobExceptionHandler;
     return this;
   }
 
@@ -728,7 +727,7 @@ public final class CamundaClientBuilderImpl
         DEFAULT_JOB_WORKER_TENANT_IDS_VAR,
         LegacyZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
     applyEnvironmentValueIfNotNull(
-        value -> defaultJobWorkerTenantFilter(TenantFilter.valueOf(value)),
+        value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
         DEFAULT_JOB_WORKER_TENANT_FILTER_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),

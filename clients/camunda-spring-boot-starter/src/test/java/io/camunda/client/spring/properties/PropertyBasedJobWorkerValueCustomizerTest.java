@@ -538,6 +538,42 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
         .contains(new FromOverrideProperty<>("overriddenTenantId"));
   }
 
+  @Test
+  void shouldSetTenantFilterOnProperties() {
+    // given
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
+
+    // when
+    properties.setTenantFilter(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
+
+    // then
+    assertThat(properties.getTenantFilter())
+        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  void shouldSetTenantFilterToProvided() {
+    // given
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
+
+    // when
+    properties.setTenantFilter(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+
+    // then
+    assertThat(properties.getTenantFilter())
+        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+  }
+
+  @Test
+  void shouldInitializeWithDefaultTenantFilter() {
+    // given/when
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties(true);
+
+    // then
+    assertThat(properties.getTenantFilter())
+        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+  }
+
   private record Input<T>(
       String displayName,
       BiConsumer<CamundaClientJobWorkerProperties, T> setter,

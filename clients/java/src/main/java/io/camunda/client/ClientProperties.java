@@ -64,7 +64,8 @@ public final class ClientProperties {
   /**
    * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
    */
-  public static final String JOB_WORKER_TENANT_FILTER = "camunda.client.worker.tenantFilter";
+  public static final String DEFAULT_JOB_WORKER_TENANT_FILTER =
+      "camunda.client.worker.tenantFilter";
 
   /**
    * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)
