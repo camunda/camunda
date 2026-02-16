@@ -13,7 +13,7 @@
 
 ### Get list of all modules in monorepo
 # shellcheck disable=SC2016,SC2005,SC2006,SC2046
-rawModuleList=$(echo $(./mvnw -B exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' | grep '###MODULE_GAV### ' | cut -f2 -d' '))
+rawModuleList=$(echo $(./mvnw -B -q -Dquickly exec:exec -Dexec.executable=echo -Dexec.args='###MODULE_GAV### ${project.artifactId}' 2>/dev/null | grep '###MODULE_GAV### ' | cut -f2 -d' '))
 
 # Convert the module list string into an array
 IFS=' ' read -ra items <<< "$rawModuleList"
