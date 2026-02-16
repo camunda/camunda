@@ -1,0 +1,28 @@
+# Override file for max scenario - disables consistency checks for maximum performance
+orchestration:
+  extraConfiguration:
+    application.yml: |
+      zeebe.gateway.monitoring.enabled: "true"
+      zeebe.gateway.threads.managementThreads: "1"
+      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "false"
+      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "false"
+      zeebe.broker.executionMetricsExporterEnabled: "true"
+      zeebe.broker.data.disk.freeSpace.processing: "3GB"
+      zeebe.broker.data.disk.freeSpace.replication: "2GB"
+      zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
+      zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
+      zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+      zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
+      zeebe.broker.flowControl.write.enabled: "true"
+      zeebe.broker.flowControl.write.limit: 10000
+      zeebe.broker.flowControl.write.throttling.enabled: "true"
+      camunda.tasklist.importerEnabled: "false"
+      camunda.operate.importerEnabled: "false"
+      camunda.operate.elasticsearch.numberOfShards: 3
+      camunda.data.secondary-storage.retention.enabled: "true"
+      camunda.data.secondary-storage.retention.minimum-age: "70m"
+      camunda.data.secondary-storage.elasticsearch.history.policy-name: "camunda-retention-policy"
+      camunda.database.retention.policyName: "camunda-retention-policy"
+      zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
+      camunda.flags.jfr.metrics: "true"
+      zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"

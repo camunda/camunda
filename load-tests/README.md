@@ -6,7 +6,7 @@ Welcome to the Camunda Load test :wave:
 
 Make sure you have access to our Google Cloud environment. Ask the team or Infra for help, if necessary.
 
-More details can also be found in our [reliability testing documentation](../../docs/testing/reliability-testing.md).
+More details can also be found in our [reliability testing documentation](../docs/testing/reliability-testing.md).
 
 ## What's next?
 
