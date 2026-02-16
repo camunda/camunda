@@ -54,6 +54,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
@@ -1164,6 +1165,41 @@ public final class CamundaClientTest {
         .describedAs(
             "This method has no effect on the cloud client builder while under development")
         .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithCloudClientBuilder() {
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+
+    final CamundaClientCloudBuilderImpl builderWithTenantFilter =
+        (CamundaClientCloudBuilderImpl) builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
+
+    assertThat(builderWithTenantFilter).isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithClientBuilder() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldDefaultToProvidedTenantFilter() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
   @Test
