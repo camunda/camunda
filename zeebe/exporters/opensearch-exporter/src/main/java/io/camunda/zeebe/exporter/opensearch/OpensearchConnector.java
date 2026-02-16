@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.AuthenticationConfiguration;
@@ -26,6 +27,7 @@ import org.apache.hc.core5.http.HttpRequestInterceptor;
 import org.apache.hc.core5.util.Timeout;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.ssl.SSLContexts;
+import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.transport.OpenSearchTransport;
 import org.opensearch.client.transport.aws.AwsSdk2Transport;
@@ -43,19 +45,26 @@ public final class OpensearchConnector {
   private static final Logger LOGGER = LoggerFactory.getLogger(OpensearchConnector.class);
 
   private final OpensearchExporterConfiguration configuration;
+  private final ObjectMapper objectMapper;
   private final PluginRepository pluginRepository;
 
   private final AwsCredentialsProvider credentialsProvider;
 
   public OpensearchConnector(final OpensearchExporterConfiguration configuration) {
-    this(configuration, DefaultCredentialsProvider.builder().build(), new PluginRepository());
+    this(
+        configuration,
+        configuration.getObjectMapper(),
+        DefaultCredentialsProvider.builder().build(),
+        new PluginRepository());
   }
 
   public OpensearchConnector(
       final OpensearchExporterConfiguration configuration,
+      final ObjectMapper objectMapper,
       final AwsCredentialsProvider credentialsProvider,
       final PluginRepository pluginRepository) {
     this.configuration = configuration;
+    this.objectMapper = objectMapper;
     this.credentialsProvider = credentialsProvider;
     this.pluginRepository = pluginRepository;
   }
@@ -88,7 +97,10 @@ public final class OpensearchConnector {
     final Region region = Region.of(configuration.aws.region);
 
     final AwsSdk2TransportOptions transportOptions =
-        AwsSdk2TransportOptions.builder().setCredentials(credentialsProvider).build();
+        AwsSdk2TransportOptions.builder()
+            .setCredentials(credentialsProvider)
+            .setMapper(new JacksonJsonpMapper(objectMapper))
+            .build();
 
     return new AwsSdk2Transport(httpClient, hostname, region, transportOptions);
   }
@@ -110,6 +122,8 @@ public final class OpensearchConnector {
           setTimeouts(requestConfigBuilder, configuration);
           return requestConfigBuilder;
         });
+
+    builder.setMapper(new JacksonJsonpMapper(objectMapper));
 
     return builder.build();
   }

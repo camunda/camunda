@@ -9,12 +9,20 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
+import io.camunda.zeebe.exporter.opensearch.dto.IdxTemplate;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
+import jakarta.json.stream.JsonParser;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
+import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
+import org.opensearch.client.opensearch.indices.Alias;
+import org.opensearch.client.opensearch.indices.IndexSettings;
+import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
 /** Utility class to read index and component templates from the resources in a logical format. */
 @SuppressWarnings("ClassCanBeRecord") // not semantically a data class
@@ -58,6 +66,67 @@ final class TemplateReader {
             })
         .withPriority(Long.valueOf(config.getPriority()))
         .build();
+  }
+
+  PutIndexTemplateRequest getPutIndexTemplateRequest(
+      final String templateName,
+      final ValueType valueType,
+      final String searchPattern,
+      final String aliasName) {
+    try {
+      final IdxTemplate wrapper =
+          getTemplateWrapperFromClasspath(findResourceForTemplate(valueType));
+
+      return PutIndexTemplateRequest.of(
+          b ->
+              b.name(templateName)
+                  .version(wrapper.version())
+                  .priority(config.getPriority())
+                  .composedOf(config.prefix + "-" + VersionUtil.getVersionLowerCase())
+                  .indexPatterns(searchPattern)
+                  .template(
+                      t -> {
+                        IndexSettings idxSettings = wrapper.template().settings();
+                        if (wrapper.template().settings() != null) {
+                          idxSettings = updateIndexSettings(idxSettings.toBuilder()).build();
+                        }
+                        return t.settings(idxSettings)
+                            .aliases(aliasName, Alias.builder().build())
+                            .mappings(wrapper.template().mappings());
+                      }));
+    } catch (final Exception e) {
+      throw new OpensearchExporterException(
+          "Failed to create a put index template request from classpath "
+              + findResourceForTemplate(valueType),
+          e);
+    }
+  }
+
+  private IdxTemplate getTemplateWrapperFromClasspath(final String filename) {
+    try (final InputStream inputStream = OpensearchExporter.class.getResourceAsStream(filename)) {
+      if (inputStream == null) {
+        throw new OpensearchExporterException(
+            "Template resource not found on classpath " + filename);
+      }
+      final JsonbJsonpMapper mapper = new JsonbJsonpMapper();
+      final JsonParser parser = mapper.jsonProvider().createParser(inputStream);
+      return IdxTemplate._DESERIALIZER.deserialize(parser, mapper);
+    } catch (final IOException e) {
+      throw new OpensearchExporterException(
+          "Failed to load template from classpath " + filename, e);
+    }
+  }
+
+  private Builder updateIndexSettings(final Builder builder) {
+    final Integer numberOfShards = config.getNumberOfShards();
+    if (numberOfShards != null) {
+      builder.numberOfShards(numberOfShards);
+    }
+    final Integer numberOfReplicas = config.getNumberOfReplicas();
+    if (numberOfReplicas != null) {
+      builder.numberOfReplicas(numberOfReplicas);
+    }
+    return builder;
   }
 
   private String findResourceForTemplate(final ValueType valueType) {

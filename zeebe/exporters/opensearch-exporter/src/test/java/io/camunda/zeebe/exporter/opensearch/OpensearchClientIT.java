@@ -12,17 +12,20 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch.indices.IndexTemplate;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 
 public class OpensearchClientIT {
 
@@ -57,20 +60,6 @@ public class OpensearchClientIT {
   void shouldPutIndexTemplate() {
     // given
     final var valueType = ValueType.VARIABLE;
-    final String indexTemplateName =
-        searchDB
-            .indexRouter()
-            .indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
-    final String indexTemplateAlias = searchDB.indexRouter().aliasNameForValueType(valueType);
-    final Template expectedTemplate =
-        searchDB
-            .templateReader()
-            .readIndexTemplate(
-                valueType,
-                searchDB
-                    .indexRouter()
-                    .searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
-                indexTemplateAlias);
 
     // required since all index templates are composed with it
     searchDB.client().putComponentTemplate();
@@ -79,17 +68,37 @@ public class OpensearchClientIT {
     searchDB.client().putIndexTemplate(valueType);
 
     // then
-    final var templateWrapper =
+    final Optional<IndexTemplateItem> maybeIndexTemplateItem =
         searchDB.testClient().getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-    assertThat(templateWrapper)
-        .as("should have created template for value type %s", valueType)
-        .isPresent()
-        .get()
-        .extracting(IndexTemplateWrapper::name)
-        .isEqualTo(indexTemplateName);
 
-    final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    assertThat(maybeIndexTemplateItem)
+        .as("should have created index template for value type %s", valueType)
+        .isPresent();
+
+    final IndexTemplateItem indexTemplateItem = maybeIndexTemplateItem.get();
+
+    final String expectedIndexTemplateName =
+        searchDB
+            .indexRouter()
+            .indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase());
+    assertThat(indexTemplateItem.name()).isEqualTo(expectedIndexTemplateName);
+
+    final String expectedIndexTemplateAlias =
+        searchDB.indexRouter().aliasNameForValueType(valueType);
+    final String expectedSearchPatterns =
+        searchDB
+            .indexRouter()
+            .searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase());
+    final PutIndexTemplateRequest expectedPutIndexTemplateRequest =
+        searchDB
+            .templateReader()
+            .getPutIndexTemplateRequest(
+                expectedIndexTemplateName,
+                valueType,
+                expectedSearchPatterns,
+                expectedIndexTemplateAlias);
+
+    assertIndexTemplate(indexTemplateItem.indexTemplate(), expectedPutIndexTemplateRequest);
   }
 
   @Test
@@ -110,7 +119,7 @@ public class OpensearchClientIT {
         .isEqualTo(searchDB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase());
 
     final var template = templateWrapper.get().template();
-    assertIndexTemplate(template, expectedTemplate);
+    assertTemplate(template, expectedTemplate);
   }
 
   @Test
@@ -141,7 +150,7 @@ public class OpensearchClientIT {
     assertThat(searchDB.testClient().getComponentTemplate()).isPresent();
   }
 
-  private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
+  private void assertTemplate(final Template actualTemplate, final Template expectedTemplate) {
     assertThat(actualTemplate.patterns()).isEqualTo(expectedTemplate.patterns());
     assertThat(actualTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
     assertThat(actualTemplate.priority()).isEqualTo(expectedTemplate.priority());
@@ -163,5 +172,31 @@ public class OpensearchClientIT {
         .containsEntry("number_of_shards", "1")
         .containsEntry("number_of_replicas", "0")
         .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
+  }
+
+  private void assertIndexTemplate(
+      final IndexTemplate actualTemplate, final PutIndexTemplateRequest putIndexTemplateRequest) {
+    assertThat(actualTemplate.indexPatterns()).isEqualTo(putIndexTemplateRequest.indexPatterns());
+    assertThat(actualTemplate.composedOf()).isEqualTo(putIndexTemplateRequest.composedOf());
+    assertThat(actualTemplate.priority())
+        .isEqualTo(Long.valueOf(putIndexTemplateRequest.priority()));
+    assertThat(actualTemplate.version()).isEqualTo(putIndexTemplateRequest.version());
+    assertThat(actualTemplate.template().aliases())
+        .isEqualTo(putIndexTemplateRequest.template().aliases());
+    assertThat(actualTemplate.template().mappings())
+        .isEqualTo(putIndexTemplateRequest.template().mappings());
+
+    // simply this catches all cases
+    assertThat(actualTemplate.template().settings())
+        .isEqualTo(putIndexTemplateRequest.template().settings());
+
+    // also explicitly check for number_of_shards, number_of_replicas and queries settings, as those
+    // are the ones we set in the template, and we want to make sure they are correctly applied
+    assertThat(actualTemplate.template().settings().index().numberOfShards())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().numberOfShards());
+    assertThat(actualTemplate.template().settings().index().numberOfReplicas())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().numberOfReplicas());
+    assertThat(actualTemplate.template().settings().index().queries())
+        .isEqualTo(putIndexTemplateRequest.template().settings().index().queries());
   }
 }
