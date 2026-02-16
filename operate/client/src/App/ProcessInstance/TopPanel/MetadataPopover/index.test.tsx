@@ -587,4 +587,45 @@ describe('MetadataPopover', () => {
       screen.queryByRole('heading', {name: labels.details}),
     ).not.toBeInTheDocument();
   });
+
+  it('should show triggered multiple times message for multi-instance elements with multiple instances', async () => {
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        mockElementInstance,
+        mockElementInstance,
+        mockElementInstance,
+      ]),
+    );
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: FLOW_NODE_ID,
+          active: 3,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      isMultiInstanceBody: 'true',
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/This element instance triggered 3 times/),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(
+        /To view details for any of these, select one Instance in the Instance History./,
+      ),
+    ).toBeInTheDocument();
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
 });
