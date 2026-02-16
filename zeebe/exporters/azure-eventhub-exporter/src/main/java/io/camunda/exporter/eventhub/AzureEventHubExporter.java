@@ -9,8 +9,8 @@ package io.camunda.exporter.eventhub;
 
 import com.azure.messaging.eventhubs.EventData;
 import com.azure.messaging.eventhubs.EventDataBatch;
-import com.azure.messaging.eventhubs.EventHubProducerClient;
 import com.azure.messaging.eventhubs.EventHubClientBuilder;
+import com.azure.messaging.eventhubs.EventHubProducerClient;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.exporter.api.Exporter;
@@ -29,7 +29,7 @@ public class AzureEventHubExporter implements Exporter {
 
   private final Logger log = LoggerFactory.getLogger(getClass().getPackageName());
   private final ObjectMapper objectMapper;
-  private final List<Record<?>> recordBuffer;
+  private final List<EventData> recordBuffer;
 
   private AzureEventHubExporterConfiguration configuration;
   private Controller controller;
@@ -37,9 +37,9 @@ public class AzureEventHubExporter implements Exporter {
   private long lastExportedPosition = -1;
 
   public AzureEventHubExporter() {
-    this.objectMapper = new ObjectMapper();
-    this.objectMapper.registerModule(new JavaTimeModule());
-    this.recordBuffer = new ArrayList<>();
+    objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    recordBuffer = new ArrayList<>();
   }
 
   @Override
@@ -47,10 +47,10 @@ public class AzureEventHubExporter implements Exporter {
     configuration =
         context.getConfiguration().instantiate(AzureEventHubExporterConfiguration.class);
     configuration.validate();
-    
+
     // Set up record filtering to only export events (not commands or rejections)
     context.setFilter(new DefaultRecordFilter(configuration));
-    
+
     log.info(
         "Azure Event Hub exporter configured for Event Hub: {}", configuration.getEventHubName());
   }
@@ -70,12 +70,6 @@ public class AzureEventHubExporter implements Exporter {
     }
   }
 
-  protected EventHubProducerClient createProducerClient() {
-    return new EventHubClientBuilder()
-        .connectionString(configuration.getConnectionString(), configuration.getEventHubName())
-        .buildProducerClient();
-  }
-
   @Override
   public void close() {
     try {
@@ -90,11 +84,18 @@ public class AzureEventHubExporter implements Exporter {
 
   @Override
   public void export(final Record<?> record) {
-    recordBuffer.add(record);
+    recordBuffer.add(new EventData(record.toJson()));
+    lastExportedPosition = record.getPosition();
 
     if (recordBuffer.size() >= configuration.getMaxBatchSize()) {
       flush();
     }
+  }
+
+  protected EventHubProducerClient createProducerClient() {
+    return new EventHubClientBuilder()
+        .connectionString(configuration.getConnectionString(), configuration.getEventHubName())
+        .buildProducerClient();
   }
 
   private void flush() {
@@ -102,17 +103,14 @@ public class AzureEventHubExporter implements Exporter {
       return;
     }
 
+    final List<EventData> recordsToExport = new ArrayList<>(recordBuffer);
     try {
-      final List<Record<?>> recordsToExport = new ArrayList<>(recordBuffer);
       recordBuffer.clear();
-      
+
       EventDataBatch currentBatch = producerClient.createBatch();
 
-      for (final Record<?> record : recordsToExport) {
-        final String recordJson = record.toJson();
-        final EventData eventData = new EventData(recordJson);
-
-        if (!currentBatch.tryAdd(eventData)) {
+      for (final var record : recordsToExport) {
+        if (!currentBatch.tryAdd(record)) {
           // Current batch is full, send it and create a new batch
           if (currentBatch.getCount() > 0) {
             producerClient.send(currentBatch);
@@ -121,14 +119,12 @@ public class AzureEventHubExporter implements Exporter {
 
           // Create a new batch and try to add the current event
           currentBatch = producerClient.createBatch();
-          if (!currentBatch.tryAdd(eventData)) {
+          if (!currentBatch.tryAdd(record)) {
             log.warn(
-                "Event at position {} is too large to fit in a batch, skipping",
-                record.getPosition());
+                "Event {} is too large to fit in a batch, skipping",
+                record);
           }
         }
-
-        lastExportedPosition = record.getPosition();
       }
 
       // Send any remaining events in the final batch
