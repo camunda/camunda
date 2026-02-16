@@ -82,11 +82,9 @@ final class LogAppendEntrySerializer {
               .formatted(entryTimestamp));
     }
 
-    final var metadataLength = metadata.getLength();
-    final var framedEntryLength = framedLength(entry);
-
-    // Write the dispatcher framing
-    DataFrameDescriptor.write(writeBuffer, writeBufferOffset, framedEntryLength);
+    // The dispatcher framing length should be written here,
+    // but we write it later on to avoid calling getLength() for metadata
+    // and value
     final var entryOffset = writeBufferOffset + DataFrameDescriptor.HEADER_LENGTH;
 
     // Write the entry
@@ -97,16 +95,25 @@ final class LogAppendEntrySerializer {
     setSourceEventPosition(writeBuffer, entryOffset, sourcePosition);
     setKey(writeBuffer, entryOffset, key);
     setTimestamp(writeBuffer, entryOffset, entryTimestamp);
+    // metadataLength  should be written here, just before the metadata value,
+    // but it's instead written after we wrote the metadata itself, to avoid calling
+    // metadata.getLength()
+    final var metadataLength = metadata.write(writeBuffer, metadataOffset(entryOffset));
     setMetadataLength(writeBuffer, entryOffset, metadataLength);
-    metadata.write(writeBuffer, metadataOffset(entryOffset));
-    value.write(writeBuffer, valueOffset(entryOffset, metadataLength));
+    final var valueLength = value.write(writeBuffer, valueOffset(entryOffset, metadataLength));
 
+    final var framedEntryLength = framedLength(metadataLength, valueLength);
+    // written a previous offset, see above
+    DataFrameDescriptor.write(writeBuffer, writeBufferOffset, framedEntryLength);
     return framedEntryLength;
   }
 
-  static int framedLength(final LogAppendEntry entry) {
+  static int framedLength(final int metadataLength, final int recordValueLength) {
     return DataFrameDescriptor.framedLength(
-        LogEntryDescriptor.headerLength(entry.recordMetadata().getLength())
-            + entry.recordValue().getLength());
+        LogEntryDescriptor.headerLength(metadataLength) + recordValueLength);
+  }
+
+  static int framedLength(final LogAppendEntry entry) {
+    return framedLength(entry.recordMetadata().getLength(), entry.recordValue().getLength());
   }
 }
