@@ -15,7 +15,7 @@ on:
         required: false
         type: string
       dockerImage:
-        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, builds image locally using release artifacts.
+        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, defaults to 'camunda/optimize:<version>'. Use the 'build' input to control local image building.
         required: false
         type: string
       monitor:
@@ -41,6 +41,12 @@ on:
     secrets:
       SNYK_TOKEN:
         required: true
+      VAULT_ADDR:
+        required: true
+      VAULT_ROLE_ID:
+        required: true
+      VAULT_SECRET_ID:
+        required: true
     inputs:
       version:
         description: The project version; defaults to the version as defined by the root POM
@@ -51,7 +57,7 @@ on:
         required: false
         type: string
       dockerImage:
-        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, builds image locally using release artifacts.
+        description: The full name of the Docker image to scan; if provided, scans the published image from registry. If empty, defaults to 'camunda/optimize:<version>'. Use the 'build' input to control local image building.
         required: false
         type: string
       monitor:
@@ -86,7 +92,8 @@ jobs:
     timeout-minutes: 15
     runs-on: gcp-perf-core-8-default
     permissions:
-      security-events: write # required to upload SARIF files
+      contents: read # required for actions/checkout
+      actions: read # required for actions/download-artifact
     steps:
       - name: Install Snyk CLI
         uses: snyk/actions/setup@master
@@ -105,18 +112,24 @@ jobs:
       # much the GitHub Action contexts/syntax and bash itself.
       - name: Build Snyk Environment
         id: info
+        env:
+          INPUT_TARGET: ${{ inputs.target }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_DOCKER_IMAGE: ${{ inputs.dockerImage }}
+          INPUT_MONITOR: ${{ inputs.monitor }}
+          INPUT_USE_MINOR_VERSION: ${{ inputs.useMinorVersion }}
         run: |
           set -x
 
-          if [ -n "${{ inputs.target }}" ]; then
-             TARGET="${{ inputs.target }}"
+          if [ -n "${INPUT_TARGET}" ]; then
+             TARGET="${INPUT_TARGET}"
           else
             TARGET="${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}"
           fi
           export TARGET
           
-          if [ -n "${{ inputs.version }}" ]; then
-            VERSION="${{ inputs.version }}"
+          if [ -n "${INPUT_VERSION}" ]; then
+            VERSION="${INPUT_VERSION}"
           else
             # shellcheck disable=SC2016
             VERSION=$(./mvnw -q -Dexec.executable=echo -Dexec.args='${project.version}' --non-recursive exec:exec 2>/dev/null)
@@ -128,7 +141,7 @@ jobs:
             LIFECYCLE="development"
           else
             # For production releases (monitor=true), version tag uses underscores instead of dots/dashes, e.g. 8_9_0 or 8_9_0_alpha1
-            if [[ "${{ inputs.monitor }}" == "true" ]]; then
+            if [[ "${INPUT_MONITOR}" == "true" ]]; then
               VERSION_TAG="${VERSION//[.-]/_}"
             else
               # For test-only, use simple version since no tag is uploaded to Snyk
@@ -140,17 +153,24 @@ jobs:
           export LIFECYCLE
 
           # Use inputs.dockerImage if present; otherwise infer from version and default repository camunda/optimize
-          if [ -n "${{ inputs.dockerImage }}" ]; then
-            DOCKER_IMAGE="${{ inputs.dockerImage }}"
+          if [ -n "${INPUT_DOCKER_IMAGE}" ]; then
+            DOCKER_IMAGE="${INPUT_DOCKER_IMAGE}"
           else
             DOCKER_IMAGE="camunda/optimize:${VERSION}"
           fi
           export DOCKER_IMAGE
 
           # IMPORTANT: apply useMinorVersion BEFORE composing SNYK_ARGS, like Zeebe
-          if [[ '${{ inputs.useMinorVersion }}' == 'true' ]]; then
-            TARGET="$(echo "$VERSION" | sed -E -e 's/\.[^.]*$//')"
+          if [[ "${INPUT_USE_MINOR_VERSION}" == "true" ]]; then
+            TARGET="$(echo "${VERSION}" | sed -E -e 's/\.[^.]*$//')"
             export TARGET
+          fi
+
+          # Determine SNYK_COMMAND based on monitor input
+          if [[ "${INPUT_MONITOR}" == "true" ]]; then
+            SNYK_COMMAND="monitor"
+          else
+            SNYK_COMMAND="test"
           fi
 
           {
@@ -162,8 +182,7 @@ jobs:
               "--project-tags=version=${VERSION_TAG}" \
               "--target-reference=${TARGET}"
             echo "TARGET=${TARGET}"
-            echo "SNYK_COMMAND=${{ (inputs.monitor && 'monitor') || 'test' }}"
-            echo "SARIF=${{ (inputs.monitor && 'false') || 'true' }}"
+            echo "SNYK_COMMAND=${SNYK_COMMAND}"
             echo "DOCKER_IMAGE=${DOCKER_IMAGE}"
             echo "VERSION=${VERSION}"
           } >> "$GITHUB_ENV"
@@ -194,16 +213,8 @@ jobs:
         # should be added in a separate step.
         run: |
           set -e
-          mkdir -p sarif-results || true
 
           PROJECT_NAME="optimize(${TARGET}):Dockerfile"
-
-          # Optional SARIF output, same pattern as Zeebe
-          function output() {
-            local sarif="$1"
-            local name="$2"
-            [ "${sarif}" == 'true' ] && echo "--sarif-file-output=sarif-results/${name}.sarif"
-          }
 
           function ensureExists() {
             local projectFile="$1"
@@ -219,11 +230,11 @@ jobs:
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
           ensureExists "optimize.Dockerfile"
-          # shellcheck disable=SC2086,SC2046,SC2153
+          # shellcheck disable=SC2086,SC2153
           snyk container "${SNYK_COMMAND}" "${DOCKER_IMAGE}" \
             --file=optimize.Dockerfile \
             --project-name="${PROJECT_NAME}" \
-            ${SNYK_ARGS} $(output "${SARIF}" 'docker')
+            ${SNYK_ARGS}
       - name: Code Scanning summary
         if: ${{ ! inputs.monitor }}
         run: |

@@ -983,8 +983,7 @@ jobs:
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/optimize:{0}', inputs.releaseVersion) }}
-    secrets:
-      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+    secrets: inherit
 
   # GitHub release job creates a GitHub release with artifacts, changelog, and proper versioning.
   # Flags impact:
