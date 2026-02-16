@@ -71,6 +71,8 @@ export type AuditLogEntry = {
   user: string;
   comment?: string;
   agentElementId?: string;
+  /** Indicates operation was performed by AI agent on behalf of user/client */
+  agentReferenceId?: string;
 };
 
 // Search Filters

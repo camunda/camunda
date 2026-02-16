@@ -21,6 +21,7 @@ import {
   CodeSnippet,
   InlineNotification,
   Link,
+  Tooltip,
 } from '@carbon/react';
 import styled from 'styled-components';
 import {DataTable} from 'modules/components/DataTable';
@@ -34,7 +35,10 @@ import {
   BatchJob,
   SoftwareResource,
   Launch,
+  User,
+  Api,
 } from '@carbon/icons-react';
+import AiAgentIcon from 'modules/components/Icon/ai-agent-icon.svg?react';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {StatusIndicator} from './StatusIndicator';
 import {Paths} from 'modules/Routes';
@@ -67,6 +71,9 @@ const StyledStructuredListWrapper = styled(StructuredListWrapper)`
   .cds--structured-list-th {
     vertical-align: middle !important;
   }
+  .actor-label-align-top {
+    vertical-align: top !important;
+  }
 `;
 
 const VerticallyAlignedRow: any = ({children, head, ...props}: any) => (
@@ -82,15 +89,16 @@ const VerticallyAlignedRow: any = ({children, head, ...props}: any) => (
   </tr>
 );
 
-const FirstColumn: any = ({children, noWrap, ...props}: any) => (
+const FirstColumn: any = ({children, noWrap, alignTop, ...props}: any) => (
   <StructuredListCell
     {...props}
     head
+    className={alignTop ? 'actor-label-align-top' : undefined}
     style={{
       fontWeight: 400,
       whiteSpace: noWrap ? 'nowrap' : 'normal',
       width: '180px',
-      verticalAlign: 'middle',
+      verticalAlign: alignTop ? 'top' : 'middle',
     }}
   >
     {children}
@@ -179,7 +187,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
     if (!user) {
       return user;
     }
-    
+
     // If it contains spaces or capital letters, it's likely a display name
     // Convert to username format: lowercase and replace spaces with hyphens
     if (/\s/.test(user) || /[A-Z]/.test(user)) {
@@ -189,9 +197,28 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
         .replace(/\s+/g, '-') // Replace spaces with hyphens
         .replace(/[^a-z0-9-]/g, ''); // Remove special characters except hyphens
     }
-    
+
     // Already in username format, return as is
     return user;
+  };
+
+  // Determine actor type: user or API client
+  const getActorType = (user: string): 'user' | 'client' => {
+    if (!user) return 'user';
+
+    const lowerUser = user.toLowerCase();
+
+    if (
+      lowerUser.includes('api') ||
+      lowerUser.includes('client') ||
+      lowerUser.includes('service') ||
+      lowerUser.includes('-client') ||
+      lowerUser.endsWith('client')
+    ) {
+      return 'client';
+    }
+
+    return 'user';
   };
 
 
@@ -429,7 +456,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       }}
                     >
                       <SoftwareResource />
-                      Entity
+                      Entity type
                     </div>
                   </FirstColumn>
                   <StructuredListCell>
@@ -471,7 +498,7 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                   </StructuredListCell>
                 </VerticallyAlignedRow>
                 <VerticallyAlignedRow>
-                  <FirstColumn noWrap>
+                  <FirstColumn noWrap alignTop>
                     <div
                       style={{
                         display: 'flex',
@@ -483,18 +510,81 @@ const DetailsModal: React.FC<Props> = ({open, onClose, entry}) => {
                       Actor
                     </div>
                   </FirstColumn>
-                    <StructuredListCell>
-                      {entry.user ? (
-                        <CodeSnippet
-                          type="inline"
-                          title="Click to copy"
-                          aria-label="Click to copy"
-                          feedback="Copied to clipboard"
-                        >
-                          {formatUsername(entry.user)}
-                        </CodeSnippet>
-                      ) : '-'}
-                    </StructuredListCell>
+                  <StructuredListCell>
+                    {entry.user ? (() => {
+                      const actorType = getActorType(entry.user);
+                      const actorTypeLabel = actorType === 'client' ? 'Client' : 'User';
+                      const agentReferenceId = entry.agentReferenceId ?? entry.agentElementId;
+
+                      const userClientTooltipContent = (
+                        <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
+                          <span>{actorTypeLabel}</span>
+                          <CodeSnippet
+                            type="inline"
+                            hideCopyButton
+                            wrapText
+                            className="tooltip-agent-element-snippet"
+                          >
+                            {formatUsername(entry.user)}
+                          </CodeSnippet>
+                        </div>
+                      );
+
+                      const agentTooltipContent = agentReferenceId ? (
+                        <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
+                          <span>AI agent on behalf of {actorType === 'client' ? 'client' : 'user'}</span>
+                          <CodeSnippet
+                            type="inline"
+                            hideCopyButton
+                            wrapText
+                            className="tooltip-agent-element-snippet"
+                          >
+                            {agentReferenceId}
+                          </CodeSnippet>
+                        </div>
+                      ) : null;
+
+                      const UserClientIcon = actorType === 'client' ? Api : User;
+
+                      return (
+                        <div style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-03)', padding: 'var(--cds-spacing-02) 0'}}>
+                          <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+                            <Tooltip align="top-left" description={userClientTooltipContent}>
+                              <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'default'}}>
+                                <UserClientIcon size={16} />
+                              </div>
+                            </Tooltip>
+                            <CodeSnippet
+                              type="inline"
+                              title="Click to copy"
+                              hideCopyButton
+                              aria-label={actorType === 'client' ? 'Client ID' : 'Username'}
+                              feedback="Copied to clipboard"
+                            >
+                              {formatUsername(entry.user)}
+                            </CodeSnippet>
+                          </div>
+                          {agentReferenceId && (
+                            <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)'}}>
+                              <Tooltip align="top-left" description={agentTooltipContent}>
+                                <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'default'}}>
+                                  <AiAgentIcon width={16} height={16} />
+                                </div>
+                              </Tooltip>
+                              <CodeSnippet
+                                type="inline"
+                                title="Click to copy"
+                                aria-label="Agent reference ID"
+                                feedback="Copied to clipboard"
+                              >
+                                {agentReferenceId}
+                              </CodeSnippet>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })() : '-'}
+                  </StructuredListCell>
                 </VerticallyAlignedRow>
                 <VerticallyAlignedRow>
                   <FirstColumn noWrap>

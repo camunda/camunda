@@ -39,7 +39,10 @@ const JSONEditor: React.FC<Props> = observer(
     const monaco = useMonaco();
 
     useLayoutEffect(() => {
-      monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
+      const jsonDefaults = (
+        monaco?.languages?.json as {jsonDefaults?: {setDiagnosticsOptions: (opts: object) => void}}
+      )?.jsonDefaults;
+      jsonDefaults?.setDiagnosticsOptions({
         schemaValidation: 'error',
         schemaRequest: 'error',
       });

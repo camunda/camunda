@@ -228,23 +228,12 @@ const AuditLog: React.FC = () => {
     return user;
   };
 
-  // Determine actor type and return appropriate icon
-  const getActorType = (user: string): 'user' | 'client' | 'agent' => {
+  // Determine actor type: user or API client
+  const getActorType = (user: string): 'user' | 'client' => {
     if (!user) return 'user';
-    
+
     const lowerUser = user.toLowerCase();
-    
-    // Check for AI agent indicators
-    if (
-      lowerUser.includes('ai') ||
-      lowerUser.includes('agent') ||
-      lowerUser.includes('bot') ||
-      lowerUser.includes('robot') ||
-      lowerUser.includes('assistant')
-    ) {
-      return 'agent';
-    }
-    
+
     // Check for API client indicators
     if (
       lowerUser.includes('api') ||
@@ -255,20 +244,8 @@ const AuditLog: React.FC = () => {
     ) {
       return 'client';
     }
-    
-    // Default to user
-    return 'user';
-  };
 
-  const getActorIcon = (actorType: 'user' | 'client' | 'agent') => {
-    switch (actorType) {
-      case 'client':
-        return Api;
-      case 'agent':
-        return Bot;
-      default:
-        return User;
-    }
+    return 'user';
   };
 
 
@@ -455,9 +432,9 @@ const AuditLog: React.FC = () => {
             const color = isSuccess
               ? 'var(--cds-support-success)'
               : 'var(--cds-support-error)';
-            const tooltipText = isSuccess ? 'Successful' : 'Failed';
+            const tooltipText = isSuccess ? 'Success' : 'Failed';
             return (
-              <Tooltip align="top-right" description={tooltipText}>
+              <Tooltip description={tooltipText}>
                 <div style={{display: 'inline-flex', alignItems: 'center'}}>
                   <Icon size={16} style={{color}} />
                 </div>
@@ -468,49 +445,59 @@ const AuditLog: React.FC = () => {
           property: propertyDisplay,
           user: entry.user ? (() => {
             const actorType = getActorType(entry.user);
-            const getActorTypeLabel = (type: 'user' | 'client' | 'agent') => {
-              switch (type) {
-                case 'client':
-                  return 'API client';
-                case 'agent':
-                  return 'AI agent';
-                default:
-                  return 'User';
-              }
-            };
-            const getTooltipContent = (): React.ReactNode => {
-              const label = getActorTypeLabel(actorType);
-              if (actorType === 'agent' && entry.agentElementId) {
-                return (
-                  <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
-                    <span>{label}</span>
-                    <CodeSnippet
-                      type="inline"
-                      hideCopyButton
-                      wrapText
-                      className="tooltip-agent-element-snippet"
-                    >
-                      {entry.agentElementId}
-                    </CodeSnippet>
-                  </div>
-                );
-              }
-              return label;
-            };
-            const icon = actorType === 'user' ? <User size={16} /> : actorType === 'client' ? <Api size={16} /> : <AiAgentIcon width={16} height={16} />;
+            const actorTypeLabel = actorType === 'client' ? 'Client' : 'User';
+            const agentReferenceId = entry.agentReferenceId ?? entry.agentElementId;
+
+            const userClientTooltipContent = (
+              <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
+                <span>{actorTypeLabel}</span>
+                <CodeSnippet
+                  type="inline"
+                  hideCopyButton
+                  wrapText
+                  className="tooltip-agent-element-snippet"
+                >
+                  {formatUsername(entry.user)}
+                </CodeSnippet>
+              </div>
+            );
+
+            const agentTooltipContent = agentReferenceId ? (
+              <div className="tooltip-agent-element-content" style={{display: 'flex', flexDirection: 'column', gap: 'var(--cds-spacing-02)', minWidth: 0}}>
+                <span>AI agent on behalf of {actorType === 'client' ? 'client' : 'user'}</span>
+                <CodeSnippet
+                  type="inline"
+                  hideCopyButton
+                  wrapText
+                  className="tooltip-agent-element-snippet"
+                >
+                  {agentReferenceId}
+                </CodeSnippet>
+              </div>
+            ) : null;
+
+            const UserClientIcon = actorType === 'client' ? Api : User;
+
             return (
               <div style={{display: 'flex', alignItems: 'center', gap: 'var(--cds-spacing-03)', minWidth: 0, maxWidth: '100%'}}>
-                <Tooltip align="top-left" description={getTooltipContent()}>
+                <Tooltip align="top-left" description={userClientTooltipContent}>
                   <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
-                    {icon}
+                    <UserClientIcon size={16} />
                   </div>
                 </Tooltip>
+                {agentReferenceId && (
+                  <Tooltip align="top-left" description={agentTooltipContent}>
+                    <div style={{color: 'var(--cds-icon-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', cursor: 'pointer'}}>
+                      <AiAgentIcon width={16} height={16} />
+                    </div>
+                  </Tooltip>
+                )}
                 <span className="actor-value-cell" style={{minWidth: 0, maxWidth: '100%', overflow: 'hidden', display: 'block'}} title={formatUsername(entry.user)}>
                   <CodeSnippet
                     type="inline"
                     title="Click to copy"
                     feedback="Copied to clipboard"
-                    aria-label="Client ID"
+                    aria-label={actorType === 'client' ? 'Client ID' : 'Username'}
                   >
                     {formatUsername(entry.user)}
                   </CodeSnippet>
@@ -522,7 +509,9 @@ const AuditLog: React.FC = () => {
           actions:
             entry.operationState === 'fail' ||
             entry.operationType === 'ADD_VARIABLE' ||
-            entry.operationType === 'UPDATE_VARIABLE' ? (
+            entry.operationType === 'UPDATE_VARIABLE' ||
+            entry.agentReferenceId ||
+            entry.agentElementId ? (
               <Button
                 kind="ghost"
                 size="sm"
