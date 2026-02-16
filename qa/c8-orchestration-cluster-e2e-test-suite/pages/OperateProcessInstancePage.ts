@@ -39,6 +39,7 @@ class OperateProcessInstancePage {
   readonly executionCountToggleOff: Locator;
   readonly listenersTabButton: Locator;
   readonly metadataModal: Locator;
+  readonly metadataPopover: Locator;
   readonly modifyInstanceButton: Locator;
   readonly listenerTypeFilter: Locator;
   readonly editVariableButton: Locator;
@@ -147,6 +148,7 @@ class OperateProcessInstancePage {
     );
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
+    this.metadataPopover = this.page.getByTestId('popover');
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
@@ -701,6 +703,10 @@ class OperateProcessInstancePage {
 
   async clickViewParentInstance(): Promise<void> {
     await this.viewParentInstanceLink.click();
+  }
+
+  async clickMoreMetadata(): Promise<void> {
+    await this.page.getByRole('button', {name: 'Show more metadata'}).click();
   }
 }
 

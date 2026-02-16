@@ -130,6 +130,9 @@ test.describe('Process Instance Listeners', () => {
       await operateProcessInstancePage.diagramHelper.clickFlowNode(
         'Service Task B',
       );
+      await expect(
+        operateProcessInstancePage.metadataPopover.getByText('Details'),
+      ).toBeVisible();
       await operateProcessInstancePage.openListenersTab();
       await expect(
         operateProcessInstancePage.getListenerRows('execution'),
@@ -147,20 +150,37 @@ test.describe('Process Instance Listeners', () => {
 
     await test.step('Wait for new instance to appear and verify listener count', async () => {
       await expect
-        .poll(async () => {
-          return operateProcessInstancePage.instanceHistory
-            .getByText('Service Task B')
-            .count();
-        })
+        .poll(
+          async () => {
+            return operateProcessInstancePage.instanceHistory
+              .getByText('Service Task B')
+              .count();
+          },
+          {timeout: 15000},
+        )
         .toBe(2);
 
-      await operateProcessInstancePage.diagramHelper.clickFlowNode(
-        'Service Task B',
-      );
-      await operateProcessInstancePage.openListenersTab();
-      await expect(
-        operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(2);
+      await expect
+        .poll(
+          async () => {
+            // Deselect element
+            await operateProcessInstancePage.clickInstanceHistoryElement(
+              'processWithListener',
+            );
+
+            // Select element
+            await operateProcessInstancePage.diagramHelper.clickFlowNode(
+              'Service Task B',
+            );
+
+            await operateProcessInstancePage.openListenersTab();
+            return await operateProcessInstancePage
+              .getListenerRows('execution')
+              .count();
+          },
+          {intervals: [2000], timeout: 10000},
+        )
+        .toBe(2);
     });
 
     await test.step('Select specific flow node instance and verify single listener', async () => {
@@ -190,7 +210,7 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      const responsePromise = page.waitForResponse('**/flow-node-metadata');
+      const responsePromise = page.waitForResponse('**/user-tasks/search');
 
       await expect(
         operateProcessInstancePage.diagramHelper.getFlowNode('Service Task B'),
@@ -198,12 +218,18 @@ test.describe('Process Instance Listeners', () => {
       await operateProcessInstancePage.diagramHelper.clickFlowNode(
         'Service Task B',
       );
+      await operateProcessInstancePage.clickMoreMetadata();
 
       const response = await responsePromise;
       const data = await response.json();
-      userTaskKey = String(data.instanceMetadata.userTaskKey);
+      userTaskKey = String(data.items[0].userTaskKey);
 
       expect(userTaskKey).toMatch(userTaskKeyRegex);
+
+      await operateProcessInstancePage.metadataModal
+        .getByRole('button', {name: 'Close'})
+        .click();
+
       await expect(operateProcessInstancePage.stateOverlayActive).toBeVisible();
     });
 
@@ -215,7 +241,12 @@ test.describe('Process Instance Listeners', () => {
       await expect(
         operateProcessInstancePage.stateOverlayCompletedEndEvents,
       ).toBeVisible();
-      await sleep(1000);
+
+      // Deselect element
+      await operateProcessInstancePage.clickInstanceHistoryElement(
+        'processWithUserTaskListener',
+      );
+
       await operateProcessInstancePage.clickInstanceHistoryElement(
         'Service Task B',
       );
