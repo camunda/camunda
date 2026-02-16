@@ -21,7 +21,7 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
+    <version.maven-surefire-junit5-tree-reporter>1.4.0</version.maven-surefire-junit5-tree-reporter>
   </properties>
 
   <dependencies>
@@ -63,11 +63,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>camunda-gateway-model</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -581,27 +576,15 @@
     This profile will run all tests annotated with @Tag("compatibility-test").
     The profile is used to run tests against different versions of Camunda components.
 
-    To test with a specific client version:
-    ./mvnw verify -Pcompatibility-test -Dcamunda.client.version=8.8.0 -Dit.test=AuthorizationIT
+    To test with a specific client version, override the dependency version before running:
+    ./mvnw versions:use-dep-version -Dincludes=io.camunda:camunda-client-java -DdepVersion=8.8.0 -DforceVersion=true
+    ./mvnw verify -Pcompatibility-test -Dit.test=AuthorizationIT
 
     Tests compile against the current (SNAPSHOT) version but run with the specified client version.
     Tests that use APIs not available in the specified version will be automatically skipped.
     -->
     <profile>
       <id>compatibility-test</id>
-      <properties>
-        <!-- Runtime client version for compatibility tests - override via -Dcamunda.client.version=X.Y.Z -->
-        <camunda.client.version>${project.version}</camunda.client.version>
-      </properties>
-      <dependencyManagement>
-        <dependencies>
-          <dependency>
-            <groupId>io.camunda</groupId>
-            <artifactId>camunda-client-java</artifactId>
-            <version>${camunda.client.version}</version>
-          </dependency>
-        </dependencies>
-      </dependencyManagement>
       <build>
         <plugins>
           <plugin>

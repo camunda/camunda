@@ -338,6 +338,15 @@ jobs:
             -pl qa/acceptance-tests
             -am
 
+      - name: Override client version for compatibility testing
+        run: |
+          # Inject the specific client version into the POM to override the inherited version
+          ./mvnw -pl qa/acceptance-tests versions:use-dep-version \
+            -Dincludes=io.camunda:camunda-client-java \
+            -DdepVersion=${{ matrix.client }} \
+            -DforceVersion=true \
+            -DgenerateBackupPoms=false
+
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
@@ -346,7 +355,6 @@ jobs:
             -P compatibility-test
             -pl qa/acceptance-tests
             -Dcamunda.compatibility.test.version=${{ matrix.server }}
-            -Dcamunda.client.version=${{ matrix.client }}
             -DfailIfNoTests=false
 
       - name: Record tested combination

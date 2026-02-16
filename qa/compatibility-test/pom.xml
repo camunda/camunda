@@ -113,23 +113,4 @@
     </plugins>
   </build>
 
-  <profiles>
-    <profile>
-      <id>compatibility-test</id>
-      <properties>
-        <!-- Runtime spring client version for compatibility tests - override via -Dcamunda.spring.client.version=X.Y.Z -->
-        <camunda.spring.client.version>${project.version}</camunda.spring.client.version>
-      </properties>
-      <dependencyManagement>
-        <dependencies>
-          <dependency>
-            <groupId>io.camunda</groupId>
-            <artifactId>camunda-spring-boot-starter</artifactId>
-            <version>${camunda.spring.client.version}</version>
-          </dependency>
-        </dependencies>
-      </dependencyManagement>
-    </profile>
-  </profiles>
-
 </project>
