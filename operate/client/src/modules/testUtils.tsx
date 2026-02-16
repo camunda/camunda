@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
@@ -32,7 +31,6 @@ const createRandomId = function* createRandomId(type: string) {
 };
 
 const randomIdIterator = createRandomId('id');
-const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
@@ -282,58 +280,6 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
   ]);
-
-/**
- * @returns a mocked process Object with a unique id
- * @param {*} customProps Obj with any type of custom property
- */
-const createProcess = (options = {}) => {
-  return {
-    processId: randomProcessIdIterator.next().value,
-    tenantId: '<default>',
-    name: 'mockProcess',
-    version: 1,
-    bpmnProcessId: 'mockProcess',
-    errorMessage: 'JSON path $.paid has no result.',
-    instancesWithActiveIncidentsCount: 37,
-    activeInstancesCount: 5,
-    ...options,
-  };
-};
-
-/**
- * @returns a single mocked instanceByProcess Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createIncidentByError = (
-  options: Partial<IncidentByErrorDto> = {},
-): IncidentByErrorDto => {
-  return {
-    errorMessage: "JSON path '$.paid' has no result.",
-    incidentErrorHashCode: 234254,
-    instancesWithErrorCount: 36,
-    processes: [
-      createProcess({
-        processId: '1',
-        version: 1,
-        name: 'Order process',
-        bpmnProcessId: 'orderProcess',
-        errorMessage: "JSON path '$.paid' has no result.",
-        instancesWithActiveIncidentsCount: 36,
-        activeInstancesCount: null,
-      }),
-    ],
-    ...options,
-  };
-};
-
-/**
- * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
- * @param {*} customProps array with any number of instanceByError Objects
- */
-const createIncidentsByError = (options: IncidentByErrorDto[]) => {
-  return options || [createIncidentByError()];
-};
 
 /**
  * @returns a mocked diagramNode Object with a unique id
@@ -1014,9 +960,6 @@ export {
   createIncident,
   createEnhancedIncident,
   mockProcessDefinitions,
-  createProcess,
-  createIncidentByError,
-  createIncidentsByError,
   createDiagramNode,
   mockProcessStatistics,
   mockMultipleStatesStatistics,

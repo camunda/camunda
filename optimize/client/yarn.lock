@@ -2571,7 +2571,7 @@
   resolved "https://registry.yarnpkg.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.4.tgz#7358043433b2e5da569aa02cbc4c121da3af27d7"
   integrity sha512-VT2+G1VQs/9oz078bLrYbecdZKs912zQlkelYpuf+SXF+QvZDYJlbx/LSx+meSAwdDFnF8FVXW92AVjjkVmgFw==
 
-"@jridgewell/sourcemap-codec@^1.4.14", "@jridgewell/sourcemap-codec@^1.5.0":
+"@jridgewell/sourcemap-codec@^1.4.14", "@jridgewell/sourcemap-codec@^1.5.0", "@jridgewell/sourcemap-codec@^1.5.5":
   version "1.5.5"
   resolved "https://registry.yarnpkg.com/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz#6912b00d2c631c0d15ce1a7ab57cd657f2a8f8ba"
   integrity sha512-cYQ9310grqxueWbl+WuIUIaiUaDcj7WOq5fVhEljNVgRfOUhY9fy2zTvfoqWsnebh8Sl70VScFbICvJnLKB0Og==
@@ -6048,7 +6048,7 @@ commander@^8.3.0:
   resolved "https://registry.yarnpkg.com/commander/-/commander-8.3.0.tgz#4837ea1b2da67b9c616a67afbb0fafee567bca66"
   integrity sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==
 
-commenting@~1.1.0:
+commenting@^1.1.0:
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/commenting/-/commenting-1.1.0.tgz#fae14345c6437b8554f30bc6aa6c1e1633033590"
   integrity sha512-YeNK4tavZwtH7jEgK1ZINXzLKm6DZdEMfsaaieOsCAN0S8vsY7UeuO3Q7d/M018EFgE+IeUAuBOKkFccBZsUZA==
@@ -7661,9 +7661,9 @@ eslint-plugin-jest@^25.3.0:
     "@typescript-eslint/experimental-utils" "^5.0.0"
 
 eslint-plugin-jest@^29.0.0:
-  version "29.14.0"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-jest/-/eslint-plugin-jest-29.14.0.tgz#7987cb904437af505ecc6028482871c1205268a2"
-  integrity sha512-njP4UAcCmcE9uYMQcZdi4unNkiVKzMJ6yOdKcw5YqvNayV2hbopTBb+VaDU7mUmteDfRtjbmCZkK/psxbUvdUg==
+  version "29.15.0"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-jest/-/eslint-plugin-jest-29.15.0.tgz#58a5917a88244f7536ae10c68b5bd58d407896f0"
+  integrity sha512-ZCGr7vTH2WSo2hrK5oM2RULFmMruQ7W3cX7YfwoTiPfzTGTFBMmrVIz45jZHd++cGKj/kWf02li/RhTGcANJSA==
   dependencies:
     "@typescript-eslint/utils" "^8.0.0"
 
@@ -11283,7 +11283,7 @@ lodash.uniq@^4.5.0:
   resolved "https://registry.yarnpkg.com/lodash.uniq/-/lodash.uniq-4.5.0.tgz#d0225373aeb652adc1bc82e4945339a842754773"
   integrity sha512-xfBaXQd9ryd9dlSDvnvI0lvxfLJlYAZzXomUYzLKtUeOQvOP5piqAWuGtrhWeqaXK9hhoM/iyJc5AV+XfsX3HQ==
 
-"lodash@4.6.1 || ^4.16.1", lodash@^4.14.0, lodash@^4.15.0, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.7.0, lodash@~4.17.21:
+"lodash@4.6.1 || ^4.16.1", lodash@^4.14.0, lodash@^4.15.0, lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.20, lodash@^4.17.21, lodash@^4.7.0:
   version "4.17.21"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
@@ -11369,12 +11369,12 @@ magic-string@^0.25.0, magic-string@^0.25.7:
   dependencies:
     sourcemap-codec "^1.4.8"
 
-magic-string@~0.30.0:
-  version "0.30.12"
-  resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.30.12.tgz#9eb11c9d072b9bcb4940a5b2c2e1a217e4ee1a60"
-  integrity sha512-Ea8I3sQMVXr8JhN4z+H/d8zwo+tYDgHE9+5G4Wnrwhs0gaK9fXTKx0Tw5Xwsd/bCPTTZNRAdpyzvoeORe9LYpw==
+magic-string@^0.30.0:
+  version "0.30.21"
+  resolved "https://registry.yarnpkg.com/magic-string/-/magic-string-0.30.21.tgz#56763ec09a0fa8091df27879fd94d19078c00d91"
+  integrity sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==
   dependencies:
-    "@jridgewell/sourcemap-codec" "^1.5.0"
+    "@jridgewell/sourcemap-codec" "^1.5.5"
 
 make-dir@^3.0.0, make-dir@^3.0.2, make-dir@^3.1.0:
   version "3.1.0"
@@ -11960,7 +11960,7 @@ moment-duration-format-commonjs@^1.0.0:
   resolved "https://registry.yarnpkg.com/moment-duration-format-commonjs/-/moment-duration-format-commonjs-1.0.1.tgz#ca8776466dba736a30cb7cda4e07026b5aec8cf1"
   integrity sha512-KhKZRH21/+ihNRWrmdNFOyBptFi7nAWZFeFsRRpXkzgk/Yublb4fxyP0jU6EY1VDxUL/VUPdCmm/wAnpbfXdfw==
 
-moment@^2.14.1, moment@^2.29.4, moment@~2.30.1:
+moment@^2.14.1, moment@^2.29.4, moment@^2.30.1:
   version "2.30.1"
   resolved "https://registry.yarnpkg.com/moment/-/moment-2.30.1.tgz#f8c91c07b7a786e30c59926df530b4eac96974ae"
   integrity sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==
@@ -12584,7 +12584,7 @@ package-json-from-dist@^1.0.0:
   resolved "https://registry.yarnpkg.com/package-json-from-dist/-/package-json-from-dist-1.0.1.tgz#4f1471a010827a86f94cfd9b0727e36d267de505"
   integrity sha512-UEZIS3/by4OC8vL3P2dTXRETpebLI2NiI5vIrjaD/5UtrkFX/tNbwjTSRAGC/+7CAo2pIcBaRgWmcBBHcsaCIw==
 
-package-name-regex@~2.0.6:
+package-name-regex@^2.0.6:
   version "2.0.6"
   resolved "https://registry.yarnpkg.com/package-name-regex/-/package-name-regex-2.0.6.tgz#b54bcb04d950e38082b7bb38fa558e01c1679334"
   integrity sha512-gFL35q7kbE/zBaPA3UKhp2vSzcPYx2ecbYuwv1ucE9Il6IIgBDweBlH8D68UFGZic2MkllKa2KHCfC1IQBQUYA==
@@ -14522,19 +14522,19 @@ rimraf@~2.5.2:
   dependencies:
     glob "^7.0.5"
 
-rollup-plugin-license@3.6.0:
-  version "3.6.0"
-  resolved "https://registry.yarnpkg.com/rollup-plugin-license/-/rollup-plugin-license-3.6.0.tgz#4699ac83cea91afdbea638e72740531f00828ff7"
-  integrity sha512-1ieLxTCaigI5xokIfszVDRoy6c/Wmlot1fDEnea7Q/WXSR8AqOjYljHDLObAx7nFxHC2mbxT3QnTSPhaic2IYw==
+rollup-plugin-license@3.7.0:
+  version "3.7.0"
+  resolved "https://registry.yarnpkg.com/rollup-plugin-license/-/rollup-plugin-license-3.7.0.tgz#370af086789416856e52df9ee60ac9461788d7d7"
+  integrity sha512-RvvOIF+GH3fBR3wffgc/vmjQn6qOn72WjppWVDp/v+CLpT0BbcRBdSkPeeIOL6U5XccdYgSIMjUyXgxlKEEFcw==
   dependencies:
-    commenting "~1.1.0"
+    commenting "^1.1.0"
     fdir "^6.4.3"
-    lodash "~4.17.21"
-    magic-string "~0.30.0"
-    moment "~2.30.1"
-    package-name-regex "~2.0.6"
-    spdx-expression-validate "~2.0.0"
-    spdx-satisfies "~5.0.1"
+    lodash "^4.17.21"
+    magic-string "^0.30.0"
+    moment "^2.30.1"
+    package-name-regex "^2.0.6"
+    spdx-expression-validate "^2.0.0"
+    spdx-satisfies "^5.0.1"
 
 rollup-plugin-terser@^7.0.0:
   version "7.0.2"
@@ -15234,7 +15234,7 @@ spdx-expression-parse@^3.0.0:
     spdx-exceptions "^2.1.0"
     spdx-license-ids "^3.0.0"
 
-spdx-expression-validate@~2.0.0:
+spdx-expression-validate@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/spdx-expression-validate/-/spdx-expression-validate-2.0.0.tgz#25c9408e1c63fad94fff5517bb7101ffcd23350b"
   integrity sha512-b3wydZLM+Tc6CFvaRDBOF9d76oGIHNCLYFeHbftFXUWjnfZWganmDmvtM5sm1cRwJc/VDBMLyGGrsLFd1vOxbg==
@@ -15260,7 +15260,7 @@ spdx-satisfies@^4.0.0:
     spdx-expression-parse "^3.0.0"
     spdx-ranges "^2.0.0"
 
-spdx-satisfies@~5.0.1:
+spdx-satisfies@^5.0.1:
   version "5.0.1"
   resolved "https://registry.yarnpkg.com/spdx-satisfies/-/spdx-satisfies-5.0.1.tgz#9feeb2524686c08e5f7933c16248d4fdf07ed6a6"
   integrity sha512-Nwor6W6gzFp8XX4neaKQ7ChV4wmpSh2sSDemMFSzHxpTw460jxFYeOn+jq4ybnSSw/5sc3pjka9MQPouksQNpw==

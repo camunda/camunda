@@ -14,7 +14,7 @@ import {tracking} from 'modules/tracking';
 import {getAccordionTitle} from './utils/getAccordionTitle';
 import {getAccordionLabel} from './utils/getAccordionLabel';
 import {InstancesBar} from 'modules/components/InstancesBar';
-import {LinkWrapper, ErrorMessage} from '../../styled';
+import {LinkWrapper, ErrorMessage} from '../styled';
 import {Skeleton} from '../PartiallyExpandableDataTable/Skeleton';
 import {Details} from './Details';
 import {generateProcessKey} from 'modules/utils/generateProcessKey';

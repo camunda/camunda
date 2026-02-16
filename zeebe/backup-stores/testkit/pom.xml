@@ -21,6 +21,19 @@
   <name>Zeebe Backup Store Testkit</name>
 
   <dependencies>
+    <!--
+     Dependencies on junit to ensure that testkit users are picking up these tests even when they don't depend on junit themselves.
+     These need to be compile-scoped dependencies because test-scoped dependencies are not transitive.
+     -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+    </dependency>
+
     <dependency>
       <groupId>org.assertj</groupId>
       <artifactId>assertj-core</artifactId>
@@ -29,16 +42,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-backup</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-params</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter-api</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -70,6 +73,20 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredNonTestScopedDependencies>
+            <!--
+             Dependencies on junit to ensure that testkit users are picking up these tests even when they don't depend on junit themselves.
+             These need to be compile-scoped dependencies because test-scoped dependencies are not transitive.
+            -->
+            <ignoredNonTestScopedDependency>org.junit.jupiter:junit-jupiter-api</ignoredNonTestScopedDependency>
+            <ignoredNonTestScopedDependency>org.junit.jupiter:junit-jupiter-params</ignoredNonTestScopedDependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
       </plugin>
     </plugins>
   </build>

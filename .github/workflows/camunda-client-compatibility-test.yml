@@ -40,6 +40,7 @@ jobs:
     outputs:
       matrix: ${{ steps.create-matrix.outputs.matrix }}
       is-main: ${{ steps.branch-info.outputs.is-main }}
+      branch-name: ${{ steps.branch-info.outputs.branch-name }}
     steps:
       - uses: actions/checkout@v6
         with:
@@ -165,8 +166,8 @@ jobs:
           fi
 
           if [[ "$IS_MAIN" == "true" ]]; then
-            # On main, the only client is the SNAPSHOT
-            CLIENT_LIST="$NEXT_SNAPSHOT"$'\n'
+            # On main, the only client is the pom version
+            CLIENT_LIST="${{ steps.pom-version.outputs.pom-version }}"$'\n'
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
@@ -198,8 +199,8 @@ jobs:
               done
             fi
           else
-            # On main, SERVER_LIST same as CLIENT_LIST
-            SERVER_LIST="$CLIENT_LIST"
+            # On main, SERVER_LIST uses SNAPSHOT
+            SERVER_LIST="SNAPSHOT"$'\n'
           fi
 
           if [[ "$IS_MAIN" != "true" ]]; then
@@ -276,7 +277,7 @@ jobs:
                 COMBO="$client-$server"
 
                 # Skip SNAPSHOT client vs SNAPSHOT server - not a compatibility test (except on main)
-                if [[ "$GITHUB_REF_NAME" != "main" && "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
+                if [[ "${{ steps.branch-info.outputs.is-main }}" != "true" && "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
                   SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                   continue
                 fi
@@ -317,6 +318,9 @@ jobs:
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.prepare-versions.outputs.branch-name }}
+          fetch-depth: 0
 
       - uses: ./.github/actions/setup-build
         with:
@@ -325,20 +329,20 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
 
-      - name: Build dependencies
+      - name: Build and compile tests
         uses: ./.github/actions/run-maven
         with:
           parameters: >-
             install
             -Dquickly
-            -pl qa/util
+            -pl qa/acceptance-tests
             -am
 
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
           parameters: >-
-            verify
+            failsafe:integration-test failsafe:verify
             -P compatibility-test
             -pl qa/acceptance-tests
             -Dcamunda.compatibility.test.version=${{ matrix.server }}
@@ -421,42 +425,42 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  notify-failure:
-    name: Notify on failure
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [prepare-versions, run-compatibility-tests]
-    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-    permissions: {}
-    steps:
-      - uses: actions/checkout@v6
-      - name: Notify failure
-        uses: slackapi/slack-github-action@v2.1.1
-        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-        env:
-          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-        with:
-          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-          webhook-type: incoming-webhook
-          payload: |
-           {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
+#  notify-failure:
+#    name: Notify on failure
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 5
+#    needs: [prepare-versions, run-compatibility-tests]
+#    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+#    permissions: {}
+#    steps:
+#      - uses: actions/checkout@v6
+#      - name: Notify failure
+#        uses: slackapi/slack-github-action@v2.1.1
+#        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+#        env:
+#          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+#        with:
+#          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+#          webhook-type: incoming-webhook
+#          payload: |
+#           {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
+#                  }
+#                },
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+#                  }
+#                }
+#              ]
+#            }
 
       - name: Observe build status
         if: always()

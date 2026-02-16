@@ -11,7 +11,7 @@ import {getAccordionItemLabel} from './utils/getAccordionItemLabel';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
-import {Li, LinkWrapper, ErrorText} from '../../styled';
+import {Li, LinkWrapper, ErrorText} from '../styled';
 import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';

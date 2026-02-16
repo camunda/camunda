@@ -56,7 +56,7 @@ public class StandaloneCamunda {
     MainSupport.putSystemPropertyIfAbsent(
         "spring.banner.location", "classpath:/assets/camunda_banner.txt");
 
-    final var defaultProperties = getDefaultProperties();
+    final var defaultProperties = getDefaultProperties(true);
     final var standaloneCamundaApplication =
         MainSupport.createDefaultApplicationBuilder()
             .sources(
@@ -96,9 +96,19 @@ public class StandaloneCamunda {
     standaloneCamundaApplication.run(args);
   }
 
-  public static Map<String, Object> getDefaultProperties() {
+  public static Map<String, Object> getDefaultProperties(final boolean withProfiles) {
     final var defaultProperties = new HashMap<String, Object>();
-    defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
+
+    if (withProfiles) {
+      defaultProperties.put(SPRING_PROFILES_ACTIVE_PROPERTY, DEFAULT_CAMUNDA_PROFILES);
+    }
+    defaultProperties.put("management.health.defaults.enabled", false);
+    defaultProperties.put("spring.web.resources.add-mappings", false);
+    defaultProperties.put("spring.thymeleaf.check-template-location", false);
+    defaultProperties.put(
+        "camunda.security.multiTenancy.checksEnabled",
+        "${zeebe.broker.gateway.multiTenancy.enabled:false}");
+
     return defaultProperties;
   }
 }

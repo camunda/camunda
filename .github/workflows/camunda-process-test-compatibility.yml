@@ -164,8 +164,8 @@ jobs:
           fi
 
           if [[ "$IS_MAIN" == "true" ]]; then
-            # On main, the only client is the SNAPSHOT
-            CLIENT_LIST="$NEXT_SNAPSHOT"$'\n'
+            # On main, the only client is the pom version
+            CLIENT_LIST="${{ steps.pom-version.outputs.pom-version }}"$'\n'
           fi
 
           echo "$CLIENT_LIST" > /tmp/client_list.txt
@@ -197,8 +197,8 @@ jobs:
               done
             fi
           else
-            # On main, SERVER_LIST same as CLIENT_LIST
-            SERVER_LIST="$CLIENT_LIST"
+            # On main, SERVER_LIST uses SNAPSHOT
+            SERVER_LIST="SNAPSHOT"$'\n'
           fi
 
           if [[ "$IS_MAIN" != "true" ]]; then
@@ -275,7 +275,7 @@ jobs:
                 COMBO="$client-$server"
 
                 # Skip SNAPSHOT client vs SNAPSHOT server - not a compatibility test (except on main)
-                if [[ "${GITHUB_REF_NAME}" != "main" && "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
+                if [[ "${{ steps.branch-info.outputs.is-main }}" != "true" && "$client" =~ SNAPSHOT && "$server" =~ SNAPSHOT ]]; then
                   SKIPPED_COUNT=$((SKIPPED_COUNT + 1))
                   continue
                 fi
@@ -316,11 +316,11 @@ jobs:
       matrix: ${{ fromJson(needs.prepare-versions.outputs.matrix) }}
     steps:
       - name: Checkout Camunda (main for SNAPSHOT)
-        if: matrix.client == 'SNAPSHOT'
+        if: endsWith(matrix.client, '-SNAPSHOT')
         uses: actions/checkout@v6
 
       - name: Checkout Camunda
-        if: matrix.client != 'SNAPSHOT'
+        if: ${{ !endsWith(matrix.client, '-SNAPSHOT') }}
         uses: actions/checkout@v6
         with:
           ref: ${{ matrix.client }}
@@ -343,6 +343,25 @@ jobs:
             -DskipUTs
             -DskipChecks
 
+      - name: Determine API version override
+        id: api-version
+        run: |
+          CLIENT_VERSION="${{ matrix.client }}"
+          EXTRA_PROPS=""
+          # For CPT versions < 8.8.5, we need to pin the API version
+          if [[ "$CLIENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            MINOR="${BASH_REMATCH[2]}"
+            PATCH="${BASH_REMATCH[3]}"
+            if (( MAJOR < 8 )) || \
+               (( MAJOR == 8 && MINOR < 8 )) || \
+               (( MAJOR == 8 && MINOR == 8 && PATCH < 5 )); then
+              EXTRA_PROPS="-Dapi.version=1.44"
+              echo "CPT version $CLIENT_VERSION < 8.8.5 - adding $EXTRA_PROPS"
+            fi
+          fi
+          echo "extra-props=$EXTRA_PROPS" >> "$GITHUB_OUTPUT"
+
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
@@ -353,6 +372,7 @@ jobs:
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
             -Dio.camunda.process.test.connectorsDockerImageVersion=${{ matrix.server }}
             -DfailIfNoTests=false
+            ${{ steps.api-version.outputs.extra-props }}
 
       - name: Record tested combination
         if: success()
@@ -434,42 +454,42 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-  notify-failure:
-    name: Notify on failure
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [prepare-versions, run-cpt-tests]
-    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-    permissions: {}
-    steps:
-      - uses: actions/checkout@v6
-      - name: Notify failure
-        uses: slackapi/slack-github-action@v2.1.1
-        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-        env:
-          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-        with:
-          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-          webhook-type: incoming-webhook
-          payload: |
-           {
-              "blocks": [
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": ":alarm: *Camunda Process Test Compatibility Tests Failed*"
-                  }
-                },
-                {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-                  }
-                }
-              ]
-            }
+#  notify-failure:
+#    name: Notify on failure
+#    runs-on: ubuntu-latest
+#    timeout-minutes: 5
+#    needs: [prepare-versions, run-cpt-tests]
+#    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+#    permissions: {}
+#    steps:
+#      - uses: actions/checkout@v6
+#      - name: Notify failure
+#        uses: slackapi/slack-github-action@v2.1.1
+#        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+#        env:
+#          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+#        with:
+#          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+#          webhook-type: incoming-webhook
+#          payload: |
+#           {
+#              "blocks": [
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": ":alarm: *Camunda Process Test Compatibility Tests Failed*"
+#                  }
+#                },
+#                {
+#                  "type": "section",
+#                  "text": {
+#                    "type": "mrkdwn",
+#                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+#                  }
+#                }
+#              ]
+#            }
 
       - name: Observe build status
         if: always()
