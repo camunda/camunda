@@ -250,4 +250,10 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
 </mapper>

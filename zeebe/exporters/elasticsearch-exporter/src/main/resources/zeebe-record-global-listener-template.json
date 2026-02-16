@@ -45,6 +45,9 @@
             },
             "listenerType": {
               "type": "keyword"
+            },
+            "configKey": {
+              "type": "long"
             }
           }
         }

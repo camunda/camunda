@@ -16,8 +16,10 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
@@ -59,11 +61,19 @@ public final class GlobalListenerCreateProcessor
       return;
     }
 
-    final long key = keyGenerator.nextKey();
-    writers.state().appendFollowUpEvent(key, GlobalListenerIntent.CREATED, validRecord.get());
+    final var record = validRecord.get();
+    // Generate a key for the new listener and one for the resulting new configuration
+    final long listenerKey = keyGenerator.nextKey();
+    final long configKey = keyGenerator.nextKey();
+    record.setGlobalListenerKey(listenerKey);
+    record.setConfigKey(configKey);
 
+    emitChangeEvents(record);
+
+    // Note: the configuration key is used as the command key for distribution, ensuring
+    // configuration changes are applied in order
     distributionBehavior
-        .withKey(key)
+        .withKey(configKey)
         .inQueue(DistributionQueue.GLOBAL_LISTENERS.getQueueId())
         .distribute(command);
   }
@@ -79,7 +89,7 @@ public final class GlobalListenerCreateProcessor
           LISTENER_EXISTS_ERROR_MESSAGE.formatted(record.getListenerType(), record.getId());
       writers.rejection().appendRejection(command, RejectionType.ALREADY_EXISTS, message);
     } else {
-      writers.state().appendFollowUpEvent(command.getKey(), GlobalListenerIntent.CREATED, record);
+      emitChangeEvents(record);
     }
     distributionBehavior.acknowledgeCommand(command);
   }
@@ -87,5 +97,18 @@ public final class GlobalListenerCreateProcessor
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
     return Either.right(command.getValue());
+  }
+
+  private void emitChangeEvents(final GlobalListenerRecord record) {
+    writers
+        .state()
+        .appendFollowUpEvent(record.getGlobalListenerKey(), GlobalListenerIntent.CREATED, record);
+    writers
+        .state()
+        .appendFollowUpEvent(
+            record.getConfigKey(),
+            GlobalListenerBatchIntent.CONFIGURED,
+            new GlobalListenerBatchRecord()
+                .setGlobalListenerBatchKey(record.getGlobalListenerKey()));
   }
 }

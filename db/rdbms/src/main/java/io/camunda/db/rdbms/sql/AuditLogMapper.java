@@ -12,7 +12,7 @@ import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import java.util.List;
 
-public interface AuditLogMapper extends RootProcessInstanceDependantMapper {
+public interface AuditLogMapper extends ProcessInstanceDependantMapper {
 
   void insert(BatchInsertDto<AuditLogDbModel> dto);
 

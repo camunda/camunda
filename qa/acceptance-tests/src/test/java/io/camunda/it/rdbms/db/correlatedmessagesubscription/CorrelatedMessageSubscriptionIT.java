@@ -233,6 +233,49 @@ public class CorrelatedMessageSubscriptionIT {
   }
 
   @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final CorrelatedMessageSubscriptionDbReader reader =
+        rdbmsService.getCorrelatedMessageSubscriptionReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        CorrelatedMessageSubscriptionFixtures.createAndSaveCorrelatedMessageSubscription(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getCorrelatedMessageSubscriptionWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            CorrelatedMessageSubscriptionQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(CorrelatedMessageSubscriptionEntity::messageKey))
+        .containsExactlyInAnyOrder(item1.messageKey(), item3.messageKey());
+  }
+
+  @TestTemplate
   public void shouldDeleteRootProcessInstanceRelatedData(
       final CamundaRdbmsTestApplication testApplication) {
     // given

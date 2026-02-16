@@ -662,4 +662,111 @@ public class AuditLogIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items()).isEmpty();
   }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.processInstanceKeys(processInstanceKey1, processInstanceKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1, processInstanceKey2);
+
+    // when
+    final int deleted =
+        auditLogWriter.deleteProcessInstanceRelatedData(List.of(processInstanceKey1), 1000);
+
+    // then
+    assertThat(deleted).isEqualTo(20);
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey2);
+  }
+
+  @TestTemplate
+  public void shouldDeleteRootProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+    final var processInstanceKey3 = nextKey();
+    final var rootProcessInstanceKey1 = nextKey();
+    final var rootProcessInstanceKey2 = nextKey();
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey1)
+                .rootProcessInstanceKey(rootProcessInstanceKey1));
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey2)
+                .rootProcessInstanceKey(rootProcessInstanceKey2));
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey3)
+                .rootProcessInstanceKey(rootProcessInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.processInstanceKeys(
+                                processInstanceKey1, processInstanceKey2, processInstanceKey3))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::rootProcessInstanceKey)
+        .containsOnly(rootProcessInstanceKey1, rootProcessInstanceKey2);
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1, processInstanceKey2, processInstanceKey3);
+
+    // when
+    final int deleted =
+        auditLogWriter.deleteRootProcessInstanceRelatedData(List.of(rootProcessInstanceKey2), 1000);
+
+    // then
+    assertThat(deleted).isEqualTo(40);
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::rootProcessInstanceKey)
+        .containsOnly(rootProcessInstanceKey1);
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1);
+  }
 }

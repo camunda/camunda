@@ -46,7 +46,7 @@ public class HistoryCleanupService {
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
   private final AuditLogWriter auditLogWriter;
-  private final Map<String, RootProcessInstanceDependant> rootProcessInstanceDependentChildWriters;
+  private final Map<String, ProcessInstanceDependant> rootProcessInstanceDependentChildWriters;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 

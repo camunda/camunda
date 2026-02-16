@@ -398,6 +398,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
   <delete id="deleteProcessDefinitionRelatedData">
     DELETE
     FROM ${prefix}AUDIT_LOG

@@ -128,4 +128,10 @@ public interface GlobalListenerRecordValue extends RecordValue {
    * @return the listener type
    */
   GlobalListenerType getListenerType();
+
+  /**
+   * When this value is set, it indicates that the record is part of the changes necessary to define
+   * a global listeners configuration with this key.
+   */
+  Long getConfigKey();
 }

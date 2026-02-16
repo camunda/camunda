@@ -55,8 +55,10 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
       new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
 
+  private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
+
   public GlobalListenerRecord() {
-    super(9);
+    super(10);
     declareProperty(globalListenerKeyProp)
         .declareProperty(idProp)
         .declareProperty(typeProp)
@@ -65,7 +67,8 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
         .declareProperty(afterNonGlobalProp)
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
-        .declareProperty(listenerTypeProp);
+        .declareProperty(listenerTypeProp)
+        .declareProperty(configKeyProp);
   }
 
   @Override
@@ -159,6 +162,16 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setListenerType(final GlobalListenerType listenerType) {
     listenerTypeProp.setValue(listenerType);
+    return this;
+  }
+
+  @Override
+  public Long getConfigKey() {
+    return configKeyProp.getValue();
+  }
+
+  public GlobalListenerRecord setConfigKey(final Long configKey) {
+    configKeyProp.setValue(configKey);
     return this;
   }
 

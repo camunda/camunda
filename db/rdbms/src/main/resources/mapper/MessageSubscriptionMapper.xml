@@ -209,6 +209,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'MESSAGE_SUBSCRIPTION'"/>
+    <bind name="primaryKeyColumn" value="'MESSAGE_SUBSCRIPTION_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
   <!-- Message Subscription Process Definition Statistics Aggregation -->
   <select id="getProcessDefinitionStatistics"
     parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionMessageSubscriptionStatisticsDbQuery"

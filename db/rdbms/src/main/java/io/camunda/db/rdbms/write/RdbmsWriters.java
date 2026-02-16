@@ -47,11 +47,11 @@ import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.db.rdbms.write.service.ProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.RoleWriter;
-import io.camunda.db.rdbms.write.service.RootProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
@@ -277,10 +277,10 @@ public class RdbmsWriters {
     return getWriter(HistoryDeletionWriter.class);
   }
 
-  public List<RootProcessInstanceDependant> getProcessInstanceDependantWriters() {
+  public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
     return writers.values().stream()
-        .filter(RootProcessInstanceDependant.class::isInstance)
-        .map(RootProcessInstanceDependant.class::cast)
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
         .toList();
   }
 

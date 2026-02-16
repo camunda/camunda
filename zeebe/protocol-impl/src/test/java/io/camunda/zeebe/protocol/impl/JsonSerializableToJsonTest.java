@@ -4450,7 +4450,8 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": false,
             "priority": 50,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           },
           {
             "globalListenerKey": -1,
@@ -4461,7 +4462,8 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": true,
             "priority": 10,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           }
          ],
         "createdListenerKeys": [
@@ -4522,7 +4524,8 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": false,
             "priority": 50,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           },
           {
             "globalListenerKey": 125,
@@ -4533,7 +4536,8 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": true,
             "priority": 10,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           },
           {
             "globalListenerKey": 124,
@@ -4544,7 +4548,8 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": false,
             "priority": 50,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           }
         ],
         "createdListenerKeys": [
@@ -4586,7 +4591,8 @@ final class JsonSerializableToJsonTest {
                     .setRetries(5)
                     .setAfterNonGlobal(true)
                     .setPriority(10)
-                    .setSource(GlobalListenerSource.API),
+                    .setSource(GlobalListenerSource.API)
+                    .setConfigKey(124L),
         """
     {
       "globalListenerKey": 123,
@@ -4597,7 +4603,8 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": true,
       "priority": 10,
       "source": "API",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": 124
     }
     """
       },
@@ -4614,7 +4621,8 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": false,
       "priority": 50,
       "source": "CONFIGURATION",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": -1
     }
     """
       }
