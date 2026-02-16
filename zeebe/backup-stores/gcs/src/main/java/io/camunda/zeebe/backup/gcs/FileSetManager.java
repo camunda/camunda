@@ -18,6 +18,8 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -27,9 +29,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import org.apache.commons.compress.compressors.gzip.GzipCompressorOutputStream;
+import org.apache.commons.compress.compressors.gzip.GzipParameters;
 
 final class FileSetManager {
-
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
 
@@ -82,7 +85,7 @@ final class FileSetManager {
                 namedFile ->
                     schedule(
                         () -> {
-                          uploadFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
+                          upload(id, fileSetName, namedFile.getKey(), namedFile.getValue());
                           return null;
                         }))
             .toList();
@@ -114,16 +117,62 @@ final class FileSetManager {
     return result;
   }
 
-  private void uploadFile(
+  private void upload(
       final BackupIdentifier id,
       final String fileSetName,
       final String fileName,
       final Path filePath) {
-    try (final var inputStream = Files.newInputStream(filePath)) {
-      client.createFrom(
-          blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+    try {
+      if (Files.size(filePath) < 1024 * 1024) {
+        uploadUncompressedFile(id, fileSetName, fileName, filePath);
+      } else {
+        uploadCompressedFile(id, fileSetName, fileName, filePath);
+      }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private void uploadUncompressedFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath)
+      throws IOException {
+    try (final var inputStream = Files.newInputStream(filePath)) {
+      client.createFrom(
+          blobInfo(id, fileSetName, fileName).build(), inputStream, BlobWriteOption.doesNotExist());
+    }
+  }
+
+  private void uploadCompressedFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath)
+      throws IOException {
+    final var compressionParams = new GzipParameters();
+    compressionParams.setBufferSize(128 * 1024);
+
+    try (final var uncompressedFileContents = Files.newInputStream(filePath);
+        final var compressorOutput = new PipedOutputStream();
+        final var compressedFileContents = new PipedInputStream(compressorOutput, 128 * 1024)) {
+      // Feed the compressor from another thread because piped input/output stream pairs can't be
+      // used from the same threads.
+      executor.execute(
+          () -> {
+            try (final var compressorInput =
+                new GzipCompressorOutputStream(compressorOutput, compressionParams)) {
+              uncompressedFileContents.transferTo(compressorInput);
+            } catch (final IOException e) {
+              throw new UncheckedIOException(e);
+            }
+          });
+
+      client.createFrom(
+          blobInfo(id, fileSetName, fileName).setContentEncoding("gzip").build(),
+          compressedFileContents,
+          BlobWriteOption.doesNotExist());
     }
   }
 
@@ -171,7 +220,7 @@ final class FileSetManager {
       final String fileName,
       final Path targetFolder) {
     final var filePath = targetFolder.resolve(fileName);
-    client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
+    client.downloadTo(blobInfo(id, filesetName, fileName).build().getBlobId(), filePath);
     return filePath;
   }
 
@@ -180,10 +229,9 @@ final class FileSetManager {
         basePath, id.partitionId(), id.checkpointId(), id.nodeId(), fileSetName);
   }
 
-  private BlobInfo blobInfo(
+  private BlobInfo.Builder blobInfo(
       final BackupIdentifier id, final String fileSetName, final String fileName) {
     return BlobInfo.newBuilder(bucketInfo, fileSetPath(id, fileSetName) + fileName)
-        .setContentType("application/octet-stream")
-        .build();
+        .setContentType("application/octet-stream");
   }
 }
