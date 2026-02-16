@@ -73,6 +73,20 @@ class ApplicationAuthorizationIT {
           DEFAULT_PASSWORD,
           List.of(new Permissions(COMPONENT, ACCESS, List.of("tasklist"))));
 
+  @UserDefinition
+  private static final TestUser LEGACY_IDENTITY_USER =
+      new TestUser(
+          "legacy-identity",
+          DEFAULT_PASSWORD,
+          List.of(new Permissions(COMPONENT, ACCESS, List.of("identity"))));
+
+  @UserDefinition
+  private static final TestUser NEW_ADMIN_USER =
+      new TestUser(
+          "new-admin",
+          DEFAULT_PASSWORD,
+          List.of(new Permissions(COMPONENT, ACCESS, List.of("admin"))));
+
   @AutoClose
   private final HttpClient httpClient =
       HttpClient.newBuilder().followRedirects(Redirect.NEVER).build();
@@ -235,6 +249,46 @@ class ApplicationAuthorizationIT {
             HttpURLConnection.HTTP_UNAUTHORIZED,
             HttpURLConnection.HTTP_FORBIDDEN,
             HttpURLConnection.HTTP_MOVED_TEMP);
+  }
+
+  @Test
+  void accessAdminWithLegacyIdentityPermissionAllowed() {
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
+
+    try (final var loggedInClient = webappClient.logIn("legacy-identity", DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result =
+          loggedInClient.send("admin" + PATH_OPERATE_WEBAPP_USER);
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+      assertAccessAllowed(response);
+    }
+  }
+
+  @Test
+  void accessIdentityWithNewAdminPermissionAllowed() {
+    // given
+    final var webappClient = STANDALONE_CAMUNDA.newWebappClient();
+
+    try (final var loggedInClient = webappClient.logIn("new-admin", DEFAULT_PASSWORD)) {
+      // when
+      final Either<Exception, HttpResponse<String>> result =
+          loggedInClient.send("identity" + PATH_OPERATE_WEBAPP_USER);
+
+      // then
+      assertThat(result.isLeft()).isFalse();
+      final HttpResponse<String> response = result.get();
+
+      // /identity routes redirect to /admin, which is expected behavior
+      assertThat(response.statusCode()).isEqualTo(HttpURLConnection.HTTP_MOVED_TEMP);
+      assertThat(response.headers().firstValue("Location"))
+          .isPresent()
+          .get()
+          .satisfies(location -> assertThat(location).contains("/admin/user"));
+    }
   }
 
   private record MeResponse(List<String> authorizedComponents) {}
