@@ -10,9 +10,9 @@ import { ApiDefinition, ApiPromise } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 import { PageSearchParams } from "../hooks/usePagination";
 
-export const TASK_LISTENERS_ENDPOINT = "/task-listeners";
+export const GLOBAL_TASK_LISTENERS_ENDPOINT = "/global-listeners/user-task";
 
-export type TaskListener = {
+export type GlobalTaskListener = {
   id: string;
   type: string;
   eventTypes: string[];
@@ -22,7 +22,7 @@ export type TaskListener = {
   source?: "CONFIGURATION" | "API";
 };
 
-export type TaskListenerKeys =
+export type GlobalTaskListenerKeys =
   | "id"
   | "type"
   | "eventTypes"
@@ -68,10 +68,10 @@ export type EventTypeOption = (typeof EVENT_TYPE_OPTIONS)[number];
  */
 
 // Mock data store for prototype - will be replaced with actual API calls
-let mockTaskListeners: TaskListener[] = [
+let mockGlobalTaskListeners: GlobalTaskListener[] = [
   {
     id: "example-listener-1",
-    type: "io.camunda.MyTaskListener",
+    type: "io.camunda.MyGlobalTaskListener",
     eventTypes: ["creating", "completing"],
     retries: 3,
     afterNonGlobal: false,
@@ -95,34 +95,34 @@ const simulateDelay = (ms: number): Promise<void> =>
 
 // Mock API functions - these simulate API calls and will be replaced with real endpoints later
 // TODO: Implement actual API call to POST /v2/global-task-listeners/search (if search endpoint is needed)
-export const searchTaskListeners: ApiDefinition<
-  SearchResponse<TaskListener>,
+export const searchGlobalTaskListeners: ApiDefinition<
+  SearchResponse<GlobalTaskListener>,
   PageSearchParams | Record<string, unknown> | undefined
-> = () => async (): ApiPromise<SearchResponse<TaskListener>> => {
+> = () => async (): ApiPromise<SearchResponse<GlobalTaskListener>> => {
   await simulateDelay(300);
   return {
     success: true,
     data: {
-      items: [...mockTaskListeners],
+      items: [...mockGlobalTaskListeners],
     },
     error: null,
     status: 200,
   };
 };
 
-type GetTaskListenerParams = {
+type GetGlobalTaskListenerParams = {
   id: string;
 };
 
 // TODO: Implement actual API call to GET /v2/global-task-listeners/{id}
-export const getTaskListenerDetails: ApiDefinition<
-  TaskListener,
-  GetTaskListenerParams
+export const getGlobalTaskListenerDetails: ApiDefinition<
+  GlobalTaskListener,
+  GetGlobalTaskListenerParams
 > =
   ({ id }) =>
-  async (): ApiPromise<TaskListener> => {
+  async (): ApiPromise<GlobalTaskListener> => {
     await simulateDelay(200);
-    const listener = mockTaskListeners.find((l) => l.id === id);
+    const listener = mockGlobalTaskListeners.find((l) => l.id === id);
     if (listener) {
       return { success: true, data: listener, error: null, status: 200 };
     }
@@ -134,17 +134,17 @@ export const getTaskListenerDetails: ApiDefinition<
     };
   };
 
-export type CreateTaskListenerParams = Omit<TaskListener, "id" | "source"> & {
+export type CreateGlobalTaskListenerParams = Omit<GlobalTaskListener, "id" | "source"> & {
   id?: string;
 };
 
 // TODO: Implement actual API call to POST /v2/global-task-listeners
-export const createTaskListener: ApiDefinition<
+export const createGlobalTaskListener: ApiDefinition<
   undefined,
-  CreateTaskListenerParams
+  CreateGlobalTaskListenerParams
 > = (params) => async (): ApiPromise<undefined> => {
   await simulateDelay(300);
-  const newListener: TaskListener = {
+  const newListener: GlobalTaskListener = {
     id:
       params.id ||
       `listener-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -155,44 +155,44 @@ export const createTaskListener: ApiDefinition<
     priority: params.priority,
     source: "API",
   };
-  mockTaskListeners.push(newListener);
+  mockGlobalTaskListeners.push(newListener);
   return { success: true, data: undefined, error: null, status: 201 };
 };
 
-export type UpdateTaskListenerParams = Omit<TaskListener, "source"> & {
+export type UpdateGlobalTaskListenerParams = Omit<GlobalTaskListener, "source"> & {
   id: string;
 };
 
 // TODO: Implement actual API call to PUT /v2/global-task-listeners/{id}
-export const updateTaskListener: ApiDefinition<
+export const updateGlobalTaskListener: ApiDefinition<
   undefined,
-  UpdateTaskListenerParams
+  UpdateGlobalTaskListenerParams
 > = (params) => async (): ApiPromise<undefined> => {
   await simulateDelay(300);
-  const index = mockTaskListeners.findIndex((l) => l.id === params.id);
+  const index = mockGlobalTaskListeners.findIndex((l) => l.id === params.id);
   if (index !== -1) {
-    mockTaskListeners[index] = {
+    mockGlobalTaskListeners[index] = {
       ...params,
-      source: mockTaskListeners[index].source,
+      source: mockGlobalTaskListeners[index].source,
     };
     return { success: true, data: undefined, error: null, status: 200 };
   }
   return { success: false, data: null, error: null, status: 404 };
 };
 
-export type DeleteTaskListenerParams = {
+export type DeleteGlobalTaskListenerParams = {
   id: string;
   type: string;
 };
 
 // TODO: Implement actual API call to DELETE /v2/global-task-listeners/{id}
-export const deleteTaskListener: ApiDefinition<undefined, { id: string }> =
+export const deleteGlobalTaskListener: ApiDefinition<undefined, { id: string }> =
   ({ id }) =>
   async (): ApiPromise<undefined> => {
     await simulateDelay(300);
-    const index = mockTaskListeners.findIndex((l) => l.id === id);
+    const index = mockGlobalTaskListeners.findIndex((l) => l.id === id);
     if (index !== -1) {
-      mockTaskListeners.splice(index, 1);
+      mockGlobalTaskListeners.splice(index, 1);
       return { success: true, data: undefined, error: null, status: 200 };
     }
     return { success: false, data: null, error: null, status: 404 };

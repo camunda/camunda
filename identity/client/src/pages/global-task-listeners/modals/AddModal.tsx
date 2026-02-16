@@ -6,19 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useEffect } from "react";
+import { FC } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { Dropdown, MultiSelect, NumberInput } from "@carbon/react";
-import { FormModal, UseEntityModalProps } from "src/components/modal";
+import { FormModal, UseModalProps } from "src/components/modal";
 import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import {
-  updateTaskListener,
-  TaskListener,
   EVENT_TYPE_OPTIONS,
   EventTypeOption,
-} from "src/utility/api/task-listeners";
+  createGlobalTaskListener,
+} from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 
 type FormData = {
@@ -32,49 +31,27 @@ type FormData = {
 
 const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;
 
-const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
-  open,
-  onClose,
-  onSuccess,
-  entity,
-}) => {
-  const { t } = useTranslate("taskListeners");
+const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
+  const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const [callUpdateTaskListener, { loading, error }] = useApiCall(
-    updateTaskListener,
+  const [callCreateGlobalTaskListener, { loading, error }] = useApiCall(
+    createGlobalTaskListener,
     {
       suppressErrorNotification: true,
     },
   );
 
-  // Parse eventTypes array to form format
-  const parseEventTypes = (eventTypes: string[]): EventTypeOption[] => {
-    return eventTypes as EventTypeOption[];
-  };
-
-  const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
+  const { control, handleSubmit, watch, setValue } = useForm<FormData>({
     defaultValues: {
-      id: entity.id,
-      type: entity.type,
-      eventTypes: parseEventTypes(entity.eventTypes),
-      retries: entity.retries,
-      afterNonGlobal: entity.afterNonGlobal,
-      priority: entity.priority,
+      id: "",
+      type: "",
+      eventTypes: [],
+      retries: 5,
+      afterNonGlobal: false,
+      priority: 0,
     },
     mode: "all",
   });
-
-  // Reset form when entity changes
-  useEffect(() => {
-    reset({
-      id: entity.id,
-      type: entity.type,
-      eventTypes: parseEventTypes(entity.eventTypes),
-      retries: entity.retries,
-      afterNonGlobal: entity.afterNonGlobal,
-      priority: entity.priority,
-    });
-  }, [entity, reset]);
 
   const eventTypes = watch("eventTypes");
 
@@ -134,8 +111,8 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
       ? ["all"]
       : data.eventTypes.filter((type) => type !== "all");
 
-    const { success } = await callUpdateTaskListener({
-      id: entity.id,
+    const { success } = await callCreateGlobalTaskListener({
+      id: data.id,
       type: data.type,
       eventTypes: eventTypes,
       retries: data.retries,
@@ -146,7 +123,7 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("taskListenerUpdated"),
+        title: t("globalTaskListenerCreated"),
         subtitle: data.type,
       });
       onSuccess();
@@ -161,19 +138,29 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
   return (
     <FormModal
       open={open}
-      headline={t("editTaskListener")}
+      headline={t("createGlobalTaskListener")}
       loading={loading}
       error={error}
-      loadingDescription={t("editingTaskListener")}
-      confirmLabel={t("update")}
+      loadingDescription={t("creatingGlobalTaskListener")}
+      confirmLabel={t("create")}
       onClose={onClose}
       onSubmit={handleSubmit(onSubmit)}
     >
       <Controller
         name="id"
         control={control}
-        render={({ field }) => (
-          <TextField {...field} label={t("taskListenerId")} readOnly />
+        rules={{
+          required: t("globalTaskListenerIdRequired"),
+        }}
+        render={({ field, fieldState }) => (
+          <TextField
+            {...field}
+            label={t("globalTaskListenerId")}
+            placeholder={t("globalTaskListenerIdPlaceholder")}
+            errors={fieldState.error?.message}
+            helperText={t("globalTaskListenerIdHelperText")}
+            autoFocus
+          />
         )}
       />
       <Controller
@@ -197,7 +184,6 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
             placeholder={t("listenerTypePlaceholder")}
             errors={fieldState.error?.message}
             helperText={t("listenerTypeHelperText")}
-            autoFocus
           />
         )}
       />
@@ -209,7 +195,7 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
         }}
         render={({ field, fieldState }) => (
           <MultiSelect
-            id="event-type-multiselect-edit"
+            id="event-type-multiselect"
             titleText={t("eventType")}
             label={
               field.value.length > 0
@@ -238,12 +224,12 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
         control={control}
         render={({ field, fieldState }) => (
           <NumberInput
-            id="retries-input-edit"
+            id="retries-input"
             label={t("retries")}
             min={1}
             step={1}
             value={field.value}
-            onChange={(_, { value }: { value: string | number; direction: string }) => {
+            onChange={(_, { value }) => {
               const numValue =
                 typeof value === "string" ? parseInt(value, 10) : value;
               if (!isNaN(numValue)) {
@@ -260,7 +246,7 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
         control={control}
         render={({ field }) => (
           <Dropdown
-            id="execution-order-dropdown-edit"
+            id="execution-order-dropdown"
             titleText={t("executionOrder")}
             label={t("executionOrder")}
             items={afterNonGlobalOptions}
@@ -291,13 +277,16 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
         control={control}
         render={({ field, fieldState }) => (
           <NumberInput
-            id="priority-input-edit"
+            id="priority-input"
             label={t("priority")}
             helperText={t("priorityHelperText")}
             min={0}
             step={1}
             value={field.value}
-            onChange={(_, { value }: { value: string | number; direction: string }) => {
+            onChange={(
+              _,
+              { value }: { value: string | number; direction: string },
+            ) => {
               const numValue =
                 typeof value === "string" ? parseInt(value, 10) : value;
               if (!isNaN(numValue)) {
@@ -313,4 +302,4 @@ const EditModal: FC<UseEntityModalProps<TaskListener>> = ({
   );
 };
 
-export default EditModal;
+export default AddModal;

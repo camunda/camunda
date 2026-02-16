@@ -13,35 +13,34 @@ import { usePaginatedApi } from "src/utility/api";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
-  searchTaskListeners,
-  TaskListener,
-} from "src/utility/api/task-listeners";
+  GlobalTaskListener,
+  searchGlobalTaskListeners,
+} from "src/utility/api/global-task-listeners";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
 import useModal, { useEntityModal } from "src/components/modal/useModal";
-import AddModal from "src/pages/task-listeners/modals/AddModal";
-import EditModal from "src/pages/task-listeners/modals/EditModal";
-import DeleteModal from "src/pages/task-listeners/modals/DeleteModal";
+import AddModal from "src/pages/global-task-listeners/modals/AddModal";
+import EditModal from "src/pages/global-task-listeners/modals/EditModal";
+import DeleteModal from "src/pages/global-task-listeners/modals/DeleteModal";
 import PageEmptyState from "src/components/layout/PageEmptyState";
 
 const List: FC = () => {
-  const { t } = useTranslate("taskListeners");
+  const { t } = useTranslate("globalTaskListeners");
 
   const {
-    data: taskListeners,
+    data: globalTaskListeners,
     loading,
     reload,
     success,
     search,
     ...paginationProps
-  } = usePaginatedApi(searchTaskListeners);
+  } = usePaginatedApi(searchGlobalTaskListeners);
 
-  const [addTaskListener, addTaskListenerModal] = useModal(AddModal, reload);
-  const [editTaskListener, editTaskListenerModal] = useEntityModal(
-    EditModal,
+  const [addGlobalTaskListener, addGlobalTaskListenerModal] = useModal(
+    AddModal,
     reload,
   );
-  const [deleteTaskListener, deleteTaskListenerModal] = useEntityModal(
-    DeleteModal,
+  const [editGlobalTaskListener, editGlobalTaskListenerModal] = useEntityModal(
+    EditModal,
     reload,
   );
 
@@ -55,13 +54,13 @@ const List: FC = () => {
   );
 
   const shouldShowEmptyState =
-    success && !search && !taskListeners?.items.length;
+    success && !search && !globalTaskListeners?.items.length;
 
   const pageHeader = (
     <PageHeader
-      title={t("globalUserTaskListeners")}
-      linkText={t("globalUserTaskListeners").toLowerCase()}
-      docsLinkPath="/docs/components/concepts/task-listeners/"
+      title={t("globalTaskListeners")}
+      linkText={t("globalTaskListeners").toLowerCase()}
+      docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
       shouldShowDocumentationLink={!shouldShowEmptyState}
     />
   );
@@ -71,17 +70,17 @@ const List: FC = () => {
       <Page>
         {pageHeader}
         <PageEmptyState
-          resourceTypeTranslationKey={"taskListener"}
-          docsLinkPath="/docs/components/concepts/task-listeners/"
-          handleClick={addTaskListener}
+          resourceTypeTranslationKey={"globalTaskListener"}
+          docsLinkPath="/docs/components/concepts/global-user-task-listeners/"
+          handleClick={addGlobalTaskListener}
         />
-        {addTaskListenerModal}
+        {addGlobalTaskListenerModal}
       </Page>
     );
   }
 
   // Transform data to include display-friendly execution order and event types
-  const transformedData = taskListeners?.items.map((listener) => ({
+  const transformedData = globalTaskListeners?.items.map((listener) => ({
     ...listener,
     executionOrderDisplay: getExecutionOrderDisplay(listener.afterNonGlobal),
     eventTypesDisplay: listener.eventTypes.includes("all")
@@ -96,7 +95,7 @@ const List: FC = () => {
         data={transformedData ?? []}
         headers={[
           {
-            header: t("taskListenerId"),
+            header: t("globalTaskListenerId"),
             key: "id",
             isSortable: true,
           },
@@ -115,21 +114,21 @@ const List: FC = () => {
           { header: t("priority"), key: "priority", isSortable: true },
         ]}
         addEntityLabel={t("createListener")}
-        onAddEntity={addTaskListener}
+        onAddEntity={addGlobalTaskListener}
         loading={loading}
         menuItems={[
           {
-            label: t("editTaskListener"),
+            label: t("editGlobalTaskListener"),
             icon: Edit,
             onClick: (entity) =>
-              editTaskListener(entity as unknown as TaskListener),
+              editGlobalTaskListener(entity as unknown as GlobalTaskListener),
           },
           {
             label: t("delete"),
             icon: TrashCan,
             isDangerous: true,
             onClick: (entity) =>
-              deleteTaskListener(entity as unknown as TaskListener),
+              deleteGlobalTaskListener(entity as unknown as GlobalTaskListener),
           },
         ]}
         searchPlaceholder={t("searchById")}
@@ -138,13 +137,13 @@ const List: FC = () => {
       />
       {!loading && !success && (
         <TranslatedErrorInlineNotification
-          title={t("taskListenersCouldNotLoad")}
+          title={t("globalTaskListenersCouldNotLoad")}
           actionButton={{ label: t("retry"), onClick: reload }}
         />
       )}
-      {addTaskListenerModal}
-      {editTaskListenerModal}
-      {deleteTaskListenerModal}
+      {addGlobalTaskListenerModal}
+      {editGlobalTaskListenerModal}
+      {deleteGlobalTaskListenerModal}
     </Page>
   );
 };

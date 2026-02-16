@@ -14,20 +14,20 @@ import {
   UseEntityModalProps,
 } from "src/components/modal";
 import {
-  deleteTaskListener,
-  TaskListener,
-} from "src/utility/api/task-listeners";
+  deleteGlobalTaskListener,
+  GlobalTaskListener,
+} from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 
-const DeleteModal: FC<UseEntityModalProps<TaskListener>> = ({
+const DeleteModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   open,
   onClose,
   onSuccess,
   entity: { id, type },
 }) => {
-  const { t } = useTranslate("taskListeners");
+  const { t } = useTranslate("globalTaskListeners");
   const { enqueueNotification } = useNotifications();
-  const [apiCall, { loading }] = useApiCall(deleteTaskListener);
+  const [apiCall, { loading }] = useApiCall(deleteGlobalTaskListener);
 
   const handleSubmit = async () => {
     const { success } = await apiCall({ id });
@@ -35,7 +35,7 @@ const DeleteModal: FC<UseEntityModalProps<TaskListener>> = ({
     if (success) {
       enqueueNotification({
         kind: "success",
-        title: t("taskListenerDeleted"),
+        title: t("globalTaskListenerDeleted"),
         subtitle: type,
       });
       onSuccess();
@@ -45,14 +45,14 @@ const DeleteModal: FC<UseEntityModalProps<TaskListener>> = ({
   return (
     <Modal
       open={open}
-      headline={t("deleteTaskListener")}
+      headline={t("deleteGlobalTaskListener")}
       onSubmit={handleSubmit}
       loading={loading}
-      loadingDescription={t("deletingTaskListener")}
+      loadingDescription={t("deletingGlobalTaskListener")}
       onClose={onClose}
       confirmLabel={t("delete")}
     >
-      <p>{t("deleteTaskListenerConfirmation")}</p>
+      <p>{t("deleteGlobalTaskListenerConfirmation")}</p>
     </Modal>
   );
 };
