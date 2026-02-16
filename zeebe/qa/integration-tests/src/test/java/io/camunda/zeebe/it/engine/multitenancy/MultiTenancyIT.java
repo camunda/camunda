@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.AssignUserTaskResponse;
@@ -741,6 +742,131 @@ public class MultiTenancyIT {
           .describedAs(
               "Expect that job can be activated as the client has access process of tenant-a")
           .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldActivateJobWithProvidedFilterAndTenantIds() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .tenantFilter(TenantFilter.PROVIDED)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated with PROVIDED filter and explicit tenant ID")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldActivateJobWithAssignedFilter() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated with ASSIGNED filter without specifying tenant IDs")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldOnlyActivateJobsForAssignedTenantsWithAssignedFilter() {
+    // given — deploy and create instances for both TENANT_A and TENANT_B
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      clientA
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      clientA
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var clientB = createCamundaClient(USER_TENANT_B)) {
+      clientB
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+      clientB
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+    }
+
+    // when — user A activates jobs with ASSIGNED filter
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      final ActivateJobsResponse response =
+          clientA
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(10)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send()
+              .join();
+
+      // then — only jobs for TENANT_A should be activated, not TENANT_B
+      assertThat(response.getJobs())
+          .describedAs(
+              "Expect only jobs for the assigned tenant to be activated, not jobs for other tenants")
+          .isNotEmpty()
+          .allSatisfy(job -> assertThat(job.getTenantId()).isEqualTo(TENANT_A));
     }
   }
 
