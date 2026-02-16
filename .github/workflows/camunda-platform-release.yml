@@ -227,22 +227,6 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
-      - name: Debug Optimize Versions after release
-        if: ${{ inputs.dryRun }}
-        run: |
-          echo "=== Optimize Version Information ==="
-          echo "Optimize project.version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
-          echo ""
-          echo "Zeebe parent version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.parent.version -q -DforceStdout || echo "Failed to get Zeebe parent version"
-          echo ""
-          echo "Zeebe version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
-          echo ""
-          echo "Identity version:"
-          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=version.identity -q -DforceStdout || echo "Failed to get Identity version"
-          echo ""
       - name: Update Optimize parent to development version
         run: |
           # After release process completes, update Optimize parent to nextDevelopmentVersion
