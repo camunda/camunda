@@ -21,6 +21,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.util.ClientTest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
@@ -113,6 +114,7 @@ public final class JobPollerImplTest extends ClientTest {
         Duration.ofSeconds(10),
         Collections.emptyList(),
         Collections.singletonList("test-tenant"),
+        TenantFilter.PROVIDED,
         10);
   }
 

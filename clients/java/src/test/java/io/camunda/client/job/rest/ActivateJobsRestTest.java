@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
@@ -35,6 +36,7 @@ import io.camunda.client.protocol.rest.JobActivationResult;
 import io.camunda.client.protocol.rest.JobKindEnum;
 import io.camunda.client.protocol.rest.JobListenerEventTypeEnum;
 import io.camunda.client.protocol.rest.ProblemDetail;
+import io.camunda.client.protocol.rest.TenantFilterEnum;
 import io.camunda.client.protocol.rest.UserTaskProperties;
 import io.camunda.client.util.ClientRestTest;
 import io.camunda.client.util.RestGatewayPaths;
@@ -556,6 +558,61 @@ public final class ActivateJobsRestTest extends ClientRestTest {
             "should activate job with null user task properties",
             null,
             props -> assertThat(props).isNull()));
+  }
+
+  @Test
+  void shouldSetTenantFilterToProvidedAndIncludeTenantIds() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds("tenant1", "tenant2")
+        .tenantFilter(TenantFilter.PROVIDED)
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getTenantFilter()).isEqualTo(TenantFilterEnum.PROVIDED);
+    assertThat(request.getTenantIds()).containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
+
+  @Test
+  void shouldSetTenantFilterToAssignedAndExcludeTenantIds() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds("tenant1", "tenant2")
+        .tenantFilter(TenantFilter.ASSIGNED)
+        .send()
+        .join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getTenantFilter()).isEqualTo(TenantFilterEnum.ASSIGNED);
+    assertThat(request.getTenantIds()).isEmpty();
+  }
+
+  @Test
+  void shouldDefaultTenantFilterToProvided() {
+    // given
+    gatewayService.onActivateJobsRequest(new JobActivationResult());
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then
+    final JobActivationRequest request = gatewayService.getLastRequest(JobActivationRequest.class);
+    assertThat(request.getTenantFilter()).isEqualTo(TenantFilterEnum.PROVIDED);
   }
 
   private static final class VariablesPojo {
