@@ -967,8 +967,8 @@ jobs:
   snyk-optimize:
     name: Snyk Monitor Optimize
     needs: [ optimize-docker, release ]
-    # Only for stable releases (no '-' in version), and only when Optimize is part of the release
-    if: ${{ !contains(inputs.releaseVersion, '-') && inputs.includeOptimize }}
+    # Run for: actual releases (X.Y.Z), or dryrun versions (but exclude alpha, specific old versions like 86/87), and only when Optimize is part of the release
+    if: ${{ ((!contains(inputs.releaseVersion, '-') || (contains(inputs.releaseVersion, '-dryrun-') && !contains(inputs.releaseVersion, '-dryrun-alpha') && !contains(inputs.releaseVersion, '-dryrun-87') && !contains(inputs.releaseVersion, '-dryrun-86'))) && inputs.includeOptimize) }}
     concurrency:
       group: release-snyk-optimize-${{ inputs.releaseVersion }}
       cancel-in-progress: false
@@ -978,8 +978,8 @@ jobs:
       ref: ${{ needs.release.outputs.releaseBranch }}
       version: ${{ inputs.releaseVersion }}
       useMinorVersion: true
-      # In real releases, we use monitor=true; in any dry-run mode, we want test only
-      monitor: ${{ !inputs.dryRun && !inputs.releaseProcessDryRun }}
+      # For actual releases: monitor based on releaseProcessDryRun; for dryrun versions: always test only
+      monitor: ${{ !(contains(inputs.releaseVersion, '-dryrun-') && !contains(inputs.releaseVersion, '-dryrun-alpha') && !contains(inputs.releaseVersion, '-dryrun-87') && !contains(inputs.releaseVersion, '-dryrun-86')) && !inputs.dryRun && !inputs.releaseProcessDryRun }}
       # the docker image will not be pushed during a dry-run, so we need to build it locally
       build: ${{ inputs.dryRun || inputs.releaseProcessDryRun }}
       dockerImage: ${{ (inputs.dryRun || inputs.releaseProcessDryRun) && '' || format('camunda/optimize:{0}', inputs.releaseVersion) }}
