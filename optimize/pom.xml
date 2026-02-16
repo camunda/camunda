@@ -60,6 +60,7 @@
     <kotlin-stdlib.version>2.1.0</kotlin-stdlib.version>
     <jakarta.rs-api.version>4.0.0</jakarta.rs-api.version>
     <netty.version>4.1.130.Final</netty.version>
+    <log4j2.version>2.25.3</log4j2.version>
     <lombok.version>1.18.34</lombok.version>
     <logback.version>1.5.25</logback.version>
     <slf4j.version>2.0.16</slf4j.version>
@@ -108,6 +109,14 @@
         <groupId>co.elastic.clients</groupId>
         <artifactId>elasticsearch-java</artifactId>
         <version>${elasticsearch.client.version}</version>
+      </dependency>
+      <!-- Override Spring Boot's log4j version to address CVEs -->
+      <dependency>
+        <groupId>org.apache.logging.log4j</groupId>
+        <artifactId>log4j-bom</artifactId>
+        <version>${log4j2.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
       </dependency>
       <dependency>
         <groupId>org.springframework.boot</groupId>
@@ -325,7 +334,6 @@
         <artifactId>commons-lang3</artifactId>
         <version>${commons.lang3.version}</version>
       </dependency>
-
     </dependencies>
   </dependencyManagement>
 
