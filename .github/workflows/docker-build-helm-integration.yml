@@ -418,7 +418,7 @@ jobs:
                       "c8Version": "8.7",
                       "zeebeVersion": "${{ needs.build-and-push-images.outputs.image-tag }}",
                       "operateVersion": "8.7-SNAPSHOT",
-                      "tasklistVersion": "8.7-SNAPSHOTT",
+                      "tasklistVersion": "8.7-SNAPSHOT",
                       "connectorsVersion": "8.7-SNAPSHOT",
                       "optimizeVersion": "8.7-SNAPSHOT"
                   }
