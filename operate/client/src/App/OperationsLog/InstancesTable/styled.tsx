@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import { black } from '@carbon/colors';
 
 const Container = styled.section`
   height: 100%;
@@ -25,4 +26,12 @@ const PropertyText = styled.div`
   ${styles.caption01}
 `;
 
-export {Container, OperationLogName, PropertyText};
+const ActorTooltip = styled.div`
+  --cds-layer: ${black};
+
+  .cds--snippet--single {
+    block-size: 2rem;
+  }
+`;
+
+export {Container, OperationLogName, PropertyText, ActorTooltip};
