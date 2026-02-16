@@ -14,7 +14,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 
 test.describe.parallel('login page', () => {
   test.beforeEach(async ({page}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
   });
 
   test.afterEach(async ({page}, testInfo) => {

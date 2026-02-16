@@ -24,7 +24,7 @@ export async function navigateToApp(
     await page.goto(
       process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
     );
-  } else if (appName == 'identity') {
+  } else if (appName == 'admin') {
     await page.goto(
       process.env.CORE_APPLICATION_URL + '/' + appName.toLowerCase() + '/login',
     );

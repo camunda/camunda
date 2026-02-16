@@ -26,7 +26,7 @@ env-h2-up:
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,identity,consolidated-auth
+	  -Dspring.profiles.active=tasklist,broker,dev,dev-data,admin,consolidated-auth
 
 .PHONY: env-up
 env-up: $(DATABASE) setup-maven-context

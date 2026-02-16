@@ -31,20 +31,21 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
   private final boolean isStandaloneCamunda;
   private final SpringApplication application;
 
-  public ModesAndProfilesProcessor(SpringApplication application, String[] args) {
+  public ModesAndProfilesProcessor(final SpringApplication application, final String[] args) {
     this.application = application;
 
     final Class mainClass = application.getMainApplicationClass();
     if (mainClass == null) {
-      this.isStandaloneCamunda = false;
+      isStandaloneCamunda = false;
     } else {
-      this.isStandaloneCamunda = StandaloneCamunda.class.equals(mainClass);
+      isStandaloneCamunda = StandaloneCamunda.class.equals(mainClass);
     }
   }
 
   @Override
   public void environmentPrepared(
-      ConfigurableBootstrapContext bootstrapContext, ConfigurableEnvironment environment) {
+      final ConfigurableBootstrapContext bootstrapContext,
+      final ConfigurableEnvironment environment) {
     this.environment = environment;
 
     application.setLogStartupInfo(false);
@@ -128,7 +129,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
                 Profile.BROKER.getId(),
                 Profile.TASKLIST.getId(),
                 Profile.OPERATE.getId(),
-                Profile.IDENTITY.getId(),
+                Profile.ADMIN.getId(),
                 Profile.CONSOLIDATED_AUTH.getId()));
 
     if (isDevelopment()) {
@@ -155,7 +156,7 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
             Set.of(
                 Profile.GATEWAY.getId(),
                 Profile.OPERATE.getId(),
-                Profile.IDENTITY.getId(),
+                Profile.ADMIN.getId(),
                 Profile.TASKLIST.getId(),
                 Profile.CONSOLIDATED_AUTH.getId()));
 

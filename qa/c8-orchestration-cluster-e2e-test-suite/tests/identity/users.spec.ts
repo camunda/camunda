@@ -15,7 +15,7 @@ import {navigateToApp} from '@pages/UtilitiesPage';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 
 test.beforeEach(async ({page, loginPage}) => {
-  await navigateToApp(page, 'identity');
+  await navigateToApp(page, 'admin');
   await loginPage.login(LOGIN_CREDENTIALS.username, LOGIN_CREDENTIALS.password);
   await expect(page).toHaveURL(relativizePath(Paths.users()));
 });

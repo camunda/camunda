@@ -134,7 +134,7 @@ This is a small overview of the contents of this repository:
 - `build-tools` - Zeebe build tools
 - `clients` - client libraries
 - `dist` - provides the Camunda 8 distributions
-- `identity` - component within self-managed Camunda 8 responsible for authentication and authorization
+- `identity` - component within self-managed Camunda 8 responsible for authentication and authorization. Will soon be renamed to `admin` to better reflect its purpose.
 - `licenses` - the Camunda 8 licenses
 - `monitor` - Monitoring for self-managed Camunda 8
 - `operate` - Monitoring tool for monitoring and troubleshooting processes running in Zeebe
@@ -247,7 +247,7 @@ You can run the Camunda distribution via IntelliJ for development purposes.
    and start a new Spring Boot run configuration with the following settings:
    - **Module**: `camunda-zeebe`
    - **Main class**: `io.camunda.application.StandaloneCamunda`
-   - **Active profiles**: `identity,tasklist,operate,broker,consolidated-auth,dev,insecure`
+   - **Active profiles**: `admin,tasklist,operate,broker,consolidated-auth,dev,insecure`
    - **Environment variables**:
 
      ```
@@ -263,7 +263,7 @@ You can run the Camunda distribution via IntelliJ for development purposes.
 6. The webapps should be available on the following URLs with the credentials specified above (`demo`/`demo`):
    - [Tasklist](http://localhost:8080/tasklist)
    - [Operate](http://localhost:8080/operate)
-   - [Identity](http://localhost:8080/identity)
+   - [Admin](http://localhost:8080/admin)
 
 ##### Troubleshooting
 

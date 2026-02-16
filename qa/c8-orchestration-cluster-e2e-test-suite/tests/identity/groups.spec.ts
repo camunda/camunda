@@ -34,7 +34,7 @@ test.describe.serial('groups CRUD', () => {
   });
 
   test.beforeEach(async ({page, loginPage, identityGroupsPage}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
@@ -119,7 +119,7 @@ test.describe('Groups functionalities', () => {
   const createdGroupIds: string[] = [];
 
   test.beforeEach(async ({page, loginPage, identityGroupsPage}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login('demo', 'demo');
     await expect(identityGroupsPage.groupsList).toBeVisible();
   });
