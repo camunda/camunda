@@ -8,7 +8,11 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+<<<<<<< HEAD
 import {CodeSnippet} from '@carbon/react';
+=======
+import { black } from '@carbon/colors';
+>>>>>>> 2e5c1575 (feat: add tooltip component to actor cell)
 
 const Container = styled.section`
   height: 100%;
@@ -26,6 +30,7 @@ const PropertyText = styled.div`
   ${styles.caption01}
 `;
 
+<<<<<<< HEAD
 const AuthorTooltip = styled.div`
   display: flex;
   flex-direction: column;
@@ -43,3 +48,14 @@ export {
   AuthorTooltip,
   TooltipCodeSnippet,
 };
+=======
+const ActorTooltip = styled.div`
+  --cds-layer: ${black};
+
+  .cds--snippet--single {
+    block-size: 2rem;
+  }
+`;
+
+export {Container, OperationLogName, PropertyText, ActorTooltip};
+>>>>>>> 2e5c1575 (feat: add tooltip component to actor cell)
