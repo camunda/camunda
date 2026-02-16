@@ -95,18 +95,15 @@ EXPOSE 8090 8091
 
 VOLUME /tmp
 
-ENV OPT_HOME=/usr/local/optimize
-
 USER root
-RUN addgroup -g 1001 camunda && \
-    adduser -S -G camunda -u 1001 -h ${OPT_HOME} camunda && \
-    mkdir -p ${OPT_HOME} && \
-    chown -R 1001:0 ${OPT_HOME} && \
-    chmod -R 0775 ${OPT_HOME}
+RUN addgroup -S -g 1001 camunda && \
+    adduser -S -G camunda -u 1001 camunda && \
+    mkdir -p /optimize && \
+    chown 1001:1001 /optimize
 
-COPY --from=tools --chown=1001:0 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
+COPY --from=tools --chown=1001:1001 /wait-for-it.sh /usr/local/bin/wait-for-it.sh
 
-WORKDIR ${OPT_HOME}
+WORKDIR /optimize
 USER 1001:1001
 
 ENTRYPOINT ["/sbin/tini", "--"]
