@@ -64,7 +64,8 @@ public final class GcsBackupStore implements BackupStore {
     executor = Executors.newVirtualThreadPerTaskExecutor();
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
     fileSetManager =
-        new FileSetManager(client, bucketInfo, basePath, executor, config.maxConcurrentTransfers());
+        new FileSetManager(
+            client, bucketInfo, basePath, executor, config.maxConcurrentTransfers(), config.compressionLevel());
   }
 
   public static BackupStore of(final GcsBackupConfig config) {

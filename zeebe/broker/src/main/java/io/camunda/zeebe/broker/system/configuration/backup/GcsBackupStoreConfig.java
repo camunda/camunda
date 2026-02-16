@@ -10,6 +10,7 @@ package io.camunda.zeebe.broker.system.configuration.backup;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
 import io.camunda.zeebe.broker.system.configuration.ConfigurationEntry;
 import java.util.Objects;
+import java.util.zip.Deflater;
 
 public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String bucketName;
@@ -19,6 +20,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
 
   /** Default maximum concurrent transfers (uploads and downloads) */
   private int maxConcurrentTransfers = 8;
+
+  /** Default compression level for gzip compression (Deflater.DEFAULT_COMPRESSION = -1) */
+  private int compressionLevel = Deflater.DEFAULT_COMPRESSION;
 
   public String getBucketName() {
     return bucketName;
@@ -60,13 +64,22 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.maxConcurrentTransfers = maxConcurrentTransfers;
   }
 
+  public int getCompressionLevel() {
+    return compressionLevel;
+  }
+
+  public void setCompressionLevel(final int compressionLevel) {
+    this.compressionLevel = compressionLevel;
+  }
+
   public static GcsBackupConfig toStoreConfig(final GcsBackupStoreConfig config) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withBucketName(config.getBucketName())
             .withBasePath(config.getBasePath())
             .withHost(config.getHost())
-            .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers());
+            .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers())
+            .withCompressionLevel(config.getCompressionLevel());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
@@ -77,7 +90,7 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
 
   @Override
   public int hashCode() {
-    return Objects.hash(bucketName, basePath, host, auth, maxConcurrentTransfers);
+    return Objects.hash(bucketName, basePath, host, auth, maxConcurrentTransfers, compressionLevel);
   }
 
   @Override
@@ -93,7 +106,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(host, that.host)
         && auth == that.auth
-        && maxConcurrentTransfers == that.maxConcurrentTransfers;
+        && maxConcurrentTransfers == that.maxConcurrentTransfers
+        && compressionLevel == that.compressionLevel;
   }
 
   @Override
@@ -112,6 +126,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         + auth
         + ", maxConcurrentTransfers="
         + maxConcurrentTransfers
+        + ", compressionLevel="
+        + compressionLevel
         + '}';
   }
 

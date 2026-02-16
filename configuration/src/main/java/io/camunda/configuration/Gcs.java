@@ -10,6 +10,7 @@ package io.camunda.configuration;
 import io.camunda.configuration.UnifiedConfigurationHelper.BackwardsCompatibilityMode;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.zip.Deflater;
 
 public class Gcs {
   private static final String PREFIX = "camunda.data.primary-storage.backup.gcs";
@@ -63,6 +64,12 @@ public class Gcs {
 
   /** Maximum number of concurrent file transfers (uploads and downloads) using virtual threads. */
   private int maxConcurrentTransfers = 8;
+
+  /**
+   * Compression level for gzip compression. 1 to 9 for increasing levels of compression, 0 for no
+   * compression, and -1 for the default compression level.
+   */
+  private int compressionLevel = Deflater.DEFAULT_COMPRESSION;
 
   public String getBucketName() {
     return UnifiedConfigurationHelper.validateLegacyConfigurationWithOrdering(
@@ -122,6 +129,14 @@ public class Gcs {
 
   public void setMaxConcurrentTransfers(final int maxConcurrentTransfers) {
     this.maxConcurrentTransfers = maxConcurrentTransfers;
+  }
+
+  public int getCompressionLevel() {
+    return compressionLevel;
+  }
+
+  public void setCompressionLevel(final int compressionLevel) {
+    this.compressionLevel = compressionLevel;
   }
 
   public enum GcsBackupStoreAuth {

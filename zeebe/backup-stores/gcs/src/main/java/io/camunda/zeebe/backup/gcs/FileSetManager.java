@@ -55,18 +55,21 @@ final class FileSetManager {
   private final String basePath;
   private final ExecutorService executor;
   private final Semaphore concurrencyLimit;
+  private final int compressionLevel;
 
   FileSetManager(
       final Storage client,
       final BucketInfo bucketInfo,
       final String basePath,
       final ExecutorService executor,
-      final int maxConcurrentOperations) {
+      final int maxConcurrentOperations,
+      final int compressionLevel) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
     this.executor = executor;
     concurrencyLimit = new Semaphore(maxConcurrentOperations);
+    this.compressionLevel = compressionLevel;
   }
 
   /**
@@ -153,6 +156,7 @@ final class FileSetManager {
       throws IOException {
     final var compressionParams = new GzipParameters();
     compressionParams.setBufferSize(128 * 1024);
+    compressionParams.setCompressionLevel(compressionLevel);
 
     try (final var uncompressedFileContents = Files.newInputStream(filePath);
         final var compressorOutput = new PipedOutputStream();

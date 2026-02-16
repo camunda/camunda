@@ -46,7 +46,8 @@ final class FileSetManagerTest {
             BucketInfo.of("bucket"),
             "basePath",
             Executors.newVirtualThreadPerTaskExecutor(),
-            50);
+            50,
+            -1);
   }
 
   @Test

@@ -361,4 +361,23 @@ public class DataBackupGcsTest {
           .isEqualTo(100);
     }
   }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.data.primary-storage.backup.gcs.bucket-name=test-bucket",
+        "camunda.data.primary-storage.backup.gcs.compression-level=6",
+      })
+  class WithCustomCompressionLevel {
+    final BrokerBasedProperties brokerCfg;
+
+    WithCustomCompressionLevel(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldSetCompressionLevel() {
+      assertThat(brokerCfg.getData().getBackup().getGcs().getCompressionLevel()).isEqualTo(6);
+    }
+  }
 }

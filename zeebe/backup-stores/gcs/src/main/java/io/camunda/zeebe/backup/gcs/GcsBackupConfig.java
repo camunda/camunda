@@ -17,16 +17,19 @@ public record GcsBackupConfig(
     String bucketName,
     String basePath,
     GcsConnectionConfig connection,
-    int maxConcurrentTransfers) {
+    int maxConcurrentTransfers,
+    int compressionLevel) {
   public GcsBackupConfig(
       final String bucketName,
       final String basePath,
       final GcsConnectionConfig connection,
-      final int maxConcurrentTransfers) {
+      final int maxConcurrentTransfers,
+      final int compressionLevel) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
     this.maxConcurrentTransfers = maxConcurrentTransfers;
+    this.compressionLevel = compressionLevel;
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -71,6 +74,9 @@ public record GcsBackupConfig(
     /** Default parallelism for file transfers (uploads and downloads) using virtual threads */
     private int maxConcurrentTransfers = 50;
 
+    /** Default compression level for gzip compression (Deflater.DEFAULT_COMPRESSION = -1) */
+    private int compressionLevel = -1;
+
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
       return this;
@@ -91,6 +97,11 @@ public record GcsBackupConfig(
       return this;
     }
 
+    public Builder withCompressionLevel(final int compressionLevel) {
+      this.compressionLevel = compressionLevel;
+      return this;
+    }
+
     public Builder withoutAuthentication() {
       // This is only used for testing, so we can make up a project id for it.
       auth = new None("tmp");
@@ -104,7 +115,11 @@ public record GcsBackupConfig(
 
     public GcsBackupConfig build() {
       return new GcsBackupConfig(
-          bucketName, basePath, new GcsConnectionConfig(host, auth), maxConcurrentTransfers);
+          bucketName,
+          basePath,
+          new GcsConnectionConfig(host, auth),
+          maxConcurrentTransfers,
+          compressionLevel);
     }
   }
 }
