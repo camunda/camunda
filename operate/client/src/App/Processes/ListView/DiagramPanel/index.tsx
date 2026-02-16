@@ -28,20 +28,16 @@ import {
   getSubprocessOverlayFromIncidentFlowNodes,
 } from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {FlowNodeState} from 'modules/types/operate';
 import {parseProcessInstancesFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 import {
   getProcessDefinitionName,
   useProcessDefinitionSelection,
 } from 'modules/hooks/processDefinitions';
 import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
-
-const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
-
-type ModificationBadgePayload = {
-  newTokenCount: number;
-  cancelledTokenCount: number;
-};
+import {
+  isStatisticsPayload,
+  isModificationBadgePayload,
+} from 'modules/bpmn-js/overlayTypes';
 
 const DiagramPanel: React.FC = observer(() => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -82,12 +78,12 @@ const DiagramPanel: React.FC = observer(() => {
   }, [definitionSelection, definitionSelectionStatus, setSearchParams]);
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type.match(/^statistics/) !== null,
+    ({type}) => type.startsWith('statistics-'),
   );
 
   const batchModificationBadgeOverlays =
     diagramOverlaysStore.state.overlays.filter(
-      ({type}) => type === OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE,
+      ({type}) => type === 'batchModificationsBadge',
     );
 
   const {
@@ -195,10 +191,7 @@ const DiagramPanel: React.FC = observer(() => {
       return [...baseOverlays, ...(batchOverlayData ?? [])];
     }
 
-    return [
-      ...baseOverlays,
-      ...((subprocessOverlays ?? []) as typeof baseOverlays),
-    ];
+    return [...baseOverlays, ...(subprocessOverlays ?? [])];
   };
 
   const handleFlowNodeSelection = (
@@ -252,29 +245,29 @@ const DiagramPanel: React.FC = observer(() => {
             selectableFlowNodes={getSelectableFlowNodes()}
           >
             {statisticsOverlays?.map((overlay) => {
-              const payload = overlay.payload as {
-                flowNodeState: FlowNodeState;
-                count: number;
-              };
-
+              if (!isStatisticsPayload(overlay.payload)) {
+                return null;
+              }
               return (
                 <StateOverlay
-                  testId={`state-overlay-${overlay.flowNodeId}-${payload.flowNodeState}`}
-                  key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                  state={payload.flowNodeState}
-                  count={payload.count}
+                  testId={`state-overlay-${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
+                  key={`${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
+                  state={overlay.payload.flowNodeState}
+                  count={overlay.payload.count}
                   container={overlay.container}
                 />
               );
             })}
             {batchModificationBadgeOverlays?.map((overlay) => {
-              const payload = overlay.payload as ModificationBadgePayload;
+              if (!isModificationBadgePayload(overlay.payload)) {
+                return null;
+              }
               return (
                 <ModificationBadgeOverlay
                   key={overlay.flowNodeId}
                   container={overlay.container}
-                  newTokenCount={payload.newTokenCount}
-                  cancelledTokenCount={payload.cancelledTokenCount}
+                  newTokenCount={overlay.payload.newTokenCount ?? 0}
+                  cancelledTokenCount={overlay.payload.cancelledTokenCount ?? 0}
                 />
               );
             })}
