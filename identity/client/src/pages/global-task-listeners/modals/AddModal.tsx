@@ -39,9 +39,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       id: "",
       type: "",
       eventTypes: [],
-      retries: 5,
+      retries: 3,
       afterNonGlobal: false,
-      priority: 0,
+      priority: 50,
     },
     mode: "all",
   });
