@@ -21,9 +21,7 @@
 
   <name>Camunda QA Acceptance Tests</name>
   <properties>
-    <version.maven-surefire-junit5-tree-reporter>1.4.0</version.maven-surefire-junit5-tree-reporter>
-    <!-- Runtime client version for compatibility tests - can be overridden -->
-    <camunda.client.version>${project.version}</camunda.client.version>
+    <version.maven-surefire-junit5-tree-reporter>1.5.1</version.maven-surefire-junit5-tree-reporter>
   </properties>
 
   <dependencies>
@@ -65,7 +63,11 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-client-java</artifactId>
-      <version>${camunda.client.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-model</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -587,6 +589,19 @@
     -->
     <profile>
       <id>compatibility-test</id>
+      <properties>
+        <!-- Runtime client version for compatibility tests - override via -Dcamunda.client.version=X.Y.Z -->
+        <camunda.client.version>${project.version}</camunda.client.version>
+      </properties>
+      <dependencyManagement>
+        <dependencies>
+          <dependency>
+            <groupId>io.camunda</groupId>
+            <artifactId>camunda-client-java</artifactId>
+            <version>${camunda.client.version}</version>
+          </dependency>
+        </dependencies>
+      </dependencyManagement>
       <build>
         <plugins>
           <plugin>

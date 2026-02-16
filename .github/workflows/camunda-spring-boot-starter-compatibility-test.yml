@@ -342,6 +342,7 @@ jobs:
           parameters: >-
             verify
             -pl qa/compatibility-test
+            -Pcompatibility-test
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
             -Dcamunda.spring.client.version=${{ matrix.client }}
             -DfailIfNoTests=false
