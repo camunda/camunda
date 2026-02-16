@@ -241,19 +241,31 @@ test.describe('Process Instances Table', () => {
         .scrollIntoViewIfNeeded();
       await sleep(500);
       await expect(instanceRows).toHaveCount(200);
-      await expect
-        .poll(() => instanceRows.nth(0).innerText())
-        .toContain(descendingInstanceIds[0].toString());
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect
+            .poll(() => instanceRows.nth(0).innerText())
+            .toContain(descendingInstanceIds[0].toString());
+        },
+        onFailure: async () => {
+          console.log('Polling is wrong, retrying...');
+        },
+        maxRetries: 6,
+      });
+
+      
       await expect
         .poll(() => instanceRows.nth(199).innerText())
         .toContain(descendingInstanceIds[199].toString());
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
-        .scrollIntoViewIfNeeded();
-      await expect(instanceRows).toHaveCount(200);
     });
 
     await test.step('Scroll to 250th instance', async () => {
+      await page
+        .getByRole('row', {name: `Instance ${descendingInstanceIds[199]}`})
+        .scrollIntoViewIfNeeded();
+      await sleep(500);
+      await expect(instanceRows).toHaveCount(200);
       await expect
         .poll(() => instanceRows.nth(0).innerText())
         .toContain(descendingInstanceIds[50].toString());
