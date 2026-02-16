@@ -201,6 +201,9 @@ jobs:
 
   build-load-test-images:
     name: Build Starter and Worker
+    # Build load test images when:
+    # 1. No reuse-tag is provided (building from scratch), OR
+    # 2. Using official docker images (since there are no official starter/worker images, we must build them)
     if: ${{ inputs.reuse-tag == '' || inputs.use-official-docker-images == true }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
