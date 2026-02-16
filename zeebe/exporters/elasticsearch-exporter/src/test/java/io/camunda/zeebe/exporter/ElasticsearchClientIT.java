@@ -13,6 +13,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.ilm.GetLifecycleRequest;
 import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings.Index;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings.Lifecycle;
+import io.camunda.zeebe.exporter.TestClient.IndexSettings.Settings;
 import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -23,6 +27,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.agrona.CloseHelper;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -196,6 +201,32 @@ final class ElasticsearchClientIT {
     assertThat(lifecycle.policy().phases().delete().minAge().time()).isEqualTo("30d");
     assertThat(lifecycle.policy().phases().delete().actions()).isNotNull();
     assertThat(lifecycle.policy().phases().delete().actions().delete()).isNotNull();
+  }
+
+  @Test
+  void shouldBulkPutIndexLifecycleSettingsWithoutAlteringCamundaExporterIndexesWithSamePrefix()
+      throws IOException {
+    // given
+    final var esClient = testClient.getEsClient();
+    final var ownedIndexName =
+        indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
+            + "_2024-01-01";
+    // camunda exporter indexes have a slightly different format
+    final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
+    esClient.indices().create(b -> b.index(ownedIndexName));
+    esClient.indices().create(b -> b.index(camundaExporterIndexName));
+
+    // when
+    client.bulkPutIndexLifecycleSettings("zeebe-record-retention-policy");
+
+    // then
+    assertThat(testClient.getIndexSettings(ownedIndexName))
+        .isEqualTo(
+            Optional.of(
+                new IndexSettings(
+                    new Settings(new Index(new Lifecycle("zeebe-record-retention-policy"))))));
+    assertThat(testClient.getIndexSettings(camundaExporterIndexName))
+        .isEqualTo(Optional.of(new IndexSettings(new Settings(new Index(null)))));
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
