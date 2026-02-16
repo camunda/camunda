@@ -170,28 +170,29 @@ export class Visual implements IVisual {
         // Normalize value to 0-1 range
         const normalized = maxValue > minValue ? (value - minValue) / (maxValue - minValue) : 0;
         
-        // Create color gradient from white -> yellow -> orange -> red
+        // Create color gradient from light blue -> yellow -> orange -> red
+        // Using lighter opacity for overlay effect
         if (normalized < 0.33) {
-            // White to yellow
+            // Light blue to yellow (low activity)
             const intensity = normalized / 0.33;
-            const r = 255;
-            const g = 255;
-            const b = Math.round(255 * (1 - intensity));
-            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+            const r = Math.round(173 + (255 - 173) * intensity);
+            const g = Math.round(216 + (255 - 216) * intensity);
+            const b = Math.round(230 * (1 - intensity));
+            return `rgba(${r}, ${g}, ${b}, 0.6)`;
         } else if (normalized < 0.66) {
-            // Yellow to orange
+            // Yellow to orange (medium activity)
             const intensity = (normalized - 0.33) / 0.33;
             const r = 255;
-            const g = Math.round(255 * (1 - intensity * 0.35));
+            const g = Math.round(255 - 90 * intensity);
             const b = 0;
-            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+            return `rgba(${r}, ${g}, ${b}, 0.6)`;
         } else {
-            // Orange to red
+            // Orange to red (high activity)
             const intensity = (normalized - 0.66) / 0.34;
             const r = 255;
             const g = Math.round(165 * (1 - intensity));
             const b = 0;
-            return `rgba(${r}, ${g}, ${b}, 0.7)`;
+            return `rgba(${r}, ${g}, ${b}, 0.6)`;
         }
     }
 
@@ -220,41 +221,38 @@ export class Visual implements IVisual {
             this.heatmapData.forEach((count, flowNodeId) => {
                 const element = elementRegistry.get(flowNodeId);
                 
-                if (element) {
+                if (element && element.width && element.height) {
                     const color = this.getHeatmapColor(count, minValue, maxValue);
                     
-                    // Create overlay HTML
+                    // Create full-sized overlay that covers the entire element
                     const overlayHtml = document.createElement('div');
                     overlayHtml.className = 'heatmap-overlay';
+                    overlayHtml.style.width = `${element.width}px`;
+                    overlayHtml.style.height = `${element.height}px`;
                     overlayHtml.style.backgroundColor = color;
-                    overlayHtml.style.padding = '4px 8px';
-                    overlayHtml.style.borderRadius = '3px';
-                    overlayHtml.style.border = '1px solid rgba(0,0,0,0.2)';
-                    overlayHtml.style.fontSize = '11px';
-                    overlayHtml.style.fontWeight = 'bold';
-                    overlayHtml.style.color = '#333';
-                    overlayHtml.style.whiteSpace = 'nowrap';
-                    overlayHtml.textContent = count.toString();
+                    overlayHtml.style.display = 'flex';
+                    overlayHtml.style.alignItems = 'center';
+                    overlayHtml.style.justifyContent = 'center';
+                    overlayHtml.style.borderRadius = '4px';
+                    overlayHtml.style.pointerEvents = 'none';
                     
-                    // Add overlay to element
+                    // Add execution count text in the center
+                    const countText = document.createElement('span');
+                    countText.style.fontSize = '14px';
+                    countText.style.fontWeight = 'bold';
+                    countText.style.color = '#000';
+                    countText.style.textShadow = '0 0 3px #fff, 0 0 3px #fff';
+                    countText.textContent = count.toString();
+                    overlayHtml.appendChild(countText);
+                    
+                    // Add overlay positioned at top-left of element to cover it completely
                     overlays.add(flowNodeId, {
                         position: {
-                            top: -5,
-                            right: -5
+                            top: 0,
+                            left: 0
                         },
                         html: overlayHtml
                     });
-                    
-                    // Also color the element itself
-                    const gfx = elementRegistry.getGraphics(flowNodeId);
-                    if (gfx) {
-                        const shape = gfx.querySelector('rect, circle, polygon, path');
-                        if (shape) {
-                            shape.setAttribute('fill', color);
-                            shape.setAttribute('stroke', '#000');
-                            shape.setAttribute('stroke-width', '2');
-                        }
-                    }
                 }
             });
             

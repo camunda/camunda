@@ -46,7 +46,7 @@ To display execution heatmap on the diagram:
 
 1. Bind your flow node ID field to the "Flow Node ID" data role
 2. Bind your execution count field to the "Execution Count" data role
-3. The visual will automatically color-code the diagram elements based on execution frequency
+3. The visual will automatically overlay the diagram elements with colored heatmap based on execution frequency
 
 **Example Data Structure:**
 ```
@@ -59,9 +59,10 @@ EndEvent_1    | 750
 ```
 
 The visual will:
-- Color each element based on its execution count (higher counts = warmer colors)
-- Display the count as an overlay badge on each element
-- Use a gradient: white (lowest) → yellow → orange → red (highest)
+- Overlay each element with a semi-transparent colored rectangle covering the entire element
+- Display the execution count as centered text on each overlay
+- Use a color gradient: light blue (lowest) → yellow → orange → red (highest)
+- Provide clear visual indication of process execution patterns and bottlenecks
 
 ## Development
 
