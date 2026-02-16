@@ -232,7 +232,7 @@ public class OpensearchExporterSchemaManager {
     if (configuration.retention.isEnabled()) {
       successful = client.bulkAddISMPolicyToAllZeebeIndices();
     } else {
-      successful = client.bulkRemoveISMPolicyToAllZeebeIndices();
+      successful = client.bulkRemoveISMPolicyFromAllZeebeIndices();
     }
 
     if (!successful) {

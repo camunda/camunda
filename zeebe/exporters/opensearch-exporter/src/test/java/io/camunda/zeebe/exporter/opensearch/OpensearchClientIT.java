@@ -197,7 +197,7 @@ public class OpensearchClientIT {
   }
 
   @Test
-  void shouldBulkRemoveISMPolicyToAllZeebeIndices() throws IOException {
+  void shouldBulkRemoveISMPolicyFromAllZeebeIndices() throws IOException {
     // given
     final var config = SEARCH_DB.config();
     final var indexRouter = SEARCH_DB.indexRouter();
@@ -219,7 +219,7 @@ public class OpensearchClientIT {
                     .isEqualTo("zeebe-record-retention-policy"));
 
     // when
-    SEARCH_DB.client().bulkRemoveISMPolicyToAllZeebeIndices();
+    SEARCH_DB.client().bulkRemoveISMPolicyFromAllZeebeIndices();
 
     // then
     Awaitility.await()
