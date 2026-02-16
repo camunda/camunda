@@ -29,7 +29,7 @@ on:
         type: boolean
         default: false
       useMinorVersion:
-        description: Uses the major and minor version only for target and version
+        description: Uses the major and minor version only for the target reference
         required: false
         type: boolean
         default: false
@@ -71,7 +71,7 @@ on:
         type: boolean
         default: false
       useMinorVersion:
-        description: Uses the major and minor version only for target and version
+        description: Uses the major and minor version only for the target reference
         required: false
         type: boolean
         default: false
@@ -136,19 +136,31 @@ jobs:
           fi
           export VERSION
           
-          if [[ "${VERSION}" == *-SNAPSHOT ]]; then
-            VERSION_TAG="development"
-            LIFECYCLE="development"
-          else
-            # For production releases (monitor=true), version tag uses underscores instead of dots/dashes, e.g. 8_9_0 or 8_9_0_alpha1
-            if [[ "${INPUT_MONITOR}" == "true" ]]; then
-              VERSION_TAG="${VERSION//[.-]/_}"
-            else
-              # For test-only, use simple version since no tag is uploaded to Snyk
-              VERSION_TAG="${VERSION}"
-            fi
-            LIFECYCLE="production"
+          # Prevent monitoring SNAPSHOT versions (operational safety check)
+          if [[ "${INPUT_MONITOR}" == "true" && "${VERSION}" == *-SNAPSHOT ]]; then
+            echo "Cannot monitor SNAPSHOT versions"
+            exit 1
           fi
+          
+          # Determine lifecycle based on monitor input
+          if [[ "${INPUT_MONITOR}" == "true" ]]; then
+            LIFECYCLE="production"
+          else
+            LIFECYCLE="development"
+          fi
+          
+          # Determine version tag based on version type and monitor mode
+          if [[ "${VERSION}" == *-SNAPSHOT ]]; then
+            # All SNAPSHOT versions use development tag
+            VERSION_TAG="development"
+          elif [[ "${INPUT_MONITOR}" == "true" ]]; then
+            # Production releases use underscores instead of dots/dashes, e.g. 8_9_0 or 8_9_0_alpha1
+            VERSION_TAG="${VERSION//[.-]/_}"
+          else
+            # Test-only releases use simple version since no tag is uploaded to Snyk
+            VERSION_TAG="${VERSION}"
+          fi
+          
           export VERSION_TAG
           export LIFECYCLE
 
@@ -185,6 +197,7 @@ jobs:
             echo "SNYK_COMMAND=${SNYK_COMMAND}"
             echo "DOCKER_IMAGE=${DOCKER_IMAGE}"
             echo "VERSION=${VERSION}"
+            echo "LIFECYCLE=${LIFECYCLE}"
           } >> "$GITHUB_ENV"
       # Build Optimize Docker image locally if needed (for dry runs when image isn't published)
       - name: Download Release Artifacts
@@ -214,7 +227,7 @@ jobs:
         run: |
           set -e
 
-          PROJECT_NAME="optimize(${TARGET}):Dockerfile"
+          PROJECT_NAME="${VERSION}"
 
           function ensureExists() {
             local projectFile="$1"
@@ -226,6 +239,15 @@ jobs:
 
           # Print out command if debug logging is enabled
           set -x
+
+          echo "=== SNYK CONTEXT ==="
+          echo "Project: ${PROJECT_NAME}"
+          echo "Command: ${SNYK_COMMAND}"
+          echo "Target: ${TARGET}"
+          echo "Version: ${VERSION}"
+          echo "Lifecycle: ${LIFECYCLE}"
+          echo "Docker Image: ${DOCKER_IMAGE}"
+          echo "====================="
 
           # The `container` command does not yet support setting a target reference, as this is a beta
           # feature at the moment. It's added here anyway for now, and hopefully support will come soon.
