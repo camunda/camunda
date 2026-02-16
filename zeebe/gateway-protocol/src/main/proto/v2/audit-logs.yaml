@@ -100,6 +100,9 @@ components:
           description: The ID of the actor who performed the operation.
         actorType:
           $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        agentElementId:
+          type: string
+          description: The element ID of the agent that performed the operation (e.g. ad-hoc subprocess element ID).
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -279,6 +282,10 @@ components:
           description: The actor type search filter.
           allOf:
             - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
+        agentElementId:
+          description: The agent element ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         entityKey:
           description: The entity key search filter.
           allOf:

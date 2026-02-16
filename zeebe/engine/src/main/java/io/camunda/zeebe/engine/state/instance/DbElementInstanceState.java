@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.instance;
 
 import io.camunda.zeebe.db.ColumnFamily;
+import io.camunda.zeebe.db.DbKey;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
@@ -76,6 +77,15 @@ public final class DbElementInstanceState implements MutableElementInstanceState
 
   private final RuntimeInstructions runtimeInstructions;
   private final ColumnFamily<DbLong, RuntimeInstructions> runtimeInstructionsByProcessInstanceKey;
+
+  // Business ID index: [businessId | processDefinitionKey | tenantId | processInstanceKey] => NIL
+  private final DbString businessId = new DbString();
+  private final DbString tenantId = new DbString();
+  private final DbLong processInstanceKey = new DbLong();
+  private final BusinessIdIndexKey businessIdIndexKey;
+  private final ProcessInstanceByBusinessIdIndexKey processInstanceByBusinessIdIndexKey;
+  private final ColumnFamily<ProcessInstanceByBusinessIdIndexKey, DbNil>
+      processInstanceByBusinessIdIndexKeyColumnFamily;
 
   public DbElementInstanceState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb,
@@ -146,6 +156,16 @@ public final class DbElementInstanceState implements MutableElementInstanceState
             transactionContext,
             elementInstanceKey,
             runtimeInstructions);
+
+    businessIdIndexKey = new BusinessIdIndexKey(businessId, processDefinitionKey, tenantId);
+    processInstanceByBusinessIdIndexKey =
+        new ProcessInstanceByBusinessIdIndexKey(businessIdIndexKey, processInstanceKey);
+    processInstanceByBusinessIdIndexKeyColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.PROCESS_INSTANCE_KEY_BY_BUSINESS_ID,
+            transactionContext,
+            processInstanceByBusinessIdIndexKey,
+            DbNil.INSTANCE);
   }
 
   @Override
@@ -337,6 +357,21 @@ public final class DbElementInstanceState implements MutableElementInstanceState
   }
 
   @Override
+  public void insertProcessInstanceKeyByBusinessId(
+      final String businessId,
+      final long processDefinitionKey,
+      final String tenantId,
+      final long processInstanceKey) {
+    this.businessId.wrapString(businessId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.tenantId.wrapString(tenantId);
+    this.processInstanceKey.wrapLong(processInstanceKey);
+
+    processInstanceByBusinessIdIndexKeyColumnFamily.insert(
+        processInstanceByBusinessIdIndexKey, DbNil.INSTANCE);
+  }
+
+  @Override
   public ElementInstance getInstance(final long key) {
     elementInstanceKey.wrapLong(key);
     return elementInstanceColumnFamily.get(elementInstanceKey, ElementInstance::new);
@@ -512,6 +547,23 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         .toList();
   }
 
+  @Override
+  public boolean hasActiveProcessInstanceWithBusinessId(
+      final String businessId, final long processDefinitionKey, final String tenantId) {
+    this.businessId.wrapString(businessId);
+    this.processDefinitionKey.wrapLong(processDefinitionKey);
+    this.tenantId.wrapString(tenantId);
+    final var exists = new AtomicBoolean(false);
+    processInstanceByBusinessIdIndexKeyColumnFamily.whileEqualPrefix(
+        businessIdIndexKey,
+        (key, value) -> {
+          exists.set(true);
+          // just find the first, and then stop iterating
+          return false;
+        });
+    return exists.get();
+  }
+
   private void removeNumberOfTakenSequenceFlows(final long flowScopeKey) {
     this.flowScopeKey.wrapLong(flowScopeKey);
 
@@ -520,5 +572,40 @@ public final class DbElementInstanceState implements MutableElementInstanceState
         (key, number) -> {
           numberOfTakenSequenceFlowsColumnFamily.deleteExisting(key);
         });
+  }
+
+  private static class KeyWithTenantId<T extends DbKey> extends DbCompositeKey<T, DbString> {
+
+    public KeyWithTenantId(final T key, final DbString tenantId) {
+      super(key, tenantId);
+    }
+  }
+
+  private static class BusinessIdAndProcessDefinitionKey extends DbCompositeKey<DbString, DbLong> {
+    public BusinessIdAndProcessDefinitionKey(
+        final DbString businessId, final DbLong processDefinitionKey) {
+      super(businessId, processDefinitionKey);
+    }
+  }
+
+  private static class BusinessIdIndexKey
+      extends KeyWithTenantId<BusinessIdAndProcessDefinitionKey> {
+    public BusinessIdIndexKey(
+        final DbString businessId, final DbLong processDefinitionKey, final DbString tenantId) {
+      super(new BusinessIdAndProcessDefinitionKey(businessId, processDefinitionKey), tenantId);
+    }
+  }
+
+  private static class ProcessInstanceByBusinessIdIndexKey
+      extends DbCompositeKey<KeyWithTenantId<BusinessIdAndProcessDefinitionKey>, DbLong> {
+
+    public ProcessInstanceByBusinessIdIndexKey(
+        final BusinessIdIndexKey businessIdIndexKey, final DbLong processInstanceKey) {
+      super(businessIdIndexKey, processInstanceKey);
+    }
+
+    public long processInstanceKey() {
+      return second().getValue();
+    }
   }
 }

@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.nodeid.repository.s3;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 
@@ -39,6 +40,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Testcontainers
@@ -82,7 +84,7 @@ class S3NodeIdRepositoryIT {
     repository = fixed(Clock.systemUTC().millis());
 
     // when
-    repository.initialize(2);
+    assertThat(repository.initialize(2)).isEqualTo(2);
 
     // then
     for (int i = 0; i < 2; i++) {
@@ -90,6 +92,30 @@ class S3NodeIdRepositoryIT {
       assertThat(lease).isInstanceOf(StoredLease.Uninitialized.class);
       assertThat(lease.eTag()).isNotEmpty();
     }
+  }
+
+  @Test
+  void shouldNotInitializeIfAlreadyInitialized() {
+    // given
+    repository = fixed(Clock.systemUTC().millis());
+    repository.initialize(2);
+
+    final var lease0 = repository.getLease(0);
+    final var lease1 = repository.getLease(1);
+
+    // when
+    final var restartedRepository = fixed(Clock.systemUTC().millis());
+
+    // then
+    assertThat(restartedRepository.initialize(4))
+        .describedAs("Expected to not initialize leases for new node ids")
+        .isEqualTo(2);
+    assertThat(restartedRepository.getLease(0)).isEqualTo(lease0);
+    assertThat(restartedRepository.getLease(1)).isEqualTo(lease1);
+    assertThatException()
+        .isThrownBy(() -> restartedRepository.getLease(3))
+        .isInstanceOf(NoSuchKeyException.class)
+        .withMessageContaining("The specified key does not exist");
   }
 
   @Test

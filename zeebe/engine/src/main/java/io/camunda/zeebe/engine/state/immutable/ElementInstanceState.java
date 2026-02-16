@@ -133,6 +133,18 @@ public interface ElementInstanceState {
   List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       long processInstanceKey, String elementId);
 
+  /**
+   * Returns the process instance key for the given business id, process definition key, and tenant
+   * id. Returns -1 if no active process instance exists with the given business id.
+   *
+   * @param businessId the business id to look up
+   * @param processDefinitionKey the process definition key
+   * @param tenantId the tenant id
+   * @return true if an active process instance exists with the given business id, false otherwise
+   */
+  boolean hasActiveProcessInstanceWithBusinessId(
+      String businessId, long processDefinitionKey, String tenantId);
+
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {
     void visit(

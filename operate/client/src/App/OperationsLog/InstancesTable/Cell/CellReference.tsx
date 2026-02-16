@@ -16,7 +16,7 @@ type Props = {
   processDefinitionName?: string;
 };
 
-const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
+const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
   if (!item) {
     return null;
   }
@@ -25,7 +25,6 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
     case 'BATCH':
       return (
         <>
-          <div>Multiple {formatBatchTitle(item.batchOperationType)}</div>
           <div>
             {item.batchOperationKey ? (
               <Link
@@ -38,28 +37,31 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
               item.batchOperationKey
             )}
           </div>
+          <em>Multiple {formatBatchTitle(item.batchOperationType)}</em>
         </>
       );
     case 'RESOURCE':
       return (
         <>
-          <div>Deployed resource</div>
           <div>{item.entityKey}</div>
+          <em>Deployed resource</em>
         </>
       );
+    case 'INCIDENT':
+    case 'VARIABLE':
     case 'PROCESS_INSTANCE':
       return (
-        <>
-          <div>{processDefinitionName}</div>
+        <div>
           <div>
             <Link
-              to={Paths.processInstance(item.entityKey)}
-              aria-label={`View process instance ${item.entityKey}`}
+              to={Paths.processInstance(item.processInstanceKey)}
+              aria-label={`View process instance ${item.processInstanceKey}`}
             >
-              {item.entityKey}
+              {item.processInstanceKey}
             </Link>
           </div>
-        </>
+          <em>{processDefinitionName}</em>
+        </div>
       );
     case 'DECISION':
       return (
@@ -79,4 +81,4 @@ const CellAppliedTo: React.FC<Props> = ({item, processDefinitionName}) => {
   }
 };
 
-export {CellAppliedTo};
+export {CellReference};

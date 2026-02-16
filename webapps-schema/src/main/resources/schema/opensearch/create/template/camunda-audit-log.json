@@ -39,6 +39,9 @@
       "actorId": {
         "type": "keyword"
       },
+      "agentElementId": {
+        "type": "keyword"
+      },
       "tenantId": {
         "type": "keyword"
       },

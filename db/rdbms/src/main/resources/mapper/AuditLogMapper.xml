@@ -34,6 +34,7 @@
         TIMESTAMP,
         ACTOR_TYPE,
         ACTOR_ID,
+        AGENT_ELEMENT_ID,
         TENANT_ID,
         TENANT_SCOPE,
         RESULT,
@@ -167,6 +168,12 @@
       <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
         <foreach collection="filter.actorIdOperations" item="operation">
           AND ACTOR_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.agentElementIdOperations != null and !filter.agentElementIdOperations.isEmpty()">
+        <foreach collection="filter.agentElementIdOperations" item="operation">
+          AND AGENT_ELEMENT_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
@@ -313,6 +320,7 @@
       TIMESTAMP,
       ACTOR_TYPE,
       ACTOR_ID,
+      AGENT_ELEMENT_ID,
       TENANT_ID,
       TENANT_SCOPE,
       RESULT,
@@ -354,6 +362,7 @@
         #{auditLog.timestamp, jdbcType=TIMESTAMP},
         #{auditLog.actorType},
         #{auditLog.actorId},
+        #{auditLog.agentElementId},
         #{auditLog.tenantId},
         #{auditLog.tenantScope},
         #{auditLog.result},

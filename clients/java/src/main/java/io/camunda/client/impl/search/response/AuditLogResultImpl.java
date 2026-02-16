@@ -35,6 +35,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String timestamp;
   private String actorId;
   private AuditLogActorTypeEnum actorType;
+  private String agentElementId;
   private String tenantId;
   private AuditLogResultEnum result;
   private String annotation;
@@ -68,6 +69,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     timestamp = item.getTimestamp();
     actorId = item.getActorId();
     actorType = EnumUtil.convert(item.getActorType(), AuditLogActorTypeEnum.class);
+    agentElementId = item.getAgentElementId();
     tenantId = item.getTenantId();
     result = EnumUtil.convert(item.getResult(), AuditLogResultEnum.class);
     annotation = item.getAnnotation();
@@ -167,6 +169,15 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setActorType(final AuditLogActorTypeEnum actorType) {
     this.actorType = actorType;
+  }
+
+  @Override
+  public String getAgentElementId() {
+    return agentElementId;
+  }
+
+  public void setAgentElementId(final String agentElementId) {
+    this.agentElementId = agentElementId;
   }
 
   @Override

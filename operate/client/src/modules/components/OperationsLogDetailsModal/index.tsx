@@ -57,7 +57,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
       onRequestClose={onClose}
       modalHeading={formatModalHeading(auditLog)}
       primaryButtonDisabled
-      secondaryButtonText="Close"
+      passiveModal
     >
       {auditLog.entityType !== 'BATCH' && auditLog.batchOperationKey ? (
         <ParagraphWithIcon>
@@ -103,7 +103,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
             <FirstColumn noWrap>
               <IconText>
                 <EventSchedule />
-                Time
+                Date
               </IconText>
             </FirstColumn>
             <StructuredListCell>

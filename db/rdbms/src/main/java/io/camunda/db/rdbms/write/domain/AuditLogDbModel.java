@@ -27,6 +27,7 @@ public record AuditLogDbModel(
     OffsetDateTime timestamp,
     AuditLogEntity.AuditLogActorType actorType,
     String actorId,
+    String agentElementId,
     String tenantId,
     AuditLogEntity.AuditLogTenantScope tenantScope,
     AuditLogEntity.AuditLogOperationResult result,
@@ -74,6 +75,7 @@ public record AuditLogDbModel(
         .timestamp(timestamp)
         .actorType(actorType)
         .actorId(actorId)
+        .agentElementId(agentElementId)
         .tenantId(tenantId)
         .tenantScope(tenantScope)
         .result(result)
@@ -127,6 +129,7 @@ public record AuditLogDbModel(
     private OffsetDateTime timestamp;
     private AuditLogEntity.AuditLogActorType actorType;
     private String actorId;
+    private String agentElementId;
     private String tenantId;
     private AuditLogEntity.AuditLogTenantScope tenantScope;
     private AuditLogEntity.AuditLogOperationResult result;
@@ -212,6 +215,11 @@ public record AuditLogDbModel(
 
     public Builder actorId(final String actorId) {
       this.actorId = actorId;
+      return this;
+    }
+
+    public Builder agentElementId(final String agentElementId) {
+      this.agentElementId = agentElementId;
       return this;
     }
 
@@ -355,6 +363,7 @@ public record AuditLogDbModel(
           timestamp,
           actorType,
           actorId,
+          agentElementId,
           tenantId,
           tenantScope,
           result,

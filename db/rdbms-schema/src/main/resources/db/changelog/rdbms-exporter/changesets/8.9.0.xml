@@ -1191,4 +1191,11 @@
         ON ${prefix}INCIDENT (CASE WHEN STATE = 'active' THEN STATE END)
     </sql>
   </changeSet>
+
+  <changeSet id="add_agent_element_id_to_audit_log" author="camunda">
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="AGENT_ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

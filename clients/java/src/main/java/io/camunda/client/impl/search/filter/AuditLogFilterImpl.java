@@ -212,6 +212,19 @@ public class AuditLogFilterImpl
   }
 
   @Override
+  public AuditLogFilter agentElementId(final String agentElementId) {
+    return agentElementId(b -> b.eq(agentElementId));
+  }
+
+  @Override
+  public AuditLogFilter agentElementId(final Consumer<StringProperty> fn) {
+    final StringProperty property = new StringPropertyImpl();
+    fn.accept(property);
+    filter.setAgentElementId(provideSearchRequestProperty(property));
+    return this;
+  }
+
+  @Override
   public AuditLogFilter entityType(final AuditLogEntityTypeEnum entityType) {
     return entityType(b -> b.eq(entityType));
   }

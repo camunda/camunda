@@ -19,11 +19,15 @@ import java.util.Optional;
 public interface NodeIdRepository extends AutoCloseable {
 
   /**
-   * Initialize the leases if they haven't been created yet.
+   * Initialize the leases if they haven't been created yet. The parameter initialCount is used only
+   * when bootstrapping the cluster for the first time. After that new lease objects are not created
+   * even if a different count is provided.
    *
-   * @param count the number of leases to create
+   * @param initialCount the number of leases to create
+   * @return the number of available leases after initialization. This can be different from the
+   *     provided count if the repository was already initialized before.
    */
-  void initialize(int count);
+  int initialize(int initialCount);
 
   /**
    * Get a lease without acquiring it. This can be used to verify the liveness of other nodes or
