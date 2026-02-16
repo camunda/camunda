@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC, useCallback } from "react";
+import { FC } from "react";
 import { Edit, TrashCan } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import { usePaginatedApi } from "src/utility/api";
@@ -14,6 +14,7 @@ import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
   GlobalTaskListener,
+  ListenerEventType,
   searchGlobalTaskListeners,
 } from "src/utility/api/global-task-listeners";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -43,15 +44,8 @@ const List: FC = () => {
     EditModal,
     reload,
   );
-
-  const getExecutionOrderDisplay = useCallback(
-    (afterNonGlobal: boolean) => {
-      return afterNonGlobal
-        ? t("executionOrderAfter")
-        : t("executionOrderBefore");
-    },
-    [t],
-  );
+  const [deleteGlobalTaskListener, deleteGlobalTaskListenerModal] =
+    useEntityModal(DeleteModal, reload);
 
   const shouldShowEmptyState =
     success && !search && !globalTaskListeners?.items.length;
@@ -82,8 +76,10 @@ const List: FC = () => {
   // Transform data to include display-friendly execution order and event types
   const transformedData = globalTaskListeners?.items.map((listener) => ({
     ...listener,
-    executionOrderDisplay: getExecutionOrderDisplay(listener.afterNonGlobal),
-    eventTypesDisplay: listener.eventTypes.includes("all")
+    executionOrderDisplay: listener.afterNonGlobal
+      ? t("executionOrderAfter")
+      : t("executionOrderBefore"),
+    eventTypesDisplay: listener.eventTypes.includes(ListenerEventType.ALL)
       ? t("eventTypeAll")
       : listener.eventTypes.join(", "),
   }));

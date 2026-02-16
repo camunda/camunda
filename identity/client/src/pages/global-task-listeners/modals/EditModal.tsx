@@ -14,10 +14,10 @@ import useTranslate from "src/utility/localization";
 import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import {
-  EVENT_TYPE_OPTIONS,
-  EventTypeOption,
   updateGlobalTaskListener,
   GlobalTaskListener,
+  ListenerEventType,
+  LISTENER_EVENT_TYPES,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import {
@@ -41,8 +41,8 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   );
 
   // Parse eventTypes array to form format
-  const parseEventTypes = (eventTypes: string[]): EventTypeOption[] => {
-    return eventTypes as EventTypeOption[];
+  const parseEventTypes = (eventTypes: string[]): ListenerEventType[] => {
+    return eventTypes as ListenerEventType[];
   };
 
   const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
@@ -71,29 +71,37 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
 
   const eventTypes = watch("eventTypes");
 
-  const handleEventTypeChange = (selectedItems: EventTypeOption[]) => {
-    const individualTypes = EVENT_TYPE_OPTIONS.filter((opt) => opt !== "all");
+  const handleEventTypeChange = (selectedItems: ListenerEventType[]) => {
+    const individualTypes = LISTENER_EVENT_TYPES.filter(
+      (opt) => opt !== ListenerEventType.ALL,
+    );
 
     // If "all" was just checked, select all individual types too
-    if (selectedItems.includes("all") && !eventTypes.includes("all")) {
-      setValue("eventTypes", [...EVENT_TYPE_OPTIONS]); // includes "all" and all individuals
+    if (
+      selectedItems.includes(ListenerEventType.ALL) &&
+      !eventTypes.includes(ListenerEventType.ALL)
+    ) {
+      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
       return;
     }
 
     // If "all" was just unchecked, uncheck all individual types too
-    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
+    if (
+      !selectedItems.includes(ListenerEventType.ALL) &&
+      eventTypes.includes(ListenerEventType.ALL)
+    ) {
       setValue("eventTypes", []);
       return;
     }
 
     // If an individual type was unchecked while "all" is checked, uncheck "all" too
     if (
-      eventTypes.includes("all") &&
-      selectedItems.length < EVENT_TYPE_OPTIONS.length
+      eventTypes.includes(ListenerEventType.ALL) &&
+      selectedItems.length < LISTENER_EVENT_TYPES.length
     ) {
       setValue(
         "eventTypes",
-        selectedItems.filter((item) => item !== "all"),
+        selectedItems.filter((item) => item !== ListenerEventType.ALL),
       );
       return;
     }
@@ -102,16 +110,19 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     const allIndividualSelected = individualTypes.every((type) =>
       selectedItems.includes(type),
     );
-    if (allIndividualSelected && !selectedItems.includes("all")) {
-      setValue("eventTypes", [...EVENT_TYPE_OPTIONS]); // includes "all" and all individuals
+    if (
+      allIndividualSelected &&
+      !selectedItems.includes(ListenerEventType.ALL)
+    ) {
+      setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
       return;
     }
 
     setValue("eventTypes", selectedItems);
   };
 
-  const getEventTypeLabel = (eventType: EventTypeOption): string => {
-    const labels: Record<EventTypeOption, string> = {
+  const getEventTypeLabel = (eventType: ListenerEventType): string => {
+    const labels: Record<ListenerEventType, string> = {
       all: t("eventTypeAll"),
       creating: t("eventTypeCreating"),
       updating: t("eventTypeUpdating"),
@@ -123,9 +134,9 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   };
 
   const onSubmit = async (data: FormData) => {
-    const eventTypes = data.eventTypes.includes("all")
-      ? ["all"]
-      : data.eventTypes.filter((type) => type !== "all");
+    const eventTypes = data.eventTypes.includes(ListenerEventType.ALL)
+      ? [ListenerEventType.ALL]
+      : data.eventTypes.filter((type) => type !== ListenerEventType.ALL);
 
     const { success } = await callUpdateGlobalTaskListener({
       id: entity.id,
@@ -206,21 +217,21 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
             titleText={t("eventType")}
             label={
               field.value.length > 0
-                ? field.value.includes("all")
+                ? field.value.includes(ListenerEventType.ALL)
                   ? t("eventTypeAll")
                   : field.value.map(getEventTypeLabel).join(", ")
                 : t("selectEventTypes")
             }
-            items={[...EVENT_TYPE_OPTIONS]}
+            items={[...LISTENER_EVENT_TYPES]}
             selectedItems={field.value}
             onChange={({
               selectedItems,
             }: {
-              selectedItems: EventTypeOption[];
+              selectedItems: ListenerEventType[];
             }) => {
               handleEventTypeChange(selectedItems);
             }}
-            itemToString={(item: EventTypeOption) => getEventTypeLabel(item)}
+            itemToString={(item: ListenerEventType) => getEventTypeLabel(item)}
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}
           />

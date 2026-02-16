@@ -12,14 +12,30 @@ import { PageSearchParams } from "../hooks/usePagination";
 
 export const GLOBAL_TASK_LISTENERS_ENDPOINT = "/global-listeners/user-task";
 
+export enum ListenerSource {
+  CONFIGURATION = "CONFIGURATION",
+  API = "API",
+}
+
+export enum ListenerEventType {
+  ALL = "all",
+  CREATING = "creating",
+  UPDATING = "updating",
+  ASSIGNING = "assigning",
+  COMPLETING = "completing",
+  CANCELING = "canceling",
+}
+
+export const LISTENER_EVENT_TYPES = Object.values(ListenerEventType);
+
 export type GlobalTaskListener = {
   id: string;
   type: string;
-  eventTypes: string[];
-  retries: number;
-  afterNonGlobal: boolean;
-  priority: number;
-  source?: "CONFIGURATION" | "API";
+  eventTypes: ListenerEventType[];
+  retries?: number;
+  afterNonGlobal?: boolean;
+  priority?: number;
+  source?: ListenerSource;
 };
 
 export type GlobalTaskListenerKeys =
@@ -28,17 +44,6 @@ export type GlobalTaskListenerKeys =
   | "eventTypes"
   | "retries"
   | "afterNonGlobal";
-
-export const EVENT_TYPE_OPTIONS = [
-  "all",
-  "creating",
-  "updating",
-  "assigning",
-  "completing",
-  "canceling",
-] as const;
-
-export type EventTypeOption = (typeof EVENT_TYPE_OPTIONS)[number];
 
 /*
  * TODO: Replace mock implementation with actual OC REST API calls
