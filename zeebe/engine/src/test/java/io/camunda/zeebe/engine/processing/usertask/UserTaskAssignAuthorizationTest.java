@@ -171,7 +171,7 @@ public class UserTaskAssignAuthorizationTest {
   }
 
   @Test
-  public void shouldBeAuthorizedToAssignUserTaskWithUserTaskUpdateAssigneePropertyPermission() {
+  public void shouldBeAuthorizedToReassignUserTaskWithUserTaskUpdateAssigneePropertyPermission() {
     // given
     final var user = createUser();
     final var processInstanceKey =
@@ -194,6 +194,7 @@ public class UserTaskAssignAuthorizationTest {
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
                 .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().equals("newAssignee"))
                 .exists())
         .isTrue();
   }
@@ -218,6 +219,7 @@ public class UserTaskAssignAuthorizationTest {
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
                 .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
                 .exists())
         .isTrue();
   }
@@ -410,6 +412,7 @@ public class UserTaskAssignAuthorizationTest {
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
                 .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
                 .exists())
         .isTrue();
   }
@@ -434,6 +437,7 @@ public class UserTaskAssignAuthorizationTest {
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
                 .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
                 .exists())
         .isTrue();
   }
@@ -459,6 +463,7 @@ public class UserTaskAssignAuthorizationTest {
     assertThat(
             RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
                 .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
                 .exists())
         .isTrue();
   }
