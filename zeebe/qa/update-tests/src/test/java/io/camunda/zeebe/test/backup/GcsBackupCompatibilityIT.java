@@ -18,6 +18,8 @@ import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -31,7 +33,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
-final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance {
+final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance, AfterAllCallback {
   private static final String BUCKET_NAME =
       RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   private static final Network NETWORK = Network.newNetwork();
@@ -81,5 +83,10 @@ final class GcsBackupCompatibilityIT implements BackupCompatibilityAcceptance {
     gcs.setAuth(Gcs.GcsBackupStoreAuth.NONE);
     gcs.setBucketName(BUCKET_NAME);
     gcs.setHost(GCS.externalEndpoint());
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    NETWORK.close();
   }
 }

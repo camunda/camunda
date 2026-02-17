@@ -13,6 +13,8 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.test.testcontainers.AzuriteContainer;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -25,7 +27,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  */
 @Testcontainers
 @ZeebeIntegration
-final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance {
+final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance, AfterAllCallback {
   private static final String CONTAINER_NAME =
       RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   private static final Network NETWORK = Network.newNetwork();
@@ -58,5 +60,10 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance 
     final var azure = backup.getAzure();
     azure.setConnectionString(AZURITE.externalConnectionString());
     azure.setBasePath(CONTAINER_NAME);
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    NETWORK.close();
   }
 }

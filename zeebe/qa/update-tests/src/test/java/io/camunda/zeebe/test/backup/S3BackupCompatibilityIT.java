@@ -17,14 +17,17 @@ import java.time.Duration;
 import java.util.Map;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.extension.AfterAllCallback;
+import org.junit.jupiter.api.extension.ExtensionContext;
 import org.testcontainers.containers.Network;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @Testcontainers
 @ZeebeIntegration
-final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance {
-  private static final String BUCKET_NAME = RandomStringUtils.randomAlphabetic(10).toLowerCase();
+final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, AfterAllCallback {
+  private static final String BUCKET_NAME =
+      RandomStringUtils.insecure().nextAlphabetic(10).toLowerCase();
   private static final Network NETWORK = Network.newNetwork();
 
   @Container
@@ -79,5 +82,10 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance {
     s3.setEndpoint(MINIO.externalEndpoint());
     s3.setAccessKey(MINIO.accessKey());
     s3.setForcePathStyleAccess(true);
+  }
+
+  @Override
+  public void afterAll(final ExtensionContext context) {
+    NETWORK.close();
   }
 }
