@@ -121,6 +121,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
         .isAnyAuthorizedOrInternalCommand(
             buildProcessDefinitionRequest(
                 command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
+            buildProcessDefinitionRequest(
+                command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
         .map(ignored -> persistedUserTask);

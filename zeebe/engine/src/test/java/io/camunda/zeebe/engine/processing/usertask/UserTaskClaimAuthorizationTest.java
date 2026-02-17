@@ -117,6 +117,56 @@ public class UserTaskClaimAuthorizationTest {
   }
 
   @Test
+  public void
+      shouldBeAuthorizedToClaimUserTaskWithProcessDefinitionClaimUserTaskWildcardPermission() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var username = createUser().getUsername();
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.WILDCARD);
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).withAssignee(username).claim(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().equals(username))
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void
+      shouldBeAuthorizedToClaimUserTaskWithProcessDefinitionClaimUserTaskResourceIdPermission() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var username = createUser().getUsername();
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.id(PROCESS_ID));
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).withAssignee(username).claim(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().equals(username))
+                .exists())
+        .isTrue();
+  }
+
+  @Test
   public void shouldBeAuthorizedToClaimUserTaskWithUserTaskUpdateWildcardPermission() {
     // given
     final var processInstanceKey = createProcessInstance(process());
@@ -427,9 +477,10 @@ public class UserTaskClaimAuthorizationTest {
         .hasRejectionReason(
             """
                 Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'"""
-                .formatted(PROCESS_ID, userTaskKey, userTaskKey));
+                .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
   }
 
   private UserRecordValue createUser() {
