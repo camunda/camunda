@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.GlobalListenerMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER (ID,
+                                          LISTENER_ID,
+                                          TYPE,
+                                          RETRIES,
+                                          AFTER_NON_GLOBAL,
+                                          PRIORITY,
+                                          SOURCE,
+                                          LISTENER_TYPE)
+    VALUES (#{id},
+            #{listenerId},
+            #{type},
+            #{retries},
+            #{afterNonGlobal},
+            #{priority},
+            #{source},
+            #{listenerType})
+  </insert>
+
+  <insert id="insertEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER_EVENT_TYPE (ID, EVENT_TYPE)
+    VALUES
+    <foreach collection="eventTypes" item="eventType" separator=", ">
+      (#{id}, #{eventType})
+    </foreach>
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    UPDATE ${prefix}GLOBAL_LISTENER
+    SET LISTENER_ID = #{listenerId},
+        TYPE = #{type},
+        RETRIES = #{retries},
+        AFTER_NON_GLOBAL = #{afterNonGlobal},
+        PRIORITY = #{priority},
+        SOURCE = #{source},
+        LISTENER_TYPE = #{listenerType}
+    WHERE ID = #{id}
+  </update>
+
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER
+    WHERE ID = #{id}
+  </delete>
+
+  <delete id="deleteEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER_EVENT_TYPE
+    WHERE ID = #{id}
+  </delete>
+
+</mapper>
+
