@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
+import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
@@ -19,6 +20,8 @@ import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
+import java.util.Collections;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +66,60 @@ public class JobMetricsBatchDbReader implements JobMetricsBatchReader {
   @Override
   public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
       final JobTypeStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    LOG.trace("[RDBMS DB] Search job type statistics with {}", query);
+
+    if (shouldReturnEmptyResult(resourceAccessChecks)) {
+      return emptyJobTypeStatistics();
+    }
+
+    final var dbQuery =
+        JobTypeStatisticsDbQuery.of(
+            b ->
+                b.filter(query.filter())
+                    .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
+                    .page(query.page()));
+
+    final var totalHits = jobMetricsBatchMapper.countJobTypeStatistics(dbQuery);
+
+    if (totalHits == null || totalHits == 0) {
+      return emptyJobTypeStatistics();
+    }
+
+    final var results = jobMetricsBatchMapper.jobTypeStatistics(dbQuery);
+
+    final var entities =
+        results.stream()
+            .map(
+                result ->
+                    new JobTypeStatisticsEntity(
+                        result.jobType(),
+                        new StatusMetric(
+                            ofNullable(result.createdCount()).orElse(0L), result.lastCreatedAt()),
+                        new StatusMetric(
+                            ofNullable(result.completedCount()).orElse(0L),
+                            result.lastCompletedAt()),
+                        new StatusMetric(
+                            ofNullable(result.failedCount()).orElse(0L), result.lastFailedAt()),
+                        ofNullable(result.workers()).orElse(0)))
+            .toList();
+
+    return SearchQueryResult.of(
+        f ->
+            f.total(totalHits)
+                .items(entities)
+                .sortValues(Collections.emptyList())
+                .firstSortValues(Collections.emptyList())
+                .lastSortValues(Collections.emptyList()));
+  }
+
+  private SearchQueryResult<JobTypeStatisticsEntity> emptyJobTypeStatistics() {
+    return SearchQueryResult.of(
+        f ->
+            f.total(0L)
+                .items(Collections.emptyList())
+                .sortValues(Collections.emptyList())
+                .firstSortValues(Collections.emptyList())
+                .lastSortValues(Collections.emptyList()));
   }
 
   private GlobalJobStatisticsEntity emptyGlobalJobStatistics() {
