@@ -47,6 +47,6 @@ const getActorIcon = (auditLog: AuditLog) => {
     default:
       return null;
   }
-}
+};
 
 export {formatBatchTitle, formatModalHeading, getActorIcon};
