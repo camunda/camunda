@@ -128,6 +128,8 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         .isAnyAuthorizedOrInternalCommand(
             buildProcessDefinitionRequest(
                 command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
+            buildProcessDefinitionRequest(
+                command, persistedUserTask, PermissionType.COMPLETE_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.COMPLETE))
         .map(ignored -> persistedUserTask);

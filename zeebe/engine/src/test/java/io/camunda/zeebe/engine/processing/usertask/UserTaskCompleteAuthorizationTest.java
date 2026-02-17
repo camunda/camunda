@@ -109,6 +109,54 @@ public class UserTaskCompleteAuthorizationTest {
   }
 
   @Test
+  public void
+      shouldBeAuthorizedToCompleteUserTaskWithProcessDefinitionCompleteUserTaskWildcardPermission() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var username = createUser().getUsername();
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.COMPLETE_USER_TASK,
+        AuthorizationScope.WILDCARD);
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).complete(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void
+      shouldBeAuthorizedToCompleteUserTaskWithProcessDefinitionCompleteUserTaskResourceIdPermission() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var username = createUser().getUsername();
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.COMPLETE_USER_TASK,
+        AuthorizationScope.id(PROCESS_ID));
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).complete(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.COMPLETED)
+                .withProcessInstanceKey(processInstanceKey)
+                .exists())
+        .isTrue();
+  }
+
+  @Test
   public void shouldBeAuthorizedToCompleteUserTaskWithUserTaskUpdateWildcardPermission() {
     // given
     final var processInstanceKey = createProcessInstance(process());
@@ -379,9 +427,10 @@ public class UserTaskCompleteAuthorizationTest {
         .hasRejectionReason(
             """
                 Insufficient permissions to perform operation 'UPDATE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'COMPLETE_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'UPDATE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'; \
                 and Insufficient permissions to perform operation 'COMPLETE' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]'"""
-                .formatted(PROCESS_ID, userTaskKey, userTaskKey));
+                .formatted(PROCESS_ID, PROCESS_ID, userTaskKey, userTaskKey));
   }
 
   private UserRecordValue createUser() {
