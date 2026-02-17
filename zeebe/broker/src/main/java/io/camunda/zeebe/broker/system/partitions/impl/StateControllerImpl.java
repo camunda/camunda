@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl;
 
 import static java.util.Objects.requireNonNull;
 
+import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
@@ -284,14 +285,16 @@ public class StateControllerImpl implements StateController {
               db.createSnapshot(snapshotDir.toFile());
             });
 
-    snapshotTaken.onComplete(
-        (ok, error) -> {
-          if (error != null) {
-            transientSnapshotFuture.completeExceptionally(error);
-          } else {
-            transientSnapshotFuture.complete(snapshot);
-          }
-        });
+    snapshotTaken
+        .thenApply(
+            ignored -> {
+              // After taking the snapshot, determine the highest exported position again so that we
+              // can include it in the snapshot metadata.
+              return snapshot.withMaxExportedPosition(
+                  StatePositionSupplier.getHighestExportedPosition(db));
+            },
+            concurrencyControl)
+        .onComplete(transientSnapshotFuture, concurrencyControl);
   }
 
   private record NextSnapshotId(

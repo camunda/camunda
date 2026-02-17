@@ -16,6 +16,7 @@ import java.util.Optional;
 import java.util.function.BiConsumer;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.LongArrayList;
+import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExportersState {
@@ -101,6 +102,20 @@ public final class ExportersState {
     visitExporterState(
         (exporterId, exporterStateEntry) -> positions.addLong(exporterStateEntry.getPosition()));
     return positions.longStream().min().orElse(-1L);
+  }
+
+  /**
+   * Return highest position of all exporters or {@link Long#MIN_VALUE} if no exporters are present.
+   */
+  public long getHighestPosition() {
+    final var max = new MutableLong(Long.MIN_VALUE);
+    visitExporterState(
+        (exporterId, exporterStateEntry) -> {
+          if (max.longValue() < exporterStateEntry.getPosition()) {
+            max.set(exporterStateEntry.getPosition());
+          }
+        });
+    return max.get();
   }
 
   public void removeExporterState(final String exporterId) {

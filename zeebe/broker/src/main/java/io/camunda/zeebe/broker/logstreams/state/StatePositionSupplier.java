@@ -14,13 +14,17 @@ import io.camunda.zeebe.db.ZeebeDb;
 public final class StatePositionSupplier {
   private StatePositionSupplier() {}
 
-  public static long getHighestExportedPosition(final ZeebeDb zeebeDb) {
+  public static long getLowestExportedPosition(final ZeebeDb zeebeDb) {
     final var exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
     if (exporterState.hasExporters()) {
       return exporterState.getLowestPosition();
     } else {
       return Long.MAX_VALUE;
     }
+  }
+
+  public static long getHighestExportedPosition(final ZeebeDb zeebeDb) {
+    return new ExportersState(zeebeDb, zeebeDb.createContext()).getHighestPosition();
   }
 
   public static long getHighestBackupPosition(final ZeebeDb zeebeDb) {
