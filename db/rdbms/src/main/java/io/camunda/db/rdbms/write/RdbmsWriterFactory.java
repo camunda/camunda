@@ -16,6 +16,7 @@ import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
@@ -60,6 +61,7 @@ public class RdbmsWriterFactory {
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper;
   private final ClusterVariableMapper clusterVariableMapper;
   private final HistoryDeletionMapper historyDeletionMapper;
+  private final GlobalListenerMapper globalListenerMapper;
 
   public RdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
@@ -85,7 +87,8 @@ public class RdbmsWriterFactory {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final GlobalListenerMapper globalListenerMapper) {
     this.sqlSessionFactory = sqlSessionFactory;
     this.exporterPositionMapper = exporterPositionMapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -110,6 +113,7 @@ public class RdbmsWriterFactory {
     this.correlatedMessageSubscriptionMapper = correlatedMessageSubscriptionMapper;
     this.clusterVariableMapper = clusterVariableMapper;
     this.historyDeletionMapper = historyDeletionMapper;
+    this.globalListenerMapper = globalListenerMapper;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {
@@ -146,6 +150,7 @@ public class RdbmsWriterFactory {
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
-        historyDeletionMapper);
+        historyDeletionMapper,
+        globalListenerMapper);
   }
 }

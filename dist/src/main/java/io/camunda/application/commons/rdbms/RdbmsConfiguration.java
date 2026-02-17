@@ -63,6 +63,7 @@ import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -371,7 +372,8 @@ public class RdbmsConfiguration {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final GlobalListenerMapper globalListenerMapper) {
     return new RdbmsWriterFactory(
         sqlSessionFactory,
         exporterPositionMapper,
@@ -396,7 +398,8 @@ public class RdbmsConfiguration {
         messageSubscriptionMapper,
         correlatedMessageSubscriptionMapper,
         clusterVariableMapper,
-        historyDeletionMapper);
+        historyDeletionMapper,
+        globalListenerMapper);
   }
 
   @Bean

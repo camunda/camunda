@@ -15,6 +15,7 @@ import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
@@ -40,6 +41,7 @@ import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.GlobalListenerWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
@@ -100,7 +102,8 @@ public class RdbmsWriters {
       final MessageSubscriptionMapper messageSubscriptionMapper,
       final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper,
       final ClusterVariableMapper clusterVariableMapper,
-      final HistoryDeletionMapper historyDeletionMapper) {
+      final HistoryDeletionMapper historyDeletionMapper,
+      final GlobalListenerMapper globalListenerMapper) {
     this.executionQueue = executionQueue;
     this.exporterPositionService = exporterPositionService;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
@@ -171,6 +174,8 @@ public class RdbmsWriters {
     writers.put(
         HistoryDeletionWriter.class,
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
+    writers.put(
+        GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue, globalListenerMapper));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
