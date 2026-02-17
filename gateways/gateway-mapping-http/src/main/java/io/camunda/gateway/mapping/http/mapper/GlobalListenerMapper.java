@@ -46,6 +46,20 @@ public class GlobalListenerMapper {
         });
   }
 
+  public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerGetRequest(
+      final String id) {
+    return RequestMapper.getResult(
+        requestValidator.validateGetRequest(id),
+        () -> {
+          final var record = new GlobalListenerRecord();
+          // Ensure basic data for a task listener request is set
+          fillDataFromGlobalTaskListenerRequest(record, new GlobalTaskListenerBase());
+          // Add ID from the actual request
+          record.setId(id);
+          return record;
+        });
+  }
+
   public Either<ProblemDetail, GlobalListenerRecord> toGlobalTaskListenerUpdateRequest(
       final String id, final UpdateGlobalTaskListenerRequest request) {
     return RequestMapper.getResult(

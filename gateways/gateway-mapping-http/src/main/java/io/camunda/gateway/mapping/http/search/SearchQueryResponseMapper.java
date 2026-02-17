@@ -54,6 +54,10 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryResult;
 import io.camunda.gateway.protocol.model.GroupClientResult;
 import io.camunda.gateway.protocol.model.GroupClientSearchResult;
 import io.camunda.gateway.protocol.model.GroupResult;
@@ -146,6 +150,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -1577,6 +1582,34 @@ public final class SearchQueryResponseMapper {
     return new StatusMetric()
         .count(metric.count())
         .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
+  }
+
+  public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
+      final SearchQueryResult<GlobalListenerEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GlobalTaskListenerSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    entities ->
+                        entities.stream()
+                            .map(SearchQueryResponseMapper::toGlobalTaskListenerResult)
+                            .toList())
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalTaskListenerResult toGlobalTaskListenerResult(
+      final GlobalListenerEntity entity) {
+    return new GlobalTaskListenerResult()
+        .id(entity.listenerId())
+        .type(entity.type())
+        .retries(entity.retries())
+        .eventTypes(
+            entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
+        .afterNonGlobal(entity.afterNonGlobal())
+        .priority(entity.priority())
+        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens

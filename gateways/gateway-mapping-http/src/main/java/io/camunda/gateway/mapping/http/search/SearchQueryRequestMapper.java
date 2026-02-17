@@ -21,6 +21,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -35,6 +36,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
@@ -838,6 +840,23 @@ public final class SearchQueryRequestMapper {
         sort,
         page,
         SearchQueryBuilders::incidentProcessInstanceStatisticsByDefinitionQuery);
+  }
+
+  public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQuery(
+      final GlobalTaskListenerSearchQueryRequest request) {
+    if (request == null) {
+      return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
+    }
+    final var page = SearchQueryRequestMapper.toSearchQueryPage(request.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromGlobalTaskListenerSearchQuerySortRequest(
+                request.getSort()),
+            SortOptionBuilders::globalListener,
+            SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
+    final GlobalListenerFilter filter =
+        SearchQueryFilterMapper.toGlobalTaskListenerFilter(request.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

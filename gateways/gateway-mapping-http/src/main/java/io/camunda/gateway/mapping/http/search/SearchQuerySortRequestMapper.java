@@ -19,6 +19,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
@@ -255,6 +256,12 @@ public class SearchQuerySortRequestMapper {
               IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest.FieldEnum>>
       fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
           final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
+    return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<SearchQuerySortRequest<GlobalTaskListenerSearchQuerySortRequest.FieldEnum>>
+      fromGlobalTaskListenerSearchQuerySortRequest(
+          final List<GlobalTaskListenerSearchQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
@@ -928,6 +935,25 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case TENANT_ID -> builder.tenantId();
         case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyGlobalTaskListenerSortField(
+      final GlobalTaskListenerSearchQuerySortRequest.FieldEnum field,
+      final GlobalListenerSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ID -> builder.listenerId();
+        case TYPE -> builder.type();
+        case AFTER_NON_GLOBAL -> builder.afterNonGlobal();
+        case PRIORITY -> builder.priority();
+        case SOURCE -> builder.source();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }
