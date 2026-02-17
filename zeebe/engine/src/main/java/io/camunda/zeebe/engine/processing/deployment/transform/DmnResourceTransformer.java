@@ -81,9 +81,9 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
     if (parsedDrg.isValid()) {
       return checkForDuplicateIds(resource, parsedDrg, deployment)
-          .flatMap(valid -> checkDrdIdNameLength(parsedDrg))
-          .flatMap(valid -> checkDecisionIdLength(parsedDrg))
-          .flatMap(valid -> checkDecisionNameLength(parsedDrg))
+          .flatMap(valid -> checkDrdIdNameLength(resource, parsedDrg))
+          .flatMap(valid -> checkDecisionIdLength(resource, parsedDrg))
+          .flatMap(valid -> checkDecisionNameLength(resource, parsedDrg))
           .map(
               valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
@@ -226,7 +226,8 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         .orElse(NO_VALIDATION_ERROR);
   }
 
-  private Either<Failure, ?> checkDrdIdNameLength(final ParsedDecisionRequirementsGraph parsedDrg) {
+  private Either<Failure, ?> checkDrdIdNameLength(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     final var decisionRequirementsId = parsedDrg.getId();
     final var decisionRequirementsName = parsedDrg.getName();
 
@@ -234,15 +235,19 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
         && decisionRequirementsId.length() > engineConfiguration.getMaxIdFieldLength()) {
       final var failureMessage =
           String.format(
-              "The ID of a DRD must not be longer than the configured max-id-length of %s characters",
-              engineConfiguration.getMaxIdFieldLength());
+              "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+              engineConfiguration.getMaxIdFieldLength(),
+              decisionRequirementsId,
+              resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     } else if (decisionRequirementsName != null
         && decisionRequirementsName.length() > engineConfiguration.getMaxNameFieldLength()) {
       final var failureMessage =
           String.format(
-              "The name of a DRD must not be longer than the configured max-id-length of %s characters",
-              engineConfiguration.getMaxNameFieldLength());
+              "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
+              engineConfiguration.getMaxNameFieldLength(),
+              decisionRequirementsName,
+              resource.getResourceName());
       return Either.left(new Failure(failureMessage));
     } else {
       return NO_VALIDATION_ERROR;
@@ -250,7 +255,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   }
 
   private Either<Failure, ?> checkDecisionIdLength(
-      final ParsedDecisionRequirementsGraph parsedDrg) {
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     return parsedDrg.getDecisions().stream()
         .map(ParsedDecision::getId)
         .filter(id -> id != null && id.length() > engineConfiguration.getMaxIdFieldLength())
@@ -260,13 +265,15 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 Either.left(
                     new Failure(
                         String.format(
-                            "The ID of a decision must not be longer than the configured max-id-length of %s characters",
-                            engineConfiguration.getMaxIdFieldLength()))))
+                            "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                            engineConfiguration.getMaxIdFieldLength(),
+                            id,
+                            resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);
   }
 
   private Either<Failure, ?> checkDecisionNameLength(
-      final ParsedDecisionRequirementsGraph parsedDrg) {
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
     return parsedDrg.getDecisions().stream()
         .map(ParsedDecision::getName)
         .filter(name -> name != null && name.length() > engineConfiguration.getMaxNameFieldLength())
@@ -276,8 +283,10 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                 Either.left(
                     new Failure(
                         String.format(
-                            "The name of a decision must not be longer than the configured max-name-length of %s characters",
-                            engineConfiguration.getMaxNameFieldLength()))))
+                            "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
+                            engineConfiguration.getMaxNameFieldLength(),
+                            name,
+                            resource.getResourceName()))))
         .orElse(NO_VALIDATION_ERROR);
   }
 

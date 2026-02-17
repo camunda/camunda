@@ -644,8 +644,8 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a DRD must not be longer than the configured max-id-length of %s characters",
-                MAX_ID_FIELD_LENGTH));
+                "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_requirements_graph' in resource '%s'",
+                MAX_ID_FIELD_LENGTH, DRG_ID_LENGTH_EXCEEDED));
   }
 
   @Test
@@ -667,8 +667,8 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a DRD must not be longer than the configured max-id-length of %s characters",
-                MAX_ID_FIELD_LENGTH));
+                "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was 'This is a very long name for a decision requirements graph' in DRG '%s'",
+                MAX_NAME_FIELD_LENGTH, DRG_NAME_LENGTH_EXCEEDED));
   }
 
   @Test
@@ -690,8 +690,8 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a decision must not be longer than the configured max-id-length of %s characters",
-                MAX_ID_FIELD_LENGTH));
+                "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision1' in resource '%s'",
+                MAX_ID_FIELD_LENGTH, DECISION_ID_LENGTH_EXCEEDED));
   }
 
   @Test
@@ -713,8 +713,8 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a decision must not be longer than the configured max-name-length of %s characters",
-                MAX_NAME_FIELD_LENGTH));
+                "The name of a decision must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision table' in resource '%s'",
+                MAX_NAME_FIELD_LENGTH, DECISION_NAME_LENGTH_EXCEEDED));
   }
 
   private byte[] getChecksum(final String resourceName) {
