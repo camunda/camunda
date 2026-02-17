@@ -397,6 +397,11 @@ public class ResourceDeletionDeleteProcessor
 
   private void deleteHistory(
       final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
+    if (command.isCommandDistributed()) {
+      // We should not create batch operations for distributed commands. This gets handled by the
+      // batch operation creator itself.
+      return;
+    }
     final var commandValue = command.getValue();
     final var resourceType = commandValue.getResourceType();
 
