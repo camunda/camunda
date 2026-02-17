@@ -7,6 +7,11 @@
  */
 package io.camunda.service;
 
+import static io.camunda.search.query.SearchQueryBuilders.decisionRequirementsSearchQuery;
+import static io.camunda.search.query.SearchQueryBuilders.processDefinitionSearchQuery;
+
+import io.camunda.search.clients.DecisionRequirementSearchClient;
+import io.camunda.search.clients.ProcessDefinitionSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -17,23 +22,31 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerFetchResourceRequest;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class ResourceServices extends ApiServices<ResourceServices> {
+
+  private final ProcessDefinitionSearchClient processDefinitionSearchClient;
+  private final DecisionRequirementSearchClient decisionRequirementSearchClient;
 
   public ResourceServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
     super(
         brokerClient,
         securityContextProvider,
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
+    this.processDefinitionSearchClient = processDefinitionSearchClient;
+    this.decisionRequirementSearchClient = decisionRequirementSearchClient;
   }
 
   @Override
@@ -43,7 +56,9 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         securityContextProvider,
         authentication,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        processDefinitionSearchClient,
+        decisionRequirementSearchClient);
   }
 
   public CompletableFuture<DeploymentRecord> deployResources(
@@ -60,6 +75,43 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         new BrokerDeleteResourceRequest()
             .setResourceKey(request.resourceKey())
             .setDeleteHistory(request.deleteHistory());
+
+    // TODO extract to method and add javadoc explaining why we do this
+    if (request.deleteHistory()) {
+      final var processDefinition =
+          processDefinitionSearchClient
+              .withSecurityContext(
+                  securityContextProvider.provideSecurityContext(CamundaAuthentication.anonymous()))
+              .searchProcessDefinitions(
+                  processDefinitionSearchQuery()
+                      .filter(f -> f.processDefinitionKeys(request.resourceKey()))
+                      .build())
+              .items();
+      if (!processDefinition.isEmpty()) {
+        brokerRequest
+            .setResourceType(ResourceType.PROCESS_DEFINITION)
+            .setResourceId(processDefinition.getFirst().processDefinitionId())
+            .setTenantId(processDefinition.getFirst().tenantId());
+      } else {
+        final var decisionRequirements =
+            decisionRequirementSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        CamundaAuthentication.anonymous()))
+                .searchDecisionRequirements(
+                    decisionRequirementsSearchQuery()
+                        .filter(f -> f.decisionRequirementsKeys(request.resourceKey))
+                        .build())
+                .items();
+        if (!decisionRequirements.isEmpty()) {
+          brokerRequest
+              .setResourceType(ResourceType.DECISION_REQUIREMENTS)
+              .setResourceId(decisionRequirements.getFirst().decisionRequirementsId())
+              .setTenantId(decisionRequirements.getFirst().tenantId());
+        }
+      }
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }

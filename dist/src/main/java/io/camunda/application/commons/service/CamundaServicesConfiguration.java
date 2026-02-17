@@ -485,13 +485,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
         null,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        processDefinitionSearchClient,
+        decisionRequirementSearchClient);
   }
 
   @Bean
