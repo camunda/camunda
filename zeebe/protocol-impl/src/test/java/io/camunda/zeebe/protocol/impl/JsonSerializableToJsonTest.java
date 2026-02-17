@@ -107,6 +107,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -2568,7 +2569,9 @@ final class JsonSerializableToJsonTest {
                   .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                   .setDeleteHistory(true)
                   .setBatchOperationKey(batchOperationKey)
-                  .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+                  .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+                  .setResourceType(ResourceType.PROCESS_DEFINITION)
+                  .setResourceId("foo");
             },
         """
                 {
@@ -2576,7 +2579,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "deleteHistory": true,
                   "batchOperationKey": 2,
-                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE",
+                  "resourceType": "PROCESS_DEFINITION",
+                  "resourceId": "foo"
                 }
                 """
       },
@@ -2596,7 +2601,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "deleteHistory": false,
                   "batchOperationKey": -1,
-                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE",
+                  "resourceType": "UNKNOWN",
+                  "resourceId": ""
                 }
                 """
       },
