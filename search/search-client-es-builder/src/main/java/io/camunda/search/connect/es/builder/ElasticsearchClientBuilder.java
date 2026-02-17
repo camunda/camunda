@@ -79,6 +79,12 @@ import org.slf4j.LoggerFactory;
  */
 public final class ElasticsearchClientBuilder {
 
+  /**
+   * The compatibility version sent via Accept/Content-Type headers. All clients always send {@code
+   * compatible-with=9} to ensure correct communication with Elasticsearch.
+   */
+  static final int COMPATIBILITY_VERSION = 9;
+
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
 
   // Connection
@@ -99,13 +105,6 @@ public final class ElasticsearchClientBuilder {
   // Timeouts
   private Integer connectTimeoutMs;
   private Integer socketTimeoutMs;
-
-  // ES compatibility headers — always sent with version 9
-  /**
-   * The compatibility version sent via Accept/Content-Type headers. All clients always send {@code
-   * compatible-with=9} to ensure correct communication with Elasticsearch.
-   */
-  static final int COMPATIBILITY_VERSION = 9;
 
   // HTTP tuning
   private Integer ioThreadCount;
