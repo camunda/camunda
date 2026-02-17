@@ -163,6 +163,7 @@ public class GatewayBasedPropertiesOverride {
 
   private void populateFromCluster(final GatewayBasedProperties override) {
     populateFromClusterNetwork(override);
+    populateFromClusterId(override);
     // Rest of camunda.cluster.* sections
   }
 
@@ -171,5 +172,11 @@ public class GatewayBasedPropertiesOverride {
         unifiedConfiguration.getCamunda().getCluster().getNetwork().withGatewayNetworkProperties();
 
     override.getCluster().setHost(network.getHost());
+  }
+
+  private void populateFromClusterId(final GatewayBasedProperties override) {
+    override
+        .getCluster()
+        .setMemberId(unifiedConfiguration.getCamunda().getCluster().getMemberId());
   }
 }

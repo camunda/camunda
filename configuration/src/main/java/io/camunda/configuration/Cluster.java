@@ -19,6 +19,7 @@ public class Cluster {
   private static final String LEGACY_REPLICATION_FACTOR_PROPERTY =
       "zeebe.broker.cluster.replicationFactor";
   private static final String LEGACY_SIZE_PROPERTY = "zeebe.broker.cluster.clusterSize";
+  private static final String LEGACY_MEMBER_ID_PROPERTY = "zeebe.gateway.cluster.memberId";
 
   /** Configuration for the distributed metadata manager in the cluster. */
   private Metadata metadata = new Metadata();
@@ -43,6 +44,12 @@ public class Cluster {
 
   /** The number of nodes in the cluster. */
   private int size = 1;
+
+  /**
+   * The member id of this gateway node in the cluster. Only relevant for standalone gateway
+   * deployments.
+   */
+  private String memberId = "gateway";
 
   /** Configuration for the Raft protocol in the cluster. */
   private Raft raft = new Raft();
@@ -113,6 +120,19 @@ public class Cluster {
 
   public void setSize(final int size) {
     this.size = size;
+  }
+
+  public String getMemberId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".member-id",
+        memberId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_MEMBER_ID_PROPERTY));
+  }
+
+  public void setMemberId(final String memberId) {
+    this.memberId = memberId;
   }
 
   public Raft getRaft() {
