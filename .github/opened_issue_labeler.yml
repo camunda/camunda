@@ -26,6 +26,8 @@ component/tasklist:
   '(Tasklist-)'
 component/zeebe:
   '(Zeebe-)'
+needs component label:
+  '(Not sure-)'
 severity/critical:
   '(Critical-)'
 severity/high:
