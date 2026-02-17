@@ -7,16 +7,24 @@
  */
 package io.camunda.zeebe.gateway.rest.controller;
 
+import static io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper.mapErrorToResponse;
+
 import io.camunda.gateway.mapping.http.mapper.GlobalListenerMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
+import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mapping.http.validator.GlobalListenerRequestValidator;
 import io.camunda.gateway.protocol.model.CreateGlobalTaskListenerRequest;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryRequest;
 import io.camunda.gateway.protocol.model.UpdateGlobalTaskListenerRequest;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.service.GlobalListenerServices;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaDeleteMapping;
+import io.camunda.zeebe.gateway.rest.annotation.CamundaGetMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPostMapping;
 import io.camunda.zeebe.gateway.rest.annotation.CamundaPutMapping;
+import io.camunda.zeebe.gateway.rest.annotation.RequiresSecondaryStorage;
 import io.camunda.zeebe.gateway.rest.mapper.RequestExecutor;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
@@ -55,6 +63,14 @@ public class GlobalListenerController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::createGlobalListener);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaGetMapping(path = TASK_LISTENER_PATH + "/{id}")
+  public ResponseEntity<Object> getGlobalTaskListener(@PathVariable("id") final String id) {
+    return globalListenerMapper
+        .toGlobalTaskListenerGetRequest(id)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalListener);
+  }
+
   @CamundaPutMapping(path = TASK_LISTENER_PATH + "/{id}")
   public CompletableFuture<ResponseEntity<Object>> updateGlobalTaskListener(
       @PathVariable("id") final String id,
@@ -83,6 +99,27 @@ public class GlobalListenerController {
         HttpStatus.CREATED);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = TASK_LISTENER_PATH + "/search")
+  private ResponseEntity<Object> search(
+      @RequestBody(required = false) final GlobalTaskListenerSearchQueryRequest request) {
+    return SearchQueryRequestMapper.toGlobalTaskListenerQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::search);
+  }
+
+  private ResponseEntity<Object> getGlobalListener(final GlobalListenerRecord request) {
+    try {
+      return ResponseEntity.ok()
+          .body(
+              SearchQueryResponseMapper.toGlobalTaskListenerResult(
+                  globalListenerServices
+                      .withAuthentication(authenticationProvider.getCamundaAuthentication())
+                      .getGlobalTaskListener(request)));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
   private CompletableFuture<ResponseEntity<Object>> updateGlobalListener(
       final GlobalListenerRecord request) {
     return RequestExecutor.executeServiceMethod(
@@ -101,5 +138,18 @@ public class GlobalListenerController {
             globalListenerServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteGlobalListener(request));
+  }
+
+  private ResponseEntity<Object> search(final GlobalListenerQuery query) {
+    try {
+      final var result =
+          globalListenerServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .search(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
   }
 }
