@@ -2059,7 +2059,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /process-instances/incident-resolution:
     post:
       tags:
@@ -2098,7 +2098,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /process-instances/migration:
     post:
       tags:
@@ -2137,7 +2137,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /process-instances/modification:
     post:
       tags:
@@ -2178,7 +2178,7 @@ paths:
           $ref: "#/components/responses/Forbidden"
         "500":
           $ref: "#/components/responses/InternalServerError"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /process-instances/{processInstanceKey}/migration:
     post:
       tags:
@@ -4770,7 +4770,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /users/search:
     post:
       tags:
@@ -4864,9 +4864,9 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
     put:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - User
       operationId: updateUser
@@ -4936,7 +4936,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /incidents/search:
     post:
       tags:
@@ -5456,7 +5456,7 @@ paths:
                 $ref: "#/components/schemas/ProblemDetail"
         "500":
           $ref: "#/components/responses/InternalServerError"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /batch-operations/{batchOperationKey}/suspension:
     post:
       tags:
@@ -5496,7 +5496,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /batch-operations/{batchOperationKey}/resumption:
     post:
       tags:
@@ -5536,7 +5536,7 @@ paths:
           $ref: "#/components/responses/InternalServerError"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
-      x-eventually-consistent: true
+      x-eventually-consistent: false
   /batch-operation-items/search:
     post:
       tags:
