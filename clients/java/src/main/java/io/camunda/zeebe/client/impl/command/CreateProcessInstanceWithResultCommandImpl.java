@@ -82,6 +82,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
     this.requestTimeout = requestTimeout;
     grpcRequestObject.setRequestTimeout(requestTimeout.toMillis());
     httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
+    httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     return this;
   }
 
