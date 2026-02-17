@@ -40,7 +40,7 @@ public record JobTypeStatisticsQuery(JobTypeStatisticsFilter filter, SearchQuery
 
   @Override
   public AggregationBase aggregation() {
-    return new JobTypeStatisticsAggregation();
+    return new JobTypeStatisticsAggregation(page);
   }
 
   public static final class Builder

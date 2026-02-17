@@ -9,10 +9,12 @@ package io.camunda.search.clients.transformers.aggregation;
 
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_BY_TYPE;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_COMPLETED;
+import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_COMPOSITE_SIZE;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_COUNT;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_CREATED;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_FAILED;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_LAST_UPDATED_AT;
+import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_SOURCE_NAME_JOB_TYPE;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_WORKERS;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_COMPLETED_COUNT;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_CREATED_COUNT;
@@ -23,6 +25,7 @@ import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_L
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_LAST_FAILED_AT;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_WORKER;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.cardinality;
+import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.composite;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.filter;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.max;
 import static io.camunda.search.clients.aggregator.SearchAggregatorBuilders.sum;
@@ -32,8 +35,10 @@ import static io.camunda.search.clients.query.SearchQueryBuilders.matchAll;
 import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Optional;
 
 public class JobTypeStatisticsAggregationTransformer
     implements AggregationTransformer<JobTypeStatisticsAggregation> {
@@ -41,6 +46,8 @@ public class JobTypeStatisticsAggregationTransformer
   @Override
   public List<SearchAggregator> apply(
       final Tuple<JobTypeStatisticsAggregation, ServiceTransformers> value) {
+    
+    final var aggregation = value.getLeft();
 
     // Created filter bucket with count and lastUpdatedAt sub-aggregations
     final var createdAgg =
@@ -75,11 +82,24 @@ public class JobTypeStatisticsAggregationTransformer
     // Cardinality aggregation to count distinct workers
     final var workersAgg = cardinality(AGGREGATION_WORKERS, FIELD_WORKER);
 
-    // Terms aggregation by job type with sub-aggregations for metrics
-    final var byTypeAgg =
+    // Terms source for composite aggregation by job type
+    final var byJobTypeSource =
         terms()
-            .name(AGGREGATION_BY_TYPE)
+            .name(AGGREGATION_SOURCE_NAME_JOB_TYPE)
             .field(FIELD_JOB_TYPE)
+            .build();
+
+    // Composite aggregation for pagination support
+    final var page = aggregation.page();
+    final var byTypeAgg =
+        composite()
+            .name(AGGREGATION_BY_TYPE)
+            .size(
+                Optional.ofNullable(page)
+                    .map(SearchQueryPage::size)
+                    .orElse(AGGREGATION_COMPOSITE_SIZE))
+            .after(Optional.ofNullable(page).map(SearchQueryPage::after).orElse(null))
+            .sources(List.of(byJobTypeSource))
             .aggregations(createdAgg, completedAgg, failedAgg, workersAgg)
             .build();
 

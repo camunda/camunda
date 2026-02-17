@@ -7,10 +7,20 @@
  */
 package io.camunda.search.aggregation;
 
-public class JobTypeStatisticsAggregation implements AggregationBase {
+import io.camunda.search.page.SearchQueryPage;
+import io.camunda.search.query.AggregationPaginated;
+
+public record JobTypeStatisticsAggregation(SearchQueryPage page)
+    implements AggregationBase, AggregationPaginated {
 
   // Composite aggregation name
   public static final String AGGREGATION_BY_TYPE = "byType";
+  
+  // Composite aggregation source name
+  public static final String AGGREGATION_SOURCE_NAME_JOB_TYPE = "jobType";
+  
+  // Default size for composite aggregation
+  public static final int AGGREGATION_COMPOSITE_SIZE = 10000;
 
   // Filter bucket names (within each job type bucket)
   public static final String AGGREGATION_CREATED = "created";

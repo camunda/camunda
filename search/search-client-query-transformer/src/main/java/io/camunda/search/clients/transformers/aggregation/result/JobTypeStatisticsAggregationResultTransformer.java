@@ -35,7 +35,7 @@ public class JobTypeStatisticsAggregationResultTransformer
 
     final var byTypeAgg = aggregations.get(AGGREGATION_BY_TYPE);
     if (byTypeAgg == null || byTypeAgg.aggregations() == null) {
-      return new JobTypeStatisticsAggregationResult(Collections.emptyList());
+      return new JobTypeStatisticsAggregationResult(Collections.emptyList(), null);
     }
 
     final var perTypeBuckets = byTypeAgg.aggregations();
@@ -67,7 +67,7 @@ public class JobTypeStatisticsAggregationResultTransformer
             .filter(item -> item != null)
             .toList();
 
-    return new JobTypeStatisticsAggregationResult(items);
+    return new JobTypeStatisticsAggregationResult(items, byTypeAgg.endCursor());
   }
 
   private StatusMetric extractStatusMetric(
