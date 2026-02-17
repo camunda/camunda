@@ -132,7 +132,10 @@ public final class SearchQueryRequestMapper {
       toJobTypeStatisticsQuery(
           final io.camunda.gateway.protocol.model.JobTypeStatisticsQuery request) {
     if (request == null) {
-      return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
+      final var problem =
+          RequestValidator.createProblemDetail(
+              List.of("JobTypeStatisticsQuery request body must not be null"));
+      return Either.left(problem.get());
     }
     final Either<List<String>, SearchQueryPage> page =
         request.getPage() == null
