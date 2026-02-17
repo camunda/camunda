@@ -57,6 +57,7 @@ public class CreateProcessInstanceWithResultRestTest extends ClientRestTest {
         gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
     assertThat(request.getVariables()).isEmpty();
     assertThat(request.getProcessDefinitionKey()).isEqualTo("123");
+    assertThat(request.getRequestTimeout()).isEqualTo(123000L);
   }
 
   @Test
