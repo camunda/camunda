@@ -465,4 +465,62 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Move/)).toBeInTheDocument();
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
+
+  it('should display message when there are multiple instances and hide when specific instance is selected', async () => {
+    const {unmount} = renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
+    ]);
+
+    expect(
+      await screen.findByText(/To modify a specific instance/i),
+    ).toBeInTheDocument();
+
+    unmount();
+
+    mockFetchElementInstance('some-instance-key').withSuccess({
+      elementInstanceKey: 'some-instance-key',
+      elementId: 'service-task-1',
+      elementName: 'Service Task 1',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    mockFetchProcessInstance().withSuccess({
+      processInstanceKey: 'instance_id',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionKey: '2',
+      processDefinitionVersion: 1,
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      processDefinitionName: 'someProcessName',
+      hasIncident: false,
+    });
+
+    mockFetchProcessDefinitionXml().withSuccess(
+      open('diagramForModifications.bpmn'),
+    );
+
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statisticsData,
+    });
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1&elementInstanceKey=some-instance-key`,
+    ]);
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('dropdown-spinner'),
+    );
+
+    expect(
+      screen.queryByText(/To modify a specific instance/i),
+    ).not.toBeInTheDocument();
+  });
 });

@@ -7,22 +7,25 @@
  */
 package io.camunda.zeebe.engine.processing.globallistener;
 
-import io.camunda.zeebe.engine.processing.ExcludeAuthorizationCheck;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
+import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.distribution.DistributionQueue;
 import io.camunda.zeebe.engine.state.globallistener.GlobalListenersState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 
-@ExcludeAuthorizationCheck
 public final class GlobalListenerUpdateProcessor
     implements DistributedTypedRecordProcessor<GlobalListenerRecord> {
 
@@ -31,6 +34,7 @@ public final class GlobalListenerUpdateProcessor
   private final CommandDistributionBehavior distributionBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final GlobalListenersState globalListenersState;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public GlobalListenerUpdateProcessor(
       final KeyGenerator keyGenerator,
@@ -43,6 +47,7 @@ public final class GlobalListenerUpdateProcessor
     this.distributionBehavior = distributionBehavior;
     this.authCheckBehavior = authCheckBehavior;
     globalListenersState = processingState.getGlobalListenersState();
+    globalListenerValidator = new GlobalListenerValidator();
   }
 
   @Override
@@ -55,25 +60,62 @@ public final class GlobalListenerUpdateProcessor
       return;
     }
 
-    final long key = keyGenerator.nextKey();
-    writers.state().appendFollowUpEvent(key, GlobalListenerIntent.UPDATED, validRecord.get());
+    final var record = validRecord.get();
+    // Generate a key for the new configuration after the listener update
+    final long configKey = keyGenerator.nextKey();
+    record.setConfigKey(configKey);
 
+    emitChangeEvents(record);
+
+    writers
+        .response()
+        .writeEventOnCommand(
+            record.getGlobalListenerKey(), GlobalListenerIntent.UPDATED, record, command);
+
+    // Note: the configuration key is used as the command key for distribution, ensuring
+    // configuration changes are applied in order
     distributionBehavior
-        .withKey(key)
+        .withKey(configKey)
         .inQueue(DistributionQueue.GLOBAL_LISTENERS.getQueueId())
         .distribute(command);
   }
 
   @Override
   public void processDistributedCommand(final TypedRecord<GlobalListenerRecord> command) {
-    writers
-        .state()
-        .appendFollowUpEvent(command.getKey(), GlobalListenerIntent.UPDATED, command.getValue());
+    emitChangeEvents(command.getValue());
     distributionBehavior.acknowledgeCommand(command);
   }
 
   private Either<Rejection, GlobalListenerRecord> validateCommand(
       final TypedRecord<GlobalListenerRecord> command) {
-    return Either.right(command.getValue());
+
+    final AuthorizationRequest authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.GLOBAL_LISTENER)
+            .permissionType(PermissionType.UPDATE_TASK_LISTENER)
+            .build();
+    return authCheckBehavior
+        .isAuthorizedOrInternalCommand(authRequest)
+        .map(unused -> command.getValue())
+        .flatMap(globalListenerValidator::idProvided)
+        .flatMap(
+            record -> globalListenerValidator.resolveExistingListener(record, globalListenersState))
+        .flatMap(globalListenerValidator::typeProvided)
+        .flatMap(globalListenerValidator::eventTypesProvided)
+        .flatMap(globalListenerValidator::validEventTypes);
+  }
+
+  private void emitChangeEvents(final GlobalListenerRecord record) {
+    writers
+        .state()
+        .appendFollowUpEvent(record.getGlobalListenerKey(), GlobalListenerIntent.UPDATED, record);
+    writers
+        .state()
+        .appendFollowUpEvent(
+            record.getConfigKey(),
+            GlobalListenerBatchIntent.CONFIGURED,
+            new GlobalListenerBatchRecord()
+                .setGlobalListenerBatchKey(record.getGlobalListenerKey()));
   }
 }

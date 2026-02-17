@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,6 +49,19 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
   public Either<Exception, List<ClusterConfigurationChangeOperation>> operations(
       final ClusterConfiguration clusterConfiguration) {
     generatedOperations.clear();
+
+    if (!clusterConfiguration.members().keySet().equals(members)) {
+      // Could be any broker, we simply select the first member.
+      final var coordinatorId =
+          clusterConfiguration.members().keySet().stream()
+              .findFirst()
+              .orElseThrow(
+                  () ->
+                      new IllegalArgumentException(
+                          "Cannot perform scaling operation on an empty cluster"));
+      final var preScaleOperation = new PreScalingOperation(coordinatorId, members);
+      generatedOperations.add(preScaleOperation);
+    }
 
     // First add new members
     return new AddMembersTransformer(members)

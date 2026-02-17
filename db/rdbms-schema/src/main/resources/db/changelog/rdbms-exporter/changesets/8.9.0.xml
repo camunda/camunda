@@ -1074,6 +1074,7 @@
       <column name="JOB_METRICS_BATCH_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
+      <column name="PARTITION_ID" type="NUMBER"/>
       <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="INCOMPLETE_BATCH" type="BOOLEAN"/>
@@ -1191,4 +1192,11 @@
         ON ${prefix}INCIDENT (CASE WHEN STATE = 'active' THEN STATE END)
     </sql>
   </changeSet>
+
+  <changeSet id="add_agent_element_id_to_audit_log" author="camunda">
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="AGENT_ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
 </databaseChangeLog>

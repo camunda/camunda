@@ -72,7 +72,7 @@ paths:
 
   /decision-instances/{decisionInstanceKey}/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Decision instance
       operationId: deleteDecisionInstance
@@ -111,7 +111,7 @@ paths:
 
   /decision-instances/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Decision instance
       operationId: deleteDecisionInstancesBatchOperation

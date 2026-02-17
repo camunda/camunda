@@ -1,0 +1,104 @@
+# Spectral ruleset for OpenAPI validation
+# Replaces Vacuum for comprehensive OpenAPI linting and validation
+description: Recommended ruleset with additional customizations.
+extends: [[spectral:oas, recommended]]
+functions:
+  - verifyKeyTypesPaths
+  - verifyKeyTypesSchemas
+functionsDir: ./spectral-functions
+rules:
+  # Tag validation
+  operation-tag-defined: error
+  
+  # Enforce strict schema validation (catches issues like `required: false` at property level)
+  # The oas3-valid-schema-example rule validates that schemas are valid according to the 
+  # OpenAPI 3.0 JSON Schema specifications. This will catch structural issues like:
+  # - Using `required: false` as a boolean at property level (should be array at object level)
+  # - Invalid schema property combinations
+  # - Type mismatches in schema definitions
+  oas3-valid-schema-example: error
+  
+  # Custom validation rules migrated from Vacuum
+  no-period-in-summary:
+    description: Path summary must not include period
+    severity: error
+    given: $.paths[*][*].summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: ^.*\.$
+    message: Summaries are short descriptions often used in navigation bars, they must not contain periods at the end. Please remove the period at the end of the summary text.
+  
+  no-flow-node-in-path-summary:
+    description: Path summary must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].summary
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    message: Please replace the term "flow node" with "element".
+  
+  no-flow-node-in-path-description:
+    description: Path description must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].description
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|flow node).*
+    message: Please replace the term "flow node" with "element".
+  
+  no-flow-node-in-operation-id:
+    description: Path operation ID must not include term "flow node"
+    severity: error
+    given: $.paths[*][*].operationId
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode|FlowNode|Flownode).*
+    message: Please replace the term "flow node" with "element".
+  
+  no-flow-node-in-path:
+    description: Paths must not include term "flow node"
+    severity: error
+    given: $.paths.*~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flow-node|flownode|flowNode).*
+    message: Please replace the term "flow node" with "element".
+  
+  no-flow-node-in-component-property:
+    description: Component properties must not include term "flow node"
+    severity: error
+    given: $.components[*][*].properties.*~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: .*(flownode|flowNode).*
+    message: Please replace the term "flow node" with "element".
+  
+  require-property-descriptions:
+    description: Schema properties must have a description.
+    severity: error
+    given: $.components.schemas[*].properties[*]
+    then:
+      field: description
+      function: truthy
+  
+  operation-key-properties-must-be-strings:
+    description: "`...Key` parameters must be of type `string`."
+    severity: warn
+    given: $.paths[*][*].parameters[*]
+    then:
+      function: verifyKeyTypesPaths
+    message: Make the `...Key` property a `string`.
+  
+  schema-key-properties-must-be-strings:
+    description: "`...Key` properties must be of type `string`."
+    severity: warn
+    given: $.components.schemas[*].properties
+    then:
+      function: verifyKeyTypesSchemas
+    message: Make the `...Key` property a `string`.

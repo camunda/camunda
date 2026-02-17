@@ -149,7 +149,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
+    public int write(final MutableDirectBuffer buffer, final int offset) {
       throw new UnsupportedOperationException();
     }
   }

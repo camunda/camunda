@@ -19,6 +19,7 @@ import {
   Title,
   Unsupported,
   SelectedInstanceCount,
+  InfoMessage,
   Button,
   InlineLoading,
 } from './styled';
@@ -91,6 +92,10 @@ const ModificationDropdown: React.FC<Props> = observer(
       processDefinitionKey,
     });
 
+    const hasSelectedElementMultipleRunningInstances =
+      selectedElementRunningInstancesCount !== undefined &&
+      selectedElementRunningInstancesCount > 1;
+
     if (
       selectedElementId === null ||
       modificationsStore.state.status === 'moving-token'
@@ -133,6 +138,13 @@ const ModificationDropdown: React.FC<Props> = observer(
                       {`Selected running instances: ${selectedElementRunningInstancesCount ?? 0}`}
                     </SelectedInstanceCount>
                   )}
+                  {hasSelectedElementMultipleRunningInstances && (
+                    <InfoMessage>
+                      To modify a specific instance, select it in the Instance
+                      History below.
+                    </InfoMessage>
+                  )}
+
                   <Stack gap={2}>
                     {availableModifications.includes('add') &&
                       businessObjects && (

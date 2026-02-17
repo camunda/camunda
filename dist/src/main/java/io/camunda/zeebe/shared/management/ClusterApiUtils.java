@@ -31,6 +31,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -246,6 +247,15 @@ final class ClusterApiUtils {
               .brokerId(Integer.parseInt(updateRoutingState.memberId().id()));
       case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
           new Operation().operation(OperationEnum.UPDATE_INCARNATION_NUMBER);
+      case final PreScalingOperation preScalingOperation ->
+          new Operation()
+              .operation(OperationEnum.PRE_SCALING)
+              .brokerId(Integer.parseInt(preScalingOperation.memberId().id()))
+              .brokers(
+                  preScalingOperation.clusterMembers().stream()
+                      .map(MemberId::id)
+                      .map(Integer::parseInt)
+                      .toList());
       default -> new Operation().operation(OperationEnum.UNKNOWN);
     };
   }
@@ -507,6 +517,15 @@ final class ClusterApiUtils {
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UPDATE_INCARNATION_NUMBER)
                   .brokerId(Integer.parseInt(updateIncarnationNumberOperation.memberId().id()));
+          case final PreScalingOperation preScalingOperation ->
+              new TopologyChangeCompletedInner()
+                  .operation(TopologyChangeCompletedInner.OperationEnum.PRE_SCALING)
+                  .brokerId(Integer.parseInt(preScalingOperation.memberId().id()))
+                  .brokers(
+                      preScalingOperation.clusterMembers().stream()
+                          .map(MemberId::id)
+                          .map(Integer::parseInt)
+                          .toList());
           default ->
               new TopologyChangeCompletedInner()
                   .operation(TopologyChangeCompletedInner.OperationEnum.UNKNOWN);

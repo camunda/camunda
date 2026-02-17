@@ -60,7 +60,7 @@ paths:
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
-          description: An internal error occurred while processing the request.
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /roles/{roleId}:
     get:

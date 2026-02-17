@@ -32,7 +32,7 @@ public class DeleteProcessInstanceRestTest extends ClientRestTest {
   @Test
   public void shouldSendDeleteCommand() {
     // when
-    client.newDeleteInstanceCommand(PROCESS_INSTANCE_KEY).send().join();
+    client.newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY).send().join();
 
     // then
     final DeleteProcessInstanceRequest request =
@@ -47,7 +47,8 @@ public class DeleteProcessInstanceRestTest extends ClientRestTest {
         RestGatewayPaths.getDeleteProcessInstanceUrl(PROCESS_INSTANCE_KEY),
         () -> new ProblemDetail().title("Invalid request").status(400));
 
-    assertThatThrownBy(() -> client.newDeleteInstanceCommand(PROCESS_INSTANCE_KEY).send().join())
+    assertThatThrownBy(
+            () -> client.newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY).send().join())
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Invalid request");
   }
@@ -59,7 +60,7 @@ public class DeleteProcessInstanceRestTest extends ClientRestTest {
 
     // when
     client
-        .newDeleteInstanceCommand(PROCESS_INSTANCE_KEY)
+        .newDeleteProcessInstanceCommand(PROCESS_INSTANCE_KEY)
         .operationReference(operationReference)
         .execute();
 

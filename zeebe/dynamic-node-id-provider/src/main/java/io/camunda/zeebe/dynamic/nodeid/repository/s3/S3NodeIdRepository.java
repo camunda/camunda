@@ -31,18 +31,21 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.http.apache.ApacheHttpClient;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
 public class S3NodeIdRepository implements NodeIdRepository {
 
   private static final Logger LOG = LoggerFactory.getLogger(S3NodeIdRepository.class);
+  private static final String NODEID_INITIALIZATION_MARKER_KEY = "node-ids-initialized";
+  private static final String NODE_ID_KEY_PATTERN = "\\d+\\.json";
   private final S3Client client;
   private final Config config;
   private final InstantSource clock;
   private final boolean closeClient;
-  private volatile boolean initialized = false;
 
   public S3NodeIdRepository(
       final S3Client s3Client,
@@ -63,11 +66,54 @@ public class S3NodeIdRepository implements NodeIdRepository {
   }
 
   @Override
-  public void initialize(final int count) {
+  public int initialize(final int initialCount) {
+    final var initialized = isInitialized();
     if (!initialized) {
-      IntStream.range(0, count).forEach(this::initializeForNode);
+      if (initialCount <= 0) {
+        throw new IllegalArgumentException("initialCount must be greater than 0");
+      }
+
+      IntStream.range(0, initialCount).forEach(this::initializeForNode);
+
+      // We need a marker object to mark the completion of initialization.
+      // In case the initialization fails halfway, marker file does not exist and the retries will
+      // complete the initialization.
+      markInitialized();
     }
-    initialized = true;
+    return getAvailableLeaseCount();
+  }
+
+  @Override
+  public void scale(final int newCount) {
+    if (newCount <= 0) {
+      throw new IllegalArgumentException("newCount must be greater than 0");
+    }
+    // Keep it simple for now by just creating new leases for new nodes and deleting leases for
+    // removed nodes. We can improve it later by making the leases non-acquirable. This would let
+    // graceful shutdown of tasks that are still holding those leases.
+    final var oldCount = getAvailableLeaseCount();
+    if (newCount > oldCount) {
+      // scale up => add new leases
+      IntStream.range(oldCount, newCount).forEach(this::initializeForNode);
+    } else {
+      // scale down =>  delete extra leases
+      // Delete in reverse order so that retry after failure will correctly delete remaining node
+      // ids
+      for (int nodeId = oldCount - 1; nodeId >= newCount; nodeId--) {
+        final var request =
+            DeleteObjectRequest.builder().bucket(config.bucketName).key(objectKey(nodeId)).build();
+        try {
+          client.deleteObject(request);
+        } catch (final S3Exception e) {
+          if (e.statusCode() == 404) {
+            LOG.debug("Lease for nodeId {} does not exist, likely already deleted.", nodeId);
+          } else {
+            LOG.warn("Failed to delete lease object for node {} ", nodeId, e);
+            throw e;
+          }
+        }
+      }
+    }
   }
 
   @Override
@@ -185,6 +231,66 @@ public class S3NodeIdRepository implements NodeIdRepository {
     }
   }
 
+  private void markInitialized() {
+    // concurrent puts to these object is fine as the content is not relevant.
+    final var request =
+        PutObjectRequest.builder()
+            .bucket(config.bucketName)
+            .key(NODEID_INITIALIZATION_MARKER_KEY)
+            .build();
+    try {
+      client.putObject(request, RequestBody.empty());
+      LOG.debug("Node ID repository initialized successfully");
+    } catch (final Exception e) {
+      LOG.warn("Failed to mark node ID repository as initialized", e);
+      throw e;
+    }
+  }
+
+  // returns true if the marker object exists, false if it doesn't exist, and throws exception if
+  // the check failed for other reasons (e.g. permissions, network error, etc.)
+  private boolean isInitialized() {
+    final var request =
+        GetObjectRequest.builder()
+            .bucket(config.bucketName)
+            .key(NODEID_INITIALIZATION_MARKER_KEY)
+            .build();
+    try {
+      client.getObject(request);
+      return true;
+    } catch (final S3Exception e) {
+      if (e.statusCode() == 404) {
+        LOG.debug("Node ID repository is not initialized yet");
+        return false;
+      }
+      LOG.warn("Failed to check if node ID repository is initialized", e);
+      throw e;
+    }
+  }
+
+  private int getAvailableLeaseCount() {
+    final var request = ListObjectsV2Request.builder().bucket(config.bucketName).build();
+    try {
+      final var response = client.listObjectsV2(request);
+      if (response.hasContents() && !response.contents().isEmpty()) {
+        return (int) response.contents().stream().filter(o -> isNodeIdLease(o.key())).count();
+      }
+      return 0;
+    } catch (final S3Exception e) {
+      if (e.statusCode() == 404) {
+        LOG.warn("Bucket {} does not exist", config.bucketName);
+        throw e;
+      }
+      LOG.warn("Failed to list objects in bucket {}", config.bucketName, e);
+      throw e;
+    }
+  }
+
+  private boolean isNodeIdLease(final String key) {
+    // key is of pattern "<nodeId>.json"
+    return key.matches(NODE_ID_KEY_PATTERN);
+  }
+
   private String getRestoreStatusKey(final String restoreId) {
     return "restore/%s".formatted(restoreId);
   }
@@ -202,12 +308,21 @@ public class S3NodeIdRepository implements NodeIdRepository {
         if (s3Exception.statusCode() == 404) {
           throw new IllegalArgumentException(
               "Cannot create file for node " + nodeId + " in bucket " + config.bucketName, e);
+        } else if (s3Exception.statusCode() == 412) {
+          // Precondition failed is returned when the object already exists, which can happen in
+          // case of multiple nodes starting at the same time, so we can ignore it here.
+          LOG.debug(
+              "File for nodeId {} already exists, likely created by another node starting at the same time.",
+              nodeId);
+          return;
         }
       }
       LOG.debug(
           "File creation failed for nodeId {}: {}",
           nodeId,
           e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
+      // Need to fail so that initialization is retried.
+      throw e;
     }
   }
 

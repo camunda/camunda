@@ -70,7 +70,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/cancellation:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: cancelBatchOperation
@@ -108,7 +108,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/suspension:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: suspendBatchOperation
@@ -148,7 +148,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/resumption:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: resumeBatchOperation

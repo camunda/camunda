@@ -23,6 +23,13 @@ import {
   TableHead,
 } from './styled';
 
+/**
+ * Non-paginated variant of PartiallyExpandableDataTable.
+ * Used for simple tables with all data loaded at once (e.g., IncidentsByError).
+ *
+ * For paginated tables with infinite scroll, use v2/PartiallyExpandableDataTable instead.
+ * Will be removed in the scope of #44728
+ */
 type Props = {
   headers: {key: string; header: string; width?: string}[];
   rows: React.ComponentProps<typeof DataTable>['rows'];
@@ -40,19 +47,16 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
   dataTestId,
 }) => {
   return (
-    <DataTable
-      size="sm"
-      headers={headers}
-      rows={rows}
-      render={({
+    <DataTable size="sm" headers={headers} rows={rows}>
+      {({
         rows,
         headers,
         getTableContainerProps,
         getTableProps,
         getRowProps,
         getHeaderProps,
-        getExpandedRowProps,
         getExpandHeaderProps,
+        getExpandedRowProps,
       }) => (
         <TableContainer {...getTableContainerProps()} data-testid={dataTestId}>
           <Table {...getTableProps()}>
@@ -98,9 +102,11 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
                         colSpan={headers.length + 1}
                         {...getExpandedRowProps({row})}
                       >
-                        {React.cloneElement(expandedContent, {
-                          tabIndex: row.isExpanded ? 0 : -1,
-                        })}
+                        {row.isExpanded
+                          ? React.cloneElement(expandedContent, {
+                              tabIndex: 0,
+                            })
+                          : null}
                       </TableExpandedRow>
                     )}
                   </React.Fragment>
@@ -110,7 +116,7 @@ const PartiallyExpandableDataTable: React.FC<Props> = ({
           </Table>
         </TableContainer>
       )}
-    />
+    </DataTable>
   );
 };
 

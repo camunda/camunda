@@ -21,6 +21,7 @@ import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
@@ -28,6 +29,7 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
@@ -38,6 +40,7 @@ import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.GroupUser;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
@@ -47,8 +50,10 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -58,12 +63,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 
 /**
  * This class provides several static methods to facilitate common operations such as deploying
@@ -330,18 +336,19 @@ public final class TestHelper {
    *     parameters until the expected count of items is reached or the timeout is exceeded.
    * @param <T> The type of items being searched for (e.g., ProcessInstance, ElementInstance, etc.).
    *     Can typically be inferred from the searchFunction parameter.
+   * @return The list of items collected during the wait operation.
    */
-  private static <T> void waitForItemsPaginated(
+  private static <T> List<T> waitForItemsPaginated(
       final String timeoutMessage,
       final int expectedCount,
       final Function<Consumer<SearchRequestPage>, SearchResponse<T>> searchFunction) {
-    final var collected = new AtomicInteger(0);
+    final var collectedItems = new ArrayList<T>();
     Awaitility.await(timeoutMessage)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .until(
             () -> {
-              final int currentCollected = collected.get();
+              final int currentCollected = collectedItems.size();
               if (currentCollected >= expectedCount) {
                 return true;
               }
@@ -350,11 +357,12 @@ public final class TestHelper {
               final var items = response.items();
 
               if (!items.isEmpty()) {
-                collected.addAndGet(items.size());
+                collectedItems.addAll(items);
               }
 
-              return collected.get() >= expectedCount;
+              return collectedItems.size() >= expectedCount;
             });
+    return collectedItems;
   }
 
   public static void waitForProcessInstancesToStart(
@@ -684,9 +692,9 @@ public final class TestHelper {
             camundaClient.newElementInstanceSearchRequest().filter(filter).page(page).execute());
   }
 
-  public static void waitForJobs(
+  public static List<Job> waitForJobs(
       final CamundaClient camundaClient, final List<Long> processInstanceKeys) {
-    waitForItemsPaginated(
+    return waitForItemsPaginated(
         "should wait until jobs are available",
         processInstanceKeys.size(),
         page ->
@@ -976,6 +984,51 @@ public final class TestHelper {
         1,
         1);
     return decisionDeployment;
+  }
+
+  public static Decision deployDmnModel(
+      final CamundaClient camundaClient,
+      final DmnModelInstance dmnModel,
+      final String resourceName) {
+    final DeploymentEvent deploymentEvent =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(dmnModel).getBytes()),
+                resourceName + ".dmn")
+            .send()
+            .join();
+    return deploymentEvent.getDecisions().getFirst();
+  }
+
+  public static EvaluateDecisionResponse evaluateDecision(
+      final CamundaClient camundaClient, final long decisionKey, final String variables) {
+    return camundaClient
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables(variables)
+        .send()
+        .join();
+  }
+
+  public static void waitForDecisionInstanceCount(
+      final CamundaClient camundaClient,
+      final Consumer<DecisionInstanceFilter> filter,
+      final int expectedResultCount) {
+    Awaitility.await("Expected amount of decision instances in secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newDecisionInstanceSearchRequest()
+                          .filter(filter)
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(expectedResultCount);
+            });
   }
 
   public static Process startDefaultTestDecisionProcessInstance(

@@ -9,14 +9,23 @@
 package io.camunda.zeebe.engine.state.globallistener;
 
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 
 public interface MutableGlobalListenersState extends GlobalListenersState {
+  void create(final GlobalListenerRecord record);
+
+  void update(final GlobalListenerRecord record);
+
+  void delete(final GlobalListenerRecord record);
+
   /**
-   * Replace the current global listeners configuration with the given one.
-   *
-   * @param record the new global listeners configuration
+   * Change the key of the current global listeners configuration. This key is used to link the
+   * current configuration to the stored versions of the configuration, e.g. when pinning a
+   * configuration version to a user task. Every time the configuration is changed (e.g. by
+   * creating/updating/deleting a global listener), the configuration key should be updated to a new
+   * value.
    */
-  void updateCurrentConfiguration(final GlobalListenerBatchRecord record);
+  void updateConfigKey(final long key);
 
   /**
    * Store a copy of the given global listeners configuration and return its version key.

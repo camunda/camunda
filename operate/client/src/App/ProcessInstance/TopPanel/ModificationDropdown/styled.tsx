@@ -30,8 +30,22 @@ const SelectedInstanceCount = styled.div`
   ${styles.helperText01}
 `;
 
+const InfoMessage = styled.div`
+  ${styles.helperText01}
+  max-width: 20rem;
+  font-style: italic;
+  color: var(--cds-text-secondary);
+`;
+
 const InlineLoading = styled(BaseInlineLoading)`
   justify-content: center;
 `;
 
-export {Title, Unsupported, SelectedInstanceCount, InlineLoading, Button};
+export {
+  Title,
+  Unsupported,
+  SelectedInstanceCount,
+  InfoMessage,
+  InlineLoading,
+  Button,
+};

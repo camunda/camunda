@@ -27,6 +27,7 @@ public interface BufferWriter {
    *
    * @param buffer the buffer that this writer writes to
    * @param offset the offset in the buffer that the writer begins writing at
+   * @return the number of bytes written
    */
-  void write(MutableDirectBuffer buffer, int offset);
+  int write(MutableDirectBuffer buffer, int offset);
 }

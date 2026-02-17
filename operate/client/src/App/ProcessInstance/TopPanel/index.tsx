@@ -85,6 +85,7 @@ const TopPanel: React.FC = observer(() => {
   const {
     clearSelection,
     selectedElementId,
+    selectedElementInstanceKey,
     selectElement,
     selectedAnchorElementId,
   } = useProcessInstanceElementSelection();
@@ -125,8 +126,8 @@ const TopPanel: React.FC = observer(() => {
   const {data: selectedElementRunningInstancesCount} =
     useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
   const hasSelectedElementMultipleRunningInstances =
-    selectedElementRunningInstancesCount !== undefined &&
-    selectedElementRunningInstancesCount > 1;
+    selectedElementInstanceKey === null &&
+    (selectedElementRunningInstancesCount ?? 0) > 1;
 
   const {
     data: processDefinitionData,
@@ -313,10 +314,6 @@ const TopPanel: React.FC = observer(() => {
               label: 'Discard',
             }}
           />
-        )}
-      {modificationsStore.isModificationModeEnabled &&
-        hasSelectedElementMultipleRunningInstances && (
-          <ModificationInfoBanner text="Flow node has multiple instances. To select one, use the instance history tree below." />
         )}
       <DiagramPanel>
         <DiagramShell status={getStatus()}>

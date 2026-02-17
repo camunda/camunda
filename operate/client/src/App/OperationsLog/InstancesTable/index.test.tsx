@@ -112,26 +112,23 @@ describe('OperationsLog InstancesTable', () => {
       wrapper: Wrapper,
     });
 
-    await waitFor(() => {
-      expect(
-        screen.getByRole('columnheader', {name: /operation/i}),
-      ).toBeInTheDocument();
-    });
-
     expect(
-      screen.getByRole('columnheader', {name: /entity/i}),
+      screen.getByRole('columnheader', {name: /operation type/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /status/i}),
+      screen.getByRole('columnheader', {name: /entity type/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /applied to/i}),
+      screen.getByRole('columnheader', {name: /reference to entity/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /property/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /actor/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /time/i}),
+      screen.getByRole('columnheader', {name: /date/i}),
     ).toBeInTheDocument();
   });
 
@@ -149,18 +146,20 @@ describe('OperationsLog InstancesTable', () => {
           annotation: 'Updated variable',
           actorType: 'USER',
           category: 'USER_TASKS',
+          entityDescription: 'variableName',
         },
         {
           auditLogKey: '456',
           entityKey: '2',
           operationType: 'CREATE',
-          entityType: 'PROCESS_INSTANCE',
+          entityType: 'RESOURCE',
           result: 'FAIL',
           actorId: 'user2',
           timestamp: '2024-01-02T00:00:00.000Z',
           annotation: 'Created instance',
           actorType: 'USER',
           category: 'DEPLOYED_RESOURCES',
+          entityDescription: 'ERROR_CODE',
         },
       ],
       page: {totalItems: 2},
@@ -170,12 +169,18 @@ describe('OperationsLog InstancesTable', () => {
       wrapper: Wrapper,
     });
 
-    expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
-    expect(screen.getByText(/create process instance/i)).toBeInTheDocument();
-    expect(screen.getByText(/success/i)).toBeInTheDocument();
-    expect(screen.getByText(/fail/i)).toBeInTheDocument();
+    expect(await screen.findByText('Update')).toBeInTheDocument();
+    expect(await screen.findByText('Variable')).toBeInTheDocument();
+    expect(await screen.findByText('Create')).toBeInTheDocument();
+    expect(await screen.findByText('Resource')).toBeInTheDocument();
+    expect(screen.getByTestId('SUCCESS-icon')).toBeInTheDocument();
+    expect(screen.getByTestId('FAIL-icon')).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
     expect(screen.getByText('user2')).toBeInTheDocument();
+    expect(screen.getByText(/variable name/i)).toBeInTheDocument();
+    expect(await screen.findByText(/error code/i)).toBeInTheDocument();
+    expect(screen.getByText('variableName')).toBeInTheDocument();
+    expect(screen.getByText('ERROR_CODE')).toBeInTheDocument();
   });
 
   it('should render batch operation information', async () => {
@@ -203,9 +208,15 @@ describe('OperationsLog InstancesTable', () => {
       wrapper: Wrapper,
     });
 
-    expect(await screen.findByText(/cancel batch/i)).toBeInTheDocument();
+    expect(await screen.findByText('Cancel')).toBeInTheDocument();
+    expect(screen.getByText('Batch')).toBeInTheDocument();
+    expect(screen.getByText(/batch operation type/i)).toBeInTheDocument();
     expect(screen.getByText(/cancel process instance/i)).toBeInTheDocument();
-    expect(screen.getByText('batch-123')).toBeInTheDocument();
+    expect(screen.getByText(/multiple process instances/i)).toBeInTheDocument();
+    expect(screen.getByText('batch-123')).toHaveAttribute(
+      'href',
+      '/batch-operations/batch-123',
+    );
   });
 
   it('should open details modal when info button is clicked', async () => {
@@ -288,6 +299,7 @@ describe('OperationsLog InstancesTable', () => {
         {
           auditLogKey: '123',
           entityKey: '999',
+          processInstanceKey: '999',
           operationType: 'CANCEL',
           entityType: 'PROCESS_INSTANCE',
           result: 'SUCCESS',

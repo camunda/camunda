@@ -79,6 +79,7 @@ public class SupportedRecordsMapper implements RecordMapper<Event> {
     return new Event.UserTaskMetaData(
         String.valueOf(record.getValue().getUserTaskKey()),
         record.getValue().getTags(),
+        record.getValue().getCustomHeaders(),
         record.getValue().getAssignee(),
         record.getValue().getCandidateGroupsList(),
         record.getValue().getCandidateUsersList(),

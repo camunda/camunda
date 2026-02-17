@@ -16,7 +16,6 @@
 package io.camunda.client.jobhandling.result;
 
 import io.camunda.client.bean.MethodInfo;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
 
 public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
   private final DocumentResultProcessorFailureHandlingStrategy
@@ -33,7 +32,8 @@ public class DefaultResultProcessorStrategy implements ResultProcessorStrategy {
   public ResultProcessor createProcessor(final ResultProcessorStrategyContext context) {
     final MethodInfo methodInfo = context.methodInfo();
     if (methodInfo.getReturnType() != null
-        && methodInfo.getReturnType().equals(UserTaskResultFunction.class)) {
+        && (methodInfo.getReturnType().equals(UserTaskResultFunction.class)
+            || methodInfo.getReturnType().equals(AdHocSubProcessResultFunction.class))) {
       return new ResultFunctionResultProcessor();
     }
     return new DefaultResultProcessor(

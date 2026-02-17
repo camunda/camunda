@@ -21,6 +21,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -67,6 +68,9 @@ final class ConfigurationChangeAppliersImplTest {
         Arguments.of(
             new PartitionEnableExporterOperation(localMemberId, 1, "expId", Optional.empty()),
             PartitionEnableExporterApplier.class),
-        Arguments.of(new DeleteHistoryOperation(localMemberId), DeleteHistoryApplier.class));
+        Arguments.of(new DeleteHistoryOperation(localMemberId), DeleteHistoryApplier.class),
+        Arguments.of(
+            new PreScalingOperation(localMemberId, Set.of(localMemberId, MemberId.from("2"))),
+            PreScalingApplier.class));
   }
 }

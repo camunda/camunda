@@ -20,6 +20,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
@@ -122,9 +123,10 @@ public final class DecisionInstanceServices
                 q -> q.filter(f -> f.decisionInstanceKeys(decisionInstanceKey))));
 
     if (searchResult.items().isEmpty()) {
-      throw new CamundaSearchException(
-          ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", decisionInstanceKey),
-          CamundaSearchException.Reason.NOT_FOUND);
+      throw ErrorMapper.mapSearchError(
+          new CamundaSearchException(
+              ERROR_ENTITY_BY_KEY_NOT_FOUND.formatted("Decision Instance", decisionInstanceKey),
+              CamundaSearchException.Reason.NOT_FOUND));
     }
 
     final var decisionInstance = searchResult.items().getFirst();

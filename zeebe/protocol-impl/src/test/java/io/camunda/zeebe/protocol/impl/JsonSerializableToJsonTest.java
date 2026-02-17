@@ -4419,18 +4419,17 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// GlobalListenerBatchRecord /////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "GlobalListenerBatchRecord",
+        "GlobalListenerBatchRecord command",
         (Supplier<GlobalListenerBatchRecord>)
             () ->
                 new GlobalListenerBatchRecord()
-                    .setGlobalListenerBatchKey(1)
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener1")
                             .setType("global1")
                             .setEventTypes(List.of("creating", "assigning"))
                             .setRetries(5))
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener2")
                             .setType("global2")
@@ -4440,9 +4439,10 @@ final class JsonSerializableToJsonTest {
                             .setPriority(10)),
         """
       {
-        "globalListenerBatchKey": 1,
-        "taskListeners": [
+        "globalListenerBatchKey": -1,
+        "listeners": [
           {
+            "globalListenerKey": -1,
             "id": "listener1",
             "type": "global1",
             "retries": 5,
@@ -4450,9 +4450,11 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": false,
             "priority": 50,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           },
           {
+            "globalListenerKey": -1,
             "id": "listener2",
             "type": "global2",
             "retries": 3,
@@ -4460,19 +4462,118 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": true,
             "priority": 10,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           }
+         ],
+        "createdListenerKeys": [
+        ],
+        "updatedListenerKeys": [
+        ],
+        "deletedListenerKeys": [
+        ]
+      }
+      """
+      },
+      {
+        "Distributed GlobalListenerBatchRecord command",
+        (Supplier<GlobalListenerBatchRecord>)
+            () -> {
+              final var existingListener1 =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(123L)
+                      .setId("listener1")
+                      .setType("global1")
+                      .setEventTypes(List.of("creating", "assigning"))
+                      .setRetries(5);
+              final var existingListener2 =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(124L)
+                      .setId("listener2")
+                      .setType("global2")
+                      .setEventTypes(List.of("creating", "assigning"))
+                      .setRetries(5);
+              final var newListener =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(125L)
+                      .setId("listener3")
+                      .setType("global3")
+                      .setEventTypes(List.of("all"))
+                      .setRetries(3)
+                      .setAfterNonGlobal(true)
+                      .setPriority(10);
+              return new GlobalListenerBatchRecord()
+                  .setGlobalListenerBatchKey(1)
+                  .addListener(existingListener1)
+                  .addListener(newListener)
+                  .addListener(existingListener2)
+                  .addCreatedListener(newListener)
+                  .addUpdatedListener(existingListener1)
+                  .addDeletedListener(existingListener2);
+            },
+        """
+      {
+        "globalListenerBatchKey": 1,
+        "listeners": [
+          {
+            "globalListenerKey": 123,
+            "id": "listener1",
+            "type": "global1",
+            "retries": 5,
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false,
+            "priority": 50,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          },
+          {
+            "globalListenerKey": 125,
+            "id": "listener3",
+            "type": "global3",
+            "retries": 3,
+            "eventTypes": ["all"],
+            "afterNonGlobal": true,
+            "priority": 10,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          },
+          {
+            "globalListenerKey": 124,
+            "id": "listener2",
+            "type": "global2",
+            "retries": 5,
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false,
+            "priority": 50,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          }
+        ],
+        "createdListenerKeys": [
+          125
+        ],
+        "updatedListenerKeys": [
+          123
+        ],
+        "deletedListenerKeys": [
+          124
         ]
       }
       """
       },
       {
         "Empty GlobalListenerBatchRecord",
-        (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
+        (Supplier<GlobalListenerBatchRecord>) GlobalListenerBatchRecord::new,
         """
       {
         "globalListenerBatchKey": -1,
-        "taskListeners": []
+        "listeners": [],
+        "createdListenerKeys": [],
+        "updatedListenerKeys": [],
+        "deletedListenerKeys": []
       }
       """
       },
@@ -4483,15 +4584,18 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerRecord>)
             () ->
                 new GlobalListenerRecord()
+                    .setGlobalListenerKey(123L)
                     .setId("my-listener")
                     .setType("global1")
                     .setEventTypes(List.of("creating", "assigning"))
                     .setRetries(5)
                     .setAfterNonGlobal(true)
                     .setPriority(10)
-                    .setSource(GlobalListenerSource.API),
+                    .setSource(GlobalListenerSource.API)
+                    .setConfigKey(124L),
         """
     {
+      "globalListenerKey": 123,
       "id": "my-listener",
       "type": "global1",
       "retries": 5,
@@ -4499,15 +4603,17 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": true,
       "priority": 10,
       "source": "API",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": 124
     }
     """
       },
       {
         "Empty GlobalListenerRecord",
-        (Supplier<GlobalListenerRecord>) () -> new GlobalListenerRecord(),
+        (Supplier<GlobalListenerRecord>) GlobalListenerRecord::new,
         """
     {
+      "globalListenerKey": -1,
       "id": "",
       "type": "",
       "retries": 3,
@@ -4515,7 +4621,8 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": false,
       "priority": 50,
       "source": "CONFIGURATION",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": -1
     }
     """
       }

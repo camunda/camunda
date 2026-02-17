@@ -13,10 +13,11 @@ import {
   Wrapper,
   mockEventSubprocessInstance,
 } from './mocks';
-import {eventSubProcess} from 'modules/testUtils';
+import {eventSubProcess, searchResult} from 'modules/testUtils';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {parseDiagramXML} from 'modules/utils/bpmn';
@@ -30,10 +31,7 @@ describe('ElementInstancesTree - Event Subprocess', () => {
     mockFetchProcessInstance().withSuccess(mockEventSubprocessInstance);
     mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level1,
     );
@@ -59,6 +57,9 @@ describe('ElementInstancesTree - Event Subprocess', () => {
 
     mockSearchElementInstances().withSuccess(
       eventSubProcessElementInstances.level2,
+    );
+    mockFetchElementInstance(':id').withSuccess(
+      eventSubProcessElementInstances.level1.items[2]!,
     );
 
     await user.type(

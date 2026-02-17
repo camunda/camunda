@@ -166,6 +166,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'VARIABLE'"/>
+    <bind name="primaryKeyColumn" value="'VAR_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
   <update id="migrateToProcess" parameterType="java.util.Map">
       UPDATE ${prefix}VARIABLE
       SET PROCESS_DEFINITION_ID = #{processDefinitionId}

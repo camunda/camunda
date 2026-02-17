@@ -57,6 +57,7 @@ public final class RdbmsExporter {
   private ScheduledTask currentFlushTask = null;
   private ScheduledTask currentCleanupTask = null;
   private ScheduledTask currentUsageMetricsCleanupTask = null;
+  private ScheduledTask currentJobBatchMetricsCleanupTask = null;
   private ScheduledTask currentHistoryDeletionTask = null;
 
   // Track the oldest record timestamp in the current batch for exporting latency calculation
@@ -138,6 +139,9 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupHistory);
     currentUsageMetricsCleanupTask =
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::cleanupUsageMetricsHistory);
+    currentJobBatchMetricsCleanupTask =
+        controller.scheduleCancellableTask(
+            Duration.ofSeconds(1), this::cleanupJobBatchMetricsHistory);
     currentHistoryDeletionTask =
         controller.scheduleCancellableTask(Duration.ofSeconds(1), this::deleteHistory);
 
@@ -157,6 +161,9 @@ public final class RdbmsExporter {
       }
       if (currentUsageMetricsCleanupTask != null) {
         currentUsageMetricsCleanupTask.cancel();
+      }
+      if (currentJobBatchMetricsCleanupTask != null) {
+        currentJobBatchMetricsCleanupTask.cancel();
       }
       if (currentHistoryDeletionTask != null) {
         currentHistoryDeletionTask.cancel();
@@ -272,6 +279,9 @@ public final class RdbmsExporter {
     }
     if (currentUsageMetricsCleanupTask != null) {
       currentUsageMetricsCleanupTask.cancel();
+    }
+    if (currentJobBatchMetricsCleanupTask != null) {
+      currentJobBatchMetricsCleanupTask.cancel();
     }
     if (currentHistoryDeletionTask != null) {
       currentHistoryDeletionTask.cancel();
@@ -390,6 +400,22 @@ public final class RdbmsExporter {
         controller.scheduleCancellableTask(
             historyCleanupService.getUsageMetricsHistoryCleanupInterval(),
             this::cleanupUsageMetricsHistory);
+  }
+
+  @VisibleForTesting
+  void cleanupJobBatchMetricsHistory() {
+    try {
+      historyCleanupService.cleanupJobBatchMetricsHistory(partitionId, OffsetDateTime.now());
+    } catch (final Exception e) {
+      LOG.warn(
+          "[RDBMS Exporter P{}] Failed to cleanup job batch metrics history, retrying ... {}",
+          partitionId,
+          e.getMessage());
+    }
+    currentJobBatchMetricsCleanupTask =
+        controller.scheduleCancellableTask(
+            historyCleanupService.getJobBatchMetricsHistoryCleanupInterval(),
+            this::cleanupJobBatchMetricsHistory);
   }
 
   @VisibleForTesting

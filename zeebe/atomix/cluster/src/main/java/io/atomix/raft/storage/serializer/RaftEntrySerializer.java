@@ -105,8 +105,8 @@ public interface RaftEntrySerializer {
     }
 
     @Override
-    public void write(final MutableDirectBuffer writeBuffer, final int offset) {
-      writeFunction.apply(writeBuffer, offset);
+    public int write(final MutableDirectBuffer writeBuffer, final int offset) {
+      return writeFunction.apply(writeBuffer, offset);
     }
   }
 }

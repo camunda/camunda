@@ -90,6 +90,7 @@ public class JobBatchMetricsExportedHandler
             .orElseThrow();
 
     entity
+        .setPartitionId(record.getPartitionId())
         .setStartTime(
             OffsetDateTime.ofInstant(
                 Instant.ofEpochMilli(jobMetricsBatchRecord.getBatchStartTime()), ZoneOffset.UTC))

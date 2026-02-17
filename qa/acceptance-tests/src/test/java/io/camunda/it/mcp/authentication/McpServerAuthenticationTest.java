@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
 
 abstract class McpServerAuthenticationTest extends McpServerTest {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  protected final ObjectMapper objectMapper = new ObjectMapper();
 
   @Test
   void returnsConfiguredInfoAndCapabilities() {

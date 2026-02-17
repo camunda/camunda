@@ -96,6 +96,7 @@ test.describe('task history tab', () => {
       actorId: 'jane',
       timestamp: '2024-01-15T10:30:00.000Z',
       result: 'SUCCESS',
+      relatedEntityKey: 'demo',
     });
 
     mockQueryUserTasksRequest([TASK]);

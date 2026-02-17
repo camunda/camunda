@@ -17,6 +17,9 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
   private String host;
   private GcsBackupStoreAuth auth = GcsBackupStoreAuth.AUTO;
 
+  /** Default maximum concurrent transfers (uploads and downloads) */
+  private int maxConcurrentTransfers = 8;
+
   public String getBucketName() {
     return bucketName;
   }
@@ -49,18 +52,32 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     this.auth = auth;
   }
 
-  public static GcsBackupConfig toStoreConfig(GcsBackupStoreConfig config) {
+  public int getMaxConcurrentTransfers() {
+    return maxConcurrentTransfers;
+  }
+
+  public void setMaxConcurrentTransfers(final int maxConcurrentTransfers) {
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
+  }
+
+  public static GcsBackupConfig toStoreConfig(final GcsBackupStoreConfig config) {
     final var storeConfig =
         new GcsBackupConfig.Builder()
             .withBucketName(config.getBucketName())
             .withBasePath(config.getBasePath())
-            .withHost(config.getHost());
+            .withHost(config.getHost())
+            .withMaxConcurrentTransfers(config.getMaxConcurrentTransfers());
     final var authenticated =
         switch (config.getAuth()) {
           case NONE -> storeConfig.withoutAuthentication();
           case AUTO -> storeConfig.withAutoAuthentication();
         };
     return authenticated.build();
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bucketName, basePath, host, auth, maxConcurrentTransfers);
   }
 
   @Override
@@ -75,12 +92,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
     return Objects.equals(bucketName, that.bucketName)
         && Objects.equals(basePath, that.basePath)
         && Objects.equals(host, that.host)
-        && auth == that.auth;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(bucketName, basePath, host, auth);
+        && auth == that.auth
+        && maxConcurrentTransfers == that.maxConcurrentTransfers;
   }
 
   @Override
@@ -97,6 +110,8 @@ public class GcsBackupStoreConfig implements ConfigurationEntry {
         + '\''
         + ", auth="
         + auth
+        + ", maxConcurrentTransfers="
+        + maxConcurrentTransfers
         + '}';
   }
 

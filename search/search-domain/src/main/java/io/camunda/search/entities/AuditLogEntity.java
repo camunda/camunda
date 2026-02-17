@@ -22,6 +22,7 @@ public record AuditLogEntity(
     OffsetDateTime timestamp,
     String actorId,
     AuditLogActorType actorType,
+    String agentElementId,
     String tenantId,
     AuditLogTenantScope tenantScope,
     AuditLogOperationResult result,
@@ -62,6 +63,7 @@ public record AuditLogEntity(
     private OffsetDateTime timestamp;
     private String actorId;
     private AuditLogActorType actorType;
+    private String agentElementId;
     private String tenantId;
     private AuditLogTenantScope tenantScope;
     private AuditLogOperationResult result;
@@ -128,6 +130,11 @@ public record AuditLogEntity(
 
     public Builder actorId(final String actorId) {
       this.actorId = actorId;
+      return this;
+    }
+
+    public Builder agentElementId(final String agentElementId) {
+      this.agentElementId = agentElementId;
       return this;
     }
 
@@ -258,6 +265,7 @@ public record AuditLogEntity(
           timestamp,
           actorId,
           actorType,
+          agentElementId,
           tenantId,
           tenantScope,
           result,

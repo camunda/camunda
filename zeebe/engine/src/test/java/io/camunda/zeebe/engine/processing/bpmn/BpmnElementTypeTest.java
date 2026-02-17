@@ -400,6 +400,7 @@ public final class BpmnElementTypeTest {
               return Bpmn.createExecutableProcess(processId())
                   .startEvent()
                   .adHocSubProcess(elementId(), adHocSubProcess -> adHocSubProcess.task("task"))
+                  .zeebeActiveElementsCollectionExpression("[\"task\"]")
                   .endEvent()
                   .done();
             }

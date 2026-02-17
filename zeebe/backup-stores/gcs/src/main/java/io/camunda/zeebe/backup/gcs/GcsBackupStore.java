@@ -12,8 +12,6 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.StorageOptions;
-import com.google.cloud.storage.transfermanager.TransferManager;
-import com.google.cloud.storage.transfermanager.TransferManagerConfig;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
@@ -51,7 +49,6 @@ public final class GcsBackupStore implements BackupStore {
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
-  private final TransferManager transferManager;
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
@@ -64,14 +61,10 @@ public final class GcsBackupStore implements BackupStore {
     bucketInfo = BucketInfo.of(config.bucketName());
     basePath = Optional.ofNullable(config.basePath()).map(s -> s + "/").orElse("");
     this.client = client;
-    executor = Executors.newWorkStealingPool(4);
+    executor = Executors.newVirtualThreadPerTaskExecutor();
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
-    transferManager =
-        TransferManagerConfig.newBuilder()
-            .setStorageOptions(client.getOptions())
-            .build()
-            .getService();
-    fileSetManager = new FileSetManager(client, transferManager, bucketInfo, basePath);
+    fileSetManager =
+        new FileSetManager(client, bucketInfo, basePath, executor, config.maxConcurrentTransfers());
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -80,19 +73,47 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> save(final Backup backup) {
-    return CompletableFuture.runAsync(
-        () -> {
-          final var persistedManifest = manifestManager.createInitialManifest(backup);
-          try {
-            fileSetManager.saveSnapshot(backup.id(), backup.snapshot());
-            fileSetManager.saveSegments(backup.id(), backup.segments());
-            manifestManager.completeManifest(persistedManifest);
-          } catch (final Exception e) {
-            manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
-            throw e;
-          }
-        },
-        executor);
+    return CompletableFuture.supplyAsync(
+            () -> manifestManager.createInitialManifest(backup), executor)
+        .thenComposeAsync(
+            persistedManifest -> {
+              final var snapshotFuture =
+                  CompletableFuture.runAsync(
+                      () ->
+                          fileSetManager.save(
+                              backup.id(), FileSetManager.SNAPSHOT_FILESET_NAME, backup.snapshot()),
+                      executor);
+              final var segmentsFuture =
+                  CompletableFuture.runAsync(
+                      () ->
+                          fileSetManager.save(
+                              backup.id(), FileSetManager.SEGMENTS_FILESET_NAME, backup.segments()),
+                      executor);
+
+              return CompletableFuture.allOf(snapshotFuture, segmentsFuture)
+                  .handleAsync(
+                      (ignored, error) -> {
+                        if (error != null) {
+                          manifestManager.markAsFailed(
+                              persistedManifest.manifest(), error.getMessage());
+                          throw new GcsBackupStoreException.UploadException(
+                              "Failed to save backup contents", error);
+                        }
+                        return persistedManifest;
+                      },
+                      executor);
+            },
+            executor)
+        .thenAcceptAsync(
+            persistedManifest -> {
+              try {
+                manifestManager.completeManifest(persistedManifest);
+              } catch (final Exception e) {
+                manifestManager.markAsFailed(persistedManifest.manifest(), e.getMessage());
+                throw e;
+              }
+            },
+            executor);
   }
 
   @Override
@@ -140,13 +161,30 @@ public final class GcsBackupStore implements BackupStore {
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
               final var completed = manifest.asCompleted();
-              final var snapshot =
-                  fileSetManager.restore(
-                      id, FileSetManager.SNAPSHOT_FILESET_NAME, completed.snapshot(), targetFolder);
-              final var segments =
-                  fileSetManager.restore(
-                      id, FileSetManager.SEGMENTS_FILESET_NAME, completed.segments(), targetFolder);
-              yield new BackupImpl(id, manifest.descriptor(), snapshot, segments);
+              final var snapshotFuture =
+                  CompletableFuture.supplyAsync(
+                      () ->
+                          fileSetManager.restore(
+                              id,
+                              FileSetManager.SNAPSHOT_FILESET_NAME,
+                              completed.snapshot(),
+                              targetFolder),
+                      executor);
+              final var segmentsFuture =
+                  CompletableFuture.supplyAsync(
+                      () ->
+                          fileSetManager.restore(
+                              id,
+                              FileSetManager.SEGMENTS_FILESET_NAME,
+                              completed.segments(),
+                              targetFolder),
+                      executor);
+
+              // Wait for both to complete
+              CompletableFuture.allOf(snapshotFuture, segmentsFuture).join();
+
+              yield new BackupImpl(
+                  id, manifest.descriptor(), snapshotFuture.join(), segmentsFuture.join());
             }
           };
         },
@@ -218,7 +256,6 @@ public final class GcsBackupStore implements BackupStore {
               executor.shutdownNow();
             }
             client.close();
-            transferManager.close();
           } catch (final Exception e) {
             throw new RuntimeException(e);
           }

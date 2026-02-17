@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.dynamic.config.changes;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
+import java.util.Set;
 
 public interface ClusterChangeExecutor {
 
@@ -25,9 +27,25 @@ public interface ClusterChangeExecutor {
    */
   ActorFuture<Void> deleteHistory();
 
+  /**
+   * This method will start an asynchronous pre-scaling operation, preparing the member for a
+   * cluster scaling event.
+   *
+   * <p>This operation should be idempotent, as it may be retried multiple times until successful.
+   *
+   * @param clusterMembers the set of member ids that will be part of the cluster after scaling
+   * @return future when the operation is completed
+   */
+  ActorFuture<Void> preScaling(Set<MemberId> clusterMembers);
+
   final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
     @Override
     public ActorFuture<Void> deleteHistory() {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> preScaling(final Set<MemberId> clusterMembers) {
       return CompletableActorFuture.completed(null);
     }
   }

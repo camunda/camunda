@@ -20,6 +20,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
@@ -119,6 +120,11 @@ public class ConfigurationChangeAppliersImpl implements ConfigurationChangeAppli
           new UpdateRoutingStateApplier(updateRoutingState, partitionScalingChangeExecutor);
       case final UpdateIncarnationNumberOperation updateIncarnationNumberOperation ->
           new UpdateIncarnationNumberApplier();
+      case final PreScalingOperation preScalingOperation ->
+          new PreScalingApplier(
+              preScalingOperation.memberId(),
+              preScalingOperation.clusterMembers(),
+              clusterChangeExecutor);
     };
   }
 }

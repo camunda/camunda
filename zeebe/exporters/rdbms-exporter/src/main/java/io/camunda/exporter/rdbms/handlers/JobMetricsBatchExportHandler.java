@@ -55,6 +55,7 @@ public class JobMetricsBatchExportHandler
                             Integer.toString(jobMetrics.getJobTypeIndex()),
                             Integer.toString(jobMetrics.getTenantIdIndex()),
                             Integer.toString(jobMetrics.getWorkerNameIndex())))
+                    .partitionId(record.getPartitionId())
                     .startTime(
                         OffsetDateTime.ofInstant(
                             Instant.ofEpochMilli(jobMetricsBatchRecord.getBatchStartTime()),

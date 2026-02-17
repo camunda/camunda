@@ -130,7 +130,8 @@ const SortableTable = <
         rows={rows}
         headers={headerColumns}
         size={size}
-        render={({
+      >
+        {({
           rows,
           headers,
           getHeaderProps,
@@ -249,7 +250,7 @@ const SortableTable = <
             </Table>
           </TableContainer>
         )}
-      />
+      </DataTable>
     </Container>
   );
 };

@@ -84,7 +84,7 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
     set();
   }
 
-  public void write(final MsgPackWriter writer) {
+  public int write(final MsgPackWriter writer) {
     T valueToWrite = value;
     if (!isSet) {
       valueToWrite = defaultValue;
@@ -95,8 +95,9 @@ public abstract class BaseProperty<T extends BaseValue> implements Recyclable {
           key, "Expected a value or default value to be set before writing, but has nothing");
     }
 
-    key.write(writer);
-    valueToWrite.write(writer);
+    int written = key.write(writer);
+    written += valueToWrite.write(writer);
+    return written;
   }
 
   public void writeJSON(final StringBuilder sb, final boolean maskSanitized) {

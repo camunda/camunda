@@ -15,12 +15,11 @@
  */
 package io.camunda.client.jobhandling.result;
 
-import io.camunda.client.jobhandling.UserTaskResultFunction;
-
 public class ResultFunctionResultProcessor implements ResultProcessor {
   @Override
   public Object process(final ResultProcessorContext context) {
-    if (context.getResult() instanceof UserTaskResultFunction) {
+    if (context.getResult() instanceof UserTaskResultFunction
+        || context.getResult() instanceof AdHocSubProcessResultFunction) {
       return context.getResult();
     } else {
       throw new IllegalStateException(

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.39
+
+### 🚀 Enhancements
+
+update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
 ## v0.0.38
 
 ### 🚀 Enhancements

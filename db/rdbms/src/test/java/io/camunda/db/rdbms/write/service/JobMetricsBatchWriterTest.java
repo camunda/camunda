@@ -12,6 +12,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -22,7 +23,9 @@ import org.junit.jupiter.api.Test;
 class JobMetricsBatchWriterTest {
 
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
-  private final JobMetricsBatchWriter writer = new JobMetricsBatchWriter(executionQueue);
+  private final JobMetricsBatchMapper jobMetricsBatchMapper = mock(JobMetricsBatchMapper.class);
+  private final JobMetricsBatchWriter writer =
+      new JobMetricsBatchWriter(executionQueue, jobMetricsBatchMapper);
 
   @Test
   void shouldCreateJobMetricsBatch() {

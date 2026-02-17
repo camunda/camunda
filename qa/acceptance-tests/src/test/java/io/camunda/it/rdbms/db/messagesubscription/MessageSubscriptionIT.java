@@ -22,6 +22,7 @@ import io.camunda.search.page.SearchQueryPage;
 import io.camunda.search.query.MessageSubscriptionQuery;
 import io.camunda.search.sort.MessageSubscriptionSort;
 import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -98,6 +99,115 @@ public class MessageSubscriptionIT {
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
     assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
+
+    final var subscription1 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+    final var subscription2 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+    final var subscription3 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+
+    final MessageSubscriptionQuery query =
+        MessageSubscriptionQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.processInstanceKeys(
+                                subscription1.processInstanceKey(),
+                                subscription2.processInstanceKey(),
+                                subscription3.processInstanceKey()))
+                    .sort(s -> s)
+                    .page(p -> p.from(0).size(20)));
+
+    var searchResult = reader.search(query);
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items()).hasSize(3);
+    assertThat(searchResult.items().stream().map(MessageSubscriptionEntity::processInstanceKey))
+        .containsExactlyInAnyOrder(
+            subscription1.processInstanceKey(),
+            subscription2.processInstanceKey(),
+            subscription3.processInstanceKey());
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getMessageSubscriptionWriter()
+            .deleteProcessInstanceRelatedData(List.of(subscription2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+
+    searchResult = reader.search(query);
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(MessageSubscriptionEntity::processInstanceKey))
+        .containsExactlyInAnyOrder(
+            subscription1.processInstanceKey(), subscription3.processInstanceKey());
+  }
+
+  @TestTemplate
+  public void shouldDeleteRootProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final MessageSubscriptionDbReader reader = rdbmsService.getMessageSubscriptionReader();
+
+    final var subscription1 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+    final var subscription2 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+    final var subscription3 =
+        MessageSubscriptionFixtures.createAndSaveMessageSubscription(rdbmsWriters, b -> b);
+
+    final MessageSubscriptionQuery query =
+        MessageSubscriptionQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.processInstanceKeys(
+                                subscription1.processInstanceKey(),
+                                subscription2.processInstanceKey(),
+                                subscription3.processInstanceKey()))
+                    .sort(s -> s)
+                    .page(p -> p.from(0).size(20)));
+
+    var searchResult = reader.search(query);
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items()).hasSize(3);
+    assertThat(searchResult.items().stream().map(MessageSubscriptionEntity::rootProcessInstanceKey))
+        .containsExactlyInAnyOrder(
+            subscription1.rootProcessInstanceKey(),
+            subscription2.rootProcessInstanceKey(),
+            subscription3.rootProcessInstanceKey());
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getMessageSubscriptionWriter()
+            .deleteRootProcessInstanceRelatedData(
+                List.of(subscription2.rootProcessInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+
+    searchResult = reader.search(query);
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(MessageSubscriptionEntity::rootProcessInstanceKey))
+        .containsExactlyInAnyOrder(
+            subscription1.rootProcessInstanceKey(), subscription3.rootProcessInstanceKey());
   }
 
   private static void compareMessageSubscriptions(

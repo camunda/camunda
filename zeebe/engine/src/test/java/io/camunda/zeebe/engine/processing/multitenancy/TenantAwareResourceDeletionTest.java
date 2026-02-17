@@ -168,9 +168,12 @@ public class TenantAwareResourceDeletionTest {
             "Expected to delete resource but no resource found with key `%d`"
                 .formatted(resourceKey));
     assertThat(
-            RecordingExporter.resourceDeletionRecords()
-                .withIntent(ResourceDeletionIntent.DELETED)
-                .exists())
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .resourceDeletionRecords()
+                        .withIntent(ResourceDeletionIntent.DELETED)
+                        .exists()))
         .isFalse();
   }
 

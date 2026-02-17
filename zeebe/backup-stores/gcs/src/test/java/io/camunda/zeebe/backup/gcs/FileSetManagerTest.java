@@ -10,18 +10,11 @@ package io.camunda.zeebe.backup.gcs;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatThrownBy;
 import static org.mockito.Mockito.*;
 
-import com.google.api.core.ApiFutures;
 import com.google.api.gax.paging.Page;
 import com.google.cloud.storage.Blob;
-import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageException;
-import com.google.cloud.storage.transfermanager.ParallelUploadConfig;
-import com.google.cloud.storage.transfermanager.TransferManager;
-import com.google.cloud.storage.transfermanager.TransferStatus;
-import com.google.cloud.storage.transfermanager.UploadJob;
-import com.google.cloud.storage.transfermanager.UploadResult;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
@@ -32,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,13 +36,17 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 final class FileSetManagerTest {
   private final Storage storage;
-  private final TransferManager transferManager;
   private final FileSetManager manager;
 
-  FileSetManagerTest(@Mock final Storage storage, @Mock final TransferManager transferManager) {
+  FileSetManagerTest(@Mock final Storage storage) {
     this.storage = storage;
-    this.transferManager = transferManager;
-    manager = new FileSetManager(storage, transferManager, BucketInfo.of("bucket"), "basePath");
+    manager =
+        new FileSetManager(
+            storage,
+            BucketInfo.of("bucket"),
+            "basePath",
+            Executors.newVirtualThreadPerTaskExecutor(),
+            50);
   }
 
   @Test
@@ -60,19 +58,11 @@ final class FileSetManagerTest {
     final var namedFileSet =
         new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
 
-    final var uploadJob =
-        UploadJob.newBuilder()
-            .setParallelUploadConfig(
-                ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
-            .build();
-    when(transferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
-        .thenReturn(uploadJob);
-
     // when
-    manager.saveSnapshot(backupIdentifier, namedFileSet);
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
 
-    // then
-    verify(transferManager).uploadFiles(anyList(), any(ParallelUploadConfig.class));
+    // then - snapshots are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
   }
 
   @Test
@@ -84,29 +74,19 @@ final class FileSetManagerTest {
     final var file2 = Files.createFile(tempDir.resolve("file2"));
     final var namedFileSet =
         new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
-
-    final var failedResult =
-        UploadResult.newBuilder(
-                BlobInfo.newBuilder("bucket", "test").build(), TransferStatus.FAILED_TO_FINISH)
-            .setException(new StorageException(412, "expected"))
-            .build();
-    final var uploadJob =
-        UploadJob.newBuilder()
-            .setUploadResults(List.of(ApiFutures.immediateFuture(failedResult)))
-            .setParallelUploadConfig(
-                ParallelUploadConfig.newBuilder().setBucketName("bucket").build())
-            .build();
-    when(transferManager.uploadFiles(anyList(), any(ParallelUploadConfig.class)))
-        .thenReturn(uploadJob);
+    when(storage.createFrom(any(), any(InputStream.class), any()))
+        .thenThrow(new StorageException(412, "expected"));
 
     // when throw
-    Assertions.assertThatThrownBy(() -> manager.saveSnapshot(backupIdentifier, namedFileSet))
-        .isInstanceOf(StorageException.class)
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
   @Test
-  void shouldSaveSegmentFilesSequentially(@TempDir final Path tempDir) throws IOException {
+  void shouldSaveSegmentFilesInParallel(@TempDir final Path tempDir) throws IOException {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var file1 = Files.createFile(tempDir.resolve("file1"));
@@ -115,11 +95,10 @@ final class FileSetManagerTest {
         new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
 
     // when
-    manager.saveSegments(backupIdentifier, namedFileSet);
+    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
 
-    // then
+    // then - segments are uploaded in parallel using the executor
     verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
-    verifyNoInteractions(transferManager);
   }
 
   @Test
@@ -134,8 +113,10 @@ final class FileSetManagerTest {
         .thenThrow(new StorageException(412, "expected"));
 
     // when throw
-    Assertions.assertThatThrownBy(() -> manager.saveSegments(backupIdentifier, namedFileSet))
-        .isInstanceOf(StorageException.class)
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
@@ -220,7 +201,7 @@ final class FileSetManagerTest {
 
     // when - then throw
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))
-        .isInstanceOf(StorageException.class)
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 }

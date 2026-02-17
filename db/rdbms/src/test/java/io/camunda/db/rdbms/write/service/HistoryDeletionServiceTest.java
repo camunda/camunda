@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
-import io.camunda.db.rdbms.sql.RootProcessInstanceDependantMapper;
+import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
@@ -67,7 +67,7 @@ public class HistoryDeletionServiceTest {
                     createModel(processInstanceKey1, HistoryDeletionTypeDbModel.PROCESS_INSTANCE),
                     createModel(
                         processInstanceKey2, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
-    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
 
@@ -76,10 +76,10 @@ public class HistoryDeletionServiceTest {
 
     // then
     verify(mapperMock)
-        .deleteRootProcessInstanceRelatedData(
+        .deleteProcessInstanceRelatedData(
             argThat(
                 dto ->
-                    dto.rootProcessInstanceKeys()
+                    dto.processInstanceKeys()
                         .equals(List.of(processInstanceKey1, processInstanceKey2))));
     verify(rdbmsWritersMock.getProcessInstanceWriter())
         .deleteByKeys(List.of(processInstanceKey1, processInstanceKey2));
@@ -92,7 +92,7 @@ public class HistoryDeletionServiceTest {
     // given
     when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
         .thenReturn(new HistoryDeletionBatch(List.of()));
-    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
 
@@ -100,7 +100,7 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(1);
 
     // then
-    verify(mapperMock, never()).deleteRootProcessInstanceRelatedData(any());
+    verify(mapperMock, never()).deleteProcessInstanceRelatedData(any());
     verify(rdbmsWritersMock.getProcessInstanceWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
   }
@@ -115,10 +115,10 @@ public class HistoryDeletionServiceTest {
             new HistoryDeletionBatch(
                 List.of(
                     createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
-    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
+    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
-    when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
+    when(mapperMock.deleteProcessInstanceRelatedData(any()))
         .thenReturn(10000); // not all dependant data deleted
 
     // when
@@ -285,8 +285,8 @@ public class HistoryDeletionServiceTest {
                     createModel(
                         decisionInstanceKey1, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
     // Mock process instance dependant writers to return limit, meaning not all data deleted
-    final var mapperMock = mock(RootProcessInstanceDependantMapper.class);
-    when(mapperMock.deleteRootProcessInstanceRelatedData(any()))
+    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
+    when(mapperMock.deleteProcessInstanceRelatedData(any()))
         .thenReturn(10000); // return the limit, meaning not all dependant data deleted
     when(rdbmsWritersMock.getProcessInstanceDependantWriters())
         .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
@@ -340,10 +340,10 @@ public class HistoryDeletionServiceTest {
     return new HistoryDeletionDbModel(processInstanceKey, type, 2L, 1);
   }
 
-  private static class TestProcessInstanceDependantWriter extends RootProcessInstanceDependant {
+  private static class TestProcessInstanceDependantWriter extends ProcessInstanceDependant {
     public TestProcessInstanceDependantWriter(
-        final RootProcessInstanceDependantMapper rootProcessInstanceDependantMapper) {
-      super(rootProcessInstanceDependantMapper);
+        final ProcessInstanceDependantMapper processInstanceDependantMapper) {
+      super(processInstanceDependantMapper);
     }
   }
 }

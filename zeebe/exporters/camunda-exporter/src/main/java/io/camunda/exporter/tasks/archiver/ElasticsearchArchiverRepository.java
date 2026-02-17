@@ -584,9 +584,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                         d.field(JobMetricsBatchTemplate.END_TIME)
                             .lte(config.getArchivingTimePoint())));
 
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(JobMetricsBatchTemplate.PARTITION_ID).value(partitionId));
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+    boolBuilder.must(partitionQ);
+
     return createSearchRequest(
         jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
-        endDateQ,
+        boolBuilder.build()._toQuery(),
         JobMetricsBatchTemplate.END_TIME);
   }
 

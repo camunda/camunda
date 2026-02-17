@@ -21,6 +21,8 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteProcessInstanceResponse;
 import io.camunda.client.api.search.enums.BatchOperationState;
+import io.camunda.client.api.search.filter.ProcessInstanceFilter;
+import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.configuration.HistoryDeletion;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.test.util.Strings;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
@@ -75,7 +78,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processDefinitionId(processId))
             .send()
             .join();
@@ -90,6 +93,59 @@ public class DeleteProcessInstanceHistoryIT {
     // and - all related data should be deleted
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey2);
+  }
+
+  @Test
+  void shouldDeleteSubProcessInstancesByProcessDefinitionIdUsingBatchOperation() {
+    // given - 2 completed process instances
+    final var subProcessId = Strings.newRandomValidBpmnId();
+    deployProcessAndWaitForIt(
+        camundaClient,
+        Bpmn.createExecutableProcess(subProcessId).startEvent().endEvent().done(),
+        subProcessId + ".bpmn");
+    final var rootProcessId = Strings.newRandomValidBpmnId();
+    deployProcessAndWaitForIt(
+        camundaClient,
+        Bpmn.createExecutableProcess(rootProcessId)
+            .startEvent()
+            .callActivity()
+            .zeebeProcessId(subProcessId)
+            .endEvent()
+            .done(),
+        rootProcessId + ".bpmn");
+    final long rootProcessInstanceKey =
+        startProcessInstance(camundaClient, rootProcessId).getProcessInstanceKey();
+    final Consumer<ProcessInstanceFilter> subProcessFilter =
+        f -> f.processDefinitionId(subProcessId);
+    waitForProcessInstances(camundaClient, subProcessFilter, 1);
+
+    final var subprocessSearchResult =
+        camundaClient.newProcessInstanceSearchRequest().filter(subProcessFilter).send().join();
+
+    assertThat(subprocessSearchResult.items()).hasSize(1);
+    final ProcessInstance subprocessInstance = subprocessSearchResult.items().getFirst();
+    assertThat(subprocessInstance.getProcessInstanceKey()).isNotEqualTo(rootProcessInstanceKey);
+    assertThat(subprocessInstance.getRootProcessInstanceKey()).isEqualTo(rootProcessInstanceKey);
+
+    // when - delete by (sub) process definition id
+    final var batchResult =
+        camundaClient
+            .newCreateBatchOperationCommand()
+            .deleteProcessInstance()
+            .filter(f -> f.processDefinitionId(subProcessId))
+            .send()
+            .join();
+
+    // then - batch operation should be created and complete successfully
+    assertThat(batchResult).isNotNull();
+    assertThat(batchResult.getBatchOperationKey()).isNotNull();
+    waitForBatchOperationWithCorrectTotalCount(
+        camundaClient, batchResult.getBatchOperationKey(), 1);
+    waitForBatchOperationCompleted(camundaClient, batchResult.getBatchOperationKey(), 1, 0);
+
+    // and - all related data should be deleted
+    assertAllProcessInstanceDependantDataDeleted(
+        camundaClient, subprocessInstance.getProcessInstanceKey());
   }
 
   @Test
@@ -108,7 +164,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processInstanceKey(piKey1))
             .send()
             .join();
@@ -146,7 +202,7 @@ public class DeleteProcessInstanceHistoryIT {
     final var batchResult =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.processInstanceKey(piKey))
             .send()
             .join();
@@ -189,7 +245,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -210,7 +266,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete only one by key
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey1).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey1).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -237,7 +293,7 @@ public class DeleteProcessInstanceHistoryIT {
     waitForProcessInstances(camundaClient, f -> f.processInstanceKey(piKey), 1);
 
     // when
-    final var resultFuture = camundaClient.newDeleteInstanceCommand(piKey).send();
+    final var resultFuture = camundaClient.newDeleteProcessInstanceCommand(piKey).send();
 
     // then
     assertThatExceptionOfType(ProblemException.class)
@@ -271,7 +327,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -300,7 +356,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -324,7 +380,7 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when - delete using singular deletion
     final DeleteProcessInstanceResponse result =
-        camundaClient.newDeleteInstanceCommand(piKey).send().join();
+        camundaClient.newDeleteProcessInstanceCommand(piKey).send().join();
 
     // then - deletion should be successful
     assertThat(result).isNotNull();
@@ -338,7 +394,8 @@ public class DeleteProcessInstanceHistoryIT {
 
     // when/then - try to delete non-existing process instance should throw not found exception
     assertThatExceptionOfType(ProblemException.class)
-        .isThrownBy(() -> camundaClient.newDeleteInstanceCommand(nonExistingKey).send().join())
+        .isThrownBy(
+            () -> camundaClient.newDeleteProcessInstanceCommand(nonExistingKey).send().join())
         .satisfies(
             exception -> {
               assertThat(exception.code()).isEqualTo(404);

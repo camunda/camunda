@@ -41,11 +41,10 @@ public class RestApiCompositeFilter extends CompositeFilter {
               ? ((HttpServletRequest) request).getRequestURI()
               : "";
       final var msg =
-          "{ \"type\": \"about:blank\", \"status\": 500, \"title\": \"Filter issue\", \"detail\": \""
-              + e.getMessage()
-              + "\", \"instance\": \" "
-              + instance
-              + "\" }";
+          """
+          { "type": "about:blank", "status": 500, "title": "Filter issue", "detail": "%s", "instance": "%s" }
+          """
+              .formatted(e.getMessage(), instance);
 
       if (response instanceof HttpServletResponse) {
         ((HttpServletResponse) response).setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

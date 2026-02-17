@@ -56,6 +56,11 @@ on:
         type: boolean
         required: false
         default: false
+      enable-optimize:
+        description: 'Enable Optimize for load testing'
+        type: boolean
+        required: false
+        default: false
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         type: choice
@@ -111,6 +116,11 @@ on:
         required: false
       stable-vms:
         description: 'Deploy to non-spot VMs'
+        type: boolean
+        required: false
+        default: false
+      enable-optimize:
+        description: 'Enable Optimize for load testing'
         type: boolean
         required: false
         default: false
@@ -356,7 +366,7 @@ jobs:
           # the GitHub action by default. We need to correctly configure the git user here to make it work
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
-          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }}
+          ./newLoadTest.sh ${{ inputs.name }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ inputs.name }}
@@ -370,6 +380,7 @@ jobs:
 
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
+            enable_optimize=${{ inputs.enable-optimize }} \
             additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'gcr.io' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'zeebe-io/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment

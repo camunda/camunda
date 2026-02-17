@@ -31,8 +31,10 @@ const hasEmbeddedForm = (businessObject?: BusinessObject): boolean => {
   const formDefinition = businessObject.extensionElements?.values?.find(
     (element) => element.$type === 'zeebe:formDefinition',
   );
-
-  return formDefinition?.formKey !== undefined;
+  return (
+    formDefinition?.formKey !== undefined &&
+    formDefinition?.formKey.toLowerCase().startsWith('camunda-forms:bpmn:')
+  );
 };
 
 export {hasEmbeddedForm};

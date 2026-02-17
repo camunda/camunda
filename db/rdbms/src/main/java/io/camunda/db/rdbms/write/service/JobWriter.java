@@ -21,7 +21,7 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.util.function.Function;
 
-public class JobWriter extends RootProcessInstanceDependant implements RdbmsWriter {
+public class JobWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;

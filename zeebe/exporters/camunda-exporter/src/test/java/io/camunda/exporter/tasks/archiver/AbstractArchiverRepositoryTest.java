@@ -61,6 +61,7 @@ abstract class AbstractArchiverRepositoryTest {
         Named.of("getBatchOperationsNextBatch", ArchiverRepository::getBatchOperationsNextBatch),
         Named.of("getUsageMetricTUNextBatch", ArchiverRepository::getUsageMetricTUNextBatch),
         Named.of("getUsageMetricNextBatch", ArchiverRepository::getUsageMetricNextBatch),
+        Named.of("getJobBatchMetricsNextBatch", ArchiverRepository::getJobBatchMetricsNextBatch),
         Named.of(
             "getStandaloneDecisionNextBatch", ArchiverRepository::getStandaloneDecisionNextBatch));
   }

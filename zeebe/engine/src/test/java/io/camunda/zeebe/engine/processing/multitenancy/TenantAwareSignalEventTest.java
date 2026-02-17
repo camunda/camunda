@@ -430,11 +430,15 @@ public class TenantAwareSignalEventTest {
         .describedAs("Expect that signal is thrown")
         .isNotNull();
     assertThat(
-            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-                .withBpmnProcessId(signalCatchingProcess)
-                .withElementId("signal-start")
-                .withTenantId(tenantIdB)
-                .exists())
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processInstanceRecords()
+                        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                        .withBpmnProcessId(signalCatchingProcess)
+                        .withElementId("signal-start")
+                        .withTenantId(tenantIdB)
+                        .exists()))
         .describedAs("Expect that process instance was not created")
         .isFalse();
   }

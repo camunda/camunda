@@ -19,7 +19,7 @@ import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public class DecisionInstanceWriter extends RootProcessInstanceDependant implements RdbmsWriter {
+public class DecisionInstanceWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final DecisionInstanceMapper mapper;
   private final ExecutionQueue executionQueue;

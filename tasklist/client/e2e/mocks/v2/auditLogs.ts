@@ -18,6 +18,7 @@ type AuditLogItem = {
   actorType: string;
   result: 'SUCCESS' | 'FAIL';
   category: string;
+  relatedEntityKey?: string;
 };
 
 type QueryUserTaskAuditLogsResponse = {
@@ -51,6 +52,7 @@ const auditLogs: AuditLogItem[] = [
     timestamp: '2024-01-01T01:00:00.000Z',
     actorId: 'jane',
     result: 'SUCCESS',
+    relatedEntityKey: 'demo',
   }),
   auditLog({
     operationType: 'COMPLETE',

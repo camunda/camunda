@@ -14,11 +14,6 @@
 
   <name>Camunda QA Compatibility Tests</name>
 
-  <properties>
-    <!-- Runtime spring client version for compatibility tests - can be overridden -->
-    <camunda.spring.client.version>${project.version}</camunda.spring.client.version>
-  </properties>
-
   <dependencies>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -28,7 +23,6 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>camunda-spring-boot-starter</artifactId>
-      <version>${camunda.spring.client.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>

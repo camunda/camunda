@@ -77,6 +77,17 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
       filters.add(new VariableTypeFilter(valueTypeInclusion, valueTypeExclusion));
     }
 
+    if (!index.getBpmnProcessIdInclusion().isEmpty()
+        || !index.getBpmnProcessIdExclusion().isEmpty()) {
+      LOG.info(
+          "Bpmn process id filters configured. Inclusion ids: {}, Exclusion ids: {}.",
+          index.getBpmnProcessIdInclusion(),
+          index.getBpmnProcessIdExclusion());
+      filters.add(
+          new BpmnProcessFilter(
+              index.getBpmnProcessIdInclusion(), index.getBpmnProcessIdExclusion()));
+    }
+
     return List.copyOf(filters);
   }
 

@@ -27,6 +27,6 @@
 		"eslint-plugin-license-header": "0.9.0",
 		"globals": "17.3.0",
 		"prettier": "3.8.1",
-		"typescript-eslint": "8.55.0"
+		"typescript-eslint": "8.56.0"
 	}
 }

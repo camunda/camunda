@@ -52,6 +52,7 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
+import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
@@ -592,6 +593,20 @@ public class CamundaServicesConfiguration {
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new TopologyServices(
+        brokerClient,
+        securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public GlobalListenerServices globalListenerServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new GlobalListenerServices(
         brokerClient,
         securityContextProvider,
         null,

@@ -650,7 +650,7 @@ final class SystemContextTest {
         .setUserTask(
             List.of(
                 createListenerCfg("test", List.of("creating")),
-                createListenerCfg(null, List.of("assigning"))));
+                createListenerCfg("", List.of("assigning"))));
 
     // when
     initSystemContext(brokerCfg);

@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.github.tomakehurst.wiremock.http.RequestMethod;
 import com.github.tomakehurst.wiremock.verification.LoggedRequest;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
+import io.camunda.client.protocol.rest.DecisionInstanceDeletionBatchOperationRequest;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceDeletionBatchOperationRequest;
@@ -92,7 +93,7 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     // when
     client
         .newCreateBatchOperationCommand()
-        .processInstanceDelete()
+        .deleteProcessInstance()
         .filter(filter -> filter.processDefinitionId("test-01"))
         .send()
         .join();
@@ -198,5 +199,29 @@ public final class CreateBatchOperationTest extends ClientRestTest {
     final ProcessInstanceIncidentResolutionBatchOperationRequest lastRequest =
         gatewayService.getLastRequest(ProcessInstanceIncidentResolutionBatchOperationRequest.class);
     assertThat(lastRequest.getFilter().getProcessDefinitionId().get$Eq()).isEqualTo("test-01");
+  }
+
+  @Test
+  public void shouldSendDecisionInstanceDeleteCommandWithFilter() {
+    // given
+    gatewayService.onDeleteDecisionInstancesRequest(
+        Instancio.create(BatchOperationCreatedResult.class).batchOperationKey("2"));
+
+    // when
+    client
+        .newCreateBatchOperationCommand()
+        .deleteDecisionInstance()
+        .filter(filter -> filter.decisionDefinitionId("test-d-01"))
+        .send()
+        .join();
+
+    // then
+    final LoggedRequest request = RestGatewayService.getLastRequest();
+    assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
+    assertThat(request.getUrl()).isEqualTo("/v2/decision-instances/deletion");
+
+    final DecisionInstanceDeletionBatchOperationRequest lastRequest =
+        gatewayService.getLastRequest(DecisionInstanceDeletionBatchOperationRequest.class);
+    assertThat(lastRequest.getFilter().getDecisionDefinitionId()).isEqualTo("test-d-01");
   }
 }

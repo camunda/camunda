@@ -79,10 +79,11 @@ public final class MetricsKey implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putInt(offset, jobTypeIndex, Protocol.ENDIANNESS);
     buffer.putInt(offset + Integer.BYTES, tenantIdIndex, Protocol.ENDIANNESS);
     buffer.putInt(offset + 2 * Integer.BYTES, workerNameIndex, Protocol.ENDIANNESS);
+    return getLength();
   }
 
   @Override

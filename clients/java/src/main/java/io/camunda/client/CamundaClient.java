@@ -47,6 +47,7 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
+import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
@@ -409,14 +410,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteInstanceCommand(processInstanceKey)
+   *  .newDeleteProcessInstanceCommand(processInstanceKey)
    *  .send();
    * </pre>
    *
    * @param processInstanceKey the key which identifies the corresponding process instance
    * @return a builder for the command
    */
-  DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(long processInstanceKey);
+  DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,
@@ -880,7 +881,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @param decisionDefinitionKey the key of the process definition
+   * @param processDefinitionKey the key of the process definition
    * @return a builder for the request to get the XML of a process definition
    */
   ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(long processDefinitionKey);
@@ -1215,6 +1216,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a decision instance
    */
   DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
+
+  /**
+   * Command to delete a decision instance history.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteDecisionInstanceCommand(decisionInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param decisionInstanceKey the key which identifies the corresponding decision instance
+   * @return a builder for the command
+   */
+  DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(long decisionInstanceKey);
 
   /**
    * Executes a search request to query incidents.

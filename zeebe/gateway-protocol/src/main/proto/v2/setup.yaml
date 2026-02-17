@@ -3,7 +3,7 @@
 paths:
   /setup/user:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Setup
       operationId: createAdminUser
@@ -18,6 +18,10 @@ paths:
       responses:
         "201":
           description: The admin user was created successfully.
+          content:
+            application/json:
+              schema:
+                $ref: 'users.yaml#/components/schemas/UserCreateResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "403":

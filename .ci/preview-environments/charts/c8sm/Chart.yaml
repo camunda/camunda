@@ -11,7 +11,7 @@ version: 0.1.0
 dependencies:
 - name: infra-preview-environments-ingress
   repository: oci://registry.camunda.cloud/library
-  version: 1.8.1
+  version: 1.8.2
 - name: camunda-platform
   repository: https://helm.camunda.io
   version: 14.0.0-alpha4

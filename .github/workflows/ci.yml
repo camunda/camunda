@@ -1288,25 +1288,29 @@ jobs:
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
-      # renovate: datasource=github-releases depName=daveshanley/vacuum
-      VACUUM_VERSION: 'v0.23.8'
+      # renovate: datasource=npm depName=@stoplight/spectral-cli
+      SPECTRAL_VERSION: '6.15.0'
     steps:
       - uses: actions/checkout@v6
-      - name: Install vacuum
-        run: |
-          STRIPPED_VACUUM_VERSION="${VACUUM_VERSION#v}"
-          curl -s -L "https://github.com/daveshanley/vacuum/releases/download/${VACUUM_VERSION}/vacuum_${STRIPPED_VACUUM_VERSION}_Linux_x86_64.tar.gz" | tar xvz vacuum
+      - name: Setup Node.js for Spectral
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+      - name: Install Spectral CLI
+        run: npm install -g "@stoplight/spectral-cli@${SPECTRAL_VERSION}"
         shell: bash
-      - name: Run OpenAPI Linter
+      - name: Run OpenAPI Linter (Spectral)
+        # Spectral provides comprehensive OpenAPI validation including:
+        # - Schema structure validation (catches issues like required: false at property level)
+        # - Custom business rules (flow node terminology, key properties, descriptions)
+        # - Works correctly with multi-part specs using external $ref
         run: >
-          ./vacuum lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
-          --ruleset zeebe/gateway-protocol/vacuum-ruleset.yaml
-          --ignore-file zeebe/gateway-protocol/vacuum-ignores.yaml
-          --functions zeebe/gateway-protocol/vacuum-rules
-          --details --no-clip --errors
+          spectral lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
+          --ruleset zeebe/gateway-protocol/.spectral.yaml
+          --fail-severity error
         shell: bash
       - name: Observe build status
         if: always()

@@ -75,7 +75,7 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   protected void onActorClosing() {
     internalBackupManager.close();
-    metrics.cancelInProgressOperations();
+    metrics.close();
   }
 
   @Override

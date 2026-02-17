@@ -12,7 +12,6 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -464,7 +464,7 @@ public final class BpmnUserTaskBehavior {
 
     // Extract the list of supported listener event types
     var eventTypes =
-        globalTaskListener.getEventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
+        globalTaskListener.getEventTypes().contains(GlobalListenerRecord.ALL_EVENT_TYPES)
             ? List.of(ZeebeTaskListenerEventType.values())
             : globalTaskListener.getEventTypes().stream()
                 .map(ZeebeTaskListenerEventType::valueOf)

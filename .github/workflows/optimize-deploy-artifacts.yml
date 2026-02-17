@@ -69,6 +69,20 @@ jobs:
       run: ./.github/optimize/scripts/build-docker-image.sh
     # The SmokeTest is running as part of the "deploy-artifact" job to ensure we only push the artifact on success
     # It uses the previously created docker image before it was pushed
+    - name: Set Smoketest versions for main branch
+      if: github.ref_name == 'main'
+      run: |
+        {
+          echo "ZEEBE_VERSION=latest"
+          echo "IDENTITY_VERSION=latest"
+        } >> "$GITHUB_ENV"
+    - name: Set Smoketest versions for stable branch
+      if: startsWith(github.ref_name, 'stable/')
+      run: |
+        {
+          echo "ZEEBE_VERSION=${{ steps.pom-info.outputs.x_zeebe_version }}"
+          echo "IDENTITY_VERSION=${{ steps.pom-info.outputs.x_identity_version }}"
+        } >> "$GITHUB_ENV"
     - name: Start Smoketest
       uses: ./.github/actions/compose
       with:
@@ -77,8 +91,8 @@ jobs:
       env:
         OPTIMIZE_IMAGE_TAG: ${{ env.DOCKER_TAG }}
         ELASTIC_VERSION: ${{ steps.pom-info.outputs.x_elasticsearch_test_version }}
-        ZEEBE_VERSION: ${{ steps.pom-info.outputs.x_zeebe_version }}
-        IDENTITY_VERSION: ${{ steps.pom-info.outputs.x_identity_version }}
+        ZEEBE_VERSION: ${{ env.ZEEBE_VERSION }}
+        IDENTITY_VERSION: ${{ env.IDENTITY_VERSION }}
 
     - name: Wait for Optimize to start
       run: ./.github/optimize/scripts/wait-for.sh http://localhost:8090/ready

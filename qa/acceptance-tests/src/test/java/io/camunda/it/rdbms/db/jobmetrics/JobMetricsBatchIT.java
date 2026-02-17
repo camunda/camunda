@@ -39,7 +39,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class JobMetricsBatchIT {
 
-  private static final Long PARTITION_ID = 0L;
+  private static final int PARTITION_ID = 10;
   private static final OffsetDateTime NOW = OffsetDateTime.now(UTC).truncatedTo(ChronoUnit.MILLIS);
   private static final OffsetDateTime NOW_MINUS_2M = NOW.minusMinutes(2);
   private static final OffsetDateTime NOW_MINUS_3M = NOW.minusMinutes(3);
@@ -102,6 +102,7 @@ public class JobMetricsBatchIT {
     writer.create(
         new JobMetricsBatchDbModel.Builder()
             .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
             .startTime(startTime)
             .endTime(endTime)
             .tenantId(tenantId)
@@ -125,13 +126,13 @@ public class JobMetricsBatchIT {
     jobMetricsBatchWriter = rdbmsWriters.getJobMetricsBatchWriter();
 
     // Clean up any existing data before each test
-    jobMetricsBatchWriter.cleanupMetrics(NOW.plusDays(1), Integer.MAX_VALUE);
+    jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.plusDays(1), Integer.MAX_VALUE);
     rdbmsWriters.flush();
   }
 
   @AfterEach
   void tearDown() {
-    jobMetricsBatchWriter.cleanupMetrics(NOW.plusDays(1), Integer.MAX_VALUE);
+    jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.plusDays(1), Integer.MAX_VALUE);
     rdbmsWriters.flush();
   }
 
@@ -777,5 +778,469 @@ public class JobMetricsBatchIT {
               assertThat(actual.completed().count()).isEqualTo(10L);
               assertThat(actual.failed().count()).isEqualTo(2L);
             });
+  }
+
+  @TestTemplate
+  public void shouldInsertJobMetricsBatch() {
+    // given
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(5)
+            .lastFailedAt(NOW)
+            .completedCount(10)
+            .lastCompletedAt(NOW)
+            .createdCount(15)
+            .lastCreatedAt(NOW)
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.key()).isNotNull();
+    assertThat(model.tenantId()).isEqualTo(TENANT1);
+    assertThat(model.jobType()).isEqualTo(JOB_TYPE_A);
+    assertThat(model.worker()).isEqualTo(WORKER_1);
+    assertThat(model.failedCount()).isEqualTo(5);
+    assertThat(model.completedCount()).isEqualTo(10);
+    assertThat(model.createdCount()).isEqualTo(15);
+    assertThat(model.incompleteBatch()).isFalse();
+  }
+
+  @TestTemplate
+  public void shouldInsertMultipleJobMetricsBatches() {
+    // given
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT1,
+        JOB_TYPE_A,
+        WORKER_1,
+        1,
+        NOW,
+        2,
+        NOW,
+        3,
+        NOW,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW_MINUS_5M,
+        NOW_MINUS_5M,
+        TENANT1,
+        JOB_TYPE_B,
+        WORKER_2,
+        4,
+        NOW_MINUS_5M,
+        5,
+        NOW_MINUS_5M,
+        6,
+        NOW_MINUS_5M,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW_MINUS_10M,
+        NOW_MINUS_10M,
+        TENANT2,
+        JOB_TYPE_A,
+        WORKER_1,
+        7,
+        NOW_MINUS_10M,
+        8,
+        NOW_MINUS_10M,
+        9,
+        NOW_MINUS_10M,
+        true);
+
+    // when
+    rdbmsWriters.flush();
+
+    // when - then
+    assertThat(rdbmsWriters).isNotNull();
+  }
+
+  @TestTemplate
+  public void shouldInsertJobMetricsBatchWithDifferentTenants() {
+    // given
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT1,
+        JOB_TYPE_A,
+        WORKER_1,
+        5,
+        NOW,
+        10,
+        NOW,
+        15,
+        NOW,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT2,
+        JOB_TYPE_A,
+        WORKER_1,
+        3,
+        NOW,
+        6,
+        NOW,
+        9,
+        NOW,
+        false);
+    rdbmsWriters.flush();
+
+    // then - verify both were written successfully
+    final var actual =
+        jobMetricsBatchReader.getGlobalJobStatistics(
+            GlobalJobStatisticsQuery.of(
+                q -> q.filter(f -> f.from(NOW_MINUS_15M).to(NOW.plusMinutes(1)))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+    assertThat(actual.created().count()).isEqualTo(8L); // 5 from TENANT1 + 3 from TENANT2
+  }
+
+  @TestTemplate
+  public void shouldInsertJobMetricsBatchWithIncompleteBatch() {
+    // given
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(5)
+            .lastFailedAt(NOW)
+            .completedCount(10)
+            .lastCompletedAt(NOW)
+            .createdCount(15)
+            .lastCreatedAt(NOW)
+            .incompleteBatch(true)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.incompleteBatch()).isTrue();
+  }
+
+  @TestTemplate
+  public void shouldInsertJobMetricsBatchWithNullLastUpdatedTimes() {
+    // given - create a batch with zero counts, so no lastUpdatedAt times
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(0)
+            .lastFailedAt(null)
+            .completedCount(0)
+            .lastCompletedAt(null)
+            .createdCount(0)
+            .lastCreatedAt(null)
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.lastFailedAt()).isNull();
+    assertThat(model.lastCompletedAt()).isNull();
+    assertThat(model.lastCreatedAt()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldCleanupJobMetricsBatchesProperly() {
+    // given
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT1,
+        JOB_TYPE_A,
+        WORKER_1,
+        5,
+        NOW,
+        10,
+        NOW,
+        15,
+        NOW,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT1,
+        JOB_TYPE_B,
+        WORKER_1,
+        5,
+        NOW,
+        10,
+        NOW,
+        15,
+        NOW,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW.minusYears(3),
+        NOW.minusYears(3),
+        TENANT2,
+        JOB_TYPE_A,
+        WORKER_1,
+        3,
+        NOW.minusYears(3),
+        6,
+        NOW.minusYears(3),
+        9,
+        NOW.minusYears(3),
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW.minusYears(3),
+        NOW.minusYears(3),
+        TENANT2,
+        JOB_TYPE_B,
+        WORKER_2,
+        1,
+        NOW.minusYears(3),
+        2,
+        NOW.minusYears(3),
+        3,
+        NOW.minusYears(3),
+        false);
+    rdbmsWriters.flush();
+
+    // when - cleanup records older than 2 years
+    Awaitility.await("should cleanup old job metrics batches")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final int deletedCount =
+                  jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.minusYears(2), 100);
+              assertThat(deletedCount).isEqualTo(2);
+            });
+  }
+
+  @TestTemplate
+  public void shouldCleanupJobMetricsBatchesWithLimit() {
+    // given - create 5 old records
+    for (int i = 0; i < 5; i++) {
+      writeMetric(
+          jobMetricsBatchWriter,
+          NOW.minusYears(3),
+          NOW.minusYears(3),
+          TENANT1,
+          JOB_TYPE_A + i,
+          WORKER_1,
+          1,
+          NOW.minusYears(3),
+          2,
+          NOW.minusYears(3),
+          3,
+          NOW.minusYears(3),
+          false);
+    }
+    rdbmsWriters.flush();
+
+    // when - cleanup with limit of 3
+    Awaitility.await("should cleanup limited job metrics batches")
+        .atMost(Duration.ofSeconds(4))
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final int deletedCount =
+                  jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.minusYears(2), 3);
+              assertThat(deletedCount).isEqualTo(3);
+            });
+  }
+
+  @TestTemplate
+  public void shouldNotCleanupRecentJobMetricsBatches() {
+    // given - create only recent records
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW,
+        NOW,
+        TENANT1,
+        JOB_TYPE_A,
+        WORKER_1,
+        5,
+        NOW,
+        10,
+        NOW,
+        15,
+        NOW,
+        false);
+    writeMetric(
+        jobMetricsBatchWriter,
+        NOW_MINUS_5M,
+        NOW_MINUS_5M,
+        TENANT1,
+        JOB_TYPE_B,
+        WORKER_2,
+        3,
+        NOW_MINUS_5M,
+        6,
+        NOW_MINUS_5M,
+        9,
+        NOW_MINUS_5M,
+        false);
+    rdbmsWriters.flush();
+
+    // when - cleanup records older than 2 years (none should be affected)
+    final int deletedCount =
+        jobMetricsBatchWriter.cleanupMetrics(PARTITION_ID, NOW.minusYears(2), 100);
+
+    // then
+    assertThat(deletedCount).isEqualTo(0);
+  }
+
+  @TestTemplate
+  public void shouldInsertJobMetricsBatchWithAllFields() {
+    // given
+    final var startTime = NOW.minusMinutes(30);
+    final var endTime = NOW;
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(startTime)
+            .endTime(endTime)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(100)
+            .lastFailedAt(NOW.minusMinutes(5))
+            .completedCount(200)
+            .lastCompletedAt(NOW.minusMinutes(3))
+            .createdCount(300)
+            .lastCreatedAt(NOW.minusMinutes(1))
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.startTime()).isEqualTo(startTime);
+    assertThat(model.endTime()).isEqualTo(endTime);
+    assertThat(model.failedCount()).isEqualTo(100);
+    assertThat(model.completedCount()).isEqualTo(200);
+    assertThat(model.createdCount()).isEqualTo(300);
+    assertThat(model.lastFailedAt()).isNotNull();
+    assertThat(model.lastCompletedAt()).isNotNull();
+    assertThat(model.lastCreatedAt()).isNotNull();
+  }
+
+  @TestTemplate
+  public void shouldHandleBatchWithOnlyFailedJobs() {
+    // given
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(10)
+            .lastFailedAt(NOW)
+            .completedCount(0)
+            .lastCompletedAt(null)
+            .createdCount(0)
+            .lastCreatedAt(null)
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.failedCount()).isEqualTo(10);
+    assertThat(model.completedCount()).isZero();
+    assertThat(model.createdCount()).isZero();
+    assertThat(model.lastFailedAt()).isNotNull();
+    assertThat(model.lastCompletedAt()).isNull();
+    assertThat(model.lastCreatedAt()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldHandleBatchWithOnlyCompletedJobs() {
+    // given
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(0)
+            .lastFailedAt(null)
+            .completedCount(20)
+            .lastCompletedAt(NOW)
+            .createdCount(0)
+            .lastCreatedAt(null)
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.failedCount()).isZero();
+    assertThat(model.completedCount()).isEqualTo(20);
+    assertThat(model.createdCount()).isZero();
+    assertThat(model.lastFailedAt()).isNull();
+    assertThat(model.lastCompletedAt()).isNotNull();
+    assertThat(model.lastCreatedAt()).isNull();
+  }
+
+  @TestTemplate
+  public void shouldHandleBatchWithOnlyCreatedJobs() {
+    // given
+    final var model =
+        new JobMetricsBatchDbModel.Builder()
+            .key(String.valueOf(CommonFixtures.nextKey()))
+            .partitionId(PARTITION_ID)
+            .startTime(NOW)
+            .endTime(NOW)
+            .tenantId(TENANT1)
+            .jobType(JOB_TYPE_A)
+            .worker(WORKER_1)
+            .failedCount(0)
+            .lastFailedAt(null)
+            .completedCount(0)
+            .lastCompletedAt(null)
+            .createdCount(30)
+            .lastCreatedAt(NOW)
+            .incompleteBatch(false)
+            .build();
+    jobMetricsBatchWriter.create(model);
+    rdbmsWriters.flush();
+
+    // then
+    assertThat(model.failedCount()).isZero();
+    assertThat(model.completedCount()).isZero();
+    assertThat(model.createdCount()).isEqualTo(30);
+    assertThat(model.lastFailedAt()).isNull();
+    assertThat(model.lastCompletedAt()).isNull();
+    assertThat(model.lastCreatedAt()).isNotNull();
   }
 }

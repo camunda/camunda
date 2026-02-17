@@ -71,11 +71,8 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
   ) => {
     return (
       <Container className={className} ref={ref}>
-        <CarbonDataTable
-          size={size}
-          headers={rawHeaders}
-          rows={rows}
-          render={({
+        <CarbonDataTable size={size} headers={rawHeaders} rows={rows}>
+          {({
             rows,
             headers,
             getTableContainerProps,
@@ -159,7 +156,7 @@ const DataTable = React.forwardRef<HTMLDivElement, Props>(
               </Table>
             </TableContainer>
           )}
-        />
+        </CarbonDataTable>
       </Container>
     );
   },

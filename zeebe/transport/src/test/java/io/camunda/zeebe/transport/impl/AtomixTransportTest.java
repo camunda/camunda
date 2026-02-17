@@ -461,8 +461,10 @@ public class AtomixTransportTest {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
-      buffer.putBytes(offset, msg.getBytes());
+    public int write(final MutableDirectBuffer buffer, final int offset) {
+      final var bytes = msg.getBytes();
+      buffer.putBytes(offset, bytes);
+      return bytes.length;
     }
   }
 

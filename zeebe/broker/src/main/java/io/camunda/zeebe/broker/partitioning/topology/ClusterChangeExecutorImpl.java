@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.broker.partitioning.topology;
 
+import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.broker.Loggers;
 import io.camunda.zeebe.broker.exporter.context.ExporterContext;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +54,12 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         });
 
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> preScaling(final Set<MemberId> clusterMembers) {
+    // TODO: implement actual logic
+    return concurrencyControl.createCompletedFuture();
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {

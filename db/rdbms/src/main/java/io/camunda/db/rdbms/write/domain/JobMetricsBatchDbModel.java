@@ -12,6 +12,7 @@ import java.time.OffsetDateTime;
 
 public record JobMetricsBatchDbModel(
     String key,
+    int partitionId,
     OffsetDateTime startTime,
     OffsetDateTime endTime,
     boolean incompleteBatch,
@@ -28,6 +29,7 @@ public record JobMetricsBatchDbModel(
   public static class Builder implements ObjectBuilder<JobMetricsBatchDbModel> {
 
     private String key;
+    private int partitionId;
     private OffsetDateTime startTime;
     private OffsetDateTime endTime;
     private boolean incompleteBatch;
@@ -43,6 +45,11 @@ public record JobMetricsBatchDbModel(
 
     public Builder key(final String key) {
       this.key = key;
+      return this;
+    }
+
+    public Builder partitionId(final int partitionId) {
+      this.partitionId = partitionId;
       return this;
     }
 
@@ -110,6 +117,7 @@ public record JobMetricsBatchDbModel(
     public JobMetricsBatchDbModel build() {
       return new JobMetricsBatchDbModel(
           key,
+          partitionId,
           startTime,
           endTime,
           incompleteBatch,

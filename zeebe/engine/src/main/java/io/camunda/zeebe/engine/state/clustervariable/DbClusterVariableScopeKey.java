@@ -47,12 +47,12 @@ public class DbClusterVariableScopeKey implements DbKey {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    scope.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    int written = scope.write(buffer, offset);
 
     if (scope.getValue() != ClusterVariableScope.GLOBAL) {
-      final var scopeLength = scope.getLength();
-      scopeKey.write(buffer, offset + scopeLength);
+      written += scopeKey.write(buffer, offset + written);
     } // else don't write scopeKey as part of the key
+    return written;
   }
 }

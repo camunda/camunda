@@ -12,6 +12,7 @@ import {
   ErrorFilled as BaseErrorFilled,
 } from "@carbon/react/icons";
 import { Column, Grid as CarbonGrid } from "@carbon/react";
+import { styles } from "@carbon/elements";
 
 const OperationLogName = styled.div`
   display: flex;
@@ -62,6 +63,14 @@ const DatePickerWrapper = styled.div`
   }
 `;
 
+const PropertyText = styled.div`
+  ${styles.caption01}
+`;
+
+const OwnerInfo = styled.div`
+  white-space: nowrap;
+`;
+
 export {
   OperationLogName,
   SuccessIcon,
@@ -70,4 +79,6 @@ export {
   ColumnRightPadding,
   CenteredRow,
   DatePickerWrapper,
+  PropertyText,
+  OwnerInfo,
 };

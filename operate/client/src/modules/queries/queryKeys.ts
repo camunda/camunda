@@ -93,6 +93,9 @@ const queryKeys = {
       'processDefinitionStatistics',
       payload,
     ],
+    getPaginated: (
+      payload?: GetProcessDefinitionInstanceStatisticsRequestBody,
+    ) => ['processDefinitionStatistics', 'paginated', payload],
     getByVersion: (
       processDefinitionId: string,
       payload?: GetProcessDefinitionInstanceVersionStatisticsRequestBody,

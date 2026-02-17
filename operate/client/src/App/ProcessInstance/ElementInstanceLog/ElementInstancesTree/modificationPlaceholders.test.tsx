@@ -9,7 +9,7 @@
 import {act} from 'react';
 import {render, screen, waitFor} from 'modules/testing-library';
 import {modificationsStore} from 'modules/stores/modifications';
-import {multiInstanceProcess} from 'modules/testUtils';
+import {multiInstanceProcess, searchResult} from 'modules/testUtils';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {ElementInstancesTree} from './index';
 import {
@@ -29,6 +29,7 @@ import {
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -49,10 +50,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
   });
 
   it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
@@ -125,6 +123,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.secondLevel1,
     );
+    mockFetchElementInstance('1').withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.firstLevel.items[0]!,
+    );
 
     const [expandFirstScope, expandSecondScope, expandNewScope] =
       screen.getAllByRole('treeitem', {
@@ -147,6 +148,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.thirdLevel1,
     );
+    mockFetchElementInstance('1_2').withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel1.items[1]!,
+    );
 
     await user.type(
       screen.getByRole('treeitem', {
@@ -162,6 +166,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.secondLevel2,
     );
+    mockFetchElementInstance('2').withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.firstLevel.items[1]!,
+    );
 
     await user.type(expandSecondScope!, '{arrowright}');
 
@@ -173,6 +180,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.thirdLevel2,
+    );
+    mockFetchElementInstance('2_2').withSuccess(
+      multipleSubprocessesWithNoRunningScopeMock.secondLevel2.items[1]!,
     );
 
     await user.type(
@@ -240,8 +250,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
   it('should show and remove two add modification flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -269,9 +279,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.205+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
 
     render(
       <ElementInstancesTree
@@ -351,8 +360,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
   it('should show and remove one cancel modification flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockSearchElementInstances().withSuccess({
-      items: [
+    mockSearchElementInstances().withSuccess(
+      searchResult([
         {
           elementInstanceKey: '2251799813686130',
           processInstanceKey: '2251799813686118',
@@ -380,9 +389,8 @@ describe('ElementInstancesTree - Modification placeholders', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
         },
-      ],
-      page: {totalItems: 2},
-    });
+      ]),
+    );
 
     render(
       <ElementInstancesTree
@@ -495,6 +503,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.secondLevel1,
     );
+    mockFetchElementInstance('1').withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.firstLevel.items[0]!,
+    );
 
     const [expandFirstScope, expandSecondScope] = screen.getAllByRole(
       'treeitem',
@@ -517,6 +528,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.thirdLevel1,
     );
+    mockFetchElementInstance('1_2').withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel1.items[1]!,
+    );
 
     await user.type(
       screen.getByRole('treeitem', {
@@ -533,6 +547,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.secondLevel2,
     );
+    mockFetchElementInstance('2').withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.firstLevel.items[1]!,
+    );
 
     await user.type(expandSecondScope!, '{arrowright}');
 
@@ -544,6 +561,9 @@ describe('ElementInstancesTree - Modification placeholders', () => {
 
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.thirdLevel2,
+    );
+    mockFetchElementInstance('2_2').withSuccess(
+      multipleSubprocessesWithOneRunningScopeMock.secondLevel2.items[1]!,
     );
 
     await user.type(

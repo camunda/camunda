@@ -24,7 +24,7 @@
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
     "fuse.js": "7.1.0",
-    "i18next": "25.8.7",
+    "i18next": "25.8.10",
     "mobx-react-lite": "4.1.1",
     "react": "18.3.1",
     "react-debounced": "1.1.3",
@@ -33,7 +33,8 @@
     "react-i18next": "16.5.4",
     "react-router-dom": "7.13.0",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.3.9"
+    "styled-components": "6.3.9",
+    "zod": "4.3.6"
   },
   "devDependencies": {
     "@types/carbon__elements": "^11.10.3",
@@ -43,8 +44,8 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/react-transition-group": "4.4.12",
-    "@typescript-eslint/eslint-plugin": "8.55.0",
-    "@typescript-eslint/parser": "8.55.0",
+    "@typescript-eslint/eslint-plugin": "8.56.0",
+    "@typescript-eslint/parser": "8.56.0",
     "@vitejs/plugin-react": "^4.3.4",
     "eslint": "9.39.2",
     "eslint-config-prettier": "^10.1.1",

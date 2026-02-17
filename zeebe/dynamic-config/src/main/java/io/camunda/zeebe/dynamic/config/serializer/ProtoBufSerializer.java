@@ -53,6 +53,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
@@ -508,6 +509,12 @@ public class ProtoBufSerializer
       case final UpdateIncarnationNumberOperation msg ->
           builder.setUpdateIncarnationNumber(
               Topology.UpdateIncarnationNumberOperation.newBuilder().build());
+      case final PreScalingOperation preScalingOperation ->
+          builder.setPreScaling(
+              Topology.PreScalingOperation.newBuilder()
+                  .addAllClusterMembers(
+                      preScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
+                  .build());
     }
     return builder.build();
   }
@@ -762,6 +769,13 @@ public class ProtoBufSerializer
       return new UpdateRoutingState(memberId, routingState);
     } else if (topologyChangeOperation.hasUpdateIncarnationNumber()) {
       return new UpdateIncarnationNumberOperation(memberId);
+    } else if (topologyChangeOperation.hasPreScaling()) {
+      final var preScalingOperation = topologyChangeOperation.getPreScaling();
+      return new PreScalingOperation(
+          memberId,
+          preScalingOperation.getClusterMembersList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()));
     } else {
       // If the node does not know of a type, the exception thrown will prevent
       // ClusterTopologyGossiper from processing the incoming topology. This helps to prevent any

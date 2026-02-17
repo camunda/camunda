@@ -26,15 +26,20 @@ public final class GlobalListenerBatchClient {
 
   private final GlobalListenerBatchRecord globalListenerBatchRecord;
   private final CommandWriter writer;
-  private LongFunction<Record<GlobalListenerBatchRecordValue>> expectation = SUCCESS_SUPPLIER;
+  private final LongFunction<Record<GlobalListenerBatchRecordValue>> expectation = SUCCESS_SUPPLIER;
 
   public GlobalListenerBatchClient(final CommandWriter writer) {
     globalListenerBatchRecord = new GlobalListenerBatchRecord();
     this.writer = writer;
   }
 
-  public GlobalListenerBatchClient withTaskListener(final GlobalListenerRecord taskListener) {
-    globalListenerBatchRecord.addTaskListener(taskListener);
+  public GlobalListenerBatchClient withListener(final GlobalListenerRecord taskListener) {
+    globalListenerBatchRecord.addListener(taskListener);
+    return this;
+  }
+
+  public GlobalListenerBatchClient withRecord(final GlobalListenerBatchRecord record) {
+    globalListenerBatchRecord.copyFrom(record);
     return this;
   }
 

@@ -65,7 +65,7 @@ const JSONEditor: FC<JSONEditorProps> = observer(
           });
 
           monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-            ...monaco.json.jsonDefaults.diagnosticsOptions,
+            ...monaco.languages.json.jsonDefaults.diagnosticsOptions,
             schemaValidation: "error",
             schemaRequest: "error",
           });

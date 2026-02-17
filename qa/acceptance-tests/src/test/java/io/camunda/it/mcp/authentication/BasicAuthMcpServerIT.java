@@ -15,7 +15,6 @@ import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
-import java.util.List;
 
 @MultiDbTest
 public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
@@ -24,11 +23,17 @@ public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
   static final TestCamundaApplication TEST_INSTANCE =
       new TestCamundaApplication()
           .withBasicAuth()
-          .withAuthenticatedAccess()
+          .withAuthorizationsEnabled()
           .withProperty("camunda.mcp.enabled", true);
 
   @UserDefinition
-  private static final TestUser USER = new TestUser("mcp_username", "mcp_password", List.of());
+  private static final TestUser UNRESTRICTED_USER =
+      new TestUser(
+          UNRESTRICTED_PRINCIPAL_NAME, "test_unrestricted_password", UNRESTRICTED_PERMISSIONS);
+
+  @UserDefinition
+  private static final TestUser RESTRICTED_USER =
+      new TestUser(RESTRICTED_PRINCIPAL_NAME, "test_restricted_password", RESTRICTED_PERMISSIONS);
 
   @Override
   protected TestCamundaApplication testInstance() {
@@ -37,17 +42,20 @@ public class BasicAuthMcpServerIT extends AuthenticatedMcpServerTest {
 
   @Override
   protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
-    final var basicAuthHeader = createBasicAuthHeader();
-
-    return (builder, method, endpoint, body, context) ->
-        builder.header("Authorization", basicAuthHeader);
+    return createBasicAuthAuthenticator(UNRESTRICTED_USER);
   }
 
-  private String createBasicAuthHeader() {
-    final var credentialsString = "%s:%s".formatted(USER.username(), USER.password());
+  @Override
+  protected McpSyncHttpClientRequestCustomizer createRestrictedMcpClientRequestCustomizer() {
+    return createBasicAuthAuthenticator(RESTRICTED_USER);
+  }
+
+  private McpSyncHttpClientRequestCustomizer createBasicAuthAuthenticator(final TestUser user) {
+    final var credentialsString = "%s:%s".formatted(user.username(), user.password());
     final var encodedCredentials =
         Base64.getEncoder().encodeToString(credentialsString.getBytes(StandardCharsets.UTF_8));
 
-    return "Basic " + encodedCredentials;
+    return (builder, method, endpoint, body, context) ->
+        builder.header("Authorization", "Basic " + encodedCredentials);
   }
 }

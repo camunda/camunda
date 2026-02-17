@@ -116,6 +116,29 @@ class RepositoryNodeIdProviderIT {
   }
 
   @Test
+  void shouldAcquireLeaseIfClusterSizeChangedAfterInitialization() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    final var lease0 = repository.getLease(0);
+    final var newLease =
+        lease0
+            .acquireInitialLease(taskId, clock, Duration.ofMinutes(5))
+            .orElseThrow(); // never expires
+    repository.acquire(newLease, lease0.eTag());
+
+    // when
+    // nodeIdProvider is configured with different cluster size
+    nodeIdProvider = ofSize(1);
+    assertLeaseIsReady();
+
+    // then
+    final var acquiredLease = nodeIdProvider.getCurrentLease();
+    final var nodeId = acquiredLease.lease().nodeInstance().id();
+    assertThat(nodeId).isGreaterThan(0); // should acquire a lease for nodeid 1 or 2.
+  }
+
+  @Test
   void shouldAcquireAnExpiredLease()
       throws ExecutionException, InterruptedException, TimeoutException {
     // given

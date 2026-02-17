@@ -207,7 +207,7 @@ const OptionalFiltersFormGroup: React.FC<Props> = observer(
                 <IconButton
                   kind="ghost"
                   label={`Remove ${OPTIONAL_FILTER_FIELDS[filter].label} Filter`}
-                  align="top-right"
+                  align="top-end"
                   size="sm"
                   onClick={() => {
                     onVisibleFilterChange(

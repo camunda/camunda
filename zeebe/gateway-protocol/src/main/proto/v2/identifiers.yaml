@@ -34,6 +34,13 @@ components:
       pattern: ^[A-Za-z0-9_@.+-]+$
       example: new-hire-onboarding-workflow
 
+    GlobalListenerId:
+      description: The user-defined id for the global listener
+      type: string
+      format: GlobalListenerId
+      x-semantic-type: GlobalListenerId
+      example: GlobalListener_1
+
     TenantId:
       example: customer-service
       description: The unique identifier of the tenant.

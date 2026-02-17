@@ -34,6 +34,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +45,7 @@ import org.slf4j.LoggerFactory;
  * {@link BackupStore} to fetch and manage backup data required for restoring partitions or
  * determining safe starting checkpoints.
  */
+@NullMarked
 public final class BackupRangeResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
@@ -57,7 +60,8 @@ public final class BackupRangeResolver {
    *     per task
    */
   public CompletableFuture<GlobalRestoreInfo> getRestoreInfoForAllPartitions(
-      final Interval<Instant> interval,
+      final Instant from,
+      @Nullable final Instant to,
       final int partitionCount,
       final Map<Integer, Long> exportedPositions,
       final CheckpointIdGenerator checkpointIdGenerator,
@@ -85,7 +89,8 @@ public final class BackupRangeResolver {
                     () ->
                         getInformationPerPartition(
                             partition,
-                            interval,
+                            from,
+                            to,
                             exportedPositions.get(partition),
                             checkpointIdGenerator),
                     executor))
@@ -102,7 +107,8 @@ public final class BackupRangeResolver {
 
   public PartitionRestoreInfo getInformationPerPartition(
       final int partition,
-      final Interval<Instant> interval,
+      final Instant from,
+      @Nullable final Instant to,
       final long exporterPosition,
       final CheckpointIdGenerator checkpointIdGenerator) {
     final var rangeMarkers = store.rangeMarkers(partition).join();
@@ -110,18 +116,26 @@ public final class BackupRangeResolver {
 
     // finds the BackupRange that entirely covers the interval `[from, to]`
     final var statusInterval =
-        findBackupRangeCoveringInterval(interval, ranges, partition)
+        findBackupRangeCoveringInterval(from, to, ranges, partition)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
-                        "No complete backup range found for partition %d in interval %s, ranges=%s, timeInterval=%s"
+                        "No complete backup range found for partition %d in interval [%s, %s], ranges=%s, timeInterval=%s"
                             .formatted(
                                 partition,
-                                interval,
+                                from,
+                                to,
                                 ranges,
                                 ranges.stream()
                                     .map(r -> r.timeInterval(checkpointIdGenerator))
                                     .toList())));
+
+    // if to was not set, then the interval can be computed with `from` and the last backup
+    final var interval =
+        Interval.closed(
+            from,
+            Optional.ofNullable(to)
+                .orElse(statusInterval.getRight().end().descriptor().get().checkpointTimestamp()));
 
     // Retrieve all BackupStatus in the BackupRange
     // note that all backups must be retrieved as we only know the extremes, not every backup inside
@@ -155,17 +169,21 @@ public final class BackupRangeResolver {
    * interval. If such a range is found, it is returned along with its corresponding backup status
    * interval. If no range meets the criteria, an empty {@code Optional} is returned.
    *
-   * @param interval the target time interval that needs to be covered
+   * @param from the target start of time interval that needs to be covered
+   * @param to the target end of time interval that needs to be covered (optional, the end of the
+   *     backup range will be used instead)
    * @param ranges a chronologically ordered collection of backup ranges to search
    * @param partitionId the partition ID used for mapping backup checkpoints to their statuses
    * @return an {@code Optional} containing a tuple of the matching complete backup range and its
    *     corresponding status interval if found; otherwise, an empty {@code Optional}
    */
   public Optional<Tuple<Complete, Interval<BackupStatus>>> findBackupRangeCoveringInterval(
-      final Interval<Instant> interval,
+      final Instant from,
+      @Nullable final Instant to,
       final SequencedCollection<BackupRange> ranges,
       final int partitionId) {
     // ranges are ordered chronologically, so we start from the latest one, going backwards in time
+    final var interval = to != null ? Interval.closed(from, to) : null;
     for (final var range : ranges.reversed()) {
       if (range instanceof final BackupRange.Complete completeRange) {
         // get the BackupStatuses from the store
@@ -178,7 +196,11 @@ public final class BackupRangeResolver {
           // ignore this backup
           continue;
         }
-        if (timeInterval.contains(interval)) {
+        if (interval != null) {
+          if (timeInterval.contains(interval)) {
+            return Optional.of(new Tuple<>(completeRange, statusInterval));
+          }
+        } else if (timeInterval.contains(from)) {
           return Optional.of(new Tuple<>(completeRange, statusInterval));
         }
       }

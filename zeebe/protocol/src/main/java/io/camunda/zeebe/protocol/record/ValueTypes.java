@@ -59,7 +59,8 @@ public final class ValueTypes {
           ValueType.HISTORY_DELETION,
           ValueType.CONDITIONAL_SUBSCRIPTION,
           ValueType.CONDITIONAL_EVALUATION,
-          ValueType.EXPRESSION);
+          ValueType.EXPRESSION,
+          ValueType.GLOBAL_LISTENER);
 
   private ValueTypes() {}
 

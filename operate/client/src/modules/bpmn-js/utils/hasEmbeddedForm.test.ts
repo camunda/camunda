@@ -103,4 +103,22 @@ describe('hasEmbeddedForm', () => {
 
     expect(hasEmbeddedForm(businessObject)).toBe(false);
   });
+
+  it('should return false for formKey that is an external form reference', () => {
+    const businessObject: BusinessObject = {
+      $type: 'bpmn:UserTask',
+      id: 'task1',
+      name: 'Task 1',
+      extensionElements: {
+        values: [
+          {
+            $type: 'zeebe:formDefinition',
+            formKey: 'localhost:3000/myForm',
+          },
+        ],
+      },
+    };
+
+    expect(hasEmbeddedForm(businessObject)).toBe(false);
+  });
 });

@@ -513,11 +513,23 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         QueryBuilders.range()
             .field(JobMetricsBatchTemplate.END_TIME)
             .lte(JsonData.of(config.getArchivingTimePoint()))
-            .build();
+            .build()
+            .toQuery();
+
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(JobMetricsBatchTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build()
+            .toQuery();
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+    boolBuilder.must(partitionQ);
 
     return createSearchRequest(
         jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
-        endDateQ.toQuery(),
+        boolBuilder.build().toQuery(),
         JobMetricsBatchTemplate.END_TIME);
   }
 

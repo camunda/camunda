@@ -18,7 +18,7 @@ import io.camunda.db.rdbms.write.queue.InsertVariableMerger;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 
-public class VariableWriter extends RootProcessInstanceDependant implements RdbmsWriter {
+public class VariableWriter extends ProcessInstanceDependant implements RdbmsWriter {
 
   private final ExecutionQueue executionQueue;
   private final VendorDatabaseProperties vendorDatabaseProperties;

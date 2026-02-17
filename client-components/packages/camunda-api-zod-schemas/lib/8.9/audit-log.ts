@@ -92,6 +92,7 @@ const auditLogSchema = z.object({
 	relatedEntityKey: z.string().optional(),
 	relatedEntityType: auditLogEntityTypeSchema.optional(),
 	entityDescription: z.string().optional(),
+	agentElementId: z.string().optional(),
 });
 type AuditLog = z.infer<typeof auditLogSchema>;
 

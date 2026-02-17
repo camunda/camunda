@@ -41,10 +41,10 @@ describe('DetailsModal', () => {
     expect(
       screen.getByRole('heading', {name: /update variable/i}),
     ).toBeInTheDocument();
-    expect(screen.getByText(/status/i)).toBeInTheDocument();
-    expect(screen.getByText(/actor/i)).toBeInTheDocument();
-    expect(screen.getByText(/time/i)).toBeInTheDocument();
-    expect(screen.getByText(/success/i)).toBeInTheDocument();
+    expect(screen.getByText('Status')).toBeInTheDocument();
+    expect(screen.getByText('Actor')).toBeInTheDocument();
+    expect(screen.getByText('Date')).toBeInTheDocument();
+    expect(screen.getByText('Success')).toBeInTheDocument();
     expect(screen.getByText('demo')).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 10:00:00')).toBeInTheDocument();
 

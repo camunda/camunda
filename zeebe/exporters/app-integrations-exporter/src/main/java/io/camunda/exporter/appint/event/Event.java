@@ -10,6 +10,7 @@ package io.camunda.exporter.appint.event;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public sealed interface Event {
@@ -28,6 +29,7 @@ public sealed interface Event {
   record UserTaskMetaData(
       String userTaskKey,
       Set<String> tags,
+      Map<String, String> customHeaders,
       String assignee,
       List<String> candidateGroups,
       List<String> candidateUsers,

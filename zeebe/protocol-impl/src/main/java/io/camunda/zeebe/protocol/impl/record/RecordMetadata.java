@@ -143,17 +143,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-    encoder.wrap(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
     encoder
@@ -176,13 +167,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    final var authorizationBuffer = authorization.toDirectBuffer();
+    encoder.putAuthorization(authorizationBuffer, 0, authorizationBuffer.capacity());
 
     if (agent != null) {
-      encoder.putAgent(agent.toDirectBuffer(), 0, agent.getLength());
+      final var bb = agent.toDirectBuffer();
+      encoder.putAgent(bb, 0, bb.capacity());
     } else {
       encoder.agent("");
     }
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   public long getRequestId() {

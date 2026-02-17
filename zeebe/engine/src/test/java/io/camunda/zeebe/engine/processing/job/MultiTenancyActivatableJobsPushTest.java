@@ -19,7 +19,6 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.Record;
-import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.test.util.Strings;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.buffer.BufferUtil;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -54,8 +52,6 @@ public class MultiTenancyActivatableJobsPushTest {
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
-
-  private final List<Long> activeProcessInstances = new ArrayList<>();
 
   @Test
   public void shouldPushWhenJobCreatedForAuthorizedTenant() {
@@ -117,7 +113,9 @@ public class MultiTenancyActivatableJobsPushTest {
     assertThat(batch.getJobKeys()).contains(jobKey);
 
     // assert event order
-    assertEventOrder(JobIntent.CREATED, JobBatchIntent.ACTIVATED);
+    assertThat(records().limit(r -> r.getIntent() == JobBatchIntent.ACTIVATED))
+        .extracting(Record::getIntent)
+        .containsSequence(JobIntent.CREATED, JobBatchIntent.ACTIVATED);
 
     // assert job stream
     assertActivatedJob(jobStreamA, jobKey, worker, variables, activationCount, tenantIdA);
@@ -131,17 +129,7 @@ public class MultiTenancyActivatableJobsPushTest {
       final String tenantId) {
     final Record<JobRecordValue> jobRecord =
         ENGINE.createJob(jobType, processId, variables, tenantId);
-    activeProcessInstances.add(jobRecord.getValue().getProcessInstanceKey());
     return jobRecord.getKey();
-  }
-
-  private void assertEventOrder(final Intent... eventOrder) {
-    for (final long piKey : activeProcessInstances) {
-      final var processInstanceRecordStream = records().betweenProcessInstance(piKey);
-      assertThat(processInstanceRecordStream)
-          .extracting(Record::getIntent)
-          .containsSequence(eventOrder);
-    }
   }
 
   private void assertActivatedJob(

@@ -14,15 +14,14 @@ import {
   fireEvent,
 } from 'modules/testing-library';
 import {ProcessInstance} from '../index';
-import {createUser, createVariable} from 'modules/testUtils';
+import {createUser, createVariable, searchResult} from 'modules/testUtils';
 import {storeStateLocally} from 'modules/utils/localStorage';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {getWrapper, mockRequests} from './mocks';
+import {getWrapper, mockRequests, updateSearchParams} from './mocks';
 import {modificationsStore} from 'modules/stores/modifications';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockModifyProcessInstance} from 'modules/mocks/api/v2/processInstances/modifyProcessInstance';
 
 vi.mock('modules/utils/bpmn');
@@ -38,12 +37,7 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display the modifications header and footer when modification mode is enabled', async () => {
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchVariables().withSuccess(searchResult([]));
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     expect(
@@ -97,12 +91,7 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should display confirmation modal when discard all is clicked during the modification mode', async () => {
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchVariables().withSuccess(searchResult([]));
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
@@ -145,12 +134,7 @@ describe('ProcessInstance - modification mode', () => {
   });
 
   it('should disable apply modifications button if there are no modifications pending', async () => {
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchVariables().withSuccess(searchResult([]));
     const {user} = render(<ProcessInstance />, {wrapper: getWrapper()});
 
     storeStateLocally({
@@ -169,25 +153,14 @@ describe('ProcessInstance - modification mode', () => {
     expect(screen.getByTestId('apply-modifications-button')).toBeDisabled();
   });
 
-  // TODO: fix test with #45539
-  it.skip('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+  it('should display summary modifications modal when apply modifications is clicked during the modification mode', async () => {
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
+    mockSearchJobs().withSuccess(searchResult([]));
+    mockSearchJobs().withSuccess(searchResult([]));
 
     const {user} = render(<ProcessInstance />, {
-      wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
+      wrapper: getWrapper(),
     });
 
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
@@ -205,16 +178,27 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813699889',
+          elementId: 'taskD',
+          elementName: 'Task D',
+          type: 'SERVICE_TASK',
+          state: 'ACTIVE',
+          processDefinitionId: '123',
+          processInstanceKey: '4294980768',
+          processDefinitionKey: '123',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+        },
+      ]),
+    );
 
-    await user.click(screen.getByRole('button', {name: 'Select flow node'}));
+    updateSearchParams({elementId: 'taskD'});
 
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     await user.click(
       await screen.findByRole('button', {
@@ -222,12 +206,7 @@ describe('ProcessInstance - modification mode', () => {
       }),
     );
 
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
+    mockSearchVariables().withSuccess(searchResult([createVariable()]));
 
     await user.click(screen.getByTestId('apply-modifications-button'));
 
@@ -251,22 +230,16 @@ describe('ProcessInstance - modification mode', () => {
     );
   });
 
-  // TODO: fix test with #45539
-  it.skip('should display loading overlay when modifications are applied', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+  it('should display loading overlay when modifications are applied', async () => {
     mockModifyProcessInstance().withSuccess(null);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([]));
+    mockSearchVariables().withSuccess(searchResult([]));
+    mockSearchVariables().withSuccess(searchResult([]));
 
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     const {user} = render(<ProcessInstance />, {
-      wrapper: getWrapper({selectableFlowNode: {flowNodeId: 'taskD'}}),
+      wrapper: getWrapper(),
     });
 
     storeStateLocally({
@@ -287,11 +260,27 @@ describe('ProcessInstance - modification mode', () => {
       screen.getByText('Process Instance Modification Mode'),
     ).toBeInTheDocument();
 
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813699889',
+          elementId: 'taskD',
+          elementName: 'Task D',
+          type: 'SERVICE_TASK',
+          state: 'ACTIVE',
+          processDefinitionId: '123',
+          processInstanceKey: '4294980768',
+          processDefinitionKey: '123',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2020-08-18T12:07:33.953+0000',
+        },
+      ]),
+    );
+    mockSearchJobs().withSuccess(searchResult([]));
+    mockSearchJobs().withSuccess(searchResult([]));
 
-    await user.click(screen.getByRole('button', {name: 'Select flow node'}));
+    updateSearchParams({elementId: 'taskD'});
 
     await user.click(
       await screen.findByRole('button', {

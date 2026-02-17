@@ -104,7 +104,7 @@ public class BackupRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
@@ -115,5 +115,6 @@ public class BackupRequest implements BufferReader, BufferWriter {
     if (checkpointType != null) {
       bodyEncoder.checkpointType(checkpointType.getValue());
     }
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 }

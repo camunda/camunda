@@ -1,6 +1,7 @@
 namespace ?= __NAMESPACE__
 secondary_storage ?= __STORAGE_TYPE__
 helm_chart ?= camunda-platform-8.9
+enable_optimize ?= __ENABLE_OPTIMIZE__
 curl_image ?= curlimages/curl:7.87.0
 camunda_management_url ?= http://camunda:9600
 prometheus_elasticsearch_exporter_chart_version ?= 7.2.1
@@ -14,14 +15,25 @@ additional_platform_configuration ?=
 # See the load test README for example values and guidance.
 additional_load_test_configuration ?=
 
-# Conditional values file based on secondary_storage
+# Construct platform values files based on configuration
+platform_values := -f camunda-platform-values.yaml
+
+# Add secondary storage values
 ifeq ($(secondary_storage),postgresql)
-storage_values_file := camunda-platform-values-rdbms.yaml
+platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
-storage_values_file := camunda-platform-values-opensearch.yaml
+platform_values += -f camunda-platform-values-opensearch.yaml
 else # default is elasticsearch
-storage_values_file := camunda-platform-values-elasticsearch.yaml
+platform_values += -f camunda-platform-values-elasticsearch.yaml
 endif
+
+# Add Optimize values if enabled
+ifeq ($(enable_optimize),true)
+platform_values += -f camunda-platform-values-optimize.yaml
+endif
+
+# Platform values with stable configuration
+platform_values_stable := $(platform_values) -f values-stable.yaml
 
 .PHONY: all
 all: install
@@ -74,8 +86,7 @@ install-platform: setup-leader-balancer
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
-		-f camunda-platform-values.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(platform_values) \
 		$(additional_platform_configuration)
 
 # Install/upgrade Camunda Platform on stable VMs
@@ -86,9 +97,7 @@ install-platform-stable: setup-leader-balancer
 		--namespace $(namespace) \
 		--reset-then-reuse-values \
 		--render-subchart-notes \
-		-f camunda-platform-values.yaml \
-		-f values-stable.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(platform_values_stable) \
 		$(additional_platform_configuration)
 
 # Install/upgrade load test helm chart
@@ -119,16 +128,13 @@ setup-leader-balancer:
 .PHONY: template
 template:
 	helm template $(namespace) camunda/$(helm_chart) \
-		-f camunda-platform-values.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(platform_values) \
 		--output-dir .
 
 .PHONY: template-stable
 template-stable:
 	helm template $(namespace) camunda/$(helm_chart) \
-		-f camunda-platform-values.yaml \
-		-f values-stable.yaml \
-		$(if $(storage_values_file),-f $(storage_values_file)) \
+		$(platform_values_stable) \
 		--output-dir .
 
 .PHONY: clean

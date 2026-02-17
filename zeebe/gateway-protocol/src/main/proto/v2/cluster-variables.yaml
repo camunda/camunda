@@ -8,6 +8,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Create a global-scoped cluster variable
+      description: Create a global-scoped cluster variable.
       requestBody:
         required: true
         content:
@@ -36,6 +37,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Create a tenant-scoped cluster variable
+      description: Create a new cluster variable for the given tenant.
       parameters:
         - name: tenantId
           in: path
@@ -106,6 +108,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Get a global-scoped cluster variable
+      description: Get a global-scoped cluster variable.
       parameters:
         - name: name
           in: path
@@ -183,6 +186,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Delete a global-scoped cluster variable
+      description: Delete a global-scoped cluster variable.
       parameters:
         - name: name
           in: path
@@ -214,6 +218,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Get a tenant-scoped cluster variable
+      description: Get a tenant-scoped cluster variable.
       parameters:
         - name: tenantId
           in: path
@@ -303,6 +308,7 @@ paths:
       tags:
         - Cluster Variable
       summary: Delete a tenant-scoped cluster variable
+      description: Delete a tenant-scoped cluster variable.
       parameters:
         - name: tenantId
           in: path

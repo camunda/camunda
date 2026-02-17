@@ -18,6 +18,7 @@ import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -47,11 +48,11 @@ import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.db.rdbms.write.service.ProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.RoleWriter;
-import io.camunda.db.rdbms.write.service.RootProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
@@ -91,6 +92,7 @@ public class RdbmsWriters {
       final VendorDatabaseProperties vendorDatabaseProperties,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
+      final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
@@ -148,7 +150,9 @@ public class RdbmsWriters {
     writers.put(
         JobWriter.class,
         new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
-    writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
+    writers.put(
+        JobMetricsBatchWriter.class,
+        new JobMetricsBatchWriter(executionQueue, jobMetricsBatchMapper));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
     writers.put(UsageMetricWriter.class, new UsageMetricWriter(executionQueue, usageMetricMapper));
@@ -277,10 +281,10 @@ public class RdbmsWriters {
     return getWriter(HistoryDeletionWriter.class);
   }
 
-  public List<RootProcessInstanceDependant> getProcessInstanceDependantWriters() {
+  public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
     return writers.values().stream()
-        .filter(RootProcessInstanceDependant.class::isInstance)
-        .map(RootProcessInstanceDependant.class::cast)
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
         .toList();
   }
 

@@ -762,8 +762,7 @@ public final class RecordingExporter implements Exporter {
    * RecordingExporter#DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME} to speed up the test execution, and
    * resets it after.
    */
-  public static <T extends ExporterRecordStream<?, ?>> T expectNoMatchingRecords(
-      final Function<RecordStream, T> consumer) {
+  public static <T> T expectNoMatchingRecords(final Function<RecordStream, T> consumer) {
     final var previousMaximumWaitTime = maximumWaitTime;
     maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
     try {

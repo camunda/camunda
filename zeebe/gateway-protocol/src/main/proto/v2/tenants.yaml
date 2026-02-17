@@ -68,6 +68,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "404":
           description: Not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 

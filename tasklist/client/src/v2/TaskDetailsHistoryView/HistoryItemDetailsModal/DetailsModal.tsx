@@ -57,6 +57,26 @@ const DetailsModal: React.FC<Props> = ({onClose, auditLog}) => {
               </StructuredListCell>
               <StructuredListCell>{formatDate(timestamp)}</StructuredListCell>
             </StructuredListRow>
+            {auditLog.operationType === 'ASSIGN' ? (
+              <>
+                <StructuredListRow>
+                  <h5 className={styles.titleListCell}>
+                    {t('taskDetailsHistoryModalProperties')}:
+                  </h5>
+                </StructuredListRow>
+                <StructuredListRow className={styles.verticallyAlignedRow}>
+                  <StructuredListCell noWrap className={styles.firstColumn}>
+                    <div className={styles.iconText}>
+                      <EventSchedule />
+                      {t('taskDetailsHistoryModalAssignee')}
+                    </div>
+                  </StructuredListCell>
+                  <StructuredListCell>
+                    {auditLog.relatedEntityKey}
+                  </StructuredListCell>
+                </StructuredListRow>
+              </>
+            ) : undefined}
           </StructuredListBody>
         </StructuredListWrapper>
       </ModalBody>

@@ -71,6 +71,21 @@ public sealed interface ClusterConfigurationChangeOperation {
   record UpdateIncarnationNumberOperation(MemberId memberId)
       implements ClusterConfigurationChangeOperation {}
 
+  /**
+   * Operation to prepare a member for scaling. This operation is executed before scaling starts.
+   *
+   * @param memberId the member id of the member that will apply this operation
+   * @param clusterMembers the list of member ids that will be part of the cluster after scaling is
+   *     completed
+   */
+  record PreScalingOperation(MemberId memberId, SortedSet<MemberId> clusterMembers)
+      implements ClusterConfigurationChangeOperation {
+
+    public PreScalingOperation(final MemberId memberId, final Set<MemberId> clusterMembers) {
+      this(memberId, ImmutableSortedSet.copyOf(clusterMembers));
+    }
+  }
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute

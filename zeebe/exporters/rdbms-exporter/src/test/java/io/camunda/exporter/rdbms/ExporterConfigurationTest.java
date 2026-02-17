@@ -40,6 +40,8 @@ class ExporterConfigurationTest {
     historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofMillis(-2000));
     historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-2000));
     historyConfiguration.setUsageMetricsTTL(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-2000));
     historyConfiguration.setHistoryCleanupBatchSize(-1000);
     historyConfiguration.setBatchOperationCancelProcessInstanceHistoryTTL(Duration.ofMillis(-1000));
     historyConfiguration.setBatchOperationMigrateProcessInstanceHistoryTTL(
@@ -71,6 +73,8 @@ class ExporterConfigurationTest {
         .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration")
         .hasMessageContaining("usageMetricsCleanup must be a positive duration")
         .hasMessageContaining("usageMetricsTTL must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration")
         .hasMessageContaining(
             "maxHistoryCleanupInterval must be greater than minHistoryCleanupInterval")
         .hasMessageContaining("historyCleanupBatchSize must be")
@@ -451,5 +455,31 @@ class ExporterConfigurationTest {
     assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(50);
     assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(30);
     assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(35);
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration");
   }
 }

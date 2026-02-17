@@ -32,4 +32,10 @@ public abstract class GcsBackupStoreException extends RuntimeException {
       }
     }
   }
+
+  public static class UploadException extends GcsBackupStoreException {
+    public UploadException(final String message, final Throwable cause) {
+      super(message, cause);
+    }
+  }
 }

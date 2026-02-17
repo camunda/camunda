@@ -59,7 +59,7 @@ components:
           example: "=x + y"
         result:
           description: The result value. Its type can vary.
-          type: object
+          # Omitting type for this field generates Object in Java, and signals Any to other consumers. It can be anything.
           example: 30
         warnings:
           type: array

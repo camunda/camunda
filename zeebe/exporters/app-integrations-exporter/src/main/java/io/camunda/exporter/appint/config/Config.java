@@ -20,9 +20,9 @@ public class Config {
   private long requestTimeoutMs = 5000;
 
   // Batch settings
-  private int maxBatchesInFlight = 2;
   private int batchSize = 50;
   private Long batchIntervalMs = 2000L;
+  private int maxBatchesInFlight = 2;
 
   public String getUrl() {
     return url;

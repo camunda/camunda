@@ -8,18 +8,12 @@
 
 import {IncidentsTable} from '..';
 import {createProcessInstance} from 'modules/testUtils';
-import {render, screen} from 'modules/testing-library';
+import {render, screen, waitFor} from 'modules/testing-library';
 import {Wrapper, firstIncident, secondIncident} from './mocks';
-import * as selectionUtils from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance as mockFetchProcessInstanceV2} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 
-// TanStack query is still fetching the data when the test executes, so "useRootNode"
-// falls back to undefined for the flowNodeInstanceId.
-const rootNode = {flowNodeInstanceId: undefined, isMultiInstance: false};
-
-// TODO: fix test with #45539
-describe.skip('Selection', () => {
+describe('Selection', () => {
   beforeEach(() => {
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
@@ -43,8 +37,6 @@ describe.skip('Selection', () => {
   });
 
   it('should deselect selected incident', async () => {
-    const spy = vi.spyOn(selectionUtils, 'clearSelection');
-
     const {user} = render(
       <IncidentsTable
         state="content"
@@ -57,13 +49,12 @@ describe.skip('Selection', () => {
 
     await user.click(screen.getByRole('row', {selected: true}));
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(rootNode);
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent('');
+    });
   });
 
   it('should select single incident when multiple incidents are selected', async () => {
-    const spy = vi.spyOn(selectionUtils, 'selectFlowNode');
-
     const {user} = render(
       <IncidentsTable
         state="content"
@@ -84,11 +75,10 @@ describe.skip('Selection', () => {
     expect(firstRow).toBeInTheDocument();
     await user.click(firstRow);
 
-    expect(spy).toHaveBeenCalledTimes(1);
-    expect(spy).toHaveBeenCalledWith(rootNode, {
-      flowNodeId: firstIncident.elementId,
-      flowNodeInstanceId: firstIncident.elementInstanceKey,
-      isMultiInstance: false,
+    await waitFor(() => {
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?elementId=StartEvent_1&elementInstanceKey=18239123812938',
+      );
     });
   });
 });

@@ -369,7 +369,6 @@ components:
             will be deleted. In those cases, the `batchOperation` field in the response
             will not be populated.
           type: boolean
-          required: false
           default: false
 
     DeleteResourceResponse:

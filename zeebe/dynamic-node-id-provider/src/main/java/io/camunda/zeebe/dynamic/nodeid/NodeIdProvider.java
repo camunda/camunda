@@ -16,6 +16,14 @@ public interface NodeIdProvider extends AutoCloseable {
   CompletableFuture<Void> initialize(int clusterSize);
 
   /**
+   * Scale the available node ids to the new cluster size.
+   *
+   * @param newClusterSize the new cluster size
+   * @return a CompletableFuture that completes when the scaling operation is done
+   */
+  CompletableFuture<Void> scale(int newClusterSize);
+
+  /**
    * @return the node instance. Null can be returned when the provider is shutting down
    */
   NodeInstance currentNodeInstance();
@@ -73,6 +81,11 @@ public interface NodeIdProvider extends AutoCloseable {
 
       @Override
       public CompletableFuture<Void> initialize(final int clusterSize) {
+        return CompletableFuture.completedFuture(null);
+      }
+
+      @Override
+      public CompletableFuture<Void> scale(final int newClusterSize) {
         return CompletableFuture.completedFuture(null);
       }
 

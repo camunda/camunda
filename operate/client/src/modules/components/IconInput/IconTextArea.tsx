@@ -26,7 +26,7 @@ const IconTextArea: React.FC<Props> = ({
   invalid,
   onIconClick,
   buttonLabel,
-  tooltipPosition = 'top-right',
+  tooltipPosition = 'top-end',
   ...props
 }) => {
   return (

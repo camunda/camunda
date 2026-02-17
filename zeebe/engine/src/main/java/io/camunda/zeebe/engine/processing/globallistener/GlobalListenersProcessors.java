@@ -31,7 +31,8 @@ public class GlobalListenersProcessors {
         .onCommand(
             ValueType.GLOBAL_LISTENER_BATCH,
             GlobalListenerBatchIntent.CONFIGURE,
-            new GlobalListenerBatchConfigureProcessor(keyGenerator, writers, distributionBehavior))
+            new GlobalListenerBatchConfigureProcessor(
+                keyGenerator, writers, distributionBehavior, processingState))
         .onCommand(
             ValueType.GLOBAL_LISTENER,
             GlobalListenerIntent.CREATE,

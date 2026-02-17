@@ -10,17 +10,16 @@ import {Route, MemoryRouter, Routes} from 'react-router-dom';
 import {createEnhancedIncident} from 'modules/testUtils';
 import {useEffect} from 'react';
 import {authenticationStore} from 'modules/stores/authentication';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {LocationLog} from 'modules/utils/LocationLog';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
     return () => {
       authenticationStore.reset();
-      flowNodeSelectionStore.reset();
     };
   });
   return (
@@ -28,7 +27,15 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       <QueryClientProvider client={getMockQueryClient()}>
         <MemoryRouter initialEntries={[Paths.processInstance('1')]}>
           <Routes>
-            <Route path={Paths.processInstance()} element={children} />
+            <Route
+              path={Paths.processInstance()}
+              element={
+                <>
+                  {children}
+                  <LocationLog />
+                </>
+              }
+            />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>

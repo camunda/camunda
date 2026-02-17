@@ -18,7 +18,6 @@ import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
@@ -40,12 +39,15 @@ import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
+@NullMarked
 final class BackupRangeResolverTest {
 
   private static final int NODE_ID = 0;
@@ -163,6 +165,27 @@ final class BackupRangeResolverTest {
   }
 
   @Test
+  void shouldRestoreToEndOfRangeWhenToIsMissing() {
+    // given
+    for (int i = 1; i < 3; i++) {
+      store
+          .forPartition(i)
+          .withRange(100, 400)
+          .addBackup(100, 1000, 1, minutesAfterBase(0))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(40))
+          .addBackup(400, 4000, 3001, minutesAfterBase(60));
+    }
+
+    // when - time interval [20, 40] covers only checkpoints 200 and 300
+    final var result = resolve(1, minutesAfterBase(20), null, Map.of(1, 2500L));
+
+    // then - all backups after `from` are returned
+    assertThat(result.globalCheckpointId()).isEqualTo(400L);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(200L, 300L, 400L);
+  }
+
+  @Test
   void shouldHandleDifferentSafeStartsPerPartition() {
     // given - partitions have different exported positions, so different safe starts
     store
@@ -200,8 +223,8 @@ final class BackupRangeResolverTest {
             () -> resolve(1, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 2500L)))
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(
-            "No complete backup range found for partition 1 in interval [2026-01-20T10:00:00Z, 2026-01-20T11:00:00Z], ranges=[]");
+        .hasRootCauseMessage(
+            "No complete backup range found for partition 1 in interval [2026-01-20T10:00:00Z, 2026-01-20T11:00:00Z], ranges=[], timeInterval=[]");
   }
 
   @Test
@@ -289,11 +312,11 @@ final class BackupRangeResolverTest {
 
     // when/then
     assertThatThrownBy(
-            () -> resolve(2, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 2500L, 2, 2500L)))
+            () -> resolve(2, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 2500L, 2, 2500L)))
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(
-            "No complete backup range found for partition 1 in interval [2026-01-20T10:00:00Z, 2026-01-20T11:00:00Z], ranges=[Complete[checkpointInterval=[100, 200]]");
+        .hasRootCauseMessage(
+            "No complete backup range found for partition 2 in interval [2026-01-20T10:00:00Z, 2026-01-20T10:30:00Z], ranges=[Complete[checkpointInterval=[100, 200]]], timeInterval=[[1970-01-01T00:00:00.100Z, 1970-01-01T00:00:00.200Z]]");
   }
 
   @Test
@@ -461,18 +484,12 @@ final class BackupRangeResolverTest {
   private GlobalRestoreInfo resolve(
       final int partitionCount,
       final Instant from,
-      final Instant to,
+      @Nullable final Instant to,
       final Map<Integer, Long> exportedPositions) {
-    final var value =
-        resolver
-            .getRestoreInfoForAllPartitions(
-                Interval.closed(from, to),
-                partitionCount,
-                exportedPositions,
-                checkIdGenerator,
-                DIRECT_EXECUTOR)
-            .join();
-    return value;
+    return resolver
+        .getRestoreInfoForAllPartitions(
+            from, to, partitionCount, exportedPositions, checkIdGenerator, DIRECT_EXECUTOR)
+        .join();
   }
 
   private static Instant minutesAfterBase(final int minutes) {
@@ -605,7 +622,7 @@ final class BackupRangeResolverTest {
           backups.values().stream()
               .filter(backup -> wildcard.matches(backup.id()))
               .map(this::toStatus)
-              .map(s -> (BackupStatus) s)
+              .map(BackupStatus.class::cast)
               .toList();
       return CompletableFuture.completedFuture(matchingBackups);
     }
@@ -619,6 +636,12 @@ final class BackupRangeResolverTest {
     @Override
     public CompletableFuture<Backup> restore(final BackupIdentifier id, final Path targetFolder) {
       return CompletableFuture.completedFuture(backups.get(id));
+    }
+
+    @Override
+    public CompletableFuture<BackupStatusCode> markFailed(
+        final BackupIdentifier id, final String failureReason) {
+      return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
     }
 
     @Override
@@ -647,12 +670,6 @@ final class BackupRangeResolverTest {
     @Override
     public CompletableFuture<Void> closeAsync() {
       return CompletableFuture.completedFuture(null);
-    }
-
-    @Override
-    public CompletableFuture<BackupStatusCode> markFailed(
-        final BackupIdentifier id, final String failureReason) {
-      return CompletableFuture.completedFuture(BackupStatusCode.FAILED);
     }
 
     private BackupStatusImpl toStatus(final Backup backup) {

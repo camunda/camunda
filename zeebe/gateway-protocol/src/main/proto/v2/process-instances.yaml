@@ -237,7 +237,7 @@ paths:
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents
@@ -311,7 +311,7 @@ paths:
 
   /process-instances/cancellation:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
@@ -351,7 +351,7 @@ paths:
 
   /process-instances/incident-resolution:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
@@ -391,7 +391,7 @@ paths:
 
   /process-instances/migration:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
@@ -431,7 +431,7 @@ paths:
 
   /process-instances/modification:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
@@ -473,7 +473,7 @@ paths:
 
   /process-instances/{processInstanceKey}/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: deleteProcessInstance
@@ -518,7 +518,7 @@ paths:
 
   /process-instances/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: deleteProcessInstancesBatchOperation

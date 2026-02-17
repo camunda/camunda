@@ -22,7 +22,9 @@ import io.camunda.client.api.command.ClientHttpException;
 import io.camunda.client.api.command.MalformedResponseException;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.impl.HttpStatusCode;
+import io.camunda.client.impl.Loggers;
 import io.camunda.client.impl.http.ApiResponseConsumer.ApiResponse;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,9 +125,23 @@ final class ApiCallback<HttpT, RespT> implements FutureCallback<ApiResponse<Http
 
     final ProblemDetail problem = new ProblemDetail();
     if (body.problem() != null) {
+      final String instanceValue = body.problem().getInstance();
+      URI instanceUri = null;
+      if (instanceValue != null) {
+        try {
+          instanceUri = URI.create(instanceValue);
+        } catch (final IllegalArgumentException e) {
+          // Server returned an invalid URI; leave instance as null
+          // to avoid masking the original HTTP error
+          Loggers.LOGGER.warn(
+              "Failed to parse ProblemDetail instance as URI: '{}'. Ignoring invalid value.",
+              instanceValue,
+              e);
+        }
+      }
       problem
           .setDetail(body.problem().getDetail())
-          .setInstance(body.problem().getInstance())
+          .setInstance(instanceUri)
           .setStatus(body.problem().getStatus())
           .setTitle(body.problem().getTitle())
           .setType(body.problem().getType());

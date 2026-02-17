@@ -85,6 +85,7 @@ describe('OperationsLog', () => {
           annotation: 'Updated variable',
           actorType: 'USER',
           category: 'USER_TASKS',
+          entityDescription: 'variableValue',
         },
       ],
       page: {totalItems: 1},
@@ -98,17 +99,19 @@ describe('OperationsLog', () => {
       screen.getByRole('columnheader', {name: /operation/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /status/i}),
+      screen.getByRole('columnheader', {name: /property/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /actor/i}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('columnheader', {name: /time/i}),
+      screen.getByRole('columnheader', {name: /date/i}),
     ).toBeInTheDocument();
 
+    expect(await screen.findByTestId('SUCCESS-icon')).toBeInTheDocument();
     expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
-    expect(screen.getByText(/success/i)).toBeInTheDocument();
+    expect(screen.getByText(/variable name/i)).toBeInTheDocument();
+    expect(screen.getByText('variableValue')).toBeInTheDocument();
     expect(screen.getByText('user1')).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 00:00:00')).toBeInTheDocument();
     expect(

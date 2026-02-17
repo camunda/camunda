@@ -12,9 +12,6 @@ import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
 import com.google.cloud.storage.Storage.BlobWriteOption;
-import com.google.cloud.storage.transfermanager.ParallelUploadConfig;
-import com.google.cloud.storage.transfermanager.TransferManager;
-import com.google.cloud.storage.transfermanager.TransferStatus;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
@@ -25,6 +22,10 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Semaphore;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 final class FileSetManager {
@@ -47,82 +48,82 @@ final class FileSetManager {
   private static final String PATH_FORMAT = "%scontents/%s/%s/%s/%s/";
 
   private final Storage client;
-  private final TransferManager transferManager;
   private final BucketInfo bucketInfo;
   private final String basePath;
+  private final ExecutorService executor;
+  private final Semaphore concurrencyLimit;
 
   FileSetManager(
       final Storage client,
-      final TransferManager transferManager,
       final BucketInfo bucketInfo,
-      final String basePath) {
+      final String basePath,
+      final ExecutorService executor,
+      final int maxConcurrentOperations) {
     this.client = client;
-    this.transferManager = transferManager;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
+    this.executor = executor;
+    concurrencyLimit = new Semaphore(maxConcurrentOperations);
   }
 
   /**
-   * Uploads snapshot files in parallel using the GCS {@link TransferManager}. Snapshot files are
-   * immutable, so the Path-based upload (which reads the file twice for CRC32C verification) is
-   * safe.
-   */
-  void saveSnapshot(final BackupIdentifier id, final NamedFileSet fileSet) {
-    final var prefix = fileSetPath(id, SNAPSHOT_FILESET_NAME);
-    final var namedFiles = fileSet.namedFiles();
-    final var pathToName =
-        namedFiles.entrySet().stream()
-            .collect(
-                Collectors.toMap(e -> e.getValue().toAbsolutePath().toString(), Map.Entry::getKey));
-    final var paths = namedFiles.values().stream().toList();
-
-    final var uploadConfig =
-        ParallelUploadConfig.newBuilder()
-            .setBucketName(bucketInfo.getName())
-            .setUploadBlobInfoFactory(
-                (bucketName, fileName) ->
-                    BlobInfo.newBuilder(bucketName, prefix + pathToName.get(fileName))
-                        .setContentType("application/octet-stream")
-                        .build())
-            .setSkipIfExists(true)
-            .build();
-
-    try {
-      final var uploadJob = transferManager.uploadFiles(paths, uploadConfig);
-      for (final var result : uploadJob.getUploadResults()) {
-        if (result.getStatus() != TransferStatus.SUCCESS
-            && result.getStatus() != TransferStatus.SKIPPED) {
-          throw result.getException();
-        }
-      }
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    } catch (final RuntimeException e) {
-      throw e;
-    } catch (final Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * Uploads segment files sequentially using an InputStream-based approach. Segment files may be
-   * modified during upload, so we use InputStream to prevent the GCS client from reading the file
-   * twice (once for CRC32C checksum, once for upload) which would cause checksum mismatches.
+   * Uploads files in parallel using virtual threads. Uses an InputStream-based approach to prevent
+   * the GCS client from reading the file twice (once for CRC32C checksum, once for upload) which
+   * could cause checksum mismatches if the file is modified during upload.
+   *
+   * <p>Concurrency is limited by a semaphore to avoid resource exhaustion.
    *
    * @see <a href="https://github.com/camunda/camunda/issues/45636">#45636</a>
    */
-  void saveSegments(final BackupIdentifier id, final NamedFileSet fileSet) {
-    for (final var namedFile : fileSet.namedFiles().entrySet()) {
-      final var fileName = namedFile.getKey();
-      final var filePath = namedFile.getValue();
-      try (final var inputStream = Files.newInputStream(filePath)) {
-        client.createFrom(
-            blobInfo(id, SEGMENTS_FILESET_NAME, fileName),
-            inputStream,
-            BlobWriteOption.doesNotExist());
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
-      }
+  void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
+    final var uploadFutures =
+        fileSet.namedFiles().entrySet().stream()
+            .map(
+                namedFile ->
+                    schedule(
+                        () -> {
+                          uploadFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
+                          return null;
+                        }))
+            .toList();
+
+    // Wait for all uploads to complete
+    CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
+  }
+
+  /**
+   * Schedules a task to be executed asynchronously using virtual threads, respecting the
+   * concurrency limit imposed by the semaphore.
+   */
+  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
+    final var result = new CompletableFuture<T>();
+    executor.execute(
+        () -> {
+          try {
+            concurrencyLimit.acquire();
+            result.complete(task.get());
+          } catch (final InterruptedException e) {
+            Thread.currentThread().interrupt();
+            result.completeExceptionally(e);
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          } finally {
+            concurrencyLimit.release();
+          }
+        });
+    return result;
+  }
+
+  private void uploadFile(
+      final BackupIdentifier id,
+      final String fileSetName,
+      final String fileName,
+      final Path filePath) {
+    try (final var inputStream = Files.newInputStream(filePath)) {
+      client.createFrom(
+          blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
     }
   }
 
@@ -135,22 +136,43 @@ final class FileSetManager {
     }
   }
 
-  public NamedFileSet restore(
+  /**
+   * Downloads files in parallel using virtual threads. Concurrency is limited by the same semaphore
+   * used for uploads to avoid resource exhaustion.
+   */
+  NamedFileSet restore(
       final BackupIdentifier id,
       final String filesetName,
       final FileSet fileSet,
       final Path targetFolder) {
-    final var pathByName =
+    final var downloadFutures =
         fileSet.files().stream()
-            .collect(Collectors.toMap(NamedFile::name, (f) -> targetFolder.resolve(f.name())));
+            .collect(
+                Collectors.toMap(
+                    NamedFile::name,
+                    namedFile ->
+                        schedule(
+                            () -> downloadFile(id, filesetName, namedFile.name(), targetFolder))));
 
-    for (final var entry : pathByName.entrySet()) {
-      final var fileName = entry.getKey();
-      final var filePath = entry.getValue();
-      client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
-    }
+    // Wait for all downloads to complete
+    CompletableFuture.allOf(downloadFutures.values().toArray(new CompletableFuture[0])).join();
+
+    // Collect results
+    final var pathByName =
+        downloadFutures.entrySet().stream()
+            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().join()));
 
     return new NamedFileSetImpl(pathByName);
+  }
+
+  private Path downloadFile(
+      final BackupIdentifier id,
+      final String filesetName,
+      final String fileName,
+      final Path targetFolder) {
+    final var filePath = targetFolder.resolve(fileName);
+    client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
+    return filePath;
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {

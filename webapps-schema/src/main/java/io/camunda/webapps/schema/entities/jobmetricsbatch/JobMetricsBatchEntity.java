@@ -20,6 +20,9 @@ public final class JobMetricsBatchEntity
   private String id;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
+  private int partitionId;
+
+  @SinceVersion(value = "8.9.0", requireDefault = false)
   private OffsetDateTime startTime;
 
   @SinceVersion(value = "8.9.0", requireDefault = false)
@@ -63,6 +66,15 @@ public final class JobMetricsBatchEntity
   @Override
   public JobMetricsBatchEntity setId(final String id) {
     this.id = id;
+    return this;
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public JobMetricsBatchEntity setPartitionId(final int partitionId) {
+    this.partitionId = partitionId;
     return this;
   }
 
@@ -179,6 +191,7 @@ public final class JobMetricsBatchEntity
   public int hashCode() {
     return Objects.hash(
         id,
+        partitionId,
         startTime,
         endTime,
         incompleteBatch,
@@ -203,6 +216,7 @@ public final class JobMetricsBatchEntity
     }
     final var that = (JobMetricsBatchEntity) obj;
     return Objects.equals(id, that.id)
+        && partitionId == that.partitionId
         && Objects.equals(startTime, that.startTime)
         && Objects.equals(endTime, that.endTime)
         && incompleteBatch == that.incompleteBatch
@@ -219,9 +233,10 @@ public final class JobMetricsBatchEntity
 
   @Override
   public String toString() {
-    return "JobMetricsBatchEntity[id=%s, startTime=%s, endTime=%s, incompleteBatch=%s, tenantId=%s, failedCount=%d, lastFailedAt=%s, completedCount=%d, lastCompletedAt=%s, createdCount=%d, lastCreatedAt=%s, jobType=%s, worker=%s]"
+    return "JobMetricsBatchEntity[id=%s, partitionId=%d, startTime=%s, endTime=%s, incompleteBatch=%s, tenantId=%s, failedCount=%d, lastFailedAt=%s, completedCount=%d, lastCompletedAt=%s, createdCount=%d, lastCreatedAt=%s, jobType=%s, worker=%s]"
         .formatted(
             id,
+            partitionId,
             startTime,
             endTime,
             incompleteBatch,

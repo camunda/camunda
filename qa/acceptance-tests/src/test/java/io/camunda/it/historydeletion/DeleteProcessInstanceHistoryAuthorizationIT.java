@@ -107,7 +107,8 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
         adminClient, f -> f.processInstanceKey(processInstanceKey), 1);
 
     // when
-    final var result = camundaClient.newDeleteInstanceCommand(processInstanceKey).send().join();
+    final var result =
+        camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
 
     // then - should not throw an exception
     assertThat(result).isNotNull();
@@ -125,7 +126,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
 
     // when
     final ThrowingCallable executeDelete =
-        () -> camundaClient.newDeleteInstanceCommand(processInstanceKey).send().join();
+        () -> camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
 
     // then
     final var problemException =
@@ -147,7 +148,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
 
     // when
     final ThrowingCallable executeDelete =
-        () -> camundaClient.newDeleteInstanceCommand(processInstanceKey).send().join();
+        () -> camundaClient.newDeleteProcessInstanceCommand(processInstanceKey).send().join();
 
     // then
     final var problemException =
@@ -172,7 +173,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
     final var result =
         camundaClient
             .newCreateBatchOperationCommand()
-            .processInstanceDelete()
+            .deleteProcessInstance()
             .filter(f -> f.variables(getScopedVariables(scopeId)))
             .send()
             .join();
@@ -197,7 +198,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
         () ->
             camundaClient
                 .newCreateBatchOperationCommand()
-                .processInstanceDelete()
+                .deleteProcessInstance()
                 .filter(f -> f.variables(getScopedVariables(scopeId)))
                 .send()
                 .join();
@@ -227,7 +228,7 @@ public class DeleteProcessInstanceHistoryAuthorizationIT {
         () ->
             camundaClient
                 .newCreateBatchOperationCommand()
-                .processInstanceDelete()
+                .deleteProcessInstance()
                 .filter(f -> f.variables(getScopedVariables(scopeId)))
                 .send()
                 .join();

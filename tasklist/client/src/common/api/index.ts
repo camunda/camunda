@@ -42,9 +42,6 @@ const commonApi = {
     new Request(getFullURL('/logout'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     }),
   getCurrentUser: () =>
     new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {

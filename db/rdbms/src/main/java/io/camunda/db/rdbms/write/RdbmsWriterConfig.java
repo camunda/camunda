@@ -113,7 +113,9 @@ public record RdbmsWriterConfig(
       int historyCleanupBatchSize,
       int historyCleanupProcessInstanceBatchSize,
       Duration usageMetricsCleanup,
-      Duration usageMetricsTTL) {
+      Duration usageMetricsTTL,
+      Duration jobBatchMetricsCleanup,
+      Duration jobBatchMetricsTTL) {
 
     public static final Duration DEFAULT_HISTORY_TTL = Duration.ofDays(30);
     public static final Duration DEFAULT_BATCH_OPERATION_HISTORY_TTL = Duration.ofDays(5);
@@ -121,6 +123,8 @@ public record RdbmsWriterConfig(
     public static final Duration DEFAULT_MAX_HISTORY_CLEANUP_INTERVAL = Duration.ofMinutes(60);
     public static final Duration DEFAULT_USAGE_METRICS_CLEANUP = Duration.ofDays(1);
     public static final Duration DEFAULT_USAGE_METRICS_TTL = Duration.ofDays(730);
+    public static final Duration DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL = Duration.ofDays(1);
+
     public static final int DEFAULT_HISTORY_CLEANUP_BATCH_SIZE = 10000;
     // Keep this smaller to avoid Oracle IN-clause limit (1000)
     // when passing PI keys to deleteRootProcessInstanceRelatedData()
@@ -149,6 +153,8 @@ public record RdbmsWriterConfig(
           DEFAULT_HISTORY_CLEANUP_PROCESS_INSTANCE_BATCH_SIZE;
       private Duration usageMetricsCleanup = DEFAULT_USAGE_METRICS_CLEANUP;
       private Duration usageMetricsTTL = DEFAULT_USAGE_METRICS_TTL;
+      private Duration jobBatchMetricsCleanupInterval = DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL;
+      private Duration jobBatchMetricsTTL = DEFAULT_HISTORY_TTL;
 
       public HistoryConfig.Builder defaultHistoryTTL(final Duration defaultHistoryTTL) {
         this.defaultHistoryTTL = defaultHistoryTTL;
@@ -220,6 +226,17 @@ public record RdbmsWriterConfig(
         return this;
       }
 
+      public HistoryConfig.Builder jobBatchMetricsCleanupInterval(
+          final Duration jobBatchMetricsCleanupInterval) {
+        this.jobBatchMetricsCleanupInterval = jobBatchMetricsCleanupInterval;
+        return this;
+      }
+
+      public HistoryConfig.Builder jobBatchMetricsTTL(final Duration jobBatchMetricsTTL) {
+        this.jobBatchMetricsTTL = jobBatchMetricsTTL;
+        return this;
+      }
+
       @Override
       public HistoryConfig build() {
         return new HistoryConfig(
@@ -234,7 +251,9 @@ public record RdbmsWriterConfig(
             historyCleanupBatchSize,
             historyCleanupProcessInstanceBatchSize,
             usageMetricsCleanup,
-            usageMetricsTTL);
+            usageMetricsTTL,
+            jobBatchMetricsCleanupInterval,
+            jobBatchMetricsTTL);
       }
     }
   }

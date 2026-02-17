@@ -149,6 +149,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "404":
           description: The decision is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":

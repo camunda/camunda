@@ -12,6 +12,9 @@ import static io.camunda.it.rdbms.db.fixtures.SequenceFlowFixtures.createAndSave
 import static io.camunda.it.rdbms.db.fixtures.SequenceFlowFixtures.createRandomized;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.db.rdbms.RdbmsService;
+import io.camunda.db.rdbms.read.service.SequenceFlowDbReader;
+import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.it.rdbms.db.fixtures.CommonFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
@@ -19,6 +22,7 @@ import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import java.time.OffsetDateTime;
+import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -223,5 +227,84 @@ public class SequenceFlowIT {
                     q -> q.filter(f -> f.processInstanceKey(dbModel.processInstanceKey()))))
             .items();
     assertThat(itemsAfterDelete).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
+    final var sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
+
+    final var item1 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item1);
+    final var item2 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item2);
+    final var item3 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item3);
+    rdbmsWriters.flush();
+
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item1.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item2.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item3.processInstanceKey())).hasSize(1);
+
+    // when
+    final int deleted =
+        sequenceFlowWriter.deleteProcessInstanceRelatedData(
+            List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item1.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item2.processInstanceKey())).hasSize(0);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item3.processInstanceKey())).hasSize(1);
+  }
+
+  @TestTemplate
+  public void shouldDeleteRootProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final var sequenceFlowReader = rdbmsService.getSequenceFlowReader();
+    final var sequenceFlowWriter = rdbmsWriters.getSequenceFlowWriter();
+
+    final var item1 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item1);
+    final var item2 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item2);
+    final var item3 = createRandomized(b -> b);
+    sequenceFlowWriter.create(item3);
+    rdbmsWriters.flush();
+
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item1.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item2.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item3.processInstanceKey())).hasSize(1);
+
+    // when
+    final int deleted =
+        sequenceFlowWriter.deleteRootProcessInstanceRelatedData(
+            List.of(item2.rootProcessInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item1.processInstanceKey())).hasSize(1);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item2.processInstanceKey())).hasSize(0);
+    assertThat(findByProcessInstanceKey(sequenceFlowReader, item3.processInstanceKey())).hasSize(1);
+  }
+
+  private List<SequenceFlowEntity> findByProcessInstanceKey(
+      final SequenceFlowDbReader sequenceFlowReader, final long processInstanceKey) {
+    final var query =
+        SequenceFlowQuery.of(
+            q ->
+                q.filter(f -> f.processInstanceKey(processInstanceKey))
+                    .page(p -> p.from(0).size(20)));
+
+    final var searchResult = sequenceFlowReader.search(query);
+    assertThat(searchResult).isNotNull();
+    return searchResult.items();
   }
 }

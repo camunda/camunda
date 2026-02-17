@@ -64,9 +64,12 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.collections.MutableBoolean;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@NullMarked
 public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
@@ -74,7 +77,7 @@ public class RestoreManager implements CloseableSilently {
   private final BackupRangeResolver rangeResolver;
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
-  private final ExporterPositionMapper exporterPositionMapper;
+  @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
 
   @VisibleForTesting
@@ -88,7 +91,7 @@ public class RestoreManager implements CloseableSilently {
   public RestoreManager(
       final BrokerCfg configuration,
       final BackupStore backupStore,
-      final ExporterPositionMapper exporterPositionMapper,
+      @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
     checkpointIdGenerator =
         new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
@@ -109,12 +112,12 @@ public class RestoreManager implements CloseableSilently {
 
   public void restore(
       final Instant from,
-      final Instant to,
+      @Nullable final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     if (exporterPositionMapper == null) {
-      restoreTimeRange(from, to, validateConfig, ignoreFilesInTarget);
+      restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
     } else {
       restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
     }
@@ -122,7 +125,7 @@ public class RestoreManager implements CloseableSilently {
 
   private void restoreRdbms(
       final Instant from,
-      final Instant to,
+      @Nullable final Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
@@ -134,7 +137,7 @@ public class RestoreManager implements CloseableSilently {
     final var restoreInfos =
         rangeResolver
             .getRestoreInfoForAllPartitions(
-                interval, partitionCount, exportedPositions, checkpointIdGenerator, executor)
+                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
             .join();
 
     LOG.info(

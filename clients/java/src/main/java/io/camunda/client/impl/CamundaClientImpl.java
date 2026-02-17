@@ -55,6 +55,7 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
+import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
@@ -222,6 +223,7 @@ import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
+import io.camunda.client.impl.command.DeleteDecisionInstanceCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
@@ -705,7 +707,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(final long processInstanceKey) {
+  public DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(
+      final long processInstanceKey) {
     return new DeleteProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 
@@ -986,6 +989,13 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final String decisionInstanceId) {
     return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceId);
+  }
+
+  @Override
+  public DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(
+      final long decisionInstanceKey) {
+    return new DeleteDecisionInstanceCommandImpl(
+        decisionInstanceKey, config, httpClient, jsonMapper);
   }
 
   @Override

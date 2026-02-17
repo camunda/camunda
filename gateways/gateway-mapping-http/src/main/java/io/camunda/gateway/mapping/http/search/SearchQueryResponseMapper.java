@@ -1425,6 +1425,7 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
+        .agentElementId(auditLog.agentElementId())
         .tenantId(auditLog.tenantId())
         .result(
             ofNullable(auditLog.result())

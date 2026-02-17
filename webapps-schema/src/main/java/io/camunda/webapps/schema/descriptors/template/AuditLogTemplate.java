@@ -25,6 +25,7 @@ public class AuditLogTemplate extends AbstractTemplateDescriptor
   public static final String ID = "id";
   public static final String ACTOR_ID = "actorId";
   public static final String ACTOR_TYPE = "actorType";
+  public static final String AGENT_ELEMENT_ID = "agentElementId";
   public static final String ANNOTATION = "annotation";
   public static final String AUDIT_LOG_KEY = "auditLogKey";
   public static final String BATCH_OPERATION_KEY = "batchOperationKey";

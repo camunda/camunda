@@ -39,7 +39,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 public class GlobalJobStatisticsTenancyIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
-  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
+  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(5);
   public static final int MAX_WORKER_NAME_LENGTH = 10;
   public static final int MAX_TENANT_ID_LENGTH = 10;
   public static final int MAX_UNIQUE_KEYS = 5;

@@ -46,6 +46,10 @@ public interface FilterConfiguration {
 
     List<String> getVariableValueTypeExclusion();
 
+    List<String> getBpmnProcessIdInclusion();
+
+    List<String> getBpmnProcessIdExclusion();
+
     boolean isOptimizeModeEnabled();
   }
 }

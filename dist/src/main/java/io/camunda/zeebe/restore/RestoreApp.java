@@ -28,6 +28,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Objects;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -53,6 +55,7 @@ import org.springframework.context.annotation.Import;
       // When active, provides ExporterPositionMapper for RDBMS-aware restore.
       RdbmsConfiguration.class,
     })
+@NullMarked
 public class RestoreApp implements ApplicationRunner {
 
   private static final Logger LOG = LoggerFactory.getLogger(RestoreApp.class);
@@ -61,17 +64,20 @@ public class RestoreApp implements ApplicationRunner {
 
   @Value("${backupId:#{null}}")
   // Parsed from commandline Eg:-`--backupId=100` (optional, mutually exclusive with from/to)
-  private long[] backupId;
+  private long @Nullable [] backupId;
 
   @Value("${from:#{null}}")
   // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, requires --to)
+  @Nullable
   private Instant from;
 
   @Value("${to:#{null}}")
-  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, requires --from)
+  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, can be omitted when `--from`
+  // is specified)
+  @Nullable
   private Instant to;
 
-  private final ExporterPositionMapper exporterPositionMapper;
+  @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final RestoreProperties restoreConfiguration;
   private final MeterRegistry meterRegistry;
   private final PostRestoreAction postRestoreAction;
@@ -82,7 +88,7 @@ public class RestoreApp implements ApplicationRunner {
       final Camunda camunda,
       final BrokerBasedProperties configuration,
       final BackupStore backupStore,
-      @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
+      @Nullable @Autowired(required = false) final ExporterPositionMapper exporterPositionMapper,
       final RestoreProperties restoreConfiguration,
       final MeterRegistry meterRegistry,
       final NodeIdProvider nodeIdProvider,
@@ -153,7 +159,7 @@ public class RestoreApp implements ApplicationRunner {
               restoreConfiguration.validateConfig(),
               restoreConfiguration.ignoreFilesInTarget());
           LOG.info("Successfully restored broker from backup {}", backupId);
-        } else {
+        } else if (hasTimeRange()) {
           LOG.info(
               "Starting to restore from backups in time range [{}, {}] with the following configuration: {}",
               from,
@@ -194,22 +200,18 @@ public class RestoreApp implements ApplicationRunner {
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
     }
 
-    if (from != null && to == null) {
-      throw new IllegalArgumentException("--from parameter requires --to parameter");
-    }
-
     if (to != null && from == null) {
       throw new IllegalArgumentException("--to parameter requires --from parameter");
     }
 
-    if (hasTimeRange && from.isAfter(to)) {
+    if (hasTimeRange && to != null && from.isAfter(to)) {
       throw new IllegalArgumentException(
           "Invalid time range: --from (%s) must be before --to (%s)".formatted(from, to));
     }
   }
 
   private boolean hasTimeRange() {
-    return from != null && to != null;
+    return from != null;
   }
 
   private boolean hasBackupId() {

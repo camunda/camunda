@@ -7,9 +7,8 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {notificationsStore} from 'modules/stores/notifications';
-import {adHocSubProcessInnerInstance} from 'modules/testUtils';
+import {adHocSubProcessInnerInstance, searchResult} from 'modules/testUtils';
 import {ElementInstancesTree} from './index';
 import {
   Wrapper,
@@ -20,6 +19,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
@@ -40,22 +40,20 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     );
     mockFetchProcessDefinitionXml().withSuccess(adHocSubProcessInnerInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
-    mockQueryBatchOperationItems().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(
       adHocSubProcessInnerInstanceElementInstances.level1,
+    );
+    mockFetchElementInstance('inner-1').withSuccess(
+      adHocSubProcessInnerInstanceElementInstances.level1.items[1]!,
     );
   });
 
   afterEach(() => {
-    flowNodeSelectionStore.reset();
     notificationsStore.reset();
   });
 
-  // TODO: fix test with #45539
-  it.skip('should select inner instance with first child as anchor when node is expanded and has children', async () => {
+  it('should select inner instance with first child as anchor when node is expanded and has children', async () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
@@ -93,18 +91,13 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     );
 
     await waitFor(() => {
-      expect(flowNodeSelectionStore.state.selection).toEqual(
-        expect.objectContaining({
-          flowNodeId: 'ad_hoc_subprocess',
-          flowNodeInstanceId: 'inner-1',
-          anchorFlowNodeId: 'user_task_in_ad_hoc_subprocess',
-        }),
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=user_task_in_ad_hoc_subprocess',
       );
     });
   });
 
-  // TODO: fix test with #45539
-  it.skip('should fetch first child and select with anchor when clicking collapsed inner instance', async () => {
+  it('should fetch first child and select with anchor when clicking collapsed inner instance', async () => {
     const {user} = render(
       <ElementInstancesTree
         processInstance={mockAdHocSubProcessInnerInstanceProcessInstance}
@@ -155,12 +148,8 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
     );
 
     await waitFor(() => {
-      expect(flowNodeSelectionStore.state.selection).toEqual(
-        expect.objectContaining({
-          flowNodeId: 'ad_hoc_subprocess',
-          flowNodeInstanceId: 'inner-1',
-          anchorFlowNodeId: 'user_task_in_ad_hoc_subprocess',
-        }),
+      expect(screen.getByTestId('search')).toHaveTextContent(
+        '?elementId=ad_hoc_subprocess&elementInstanceKey=inner-1&anchorElementId=user_task_in_ad_hoc_subprocess',
       );
     });
 
@@ -177,16 +166,13 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         wrapper: Wrapper,
       },
     );
-    const originalSelection = flowNodeSelectionStore.state.selection;
+    const originalSearch = screen.getByTestId('search').textContent;
 
     expect(
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
     ).toBeInTheDocument();
 
-    mockSearchElementInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchElementInstances().withSuccess(searchResult([]));
 
     await user.click(
       await screen.findByLabelText('Ad Hoc Sub Process Inner Instance', {
@@ -206,7 +192,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       );
     });
 
-    expect(flowNodeSelectionStore.state.selection).toEqual(originalSelection);
+    expect(screen.getByTestId('search')).toHaveTextContent(originalSearch);
   });
 
   it('should display warning notification when fetching first child fails', async () => {
@@ -219,7 +205,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
         wrapper: Wrapper,
       },
     );
-    const originalSelection = flowNodeSelectionStore.state.selection;
+    const originalSearch = screen.getByTestId('search').textContent;
 
     expect(
       await screen.findByText('Ad Hoc Inner Subprocess Test'),
@@ -245,6 +231,6 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       );
     });
 
-    expect(flowNodeSelectionStore.state.selection).toEqual(originalSelection);
+    expect(screen.getByTestId('search')).toHaveTextContent(originalSearch);
   });
 });

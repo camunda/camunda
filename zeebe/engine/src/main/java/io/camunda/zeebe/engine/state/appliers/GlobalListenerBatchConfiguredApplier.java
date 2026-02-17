@@ -25,6 +25,6 @@ public final class GlobalListenerBatchConfiguredApplier
   @Override
   public void applyState(final long eventKey, final GlobalListenerBatchRecord value) {
     value.setGlobalListenerBatchKey(eventKey);
-    globalListenersState.updateCurrentConfiguration(value);
+    globalListenersState.updateConfigKey(value.getGlobalListenerBatchKey());
   }
 }

@@ -14,6 +14,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.List;
 import java.util.function.BiFunction;
 
 public final class GlobalListenerClient {
@@ -58,7 +59,12 @@ public final class GlobalListenerClient {
     return this;
   }
 
-  public GlobalListenerClient withEventType(final String eventType) {
+  public GlobalListenerClient withEventTypes(final String... eventTypes) {
+    globalListenerRecord.setEventTypes(List.of(eventTypes));
+    return this;
+  }
+
+  public GlobalListenerClient addEventType(final String eventType) {
     globalListenerRecord.addEventType(eventType);
     return this;
   }
@@ -101,13 +107,31 @@ public final class GlobalListenerClient {
     return expectation.apply(position, GlobalListenerIntent.CREATED);
   }
 
+  public Record<GlobalListenerRecordValue> create(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.CREATE, username, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.CREATED);
+  }
+
   public Record<GlobalListenerRecordValue> update() {
     final long position = writer.writeCommand(GlobalListenerIntent.UPDATE, globalListenerRecord);
     return expectation.apply(position, GlobalListenerIntent.UPDATED);
   }
 
+  public Record<GlobalListenerRecordValue> update(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.UPDATE, username, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.UPDATED);
+  }
+
   public Record<GlobalListenerRecordValue> delete() {
     final long position = writer.writeCommand(GlobalListenerIntent.DELETE, globalListenerRecord);
+    return expectation.apply(position, GlobalListenerIntent.DELETED);
+  }
+
+  public Record<GlobalListenerRecordValue> delete(final String username) {
+    final long position =
+        writer.writeCommand(GlobalListenerIntent.DELETE, username, globalListenerRecord);
     return expectation.apply(position, GlobalListenerIntent.DELETED);
   }
 }

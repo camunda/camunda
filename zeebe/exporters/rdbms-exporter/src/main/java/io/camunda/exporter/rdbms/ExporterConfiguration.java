@@ -214,6 +214,8 @@ public class ExporterConfiguration {
                 history.getHistoryCleanupProcessInstanceBatchSize())
             .usageMetricsCleanup(history.getUsageMetricsCleanup())
             .usageMetricsTTL(history.getUsageMetricsTTL())
+            .jobBatchMetricsCleanupInterval(history.getJobBatchMetricsCleanup())
+            .jobBatchMetricsTTL(history.getJobBatchMetricsTTL())
             .build();
 
     return new RdbmsWriterConfig.Builder()
@@ -406,6 +408,9 @@ public class ExporterConfiguration {
     private Duration usageMetricsCleanup =
         RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_CLEANUP;
     private Duration usageMetricsTTL = RdbmsWriterConfig.HistoryConfig.DEFAULT_USAGE_METRICS_TTL;
+    private Duration jobBatchMetricsCleanup =
+        HistoryConfig.DEFAULT_JOB_METRICS_BATCH_CLEANUP_INTERVAL;
+    private Duration jobBatchMetricsTTL = HistoryConfig.DEFAULT_HISTORY_TTL;
 
     public Duration getDefaultHistoryTTL() {
       return defaultHistoryTTL;
@@ -510,6 +515,22 @@ public class ExporterConfiguration {
       this.usageMetricsTTL = usageMetricsTTL;
     }
 
+    public Duration getJobBatchMetricsCleanup() {
+      return jobBatchMetricsCleanup;
+    }
+
+    public void setJobBatchMetricsCleanup(final Duration jobBatchMetricsCleanup) {
+      this.jobBatchMetricsCleanup = jobBatchMetricsCleanup;
+    }
+
+    public Duration getJobBatchMetricsTTL() {
+      return jobBatchMetricsTTL;
+    }
+
+    public void setJobBatchMetricsTTL(final Duration jobBatchMetricsTTL) {
+      this.jobBatchMetricsTTL = jobBatchMetricsTTL;
+    }
+
     public List<String> validate() {
       final List<String> errors = new ArrayList<>();
 
@@ -536,6 +557,8 @@ public class ExporterConfiguration {
       checkPositiveDuration(maxHistoryCleanupInterval, "maxHistoryCleanupInterval", errors);
       checkPositiveDuration(usageMetricsCleanup, "usageMetricsCleanup", errors);
       checkPositiveDuration(usageMetricsTTL, "usageMetricsTTL", errors);
+      checkPositiveDuration(jobBatchMetricsCleanup, "jobBatchMetricsCleanup", errors);
+      checkPositiveDuration(jobBatchMetricsTTL, "jobBatchMetricsTTL", errors);
 
       if (maxHistoryCleanupInterval.compareTo(minHistoryCleanupInterval) <= 0) {
         errors.add(

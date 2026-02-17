@@ -136,6 +136,7 @@ final class OpensearchExporterIT {
   @AfterAll
   static void afterAll() {
     deletedIndices();
+    previousTestMethod = null;
   }
 
   @ParameterizedTest(name = "{0}")

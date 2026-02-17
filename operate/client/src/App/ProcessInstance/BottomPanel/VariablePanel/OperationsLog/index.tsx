@@ -15,7 +15,7 @@ import {
   type QueryAuditLogsRequestBody,
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {Container, OperationLogName} from './styled';
+import {Container} from './styled';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
@@ -29,11 +29,13 @@ import {
   DetailsModal,
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
-import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
+import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
+import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
 
 type Props = {
   isVisible: boolean;
@@ -41,13 +43,18 @@ type Props = {
 
 const headerColumns = [
   {
+    header: '',
+    key: 'result',
+  },
+  {
     header: 'Operation',
     key: 'operationType',
     sortKey: 'operationType',
   },
   {
-    header: 'Status',
-    key: 'result',
+    header: 'Property',
+    key: 'property',
+    isDisabled: true,
   },
   {
     header: 'Actor',
@@ -55,7 +62,7 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
-    header: 'Time',
+    header: 'Date',
     key: 'timestamp',
     sortKey: 'timestamp',
   },
@@ -146,19 +153,12 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     () =>
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
+        result: <CellResult item={item} />,
         operationType: `${spaceAndCapitalize(item.operationType.toString())} ${spaceAndCapitalize(
           item.entityType.toString(),
         )}`,
-        result: (
-          <OperationLogName>
-            <OperationsLogStateIcon
-              state={item.result}
-              data-testid={`${item.auditLogKey}-icon`}
-            />
-            {spaceAndCapitalize(item.result.toString())}
-          </OperationLogName>
-        ),
-        user: item.actorId,
+        property: <CellProperty item={item} />,
+        user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: (
           <Button

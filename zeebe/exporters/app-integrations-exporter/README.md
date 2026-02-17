@@ -65,9 +65,16 @@ Additional configuration options:
 
 ### Authentication
 
-The exporter supports API key authentication. You can provide the API key via the `apiKey` configuration property. The exporter will include the API key in the `Authorization` header of each HTTP request as a Bearer token:
+The exporter supports different authentication mechanisms.
+Currently, it supports API key authentication as well as no authentication (if the backend does not require it).
 
-```Authorization: Bearer myAPIKey```
+#### Example of API key authentication:
+
+You can provide the API key via the `apiKey` configuration property. The exporter will include the API key in the `x-api-key` header of each HTTP request:
+
+```
+x-api-key: myAPIKey
+```
 
 ## Development
 

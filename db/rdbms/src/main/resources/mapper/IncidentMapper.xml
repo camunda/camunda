@@ -226,6 +226,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'INCIDENT'"/>
+    <bind name="primaryKeyColumn" value="'INCIDENT_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
   <select id="processInstanceStatisticsByErrorCount" parameterType="io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery"
           resultType="long">
     SELECT COUNT(*)

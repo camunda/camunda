@@ -7,10 +7,10 @@
  */
 package io.camunda.zeebe.engine;
 
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import java.util.List;
-import java.util.stream.Stream;
 
 public record GlobalListenerConfiguration(
     String id,
@@ -21,10 +21,15 @@ public record GlobalListenerConfiguration(
     int priority,
     GlobalListenerType listenerType) {
 
-  public static final String ALL_EVENT_TYPES = "all";
-
-  // List of all possible task listener event types as strings, to be used while validating
-  // the configuration (ZeebeTaskListenerEventType is not accessible from the broker module)
-  public static final List<String> TASK_LISTENER_EVENT_TYPES =
-      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).toList();
+  public GlobalListenerRecord toRecord() {
+    return new GlobalListenerRecord()
+        .setId(this.id())
+        .setType(this.type())
+        .setEventTypes(this.eventTypes())
+        .setRetries(Integer.parseInt(this.retries()))
+        .setAfterNonGlobal(this.afterNonGlobal())
+        .setPriority(this.priority())
+        .setSource(GlobalListenerSource.CONFIGURATION)
+        .setListenerType(this.listenerType());
+  }
 }
