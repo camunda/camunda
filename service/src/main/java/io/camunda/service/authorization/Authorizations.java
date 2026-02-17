@@ -109,6 +109,9 @@ public abstract class Authorizations {
                   .or()
                   .authorizedByCandidateGroups());
 
+  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION =
+      Authorization.of(a -> a.auditLog().read().authorizedByCategory());
+
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 

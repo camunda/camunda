@@ -7,7 +7,7 @@
  */
 package io.camunda.service;
 
-import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_AUTHORIZATION;
+import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION;
 import static io.camunda.service.authorization.Authorizations.AUDIT_LOG_READ_USER_TASK_AUTHORIZATION;
 
@@ -29,7 +29,7 @@ public class AuditLogServices
 
   private static final AuthorizationCondition AUDIT_LOG_AUTHORIZATIONS =
       AuthorizationConditions.anyOf(
-          AUDIT_LOG_READ_AUTHORIZATION.withResourceIdSupplier(al -> al.category().name()),
+          AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION,
           AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION
               .withResourceIdSupplier(AuditLogEntity::processDefinitionId)
               .withCondition(al -> al.processDefinitionId() != null),
