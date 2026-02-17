@@ -14,19 +14,13 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createInstance,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {useEffect, act} from 'react';
+import {act, useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -35,18 +29,73 @@ import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownod
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementInstances/updateElementInstanceVariables';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },
 }));
+
+const TestSelectionControls: React.FC = () => {
+  const {selectElementInstance, selectElement, clearSelection} =
+    useProcessInstanceElementSelection();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'TEST_FLOW_NODE',
+            elementInstanceKey: '2',
+          })
+        }
+      >
+        select test flow node
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'Activity_0qtp1k6',
+            elementInstanceKey: '2',
+          })
+        }
+      >
+        select activity
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElement({
+            elementId: 'Event_0bonl61',
+          })
+        }
+      >
+        select end event
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElement({
+            elementId: 'StartEvent_1',
+          })
+        }
+      >
+        select start event
+      </button>
+      <button type="button" onClick={() => clearSelection()}>
+        clear selection
+      </button>
+    </>
+  );
+};
 
 const getWrapper = (
   initialEntries: React.ComponentProps<
@@ -56,10 +105,7 @@ const getWrapper = (
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
         modificationsStore.reset();
-        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -68,7 +114,15 @@ const getWrapper = (
         <QueryClientProvider client={getMockQueryClient()}>
           <MemoryRouter initialEntries={initialEntries}>
             <Routes>
-              <Route path={Paths.processInstance()} element={children} />
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TestSelectionControls />
+                    {children}
+                  </>
+                }
+              />
             </Routes>
           </MemoryRouter>
         </QueryClientProvider>
@@ -90,8 +144,6 @@ describe('VariablePanel', () => {
     processDefinitionName: 'someProcessName',
     hasIncident: false,
   };
-
-  const mockProcessInstanceDeprecated = createInstance();
 
   const statistics = [
     {
@@ -115,16 +167,6 @@ describe('VariablePanel', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
@@ -141,20 +183,10 @@ describe('VariablePanel', () => {
         totalItems: 1,
       },
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-    init('process-instance', statistics);
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
   });
 
   afterEach(() => {
@@ -219,8 +251,6 @@ describe('VariablePanel', () => {
       }),
       '"bar"',
     );
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
 
     await waitFor(() =>
       expect(
@@ -295,14 +325,8 @@ describe('VariablePanel', () => {
     vi.useRealTimers();
   });
 
-  // TODO: fix test with #44450
-  it.skip('should remove pending variable if scope id changes', async () => {
+  it('should remove pending variable if scope changes', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '2251799813686104',
-    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -344,6 +368,10 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockUpdateElementInstanceVariables(':instance_id').withSuccess(null);
 
+    await act(async () => {
+      await vi.runOnlyPendingTimersAsync();
+    });
+
     await waitFor(() =>
       expect(
         screen.getByRole('button', {
@@ -351,42 +379,40 @@ describe('VariablePanel', () => {
         }),
       ).toBeEnabled(),
     );
-    await user.click(
-      screen.getByRole('button', {
-        name: /save variable/i,
-      }),
-    );
     expect(
       screen.queryByRole('button', {
         name: /add variable/i,
       }),
     ).not.toBeInTheDocument();
 
-    expect(screen.getByTestId('full-variable-loader')).toBeInTheDocument();
-
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'TEST_FLOW_NODE',
-        flowNodeInstanceId: '2',
-      });
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'TEST_FLOW_NODE',
+      elementName: 'Test Flow Node',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
     });
 
-    expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(() =>
-      screen.queryByTestId('variables-spinner'),
+    await user.click(
+      screen.getByRole('button', {name: /select test flow node/i}),
     );
-    expect(
-      screen.queryByTestId('full-variable-loader'),
-    ).not.toBeInTheDocument();
 
     expect(
       screen.getByRole('button', {
         name: /add variable/i,
       }),
     ).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('foo')).not.toBeInTheDocument();
+    expect(screen.queryByDisplayValue('"bar"')).not.toBeInTheDocument();
 
     vi.clearAllTimers();
     vi.useRealTimers();
@@ -465,8 +491,7 @@ describe('VariablePanel', () => {
     );
   });
 
-  // TODO: fix test with #44450
-  it.skip('should select correct tab when navigating between flow nodes', async () => {
+  it('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
@@ -487,40 +512,63 @@ describe('VariablePanel', () => {
       page: {totalItems: 1},
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchProcessDefinitionXml().withSuccess('');
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Activity_0qtp1k6',
-        flowNodeInstanceId: '2',
-      });
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'Activity_0qtp1k6',
+      elementName: 'Activity',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      hasIncident: true,
+      tenantId: '<default>',
     });
+
+    await user.click(screen.getByRole('button', {name: /select activity/i}));
 
     expect(await screen.findByText('test2')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
       page: {totalItems: 1},
     });
-    mockFetchProcessDefinitionXml().withSuccess('');
-
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'Event_0bonl61',
-      });
-    });
-
-    await waitFor(() =>
-      expect(flowNodeSelectionStore.state.selection?.flowNodeId).toBe(
-        'Event_0bonl61',
-      ),
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
     );
 
-    expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '10',
+          elementId: 'Event_0bonl61',
+          elementName: 'End Event',
+          type: 'END_EVENT',
+          state: 'COMPLETED',
+          startDate: '2018-06-21',
+          processDefinitionId: 'someKey',
+          processInstanceKey: 'instance_id',
+          processDefinitionKey: '2',
+          hasIncident: false,
+          tenantId: '<default>',
+        },
+      ],
+      page: {totalItems: 1},
+    });
+
+    await user.click(screen.getByRole('button', {name: /select end event/i}));
+
+    expect(
+      await screen.findByText('No Input Mappings defined'),
+    ).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
@@ -528,13 +576,13 @@ describe('VariablePanel', () => {
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
-    act(() => {
-      flowNodeSelectionStore.clearSelection();
-    });
+    await user.click(screen.getByRole('button', {name: /clear selection/i}));
 
-    expect(
-      screen.queryByText('No Input Mappings defined'),
-    ).not.toBeInTheDocument();
+    await waitFor(() =>
+      expect(
+        screen.queryByText('No Input Mappings defined'),
+      ).not.toBeInTheDocument(),
+    );
     expect(screen.getByRole('tab', {name: 'Variables'})).toBeInTheDocument();
     expect(
       screen.queryByRole('tab', {name: 'Input Mappings'}),
@@ -543,15 +591,29 @@ describe('VariablePanel', () => {
       screen.queryByRole('tab', {name: 'Output Mappings'}),
     ).not.toBeInTheDocument();
 
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'StartEvent_1',
-      });
+    mockSearchElementInstances().withSuccess({
+      items: [
+        {
+          elementInstanceKey: '20',
+          elementId: 'StartEvent_1',
+          elementName: 'Start Event',
+          type: 'START_EVENT',
+          state: 'COMPLETED',
+          startDate: '2018-06-21',
+          processDefinitionId: 'someKey',
+          processInstanceKey: 'instance_id',
+          processDefinitionKey: '2',
+          hasIncident: false,
+          tenantId: '<default>',
+        },
+      ],
+      page: {totalItems: 1},
     });
+
+    await user.click(screen.getByRole('button', {name: /select start event/i}));
 
     expect(
       await screen.findByText('No Input Mappings defined'),
