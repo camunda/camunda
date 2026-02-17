@@ -124,10 +124,13 @@ orchestration:
   # @param core.env can be used to set extra environment variables in each broker container
   env:
     # Enable JSON logging for google cloud stackdriver
+    # Note: CAMUNDA_LOG_APPENDER is the preferred environment variable, with ZEEBE_LOG_APPENDER as a fallback
     - name: ZEEBE_LOG_APPENDER
       value: Stackdriver
+    # Note: CAMUNDA_LOG_STACKDRIVER_SERVICENAME is the preferred environment variable, with component-specific variables as fallbacks
     - name: ZEEBE_LOG_STACKDRIVER_SERVICENAME
       value: zeebe
+    # Note: CAMUNDA_LOG_STACKDRIVER_SERVICEVERSION is the preferred environment variable, with component-specific variables as fallbacks
     - name: ZEEBE_LOG_STACKDRIVER_SERVICEVERSION
       valueFrom:
         fieldRef:
