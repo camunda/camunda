@@ -7,6 +7,8 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -23,7 +25,8 @@ import java.util.function.Function;
  * @param page pagination parameters
  */
 public record JobTypeStatisticsQuery(JobTypeStatisticsFilter filter, SearchQueryPage page)
-    implements TypedSearchQuery<JobTypeStatisticsFilter, SortOption> {
+    implements TypedSearchAggregationQuery<
+        JobTypeStatisticsFilter, SortOption, JobTypeStatisticsAggregation> {
 
   public static JobTypeStatisticsQuery of(
       final Function<Builder, ObjectBuilder<JobTypeStatisticsQuery>> fn) {
@@ -33,6 +36,11 @@ public record JobTypeStatisticsQuery(JobTypeStatisticsFilter filter, SearchQuery
   @Override
   public SortOption sort() {
     return NoSort.NO_SORT;
+  }
+
+  @Override
+  public AggregationBase aggregation() {
+    return new JobTypeStatisticsAggregation();
   }
 
   public static final class Builder

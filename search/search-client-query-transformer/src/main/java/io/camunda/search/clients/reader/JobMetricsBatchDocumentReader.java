@@ -8,6 +8,7 @@
 package io.camunda.search.clients.reader;
 
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
+import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
 import io.camunda.search.clients.SearchClientBasedQueryExecutor;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
@@ -36,6 +37,8 @@ public class JobMetricsBatchDocumentReader extends DocumentBasedReader
   @Override
   public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
       final JobTypeStatisticsQuery query, final ResourceAccessChecks resourceAccessChecks) {
-    throw new UnsupportedOperationException("Not implemented yet");
+    return getSearchExecutor()
+        .search(query, JobTypeStatisticsAggregationResult.class, resourceAccessChecks)
+        .map(result -> result.items());
   }
 }

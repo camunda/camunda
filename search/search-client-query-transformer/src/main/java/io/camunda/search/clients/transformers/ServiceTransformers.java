@@ -12,6 +12,7 @@ import io.camunda.search.aggregation.DecisionDefinitionLatestVersionAggregation;
 import io.camunda.search.aggregation.GlobalJobStatisticsAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregation;
 import io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation;
+import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionFlowNodeStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceStatisticsAggregation;
 import io.camunda.search.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregation;
@@ -25,6 +26,7 @@ import io.camunda.search.aggregation.result.DecisionDefinitionLatestVersionAggre
 import io.camunda.search.aggregation.result.GlobalJobStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResult;
 import io.camunda.search.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResult;
+import io.camunda.search.aggregation.result.JobTypeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResult;
 import io.camunda.search.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResult;
@@ -42,6 +44,7 @@ import io.camunda.search.clients.transformers.aggregation.DecisionDefinitionLate
 import io.camunda.search.clients.transformers.aggregation.GlobalJobStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByDefinitionAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.IncidentProcessInstanceStatisticsByErrorAggregationTransformer;
+import io.camunda.search.clients.transformers.aggregation.JobTypeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionFlowNodeStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceStatisticsAggregationTransformer;
 import io.camunda.search.clients.transformers.aggregation.ProcessDefinitionInstanceVersionStatisticsAggregationTransformer;
@@ -55,6 +58,7 @@ import io.camunda.search.clients.transformers.aggregation.result.DecisionDefinit
 import io.camunda.search.clients.transformers.aggregation.result.GlobalJobStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByDefinitionAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.IncidentProcessInstanceStatisticsByErrorAggregationResultTransformer;
+import io.camunda.search.clients.transformers.aggregation.result.JobTypeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionFlowNodeStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceStatisticsAggregationResultTransformer;
 import io.camunda.search.clients.transformers.aggregation.result.ProcessDefinitionInstanceVersionStatisticsAggregationResultTransformer;
@@ -639,6 +643,8 @@ public final class ServiceTransformers {
         new DecisionDefinitionLatestVersionAggregationTransformer());
     mappers.put(
         GlobalJobStatisticsAggregation.class, new GlobalJobStatisticsAggregationTransformer());
+    mappers.put(
+        JobTypeStatisticsAggregation.class, new JobTypeStatisticsAggregationTransformer());
 
     // aggregation result
     mappers.put(
@@ -675,5 +681,8 @@ public final class ServiceTransformers {
     mappers.put(
         GlobalJobStatisticsAggregationResult.class,
         new GlobalJobStatisticsAggregationResultTransformer());
+    mappers.put(
+        JobTypeStatisticsAggregationResult.class,
+        new JobTypeStatisticsAggregationResultTransformer());
   }
 }
