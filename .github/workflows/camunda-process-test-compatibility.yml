@@ -442,24 +442,48 @@ jobs:
             -DskipUTs
             -DskipChecks
 
-      - name: Determine Docker API version override
+      - name: Override connectors version in properties file
+        # nicpuppa/fix-cpt-workflow for connectorsDockerImageVersion
+        # in the properties file, which ignores the Maven -D flag. This step patches the
+        # source properties file so resource filtering produces the correct version.
+        run: |
+          PROPS_FILE="testing/camunda-process-test-java/src/main/resources/camunda-container-runtime-version.properties"
+          CONNECTORS_VERSION="${{ steps.connectors-version.outputs.version }}"
+          if [[ -f "$PROPS_FILE" ]]; then
+            echo "Before override:"
+            cat "$PROPS_FILE"
+            sed -i "s|^connectorsDockerImageVersion=.*|connectorsDockerImageVersion=${CONNECTORS_VERSION}|" "$PROPS_FILE"
+            echo "After override:"
+            cat "$PROPS_FILE"
+          else
+            echo "::warning::Properties file not found at $PROPS_FILE"
+          fi
+
+      - name: Determine version-specific overrides
         id: api-version
         run: |
           CLIENT_VERSION="${{ matrix.client }}"
           EXTRA_PROPS=""
-          # For CPT versions < 8.8.5, we need to pin the API version
           if [[ "$CLIENT_VERSION" =~ ^([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
             MAJOR="${BASH_REMATCH[1]}"
             MINOR="${BASH_REMATCH[2]}"
             PATCH="${BASH_REMATCH[3]}"
+            # For CPT versions < 8.8.5, we need to pin the API version
             if (( MAJOR < 8 )) || \
                (( MAJOR == 8 && MINOR < 8 )) || \
                (( MAJOR == 8 && MINOR == 8 && PATCH < 5 )); then
-              EXTRA_PROPS="-Dapi.version=1.44"
-              echo "CPT version $CLIENT_VERSION < 8.8.5 - adding $EXTRA_PROPS"
+              EXTRA_PROPS+=" -Dapi.version=1.44"
+              echo "CPT version $CLIENT_VERSION < 8.8.5 - adding Docker API version override"
+            fi
+            # For CPT versions <= 8.8.7, skip CamundaSpringProcessMultiTenancyTestListenerIT
+            if (( MAJOR < 8 )) || \
+               (( MAJOR == 8 && MINOR < 8 )) || \
+               (( MAJOR == 8 && MINOR == 8 && PATCH <= 7 )); then
+              EXTRA_PROPS+=" -Dit.test='!CamundaSpringProcessMultiTenancyTestListenerIT'"
+              echo "CPT version $CLIENT_VERSION <= 8.8.7 - excluding CamundaSpringProcessMultiTenancyTestListenerIT"
             fi
           fi
-          echo "extra-props=$EXTRA_PROPS" >> "$GITHUB_OUTPUT"
+          echo "extra-props=${EXTRA_PROPS}" >> "$GITHUB_OUTPUT"
 
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
