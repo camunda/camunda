@@ -160,7 +160,7 @@ public class OpensearchClientIT {
     for (final var ismTemplate : policy.ismTemplate()) {
       assertThat(ismTemplate.indexPatterns())
           .as("ISM template should only apply to zeebe indices")
-          .allMatch(pattern -> pattern.startsWith(SEARCH_DB.config().index.prefix + "_*"));
+          .containsOnly(SEARCH_DB.config().index.prefix + "_*");
     }
   }
 
