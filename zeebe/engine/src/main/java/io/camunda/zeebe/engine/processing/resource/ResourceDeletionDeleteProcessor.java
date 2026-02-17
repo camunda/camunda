@@ -398,23 +398,35 @@ public class ResourceDeletionDeleteProcessor
   private void deleteHistory(
       final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
     final var commandValue = command.getValue();
-    switch (commandValue.getResourceType()) {
+    final var resourceType = commandValue.getResourceType();
+
+    // We cannot rely on the existing checkAuthorization method as it would swallow the not found in
+    // case the caller has no access to the tenant.
+    final var authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(
+                resourceType == ResourceType.PROCESS_DEFINITION
+                    ? PermissionType.DELETE_PROCESS
+                    : PermissionType.DELETE_DRD)
+            .addResourceId(commandValue.getResourceId())
+            .tenantId(commandValue.getTenantId())
+            .build();
+    final var authResponse = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    if (authResponse.isLeft()) {
+      if (authResponse.getLeft().type() == RejectionType.NOT_FOUND) {
+        throw new NoSuchResourceException(commandValue.getResourceKey());
+      } else {
+        throw new ForbiddenException(authRequest);
+      }
+    }
+
+    switch (resourceType) {
       case PROCESS_DEFINITION -> {
-        checkAuthorization(
-            command,
-            AuthorizationResourceType.RESOURCE,
-            PermissionType.DELETE_PROCESS,
-            commandValue.getResourceId(),
-            commandValue.getTenantId());
         deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
       }
       case DECISION_REQUIREMENTS -> {
-        checkAuthorization(
-            command,
-            AuthorizationResourceType.RESOURCE,
-            PermissionType.DELETE_DRD,
-            commandValue.getResourceId(),
-            commandValue.getTenantId());
         deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
       }
     }
