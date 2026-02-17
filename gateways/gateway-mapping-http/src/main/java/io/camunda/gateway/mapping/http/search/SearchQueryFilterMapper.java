@@ -430,20 +430,14 @@ public class SearchQueryFilterMapper {
     }
 
     final var from = validateDate(filter.getFrom(), "from", validationErrors);
-    if (from == null) {
-      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("from"));
-    } else {
-      builder.from(from);
-    }
+    Optional.ofNullable(from).ifPresent(builder::from);
 
     final var to = validateDate(filter.getTo(), "to", validationErrors);
-    if (to == null) {
-      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("to"));
-    } else {
-      builder.to(to);
-    }
+    Optional.ofNullable(to).ifPresent(builder::to);
 
-    Optional.ofNullable(filter.getJobTypePrefix()).ifPresent(builder::jobTypePrefix);
+    Optional.ofNullable(filter.getJobType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::jobTypeOperations);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

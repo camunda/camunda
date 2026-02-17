@@ -145,22 +145,24 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   }
 
   public GlobalJobStatisticsEntity getGlobalStatistics(final GlobalJobStatisticsQuery query) {
-    final var authJobSearchClient =
-        jobSearchClient.withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.system().readJobMetric())));
-
-    return authJobSearchClient.getGlobalJobStatistics(query);
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getGlobalJobStatistics(query));
   }
 
   public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
       final JobTypeStatisticsQuery query) {
-    final var authJobSearchClient =
-        jobSearchClient.withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.system().readJobMetric())));
-
-    return authJobSearchClient.getJobTypeStatistics(query);
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getJobTypeStatistics(query));
   }
 
   public record ActivateJobsRequest(

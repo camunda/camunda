@@ -155,12 +155,12 @@ components:
           type: string
           format: date-time
           example: "2024-07-29T15:51:28.071Z"
-        jobTypePrefix:
+        jobType:
           description: |
-            Optional job type prefix to filter the job types returned.
-            Only job types starting with this prefix will be included in the results.
-          type: string
-          example: "fetch-"
+            Optional job type filter with advanced search capabilities.
+            Supports exact match, pattern matching, and other operators.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     JobTypeStatisticsQueryResult:
       description: Job type statistics query result.

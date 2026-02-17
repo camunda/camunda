@@ -123,7 +123,7 @@ public class JobController {
   @RequiresSecondaryStorage
   @CamundaPostMapping(path = "/statistics/by-types")
   public ResponseEntity<JobTypeStatisticsQueryResult> getJobTypeStatistics(
-      @RequestBody(required = false) final JobTypeStatisticsQuery request) {
+      @RequestBody final JobTypeStatisticsQuery request) {
     return SearchQueryRequestMapper.toJobTypeStatisticsQuery(request)
         .fold(RestErrorMapper::mapProblemToResponse, this::getTypeStatistics);
   }

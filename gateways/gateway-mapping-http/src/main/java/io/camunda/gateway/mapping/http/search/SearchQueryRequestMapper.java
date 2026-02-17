@@ -131,13 +131,7 @@ public final class SearchQueryRequestMapper {
   public static Either<ProblemDetail, io.camunda.search.query.JobTypeStatisticsQuery>
       toJobTypeStatisticsQuery(
           final io.camunda.gateway.protocol.model.JobTypeStatisticsQuery request) {
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.jobTypeStatisticsSearchQuery().build());
-    }
-    final Either<List<String>, SearchQueryPage> page =
-        request.getPage() == null
-            ? Either.right(null)
-            : Either.right(toSearchQueryPage(request.getPage()));
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
     final var filter = SearchQueryFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
     return buildSearchQuery(
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
@@ -727,10 +721,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final Either<List<String>, SearchQueryPage> page =
-        request.getPage() == null
-            ? Either.right(null)
-            : Either.right(toSearchQueryPage(request.getPage()));
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
@@ -856,30 +847,32 @@ public final class SearchQueryRequestMapper {
     }
 
     return switch (requestedPage) {
-      case final CursorBackwardPagination req -> Either.right(toSearchQueryPage(req));
-      case final CursorForwardPagination req -> Either.right(toSearchQueryPage(req));
-      case final OffsetPagination req -> Either.right(toSearchQueryPage(req));
-      case final LimitPagination req -> Either.right(toSearchQueryPage(req));
+      case final CursorBackwardPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final CursorForwardPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final OffsetPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final LimitPagination req -> Either.right(innerToSearchQueryPage(req));
       default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
     };
   }
 
-  private static SearchQueryPage toSearchQueryPage(final CursorBackwardPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(
+      final CursorBackwardPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final CursorForwardPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(
+      final CursorForwardPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final OffsetPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(final OffsetPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final LimitPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(final LimitPagination requestedPage) {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
@@ -891,7 +884,7 @@ public final class SearchQueryRequestMapper {
     }
 
     // Delegate to the existing mapping
-    return Either.right(toSearchQueryPage(requestedPage));
+    return Either.right(innerToSearchQueryPage(requestedPage));
   }
 
   private static <
