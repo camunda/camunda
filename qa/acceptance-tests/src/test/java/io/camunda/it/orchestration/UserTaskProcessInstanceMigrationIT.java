@@ -54,18 +54,32 @@ public class UserTaskProcessInstanceMigrationIT {
   private static final String FROM_PROCESS_ID = "migration-user-task_v1";
   private static final String TO_PROCESS_ID = "migration-user-task_v2";
   private static final String TASK_ID = "task1";
+  private static final String FORM_1 = "linkedform";
+  private static final String FORM_2 = "linkedform2";
   private static final String EXAMPLE_DUE_DATE = "2017-07-21T19:32:28+02:00";
   private static final String EXAMPLE_FOLLOW_UP_DATE = "2017-07-22T19:32:28+02:00";
+  private static final String ALTERNATIVE_DUE_DATE = "2017-07-23T19:32:28+02:00";
+  private static final String ALTERNATIVE_FOLLOW_UP_DATE = "2017-07-24T19:32:28+02:00";
 
-  private static long formKey;
+  private static long formKey1;
+  private static long formKey2;
 
   @BeforeAll
   static void setup(final CamundaClient camundaClient) {
     tasklistClient = STANDALONE_CAMUNDA.newTasklistClient();
-    formKey =
+    formKey1 =
         client
             .newDeployResourceCommand()
-            .addResourceStringUtf8(getForm("linkedform"), "linkedForm.form")
+            .addResourceStringUtf8(getForm(FORM_1), FORM_1 + ".form")
+            .send()
+            .join()
+            .getForm()
+            .getFirst()
+            .getFormKey();
+    formKey2 =
+        client
+            .newDeployResourceCommand()
+            .addResourceStringUtf8(getForm(FORM_2), FORM_2 + ".form")
             .send()
             .join()
             .getForm()
@@ -156,10 +170,10 @@ public class UserTaskProcessInstanceMigrationIT {
             .singleItem();
 
     assertThat(migratedTask.getAssignee()).isEqualTo(expectedTask.assignee);
-    assertThat(migratedTask.getCandidateGroups()).isEqualTo(List.of("g1", "g2"));
-    assertThat(migratedTask.getCandidateUsers()).isEqualTo(List.of("u1", "u2"));
-    assertThat(migratedTask.getDueDate()).isEqualTo(EXAMPLE_DUE_DATE);
-    assertThat(migratedTask.getFollowUpDate()).isEqualTo(EXAMPLE_FOLLOW_UP_DATE);
+    assertThat(migratedTask.getCandidateGroups()).isEqualTo(expectedTask.candidateGroups);
+    assertThat(migratedTask.getCandidateUsers()).isEqualTo(expectedTask.candidateUsers);
+    assertThat(migratedTask.getDueDate()).isEqualTo(expectedTask.dueDate);
+    assertThat(migratedTask.getFollowUpDate()).isEqualTo(expectedTask.followupDate);
     assertThat(migratedTask.getPriority()).isEqualTo(expectedTask.priority);
     assertThat(migratedTask.getFormKey()).isEqualTo(expectedTask.formKey);
     assertThat(migratedTask.getExternalFormReference())
@@ -169,7 +183,7 @@ public class UserTaskProcessInstanceMigrationIT {
   }
 
   static Stream<Arguments> migrationTestCases() {
-    // Test case with assignee and priority expressions
+    // Job worker tasks
     final Consumer<UserTaskBuilder> fromPriorityAndAssignee =
         t ->
             t.zeebeCandidateGroups("g1,g2")
@@ -177,23 +191,12 @@ public class UserTaskProcessInstanceMigrationIT {
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
                 .zeebeAssignee("original");
-    final Consumer<UserTaskBuilder> toPriorityAndAssignee =
-        t ->
-            t.zeebeUserTask()
-                .zeebeAssigneeExpression("varAssignee")
-                .zeebeTaskPriorityExpression("2*varPriority");
-
-    // Test case where assignee and priority are removed
     final Consumer<UserTaskBuilder> fromWithoutAssigneeAndPriority =
         t ->
             t.zeebeCandidateGroups("g1,g2")
                 .zeebeCandidateUsers("u1,u2")
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE);
-    final Consumer<UserTaskBuilder> toWithoutAssigneeAndPriority =
-        AbstractUserTaskBuilder::zeebeUserTask;
-
-    // Test case migrating from embedded form to external form reference
     final Consumer<UserTaskBuilder> fromEmbeddedForm =
         t ->
             t.zeebeCandidateGroups("g1,g2")
@@ -202,54 +205,135 @@ public class UserTaskProcessInstanceMigrationIT {
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
                 .zeebeAssignee("original");
-    final Consumer<UserTaskBuilder> toExternalForm =
+    final Consumer<UserTaskBuilder> fromInternalForm =
+        t ->
+            t.zeebeAssignee("original")
+                .zeebeFormId(FORM_1)
+                .zeebeDueDate(ALTERNATIVE_DUE_DATE)
+                .zeebeFollowUpDate(ALTERNATIVE_FOLLOW_UP_DATE);
+    final Consumer<UserTaskBuilder> fromExternalForm =
+        t ->
+            t.zeebeAssigneeExpression("varAssignee")
+                .zeebeDueDate(EXAMPLE_DUE_DATE)
+                .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
+                .zeebeFormKey("localhost:8080//original-example.form");
+
+    // Camunda user tasks
+    final Consumer<UserTaskBuilder> toPriorityAndAssignee =
         t ->
             t.zeebeUserTask()
                 .zeebeAssigneeExpression("varAssignee")
+                .zeebeTaskPriorityExpression("2*varPriority");
+    final Consumer<UserTaskBuilder> toWithoutAssigneeAndPriority =
+        AbstractUserTaskBuilder::zeebeUserTask;
+    final Consumer<UserTaskBuilder> toExternalForm =
+        t ->
+            t.zeebeUserTask()
+                .zeebeTaskPriority("60")
+                .zeebeAssigneeExpression("varAssignee")
                 .zeebeExternalFormReference("localhost:8080//example.form");
-
-    // Test case migrating from embedded form to internal form
     final Consumer<UserTaskBuilder> toInternalForm =
         t ->
             t.zeebeUserTask()
+                .zeebeDueDate(EXAMPLE_DUE_DATE)
+                .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
+                .zeebeCandidateGroups("g3,g4")
+                .zeebeCandidateUsers("u3,u4")
                 .zeebeAssignee("targetAssignee")
                 .zeebeTaskPriority("10")
-                .zeebeFormId("linkedform");
+                .zeebeFormId(FORM_2);
 
     return Stream.of(
         Arguments.of(
             fromPriorityAndAssignee,
             toPriorityAndAssignee,
-            new ExpectedUserTask("demo", 40, null, null)),
+            new ExpectedUserTask(
+                "demo",
+                40,
+                null,
+                null,
+                List.of("g1", "g2"),
+                List.of("u1", "u2"),
+                EXAMPLE_DUE_DATE,
+                EXAMPLE_FOLLOW_UP_DATE)),
         Arguments.of(
             fromWithoutAssigneeAndPriority,
             toWithoutAssigneeAndPriority,
-            new ExpectedUserTask(null, 50, null, null)),
+            new ExpectedUserTask(
+                null,
+                50,
+                null,
+                null,
+                List.of("g1", "g2"),
+                List.of("u1", "u2"),
+                EXAMPLE_DUE_DATE,
+                EXAMPLE_FOLLOW_UP_DATE)),
         Arguments.of(
             fromEmbeddedForm,
             toExternalForm,
-            new ExpectedUserTask("demo", 50, "localhost:8080//example.form", null)),
+            new ExpectedUserTask(
+                "demo",
+                60,
+                "localhost:8080//example.form",
+                null,
+                List.of("g1", "g2"),
+                List.of("u1", "u2"),
+                EXAMPLE_DUE_DATE,
+                EXAMPLE_FOLLOW_UP_DATE)),
         Arguments.of(
             fromEmbeddedForm,
             toInternalForm,
-            new ExpectedUserTask("targetAssignee", 10, null, formKey)));
+            new ExpectedUserTask(
+                "targetAssignee",
+                10,
+                null,
+                formKey2,
+                List.of("g1", "g2"),
+                List.of("u1", "u2"),
+                EXAMPLE_DUE_DATE,
+                EXAMPLE_FOLLOW_UP_DATE)),
+        Arguments.of(
+            fromInternalForm,
+            toExternalForm,
+            new ExpectedUserTask(
+                "demo",
+                60,
+                null,
+                formKey1,
+                List.of(),
+                List.of(),
+                ALTERNATIVE_DUE_DATE,
+                ALTERNATIVE_FOLLOW_UP_DATE)),
+        Arguments.of(
+            fromExternalForm,
+            toExternalForm,
+            new ExpectedUserTask(
+                "demo",
+                60,
+                "localhost:8080//original-example.form",
+                null,
+                List.of(),
+                List.of(),
+                EXAMPLE_DUE_DATE,
+                EXAMPLE_FOLLOW_UP_DATE)));
   }
 
   private static String getForm(final String formId) {
-    return "{\n"
-        + "  \"components\": [],\n"
-        + "  \"type\": \"default\",\n"
-        + "  \"id\": \""
-        + formId
-        + "\",\n"
-        + "  \"executionPlatform\": \"Camunda Cloud\",\n"
-        + "  \"executionPlatformVersion\": \"8.7.0\",\n"
-        + "  \"exporter\": {\n"
-        + "    \"name\": \"Camunda Modeler\",\n"
-        + "    \"version\": \"5.38.1\"\n"
-        + "  },\n"
-        + "  \"schemaVersion\": 19\n"
-        + "}";
+    return """
+        {
+          "components": [],
+          "type": "default",
+          "id": "%s",
+          "executionPlatform": "Camunda Cloud",
+          "executionPlatformVersion": "8.7.0",
+          "exporter": {
+            "name": "Camunda Modeler",
+            "version": "5.38.1"
+          },
+          "schemaVersion": 19
+        }
+        """
+        .formatted(formId);
   }
 
   private void migrateProcessInstance(
@@ -287,5 +371,12 @@ public class UserTaskProcessInstanceMigrationIT {
   }
 
   record ExpectedUserTask(
-      String assignee, Integer priority, String externalFormReference, Long formKey) {}
+      String assignee,
+      Integer priority,
+      String externalFormReference,
+      Long formKey,
+      List<String> candidateGroups,
+      List<String> candidateUsers,
+      String dueDate,
+      String followupDate) {}
 }
