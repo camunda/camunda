@@ -12,6 +12,7 @@ import static io.camunda.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.spec.MsgPackUtil.CheckedConsumer;
+import io.camunda.zeebe.msgpack.spec.MsgPackUtil.CheckedToIntFunction;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
@@ -38,7 +39,7 @@ public final class MsgPackWriterTest {
   public String name;
 
   @Parameter(1)
-  public CheckedConsumer<MsgPackWriter> actualValueWriter;
+  public CheckedToIntFunction<MsgPackWriter> actualValueWriter;
 
   @Parameter(2)
   public CheckedConsumer<ByteArrayBuilder> expectedValueWriter;
@@ -183,11 +184,12 @@ public final class MsgPackWriterTest {
     final byte[] expectedValue = builder.value;
 
     // when
-    actualValueWriter.accept(writer);
+    final var len = actualValueWriter.apply(writer);
 
     // then
     assertThat(writer.getOffset()).isEqualTo(WRITE_OFFSET + expectedValue.length);
     assertThatBuffer(actualValueBuffer).hasBytes(expectedValue, WRITE_OFFSET);
+    assertThat(len).isEqualTo(expectedValue.length);
   }
 
   // helping the compiler with recognizing lamdas
@@ -196,7 +198,8 @@ public final class MsgPackWriterTest {
     return arg;
   }
 
-  protected static CheckedConsumer<MsgPackWriter> actual(final CheckedConsumer<MsgPackWriter> arg) {
+  protected static CheckedToIntFunction<MsgPackWriter> actual(
+      final CheckedToIntFunction<MsgPackWriter> arg) {
     return arg;
   }
 

@@ -53,7 +53,7 @@ public final class ApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
     headerEncoder.wrap(buffer, offset);
 
     headerEncoder
@@ -68,5 +68,6 @@ public final class ApiResponseWriter implements ResponseWriter {
     if (hasPayload) {
       responseEncoder.putPayload(payload, 0, payload.length);
     }
+    return getLength();
   }
 }

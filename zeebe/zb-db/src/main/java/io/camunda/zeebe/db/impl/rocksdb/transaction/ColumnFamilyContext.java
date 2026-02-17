@@ -56,8 +56,8 @@ public class ColumnFamilyContext {
     return keyBuffer.byteArray();
   }
 
-  public void writeValue(final DbValue value) {
-    value.write(valueBuffer, 0);
+  public int writeValue(final DbValue value) {
+    return value.write(valueBuffer, 0);
   }
 
   public byte[] getValueBufferArray() {

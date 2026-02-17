@@ -95,7 +95,7 @@ public class BackupListResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
     final var backupsEncoder = bodyEncoder.backupsCount(internalBackups.size());
     internalBackups.forEach(
@@ -110,6 +110,7 @@ public class BackupListResponse implements BufferReader, BufferWriter {
                 .putCreatedAt(backup.encodedCreatedAt, 0, backup.encodedCreatedAt.length)
                 .putBrokerVersion(
                     backup.encodedBrokerVersion, 0, backup.encodedBrokerVersion.length));
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public List<BackupStatus> getBackups() {

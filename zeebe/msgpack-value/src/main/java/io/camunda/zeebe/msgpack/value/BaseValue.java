@@ -14,7 +14,7 @@ import io.camunda.zeebe.msgpack.spec.MsgPackWriter;
 public abstract class BaseValue implements Recyclable {
   public abstract void writeJSON(StringBuilder builder);
 
-  public abstract void write(MsgPackWriter writer);
+  public abstract int write(MsgPackWriter writer);
 
   public abstract void read(MsgPackReader reader);
 

@@ -41,8 +41,8 @@ public final class LongValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeInteger(value);
+  public int write(final MsgPackWriter writer) {
+    return writer.writeInteger(value);
   }
 
   @Override
