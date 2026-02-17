@@ -40,6 +40,7 @@ import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.GlobalListenerWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
@@ -171,6 +172,7 @@ public class RdbmsWriters {
     writers.put(
         HistoryDeletionWriter.class,
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
+    writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
