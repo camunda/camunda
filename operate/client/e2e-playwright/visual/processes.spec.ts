@@ -172,6 +172,8 @@ test.describe('processes page', () => {
       },
     });
 
+    await expect(processesPage.processInstancesTable).toBeVisible();
+
     await expect(page).toHaveScreenshot();
   });
 
