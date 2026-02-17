@@ -433,6 +433,10 @@
       <artifactId>jmh-generator-annprocess</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>dynamic-node-id-provider</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

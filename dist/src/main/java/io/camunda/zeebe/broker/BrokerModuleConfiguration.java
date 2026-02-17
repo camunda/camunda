@@ -18,6 +18,7 @@ import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.SystemContext;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
@@ -64,6 +65,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final NodeIdProvider nodeIdProvider;
 
   private Broker broker;
 
@@ -82,7 +84,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
       @Autowired(required = false) final UserServices userServices,
       final PasswordEncoder passwordEncoder,
       @Autowired(required = false) final JwtDecoder jwtDecoder,
-      @Autowired(required = false) final SearchClientsProxy searchClientsProxy) {
+      @Autowired(required = false) final SearchClientsProxy searchClientsProxy,
+      final NodeIdProvider nodeIdProvider) {
     this.configuration = configuration;
     this.identityConfiguration = identityConfiguration;
     this.springBrokerBridge = springBrokerBridge;
@@ -96,6 +99,7 @@ public class BrokerModuleConfiguration implements CloseableSilently {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.nodeIdProvider = nodeIdProvider;
   }
 
   @Bean
@@ -125,7 +129,8 @@ public class BrokerModuleConfiguration implements CloseableSilently {
             passwordEncoder,
             jwtDecoder,
             searchClientsProxy,
-            new BrokerRequestAuthorizationConverter(securityConfiguration));
+            new BrokerRequestAuthorizationConverter(securityConfiguration),
+            nodeIdProvider);
     springBrokerBridge.registerShutdownHelper(
         errorCode -> shutdownHelper.initiateShutdown(errorCode));
     broker =

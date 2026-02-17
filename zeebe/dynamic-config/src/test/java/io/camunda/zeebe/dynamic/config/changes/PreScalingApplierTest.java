@@ -103,7 +103,8 @@ final class PreScalingApplierTest {
           }
 
           @Override
-          public ActorFuture<Void> preScaling(final Set<MemberId> clusterMembers) {
+          public ActorFuture<Void> preScaling(
+              final int currentClusterSize, final Set<MemberId> clusterMembers) {
             return CompletableActorFuture.completedExceptionally(
                 new RuntimeException("Failed to execute operation"));
           }

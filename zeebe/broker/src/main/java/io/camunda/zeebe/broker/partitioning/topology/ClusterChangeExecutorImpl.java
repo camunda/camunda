@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.exporter.repo.ExporterDescriptor;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.dynamic.config.changes.ClusterChangeExecutor;
 import io.camunda.zeebe.dynamic.config.changes.ExporterPurgeException;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -28,20 +29,22 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   private final ConcurrencyControl concurrencyControl;
   private final ExporterRepository exporterRepository;
+  private final NodeIdProvider nodeIdProvider;
   private final MeterRegistry meterRegistry;
 
   public ClusterChangeExecutorImpl(
       final ConcurrencyControl concurrencyControl,
       final ExporterRepository exporterRepository,
+      final NodeIdProvider nodeIdProvider,
       final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.exporterRepository = exporterRepository;
+    this.nodeIdProvider = nodeIdProvider;
     this.meterRegistry = meterRegistry;
   }
 
   @Override
   public ActorFuture<Void> deleteHistory() {
-
     final ActorFuture<Void> result = concurrencyControl.createFuture();
     concurrencyControl.run(
         () -> {
@@ -57,9 +60,38 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
   }
 
   @Override
-  public ActorFuture<Void> preScaling(final Set<MemberId> clusterMembers) {
-    // TODO: implement actual logic
-    return concurrencyControl.createCompletedFuture();
+  public ActorFuture<Void> preScaling(
+      final int currentClusterSize, final Set<MemberId> clusterMembers) {
+    final ActorFuture<Void> result = concurrencyControl.createFuture();
+
+    if (currentClusterSize >= clusterMembers.size()) {
+      // No scaling up, so no need to call the NodeIdProvider
+      result.complete(null);
+      return result;
+    }
+
+    if (nodeIdProvider == null) {
+      result.completeExceptionally(
+          new IllegalStateException("NodeIdProvider is required for scaling operations"));
+      return result;
+    }
+    concurrencyControl.run(
+        () -> {
+          try {
+            nodeIdProvider
+                .scale(clusterMembers.size())
+                .thenAccept(ignore -> result.complete(null))
+                .exceptionally(
+                    e -> {
+                      result.completeExceptionally(e);
+                      return null;
+                    });
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+
+    return result;
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {

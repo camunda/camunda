@@ -33,10 +33,11 @@ public interface ClusterChangeExecutor {
    *
    * <p>This operation should be idempotent, as it may be retried multiple times until successful.
    *
+   * @param currentClusterSize the size of the cluster before scaling
    * @param clusterMembers the set of member ids that will be part of the cluster after scaling
    * @return future when the operation is completed
    */
-  ActorFuture<Void> preScaling(Set<MemberId> clusterMembers);
+  ActorFuture<Void> preScaling(final int currentClusterSize, Set<MemberId> clusterMembers);
 
   final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
     @Override
@@ -45,7 +46,8 @@ public interface ClusterChangeExecutor {
     }
 
     @Override
-    public ActorFuture<Void> preScaling(final Set<MemberId> clusterMembers) {
+    public ActorFuture<Void> preScaling(
+        final int currentClusterSize, final Set<MemberId> clusterMembers) {
       return CompletableActorFuture.completed(null);
     }
   }

@@ -34,6 +34,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -69,6 +70,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final NodeIdProvider nodeIdProvider;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -104,7 +106,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -122,6 +125,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.nodeIdProvider = nodeIdProvider;
     partitionListeners.addAll(additionalPartitionListeners);
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
   }
@@ -163,7 +167,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
         passwordEncoder,
         jwtDecoder,
         searchClientsProxy,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        null);
   }
 
   @Override
@@ -426,5 +431,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setCheckpointSchedulingService(
       final CheckpointSchedulingService checkpointSchedulingService) {
     this.checkpointSchedulingService = checkpointSchedulingService;
+  }
+
+  @Override
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
   }
 }
