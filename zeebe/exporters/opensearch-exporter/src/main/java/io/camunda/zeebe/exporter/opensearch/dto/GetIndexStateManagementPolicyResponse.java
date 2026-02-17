@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
+import io.camunda.zeebe.exporter.opensearch.RecordIndexRouter;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse.Policy.IsmTemplate;
 import java.util.List;
 
@@ -64,7 +65,9 @@ public record GetIndexStateManagementPolicyResponse(
 
     final var indexPattern = ismTemplate.get().indexPatterns.stream().findFirst();
 
-    return indexPattern.map(s -> s.equals(configuration.index.prefix + "*")).orElse(false);
+    return indexPattern
+        .map(s -> s.equals(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*"))
+        .orElse(false);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

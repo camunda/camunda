@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 final class GetIndexStateManagementPolicyResponseTest {
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
+  private final String indexPattern = config.index.prefix + "_*";
 
   @Test
   void shouldEqualConfiguration() {
@@ -32,7 +33,7 @@ final class GetIndexStateManagementPolicyResponseTest {
             config.retention.getPolicyName(),
             config.retention.getPolicyDescription(),
             config.retention.getMinimumAge(),
-            config.index.prefix + "*");
+            indexPattern);
 
     // when
     final var equal = response.equalsConfiguration(config);
@@ -49,7 +50,7 @@ final class GetIndexStateManagementPolicyResponseTest {
             "name",
             config.retention.getPolicyDescription(),
             config.retention.getMinimumAge(),
-            config.index.prefix + "*");
+            indexPattern);
 
     // when
     final var equal = response.equalsConfiguration(config);
@@ -66,7 +67,7 @@ final class GetIndexStateManagementPolicyResponseTest {
             config.retention.getPolicyName(),
             "description",
             config.retention.getMinimumAge(),
-            config.index.prefix + "*");
+            indexPattern);
 
     // when
     final var equal = response.equalsConfiguration(config);
@@ -83,7 +84,7 @@ final class GetIndexStateManagementPolicyResponseTest {
             config.retention.getPolicyName(),
             config.retention.getPolicyDescription(),
             "100d",
-            config.index.prefix + "*");
+            indexPattern);
 
     // when
     final var equal = response.equalsConfiguration(config);
