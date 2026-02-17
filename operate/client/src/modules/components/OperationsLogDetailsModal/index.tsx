@@ -35,7 +35,8 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {
   formatBatchTitle,
-  formatModalHeading, getActorIcon,
+  formatModalHeading,
+  getActorIcon,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
 import {useMemo} from 'react';
@@ -54,7 +55,7 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
-  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog])
+  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
 
   return (
     <Modal

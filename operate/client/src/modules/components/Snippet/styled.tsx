@@ -38,4 +38,4 @@ const DarkSnippet = styled(BaseSnippet)`
   --cds-layer: ${colors.black[100]};
 `;
 
-export {LightSnippet, DarkSnippet}
+export {LightSnippet, DarkSnippet};

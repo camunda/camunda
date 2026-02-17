@@ -10,17 +10,17 @@ import type {CodeSnippetProps} from '@carbon/react';
 import {DarkSnippet, LightSnippet} from './styled.tsx';
 
 type Props = CodeSnippetProps & {
-  theme?: 'light' | 'dark'
-  children: React.ReactNode
-}
-
-const Snippet: React.FC<Props> = ({theme = 'light', children , ...codeSnippetProps}) => {
-  const StyledSnippet = theme === 'light' ? LightSnippet : DarkSnippet
-  return (
-    <StyledSnippet {...codeSnippetProps}>
-      {children}
-    </StyledSnippet>
-  )
+  theme?: 'light' | 'dark';
+  children: React.ReactNode;
 };
 
-export {Snippet}
+const Snippet: React.FC<Props> = ({
+  theme = 'light',
+  children,
+  ...codeSnippetProps
+}) => {
+  const StyledSnippet = theme === 'light' ? LightSnippet : DarkSnippet;
+  return <StyledSnippet {...codeSnippetProps}>{children}</StyledSnippet>;
+};
+
+export {Snippet};

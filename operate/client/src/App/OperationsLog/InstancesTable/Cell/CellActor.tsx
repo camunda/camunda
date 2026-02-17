@@ -6,8 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-
-import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react'
+import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {AuthorTooltip, OperationLogName} from '../styled';
 import {useMemo} from 'react';
@@ -21,10 +20,13 @@ type Props = {
 };
 
 const CellActor: React.FC<Props> = ({item}) => {
-  const ActorIcon = useMemo(() => getActorIcon(item), [item])
+  const ActorIcon = useMemo(() => getActorIcon(item), [item]);
 
   const getTooltipActorContent = (actor: AuditLog['actorType'] | 'AGENT') => {
-    const label = actor !== 'AGENT' ? spaceAndCapitalize(actor) : `AI Agent on behalf of ${item.actorType.toLowerCase()}`
+    const label =
+      actor !== 'AGENT'
+        ? spaceAndCapitalize(actor)
+        : `AI Agent on behalf of ${item.actorType.toLowerCase()}`;
     return (
       <AuthorTooltip>
         <span>{label}</span>
@@ -33,17 +35,23 @@ const CellActor: React.FC<Props> = ({item}) => {
         </Snippet>
       </AuthorTooltip>
     );
-  }
+  };
 
   return item.actorId ? (
     <OperationLogName>
       {ActorIcon && (
-        <Tooltip align="bottom-left" description={getTooltipActorContent(item.actorType)}>
+        <Tooltip
+          align="bottom-left"
+          description={getTooltipActorContent(item.actorType)}
+        >
           <ActorIcon />
         </Tooltip>
       )}
       {item.agentElementId && (
-        <Tooltip align="bottom-left" description={getTooltipActorContent('AGENT')}>
+        <Tooltip
+          align="bottom-left"
+          description={getTooltipActorContent('AGENT')}
+        >
           <AiAgentIcon />
         </Tooltip>
       )}
