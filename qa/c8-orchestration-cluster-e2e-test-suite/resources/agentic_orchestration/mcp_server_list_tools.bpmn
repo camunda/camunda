@@ -25,7 +25,7 @@
                 <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
                 <zeebe:ioMapping>
                     <zeebe:input source="http" target="data.transport.type" />
-                    <zeebe:input source="http://localhost:12001/mcp"
+                    <zeebe:input source="http://mcp-test-server:12001/mcp"
                         target="data.transport.http.url" />
                     <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
                     <zeebe:input source="=false" target="data.options.clientCache" />
