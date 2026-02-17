@@ -21,7 +21,6 @@ test.beforeAll(async () => {
   await createInstances('root-cause-test', 1, 1);
   await createInstances('call-level-1-process', 1, 1, {shouldFail: true});
 
-  // Wait for incidents to be created and indexed
   await new Promise((resolve) => setTimeout(resolve, 5000));
 });
 
@@ -56,9 +55,7 @@ test.describe('Process Instance Incident', () => {
         timeout: 30000,
       });
 
-      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible({
-        timeout: 10000,
-      });
+      await expect(operateProcessInstancePage.incidentsBanner).toBeVisible();
       // Click incidents banner to open incidents view
       await operateProcessInstancePage.clickIncidentsBanner();
 

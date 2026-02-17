@@ -624,7 +624,6 @@ class OperateProcessInstancePage {
   async clickViewParentInstance(): Promise<void> {
     await this.viewParentInstanceLink.click();
   }
-  // Methods for interacting with diagram elements for incident tests
   async countIncidentErrorIndicators(): Promise<number> {
     return await this.incidentErrorIndicators.count();
   }
