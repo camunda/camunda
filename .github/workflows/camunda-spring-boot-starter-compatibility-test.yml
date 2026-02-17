@@ -341,6 +341,25 @@ jobs:
           # Inject an explicit <version> on camunda-spring-boot-starter to override the parent-managed version
           sed -i '/<artifactId>camunda-spring-boot-starter<\/artifactId>/a\      <version>${{ matrix.client }}<\/version>' qa/compatibility-test/pom.xml
 
+      - name: Determine tests to exclude
+        id: test-exclusions
+        run: |
+          CLIENT_VERSION="${{ matrix.client }}"
+          EXCLUDES=""
+
+          # Skip CompatibilityJobWorkerAnnotationSettingsIT for client versions < 8.8.3
+          # Before 8.8.3, worker defaults always override @JobWorker annotation values
+          # (fixed in https://github.com/camunda/camunda/pull/40317)
+          if [[ ! "$CLIENT_VERSION" =~ SNAPSHOT ]]; then
+            IFS='.' read -r MAJOR MINOR PATCH <<< "$CLIENT_VERSION"
+            if (( MAJOR < 8 )) || (( MAJOR == 8 && MINOR < 8 )) || (( MAJOR == 8 && MINOR == 8 && PATCH < 3 )); then
+              EXCLUDES="${EXCLUDES} -Dit.test=!CompatibilityJobWorkerAnnotationSettingsIT"
+              echo "Excluding CompatibilityJobWorkerAnnotationSettingsIT (client $CLIENT_VERSION < 8.8.3)"
+            fi
+          fi
+
+          echo "excludes=$EXCLUDES" >> "$GITHUB_OUTPUT"
+
       - name: Run compatibility tests
         uses: ./.github/actions/run-maven
         with:
@@ -349,6 +368,7 @@ jobs:
             -pl qa/compatibility-test
             -Dio.camunda.process.test.camundaDockerImageVersion=${{ matrix.server }}
             -DfailIfNoTests=false
+            ${{ steps.test-exclusions.outputs.excludes }}
 
       - name: Record tested combination
         if: success()
