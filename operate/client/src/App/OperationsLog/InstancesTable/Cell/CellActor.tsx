@@ -9,46 +9,41 @@
 
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react'
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {OperationLogName, ActorTooltip} from '../styled';
-import {User, Api} from '@carbon/react/icons';
+import {AuthorTooltip, OperationLogName} from '../styled';
 import {useMemo} from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize.ts';
-import {Tooltip, CodeSnippet} from '@carbon/react';
+import {Tooltip} from '@carbon/react';
+import {getActorIcon} from 'modules/utils/operationsLog';
+import {Snippet} from 'modules/components/Snippet';
 
 type Props = {
   item: AuditLog;
 };
 
 const CellActor: React.FC<Props> = ({item}) => {
-  const ActorIcon = useMemo(() => {
-    switch(item.actorType) {
-      case 'USER':
-        return User
-      case 'CLIENT':
-        return Api
-      default:
-        return null
-    }
-  }, [item])
+  const ActorIcon = useMemo(() => getActorIcon(item), [item])
 
-  const TooltipActorContent = (
-    <ActorTooltip>
-      <span>{spaceAndCapitalize(item.actorType)}</span>
-      <CodeSnippet hideCopyButton wrapText>
-        {item.agentElementId ? item.agentElementId : item.actorId}
-      </CodeSnippet>
-    </ActorTooltip>
-  );
+  const getTooltipActorContent = (actor: AuditLog['actorType'] | 'AGENT') => {
+    const label = actor !== 'AGENT' ? spaceAndCapitalize(actor) : `AI Agent on behalf of ${item.actorType.toLowerCase()}`
+    return (
+      <AuthorTooltip>
+        <span>{label}</span>
+        <Snippet theme="dark" hideCopyButton wrapText>
+          {item.agentElementId ? item.agentElementId : item.actorId}
+        </Snippet>
+      </AuthorTooltip>
+    );
+  }
 
   return item.actorId ? (
     <OperationLogName>
       {ActorIcon && (
-        <Tooltip align="bottom-left" description={TooltipActorContent}>
+        <Tooltip align="bottom-left" description={getTooltipActorContent(item.actorType)}>
           <ActorIcon />
         </Tooltip>
       )}
       {item.agentElementId && (
-        <Tooltip align="bottom-left" description={TooltipActorContent}>
+        <Tooltip align="bottom-left" description={getTooltipActorContent('AGENT')}>
           <AiAgentIcon />
         </Tooltip>
       )}
