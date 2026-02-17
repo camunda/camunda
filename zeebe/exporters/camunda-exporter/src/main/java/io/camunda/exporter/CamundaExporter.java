@@ -18,6 +18,7 @@ import static io.camunda.zeebe.protocol.record.ValueType.DECISION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_EVALUATION;
 import static io.camunda.zeebe.protocol.record.ValueType.DECISION_REQUIREMENTS;
 import static io.camunda.zeebe.protocol.record.ValueType.FORM;
+import static io.camunda.zeebe.protocol.record.ValueType.GLOBAL_LISTENER;
 import static io.camunda.zeebe.protocol.record.ValueType.GROUP;
 import static io.camunda.zeebe.protocol.record.ValueType.HISTORY_DELETION;
 import static io.camunda.zeebe.protocol.record.ValueType.INCIDENT;
@@ -380,7 +381,8 @@ public class CamundaExporter implements Exporter {
             USAGE_METRIC,
             CLUSTER_VARIABLE,
             HISTORY_DELETION,
-            JOB_METRICS_BATCH);
+            JOB_METRICS_BATCH,
+            GLOBAL_LISTENER);
 
     @Override
     public boolean acceptType(final RecordType recordType) {
