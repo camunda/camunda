@@ -11,10 +11,10 @@ import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
-import io.camunda.zeebe.engine.state.conditional.ConditionalSubscription;
 import io.camunda.zeebe.engine.state.immutable.ConditionalSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
+import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
@@ -127,9 +127,9 @@ public class BpmnConditionalBehavior {
   private Map<Long, Long> mergeVariableEventsToChildScopes(
       final Map<Long, List<VariableEvent>> scopeKeyToVariableEvents) {
     // copy the map to avoid concurrent modification while traversing and merging
-    final var copyScopeKeyToVariableEvents = new HashMap<>(scopeKeyToVariableEvents);
+    final var originScopesToEvents = new HashMap<>(scopeKeyToVariableEvents);
     final Map<Long, Long> childToParent = new HashMap<>();
-    for (final var entry : copyScopeKeyToVariableEvents.entrySet()) {
+    for (final var entry : originScopesToEvents.entrySet()) {
       final long scopeKey = entry.getKey();
       final List<VariableEvent> variableEventsForScope = entry.getValue();
 
@@ -216,25 +216,19 @@ public class BpmnConditionalBehavior {
     conditionSubscriptionState.visitByScopeKey(
         currentScopeKey,
         subscription -> {
-          final var subscriptionKey = subscription.getKey();
           final var record = subscription.getRecord();
-          Expression conditionExpression = null;
+          final var variableNamesFilter = record.getVariableNames();
+          final var variableEventsFilter = record.getVariableEvents();
 
           for (final VariableEvent variableEvent : variableEvents) {
             // apply variableNames and variableEvents filter
-            if (!variableEvent.matchesFilters(
-                record.getVariableNames(), record.getVariableEvents())) {
+            if (!variableEvent.matchesFilters(variableNamesFilter, variableEventsFilter)) {
               // no match, so continue with the next event
               continue;
             }
 
-            // only parse when needed and reuse the parsed expression for the next events of the
-            // same subscription
-            if (conditionExpression == null) {
-              conditionExpression = expressionLanguage.parseExpression(record.getCondition());
-            }
-
-            if (shouldTrigger(subscription, currentScopeKey, conditionExpression)) {
+            if (shouldTrigger(currentScopeKey, record)) {
+              final var subscriptionKey = subscription.getKey();
               commandWriter.appendFollowUpCommand(
                   subscriptionKey, ConditionalSubscriptionIntent.TRIGGER, record);
 
@@ -244,10 +238,12 @@ public class BpmnConditionalBehavior {
                 // stop traversing further subscriptions
                 return false;
               }
-
-              // this subscription is triggered, continue with next subscription
-              return true;
             }
+
+            // we only need one matching variable event to decide whether to evaluate; evaluation is
+            // against merged context, continue with the next subscription without unnecessarily
+            // traversing further variable events
+            return true;
           }
 
           return true;
@@ -255,14 +251,14 @@ public class BpmnConditionalBehavior {
   }
 
   private boolean shouldTrigger(
-      final ConditionalSubscription subscription,
-      final long currentScopeKey,
-      final Expression conditionExpression) {
+      final long currentScopeKey, final ConditionalSubscriptionRecord record) {
+    final Expression conditionExpression =
+        expressionLanguage.parseExpression(record.getCondition());
     final var evaluation =
         expressionProcessor.evaluateBooleanExpression(
-            conditionExpression, currentScopeKey, subscription.getRecord().getTenantId());
+            conditionExpression, currentScopeKey, record.getTenantId());
 
-    return evaluation.isRight() && evaluation.get().equals(true);
+    return evaluation.isRight() && Boolean.TRUE.equals(evaluation.get());
   }
 
   private boolean isConditionalSubscriptionExist(final long processInstanceKey) {
