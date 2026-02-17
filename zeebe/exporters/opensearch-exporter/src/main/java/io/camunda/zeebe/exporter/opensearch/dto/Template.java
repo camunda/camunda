@@ -18,15 +18,15 @@ import org.opensearch.client.util.ObjectBuilder;
  * Index template representation. You can read more about index templates <a
  * href="https://opensearch.org/docs/latest/im-plugin/index-templates/">here</a>.
  */
-public record IdxTemplate(
+public record Template(
     Long version,
     Long priority,
     List<String> composedOf,
     List<String> indexPatterns,
     IndexTemplateMapping template) {
 
-  public static final JsonpDeserializer<IdxTemplate> _DESERIALIZER =
-      ObjectBuilderDeserializer.lazy(IdxTemplate.Builder::new, IdxTemplate::setupDeserializer);
+  public static final JsonpDeserializer<Template> DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(Template.Builder::new, Template::setupDeserializer);
 
   private static void setupDeserializer(final ObjectDeserializer<Builder> deserializer) {
     deserializer.add(Builder::version, JsonpDeserializer.longDeserializer(), "version");
@@ -42,41 +42,41 @@ public record IdxTemplate(
     deserializer.add(Builder::template, IndexTemplateMapping._DESERIALIZER, "template");
   }
 
-  static class Builder implements ObjectBuilder<IdxTemplate> {
+  static class Builder implements ObjectBuilder<Template> {
     Long version;
     Long priority;
     List<String> composedOf;
     List<String> indexPatterns;
     IndexTemplateMapping template;
 
-    IdxTemplate.Builder version(final Long version) {
+    Template.Builder version(final Long version) {
       this.version = version;
       return this;
     }
 
-    IdxTemplate.Builder priority(final Long priority) {
+    Template.Builder priority(final Long priority) {
       this.priority = priority;
       return this;
     }
 
-    IdxTemplate.Builder composedOf(final List<String> composedOf) {
+    Template.Builder composedOf(final List<String> composedOf) {
       this.composedOf = composedOf;
       return this;
     }
 
-    IdxTemplate.Builder indexPatterns(final List<String> indexPatterns) {
+    Template.Builder indexPatterns(final List<String> indexPatterns) {
       this.indexPatterns = indexPatterns;
       return this;
     }
 
-    IdxTemplate.Builder template(final IndexTemplateMapping template) {
+    Template.Builder template(final IndexTemplateMapping template) {
       this.template = template;
       return this;
     }
 
     @Override
-    public IdxTemplate build() {
-      return new IdxTemplate(version, priority, composedOf, indexPatterns, template);
+    public Template build() {
+      return new Template(version, priority, composedOf, indexPatterns, template);
     }
   }
 }

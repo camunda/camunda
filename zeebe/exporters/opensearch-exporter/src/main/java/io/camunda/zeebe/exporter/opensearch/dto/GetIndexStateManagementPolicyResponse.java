@@ -28,7 +28,7 @@ public record GetIndexStateManagementPolicyResponse(
     @JsonProperty("_seq_no") Integer seqNo,
     @JsonProperty("_primary_term") Integer primaryTerm) {
 
-  public static final JsonpDeserializer<GetIndexStateManagementPolicyResponse> _DESERIALIZER =
+  public static final JsonpDeserializer<GetIndexStateManagementPolicyResponse> DESERIALIZER =
       ObjectBuilderDeserializer.lazy(
           GetIndexStateManagementPolicyResponse.Builder::new,
           GetIndexStateManagementPolicyResponse::setupDeserializer);
@@ -37,7 +37,7 @@ public record GetIndexStateManagementPolicyResponse(
       final ObjectDeserializer<GetIndexStateManagementPolicyResponse.Builder> deserializer) {
     deserializer.add(
         GetIndexStateManagementPolicyResponse.Builder::policy,
-        IsmPolicyResponse._DESERIALIZER,
+        IsmPolicyResponse.DESERIALIZER,
         "policy");
     deserializer.add(
         GetIndexStateManagementPolicyResponse.Builder::seqNo,
@@ -115,7 +115,7 @@ public record GetIndexStateManagementPolicyResponse(
       List<States> states,
       @JsonProperty("ism_template") List<IsmTemplate> ismTemplates) {
 
-    static final JsonpDeserializer<IsmPolicyResponse> _DESERIALIZER =
+    static final JsonpDeserializer<IsmPolicyResponse> DESERIALIZER =
         ObjectBuilderDeserializer.lazy(
             IsmPolicyResponse.Builder::new, IsmPolicyResponse::setupDeserializer);
 
@@ -137,7 +137,7 @@ public record GetIndexStateManagementPolicyResponse(
           "states");
       deserializer.add(
           IsmPolicyResponse.Builder::ismTemplates,
-          JsonpDeserializer.arrayDeserializer(IsmTemplate._DESERIALIZER),
+          JsonpDeserializer.arrayDeserializer(IsmTemplate.DESERIALIZER),
           "ism_template");
     }
 
@@ -184,7 +184,7 @@ public record GetIndexStateManagementPolicyResponse(
   public record IsmTemplate(
       @JsonProperty("index_patterns") List<String> indexPatterns, Integer priority) {
 
-    static final JsonpDeserializer<IsmTemplate> _DESERIALIZER =
+    static final JsonpDeserializer<IsmTemplate> DESERIALIZER =
         ObjectBuilderDeserializer.lazy(IsmTemplate.Builder::new, IsmTemplate::setupDeserializer);
 
     private static void setupDeserializer(
