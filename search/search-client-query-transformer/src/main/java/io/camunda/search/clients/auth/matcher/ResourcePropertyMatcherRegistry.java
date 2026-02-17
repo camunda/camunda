@@ -22,6 +22,7 @@ public class ResourcePropertyMatcherRegistry {
 
   public ResourcePropertyMatcherRegistry() {
     register(new UserTaskPropertyMatcher());
+    register(new AuditLogPropertyMatcher());
   }
 
   public <T> void register(final ResourcePropertyMatcher<T> matcher) {
