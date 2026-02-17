@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -34,6 +35,14 @@ public class OpensearchClientIT {
   private static final int PARTITION_ID = 1;
 
   @RegisterExtension private static final SearchDBExtension SEARCH_DB = SearchDBExtension.create();
+
+  @AfterEach
+  void tearDown() {
+    final var policyOptional = SEARCH_DB.client().getIndexStateManagementPolicy();
+    if (policyOptional.isPresent()) {
+      SEARCH_DB.client().deleteIndexStateManagementPolicy();
+    }
+  }
 
   @Test
   void shouldThrowExceptionIfFailToFlushBulk() {
@@ -150,7 +159,7 @@ public class OpensearchClientIT {
     // given
 
     // when
-    recreateISMPolicyIfNeeded();
+    SEARCH_DB.client().createIndexStateManagementPolicy();
 
     // then
     final var ismPolicyResponse = SEARCH_DB.client().getIndexStateManagementPolicy();
@@ -177,7 +186,7 @@ public class OpensearchClientIT {
     // camunda exporter indexes have a slightly different format
     final var camundaExporterIndexName = config.index.prefix + "-operate-variable-2024-01-01";
 
-    recreateISMPolicyIfNeeded();
+    SEARCH_DB.client().createIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -205,7 +214,7 @@ public class OpensearchClientIT {
         indexRouter.indexPrefixForValueType(ValueType.VARIABLE, VersionUtil.getVersionLowerCase())
             + "_2024-01-01";
 
-    recreateISMPolicyIfNeeded();
+    SEARCH_DB.client().createIndexStateManagementPolicy();
 
     final var osClient = SEARCH_DB.testClient().getOsClient();
     osClient.indices().create(b -> b.index(ownedIndexName));
@@ -224,14 +233,6 @@ public class OpensearchClientIT {
     // then
     Awaitility.await()
         .untilAsserted(() -> assertThat(getISMPolicyIdForIndex(osClient, ownedIndexName)).isNull());
-  }
-
-  private static void recreateISMPolicyIfNeeded() {
-    final var policyOptional = SEARCH_DB.client().getIndexStateManagementPolicy();
-    if (!policyOptional.isEmpty()) {
-      SEARCH_DB.client().deleteIndexStateManagementPolicy();
-    }
-    SEARCH_DB.client().createIndexStateManagementPolicy();
   }
 
   private String getISMPolicyIdForIndex(final OpenSearchClient osClient, final String indexName)
