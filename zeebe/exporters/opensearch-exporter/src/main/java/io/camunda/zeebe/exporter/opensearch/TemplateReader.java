@@ -9,7 +9,7 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
-import io.camunda.zeebe.exporter.opensearch.dto.IdxTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import jakarta.json.stream.JsonParser;
@@ -48,7 +48,7 @@ final class TemplateReader {
       final String searchPattern,
       final String aliasName) {
     try {
-      final IdxTemplate wrapper = readIdxIndexTemplate(valueType);
+      final Template wrapper = readIndexTemplate(valueType);
 
       return PutIndexTemplateRequest.of(
           b ->
@@ -76,7 +76,7 @@ final class TemplateReader {
    */
   PutComponentTemplateRequest getComponentTemplatePutRequest(final String name) {
     try {
-      final IdxTemplate wrapper = getTemplateWrapperFromClasspath(ZEEBE_RECORD_TEMPLATE_JSON);
+      final Template wrapper = getTemplateWrapperFromClasspath(ZEEBE_RECORD_TEMPLATE_JSON);
 
       return PutComponentTemplateRequest.of(
           b ->
@@ -94,15 +94,15 @@ final class TemplateReader {
     }
   }
 
-  IdxTemplate readIdxComponentTemplate() {
+  Template readComponentTemplate() {
     return getTemplateWrapperFromClasspath(ZEEBE_RECORD_TEMPLATE_JSON);
   }
 
-  IdxTemplate readIdxIndexTemplate(final ValueType valueType) {
+  Template readIndexTemplate(final ValueType valueType) {
     return getTemplateWrapperFromClasspath(findResourceForTemplate(valueType));
   }
 
-  private IdxTemplate getTemplateWrapperFromClasspath(final String filename) {
+  private Template getTemplateWrapperFromClasspath(final String filename) {
     try (final InputStream inputStream = OpensearchExporter.class.getResourceAsStream(filename)) {
       if (inputStream == null) {
         throw new OpensearchExporterException(
@@ -110,7 +110,7 @@ final class TemplateReader {
       }
       final JsonbJsonpMapper mapper = new JsonbJsonpMapper();
       final JsonParser parser = mapper.jsonProvider().createParser(inputStream);
-      return IdxTemplate._DESERIALIZER.deserialize(parser, mapper);
+      return Template.DESERIALIZER.deserialize(parser, mapper);
     } catch (final IOException e) {
       throw new OpensearchExporterException(
           "Failed to load template from classpath " + filename, e);

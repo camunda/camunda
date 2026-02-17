@@ -55,7 +55,7 @@ public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
   public static final String ISM_DELETE_STATE = "delete";
   private static final ObjectMapper MAPPER = new ObjectMapper();
-  org.opensearch.client.opensearch.OpenSearchClient openSearchClient;
+  private final OpenSearchClient openSearchClient;
   private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
@@ -411,17 +411,17 @@ public class OpensearchClient implements AutoCloseable {
         .build();
   }
 
-  private static class OpensearchIsmPolicyClientWrapper {
+  private static final class OpensearchIsmPolicyClientWrapper {
 
     public static final Endpoint<
             GetPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
-        _GET_ENDPOINT =
+        GET_ENDPOINT =
             new SimpleEndpoint<>(
                 // Request method
                 request -> "GET",
                 // Request path
                 request -> {
-                  StringBuilder buf = new StringBuilder();
+                  final StringBuilder buf = new StringBuilder();
                   buf.append("/_plugins/_ism/policies/");
                   SimpleEndpoint.pathEncode(request.policyId(), buf);
                   return buf.toString();
@@ -429,17 +429,17 @@ public class OpensearchClient implements AutoCloseable {
                 SimpleEndpoint.emptyMap(), // query parameters, none used
                 SimpleEndpoint.emptyMap(), // headers, none used
                 false,
-                GetIndexStateManagementPolicyResponse._DESERIALIZER);
+                GetIndexStateManagementPolicyResponse.DESERIALIZER);
 
     public static final Endpoint<
             PutPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
-        _PUT_ENDPOINT =
+        PUT_ENDPOINT =
             new SimpleEndpoint<>(
                 // Request method
                 request -> "PUT",
                 // Request path
                 request -> {
-                  StringBuilder buf = new StringBuilder();
+                  final StringBuilder buf = new StringBuilder();
                   buf.append("/_plugins/_ism/policies/");
                   SimpleEndpoint.pathEncode(request.policyId(), buf);
                   return buf.toString();
@@ -458,14 +458,14 @@ public class OpensearchClient implements AutoCloseable {
                 SimpleEndpoint.emptyMap(), // headers, none used
                 true, // include request body in request
                 // the response is the same as for the GET request, so we can reuse the deserializer
-                GetIndexStateManagementPolicyResponse._DESERIALIZER);
+                GetIndexStateManagementPolicyResponse.DESERIALIZER);
 
     public static GetIndexStateManagementPolicyResponse getIsmPolicyResponse(
         final OpenSearchIsmClient openSearchIsmClient, final GetPolicyRequest request)
         throws IOException {
       return openSearchIsmClient
           ._transport()
-          .performRequest(request, _GET_ENDPOINT, openSearchIsmClient._transportOptions());
+          .performRequest(request, GET_ENDPOINT, openSearchIsmClient._transportOptions());
     }
 
     public static GetIndexStateManagementPolicyResponse putIsmPolicyResponse(
@@ -473,7 +473,7 @@ public class OpensearchClient implements AutoCloseable {
         throws IOException {
       return openSearchIsmClient
           ._transport()
-          .performRequest(request, _PUT_ENDPOINT, openSearchIsmClient._transportOptions());
+          .performRequest(request, PUT_ENDPOINT, openSearchIsmClient._transportOptions());
     }
   }
 }

@@ -123,6 +123,26 @@
     </dependency>
 
     <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>regions</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>http-client-spi</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>aws-crt-client</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents.client5</groupId>
+      <artifactId>httpclient5</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>io.github.acm19</groupId>
       <artifactId>aws-request-signing-apache-interceptor</artifactId>
     </dependency>

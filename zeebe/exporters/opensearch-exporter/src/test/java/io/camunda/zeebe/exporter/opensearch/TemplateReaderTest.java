@@ -10,7 +10,7 @@ package io.camunda.zeebe.exporter.opensearch;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
-import io.camunda.zeebe.exporter.opensearch.dto.IdxTemplate;
+import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import java.util.Map;
@@ -35,14 +35,14 @@ final class TemplateReaderTest {
   @Test
   void shouldReadComponentTemplate() {
     // when
-    final IdxTemplate template = templateReader.readIdxComponentTemplate();
+    final Template template = templateReader.readComponentTemplate();
 
     // then component template settings set
     assertThat(template.template().settings().index().numberOfShards()).isEqualTo(1);
     assertThat(template.template().settings().index().numberOfReplicas()).isEqualTo(0);
     assertThat(template.template().settings().index().queries().cache().enabled()).isFalse();
 
-    // then idx template settings not set
+    // then template settings not set
     assertThat(template.composedOf())
         .as("component template is not composed of anything")
         .isNullOrEmpty();
@@ -119,12 +119,7 @@ final class TemplateReaderTest {
 
     // then
     assertThat(
-            templateReader
-                .readIdxComponentTemplate()
-                .template()
-                .settings()
-                .index()
-                .numberOfShards())
+            templateReader.readComponentTemplate().template().settings().index().numberOfShards())
         .as("should have the default number of shards in template")
         .isEqualTo(1);
 
@@ -145,12 +140,7 @@ final class TemplateReaderTest {
 
     // then
     assertThat(
-            templateReader
-                .readIdxComponentTemplate()
-                .template()
-                .settings()
-                .index()
-                .numberOfReplicas())
+            templateReader.readComponentTemplate().template().settings().index().numberOfReplicas())
         .as("should have the default number of shards in template")
         .isEqualTo(0);
 
@@ -170,7 +160,7 @@ final class TemplateReaderTest {
     final var valueType = ValueType.VARIABLE;
 
     // when
-    final IdxTemplate template = templateReader.readIdxIndexTemplate(valueType);
+    final Template template = templateReader.readIndexTemplate(valueType);
 
     // then
     assertThat(template.version()).isEqualTo(1);
@@ -264,7 +254,7 @@ final class TemplateReaderTest {
     // then
     assertThat(
             templateReader
-                .readIdxIndexTemplate(valueType)
+                .readIndexTemplate(valueType)
                 .template()
                 .settings()
                 .index()
@@ -292,7 +282,7 @@ final class TemplateReaderTest {
     // then
     assertThat(
             templateReader
-                .readIdxIndexTemplate(valueType)
+                .readIndexTemplate(valueType)
                 .template()
                 .settings()
                 .index()
