@@ -162,10 +162,11 @@ public interface BackupCompatibilityAcceptance {
 
   /** Takes a snapshot and backup on the given broker, waiting for both to complete. */
   private void takeBackup(final ZeebeContainer broker, final long backupId) {
-    PartitionsActuator.of(broker).takeSnapshot();
+    final var partitionsActuator = PartitionsActuator.of(broker);
+    partitionsActuator.takeSnapshot();
     Awaitility.await("Snapshot is taken")
         .atMost(Duration.ofSeconds(60))
-        .until(() -> PartitionsActuator.of(broker).query().get(1).snapshotId(), Objects::nonNull);
+        .until(() -> partitionsActuator.query().get(1).snapshotId(), Objects::nonNull);
 
     // Use the 8.8 actuator path (/actuator/backups) rather than the current
     // /actuator/backupRuntime
