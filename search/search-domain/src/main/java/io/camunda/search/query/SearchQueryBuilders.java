@@ -294,4 +294,13 @@ public final class SearchQueryBuilders {
       incidentProcessInstanceStatisticsByDefinitionQuery() {
     return new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder();
   }
+
+  public static GlobalListenerQuery.Builder globalListenerSearchQuery() {
+    return new GlobalListenerQuery.Builder();
+  }
+
+  public static GlobalListenerQuery globalListenerSearchQuery(
+      final Function<GlobalListenerQuery.Builder, ObjectBuilder<GlobalListenerQuery>> fn) {
+    return fn.apply(globalListenerSearchQuery()).build();
+  }
 }

@@ -324,4 +324,13 @@ public final class SortOptionBuilders {
               fn) {
     return fn.apply(new IncidentProcessInstanceStatisticsByDefinitionSort.Builder()).build();
   }
+
+  public static GlobalListenerSort.Builder globalListener() {
+    return new GlobalListenerSort.Builder();
+  }
+
+  public static GlobalListenerSort globalListener(
+      final Function<GlobalListenerSort.Builder, ObjectBuilder<GlobalListenerSort>> fn) {
+    return fn.apply(globalListener()).build();
+  }
 }
