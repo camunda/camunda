@@ -7,6 +7,7 @@
  */
 package io.camunda.service;
 
+import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.service.security.SecurityContextProvider;
@@ -19,9 +20,12 @@ import java.util.concurrent.CompletableFuture;
 
 public final class GlobalListenerServices extends ApiServices<GlobalListenerServices> {
 
+  private final GlobalListenerSearchClient globalListenerSearchClient;
+
   public GlobalListenerServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
+      final GlobalListenerSearchClient globalListenerSearchClient,
       final CamundaAuthentication authentication,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
@@ -31,6 +35,7 @@ public final class GlobalListenerServices extends ApiServices<GlobalListenerServ
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);
+    this.globalListenerSearchClient = globalListenerSearchClient;
   }
 
   @Override
@@ -38,6 +43,7 @@ public final class GlobalListenerServices extends ApiServices<GlobalListenerServ
     return new GlobalListenerServices(
         brokerClient,
         securityContextProvider,
+        globalListenerSearchClient,
         authentication,
         executorProvider,
         brokerRequestAuthorizationConverter);

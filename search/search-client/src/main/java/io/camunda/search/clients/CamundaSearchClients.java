@@ -9,6 +9,7 @@ package io.camunda.search.clients;
 
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_ID_NOT_FOUND;
 import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_KEY_NOT_FOUND;
+import static io.camunda.search.exception.ErrorMessages.ERROR_ENTITY_BY_MULTIPLE_IDS_NOT_FOUND;
 
 import io.camunda.search.clients.reader.SearchClientReaders;
 import io.camunda.search.clients.reader.SearchEntityReader;
@@ -25,6 +26,8 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalListenerEntity;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -68,6 +71,7 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -100,10 +104,12 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.TenantCheck;
+import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -491,6 +497,29 @@ public class CamundaSearchClients implements SearchClientsProxy {
     return doSearchWithReader(readers.batchOperationItemReader(), query);
   }
 
+  @Override
+  public GlobalListenerEntity getGlobalListener(
+      final String listenerId, final GlobalListenerType listenerType) {
+    return doGet(
+            resourceAccessChecks ->
+                readers
+                    .globalListenerReader()
+                    .getGlobalListener(listenerId, listenerType, resourceAccessChecks))
+        .orElseThrow(
+            () ->
+                entityByMultipleIdsNotFoundException(
+                    "Global Listener",
+                    List.of(
+                        Tuple.of("listenerId", listenerId),
+                        Tuple.of("listenerType", listenerType.name()))));
+  }
+
+  @Override
+  public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
+      final GlobalListenerQuery query) {
+    return doSearchWithReader(readers.globalListenerReader(), query);
+  }
+
   protected <T, Q extends TypedSearchQuery<?, ?>> Optional<T> doGetWithReader(
       final SearchEntityReader<T, Q> reader, final long key) {
     return doGet(a -> reader.getByKey(key, a));
@@ -608,5 +637,16 @@ public class CamundaSearchClients implements SearchClientsProxy {
       final String entityType, final String idType, final String id) {
     return new CamundaSearchException(
         ERROR_ENTITY_BY_ID_NOT_FOUND.formatted(entityType, idType, id), Reason.NOT_FOUND);
+  }
+
+  private CamundaSearchException entityByMultipleIdsNotFoundException(
+      final String entityType, final List<Tuple<String, String>> idTypesAndValues) {
+    final String formattedIds =
+        idTypesAndValues.stream()
+            .map(e -> "%s '%s'".formatted(e.getLeft(), e.getRight()))
+            .collect(Collectors.joining(", "));
+    return new CamundaSearchException(
+        ERROR_ENTITY_BY_MULTIPLE_IDS_NOT_FOUND.formatted(entityType, formattedIds),
+        Reason.NOT_FOUND);
   }
 }
