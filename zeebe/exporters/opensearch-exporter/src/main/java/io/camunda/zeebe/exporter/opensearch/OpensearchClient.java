@@ -14,8 +14,6 @@ import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
@@ -34,6 +32,10 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateRequest;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
@@ -205,12 +207,23 @@ public class OpensearchClient implements AutoCloseable {
   }
 
   /**
-   * Creates or updates the component template on the target Opensearch. The template is read from
-   * {@link TemplateReader#readComponentTemplate()}.
+   * Creates or updates the component template on the target Opensearch. The put template request is
+   * read and initialized in {@link TemplateReader#getComponentTemplatePutRequest(String)}.
    */
   public boolean putComponentTemplate() {
-    final Template template = templateReader.readComponentTemplate();
-    return putComponentTemplate(template);
+    final String templateName =
+        String.format("%s-%s", configuration.index.prefix, VersionUtil.getVersionLowerCase());
+
+    final PutComponentTemplateRequest request =
+        templateReader.getComponentTemplatePutRequest(templateName);
+
+    try {
+      final PutComponentTemplateResponse response =
+          openSearchClient.cluster().putComponentTemplate(request);
+      return response.acknowledged();
+    } catch (final OpenSearchException | IOException e) {
+      throw new OpensearchExporterException("Failed to put component template", e);
+    }
   }
 
   private void exportBulk() {
@@ -246,30 +259,28 @@ public class OpensearchClient implements AutoCloseable {
     throw new OpensearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
 
-  private boolean putComponentTemplate(final Template template) {
-    try {
-      final var request =
-          new Request(
-              "PUT",
-              "/_component_template/"
-                  + configuration.index.prefix
-                  + "-"
-                  + VersionUtil.getVersionLowerCase());
-      request.setJsonEntity(MAPPER.writeValueAsString(template));
-
-      final var response = sendRequest(request, PutIndexTemplateResponse.class);
-      return response.acknowledged();
-    } catch (final IOException e) {
-      throw new OpensearchExporterException("Failed to put component template", e);
-    }
-  }
-
-  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
+  Optional<GetIndexStateManagementPolicyResponse> maybeGetIndexStateManagementPolicy() {
     try {
       final GetPolicyRequest request =
           GetPolicyRequest.builder().policyId(configuration.retention.getPolicyName()).build();
       final GetIndexStateManagementPolicyResponse response =
           OpensearchIsmPolicyClientWrapper.getIsmPolicyResponse(openSearchClient.ism(), request);
+      return Optional.ofNullable(response);
+    } catch (final OpenSearchException | IOException e) {
+      return Optional.empty();
+    }
+  }
+
+  Optional<GetComponentTemplateResponse> maybeGetComponentTemplate() {
+    try {
+      final GetComponentTemplateRequest request =
+          GetComponentTemplateRequest.builder()
+              .name(
+                  String.format(
+                      "%s-%s", configuration.index.prefix, VersionUtil.getVersionLowerCase()))
+              .build();
+      final GetComponentTemplateResponse response =
+          openSearchClient.cluster().getComponentTemplate(request);
       return Optional.ofNullable(response);
     } catch (final OpenSearchException | IOException e) {
       return Optional.empty();
@@ -357,12 +368,7 @@ public class OpensearchClient implements AutoCloseable {
                 return req;
               });
 
-      // the response of a PUT request is the same as for a GET request, so we can reuse the
-      // response
-      final GetIndexStateManagementPolicyResponse response =
-          OpensearchIsmPolicyClientWrapper.putIsmPolicyResponse(openSearchClient.ism(), request);
-
-      return response.policy() != null;
+      return putIndexStateManagementPolicy(request);
     } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to put index state management policy", e);
     }

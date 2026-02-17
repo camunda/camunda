@@ -11,16 +11,12 @@ import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
@@ -28,6 +24,10 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.ComponentTemplateSummary;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
@@ -40,8 +40,8 @@ public class OpensearchClientIT {
 
   @AfterEach
   void tearDown() {
-    final var policyOptional = SEARCH_DB.client().getIndexStateManagementPolicy();
-    if (policyOptional.isPresent()) {
+    final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
+    if (maybePolicy.isPresent()) {
       SEARCH_DB.client().deleteIndexStateManagementPolicy();
     }
   }
@@ -82,7 +82,7 @@ public class OpensearchClientIT {
 
     // then
     final Optional<IndexTemplateItem> maybeIndexTemplateItem =
-        SEARCH_DB.testClient().getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+        SEARCH_DB.testClient().maybeGetIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
 
     assertThat(maybeIndexTemplateItem)
         .as("should have created index template for value type %s", valueType)
@@ -117,22 +117,34 @@ public class OpensearchClientIT {
   @Test
   void shouldPutComponentTemplate() {
     // given
-    final Template expectedTemplate = SEARCH_DB.templateReader().readComponentTemplate();
-
-    // when
     SEARCH_DB.client().putComponentTemplate();
 
     // then
-    final var templateWrapper = SEARCH_DB.testClient().getComponentTemplate();
-    assertThat(templateWrapper)
-        .as("should have created component template")
-        .isPresent()
-        .get()
-        .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(SEARCH_DB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase());
+    final Optional<GetComponentTemplateResponse> maybeGetComponentTemplate =
+        SEARCH_DB.testClient().maybeGetComponentTemplate();
 
-    final var template = templateWrapper.get().template();
-    assertTemplate(template, expectedTemplate);
+    assertThat(maybeGetComponentTemplate).as("should have created component template").isPresent();
+
+    final GetComponentTemplateResponse componentTemplateResponse = maybeGetComponentTemplate.get();
+
+    final String expectedComponentTemplateName =
+        SEARCH_DB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase();
+
+    final ComponentTemplate firstComponentTemplate =
+        assertThat(componentTemplateResponse)
+            .extracting(GetComponentTemplateResponse::componentTemplates)
+            .asInstanceOf(InstanceOfAssertFactories.list(ComponentTemplate.class))
+            .hasSize(1)
+            .first()
+            .actual();
+
+    assertThat(firstComponentTemplate.name()).isEqualTo(expectedComponentTemplateName);
+
+    // and
+    final PutComponentTemplateRequest componentTemplatePutRequest =
+        SEARCH_DB.templateReader().getComponentTemplatePutRequest(expectedComponentTemplateName);
+
+    assertComponentTemplate(firstComponentTemplate, componentTemplatePutRequest);
   }
 
   @Test
@@ -160,7 +172,7 @@ public class OpensearchClientIT {
     authenticatedClient.putComponentTemplate();
 
     // then
-    assertThat(SEARCH_DB.testClient().getComponentTemplate()).isPresent();
+    assertThat(SEARCH_DB.testClient().maybeGetComponentTemplate()).isPresent();
   }
 
   @Test
@@ -171,11 +183,11 @@ public class OpensearchClientIT {
     SEARCH_DB.client().createIndexStateManagementPolicy();
 
     // then
-    final var ismPolicyResponse = SEARCH_DB.client().getIndexStateManagementPolicy();
-    assertThat(ismPolicyResponse).isPresent();
-    final var policy = ismPolicyResponse.get().policy();
-    assertThat(policy.ismTemplate()).isNotEmpty();
-    for (final var ismTemplate : policy.ismTemplate()) {
+    final var maybeIsmPolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
+    assertThat(maybeIsmPolicy).isPresent();
+    final var policy = maybeIsmPolicy.get().policy();
+    assertThat(policy.ismTemplates()).isNotEmpty();
+    for (final var ismTemplate : policy.ismTemplates()) {
       assertThat(ismTemplate.indexPatterns())
           .as("ISM template should only apply to zeebe indices")
           .containsOnly(SEARCH_DB.config().index.prefix + "_*");
@@ -251,28 +263,19 @@ public class OpensearchClientIT {
             () -> assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName)).isEmpty());
   }
 
-  private void assertTemplate(final Template actualTemplate, final Template expectedTemplate) {
-    assertThat(actualTemplate.patterns()).isEqualTo(expectedTemplate.patterns());
-    assertThat(actualTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
-    assertThat(actualTemplate.priority()).isEqualTo(expectedTemplate.priority());
-    assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
-    assertThat(actualTemplate.template().aliases())
-        .isEqualTo(expectedTemplate.template().aliases());
-    assertThat(actualTemplate.template().mappings())
-        .isEqualTo(expectedTemplate.template().mappings());
+  private void assertComponentTemplate(
+      final ComponentTemplate actualTemplate,
+      final PutComponentTemplateRequest putComponentTemplateRequest) {
+    final ComponentTemplateSummary actualComponentTemplate =
+        actualTemplate.componentTemplate().template();
 
-    // cannot compare settings because we never get flat settings, instead we get { index : {
-    // number_of_shards: 1, queries: { cache : { enabled : false } } } }
-    // so instead we decompose how we compare the settings. I've tried with flat_settings parameter
-    // but that doesn't seem to be doing anything
-    assertThat(actualTemplate.template().settings())
-        .as("should contain a map of index settings")
-        .extractingByKey("index")
-        .isInstanceOf(Map.class)
-        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-        .containsEntry("number_of_shards", "1")
-        .containsEntry("number_of_replicas", "0")
-        .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
+    assertThat(actualTemplate.componentTemplate().version())
+        .isEqualTo(putComponentTemplateRequest.version());
+    assertThat(actualComponentTemplate.mappings())
+        .isEqualTo(putComponentTemplateRequest.template().mappings());
+
+    assertThat(actualComponentTemplate.settings().get("index"))
+        .isEqualTo(putComponentTemplateRequest.template().settings().index());
   }
 
   private void assertIndexTemplate(

@@ -15,14 +15,11 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -35,6 +32,7 @@ import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.indices.GetIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.GetIndexTemplateResponse;
@@ -93,7 +91,8 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateItem> getIndexTemplate(final ValueType valueType, final String version) {
+  Optional<IndexTemplateItem> maybeGetIndexTemplate(
+      final ValueType valueType, final String version) {
     try {
       final GetIndexTemplateRequest request =
           GetIndexTemplateRequest.builder()
@@ -106,26 +105,12 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<ComponentTemplateWrapper> getComponentTemplate() {
-    try {
-      final var request =
-          new Request(
-              "GET",
-              "/_component_template/"
-                  + config.index.prefix
-                  + "-"
-                  + VersionUtil.getVersionLowerCase());
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), ComponentTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  Optional<GetComponentTemplateResponse> maybeGetComponentTemplate() {
+    return opensearchClient.maybeGetComponentTemplate();
   }
 
-  Optional<GetIndexStateManagementPolicyResponse> getIndexStateManagementPolicy() {
-    return opensearchClient.getIndexStateManagementPolicy();
+  Optional<GetIndexStateManagementPolicyResponse> maybeGetIndexStateManagementPolicy() {
+    return opensearchClient.maybeGetIndexStateManagementPolicy();
   }
 
   void putIndexStateManagementPolicy(final String minimumAge) {
@@ -226,7 +211,7 @@ final class TestClient implements CloseableSilently {
   private void decoratePolicyVersionSeq(final PutPolicyRequest.Builder builder) {
     try {
       final Optional<GetIndexStateManagementPolicyResponse> maybePolicy =
-          getIndexStateManagementPolicy();
+          maybeGetIndexStateManagementPolicy();
       if (maybePolicy.isEmpty()) {
         return;
       }
@@ -267,16 +252,6 @@ final class TestClient implements CloseableSilently {
         .states(List.of(initialState, deleteState))
         .ismTemplate(ismTemplate)
         .build();
-  }
-
-  record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {
-    record IndexTemplateWrapper(String name, @JsonProperty("index_template") Template template) {}
-  }
-
-  record ComponentTemplatesDto(
-      @JsonProperty("component_templates") List<ComponentTemplateWrapper> wrappers) {
-    record ComponentTemplateWrapper(
-        String name, @JsonProperty("component_template") Template template) {}
   }
 
   record IndexISMPolicyDto(String policyId) {}
