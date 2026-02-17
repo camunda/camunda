@@ -48,6 +48,7 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   private MutableChecksumsSFV checksum;
   private final CRC32CChecksumProvider checksumProvider;
   private long lastFollowupEventPosition = Long.MAX_VALUE;
+  private long maxExportedPosition = Long.MAX_VALUE;
   private final boolean isBootstrap;
 
   FileBasedTransientSnapshot(
@@ -74,6 +75,12 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
   @Override
   public TransientSnapshot withLastFollowupEventPosition(final long lastFollowupEventPosition) {
     actor.run(() -> this.lastFollowupEventPosition = lastFollowupEventPosition);
+    return this;
+  }
+
+  @Override
+  public TransientSnapshot withMaxExportedPosition(final long maxExportedPosition) {
+    actor.run(() -> this.maxExportedPosition = maxExportedPosition);
     return this;
   }
 
@@ -171,7 +178,9 @@ public final class FileBasedTransientSnapshot implements TransientSnapshot {
                   FileBasedSnapshotStoreImpl.VERSION,
                   snapshotId.getProcessedPosition(),
                   snapshotId.getExportedPosition(),
-                  lastFollowupEventPosition);
+                  maxExportedPosition,
+                  lastFollowupEventPosition,
+                  false);
 
       writeMetadataAndUpdateChecksum(metadata);
       // snapshot id and director were first provided without the checksum because we could only

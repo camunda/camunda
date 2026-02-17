@@ -20,9 +20,15 @@ public interface SnapshotMetadata {
   long processedPosition();
 
   /**
-   * @return exported position in the snapshot (same as in SnapshotId)
+   * Smallest exported position in the snapshot, as determined before taking the snapshot. Same as
+   * in SnapshotId.
    */
-  long exportedPosition();
+  long minExportedPosition();
+
+  /**
+   * Returns the maximum exported position in the snapshot, as determined after taking the snapshot.
+   */
+  long maxExportedPosition();
 
   /**
    * A snapshot is only valid if the logstream consists of the events from the processedPosition up

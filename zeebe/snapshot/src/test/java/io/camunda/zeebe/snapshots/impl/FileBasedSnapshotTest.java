@@ -110,9 +110,9 @@ public final class FileBasedSnapshotTest {
   }
 
   @Test
-  public void shoulNotdMarkAsReservedBootstrappedSnapshots() throws IOException {
+  public void shouldNotMarkAsReservedBootstrappedSnapshots() throws IOException {
     // given
-    final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 0, true);
+    final var metadata = new FileBasedSnapshotMetadata(1, 1L, 1L, 1L, 0, true);
     final var snapshotPath = snapshotDir.resolve("snapshot");
     final Path checksumPath = snapshotDir.resolve("checksum");
 

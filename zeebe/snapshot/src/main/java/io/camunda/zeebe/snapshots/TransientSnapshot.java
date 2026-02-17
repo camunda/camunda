@@ -35,4 +35,7 @@ public interface TransientSnapshot extends PersistableSnapshot {
    * @return transient snapshot.
    */
   TransientSnapshot withLastFollowupEventPosition(long followupEventPosition);
+
+  /** Sets the highest exported position that could be reflected in this snapshot. */
+  TransientSnapshot withMaxExportedPosition(long maxExportedPosition);
 }

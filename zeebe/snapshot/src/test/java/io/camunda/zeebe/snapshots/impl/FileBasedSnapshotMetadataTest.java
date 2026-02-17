@@ -18,20 +18,27 @@ public class FileBasedSnapshotMetadataTest {
   @Test
   public void shouldDeserializeMetadataFromPreviousVersion() throws IOException {
     final var previousMetadata =
-"""
-{"version":1,"processedPosition":71662471,"exportedPosition":74709149,"lastFollowupEventPosition":74708149}
-""";
+        // language=JSON
+        """
+        {
+          "version": 1,
+          "processedPosition": 71662471,
+          "exportedPosition": 74709149,
+          "lastFollowupEventPosition": 74708149,
+          "bootstrap": false
+        }""";
     final var deserialized = FileBasedSnapshotMetadata.decode(previousMetadata.getBytes());
     assertThat(deserialized.isBootstrap()).isFalse();
     assertThat(deserialized.version()).isOne();
-    assertThat(deserialized.exportedPosition()).isEqualTo(74709149L);
+    assertThat(deserialized.minExportedPosition()).isEqualTo(74709149L);
     assertThat(deserialized.processedPosition()).isEqualTo(71662471L);
     assertThat(deserialized.lastFollowupEventPosition()).isEqualTo(74708149L);
+    assertThat(deserialized.maxExportedPosition()).isEqualTo(Long.MAX_VALUE);
   }
 
   @Test
   void shouldSerializeDeserialize() throws IOException {
-    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, true);
+    final var metadata = new FileBasedSnapshotMetadata(1, 100L, 200L, 300L, 350L, true);
     final var bos = new ByteArrayOutputStream(1024);
     metadata.encode(bos);
     final var deserialized = FileBasedSnapshotMetadata.decode(bos.toByteArray());
