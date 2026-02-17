@@ -19,7 +19,6 @@ import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
 import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
-import io.camunda.zeebe.client.api.command.CommandWithTenantStep;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
@@ -57,6 +56,7 @@ public final class CreateProcessInstanceCommandImpl
   private RequestConfig.Builder httpRequestConfig;
   private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
       httpRequestObject = new io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest();
+  private final ZeebeClientConfiguration config;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -66,6 +66,7 @@ public final class CreateProcessInstanceCommandImpl
       final HttpClient httpClient,
       final boolean preferRestOverGrpc) {
     super(jsonMapper);
+    this.config = config;
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
@@ -76,32 +77,6 @@ public final class CreateProcessInstanceCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     requestTimeout(requestTimeout);
     useRest = preferRestOverGrpc;
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub asyncStub,
-   *     JsonMapper jsonMapper, ZeebeClientConfiguration config, Predicate retryPredicate)}
-   */
-  @Deprecated
-  public CreateProcessInstanceCommandImpl(
-      final GatewayStub asyncStub,
-      final JsonMapper jsonMapper,
-      final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
-    super(jsonMapper);
-    this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
-    this.retryPredicate = retryPredicate;
-    this.jsonMapper = jsonMapper;
-    grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
-    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
@@ -140,7 +115,8 @@ public final class CreateProcessInstanceCommandImpl
         requestTimeout,
         httpClient,
         useRest,
-        httpRequestObject);
+        httpRequestObject,
+        config);
   }
 
   @Override

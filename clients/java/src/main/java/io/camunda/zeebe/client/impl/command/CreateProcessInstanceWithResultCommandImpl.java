@@ -16,6 +16,7 @@
 package io.camunda.zeebe.client.impl.command;
 
 import io.camunda.zeebe.client.CredentialsProvider.StatusCode;
+import io.camunda.zeebe.client.ZeebeClientConfiguration;
 import io.camunda.zeebe.client.api.JsonMapper;
 import io.camunda.zeebe.client.api.ZeebeFuture;
 import io.camunda.zeebe.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceWithResultCommandStep1;
@@ -54,6 +55,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
   private final RequestConfig.Builder httpRequestConfig;
   private final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest
       httpRequestObject;
+  private final ZeebeClientConfiguration config;
 
   public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
@@ -63,7 +65,9 @@ public final class CreateProcessInstanceWithResultCommandImpl
       final Duration requestTimeout,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc,
-      final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject) {
+      final io.camunda.zeebe.client.protocol.rest.CreateProcessInstanceRequest httpRequestObject,
+      final ZeebeClientConfiguration config) {
+    this.config = config;
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
     createProcessInstanceRequestBuilder = grpcRequestObject;
@@ -81,8 +85,11 @@ public final class CreateProcessInstanceWithResultCommandImpl
   public FinalCommandStep<ProcessInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     grpcRequestObject.setRequestTimeout(requestTimeout.toMillis());
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
+    // increment response timeout so client doesn't time out before the server
+    final long offsetMillis = config.getDefaultRequestTimeoutOffset().toMillis();
+    httpRequestConfig.setResponseTimeout(
+        requestTimeout.toMillis() + offsetMillis, TimeUnit.MILLISECONDS);
     return this;
   }
 
