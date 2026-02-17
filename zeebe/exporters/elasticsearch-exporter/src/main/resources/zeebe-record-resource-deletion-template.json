@@ -33,6 +33,12 @@
             },
             "batchOperationType": {
               "type": "keyword"
+            },
+            "resourceType": {
+              "type": "keyword"
+            },
+            "resourceId": {
+              "type": "keyword"
             }
           }
         }
