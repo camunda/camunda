@@ -126,7 +126,7 @@
       "defaultValue": ["<default>"]
     },
     {
-      "name": "camunda.client.worker.defaults.tenant-filter",
+      "name": "camunda.client.worker.defaults.tenant-filter-mode",
       "type": "io.camunda.client.api.command.enums.TenantFilter",
       "defaultValue": "PROVIDED"
     },

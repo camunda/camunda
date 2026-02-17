@@ -16,7 +16,7 @@
 package io.camunda.client;
 
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
-import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER;
+import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
@@ -35,7 +35,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TT
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
@@ -1192,10 +1192,11 @@ public final class CamundaClientTest {
 
     // when
     builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
-    builder.build();
+    final CamundaClient clientBuilder = builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1204,17 +1205,18 @@ public final class CamundaClientTest {
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     // when
-    builder.build();
+    final CamundaClient clientBuilder = builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.PROVIDED);
   }
 
   @Test
   public void shouldSetDefaultJobWorkerTenantFilterFromPropertyWithClientBuilder() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER, "ASSIGNED");
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "ASSIGNED");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -1228,7 +1230,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
     // given
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_VAR, "ASSIGNED");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
 
     // when
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -1241,7 +1243,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarCaseInsensitive() {
     // given
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_VAR, "assigned");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "assigned");
 
     // when
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -1254,7 +1256,7 @@ public final class CamundaClientTest {
   @Test
   public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithWhitespace() {
     // given
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_VAR, " ASSIGNED ");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, " ASSIGNED ");
 
     // when
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
@@ -1268,7 +1270,7 @@ public final class CamundaClientTest {
   public void shouldSetDefaultJobWorkerTenantFilterFromPropertyCaseInsensitive() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER, "provided");
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "provided");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.withProperties(properties);
 
@@ -1283,8 +1285,8 @@ public final class CamundaClientTest {
   public void shouldSetFinalDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
     // given
     final Properties properties = new Properties();
-    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER, "PROVIDED");
-    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_VAR, "ASSIGNED");
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "PROVIDED");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
     builder.defaultJobWorkerTenantFilter(TenantFilter.PROVIDED);
     builder.withProperties(properties);

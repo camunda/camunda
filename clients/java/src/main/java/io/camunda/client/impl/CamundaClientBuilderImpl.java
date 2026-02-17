@@ -36,7 +36,7 @@ import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUT
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.BASIC_AUTH_ENV_USERNAME;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
-import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
@@ -361,7 +361,7 @@ public final class CamundaClientBuilderImpl
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
         value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
-        io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER);
+        io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE);
 
     BuilderUtils.applyPropertyValueIfNotNull(
         properties,
@@ -728,7 +728,7 @@ public final class CamundaClientBuilderImpl
         LegacyZeebeClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerTenantFilter(TenantFilter.from(value)),
-        DEFAULT_JOB_WORKER_TENANT_FILTER_VAR);
+        DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR);
     applyEnvironmentValueIfNotNull(
         value -> defaultJobWorkerStreamEnabled(Boolean.parseBoolean(value)),
         CAMUNDA_CLIENT_WORKER_STREAM_ENABLED,
