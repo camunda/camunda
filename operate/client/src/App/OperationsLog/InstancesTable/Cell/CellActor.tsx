@@ -10,7 +10,7 @@ import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {AuthorTooltip, OperationLogName} from '../styled';
 import {useMemo} from 'react';
-import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize.ts';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Tooltip} from '@carbon/react';
 import {getActorIcon} from 'modules/utils/operationsLog';
 import {Snippet} from 'modules/components/Snippet';

@@ -28,7 +28,7 @@ import {
   IconText,
   ParagraphWithIcon,
   VerticallyAlignedRow,
-  IconTextWithTopDivider,
+  IconTextWithTopMargin,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -116,12 +116,12 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 </IconText>
               )}
               {auditLog.agentElementId && (
-                <IconTextWithTopDivider>
+                <IconTextWithTopMargin>
                   <AiAgentIcon />
                   <Snippet hideCopyButton wrapText>
                     {auditLog.agentElementId}
                   </Snippet>
-                </IconTextWithTopDivider>
+                </IconTextWithTopMargin>
               )}
             </StructuredListCell>
           </VerticallyAlignedRow>

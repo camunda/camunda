@@ -7,7 +7,7 @@
  */
 
 import type {CodeSnippetProps} from '@carbon/react';
-import {DarkSnippet, LightSnippet} from './styled.tsx';
+import {DarkSnippet, LightSnippet} from './styled';
 
 type Props = CodeSnippetProps & {
   theme?: 'light' | 'dark';
