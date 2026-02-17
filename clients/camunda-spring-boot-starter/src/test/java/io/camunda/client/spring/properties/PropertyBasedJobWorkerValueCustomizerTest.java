@@ -544,10 +544,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilter(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
+    properties.setTenantFilterMode(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
 
     // then
-    assertThat(properties.getTenantFilter())
+    assertThat(properties.getTenantFilterMode())
         .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
   }
 
@@ -557,10 +557,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilter(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+    properties.setTenantFilterMode(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
 
     // then
-    assertThat(properties.getTenantFilter())
+    assertThat(properties.getTenantFilterMode())
         .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
   }
 
@@ -570,7 +570,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties(true);
 
     // then
-    assertThat(properties.getTenantFilter())
+    assertThat(properties.getTenantFilterMode())
         .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
   }
 

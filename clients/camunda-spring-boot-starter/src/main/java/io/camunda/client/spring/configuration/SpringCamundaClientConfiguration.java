@@ -84,7 +84,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
 
   @Override
   public TenantFilter getDefaultJobWorkerTenantFilter() {
-    return camundaClientProperties.getWorker().getDefaults().getTenantFilter();
+    return camundaClientProperties.getWorker().getDefaults().getTenantFilterMode();
   }
 
   @Override

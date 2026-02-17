@@ -80,7 +80,7 @@ public class CamundaClientJobWorkerProperties {
    * Sets the tenant filter for the job worker, which determines how the worker considers tenant IDs
    * when activating jobs.
    */
-  private TenantFilter tenantFilter;
+  private TenantFilter tenantFilterMode;
 
   /** Sets whether all variables are fetched. Overrides `fetch-variables`. */
   private Boolean forceFetchAllVariables;
@@ -125,7 +125,7 @@ public class CamundaClientJobWorkerProperties {
   public CamundaClientJobWorkerProperties(final boolean initWithDefaults) {
     if (initWithDefaults) {
       tenantIds = DEFAULT_JOB_WORKER_TENANT_IDS;
-      tenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
+      tenantFilterMode = DEFAULT_JOB_WORKER_TENANT_FILTER;
       timeout = DEFAULT_JOB_TIMEOUT;
       maxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
@@ -221,12 +221,12 @@ public class CamundaClientJobWorkerProperties {
     this.tenantIds = tenantIds;
   }
 
-  public TenantFilter getTenantFilter() {
-    return tenantFilter;
+  public TenantFilter getTenantFilterMode() {
+    return tenantFilterMode;
   }
 
-  public void setTenantFilter(final TenantFilter tenantFilter) {
-    this.tenantFilter = tenantFilter;
+  public void setTenantFilterMode(final TenantFilter tenantFilter) {
+    tenantFilterMode = tenantFilter;
   }
 
   public Boolean getForceFetchAllVariables() {
