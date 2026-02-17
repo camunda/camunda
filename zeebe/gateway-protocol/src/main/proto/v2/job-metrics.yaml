@@ -1,6 +1,37 @@
 ## Endpoint definitions
 
 paths:
+  /jobs/statistics/by-types:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Job
+      operationId: getJobTypeStatistics
+      summary: Job statistics by type
+      description: |
+        Returns job statistics grouped by job type. Filter by creation time window.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobTypeStatisticsQuery'
+      responses:
+        "200":
+          description: Job statistics by type
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobTypeStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
   /jobs/statistics/global:
     get:
       x-eventually-consistent: true
@@ -56,6 +87,65 @@ paths:
 
 components:
   schemas:
+
+    JobTypeStatisticsQuery:
+      description: Query for job statistics by type.
+      type: object
+      properties:
+        filter:
+          $ref: '#/components/schemas/JobTypeStatisticsFilter'
+        page:
+          $ref: 'search-models.yaml#/components/schemas/SearchQueryPageRequest'
+
+    JobTypeStatisticsFilter:
+      description: Filter for job type statistics query.
+      type: object
+      required:
+        - from
+        - to
+      properties:
+        from:
+          description: Start of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        to:
+          description: End of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+
+    JobTypeStatisticsQueryResult:
+      description: Job statistics by type query result.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The job type statistics results.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobTypeStatisticsResult'
+
+    JobTypeStatisticsResult:
+      description: Statistics for a single job type.
+      type: object
+      required:
+        - jobType
+        - created
+        - completed
+        - failed
+      properties:
+        jobType:
+          description: The job type.
+          type: string
+          example: "fetch-customer-data"
+        created:
+          $ref: '#/components/schemas/StatusMetric'
+        completed:
+          $ref: '#/components/schemas/StatusMetric'
+        failed:
+          $ref: '#/components/schemas/StatusMetric'
 
     GlobalJobStatisticsQueryResult:
       description: Global job statistics query result.

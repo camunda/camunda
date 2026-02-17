@@ -233,6 +233,8 @@ paths:
     $ref: 'jobs.yaml#/paths/~1jobs~1{jobKey}~1failure'
 
   # Job metrics endpoints
+  /jobs/statistics/by-types:
+    $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1by-types'
   /jobs/statistics/global:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1global'
 
