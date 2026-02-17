@@ -428,11 +428,13 @@ public class ResourceDeletionDeleteProcessor
     }
 
     switch (resourceType) {
-      case PROCESS_DEFINITION -> {
-        deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
-      }
-      case DECISION_REQUIREMENTS -> {
-        deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      case PROCESS_DEFINITION ->
+          deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      case DECISION_REQUIREMENTS ->
+          deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      case FORM, UNKNOWN -> {
+        // No history to delete for forms and unknown resources
+        // This should not be reached as SUPPORTED_HISTORY_DELETION_TYPES filters these out
       }
     }
   }
