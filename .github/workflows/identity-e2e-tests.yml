@@ -49,7 +49,7 @@ jobs:
     timeout-minutes: 15
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
