@@ -76,7 +76,23 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
             .setResourceKey(request.resourceKey())
             .setDeleteHistory(request.deleteHistory());
 
-    // TODO extract to method and add javadoc explaining why we do this
+    enrichResourceDeletionRecordWithHistoryDeletionData(request, brokerRequest);
+
+    if (request.operationReference() != null) {
+      brokerRequest.setOperationReference(request.operationReference());
+    }
+    return sendBrokerRequest(brokerRequest);
+  }
+
+  /**
+   * It could happen that a resource is deleted from primary storage, without the historic data
+   * being deleted from secondary storage. When this happens, we still want this broker request to
+   * be able to delete the historic data. Unfortunately, we cannot rely on the resource key to find
+   * the data we need for the authorization checks and the actual deletion. Since the resource must
+   * then be in secondary storage, we retrieve the necessary data here and pass it along the broker.
+   */
+  private void enrichResourceDeletionRecordWithHistoryDeletionData(
+      final ResourceDeletionRequest request, final BrokerDeleteResourceRequest brokerRequest) {
     if (request.deleteHistory()) {
       final var processDefinition =
           processDefinitionSearchClient
@@ -100,7 +116,7 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
                         CamundaAuthentication.anonymous()))
                 .searchDecisionRequirements(
                     decisionRequirementsSearchQuery()
-                        .filter(f -> f.decisionRequirementsKeys(request.resourceKey))
+                        .filter(f -> f.decisionRequirementsKeys(request.resourceKey()))
                         .build())
                 .items();
         if (!decisionRequirements.isEmpty()) {
@@ -111,11 +127,6 @@ public final class ResourceServices extends ApiServices<ResourceServices> {
         }
       }
     }
-
-    if (request.operationReference() != null) {
-      brokerRequest.setOperationReference(request.operationReference());
-    }
-    return sendBrokerRequest(brokerRequest);
   }
 
   public CompletableFuture<ResourceRecord> fetchResource(final ResourceFetchRequest request) {
