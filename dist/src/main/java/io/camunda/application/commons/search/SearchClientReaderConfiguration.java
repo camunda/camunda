@@ -34,6 +34,8 @@ import io.camunda.search.clients.reader.FlowNodeInstanceDocumentReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormDocumentReader;
 import io.camunda.search.clients.reader.FormReader;
+import io.camunda.search.clients.reader.GlobalListenerDocumentReader;
+import io.camunda.search.clients.reader.GlobalListenerReader;
 import io.camunda.search.clients.reader.GroupDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
@@ -95,6 +97,7 @@ import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
@@ -423,6 +426,12 @@ public class SearchClientReaderConfiguration {
           final ProcessCache processCache) {
     return new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
         executor, descriptors.get(IncidentTemplate.class), processCache);
+  }
+
+  @Bean
+  public GlobalListenerReader globalListenerReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new GlobalListenerDocumentReader(executor, descriptors.get(GlobalListenerIndex.class));
   }
 
   @Bean
