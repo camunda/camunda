@@ -227,6 +227,39 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+      - name: Update Optimize parent to development version
+        run: |
+          # After release process completes, update Optimize parent to nextDevelopmentVersion
+          # This ensures Optimize stays aligned with the main project for future development
+          echo "Updating Optimize parent version to ${DEVELOPMENT_VERSION} for future development"
+          
+          # Update the parent version using a more precise sed command
+          sed -i "/<parent>/,/<\/parent>/ {
+            /<artifactId>zeebe-parent<\/artifactId>/ {
+              n
+              s/<version>[^<]*<\/version>/<version>${DEVELOPMENT_VERSION}<\/version>/
+            }
+          }" optimize/pom.xml
+          
+          # Verify the change
+          new_version=$(grep -A2 '<artifactId>zeebe-parent</artifactId>' optimize/pom.xml | grep '<version>' | sed 's/.*<version>\(.*\)<\/version>.*/\1/' | tr -d ' ')
+          echo "Updated parent version to: ${new_version}"
+      - name: Debug Optimize Versions after updating to development version
+        if: ${{ inputs.dryRun }}
+        run: |
+          echo "=== Optimize Version Information ==="
+          echo "Optimize project.version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.version -q -DforceStdout || echo "Failed to get Optimize version"
+          echo ""
+          echo "Zeebe parent version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=project.parent.version -q -DforceStdout || echo "Failed to get Zeebe parent version"
+          echo ""
+          echo "Zeebe version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=zeebe.version -q -DforceStdout || echo "Failed to get Zeebe version"
+          echo ""
+          echo "Identity version:"
+          ./mvnw -f optimize/pom.xml help:evaluate -Dexpression=version.identity -q -DforceStdout || echo "Failed to get Identity version"
+          echo ""
       - name: Collect Release artifacts
         id: release-artifacts
         run: |
