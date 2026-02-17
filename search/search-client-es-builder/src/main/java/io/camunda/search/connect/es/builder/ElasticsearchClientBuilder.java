@@ -400,11 +400,9 @@ public final class ElasticsearchClientBuilder {
 
   private void configureAuthentication(final HttpAsyncClientBuilder builder) {
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      if (username != null || password != null) {
-        LOGGER.warn(
-            "Username and/or password are empty. Basic authentication for Elasticsearch is not"
-                + " used.");
-      }
+      LOGGER.warn(
+          "Username and/or password are empty. Basic authentication for Elasticsearch is not"
+              + " used.");
       return;
     }
 
