@@ -22,6 +22,8 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalListenerEntity;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -59,6 +61,7 @@ import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
 import io.camunda.search.query.FormQuery;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuery;
@@ -402,5 +405,17 @@ public class NoopSearchClientsProxy implements SearchClientsProxy {
   @Override
   public GlobalJobStatisticsEntity getGlobalJobStatistics(final GlobalJobStatisticsQuery query) {
     return new GlobalJobStatisticsEntity(null, null, null, false);
+  }
+
+  @Override
+  public GlobalListenerEntity getGlobalListener(
+      final String listenerId, final GlobalListenerType listenerType) {
+    return null;
+  }
+
+  @Override
+  public SearchQueryResult<GlobalListenerEntity> searchGlobalListeners(
+      final GlobalListenerQuery query) {
+    return SearchQueryResult.empty();
   }
 }
