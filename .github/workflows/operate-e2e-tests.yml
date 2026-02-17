@@ -123,7 +123,7 @@ jobs:
         run: >
           ./mvnw -q -B spring-boot:start -pl dist -Dspring-boot.run.fork=true
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
-          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=operate,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.backpressure.enabled=false -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false"
+          -Dspring-boot.run.jvmArguments="--add-opens=java.base/java.io=ALL-UNNAMED -Dspring.profiles.active=operate,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.backpressure.enabled=false -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false"
         env:
           CAMUNDA_OPERATE_CSRF_PREVENTION_ENABLED: false
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
