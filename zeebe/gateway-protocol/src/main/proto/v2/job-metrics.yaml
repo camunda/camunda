@@ -62,7 +62,7 @@ paths:
       description: |
         Get statistics about jobs, grouped by job type.
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
