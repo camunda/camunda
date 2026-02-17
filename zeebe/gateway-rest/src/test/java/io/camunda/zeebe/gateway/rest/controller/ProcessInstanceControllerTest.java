@@ -35,6 +35,7 @@ import org.mockito.Mockito;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
+import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
 @WebMvcTest(value = ProcessInstanceController.class)
@@ -205,7 +206,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
         .json(
-            """
+"""
 {
    "processDefinitionKey":"123",
    "processDefinitionId":"bpmnProcessId",
@@ -471,7 +472,7 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldCreateProcessInstancesWithResultAndCustomRequestTimeout() {
     // given
-    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    when(multiTenancyCfg.isEnabled()).thenReturn(true);
     final var mockResponse =
         new ProcessInstanceResultRecord()
             .setProcessDefinitionKey(123L)
@@ -479,8 +480,6 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
             .setProcessInstanceKey(123L)
             .setTenantId("tenantId");
 
-    when(authenticationProvider.getCamundaAuthentication())
-        .thenReturn(AUTHENTICATION_WITH_NON_DEFAULT_TENANT);
     when(processInstanceServices.createProcessInstanceWithResult(
             any(ProcessInstanceCreateRequest.class)))
         .thenReturn(CompletableFuture.completedFuture(mockResponse));
