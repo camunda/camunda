@@ -105,7 +105,7 @@ public class BackupListRequest extends BrokerRequest<BackupListResponse> {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    request.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return request.write(buffer, offset);
   }
 }

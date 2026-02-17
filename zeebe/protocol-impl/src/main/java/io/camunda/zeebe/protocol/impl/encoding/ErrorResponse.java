@@ -111,20 +111,13 @@ public final class ErrorResponse implements BufferWriter, BufferReader {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .errorCode(errorCode)
         .putErrorData(errorData, 0, errorData.capacity());
+
+    return bodyEncoder.encodedLength() + headerEncoder.encodedLength();
   }
 
   public byte[] toBytes() {

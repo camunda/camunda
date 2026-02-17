@@ -189,18 +189,9 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .partitionId(partitionId)
         .key(key)
         .recordType(recordType)
@@ -209,5 +200,7 @@ public final class ExecuteCommandResponse implements BufferReader, BufferWriter 
         .rejectionType(rejectionType)
         .putValue(value, 0, value.capacity())
         .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 }
