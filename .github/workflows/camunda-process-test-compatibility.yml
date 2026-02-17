@@ -442,6 +442,23 @@ jobs:
             -DskipUTs
             -DskipChecks
 
+      - name: Override connectors version in properties file
+        # Older CPT versions (< 8.8.x) use ${project.version} for connectorsDockerImageVersion
+        # in the properties file, which ignores the Maven -D flag. This step patches the
+        # source properties file so resource filtering produces the correct version.
+        run: |
+          PROPS_FILE="testing/camunda-process-test-java/src/main/resources/camunda-container-runtime-version.properties"
+          CONNECTORS_VERSION="${{ steps.connectors-version.outputs.version }}"
+          if [[ -f "$PROPS_FILE" ]]; then
+            echo "Before override:"
+            cat "$PROPS_FILE"
+            sed -i "s|^connectorsDockerImageVersion=.*|connectorsDockerImageVersion=${CONNECTORS_VERSION}|" "$PROPS_FILE"
+            echo "After override:"
+            cat "$PROPS_FILE"
+          else
+            echo "::warning::Properties file not found at $PROPS_FILE"
+          fi
+
       - name: Determine Docker API version override
         id: api-version
         run: |
