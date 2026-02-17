@@ -11,8 +11,8 @@ import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -27,8 +27,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.generic.Requests;
 
 public class OpensearchClientIT {
 
@@ -199,9 +197,12 @@ public class OpensearchClientIT {
     Awaitility.await()
         .untilAsserted(
             () -> {
-              assertThat(getISMPolicyIdForIndex(osClient, ownedIndexName))
+              assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName))
+                  .isPresent()
+                  .get()
+                  .extracting(IndexISMPolicyDto::policyId)
                   .isEqualTo("zeebe-record-retention-policy");
-              assertThat(getISMPolicyIdForIndex(osClient, camundaExporterIndexName)).isNull();
+              assertThat(SEARCH_DB.testClient().explainIndex(camundaExporterIndexName)).isEmpty();
             });
   }
 
@@ -224,7 +225,10 @@ public class OpensearchClientIT {
     Awaitility.await()
         .untilAsserted(
             () ->
-                assertThat(getISMPolicyIdForIndex(osClient, ownedIndexName))
+                assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName))
+                    .isPresent()
+                    .get()
+                    .extracting(IndexISMPolicyDto::policyId)
                     .isEqualTo("zeebe-record-retention-policy"));
 
     // when
@@ -232,26 +236,8 @@ public class OpensearchClientIT {
 
     // then
     Awaitility.await()
-        .untilAsserted(() -> assertThat(getISMPolicyIdForIndex(osClient, ownedIndexName)).isNull());
-  }
-
-  private String getISMPolicyIdForIndex(final OpenSearchClient osClient, final String indexName)
-      throws IOException {
-    final var response =
-        osClient
-            .generic()
-            .execute(
-                Requests.builder()
-                    .endpoint("/_plugins/_ism/explain/" + indexName)
-                    .method("GET")
-                    .build());
-
-    final Map<String, Object> json =
-        new ObjectMapper().readValue(response.getBody().get().bodyAsString(), Map.class);
-    assertThat(json).containsKey(indexName);
-    final Map<String, Object> policyDetails = (Map) json.get(indexName);
-    assertThat(policyDetails).containsKey("index.plugins.index_state_management.policy_id");
-    return (String) policyDetails.get("index.plugins.index_state_management.policy_id");
+        .untilAsserted(
+            () -> assertThat(SEARCH_DB.testClient().explainIndex(ownedIndexName)).isEmpty());
   }
 
   private void assertIndexTemplate(final Template actualTemplate, final Template expectedTemplate) {
