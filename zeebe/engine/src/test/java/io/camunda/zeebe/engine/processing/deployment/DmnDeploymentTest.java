@@ -53,7 +53,24 @@ public final class DmnDeploymentTest {
   private static final String DMN_MISSING_DECISION_NAME =
       "/dmn/decision-table-with-missing-decision-name.dmn";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  private static final String DRG_ID_LENGTH_EXCEEDED = "/dmn/drg-id-length-exceeded.dmn";
+  private static final String DRG_NAME_LENGTH_EXCEEDED = "/dmn/drg-name-length-exceeded.dmn";
+
+  private static final String DECISION_ID_LENGTH_EXCEEDED = "/dmn/decision-table-with-long-ids.dmn";
+  private static final String DECISION_NAME_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-name.dmn";
+
+  private static final int MAX_ID_FIELD_LENGTH = 50;
+  private static final int MAX_NAME_FIELD_LENGTH = 50;
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              config ->
+                  config
+                      .setMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
+                      .setMaxNameFieldLength(MAX_NAME_FIELD_LENGTH));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -606,6 +623,98 @@ public final class DmnDeploymentTest {
                 "Expected the decision ids to be unique within a deployment "
                     + "but found a duplicated id 'jedi_or_sith' in the resources '%s' and '%s'",
                 DMN_DECISION_TABLE, DMN_DECISION_TABLE_RENAMED_DRG));
+  }
+
+  @Test
+  public void shouldRejectIfDrgIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DRG_ID_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a DRD must not be longer than the configured max-id-length of %s characters",
+                MAX_ID_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectIfDrgNameExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DRG_NAME_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The name of a DRD must not be longer than the configured max-id-length of %s characters",
+                MAX_ID_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_ID_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a decision must not be longer than the configured max-id-length of %s characters",
+                MAX_ID_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionNameExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_NAME_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The name of a decision must not be longer than the configured max-name-length of %s characters",
+                MAX_NAME_FIELD_LENGTH));
   }
 
   private byte[] getChecksum(final String resourceName) {

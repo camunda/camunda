@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/"
+  xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/"
+  xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/"
+  xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0"
+  xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/"
+  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+  id="this_is_an_extreme_and_very_long_id_for_a_decision_requirements_graph" name="force_users" namespace="http://camunda.org/schema/1.0/dmn"
+  exporter="Camunda Modeler" exporterVersion="4.12.0">
+  <decision id="jedi_or_sith" name="Jedi or Sith">
+    <extensionElements>
+      <zeebe:versionTag value="v1.0" />
+    </extensionElements>
+    <decisionTable id="DecisionTable_14n3bxx">
+      <input id="Input_1" label="Lightsaber color" biodi:width="192">
+        <inputExpression id="InputExpression_1" typeRef="string">
+          <text>lightsaberColor</text>
+        </inputExpression>
+      </input>
+      <output id="Output_1" label="Jedi or Sith" name="jedi_or_sith" typeRef="string" biodi:width="192">
+        <outputValues id="UnaryTests_0hj346a">
+          <text>"Jedi","Sith"</text>
+        </outputValues>
+      </output>
+      <rule id="DecisionRule_0zumznl">
+        <inputEntry id="UnaryTests_0leuxqi">
+          <text>"blue"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0c9vpz8">
+          <text>"Jedi"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1utwb1e">
+        <inputEntry id="UnaryTests_1v3sd4m">
+          <text>"green"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0tgh8k1">
+          <text>"Jedi"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1bwgcym">
+        <inputEntry id="UnaryTests_0n1ewm3">
+          <text>"red"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_19xnlkw">
+          <text>"Sith"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <decision id="force_user" name="Which force user?">
+    <extensionElements>
+      <zeebe:versionTag value="v2.0" />
+    </extensionElements>
+    <informationRequirement id="InformationRequirement_1o8esai">
+      <requiredDecision href="#jedi_or_sith" />
+    </informationRequirement>
+    <decisionTable id="DecisionTable_07g94t1" hitPolicy="FIRST">
+      <input id="InputClause_0qnqj25" label="Jedi or Sith">
+        <inputExpression id="LiteralExpression_00lcyt5" typeRef="string">
+          <text>jedi_or_sith</text>
+        </inputExpression>
+        <inputValues id="UnaryTests_1xjidd8">
+          <text>"Jedi","Sith"</text>
+        </inputValues>
+      </input>
+      <input id="InputClause_0k64hys" label="Body height">
+        <inputExpression id="LiteralExpression_0ib6fnk" typeRef="number">
+          <text>height</text>
+        </inputExpression>
+      </input>
+      <output id="OutputClause_0hhe1yo" label="Force user" name="force_user" typeRef="string" />
+      <rule id="DecisionRule_13zidc5">
+        <inputEntry id="UnaryTests_056skcq">
+          <text>"Jedi"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0l4xksq">
+          <text>&gt; 190</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0hclhw3">
+          <text>"Mace Windu"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0uin2hk">
+        <description></description>
+        <inputEntry id="UnaryTests_16maepk">
+          <text>"Jedi"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0rv0nwf">
+          <text>&gt; 180</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0t82c11">
+          <text>"Obi-Wan Kenobi"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_0mpio0p">
+        <inputEntry id="UnaryTests_09eicyc">
+          <text>"Jedi"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1bekl8k">
+          <text>&lt; 70</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_0brx3vt">
+          <text>"Yoda"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_06paffx">
+        <inputEntry id="UnaryTests_1baiid4">
+          <text>"Sith"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_0fcdq0i">
+          <text>&gt; 200</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_02oibi4">
+          <text>"Darth Vader"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_1ua4pcl">
+        <inputEntry id="UnaryTests_1s1h3nm">
+          <text>"Sith"</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1pnvw8p">
+          <text>&gt; 170</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_1w1n2rc">
+          <text>"Darth Sidius"</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_00ew25e">
+        <inputEntry id="UnaryTests_07uxyug">
+          <text></text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_1he6fym">
+          <text></text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_07i3sc8">
+          <text>"unknown"</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+  <dmndi:DMNDI>
+    <dmndi:DMNDiagram>
+      <dmndi:DMNShape dmnElementRef="jedi_or_sith">
+        <dc:Bounds height="80" width="180" x="160" y="280" />
+      </dmndi:DMNShape>
+      <dmndi:DMNShape id="DMNShape_1sb3tre" dmnElementRef="force_user">
+        <dc:Bounds height="80" width="180" x="280" y="80" />
+      </dmndi:DMNShape>
+      <dmndi:DMNEdge id="DMNEdge_0gt1p1u" dmnElementRef="InformationRequirement_1o8esai">
+        <di:waypoint x="250" y="280" />
+        <di:waypoint x="370" y="180" />
+        <di:waypoint x="370" y="160" />
+      </dmndi:DMNEdge>
+    </dmndi:DMNDiagram>
+  </dmndi:DMNDI>
+</definitions>
