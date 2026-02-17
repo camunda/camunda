@@ -135,6 +135,7 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
+          CAMUNDA_SECURITY_CSRF_ENABLED: false
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: >
           ./mvnw -q -B spring-boot:start -pl dist
