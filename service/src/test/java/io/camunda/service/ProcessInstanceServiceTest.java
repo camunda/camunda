@@ -529,4 +529,42 @@ public final class ProcessInstanceServiceTest {
     verify(brokerClient, org.mockito.Mockito.never())
         .sendRequest(any(), any(java.time.Duration.class));
   }
+
+  @Test
+  void shouldCreateProcessInstanceWithResultUsingDefaultTimeoutWhenRequestTimeoutIsZero() {
+    // given
+    final var request =
+        new ProcessInstanceServices.ProcessInstanceCreateRequest(
+            123L, // processDefinitionKey
+            "", // bpmnProcessId
+            -1, // version
+            null, // variables
+            "<default>", // tenantId
+            true, // awaitCompletion
+            0L, // requestTimeout explicitly set to zero
+            null, // operationReference
+            List.of(), // startInstructions
+            List.of(), // runtimeInstructions
+            List.of(), // fetchVariables
+            null // tags
+            );
+
+    final var mockResponse =
+        new io.camunda.zeebe.protocol.impl.record.value.processinstance
+            .ProcessInstanceResultRecord();
+    when(brokerClient.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
+
+    // when
+    services.createProcessInstanceWithResult(request).join();
+
+    // then
+    verify(brokerClient)
+        .sendRequest(
+            any(
+                io.camunda.zeebe.gateway.impl.broker.request
+                    .BrokerCreateProcessInstanceWithResultRequest.class));
+    verify(brokerClient, org.mockito.Mockito.never())
+        .sendRequest(any(), any(java.time.Duration.class));
+  }
 }
