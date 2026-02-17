@@ -96,24 +96,14 @@ public final class ExecuteCommandResponseWriter
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     EnsureUtil.ensureNotNull("recordType", recordType);
     EnsureUtil.ensureNotNull("valueType", valueType);
     EnsureUtil.ensureNotNull("intent", intent);
 
-    // protocol header
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
     // protocol message
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .recordType(recordType)
         .valueType(valueType)
         .intent(intent.value())
@@ -122,5 +112,6 @@ public final class ExecuteCommandResponseWriter
         .rejectionType(rejectionType)
         .putValue(value, 0, value.length)
         .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+    return bodyEncoder.encodedLength() + headerEncoder.encodedLength();
   }
 }

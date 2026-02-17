@@ -61,11 +61,11 @@ public class UnpackedObject extends ObjectValue implements Recyclable, BufferRea
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     if (writer == null) {
       writer = new MsgPackWriter();
     }
     writer.wrap(buffer, offset);
-    write(writer);
+    return write(writer);
   }
 }

@@ -33,8 +33,9 @@ public final class DbShort implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putShort(offset, shortValue, ZB_DB_BYTE_ORDER);
+    return getLength();
   }
 
   public short getValue() {

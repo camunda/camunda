@@ -123,7 +123,7 @@ public class SnapshotBrokerRequest extends BrokerRequest<SnapshotResponse> {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    serializer.serialize(request, buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return serializer.serialize(request, buffer, offset);
   }
 }

@@ -224,22 +224,11 @@ public final class ErrorResponseWriter implements BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    // protocol header
-    messageHeaderEncoder.wrap(buffer, offset);
-
-    messageHeaderEncoder
-        .blockLength(errorResponseEncoder.sbeBlockLength())
-        .templateId(errorResponseEncoder.sbeTemplateId())
-        .schemaId(errorResponseEncoder.sbeSchemaId())
-        .version(errorResponseEncoder.sbeSchemaVersion());
-
-    offset += messageHeaderEncoder.encodedLength();
-
-    // error message
-    errorResponseEncoder.wrap(buffer, offset);
-
+  public int write(final MutableDirectBuffer buffer, int offset) {
+    errorResponseEncoder.wrapAndApplyHeader(buffer, offset, messageHeaderEncoder);
     errorResponseEncoder.errorCode(errorCode).putErrorData(errorMessage, 0, errorMessage.length);
+
+    return messageHeaderEncoder.encodedLength() + errorResponseEncoder.encodedLength();
   }
 
   public void reset() {
