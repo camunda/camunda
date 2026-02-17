@@ -1115,6 +1115,29 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_global_listener_table" author="camunda">
+    <createTable tableName="${prefix}GLOBAL_LISTENER">
+      <column name="GLOBAL_LISTENER_KEY" type="BIGINT">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TYPE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="RETRIES" type="SMALLINT"/>
+      <column name="AFTER_NON_GLOBAL" type="BOOLEAN"/>
+      <column name="PRIORITY" type="SMALLINT"/>
+      <column name="SOURCE" type="VARCHAR(50)"/>
+      <column name="LISTENER_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+    
+    <createTable tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE">
+      <column name="GLOBAL_LISTENER_KEY" type="BIGINT">
+        <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="GLOBAL_LISTENER_KEY" deleteCascade="true"/>
+        />
+      </column>
+      <column name="EVENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+  </changeSet>
+
   <changeSet id="create_variable_name_index" author="camunda">
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_NAME">
       <column name="VAR_NAME"/>

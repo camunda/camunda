@@ -41,6 +41,8 @@ public final class RdbmsTableNames {
           "EXPORTER_POSITION",
           "FLOW_NODE_INSTANCE",
           "FORM",
+          "GLOBAL_LISTENER",
+          "GLOBAL_LISTENER_EVENT_TYPE",
           "GROUP_MEMBER",
           "GROUP_",
           "HISTORY_DELETION",

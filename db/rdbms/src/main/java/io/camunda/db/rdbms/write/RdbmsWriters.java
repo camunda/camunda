@@ -281,6 +281,10 @@ public class RdbmsWriters {
     return getWriter(HistoryDeletionWriter.class);
   }
 
+  public GlobalListenerWriter getGlobalListenerWriter() {
+    return getWriter(GlobalListenerWriter.class);
+  }
+
   public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
     return writers.values().stream()
         .filter(ProcessInstanceDependant.class::isInstance)
