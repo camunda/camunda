@@ -23,6 +23,7 @@ import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
+import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
@@ -63,6 +64,7 @@ import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -347,6 +349,12 @@ public class RdbmsConfiguration {
   }
 
   @Bean
+  public GlobalListenerDbReader globalListenerRdbmsReader(
+      final GlobalListenerMapper globalListenerMapper) {
+    return new GlobalListenerDbReader(globalListenerMapper);
+  }
+
+  @Bean
   public RdbmsWriterFactory rdbmsWriterFactory(
       final SqlSessionFactory sqlSessionFactory,
       final ExporterPositionMapper exporterPositionMapper,
@@ -445,7 +453,8 @@ public class RdbmsConfiguration {
       final IncidentProcessInstanceStatisticsByErrorDbReader
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
-          incidentProcessInstanceStatisticsByDefinitionReader) {
+          incidentProcessInstanceStatisticsByDefinitionReader,
+      final GlobalListenerDbReader globalListenerDbReader) {
     return new RdbmsService(
         rdbmsWriterFactory,
         auditLogReader,
@@ -483,7 +492,8 @@ public class RdbmsConfiguration {
         processDefinitionInstanceVersionStatisticsReader,
         historyDeletionDbReader,
         incidentProcessInstanceStatisticsByErrorReader,
-        incidentProcessInstanceStatisticsByDefinitionReader);
+        incidentProcessInstanceStatisticsByDefinitionReader,
+        globalListenerDbReader);
   }
 
   @Bean
