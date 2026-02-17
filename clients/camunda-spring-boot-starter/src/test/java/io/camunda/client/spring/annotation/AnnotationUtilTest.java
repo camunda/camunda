@@ -22,6 +22,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.client.annotation.AnnotationUtil;
+import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
@@ -113,7 +114,7 @@ public class AnnotationUtilTest {
     @Test
     void shouldFindDeploymentValue() {
       // given
-      final BeanInfo classInfo = beanInfo(new DeployingBean());
+      final BeanInfo classInfo = beanInfo(new DeploymentBean());
       // when
       final DeploymentValue deploymentValue = AnnotationUtil.getDeploymentValues(classInfo).get(0);
       // then
@@ -121,8 +122,50 @@ public class AnnotationUtilTest {
       assertThat(deploymentValue.getResources().get(0)).isEqualTo("classpath*:*.bpmn");
     }
 
+    @Test
+    void shouldFindDeploymentValues() {
+      // given
+      final BeanInfo classInfo = beanInfo(new MultiDeploymentBean());
+      // when
+      final List<DeploymentValue> deploymentValues = AnnotationUtil.getDeploymentValues(classInfo);
+      // then
+      assertThat(deploymentValues).hasSize(2);
+      final DeploymentValue deploymentValue1 = deploymentValues.get(0);
+      final DeploymentValue deploymentValue2 = deploymentValues.get(1);
+      assertThat(deploymentValue1.getResources()).hasSize(1);
+      assertThat(deploymentValue1.getResources().get(0)).isEqualTo("classpath*:v1/*.bpmn");
+      assertThat(deploymentValue2.getResources()).hasSize(1);
+      assertThat(deploymentValue2.getResources().get(0)).isEqualTo("classpath*:v2/*.bpmn");
+    }
+
+    @Test
+    void shouldFindDeploymentsValues() {
+      // given
+      final BeanInfo classInfo = beanInfo(new DeploymentsBean());
+      // when
+      final List<DeploymentValue> deploymentValues = AnnotationUtil.getDeploymentValues(classInfo);
+      // then
+      assertThat(deploymentValues).hasSize(2);
+      final DeploymentValue deploymentValue1 = deploymentValues.get(0);
+      final DeploymentValue deploymentValue2 = deploymentValues.get(1);
+      assertThat(deploymentValue1.getResources()).hasSize(1);
+      assertThat(deploymentValue1.getResources().get(0)).isEqualTo("classpath*:v1/*.bpmn");
+      assertThat(deploymentValue2.getResources()).hasSize(1);
+      assertThat(deploymentValue2.getResources().get(0)).isEqualTo("classpath*:v2/*.bpmn");
+    }
+
     @io.camunda.client.annotation.Deployment(resources = "classpath*:*.bpmn")
-    static class DeployingBean {}
+    static class DeploymentBean {}
+
+    @io.camunda.client.annotation.Deployment(resources = "classpath*:v1/*.bpmn")
+    @io.camunda.client.annotation.Deployment(resources = "classpath*:v2/*.bpmn")
+    static class MultiDeploymentBean {}
+
+    @Deployments({
+      @io.camunda.client.annotation.Deployment(resources = "classpath*:v1/*.bpmn"),
+      @io.camunda.client.annotation.Deployment(resources = "classpath*:v2/*.bpmn")
+    })
+    static class DeploymentsBean {}
   }
 
   @Nested
