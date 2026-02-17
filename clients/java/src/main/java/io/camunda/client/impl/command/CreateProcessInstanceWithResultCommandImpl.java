@@ -15,6 +15,7 @@
  */
 package io.camunda.client.impl.command;
 
+import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
@@ -55,6 +56,7 @@ public final class CreateProcessInstanceWithResultCommandImpl
   private final HttpClient httpClient;
   private final RequestConfig.Builder httpRequestConfig;
   private final ProcessInstanceCreationInstruction httpRequestObject;
+  private final CamundaClientConfiguration config;
 
   public CreateProcessInstanceWithResultCommandImpl(
       final JsonMapper jsonMapper,
@@ -64,7 +66,9 @@ public final class CreateProcessInstanceWithResultCommandImpl
       final Duration requestTimeout,
       final HttpClient httpClient,
       final boolean preferRestOverGrpc,
-      final ProcessInstanceCreationInstruction httpRequestObject) {
+      final ProcessInstanceCreationInstruction httpRequestObject,
+      final CamundaClientConfiguration config) {
+    this.config = config;
     this.jsonMapper = jsonMapper;
     this.asyncStub = asyncStub;
     createProcessInstanceRequestBuilder = grpcRequestObject;
@@ -82,8 +86,11 @@ public final class CreateProcessInstanceWithResultCommandImpl
   public FinalCommandStep<ProcessInstanceResult> requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     grpcRequestObject.setRequestTimeout(requestTimeout.toMillis());
-    httpRequestConfig.setResponseTimeout(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
+    // increment response timeout so client doesn't time out before the server
+    final long offsetMillis = config.getDefaultRequestTimeoutOffset().toMillis();
+    httpRequestConfig.setResponseTimeout(
+        requestTimeout.toMillis() + offsetMillis, TimeUnit.MILLISECONDS);
     return this;
   }
 
