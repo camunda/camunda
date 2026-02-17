@@ -63,6 +63,9 @@ public record Authorization<T>(
   public static final String PROP_CANDIDATE_USERS = "candidateUsers";
   public static final String PROP_CANDIDATE_GROUPS = "candidateGroups";
 
+  // AUDIT LOG property names
+  public static final String PROP_CATEGORY = "category";
+
   public boolean hasAnyResourceIds() {
     return resourceIds != null && !resourceIds.isEmpty();
   }
@@ -325,6 +328,10 @@ public record Authorization<T>(
 
     public Builder<T> authorizedByCandidateGroups() {
       return authorizedByProperty(PROP_CANDIDATE_GROUPS);
+    }
+
+    public Builder<T> authorizedByCategory() {
+      return authorizedByProperty(PROP_CATEGORY);
     }
 
     /**
