@@ -7,11 +7,7 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
-import static java.util.Optional.ofNullable;
-
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.ObjectBuilderDeserializer;
 import org.opensearch.client.json.ObjectDeserializer;
@@ -44,19 +40,6 @@ public record IdxTemplate(
         JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
         "index_patterns");
     deserializer.add(Builder::template, IndexTemplateMapping._DESERIALIZER, "template");
-  }
-
-  public record TemplateProperty(
-      Map<String, Object> aliases, Map<String, Object> settings, Map<String, Object> mappings) {
-    public static TemplateProperty mutableCopyOf(final TemplateProperty templateProperty) {
-      if (templateProperty == null) {
-        return new TemplateProperty(new HashMap<>(), new HashMap<>(), new HashMap<>());
-      }
-      return new TemplateProperty(
-          ofNullable(templateProperty.aliases).map(HashMap::new).orElseGet(HashMap::new),
-          ofNullable(templateProperty.settings).map(HashMap::new).orElseGet(HashMap::new),
-          ofNullable(templateProperty.mappings).map(HashMap::new).orElseGet(HashMap::new));
-    }
   }
 
   static class Builder implements ObjectBuilder<IdxTemplate> {

@@ -159,8 +159,7 @@ public final class OpensearchConnector {
           .map(
               url -> {
                 try {
-                  final var uri = new URI(url);
-                  return new HttpHost(uri.getScheme(), uri.getHost(), uri.getPort());
+                  return HttpHost.create(url);
                 } catch (final URISyntaxException e) {
                   throw new SearchClientConnectException("Error in url: " + url, e);
                 }

@@ -18,8 +18,6 @@ import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexTemplateResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -28,7 +26,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 import org.apache.http.entity.BasicHttpEntity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -42,6 +39,10 @@ import org.opensearch.client.Request;
 import org.opensearch.client.Response;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.OpenSearchClusterClient;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class OpensearchClientTest {
@@ -72,36 +73,54 @@ final class OpensearchClientTest {
   @MethodSource("io.camunda.zeebe.exporter.opensearch.TestSupport#provideValueTypes")
   void shouldPutIndexTemplate(final ValueType valueType) throws IOException {
     // given
-    final Template expectedTemplate =
-        templateReader.readIndexTemplate(
-            valueType,
-            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
-            indexRouter.aliasNameForValueType(valueType));
-    final ArgumentCaptor<Request> requestCaptor =
-        mockClientResponse(new PutIndexTemplateResponse(true));
+    final ArgumentCaptor<PutIndexTemplateRequest> requestCaptor =
+        ArgumentCaptor.forClass(PutIndexTemplateRequest.class);
+
+    final org.opensearch.client.opensearch.indices.PutIndexTemplateResponse response =
+        mock(org.opensearch.client.opensearch.indices.PutIndexTemplateResponse.class);
+    when(response.acknowledged()).thenReturn(true);
+
+    final OpenSearchIndicesClient indicesClient = mock(OpenSearchIndicesClient.class);
+    when(openSearchClient.indices()).thenReturn(indicesClient);
+    when(indicesClient.putIndexTemplate(requestCaptor.capture())).thenReturn(response);
 
     // when
     client.putIndexTemplate(valueType);
 
     // then
-    final var request = requestCaptor.getValue();
-    final var template = MAPPER.readValue(request.getEntity().getContent(), Template.class);
-    assertThat(template).isEqualTo(expectedTemplate);
+    final PutIndexTemplateRequest expectedRequest =
+        templateReader.getPutIndexTemplateRequest(
+            indexRouter.indexPrefixForValueType(valueType, VersionUtil.getVersionLowerCase()),
+            valueType,
+            indexRouter.searchPatternForValueType(valueType, VersionUtil.getVersionLowerCase()),
+            indexRouter.aliasNameForValueType(valueType));
+
+    assertThat(requestCaptor.getValue()).isEqualTo(expectedRequest);
   }
 
   @Test
   void shouldPutComponentTemplate() throws IOException {
     // given
-    final var expectedTemplate = templateReader.readComponentTemplate();
-    final ArgumentCaptor<Request> requestCaptor = mockClientResponse(Map.of("acknowledged", true));
+    final ArgumentCaptor<PutComponentTemplateRequest> requestCaptor =
+        ArgumentCaptor.forClass(PutComponentTemplateRequest.class);
+
+    final org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse response =
+        mock(org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse.class);
+    when(response.acknowledged()).thenReturn(true);
+
+    final OpenSearchClusterClient clusterClient = mock(OpenSearchClusterClient.class);
+    when(openSearchClient.cluster()).thenReturn(clusterClient);
+    when(clusterClient.putComponentTemplate(requestCaptor.capture())).thenReturn(response);
 
     // when
     client.putComponentTemplate();
 
     // then
-    final var request = requestCaptor.getValue();
-    final var template = MAPPER.readValue(request.getEntity().getContent(), Template.class);
-    assertThat(template).isEqualTo(expectedTemplate);
+    final PutComponentTemplateRequest expectedRequest =
+        templateReader.getComponentTemplatePutRequest(
+            String.format("%s-%s", config.index.prefix, VersionUtil.getVersionLowerCase()));
+
+    assertThat(requestCaptor.getValue()).isEqualTo(expectedRequest);
   }
 
   private <T> ArgumentCaptor<Request> mockClientResponse(final T content) throws IOException {

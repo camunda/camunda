@@ -117,7 +117,7 @@ final class OpensearchExporterTest {
     config.retention.setEnabled(true);
     exporter.configure(context);
     exporter.open(controller);
-    when(client.getIndexStateManagementPolicy()).thenReturn(Optional.empty());
+    when(client.maybeGetIndexStateManagementPolicy()).thenReturn(Optional.empty());
 
     // when
     final var recordMock = mock(Record.class);
@@ -136,7 +136,7 @@ final class OpensearchExporterTest {
     config.retention.setEnabled(true);
     exporter.configure(context);
     exporter.open(controller);
-    when(client.getIndexStateManagementPolicy())
+    when(client.maybeGetIndexStateManagementPolicy())
         .thenReturn(Optional.of(mock(GetIndexStateManagementPolicyResponse.class)));
 
     // when
@@ -158,7 +158,7 @@ final class OpensearchExporterTest {
     exporter.open(controller);
     final var policyMock = mock(GetIndexStateManagementPolicyResponse.class);
     when(policyMock.equalsConfiguration(any())).thenReturn(true);
-    when(client.getIndexStateManagementPolicy()).thenReturn(Optional.of(policyMock));
+    when(client.maybeGetIndexStateManagementPolicy()).thenReturn(Optional.of(policyMock));
 
     // when
     final var recordMock = mock(Record.class);

@@ -11,18 +11,19 @@ import static io.camunda.zeebe.exporter.opensearch.SearchDBExtension.TEST_INTEGR
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.ComponentTemplateSummary;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.IndexTemplate;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
@@ -69,7 +70,7 @@ public class OpensearchClientIT {
 
     // then
     final Optional<IndexTemplateItem> maybeIndexTemplateItem =
-        searchDB.testClient().getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+        searchDB.testClient().maybeGetIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
 
     assertThat(maybeIndexTemplateItem)
         .as("should have created index template for value type %s", valueType)
@@ -104,22 +105,34 @@ public class OpensearchClientIT {
   @Test
   void shouldPutComponentTemplate() {
     // given
-    final Template expectedTemplate = searchDB.templateReader().readComponentTemplate();
-
-    // when
     searchDB.client().putComponentTemplate();
 
     // then
-    final var templateWrapper = searchDB.testClient().getComponentTemplate();
-    assertThat(templateWrapper)
-        .as("should have created component template")
-        .isPresent()
-        .get()
-        .extracting(ComponentTemplateWrapper::name)
-        .isEqualTo(searchDB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase());
+    final Optional<GetComponentTemplateResponse> maybeGetComponentTemplate =
+        searchDB.testClient().maybeGetComponentTemplate();
 
-    final var template = templateWrapper.get().template();
-    assertTemplate(template, expectedTemplate);
+    assertThat(maybeGetComponentTemplate).as("should have created component template").isPresent();
+
+    final GetComponentTemplateResponse componentTemplateResponse = maybeGetComponentTemplate.get();
+
+    final String expectedComponentTemplateName =
+        searchDB.config().index.prefix + "-" + VersionUtil.getVersionLowerCase();
+
+    final ComponentTemplate firstComponentTemplate =
+        assertThat(componentTemplateResponse)
+            .extracting(GetComponentTemplateResponse::componentTemplates)
+            .asInstanceOf(InstanceOfAssertFactories.list(ComponentTemplate.class))
+            .hasSize(1)
+            .first()
+            .actual();
+
+    assertThat(firstComponentTemplate.name()).isEqualTo(expectedComponentTemplateName);
+
+    // and
+    final PutComponentTemplateRequest componentTemplatePutRequest =
+        searchDB.templateReader().getComponentTemplatePutRequest(expectedComponentTemplateName);
+
+    assertComponentTemplate(firstComponentTemplate, componentTemplatePutRequest);
   }
 
   @Test
@@ -147,31 +160,22 @@ public class OpensearchClientIT {
     authenticatedClient.putComponentTemplate();
 
     // then
-    assertThat(searchDB.testClient().getComponentTemplate()).isPresent();
+    assertThat(searchDB.testClient().maybeGetComponentTemplate()).isPresent();
   }
 
-  private void assertTemplate(final Template actualTemplate, final Template expectedTemplate) {
-    assertThat(actualTemplate.patterns()).isEqualTo(expectedTemplate.patterns());
-    assertThat(actualTemplate.composedOf()).isEqualTo(expectedTemplate.composedOf());
-    assertThat(actualTemplate.priority()).isEqualTo(expectedTemplate.priority());
-    assertThat(actualTemplate.version()).isEqualTo(expectedTemplate.version());
-    assertThat(actualTemplate.template().aliases())
-        .isEqualTo(expectedTemplate.template().aliases());
-    assertThat(actualTemplate.template().mappings())
-        .isEqualTo(expectedTemplate.template().mappings());
+  private void assertComponentTemplate(
+      final ComponentTemplate actualTemplate,
+      final PutComponentTemplateRequest putComponentTemplateRequest) {
+    final ComponentTemplateSummary actualComponentTemplate =
+        actualTemplate.componentTemplate().template();
 
-    // cannot compare settings because we never get flat settings, instead we get { index : {
-    // number_of_shards: 1, queries: { cache : { enabled : false } } } }
-    // so instead we decompose how we compare the settings. I've tried with flat_settings parameter
-    // but that doesn't seem to be doing anything
-    assertThat(actualTemplate.template().settings())
-        .as("should contain a map of index settings")
-        .extractingByKey("index")
-        .isInstanceOf(Map.class)
-        .asInstanceOf(InstanceOfAssertFactories.map(String.class, Object.class))
-        .containsEntry("number_of_shards", "1")
-        .containsEntry("number_of_replicas", "0")
-        .containsEntry("queries", Map.of("cache", Map.of("enabled", "false")));
+    assertThat(actualTemplate.componentTemplate().version())
+        .isEqualTo(putComponentTemplateRequest.version());
+    assertThat(actualComponentTemplate.mappings())
+        .isEqualTo(putComponentTemplateRequest.template().mappings());
+
+    assertThat(actualComponentTemplate.settings().get("index"))
+        .isEqualTo(putComponentTemplateRequest.template().settings().index());
   }
 
   private void assertIndexTemplate(

@@ -10,15 +10,13 @@ package io.camunda.zeebe.exporter.opensearch;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration.IndexConfiguration;
 import io.camunda.zeebe.exporter.opensearch.dto.IdxTemplate;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
 import jakarta.json.stream.JsonParser;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
-import java.util.Map;
 import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
+import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.indices.Alias;
 import org.opensearch.client.opensearch.indices.IndexSettings;
 import org.opensearch.client.opensearch.indices.IndexSettings.Builder;
@@ -39,43 +37,18 @@ final class TemplateReader {
     this.config = config;
   }
 
-  /** Reads the shared component template from the resources. */
-  Template readComponentTemplate() {
-    return readTemplate(ZEEBE_RECORD_TEMPLATE_JSON);
-  }
-
   /**
-   * Reads the index template for the given value type from the resources, and replaces the alias
-   * and search patterns with the given ones. Additionally, will update the composed_of to match the
-   * configured index prefix.
+   * Reads the index template for the given value type from the resources and builds a
+   * PutIndexTemplateRequest with configured shards and replicas, and given alias and search
+   * patterns.
    */
-  Template readIndexTemplate(
-      final ValueType valueType, final String searchPattern, final String aliasName) {
-    final Template template = readTemplate(findResourceForTemplate(valueType));
-
-    // update prefix in template in case it was changed in configuration
-    return Template.MutableCopyBuilder.copyOf(template)
-        .updateComposedOf(
-            composedOf ->
-                composedOf.set(0, config.prefix + "-" + VersionUtil.getVersionLowerCase()))
-        .updatePatterns(patterns -> patterns.set(0, searchPattern))
-        .updateAliases(
-            aliases -> {
-              aliases.clear();
-              aliases.put(aliasName, Collections.emptyMap());
-            })
-        .withPriority(Long.valueOf(config.getPriority()))
-        .build();
-  }
-
   PutIndexTemplateRequest getPutIndexTemplateRequest(
       final String templateName,
       final ValueType valueType,
       final String searchPattern,
       final String aliasName) {
     try {
-      final IdxTemplate wrapper =
-          getTemplateWrapperFromClasspath(findResourceForTemplate(valueType));
+      final IdxTemplate wrapper = readIdxIndexTemplate(valueType);
 
       return PutIndexTemplateRequest.of(
           b ->
@@ -85,21 +58,48 @@ final class TemplateReader {
                   .composedOf(config.prefix + "-" + VersionUtil.getVersionLowerCase())
                   .indexPatterns(searchPattern)
                   .template(
-                      t -> {
-                        IndexSettings idxSettings = wrapper.template().settings();
-                        if (wrapper.template().settings() != null) {
-                          idxSettings = updateIndexSettings(idxSettings.toBuilder()).build();
-                        }
-                        return t.settings(idxSettings)
-                            .aliases(aliasName, Alias.builder().build())
-                            .mappings(wrapper.template().mappings());
-                      }));
+                      t ->
+                          t.settings(updateSettings(wrapper.template().settings()))
+                              .aliases(aliasName, Alias.builder().build())
+                              .mappings(wrapper.template().mappings())));
     } catch (final Exception e) {
       throw new OpensearchExporterException(
           "Failed to create a put index template request from classpath "
               + findResourceForTemplate(valueType),
           e);
     }
+  }
+
+  /**
+   * Reads the component template from resources and builds a PutComponentTemplateRequest with
+   * configured shards and replicas.
+   */
+  PutComponentTemplateRequest getComponentTemplatePutRequest(final String name) {
+    try {
+      final IdxTemplate wrapper = getTemplateWrapperFromClasspath(ZEEBE_RECORD_TEMPLATE_JSON);
+
+      return PutComponentTemplateRequest.of(
+          b ->
+              b.name(name)
+                  .version(wrapper.version())
+                  .template(
+                      t ->
+                          t.settings(updateSettings(wrapper.template().settings()))
+                              .mappings(wrapper.template().mappings())));
+    } catch (final Exception e) {
+      throw new OpensearchExporterException(
+          "Failed to create a put component template request from classpath "
+              + ZEEBE_RECORD_TEMPLATE_JSON,
+          e);
+    }
+  }
+
+  IdxTemplate readIdxComponentTemplate() {
+    return getTemplateWrapperFromClasspath(ZEEBE_RECORD_TEMPLATE_JSON);
+  }
+
+  IdxTemplate readIdxIndexTemplate(final ValueType valueType) {
+    return getTemplateWrapperFromClasspath(findResourceForTemplate(valueType));
   }
 
   private IdxTemplate getTemplateWrapperFromClasspath(final String filename) {
@@ -115,6 +115,19 @@ final class TemplateReader {
       throw new OpensearchExporterException(
           "Failed to load template from classpath " + filename, e);
     }
+  }
+
+  private IndexSettings updateSettings(final IndexSettings settings) {
+    if (settings == null) {
+      return null;
+    }
+
+    final Builder settingsBuilder = settings.toBuilder();
+    if (settings.index() != null) {
+      final IndexSettings idxSettings = updateIndexSettings(settings.index().toBuilder()).build();
+      settingsBuilder.index(idxSettings);
+    }
+    return settingsBuilder.build();
   }
 
   private Builder updateIndexSettings(final Builder builder) {
@@ -135,37 +148,5 @@ final class TemplateReader {
 
   private String valueTypeToString(final ValueType valueType) {
     return valueType.name().toLowerCase().replace("_", "-");
-  }
-
-  private Template readTemplate(final String resourcePath) {
-    final Template template = getTemplateFromClasspath(resourcePath);
-    final Map<String, Object> settings = template.template().settings();
-
-    substituteConfiguration(settings);
-
-    return template;
-  }
-
-  private void substituteConfiguration(final Map<String, Object> settings) {
-    // update number of shards in template in case it was changed in configuration
-    final Integer numberOfShards = config.getNumberOfShards();
-    if (numberOfShards != null) {
-      settings.put("number_of_shards", numberOfShards);
-    }
-
-    // update number of replicas in template in case it was changed in configuration
-    final Integer numberOfReplicas = config.getNumberOfReplicas();
-    if (numberOfReplicas != null) {
-      settings.put("number_of_replicas", numberOfReplicas);
-    }
-  }
-
-  private Template getTemplateFromClasspath(final String filename) {
-    try (final InputStream inputStream = OpensearchExporter.class.getResourceAsStream(filename)) {
-      return MAPPER.readValue(inputStream, Template.class);
-    } catch (final Exception e) {
-      throw new OpensearchExporterException(
-          "Failed to load index template from classpath " + filename, e);
-    }
   }
 }

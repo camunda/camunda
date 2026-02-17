@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
@@ -36,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
@@ -47,6 +47,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.testcontainers.OpenSearchContainer;
@@ -250,7 +252,7 @@ final class OpensearchExporterIT {
 
     // then
     final var maybeTemplate =
-        testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+        testClient.maybeGetIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
     assertThat(maybeTemplate)
         .as("should have created index template for value type %s", valueType)
         .isPresent()
@@ -268,12 +270,22 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    final var template = testClient.getComponentTemplate();
-    assertThat(template)
-        .as("should have created the component template")
-        .isPresent()
-        .get()
-        .extracting(ComponentTemplateWrapper::name)
+    final Optional<GetComponentTemplateResponse> maybeGetComponentTemplate =
+        testClient.maybeGetComponentTemplate();
+
+    assertThat(maybeGetComponentTemplate).as("should have created component template").isPresent();
+
+    final GetComponentTemplateResponse componentTemplateResponse = maybeGetComponentTemplate.get();
+
+    final ComponentTemplate firstComponentTemplate =
+        assertThat(componentTemplateResponse)
+            .extracting(GetComponentTemplateResponse::componentTemplates)
+            .asInstanceOf(InstanceOfAssertFactories.list(ComponentTemplate.class))
+            .hasSize(1)
+            .first()
+            .actual();
+
+    assertThat(firstComponentTemplate.name())
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
@@ -287,7 +299,7 @@ final class OpensearchExporterIT {
 
     // then
     final Optional<GetIndexStateManagementPolicyResponse> maybeIsmPolicy =
-        testClient.getIndexStateManagementPolicy();
+        testClient.maybeGetIndexStateManagementPolicy();
     assertThat(maybeIsmPolicy).isPresent();
 
     final var policy = maybeIsmPolicy.get().policy();
@@ -336,7 +348,7 @@ final class OpensearchExporterIT {
     export(record);
 
     final Optional<GetIndexStateManagementPolicyResponse> maybeIsmPolicy =
-        testClient.getIndexStateManagementPolicy();
+        testClient.maybeGetIndexStateManagementPolicy();
     assertThat(maybeIsmPolicy).isPresent();
 
     final var updatedPolicy = maybeIsmPolicy.get().policy();
@@ -360,7 +372,7 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    assertThat(testClient.getIndexStateManagementPolicy()).isEmpty();
+    assertThat(testClient.maybeGetIndexStateManagementPolicy()).isEmpty();
   }
 
   @ParameterizedTest(name = "{0} - version={1}")
@@ -658,7 +670,7 @@ final class OpensearchExporterIT {
 
       // then
       final var maybeTemplate =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+          testClient.maybeGetIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
       assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
@@ -678,7 +690,7 @@ final class OpensearchExporterIT {
 
       // then
       final var maybeTemplate =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+          testClient.maybeGetIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
       assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
