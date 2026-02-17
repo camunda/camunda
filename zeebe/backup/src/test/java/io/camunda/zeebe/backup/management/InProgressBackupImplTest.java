@@ -298,6 +298,24 @@ class InProgressBackupImplTest {
         .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
   }
 
+  @Test
+  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead() {
+    // given
+    final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var validExporterPosition = checkpointPosition - 1L;
+    final var invalidExporterPosition = checkpointPosition + 1L;
+
+    final var validSnapshot = snapshotWith(1L, 1L, validExporterPosition);
+    final var invalidSnapshot = snapshotWith(1L, 1L, invalidExporterPosition);
+    setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
+
+    // when
+    final var validSnapshots = inProgressBackup.findValidSnapshot().join();
+
+    // then
+    assertThat(validSnapshots).singleElement().isEqualTo(validSnapshot);
+  }
+
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
     when(snapshotStore.getAvailableSnapshots())
         .thenReturn(TestActorFuture.completedFuture(snapshots));
@@ -327,6 +345,18 @@ class InProgressBackupImplTest {
     lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
 
     lenient().when(snapshot.getChecksumPath()).thenReturn(CHECKSUM_PATH);
+    return snapshot;
+  }
+
+  private PersistedSnapshot snapshotWith(
+      final long processedPosition, final long followUpPosition, final long maxExportedPosition) {
+    final var snapshotMetadata = mock(SnapshotMetadata.class);
+    when(snapshotMetadata.processedPosition()).thenReturn(processedPosition);
+    when(snapshotMetadata.lastFollowupEventPosition()).thenReturn(followUpPosition);
+    when(snapshotMetadata.maxExportedPosition()).thenReturn(maxExportedPosition);
+
+    final var snapshot = mock(PersistedSnapshot.class);
+    when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
     return snapshot;
   }
 

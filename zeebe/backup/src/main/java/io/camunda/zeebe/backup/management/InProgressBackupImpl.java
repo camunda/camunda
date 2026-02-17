@@ -94,8 +94,8 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
-  public ActorFuture<Void> findValidSnapshot() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
+  public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
+    final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
     snapshotStore
         .getAvailableSnapshots()
         .onComplete(
@@ -115,7 +115,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                 // no snapshot is taken until now, so return successfully
                 hasSnapshot = false;
                 availableValidSnapshots = Collections.emptySet();
-                result.complete(null);
+                result.complete(availableValidSnapshots);
               } else {
                 LOG.atTrace()
                     .addKeyValue("backup", backupId)
@@ -128,7 +128,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                       new SnapshotNotFoundException(eitherSnapshots.getLeft()));
                 } else {
                   availableValidSnapshots = eitherSnapshots.get();
-                  result.complete(null);
+                  result.complete(availableValidSnapshots);
                 }
               }
             });
@@ -302,6 +302,9 @@ final class InProgressBackupImpl implements InProgressBackup {
                 s ->
                     s.getMetadata().lastFollowupEventPosition()
                         < backupDescriptor().checkpointPosition())
+            .filter(
+                s ->
+                    s.getMetadata().maxExportedPosition() < backupDescriptor().checkpointPosition())
             .collect(Collectors.toSet());
 
     if (validSnapshots.isEmpty()) {
