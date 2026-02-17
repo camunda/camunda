@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.sql;
 
+import io.camunda.db.rdbms.read.domain.GlobalListenerDbQuery;
 import io.camunda.db.rdbms.write.domain.GlobalListenerDbModel;
+import java.util.List;
 
 public interface GlobalListenerMapper {
 
@@ -20,4 +22,10 @@ public interface GlobalListenerMapper {
   void delete(GlobalListenerDbModel listener);
 
   void deleteEventTypes(GlobalListenerDbModel listener);
+
+  Long count(GlobalListenerDbQuery filter);
+
+  GlobalListenerDbModel get(String id);
+
+  List<GlobalListenerDbModel> search(GlobalListenerDbQuery filter);
 }
