@@ -13,13 +13,25 @@ import styled from 'styled-components';
 const BaseSnippet = styled(CodeSnippet)`
   border-radius: 4px;
   block-size: auto;
+  display: inline;
+  flex: 0;
+
   && {
-  padding: var(--cds-spacing-02);
-    }
+    padding: var(--cds-spacing-02) var(--cds-spacing-04);
+  }
+
+  .cds--snippet-container {
+    padding: 0;
+    mask-image: none;
+  }
+
+  pre {
+    padding: 0;
+  }
 `;
 
 const LightSnippet = styled(BaseSnippet)`
-  --cds-layer: ${colors.gray[60]};
+  --cds-layer: ${colors.gray[10]};
 `;
 
 const DarkSnippet = styled(BaseSnippet)`

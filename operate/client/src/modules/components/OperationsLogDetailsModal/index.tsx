@@ -28,15 +28,19 @@ import {
   IconText,
   ParagraphWithIcon,
   VerticallyAlignedRow,
+  IconTextWithTopDivider,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
 import {
   formatBatchTitle,
-  formatModalHeading,
+  formatModalHeading, getActorIcon,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
+import {useMemo} from 'react';
+import {Snippet} from '../Snippet';
+import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 
 type Props = {
   isOpen: boolean;
@@ -50,6 +54,8 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
+  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog])
+
   return (
     <Modal
       size="md"
@@ -97,7 +103,26 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Actor
               </IconText>
             </FirstColumn>
-            <StructuredListCell>{auditLog.actorId}</StructuredListCell>
+            <StructuredListCell>
+              {!ActorIcon ? (
+                spaceAndCapitalize(auditLog.actorType)
+              ) : (
+                <IconText>
+                  <ActorIcon />
+                  <Snippet hideCopyButton wrapText>
+                    {spaceAndCapitalize(auditLog.actorType)}
+                  </Snippet>
+                </IconText>
+              )}
+              {auditLog.agentElementId && (
+                <IconTextWithTopDivider>
+                  <AiAgentIcon />
+                  <Snippet hideCopyButton wrapText>
+                    {spaceAndCapitalize(auditLog.agentElementId)}
+                  </Snippet>
+                </IconTextWithTopDivider>
+              )}
+            </StructuredListCell>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
