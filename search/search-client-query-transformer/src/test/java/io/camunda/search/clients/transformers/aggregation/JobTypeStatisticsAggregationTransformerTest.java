@@ -13,6 +13,7 @@ import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGA
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_CREATED;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_FAILED;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_LAST_UPDATED_AT;
+import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_SOURCE_NAME_JOB_TYPE;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.AGGREGATION_WORKERS;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_COMPLETED_COUNT;
 import static io.camunda.search.aggregation.JobTypeStatisticsAggregation.FIELD_CREATED_COUNT;
@@ -27,12 +28,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
 import io.camunda.search.clients.aggregator.SearchAggregator;
 import io.camunda.search.clients.aggregator.SearchCardinalityAggregator;
+import io.camunda.search.clients.aggregator.SearchCompositeAggregator;
 import io.camunda.search.clients.aggregator.SearchFilterAggregator;
 import io.camunda.search.clients.aggregator.SearchMaxAggregator;
 import io.camunda.search.clients.aggregator.SearchSumAggregator;
 import io.camunda.search.clients.aggregator.SearchTermsAggregator;
 import io.camunda.search.clients.query.SearchMatchAllQuery;
 import io.camunda.search.clients.transformers.ServiceTransformers;
+import io.camunda.search.page.SearchQueryPage;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
@@ -49,7 +52,8 @@ class JobTypeStatisticsAggregationTransformerTest {
   @Test
   void shouldBuildExpectedAggregationStructure() {
     // given
-    final var aggregation = new JobTypeStatisticsAggregation();
+    final var page = SearchQueryPage.of(b -> b.size(50).after("cursor123"));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
 
     // when
     final List<SearchAggregator> aggregations =
@@ -58,29 +62,32 @@ class JobTypeStatisticsAggregationTransformerTest {
     // then
     assertThat(aggregations).hasSize(1);
 
-    // Verify terms aggregation by job type
+    // Verify composite aggregation by job type
     assertThat(aggregations.get(0))
         .isInstanceOfSatisfying(
-            SearchTermsAggregator.class,
-            termsAgg -> {
-              assertThat(termsAgg.name()).isEqualTo(AGGREGATION_BY_TYPE);
-              assertThat(termsAgg.field()).isEqualTo(FIELD_JOB_TYPE);
-              assertThat(termsAgg.aggregations()).hasSize(4);
+            SearchCompositeAggregator.class,
+            compositeAgg -> {
+              assertThat(compositeAgg.name()).isEqualTo(AGGREGATION_BY_TYPE);
+              assertThat(compositeAgg.size()).isEqualTo(50);
+              assertThat(compositeAgg.after()).isEqualTo("cursor123");
+              assertThat(compositeAgg.sources()).hasSize(1);
+              assertThat(compositeAgg.aggregations()).hasSize(4);
             });
   }
 
   @Test
   void shouldBuildFilterBucketsForEachStatus() {
     // given
-    final var aggregation = new JobTypeStatisticsAggregation();
+    final var page = SearchQueryPage.of(b -> b.size(100));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
 
     // when
     final List<SearchAggregator> aggregations =
         transformer.apply(Tuple.of(aggregation, transformers));
 
     // then
-    final var termsAgg = (SearchTermsAggregator) aggregations.get(0);
-    final var subAggregations = termsAgg.aggregations();
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
+    final var subAggregations = compositeAgg.aggregations();
 
     // Verify created filter bucket
     assertThat(subAggregations.get(0))
@@ -129,17 +136,18 @@ class JobTypeStatisticsAggregationTransformerTest {
   @Test
   void shouldBuildFilterBucketsWithMatchAllQuery() {
     // given
-    final var aggregation = new JobTypeStatisticsAggregation();
+    final var page = SearchQueryPage.of(b -> b.size(100));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
 
     // when
     final List<SearchAggregator> aggregations =
         transformer.apply(Tuple.of(aggregation, transformers));
 
     // then
-    final var termsAgg = (SearchTermsAggregator) aggregations.get(0);
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
 
     // All filter buckets should use match_all query
-    termsAgg.aggregations().stream()
+    compositeAgg.aggregations().stream()
         .filter(SearchFilterAggregator.class::isInstance)
         .map(SearchFilterAggregator.class::cast)
         .forEach(
@@ -151,17 +159,18 @@ class JobTypeStatisticsAggregationTransformerTest {
   @Test
   void shouldBuildSubAggregationsWithCorrectTypes() {
     // given
-    final var aggregation = new JobTypeStatisticsAggregation();
+    final var page = SearchQueryPage.of(b -> b.size(100));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
 
     // when
     final List<SearchAggregator> aggregations =
         transformer.apply(Tuple.of(aggregation, transformers));
 
     // then
-    final var termsAgg = (SearchTermsAggregator) aggregations.get(0);
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
 
     // Verify each filter bucket has exactly 2 sub-aggregations: sum and max
-    termsAgg.aggregations().stream()
+    compositeAgg.aggregations().stream()
         .filter(SearchFilterAggregator.class::isInstance)
         .map(SearchFilterAggregator.class::cast)
         .forEach(
@@ -180,6 +189,61 @@ class JobTypeStatisticsAggregationTransformerTest {
                       SearchMaxAggregator.class,
                       maxAgg -> assertThat(maxAgg.name()).isEqualTo(AGGREGATION_LAST_UPDATED_AT));
             });
+  }
+
+  @Test
+  void shouldBuildCompositeAggregationWithTermsSource() {
+    // given
+    final var page = SearchQueryPage.of(b -> b.size(100));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
+
+    // when
+    final List<SearchAggregator> aggregations =
+        transformer.apply(Tuple.of(aggregation, transformers));
+
+    // then
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
+    
+    // Verify composite has one terms source for job type
+    assertThat(compositeAgg.sources()).hasSize(1);
+    assertThat(compositeAgg.sources().get(0))
+        .isInstanceOfSatisfying(
+            SearchTermsAggregator.class,
+            termsSource -> {
+              assertThat(termsSource.name()).isEqualTo(AGGREGATION_SOURCE_NAME_JOB_TYPE);
+              assertThat(termsSource.field()).isEqualTo(FIELD_JOB_TYPE);
+            });
+  }
+
+  @Test
+  void shouldUsePageSizeFromQuery() {
+    // given
+    final var page = SearchQueryPage.of(b -> b.size(42).after("someCursor"));
+    final var aggregation = new JobTypeStatisticsAggregation(page);
+
+    // when
+    final List<SearchAggregator> aggregations =
+        transformer.apply(Tuple.of(aggregation, transformers));
+
+    // then
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
+    assertThat(compositeAgg.size()).isEqualTo(42);
+    assertThat(compositeAgg.after()).isEqualTo("someCursor");
+  }
+
+  @Test
+  void shouldUseDefaultSizeWhenPageIsNull() {
+    // given
+    final var aggregation = new JobTypeStatisticsAggregation(null);
+
+    // when
+    final List<SearchAggregator> aggregations =
+        transformer.apply(Tuple.of(aggregation, transformers));
+
+    // then
+    final var compositeAgg = (SearchCompositeAggregator) aggregations.get(0);
+    assertThat(compositeAgg.size()).isEqualTo(10000);
+    assertThat(compositeAgg.after()).isNull();
   }
 
   private void assertSubAggregations(
