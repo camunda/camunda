@@ -5,7 +5,7 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.exporter.utils;
+package io.camunda.search.connect.es.builder;
 
 import java.util.ArrayList;
 import java.util.Arrays;

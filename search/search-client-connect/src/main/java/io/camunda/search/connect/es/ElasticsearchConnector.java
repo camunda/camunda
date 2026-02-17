@@ -9,29 +9,14 @@ package io.camunda.search.connect.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchAsyncClient;
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
-import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
+import io.camunda.search.connect.es.builder.ElasticsearchClientBuilder;
+import io.camunda.search.connect.es.builder.ProxyConfig;
+import io.camunda.search.connect.es.builder.SslConfig;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
-import io.camunda.search.connect.util.SecurityUtil;
-import java.nio.charset.StandardCharsets;
-import java.util.Base64;
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.config.RequestConfig.Builder;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.message.BasicHeader;
-import org.elasticsearch.client.RestClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,186 +46,67 @@ public final class ElasticsearchConnector {
 
   public ElasticsearchClient createClient() {
     LOGGER.debug("Creating Elasticsearch Client ...");
-
-    // Load plugins
-    pluginRepository.load(configuration.getInterceptorPlugins());
-
-    // create rest client
-    final var restClient = createRestClient(configuration);
-
-    // Create the transport with a Jackson mapper
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
-
-    // And create the API client
-    return new ElasticsearchClient(transport);
+    return configureBuilder().build();
   }
 
   public ElasticsearchAsyncClient createAsyncClient() {
     LOGGER.debug("Creating async Elasticsearch Client ...");
-
-    // Load plugins
-    pluginRepository.load(configuration.getInterceptorPlugins());
-
-    // create rest client
-    final var restClient = createRestClient(configuration);
-
-    // Create the transport with a Jackson mapper
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(objectMapper));
-
-    // And create the API client
-    return new ElasticsearchAsyncClient(transport);
+    return configureBuilder().buildAsync();
   }
 
   public ObjectMapper objectMapper() {
     return objectMapper;
   }
 
-  private RestClient createRestClient(final ConnectConfiguration configuration) {
-    final var httpHosts = getHttpHosts(configuration);
-    final var restClientBuilder = RestClient.builder(httpHosts);
+  private ElasticsearchClientBuilder configureBuilder() {
+    // Load plugins
+    pluginRepository.load(configuration.getInterceptorPlugins());
 
-    if (configuration.getConnectTimeout() != null || configuration.getSocketTimeout() != null) {
-      restClientBuilder.setRequestConfigCallback(
-          configCallback -> setTimeouts(configCallback, configuration));
+    final var builder =
+        ElasticsearchClientBuilder.newInstance()
+            .withObjectMapper(objectMapper)
+            .withCompatibilityHeaders(8)
+            .withBasicAuth(configuration.getUsername(), configuration.getPassword())
+            .withConnectTimeout(configuration.getConnectTimeout())
+            .withSocketTimeout(configuration.getSocketTimeout())
+            .withRequestInterceptors(pluginRepository.asRequestInterceptor());
+
+    // URLs
+    final var urls = configuration.getUrls();
+    if (urls != null && !urls.isEmpty()) {
+      builder.withUrls(urls);
+    } else {
+      builder.withUrl(configuration.getUrl());
     }
 
-    final Header[] defaultHeaders =
-        new Header[] {
-          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
-          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
-        };
-    final var restClient =
-        restClientBuilder
-            .setDefaultHeaders(defaultHeaders)
-            .setHttpClientConfigCallback(
-                httpClientBuilder ->
-                    configureHttpClient(
-                        httpClientBuilder, configuration, pluginRepository.asRequestInterceptor()))
-            .build();
-
-    return restClient;
-  }
-
-  protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ConnectConfiguration configuration,
-      final HttpRequestInterceptor... interceptors) {
-    setupAuthentication(httpAsyncClientBuilder, configuration);
+    // SSL
     final var security = configuration.getSecurity();
     if (security != null && security.isEnabled()) {
-      setupSSLContext(httpAsyncClientBuilder, security);
+      builder.withSslConfig(toSslConfig(security));
     }
 
-    for (final HttpRequestInterceptor interceptor : interceptors) {
-      httpAsyncClientBuilder.addInterceptorLast(interceptor);
-    }
-
+    // Proxy
     final var proxyConfig = configuration.getProxy();
     if (proxyConfig != null && proxyConfig.isEnabled()) {
-      setupProxy(httpAsyncClientBuilder, proxyConfig);
-      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
+      builder.withProxyConfig(
+          ProxyConfig.builder()
+              .host(proxyConfig.getHost())
+              .port(proxyConfig.getPort())
+              .sslEnabled(proxyConfig.isSslEnabled())
+              .username(proxyConfig.getUsername())
+              .password(proxyConfig.getPassword())
+              .build());
     }
 
-    return httpAsyncClientBuilder;
-  }
-
-  private void setupSSLContext(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final SecurityConfiguration configuration) {
-    try {
-      final var sslContext = SecurityUtil.getSSLContext(configuration, "elasticsearch-host");
-      httpAsyncClientBuilder.setSSLContext(sslContext);
-      if (!configuration.isVerifyHostname()) {
-        httpAsyncClientBuilder.setSSLHostnameVerifier(NoopHostnameVerifier.INSTANCE);
-      }
-    } catch (final Exception e) {
-      LOGGER.error("Error in setting up SSLContext", e);
-    }
-  }
-
-  private Builder setTimeouts(final Builder builder, final ConnectConfiguration elsConfig) {
-    if (elsConfig.getSocketTimeout() != null) {
-      builder.setSocketTimeout(elsConfig.getSocketTimeout());
-    }
-    if (elsConfig.getConnectTimeout() != null) {
-      builder.setConnectTimeout(elsConfig.getConnectTimeout());
-    }
     return builder;
   }
 
-  private HttpHost getHttpHost(final ConnectConfiguration elsConfig) {
-    try {
-      return HttpHost.create(elsConfig.getUrl());
-    } catch (final Exception e) {
-      throw new SearchClientConnectException("Error in url: " + elsConfig.getUrl(), e);
-    }
-  }
-
-  private HttpHost[] getHttpHosts(final ConnectConfiguration elsConfig) {
-    final var urls = elsConfig.getUrls();
-    if (urls != null && !urls.isEmpty()) {
-      return urls.stream()
-          .map(
-              url -> {
-                try {
-                  return HttpHost.create(url);
-                } catch (final Exception e) {
-                  throw new SearchClientConnectException("Error in url: " + url, e);
-                }
-              })
-          .toArray(HttpHost[]::new);
-    }
-    return new HttpHost[] {getHttpHost(elsConfig)};
-  }
-
-  private void setupAuthentication(
-      final HttpAsyncClientBuilder builder, final ConnectConfiguration configuration) {
-    final var username = configuration.getUsername();
-    final var password = configuration.getPassword();
-
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      LOGGER.warn(
-          "Username and/or password for are empty. Basic authentication for elasticsearch is not used.");
-      return;
-    }
-
-    final var credentialsProvider = new BasicCredentialsProvider();
-    credentialsProvider.setCredentials(
-        AuthScope.ANY, new UsernamePasswordCredentials(username, password));
-    builder.setDefaultCredentialsProvider(credentialsProvider);
-  }
-
-  private void setupProxy(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
-    httpAsyncClientBuilder.setProxy(
-        new HttpHost(
-            proxyConfig.getHost(),
-            proxyConfig.getPort(),
-            proxyConfig.isSslEnabled() ? "https" : "http"));
-  }
-
-  private void addPreemptiveProxyAuthInterceptor(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
-    final String username = proxyConfig.getUsername();
-    final String password = proxyConfig.getPassword();
-
-    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      return;
-    }
-
-    final String credentials = username + ":" + password;
-    final String encodedCredentials =
-        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
-    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
-
-    httpAsyncClientBuilder.addInterceptorFirst(
-        (HttpRequestInterceptor)
-            (request, context) -> {
-              if (!request.containsHeader("Proxy-Authorization")) {
-                request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
-              }
-            });
-
-    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
+  private SslConfig toSslConfig(final SecurityConfiguration security) {
+    return SslConfig.builder()
+        .enabled(true)
+        .certificatePath(security.getCertificatePath())
+        .selfSigned(security.isSelfSigned())
+        .verifyHostname(security.isVerifyHostname())
+        .build();
   }
 }

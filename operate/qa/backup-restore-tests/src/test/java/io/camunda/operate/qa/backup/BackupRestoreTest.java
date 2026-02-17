@@ -16,7 +16,7 @@ import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.exporter.config.ConnectionTypes;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.qa.util.TestContainerUtil;
-import io.camunda.operate.util.RetryOperation;
+import io.camunda.search.connect.es.builder.RetryOperation;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
 import java.io.IOException;

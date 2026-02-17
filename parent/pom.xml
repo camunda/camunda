@@ -938,6 +938,12 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
+        <artifactId>camunda-search-client-es-builder</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.camunda</groupId>
         <artifactId>camunda-schema-manager</artifactId>
         <version>${project.version}</version>
       </dependency>

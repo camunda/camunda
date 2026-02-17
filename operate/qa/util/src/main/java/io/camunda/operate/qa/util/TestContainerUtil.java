@@ -17,7 +17,7 @@ import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.exporter.CamundaExporter;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.RetryOperation;
+import io.camunda.search.connect.es.builder.RetryOperation;
 import io.camunda.security.configuration.ConfiguredUser;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.cluster.TestZeebePort;

@@ -38,6 +38,11 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-es-builder</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
       <scope>test</scope>
     </dependency>

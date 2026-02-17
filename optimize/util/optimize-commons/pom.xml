@@ -21,6 +21,12 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
+      <artifactId>camunda-search-client-es-builder</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
       <artifactId>camunda-search-client-plugin</artifactId>
       <version>${project.version}</version>
       <scope>test</scope>
