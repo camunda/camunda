@@ -49,18 +49,8 @@
     </dependency>
 
     <dependency>
-      <groupId>org.elasticsearch.client</groupId>
-      <artifactId>elasticsearch-rest-client</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpcore</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
     </dependency>
 
     <!-- opensearch -->
@@ -200,6 +190,18 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>elasticsearch-rest-client</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

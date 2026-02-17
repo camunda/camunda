@@ -276,12 +276,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpasyncclient</artifactId>
-      <version>4.1.5</version>
-    </dependency>
-
-    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
     </dependency>
@@ -290,6 +284,13 @@
       <groupId>software.amazon.awssdk</groupId>
       <artifactId>http-client-spi</artifactId>
       <version>${version.awssdk}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpasyncclient</artifactId>
+      <version>4.1.5</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 
