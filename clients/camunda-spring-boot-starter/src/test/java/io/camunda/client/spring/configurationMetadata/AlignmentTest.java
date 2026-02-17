@@ -91,7 +91,7 @@ public class AlignmentTest {
               "camunda.client.worker.defaults.tenant-ids",
               new Getter(p -> p.getWorker().getDefaults().getTenantIds())),
           entry(
-              "camunda.client.worker.defaults.tenant-filter",
+              "camunda.client.worker.defaults.tenant-filter-mode",
               new Getter(p -> p.getWorker().getDefaults().getTenantFilter().name())),
           entry(
               "camunda.client.worker.defaults.timeout",
