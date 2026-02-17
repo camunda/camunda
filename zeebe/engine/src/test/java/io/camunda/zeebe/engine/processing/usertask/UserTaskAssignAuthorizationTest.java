@@ -340,6 +340,56 @@ public class UserTaskAssignAuthorizationTest {
   }
 
   @Test
+  public void
+      shouldBeAuthorizedToSelfUnassignUserTaskWithProcessDefinitionClaimUserTaskWildcardPermission() {
+    // given
+    final var username = createUser().getUsername();
+    final var processInstanceKey = createProcessInstance(process(t -> t.zeebeAssignee(username)));
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.WILDCARD);
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).unassign(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
+                .exists())
+        .isTrue();
+  }
+
+  @Test
+  public void
+      shouldBeAuthorizedToSelfUnassignUserTaskWithProcessDefinitionClaimUserTaskResourceIdPermission() {
+    // given
+    final var username = createUser().getUsername();
+    final var processInstanceKey = createProcessInstance(process(t -> t.zeebeAssignee(username)));
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.id(PROCESS_ID));
+
+    // when
+    engine.userTask().ofInstance(processInstanceKey).unassign(username);
+
+    // then
+    assertThat(
+            RecordingExporter.userTaskRecords(UserTaskIntent.ASSIGNED)
+                .withProcessInstanceKey(processInstanceKey)
+                .valueFilter(task -> task.getAssignee().isEmpty())
+                .exists())
+        .isTrue();
+  }
+
+  @Test
   public void shouldBeAuthorizedToSelfUnassignUserTaskWithUserTaskClaimResourceIdPermission() {
     // given
     final var user = createUser();
@@ -473,9 +523,10 @@ public class UserTaskAssignAuthorizationTest {
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             """
-                Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
                 or resource must match property constraints '[assignee]'"""
-                .formatted(userTaskKey));
+                .formatted(PROCESS_ID, userTaskKey));
   }
 
   @Test
@@ -510,9 +561,10 @@ public class UserTaskAssignAuthorizationTest {
         .hasRejectionType(RejectionType.FORBIDDEN)
         .hasRejectionReason(
             """
-                Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
+                Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', required resource identifiers are one of '[*, %s]'; \
+                and Insufficient permissions to perform operation 'CLAIM' on resource 'USER_TASK', required resource identifiers are one of '[*, %s]' \
                 or resource must match property constraints '[assignee]'"""
-                .formatted(userTaskKey));
+                .formatted(PROCESS_ID, userTaskKey));
   }
 
   @Test

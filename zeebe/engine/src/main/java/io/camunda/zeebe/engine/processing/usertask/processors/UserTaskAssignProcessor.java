@@ -130,18 +130,17 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     }
 
     // Second check: self-unassigning case
-    // If the new assignee is empty (unassigning) and the current task assignee matches
-    // the current user, allow via USER_TASK[CLAIM] permission with any of:
-    // - Wildcard scope (*)
-    // - Resource ID scope (userTaskKey)
-    // - Property scope ("assignee")
+    // If the new assignee is empty (unassigning) and the current task assignee matches the current
+    // user, allow via PROCESS_DEFINITION[CLAIM_USER_TASK] or USER_TASK[CLAIM] permissions
     final var newAssignee = command.getValue().getAssignee();
     final var currentAssignee = persistedUserTask.getAssignee();
     final var currentUsername = getCurrentUsername(command);
 
     if (newAssignee.isEmpty() && currentUsername.filter(currentAssignee::equals).isPresent()) {
       return authCheckBehavior
-          .isAuthorizedOrInternalCommand(
+          .isAnyAuthorizedOrInternalCommand(
+              buildProcessDefinitionRequest(
+                  command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
               buildUserTaskRequest(
                   command,
                   persistedUserTask,
