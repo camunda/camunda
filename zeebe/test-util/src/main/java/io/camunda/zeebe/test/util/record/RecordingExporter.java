@@ -136,6 +136,7 @@ import org.awaitility.core.ThrowingRunnable;
 public final class RecordingExporter implements Exporter {
   public static final long DEFAULT_MAX_WAIT_TIME = Duration.ofSeconds(5).toMillis();
   public static final long DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME = Duration.ofMillis(200).toMillis();
+  public static final long DEFAULT_AWAITILITY_MAX_WAIT_TIME = Duration.ofMillis(100).toMillis();
 
   private static final ConcurrentSkipListMap<Integer, Record<?>> RECORDS =
       new ConcurrentSkipListMap<Integer, Record<?>>();
@@ -143,7 +144,7 @@ public final class RecordingExporter implements Exporter {
   private static final Condition IS_EMPTY = LOCK.newCondition();
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
-  private static boolean overrideMaximumWaitTime = false;
+  private static boolean overrideShortCircuitingCheck = false;
   private Controller controller;
 
   static long getMaximumWaitTime() {
@@ -205,7 +206,7 @@ public final class RecordingExporter implements Exporter {
       maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
       autoAcknowledge = true;
-      overrideMaximumWaitTime = false;
+      overrideShortCircuitingCheck = false;
     } finally {
       LOCK.unlock();
     }
@@ -765,10 +766,36 @@ public final class RecordingExporter implements Exporter {
   public static <T> T expectNoMatchingRecords(final Function<RecordStream, T> consumer) {
     final var previousMaximumWaitTime = maximumWaitTime;
     maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
+    overrideShortCircuitingCheck = true;
     try {
       return consumer.apply(records());
     } finally {
       maximumWaitTime = previousMaximumWaitTime;
+      overrideShortCircuitingCheck = false;
+    }
+  }
+
+  public record AwaitilityWrapper(ConditionFactory conditionFactory) {
+
+    public void untilAsserted(final ThrowingRunnable throwingRunnable) {
+      final var previousMaximumWaitTime = maximumWaitTime;
+      try {
+        maximumWaitTime = DEFAULT_AWAITILITY_MAX_WAIT_TIME;
+        overrideShortCircuitingCheck = true;
+        conditionFactory.untilAsserted(throwingRunnable);
+      } finally {
+        maximumWaitTime = previousMaximumWaitTime;
+        overrideShortCircuitingCheck = false;
+      }
+    }
+
+    public void until(final Callable<Boolean> callable) {
+      try {
+        overrideShortCircuitingCheck = true;
+        conditionFactory.until(callable);
+      } finally {
+        overrideShortCircuitingCheck = false;
+      }
     }
   }
 
@@ -784,16 +811,33 @@ public final class RecordingExporter implements Exporter {
     public boolean hasNext() {
       LOCK.lock();
       try {
-        if (overrideMaximumWaitTime) {
-          return !isEmpty();
-        }
-
         long now = System.currentTimeMillis();
         final long endTime = now + maximumWaitTime;
         while (isEmpty() && endTime > now) {
           final long waitTime = endTime - now;
           try {
-            IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
+            final var isConditionMetInTime = IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
+            if (!isConditionMetInTime && !overrideShortCircuitingCheck) {
+              throw new IllegalStateException(
+                  """
+                  Timed out waiting for records to be exported. Please ensure your test is short-circuiting properly.
+
+                  To do this you must use a short-circuiting method call in your stream. Examples are:
+                  - limit() to short-circuit on a specific exported record.
+                  - between() to short-circuit between two exported positions.
+                  - exists() this will short-circuit as long as there is a record matching your filters.
+                  - getFirst() this will short-circuit as long as there is a record matching your filters.
+
+                  If you need to wait for an assertion in an Awaitility type fashion you can use the RecordingExporter.await() method.
+
+                  If you need to assert that a specific record is not exported please consider:
+                  - Is there really no record you can limit on? Limiting always has preference.
+                  - If you do, you can use the RecordingExporter.expectNoMatchingRecords() method to
+                    temporarily reduce the wait time of the exporter and prevent the short-circuiting failure.
+                    Please be aware that doing this will set the maximum wait time to 200ms. It cannot guarantee
+                    the record won't be exported after this.
+                  """);
+            }
           } catch (final InterruptedException ignored) {
             // ignored
           }
@@ -808,27 +852,6 @@ public final class RecordingExporter implements Exporter {
     @Override
     public Record<?> next() {
       return RECORDS.get(nextIndex++);
-    }
-  }
-
-  public record AwaitilityWrapper(ConditionFactory conditionFactory) {
-
-    public void untilAsserted(final ThrowingRunnable throwingRunnable) {
-      try {
-        overrideMaximumWaitTime = true;
-        conditionFactory.untilAsserted(throwingRunnable);
-      } finally {
-        overrideMaximumWaitTime = false;
-      }
-    }
-
-    public void until(final Callable<Boolean> callable) {
-      try {
-        overrideMaximumWaitTime = true;
-        conditionFactory.until(callable);
-      } finally {
-        overrideMaximumWaitTime = false;
-      }
     }
   }
 }
