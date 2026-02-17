@@ -77,7 +77,7 @@ public class ElasticsearchClientBuilder {
     }
 
     final var builder =
-        io.camunda.search.connect.es.builder.ElasticsearchClientBuilder.newInstance()
+        io.camunda.search.connect.es.builder.ElasticsearchClientBuilder.builder()
             .withUrls(urls)
             .withBasicAuth(esConfig.getSecurityUsername(), esConfig.getSecurityPassword())
             .withConnectTimeout(esConfig.getConnectionTimeout())

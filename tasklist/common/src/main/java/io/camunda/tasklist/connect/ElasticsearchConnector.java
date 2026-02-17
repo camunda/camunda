@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +83,7 @@ public class ElasticsearchConnector {
   private ElasticsearchClientBuilder configureBuilder(
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     final var builder =
-        ElasticsearchClientBuilder.newInstance()
+        ElasticsearchClientBuilder.builder()
             .withObjectMapper(CommonUtils.OBJECT_MAPPER)
             .withBasicAuth(elsConfig.getUsername(), elsConfig.getPassword())
             .withConnectTimeout(elsConfig.getConnectTimeout())
@@ -94,7 +95,7 @@ public class ElasticsearchConnector {
     if (urls != null && !urls.isEmpty()) {
       builder.withUrls(urls);
     } else {
-      builder.withUrl(elsConfig.getUrl());
+      builder.withUrls(List.of(elsConfig.getUrl()));
     }
 
     // SSL

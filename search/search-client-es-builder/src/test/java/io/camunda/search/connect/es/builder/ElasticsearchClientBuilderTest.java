@@ -21,13 +21,14 @@ import co.elastic.clients.elasticsearch.cluster.ElasticsearchClusterClient;
 import co.elastic.clients.elasticsearch.cluster.HealthResponse;
 import java.io.IOException;
 import java.util.List;
+import org.apache.http.HttpRequestInterceptor;
 import org.junit.jupiter.api.Test;
 
 class ElasticsearchClientBuilderTest {
 
   @Test
   void shouldThrowWhenNoUrlConfigured() {
-    final var builder = ElasticsearchClientBuilder.newInstance();
+    final var builder = ElasticsearchClientBuilder.builder();
     assertThatThrownBy(builder::buildRestClient)
         .isInstanceOf(ElasticsearchClientBuilderException.class)
         .hasMessageContaining("At least one Elasticsearch URL must be configured");
@@ -36,7 +37,9 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildRestClientWithSingleUrl() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance().withUrl("http://localhost:9200").buildRestClient();
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
+            .buildRestClient();
     assertThat(restClient).isNotNull();
     restClient.close();
   }
@@ -44,7 +47,7 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildRestClientWithMultipleUrls() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
+        ElasticsearchClientBuilder.builder()
             .withUrls(List.of("http://localhost:9200", "http://localhost:9201"))
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -53,28 +56,17 @@ class ElasticsearchClientBuilderTest {
 
   @Test
   void shouldThrowOnInvalidUrl() {
-    final var builder = ElasticsearchClientBuilder.newInstance().withUrl("not a valid url");
+    final var builder = ElasticsearchClientBuilder.builder().withUrls(List.of("not a valid url"));
     assertThatThrownBy(builder::buildRestClient)
         .isInstanceOf(ElasticsearchClientBuilderException.class)
         .hasMessageContaining("Invalid Elasticsearch URL");
   }
 
   @Test
-  void shouldThrowWhenBothUrlAndUrlsAreCalled() {
-    assertThatThrownBy(
-            () ->
-                ElasticsearchClientBuilder.newInstance()
-                    .withUrl("http://localhost:9200")
-                    .withUrls(List.of("http://localhost:9201")))
-        .isInstanceOf(ElasticsearchClientBuilderException.class)
-        .hasMessageContaining("Cannot call withUrls() after withUrl()");
-  }
-
-  @Test
   void shouldBuildClientWithBasicAuth() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withBasicAuth("elastic", "changeme")
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -84,8 +76,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildClientWithTimeouts() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withConnectTimeout(5000)
             .withSocketTimeout(30000)
             .buildRestClient();
@@ -97,8 +89,8 @@ class ElasticsearchClientBuilderTest {
   void shouldBuildClientWithInfiniteSocketTimeout() throws IOException {
     // Optimize uses socketTimeout=0 for infinite
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withSocketTimeout(0)
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -109,8 +101,8 @@ class ElasticsearchClientBuilderTest {
   void shouldBuildClientWithIoThreadCount() throws IOException {
     // Zeebe exporter uses ioThreadCount=1
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withIoThreadCount(1)
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -120,8 +112,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildClientWithPathPrefix() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withPathPrefix("/elasticsearch")
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -129,15 +121,12 @@ class ElasticsearchClientBuilderTest {
   }
 
   @Test
-  void shouldAlwaysUseCompatibilityVersion9() {
-    assertThat(ElasticsearchClientBuilder.COMPATIBILITY_VERSION).isEqualTo(9);
-  }
-
-  @Test
   void shouldBuildClientWithCompatibilityHeaders() throws IOException {
-    // Compatibility headers (compatible-with=9) are always sent
+    // Compatibility headers (compatible-with=8) are always sent
     final var restClient =
-        ElasticsearchClientBuilder.newInstance().withUrl("http://localhost:9200").buildRestClient();
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
+            .buildRestClient();
     assertThat(restClient).isNotNull();
     restClient.close();
   }
@@ -145,8 +134,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildClientWithSslDisabled() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withSslConfig(SslConfig.disabled())
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -156,8 +145,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldThrowOnInvalidProxyPort() {
     final var builder =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withProxyConfig(ProxyConfig.builder().host("proxy.example.com").port(0).build());
     assertThatThrownBy(builder::buildRestClient)
         .isInstanceOf(ElasticsearchClientBuilderException.class)
@@ -167,8 +156,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldThrowOnEmptyProxyHost() {
     final var builder =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withProxyConfig(ProxyConfig.builder().host("").port(8080).build());
     assertThatThrownBy(builder::buildRestClient)
         .isInstanceOf(ElasticsearchClientBuilderException.class)
@@ -176,10 +165,22 @@ class ElasticsearchClientBuilderTest {
   }
 
   @Test
+  void shouldThrowOnNullInterceptorAtBuildTime() {
+    // Null interceptors are accepted by the setter but rejected at build time
+    final var builder =
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
+            .withRequestInterceptors((HttpRequestInterceptor) null);
+    assertThatThrownBy(builder::buildRestClient)
+        .isInstanceOf(ElasticsearchClientBuilderException.class)
+        .hasMessageContaining("HTTP request interceptor must not be null");
+  }
+
+  @Test
   void shouldBuildClientWithProxy() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withProxyConfig(ProxyConfig.builder().host("proxy.example.com").port(8080).build())
             .buildRestClient();
     assertThat(restClient).isNotNull();
@@ -189,8 +190,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildClientWithProxyAuth() throws IOException {
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withProxyConfig(
                 ProxyConfig.builder()
                     .host("proxy.example.com")
@@ -206,8 +207,8 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildElasticsearchClient() {
     final var client =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withBasicAuth("elastic", "changeme")
             .withConnectTimeout(5000)
             .withSocketTimeout(30000)
@@ -218,7 +219,9 @@ class ElasticsearchClientBuilderTest {
   @Test
   void shouldBuildAsyncClient() {
     final var client =
-        ElasticsearchClientBuilder.newInstance().withUrl("http://localhost:9200").buildAsync();
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
+            .buildAsync();
     assertThat(client).isNotNull();
   }
 
@@ -226,8 +229,8 @@ class ElasticsearchClientBuilderTest {
   void shouldSupportFluentChaining() throws IOException {
     // Verifies the builder supports full fluent chaining with all options
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
+        ElasticsearchClientBuilder.builder()
+            .withUrls(List.of("http://localhost:9200"))
             .withBasicAuth("elastic", "changeme")
             .withSslConfig(SslConfig.disabled())
             .withConnectTimeout(5000)

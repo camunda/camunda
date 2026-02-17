@@ -22,6 +22,7 @@ import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -67,30 +68,28 @@ import org.slf4j.LoggerFactory;
  * <p>Usage example:
  *
  * <pre>{@code
- * ElasticsearchClient client = ElasticsearchClientBuilder.newInstance()
- *     .withUrl("http://localhost:9200")
+ * ElasticsearchClient client = ElasticsearchClientBuilder.builder()
+ *     .withUrls(List.of("http://localhost:9200"))
  *     .withBasicAuth("elastic", "changeme")
  *     .withObjectMapper(objectMapper)
  *     .build();
  * }</pre>
  *
- * <p>All clients automatically include ES9 compatibility headers (compatible-with=9) on every
+ * <p>All clients automatically include ES8 compatibility headers (compatible-with=8) on every
  * request.
  */
 public final class ElasticsearchClientBuilder {
 
   /**
    * The compatibility version sent via Accept/Content-Type headers. All clients always send {@code
-   * compatible-with=9} to ensure correct communication with Elasticsearch.
+   * compatible-with=8} to ensure correct communication with Elasticsearch.
    */
-  static final int COMPATIBILITY_VERSION = 9;
+  static final int COMPATIBILITY_VERSION = 8;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchClientBuilder.class);
 
   // Connection
   private final List<String> urls = new ArrayList<>();
-  private boolean urlSetterCalled;
-  private boolean urlsSetterCalled;
 
   // Authentication
   private String username;
@@ -124,42 +123,19 @@ public final class ElasticsearchClientBuilder {
   private ElasticsearchClientBuilder() {}
 
   /** Creates a new builder instance. */
-  public static ElasticsearchClientBuilder newInstance() {
+  public static ElasticsearchClientBuilder builder() {
     return new ElasticsearchClientBuilder();
   }
 
   // ── Connection ──
 
   /**
-   * Sets a single Elasticsearch URL (e.g., "http://localhost:9200"). Mutually exclusive with {@link
-   * #withUrls(List)}.
+   * Sets the Elasticsearch URLs (e.g., {@code List.of("http://localhost:9200")}). Replaces any
+   * previously configured URLs.
    *
-   * @throws ElasticsearchClientBuilderException if {@link #withUrls(List)} was already called
-   */
-  public ElasticsearchClientBuilder withUrl(final String url) {
-    if (urlsSetterCalled) {
-      throw new ElasticsearchClientBuilderException(
-          "Cannot call withUrl() after withUrls() — use one or the other, not both");
-    }
-    urlSetterCalled = true;
-    urls.clear();
-    if (url != null) {
-      urls.add(url);
-    }
-    return this;
-  }
-
-  /**
-   * Sets multiple Elasticsearch URLs. Mutually exclusive with {@link #withUrl(String)}.
-   *
-   * @throws ElasticsearchClientBuilderException if {@link #withUrl(String)} was already called
+   * @param urls the list of Elasticsearch URLs
    */
   public ElasticsearchClientBuilder withUrls(final List<String> urls) {
-    if (urlSetterCalled) {
-      throw new ElasticsearchClientBuilderException(
-          "Cannot call withUrls() after withUrl() — use one or the other, not both");
-    }
-    urlsSetterCalled = true;
     this.urls.clear();
     if (urls != null) {
       this.urls.addAll(urls);
@@ -258,11 +234,7 @@ public final class ElasticsearchClientBuilder {
   /** Adds one or more HTTP request interceptors (appended last, after plugin interceptors). */
   public ElasticsearchClientBuilder withRequestInterceptors(
       final HttpRequestInterceptor... interceptors) {
-    for (final HttpRequestInterceptor interceptor : interceptors) {
-      if (interceptor != null) {
-        this.interceptors.add(interceptor);
-      }
-    }
+    this.interceptors.addAll(Arrays.asList(interceptors));
     return this;
   }
 
@@ -274,9 +246,7 @@ public final class ElasticsearchClientBuilder {
    * @return a configured ElasticsearchClient
    */
   public ElasticsearchClient build() {
-    final var restClient = buildRestClient();
-    final var mapper = resolveObjectMapper();
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(mapper));
+    final var transport = createTransport();
     return transportOptions != null
         ? new ElasticsearchClient(transport, transportOptions)
         : new ElasticsearchClient(transport);
@@ -288,9 +258,7 @@ public final class ElasticsearchClientBuilder {
    * @return a configured ElasticsearchAsyncClient
    */
   public ElasticsearchAsyncClient buildAsync() {
-    final var restClient = buildRestClient();
-    final var mapper = resolveObjectMapper();
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(mapper));
+    final var transport = createTransport();
     return transportOptions != null
         ? new ElasticsearchAsyncClient(transport, transportOptions)
         : new ElasticsearchAsyncClient(transport);
@@ -302,12 +270,10 @@ public final class ElasticsearchClientBuilder {
    * low-level client).
    *
    * @return a configured RestClient
+   * @throws ElasticsearchClientBuilderException if the configuration is invalid
    */
   public RestClient buildRestClient() {
-    if (urls.isEmpty()) {
-      throw new ElasticsearchClientBuilderException(
-          "At least one Elasticsearch URL must be configured");
-    }
+    validate();
 
     final HttpHost[] httpHosts = parseUrls();
     final RestClientBuilder restClientBuilder = RestClient.builder(httpHosts);
@@ -335,6 +301,45 @@ public final class ElasticsearchClientBuilder {
     restClientBuilder.setHttpClientConfigCallback(this::configureHttpClient);
 
     return restClientBuilder.build();
+  }
+
+  // ── Internal: Validation ──
+
+  private void validate() {
+    final List<String> errors = new ArrayList<>();
+
+    if (urls.isEmpty()) {
+      errors.add("At least one Elasticsearch URL must be configured");
+    }
+    if (proxyConfig != null) {
+      final String host = proxyConfig.getHost();
+      if (host == null || host.trim().isEmpty()) {
+        errors.add("Proxy is configured but no proxy host is specified");
+      }
+      final int port = proxyConfig.getPort();
+      if (port <= 0 || port > 65_535) {
+        errors.add("Proxy port must be between 1 and 65535, but was: " + port);
+      }
+    }
+    for (final HttpRequestInterceptor interceptor : interceptors) {
+      if (interceptor == null) {
+        errors.add("HTTP request interceptor must not be null");
+        break; // one message is sufficient
+      }
+    }
+
+    if (!errors.isEmpty()) {
+      throw new ElasticsearchClientBuilderException(
+          "Invalid configuration:\n- " + String.join("\n- ", errors));
+    }
+  }
+
+  // ── Internal: Transport ──
+
+  private RestClientTransport createTransport() {
+    final var restClient = buildRestClient();
+    final var mapper = resolveObjectMapper();
+    return new RestClientTransport(restClient, new JacksonJsonpMapper(mapper));
   }
 
   // ── Internal: URL parsing ──
@@ -400,7 +405,7 @@ public final class ElasticsearchClientBuilder {
 
   private void configureAuthentication(final HttpAsyncClientBuilder builder) {
     if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
-      LOGGER.warn(
+      LOGGER.debug(
           "Username and/or password are empty. Basic authentication for Elasticsearch is not"
               + " used.");
       return;
@@ -446,29 +451,26 @@ public final class ElasticsearchClientBuilder {
   }
 
   private KeyStore loadTrustStore() {
+    final String certPath = sslConfig.getCertificatePath();
+
+    if (certPath != null && (certPath.endsWith(".p12") || certPath.endsWith(".pfx"))) {
+      return loadPkcs12KeyStore(certPath);
+    }
+
+    return loadX509TrustStore(certPath, sslConfig.getCertificateAuthorities());
+  }
+
+  private static KeyStore loadX509TrustStore(
+      final String serverCertPath, final List<String> caCertPaths) {
     try {
-      final String certPath = sslConfig.getCertificatePath();
-
-      // PKCS12 keystore (from Tasklist connector)
-      if (certPath != null && (certPath.endsWith(".p12") || certPath.endsWith(".pfx"))) {
-        return loadPkcs12KeyStore(certPath);
-      }
-
-      // Build a custom trust store with X.509 certificates
       final KeyStore trustStore = KeyStore.getInstance(KeyStore.getDefaultType());
       trustStore.load(null);
 
-      // Load server certificate
-      if (certPath != null) {
-        final Certificate cert = loadCertificateFromPath(certPath);
-        trustStore.setCertificateEntry("elasticsearch-host", cert);
+      if (serverCertPath != null) {
+        addCertificateToStore(trustStore, serverCertPath, "elasticsearch-host");
       }
-
-      // Load CA certificates (from Optimize connector)
-      final List<String> caList = sslConfig.getCertificateAuthorities();
-      for (int i = 0; i < caList.size(); i++) {
-        final Certificate caCert = loadCertificateFromPath(caList.get(i));
-        trustStore.setCertificateEntry("custom-elasticsearch-ca-" + i, caCert);
+      for (int i = 0; i < caCertPaths.size(); i++) {
+        addCertificateToStore(trustStore, caCertPaths.get(i), "custom-elasticsearch-ca-" + i);
       }
 
       return trustStore;
@@ -477,6 +479,19 @@ public final class ElasticsearchClientBuilder {
     } catch (final Exception e) {
       throw new ElasticsearchClientBuilderException(
           "Could not create certificate trust store for the secured Elasticsearch connection", e);
+    }
+  }
+
+  private static void addCertificateToStore(
+      final KeyStore store, final String certPath, final String alias) {
+    try {
+      final Certificate cert = loadCertificateFromPath(certPath);
+      store.setCertificateEntry(alias, cert);
+    } catch (final ElasticsearchClientBuilderException e) {
+      throw e;
+    } catch (final Exception e) {
+      throw new ElasticsearchClientBuilderException(
+          "Could not add certificate to trust store: " + certPath, e);
     }
   }
 
@@ -510,16 +525,6 @@ public final class ElasticsearchClientBuilder {
   private void configureProxy(final HttpAsyncClientBuilder builder) {
     final String host = proxyConfig.getHost();
     final int port = proxyConfig.getPort();
-
-    if (host == null || host.trim().isEmpty()) {
-      throw new ElasticsearchClientBuilderException(
-          "Proxy is configured but no proxy host is specified");
-    }
-
-    if (port <= 0 || port > 65_535) {
-      throw new ElasticsearchClientBuilderException(
-          "Proxy port must be between 1 and 65535, but was: " + port);
-    }
 
     builder.setProxy(new HttpHost(host, port, proxyConfig.isSslEnabled() ? "https" : "http"));
 

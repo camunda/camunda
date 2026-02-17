@@ -40,7 +40,7 @@ final class ElasticsearchClientFactory {
       final ObjectMapper objectMapper,
       final HttpRequestInterceptor... interceptors) {
     final var builder =
-        ElasticsearchClientBuilder.newInstance()
+        ElasticsearchClientBuilder.builder()
             .withUrls(Arrays.asList(config.url.split(",")))
             .withObjectMapper(objectMapper)
             .withConnectTimeout(config.requestTimeoutMs)

@@ -17,6 +17,7 @@ import io.camunda.search.connect.es.builder.ProxyConfig;
 import io.camunda.search.connect.es.builder.SslConfig;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.plugin.PluginRepository;
+import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,7 +64,7 @@ public final class ElasticsearchConnector {
     pluginRepository.load(configuration.getInterceptorPlugins());
 
     final var builder =
-        ElasticsearchClientBuilder.newInstance()
+        ElasticsearchClientBuilder.builder()
             .withObjectMapper(objectMapper)
             .withBasicAuth(configuration.getUsername(), configuration.getPassword())
             .withConnectTimeout(configuration.getConnectTimeout())
@@ -75,7 +76,7 @@ public final class ElasticsearchConnector {
     if (urls != null && !urls.isEmpty()) {
       builder.withUrls(urls);
     } else {
-      builder.withUrl(configuration.getUrl());
+      builder.withUrls(List.of(configuration.getUrl()));
     }
 
     // SSL
