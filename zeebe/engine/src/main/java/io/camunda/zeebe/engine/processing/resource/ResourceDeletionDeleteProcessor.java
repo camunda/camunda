@@ -213,6 +213,11 @@ public class ResourceDeletionDeleteProcessor
 
     final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
     if (process != null) {
+      command
+          .getValue()
+          .setResourceType(ResourceType.PROCESS_DEFINITION)
+          .setResourceId(process.getBpmnProcessId())
+          .setTenantId(process.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -226,6 +231,11 @@ public class ResourceDeletionDeleteProcessor
         decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
     if (drgOptional.isPresent()) {
       final var drg = drgOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.DECISION_REQUIREMENTS)
+          .setResourceId(drg.getDecisionRequirementsId())
+          .setTenantId(drg.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -238,6 +248,11 @@ public class ResourceDeletionDeleteProcessor
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
     if (formOptional.isPresent()) {
       final var form = formOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.FORM)
+          .setResourceId(form.getFormId())
+          .setTenantId(form.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -250,6 +265,11 @@ public class ResourceDeletionDeleteProcessor
     final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
     if (resourceOptional.isPresent()) {
       final var resource = resourceOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.UNKNOWN)
+          .setResourceId(resource.getResourceId())
+          .setTenantId(resource.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
