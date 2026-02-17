@@ -565,6 +565,32 @@ public class OptimizeReportLoadTester {
       return total;
     }
 
+    /**
+     * Returns the maximum report response time (slowest report). This represents the bottleneck
+     * when reports are loaded in parallel.
+     *
+     * @return maximum report response time in milliseconds, or 0 if no reports
+     */
+    public long getMaxReportTimeMs() {
+      long max = 0;
+      for (final ReportEvaluationResult reportResult : reportResults) {
+        if (reportResult.getResponseTimeMs() > max) {
+          max = reportResult.getResponseTimeMs();
+        }
+      }
+      return max;
+    }
+
+    /**
+     * Returns the homepage load time (user-perceived). This is dashboard load time + maximum report
+     * time (since reports load in parallel in UI).
+     *
+     * @return homepage load time in milliseconds
+     */
+    public long getHomepageLoadTimeMs() {
+      return dashboardResult.getResponseTimeMs() + getMaxReportTimeMs();
+    }
+
     public boolean isAllSuccess() {
       if (!dashboardResult.isSuccess()) {
         return false;

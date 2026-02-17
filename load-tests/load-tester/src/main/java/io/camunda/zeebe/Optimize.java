@@ -38,6 +38,8 @@ public class Optimize extends App {
   // Metrics
   private Timer dashboardResponseTimer;
   private Timer reportResponseTimer;
+  private Timer maxReportResponseTimer;
+  private Timer homepageLoadTimer;
   private Counter dashboardSuccessCounter;
   private Counter dashboardErrorCounter;
   private Counter reportSuccessCounter;
@@ -119,6 +121,16 @@ public class Optimize extends App {
             .description("Response time for report evaluation")
             .register(registry);
 
+    maxReportResponseTimer =
+        Timer.builder("optimize.report.max.response.time")
+            .description("Maximum (slowest) report response time per evaluation cycle")
+            .register(registry);
+
+    homepageLoadTimer =
+        Timer.builder("optimize.homepage.load.time")
+            .description("Total homepage load time (dashboard + max report time)")
+            .register(registry);
+
     dashboardSuccessCounter =
         Counter.builder("optimize.dashboard.success")
             .description("Successful dashboard evaluations")
@@ -162,7 +174,7 @@ public class Optimize extends App {
             THROTTLED_LOGGER.error("Error during evaluation cycle", e);
           }
         },
-        0, // Start immediately
+        60,
         intervalSeconds,
         TimeUnit.SECONDS);
   }
@@ -212,10 +224,16 @@ public class Optimize extends App {
         }
       }
 
+      // Record max report time and homepage load time metrics
+      maxReportResponseTimer.record(result.getMaxReportTimeMs(), TimeUnit.MILLISECONDS);
+      homepageLoadTimer.record(result.getHomepageLoadTimeMs(), TimeUnit.MILLISECONDS);
+
       LOG.info(
-          "Evaluation cycle completed - Dashboard: {}ms, Total reports: {}, Total time: {}ms",
+          "Evaluation cycle completed - Dashboard: {}ms, Reports: {}, Max report: {}ms, Homepage load: {}ms, Total: {}ms",
           dashboardResult.getResponseTimeMs(),
           reportResults.size(),
+          result.getMaxReportTimeMs(),
+          result.getHomepageLoadTimeMs(),
           result.getTotalResponseTimeMs());
 
     } catch (final Exception e) {
