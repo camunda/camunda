@@ -24,6 +24,7 @@ import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormReader;
+import io.camunda.search.clients.reader.GlobalListenerReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefinitionReader;
@@ -144,7 +145,8 @@ public class SearchClientConfiguration {
       final IncidentProcessInstanceStatisticsByErrorReader
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionReader
-          incidentProcessInstanceStatisticsByDefinitionReader) {
+          incidentProcessInstanceStatisticsByDefinitionReader,
+      final GlobalListenerReader globalListenerReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -182,6 +184,7 @@ public class SearchClientConfiguration {
         clusterVariableReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
-        incidentProcessInstanceStatisticsByDefinitionReader);
+        incidentProcessInstanceStatisticsByDefinitionReader,
+        globalListenerReader);
   }
 }

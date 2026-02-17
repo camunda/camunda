@@ -47,4 +47,5 @@ public record SearchClientReaders(
     AuditLogReader auditLogReader,
     IncidentProcessInstanceStatisticsByErrorReader incidentProcessInstanceStatisticsByErrorReader,
     IncidentProcessInstanceStatisticsByDefinitionReader
-        incidentProcessInstanceStatisticsByDefinitionReader) {}
+        incidentProcessInstanceStatisticsByDefinitionReader,
+    GlobalListenerReader globalListenerReader) {}
