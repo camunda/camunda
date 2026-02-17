@@ -121,6 +121,8 @@ public class IdentitySetupInitializeDefaultsTest {
                         PermissionType.UPDATE_PROCESS_INSTANCE,
                         PermissionType.UPDATE_USER_TASK,
                         PermissionType.CREATE_PROCESS_INSTANCE,
+                        PermissionType.CLAIM_USER_TASK,
+                        PermissionType.COMPLETE_USER_TASK,
                         PermissionType.CANCEL_PROCESS_INSTANCE,
                         PermissionType.MODIFY_PROCESS_INSTANCE,
                         PermissionType.DELETE_PROCESS_INSTANCE),
