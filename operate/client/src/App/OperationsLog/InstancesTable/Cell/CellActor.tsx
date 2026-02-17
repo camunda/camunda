@@ -29,7 +29,7 @@ const CellActor: React.FC<Props> = ({item}) => {
       <AuthorTooltip>
         <span>{label}</span>
         <Snippet theme="dark" hideCopyButton wrapText>
-          {item.agentElementId ? item.agentElementId : item.actorId}
+          {actor === 'AGENT' ? item.agentElementId : item.actorId}
         </Snippet>
       </AuthorTooltip>
     );
