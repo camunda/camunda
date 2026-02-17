@@ -84,7 +84,6 @@ public class ElasticsearchConnector {
     final var builder =
         ElasticsearchClientBuilder.newInstance()
             .withObjectMapper(objectMapper)
-            .withCompatibilityHeaders(8)
             .withBasicAuth(elsConfig.getUsername(), elsConfig.getPassword())
             .withConnectTimeout(elsConfig.getConnectTimeout())
             .withSocketTimeout(elsConfig.getSocketTimeout())

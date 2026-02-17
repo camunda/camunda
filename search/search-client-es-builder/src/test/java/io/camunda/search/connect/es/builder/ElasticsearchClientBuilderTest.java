@@ -129,12 +129,15 @@ class ElasticsearchClientBuilderTest {
   }
 
   @Test
+  void shouldAlwaysUseCompatibilityVersion9() {
+    assertThat(ElasticsearchClientBuilder.COMPATIBILITY_VERSION).isEqualTo(9);
+  }
+
+  @Test
   void shouldBuildClientWithCompatibilityHeaders() throws IOException {
+    // Compatibility headers (compatible-with=9) are always sent
     final var restClient =
-        ElasticsearchClientBuilder.newInstance()
-            .withUrl("http://localhost:9200")
-            .withCompatibilityHeaders(8)
-            .buildRestClient();
+        ElasticsearchClientBuilder.newInstance().withUrl("http://localhost:9200").buildRestClient();
     assertThat(restClient).isNotNull();
     restClient.close();
   }
@@ -205,7 +208,6 @@ class ElasticsearchClientBuilderTest {
     final var client =
         ElasticsearchClientBuilder.newInstance()
             .withUrl("http://localhost:9200")
-            .withCompatibilityHeaders(8)
             .withBasicAuth("elastic", "changeme")
             .withConnectTimeout(5000)
             .withSocketTimeout(30000)
@@ -230,7 +232,6 @@ class ElasticsearchClientBuilderTest {
             .withSslConfig(SslConfig.disabled())
             .withConnectTimeout(5000)
             .withSocketTimeout(30000)
-            .withCompatibilityHeaders(8)
             .withIoThreadCount(2)
             .withPathPrefix("/es")
             .buildRestClient();

@@ -70,10 +70,12 @@ import org.slf4j.LoggerFactory;
  * ElasticsearchClient client = ElasticsearchClientBuilder.newInstance()
  *     .withUrl("http://localhost:9200")
  *     .withBasicAuth("elastic", "changeme")
- *     .withCompatibilityHeaders(8)
  *     .withObjectMapper(objectMapper)
  *     .build();
  * }</pre>
+ *
+ * <p>All clients automatically include ES9 compatibility headers (compatible-with=9) on every
+ * request.
  */
 public final class ElasticsearchClientBuilder {
 
@@ -98,8 +100,12 @@ public final class ElasticsearchClientBuilder {
   private Integer connectTimeoutMs;
   private Integer socketTimeoutMs;
 
-  // ES compatibility headers
-  private Integer compatibilityVersion = null;
+  // ES compatibility headers — always sent with version 9
+  /**
+   * The compatibility version sent via Accept/Content-Type headers. All clients always send {@code
+   * compatible-with=9} to ensure correct communication with Elasticsearch.
+   */
+  static final int COMPATIBILITY_VERSION = 9;
 
   // HTTP tuning
   private Integer ioThreadCount;
@@ -201,26 +207,6 @@ public final class ElasticsearchClientBuilder {
    */
   public ElasticsearchClientBuilder withSocketTimeout(final Integer millis) {
     socketTimeoutMs = millis;
-    return this;
-  }
-
-  // ── ES Compatibility Headers ──
-
-  /**
-   * Sets the Elasticsearch compatibility version header. When set, sends {@code Accept} and {@code
-   * Content-Type} headers with {@code application/vnd.elasticsearch+json;compatible-with=N}. This
-   * is used by Operate, Tasklist, and search-client-connect to ensure ES 8.x compatibility.
-   *
-   * @param version the compatibility version (e.g., 8)
-   */
-  public ElasticsearchClientBuilder withCompatibilityHeaders(final int version) {
-    compatibilityVersion = version;
-    return this;
-  }
-
-  /** Disables compatibility headers. This is the default behavior. */
-  public ElasticsearchClientBuilder withoutCompatibilityHeaders() {
-    compatibilityVersion = null;
     return this;
   }
 
@@ -332,16 +318,14 @@ public final class ElasticsearchClientBuilder {
       restClientBuilder.setRequestConfigCallback(this::configureTimeouts);
     }
 
-    // Compatibility headers
-    if (compatibilityVersion != null) {
-      final String headerValue =
-          "application/vnd.elasticsearch+json;compatible-with=" + compatibilityVersion;
-      final Header[] defaultHeaders =
-          new Header[] {
-            new BasicHeader("Accept", headerValue), new BasicHeader("Content-Type", headerValue)
-          };
-      restClientBuilder.setDefaultHeaders(defaultHeaders);
-    }
+    // Compatibility headers — always sent
+    final String headerValue =
+        "application/vnd.elasticsearch+json;compatible-with=" + COMPATIBILITY_VERSION;
+    final Header[] defaultHeaders =
+        new Header[] {
+          new BasicHeader("Accept", headerValue), new BasicHeader("Content-Type", headerValue)
+        };
+    restClientBuilder.setDefaultHeaders(defaultHeaders);
 
     // Path prefix
     if (pathPrefix != null && !pathPrefix.isEmpty()) {
