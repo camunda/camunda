@@ -33,39 +33,43 @@ jobs:
         include:
           # Elasticsearch 8 - Supported versions: 8.16.6 (min) to 8.19.10 (max)
           - database-name: "Elasticsearch 8.16.6"
-            database-type: "elasticsearch"
+            database-type: "elasticsearch8_16"
+            database-container: "elasticsearch"
             database-image-version: "8.16.6"
             it-database-type: "es"
           - database-name: "Elasticsearch 8.19.10"
-            database-type: "elasticsearch"
+            database-type: "elasticsearch8_19"
+            database-container: "elasticsearch"
             database-image-version: "8.19.10"
             it-database-type: "es"
           # Elasticsearch 9 - Supported versions: 9.0.0 (min) to 9.3.0 (max)
           - database-name: "Elasticsearch 9.0.0"
-            database-type: "elasticsearch"
+            database-type: "elasticsearch9_0"
+            database-container: "elasticsearch"
             database-image-version: "9.0.0"
             it-database-type: "es"
-            job-name-suffix: "9"
           - database-name: "Elasticsearch 9.3.0"
-            database-type: "elasticsearch"
+            database-type: "elasticsearch9_3"
+            database-container: "elasticsearch"
             database-image-version: "9.3.0"
             it-database-type: "es"
-            job-name-suffix: "9"
           # OpenSearch 2 - Supported versions: 2.17.0 (min) to 2.19.4 (max)
           - database-name: "OpenSearch 2.17.0"
-            database-type: "opensearch"
+            database-type: "opensearch2_17"
+            database-container: "opensearch"
             database-image-version: "2.17.0"
             it-database-type: "os"
           - database-name: "OpenSearch 2.19.4"
-            database-type: "opensearch"
+            database-type: "opensearch2_19"
+            database-container: "opensearch"
             database-image-version: "2.19.4"
             it-database-type: "os"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
       database-type: ${{ matrix.database-type }}
+      database-container: ${{ matrix.database-container }}
       database-image-version: ${{ matrix.database-image-version }}
       database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
-      job-name-suffix: ${{ matrix.job-name-suffix || '' }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}
