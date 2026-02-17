@@ -1,0 +1,4 @@
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME" value="io.camunda.exporter.CamundaExporter" />
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL" value="http://localhost:9200" />
+      <env name="ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS" value="false" />
+      <env name="CAMUNDA_DATA_SECONDARYSTORAGE_TYPE" value="opensearch" />

@@ -1,0 +1,17 @@
+
+  mariadb:
+    image: mariadb:12.0
+    container_name: {{ENV_NAME}}-mariadb
+    environment:
+      MARIADB_ROOT_PASSWORD: example
+      MARIADB_DATABASE: camunda
+      MARIADB_USER: camunda
+      MARIADB_PASSWORD: camunda
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_uca1400_ai_ci
+    ports:
+      - "3306:3306"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

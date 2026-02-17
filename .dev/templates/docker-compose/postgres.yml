@@ -1,0 +1,13 @@
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: {{ENV_NAME}}-postgres
+    shm_size: 128mb
+    environment:
+      POSTGRES_USER: camunda
+      POSTGRES_PASSWORD: camunda
+    ports:
+      - "5432:5432"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

@@ -1,0 +1,16 @@
+
+  connectors:
+    image: camunda/connectors-bundle:8.9.0-alpha1
+    container_name: {{ENV_NAME}}-connectors
+    ports:
+      - "8086:8080"
+    environment:
+      - CAMUNDA_CLIENT_RESTADDRESS=http://host.docker.internal:8080/v2
+      - CAMUNDA_CLIENT_GRPCADDRESS=http://host.docker.internal:26500
+      - CAMUNDA_CLIENT_AUTH_USERNAME=demo
+      - CAMUNDA_CLIENT_AUTH_PASSWORD=demo
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

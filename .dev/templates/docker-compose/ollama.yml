@@ -1,0 +1,26 @@
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: {{ENV_NAME}}-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - {{ENV_NAME}}-ollama-data:/root/.ollama
+    networks:
+      - {{ENV_NAME}}
+    restart: always
+
+  ollama-init:
+    image: curlimages/curl:latest
+    container_name: {{ENV_NAME}}-ollama-init
+    networks:
+      - {{ENV_NAME}}
+    restart: "no"
+    entrypoint: >
+      sh -c '
+        echo "Waiting for Ollama to be ready..."
+        until curl -sf http://ollama:11434/api/tags >/dev/null 2>&1; do sleep 2; done
+        echo "Pulling {{OLLAMA_MODEL}} model..."
+        curl -sf http://ollama:11434/api/pull -d "{\"name\": \"{{OLLAMA_MODEL}}\"}" &&
+        echo "Model ready."
+      '

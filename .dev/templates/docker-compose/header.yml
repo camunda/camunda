@@ -1,0 +1,4 @@
+networks:
+  {{ENV_NAME}}: {}
+
+services:

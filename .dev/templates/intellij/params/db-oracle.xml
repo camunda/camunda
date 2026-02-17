@@ -1,0 +1,4 @@
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.data.secondary-storage.type" /><option name="value" value="rdbms" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.data.secondary-storage.rdbms.url" /><option name="value" value="jdbc:oracle:thin:@localhost:1521/FREEPDB1" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.data.secondary-storage.rdbms.username" /><option name="value" value="camunda" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.data.secondary-storage.rdbms.password" /><option name="value" value="camunda" /></param>

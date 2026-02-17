@@ -1,0 +1,12 @@
+
+  mssql:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    container_name: {{ENV_NAME}}-mssql
+    environment:
+      ACCEPT_EULA: "y"
+      MSSQL_SA_PASSWORD: "Camunda#8_demo"
+    ports:
+      - "1433:1433"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

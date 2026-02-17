@@ -1,0 +1,12 @@
+
+  oracle:
+    image: gvenzl/oracle-free:23-slim-faststart
+    container_name: {{ENV_NAME}}-oracle
+    environment:
+      ORACLE_PASSWORD: sys_user_password
+      APP_USER: camunda
+      APP_USER_PASSWORD: camunda
+    ports:
+      - "1521:1521"
+    networks:
+      - {{ENV_NAME}}

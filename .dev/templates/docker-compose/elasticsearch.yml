@@ -1,0 +1,20 @@
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.4
+    container_name: {{ENV_NAME}}-elasticsearch
+    environment:
+      - discovery.type=single-node
+      - cluster.name=elasticsearch
+      - bootstrap.memory_lock=true
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - action.destructive_requires_name=false
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

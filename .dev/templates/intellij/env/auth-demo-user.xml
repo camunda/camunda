@@ -1,0 +1,5 @@
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME" value="demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD" value="demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME" value="Demo" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL" value="demo@example.com" />
+      <env name="CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0_" value="demo" />

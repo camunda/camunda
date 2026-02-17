@@ -1,0 +1,14 @@
+
+  mysql:
+    image: mysql:9.6
+    container_name: {{ENV_NAME}}-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: example
+      MYSQL_DATABASE: camunda
+      MYSQL_USER: camunda
+      MYSQL_PASSWORD: camunda
+    ports:
+      - "3306:3306"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

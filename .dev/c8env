@@ -1,0 +1,758 @@
+#!/usr/bin/env bash
+# c8env — Camunda 8 Dev Environment Generator
+# Generates docker-compose + IntelliJ run configs for local development.
+# Zero dependencies — pure Bash with interactive arrow-key menus.
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+TEMPLATES_DIR="$SCRIPT_DIR/templates"
+ENVS_DIR="$SCRIPT_DIR/envs"
+RESOURCES_DIR="$SCRIPT_DIR/resources"
+IDEA_DIR="$REPO_ROOT/.idea/runConfigurations"
+
+# ─── Colors & Symbols ────────────────────────────────────────────────────────
+
+BOLD='\033[1m'
+DIM='\033[2m'
+CYAN='\033[36m'
+GREEN='\033[32m'
+YELLOW='\033[33m'
+RED='\033[31m'
+RESET='\033[0m'
+POINTER='❯'
+
+# ─── Arrow-key menu ──────────────────────────────────────────────────────────
+# Usage: menu_select RESULT_VAR "prompt" "option1" "option2" ...
+# Writes the selected option (value) into the variable named by RESULT_VAR.
+
+menu_select() {
+  local result_var="$1"; shift
+  local prompt="$1"; shift
+  local options=("$@")
+  local count=${#options[@]}
+  local selected=0
+
+  # Hide cursor
+  printf '\033[?25l'
+  # Ensure cursor is restored on exit/interrupt
+  trap 'printf "\033[?25h"' RETURN
+
+  # Print prompt
+  printf "\n  ${BOLD}%s${RESET}\n" "$prompt"
+
+  # Draw initial menu
+  for i in "${!options[@]}"; do
+    if [[ $i -eq $selected ]]; then
+      printf "  ${CYAN}${POINTER} %s${RESET}\n" "${options[$i]}"
+    else
+      printf "    ${DIM}%s${RESET}\n" "${options[$i]}"
+    fi
+  done
+
+  while true; do
+    # Read one character
+    IFS= read -rsn1 key
+    if [[ "$key" == $'\x1b' ]]; then
+      read -rsn2 key
+      case "$key" in
+        '[A') # Up
+          ((selected > 0)) && ((selected--))
+          ;;
+        '[B') # Down
+          ((selected < count - 1)) && ((selected++))
+          ;;
+      esac
+    elif [[ "$key" == "" ]]; then
+      # Enter pressed
+      break
+    fi
+
+    # Redraw menu (move cursor up $count lines)
+    printf "\033[%dA" "$count"
+    for i in "${!options[@]}"; do
+      printf '\r\033[K'
+      if [[ $i -eq $selected ]]; then
+        printf "  ${CYAN}${POINTER} %s${RESET}\n" "${options[$i]}"
+      else
+        printf "    ${DIM}%s${RESET}\n" "${options[$i]}"
+      fi
+    done
+  done
+
+  # Show cursor
+  printf '\033[?25h'
+  trap - RETURN
+
+  local chosen="${options[$selected]}"
+  eval "$result_var=\"\$chosen\""
+}
+
+# ─── Text input ──────────────────────────────────────────────────────────────
+
+read_input() {
+  local result_var="$1"; shift
+  local prompt="$1"; shift
+  local default="${1:-}"
+
+  if [[ -n "$default" ]]; then
+    printf "\n  ${BOLD}%s${RESET} ${DIM}[%s]${RESET}: " "$prompt" "$default"
+  else
+    printf "\n  ${BOLD}%s${RESET}: " "$prompt"
+  fi
+
+  local value
+  read -r value
+  if [[ -z "$value" && -n "$default" ]]; then
+    value="$default"
+  fi
+  eval "$result_var=\"\$value\""
+}
+
+# ─── Helpers ──────────────────────────────────────────────────────────────────
+
+die() { printf "  ${RED}Error:${RESET} %s\n" "$1" >&2; exit 1; }
+info() { printf "  ${GREEN}✓${RESET} %s\n" "$1"; }
+warn() { printf "  ${YELLOW}!${RESET} %s\n" "$1"; }
+
+# Short aliases for datastores
+ds_short() {
+  case "$1" in
+    elasticsearch) echo "es" ;;
+    opensearch)    echo "os" ;;
+    postgres)      echo "pg" ;;
+    mysql)         echo "mysql" ;;
+    mariadb)       echo "maria" ;;
+    oracle)        echo "oracle" ;;
+    mssql)         echo "mssql" ;;
+    *)             echo "$1" ;;
+  esac
+}
+
+# Generate default env name from components
+# Pattern: c8-<auth>-<datastore>[-connector|-ai]
+default_name() {
+  local auth="$1" datastore="$2" connectors="$3"
+  local name="c8-${auth}-$(ds_short "$datastore")"
+  [[ "$connectors" == "runtime" ]] && name+="-connector"
+  [[ "$connectors" == "agentic" ]] && name+="-ai"
+  echo "$name"
+}
+
+# Convert a name to IntelliJ-safe filename (spaces→___, special→_)
+intellij_filename() {
+  local name="$1"
+  name="${name// /___}"
+  name="${name//+/___}"
+  name="${name//[^a-zA-Z0-9_.-]/_}"
+  # Collapse runs of 4+ underscores to ___
+  while [[ "$name" == *"____"* ]]; do
+    name="${name//____/___}"
+  done
+  echo "$name"
+}
+
+# ─── Generation ──────────────────────────────────────────────────────────────
+
+generate_compose() {
+  local env_name="$1" datastore="$2" connectors="$3" model="$4" standalone="$5" auth="$6"
+  local output=""
+
+  # Header
+  local header
+  header=$(<"$TEMPLATES_DIR/docker-compose/header.yml")
+  output+="${header//\{\{ENV_NAME\}\}/$env_name}"
+
+  # Datastore service
+  local ds_template
+  ds_template=$(<"$TEMPLATES_DIR/docker-compose/${datastore}.yml")
+  output+="${ds_template//\{\{ENV_NAME\}\}/$env_name}"
+
+  # Standalone Camunda container
+  if [[ "$standalone" == "yes" ]]; then
+    local camunda_template camunda_extra_env=""
+    camunda_template=$(<"$TEMPLATES_DIR/docker-compose/camunda.yml")
+
+    # Common env (gateway security)
+    camunda_extra_env+=$(cat "$TEMPLATES_DIR/docker-compose/camunda-env/common.yml")
+
+    # Datastore-specific env
+    local ds_env_file="$TEMPLATES_DIR/docker-compose/camunda-env/db-${datastore}.yml"
+    # mysql and mariadb share the same template
+    [[ "$datastore" == "mariadb" ]] && ds_env_file="$TEMPLATES_DIR/docker-compose/camunda-env/db-mysql.yml"
+    if [[ -f "$ds_env_file" ]]; then
+      local ds_env
+      ds_env=$(<"$ds_env_file")
+      ds_env="${ds_env//\{\{ENV_NAME\}\}/$env_name}"
+      ds_env="${ds_env//\{\{DB_TYPE\}\}/$datastore}"
+      camunda_extra_env+=$'\n'"$ds_env"
+    fi
+
+    # Auth-specific env
+    if [[ "$auth" == "basic" ]]; then
+      camunda_extra_env+=$'\n'$(cat "$TEMPLATES_DIR/docker-compose/camunda-env/auth-basic.yml")
+    fi
+
+    # Agentic env
+    if [[ "$connectors" == "agentic" ]]; then
+      camunda_extra_env+=$'\n'$(cat "$TEMPLATES_DIR/docker-compose/camunda-env/connector-agentic.yml")
+    fi
+
+    camunda_template="${camunda_template//\{\{ENV_NAME\}\}/$env_name}"
+    camunda_template="${camunda_template//\{\{CAMUNDA_EXTRA_ENV\}\}/$camunda_extra_env}"
+    output+="$camunda_template"
+  fi
+
+  # Connectors
+  if [[ "$connectors" == "runtime" || "$connectors" == "agentic" ]]; then
+    local conn_template
+    conn_template=$(<"$TEMPLATES_DIR/docker-compose/connectors.yml")
+    conn_template="${conn_template//\{\{ENV_NAME\}\}/$env_name}"
+
+    # If standalone, connectors talk to camunda container instead of host
+    if [[ "$standalone" == "yes" ]]; then
+      conn_template="${conn_template//host.docker.internal:8080/${env_name}-camunda:8080}"
+      conn_template="${conn_template//host.docker.internal:26500/${env_name}-camunda:26500}"
+    fi
+
+    output+="$conn_template"
+  fi
+
+  # Ollama (agentic)
+  if [[ "$connectors" == "agentic" ]]; then
+    local ollama_template
+    ollama_template=$(<"$TEMPLATES_DIR/docker-compose/ollama.yml")
+    ollama_template="${ollama_template//\{\{ENV_NAME\}\}/$env_name}"
+    ollama_template="${ollama_template//\{\{OLLAMA_MODEL\}\}/$model}"
+    output+="$ollama_template"
+
+    # Volumes section
+    local vol_template
+    vol_template=$(<"$TEMPLATES_DIR/docker-compose/volumes.yml")
+    output+=$'\n'"${vol_template//\{\{ENV_NAME\}\}/$env_name}"
+  fi
+
+  echo "$output"
+}
+
+generate_infra_xml() {
+  local env_name="$1" datastore="$2" connectors="$3" standalone="$4"
+  local infra_name="${env_name} Infra"
+  local compose_path=".dev/envs/${env_name}/docker-compose.yml"
+
+  # Build services list
+  local services_list="            <option value=\"${datastore}\" />"
+
+  if [[ "$standalone" == "yes" ]]; then
+    services_list+=$'\n'"            <option value=\"camunda\" />"
+  fi
+
+  if [[ "$connectors" == "runtime" || "$connectors" == "agentic" ]]; then
+    services_list+=$'\n'"            <option value=\"connectors\" />"
+  fi
+  if [[ "$connectors" == "agentic" ]]; then
+    services_list+=$'\n'"            <option value=\"ollama\" />"
+    services_list+=$'\n'"            <option value=\"ollama-init\" />"
+  fi
+
+  local template
+  template=$(<"$TEMPLATES_DIR/intellij/docker-infra.xml")
+
+  template="${template//\{\{INFRA_NAME\}\}/$infra_name}"
+  template="${template//\{\{COMPOSE_PATH\}\}/$compose_path}"
+  template="${template//\{\{SERVICES_LIST\}\}/$services_list}"
+
+  echo "$template"
+}
+
+generate_app_xml() {
+  local env_name="$1" auth="$2" datastore="$3" connectors="$4"
+  local app_name="${env_name}"
+  local infra_name="${env_name} Infra"
+
+  # Profiles — dev is always included for local development
+  local profiles
+  if [[ "$auth" == "insecure" ]]; then
+    profiles="dev,identity,tasklist,operate,broker,consolidated-auth,insecure"
+  else
+    profiles="dev,broker,consolidated-auth,identity,tasklist,operate"
+  fi
+
+  # Environment variables — assemble from template fragments
+  local env_vars=""
+  env_vars+=$(cat "$TEMPLATES_DIR/intellij/env/common.xml")
+
+  # Datastore env vars
+  case "$datastore" in
+    elasticsearch) env_vars+=$'\n'$(cat "$TEMPLATES_DIR/intellij/env/db-elasticsearch.xml") ;;
+    opensearch)    env_vars+=$'\n'$(cat "$TEMPLATES_DIR/intellij/env/db-opensearch.xml") ;;
+  esac
+
+  # Demo user env vars (insecure mode — basic auth uses additionalParameters instead)
+  if [[ "$auth" == "insecure" ]]; then
+    env_vars+=$'\n'$(cat "$TEMPLATES_DIR/intellij/env/auth-demo-user.xml")
+  fi
+
+  # Agentic env vars
+  if [[ "$connectors" == "agentic" ]]; then
+    env_vars+=$'\n'$(cat "$TEMPLATES_DIR/intellij/env/connector-agentic.xml")
+  fi
+
+  # Additional parameters — assemble from template fragments
+  local additional_params=""
+  if [[ "$auth" == "basic" ]]; then
+    additional_params="    <additionalParameters>"
+    additional_params+=$'\n'$(cat "$TEMPLATES_DIR/intellij/params/auth-basic.xml")
+  fi
+
+  # RDBMS datastore params
+  local rdbms_file=""
+  case "$datastore" in
+    postgres)      rdbms_file="db-postgres.xml" ;;
+    mysql|mariadb) rdbms_file="db-mysql.xml" ;;
+    oracle)        rdbms_file="db-oracle.xml" ;;
+    mssql)         rdbms_file="db-mssql.xml" ;;
+  esac
+  if [[ -n "$rdbms_file" ]]; then
+    [[ -z "$additional_params" ]] && additional_params="    <additionalParameters>"
+    local rdbms_params
+    rdbms_params=$(<"$TEMPLATES_DIR/intellij/params/$rdbms_file")
+    rdbms_params="${rdbms_params//\{\{DB_TYPE\}\}/$datastore}"
+    additional_params+=$'\n'"$rdbms_params"
+  fi
+
+  if [[ -n "$additional_params" ]]; then
+    additional_params+=$'\n'"    </additionalParameters>"
+  fi
+
+  # Render template
+  local template
+  template=$(<"$TEMPLATES_DIR/intellij/spring-boot.xml")
+
+  template="${template//\{\{APP_NAME\}\}/$app_name}"
+  template="${template//\{\{INFRA_NAME\}\}/$infra_name}"
+  template="${template//\{\{PROFILES\}\}/$profiles}"
+  template="${template//\{\{ADDITIONAL_PARAMS\}\}/$additional_params}"
+  template="${template//\{\{ENV_VARS\}\}/$env_vars}"
+
+  echo "$template"
+}
+
+# ─── Install ─────────────────────────────────────────────────────────────────
+
+install_configs() {
+  local env_name="$1"
+  local env_dir="$ENVS_DIR/$env_name"
+
+  [[ -d "$env_dir/intellij" ]] || die "No generated configs found for '$env_name'"
+
+  mkdir -p "$IDEA_DIR"
+
+  for xml in "$env_dir/intellij/"*.xml; do
+    local basename
+    basename=$(basename "$xml")
+    cp "$xml" "$IDEA_DIR/$basename"
+  done
+
+  info "Installed IntelliJ configs to .idea/runConfigurations/"
+}
+
+# ─── Commands ────────────────────────────────────────────────────────────────
+
+cmd_generate() {
+  local name="" auth="" datastore="" connectors="" model="" standalone=""
+  local resources=""
+  local has_flags=false
+
+  # Parse flags
+  while [[ $# -gt 0 ]]; do
+    has_flags=true
+    case "$1" in
+      --name) name="$2"; shift 2 ;;
+      --auth) auth="$2"; shift 2 ;;
+      --db) datastore="$2"; shift 2 ;;
+      --connectors) connectors="$2"; shift 2 ;;
+      --model) model="$2"; shift 2 ;;
+      --resource) resources="$2"; shift 2 ;;
+      --standalone) standalone="yes"; shift ;;
+      --no-install) NO_INSTALL=1; shift ;;
+      *) die "Unknown option: $1" ;;
+    esac
+  done
+
+  # In flag mode, apply defaults for unset values; in interactive mode, prompt
+  if [[ "$has_flags" == true ]]; then
+    [[ -z "$auth" ]] && auth="insecure"
+    [[ -z "$datastore" ]] && datastore="elasticsearch"
+    [[ -z "$connectors" ]] && connectors="none"
+    [[ -z "$standalone" ]] && standalone="no"
+  else
+    if [[ -z "$auth" ]]; then
+      menu_select auth "Auth mode:" \
+        "insecure" \
+        "basic"
+    fi
+
+    if [[ -z "$datastore" ]]; then
+      menu_select datastore "Database:" \
+        "elasticsearch" \
+        "opensearch" \
+        "postgres" \
+        "mysql" \
+        "mariadb" \
+        "oracle" \
+        "mssql"
+    fi
+
+    if [[ -z "$connectors" ]]; then
+      menu_select connectors "Connectors:" \
+        "none" \
+        "runtime" \
+        "agentic"
+    fi
+
+    if [[ "$connectors" == "agentic" && -z "$model" ]]; then
+      menu_select model "LLM Model:" \
+        "qwen3:0.6b" \
+        "qwen3:1.7b" \
+        "llama3.2:1b" \
+        "custom"
+
+      if [[ "$model" == "custom" ]]; then
+        read_input model "Model name (e.g. mistral:7b)" ""
+        [[ -n "$model" ]] || die "Model name is required"
+      fi
+    fi
+
+    if [[ -z "$standalone" ]]; then
+      menu_select standalone "Run Camunda via:" \
+        "intellij" \
+        "docker"
+      [[ "$standalone" == "docker" ]] && standalone="yes" || standalone="no"
+    fi
+  fi
+
+  [[ -z "$model" ]] && model="qwen3:0.6b"
+
+  # Auto-generate default name if not provided
+  if [[ -z "$name" ]]; then
+    local auto_name
+    auto_name="$(default_name "$auth" "$datastore" "$connectors")"
+    if [[ "$has_flags" == true ]]; then
+      name="$auto_name"
+    else
+      read_input name "Environment name" "$auto_name"
+      [[ -n "$name" ]] || name="$auto_name"
+    fi
+  fi
+
+  # Sanitize name (lowercase, alphanumeric + hyphens)
+  name=$(echo "$name" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd 'a-z0-9-')
+  [[ -n "$name" ]] || die "Invalid environment name"
+
+  # Summary
+  printf "\n  ${BOLD}Configuration:${RESET}\n"
+  printf "    Name:       ${CYAN}%s${RESET}\n" "$name"
+  printf "    Auth:       ${CYAN}%s${RESET}\n" "$auth"
+  printf "    DB:         ${CYAN}%s${RESET}\n" "$datastore"
+  printf "    Connectors: ${CYAN}%s${RESET}\n" "$connectors"
+  [[ "$connectors" == "agentic" ]] && printf "    Model:      ${CYAN}%s${RESET}\n" "$model"
+  printf "    Camunda:    ${CYAN}%s${RESET}\n" "$( [[ "$standalone" == "yes" ]] && echo "Docker (standalone)" || echo "IntelliJ (debuggable)" )"
+  [[ -n "$resources" ]] && printf "    Resources:  ${CYAN}%s${RESET}\n" "$resources"
+  printf "\n"
+
+  # Create output directory
+  local env_dir="$ENVS_DIR/$name"
+  mkdir -p "$env_dir/intellij"
+
+  # Generate docker-compose
+  generate_compose "$name" "$datastore" "$connectors" "$model" "$standalone" "$auth" > "$env_dir/docker-compose.yml"
+  info "Generated .dev/envs/${name}/docker-compose.yml"
+
+  # Generate IntelliJ configs
+  local infra_filename
+  infra_filename="$(intellij_filename "${name}___Infra").xml"
+
+  generate_infra_xml "$name" "$datastore" "$connectors" "$standalone" > "$env_dir/intellij/$infra_filename"
+
+  if [[ "$standalone" != "yes" ]]; then
+    local app_filename
+    app_filename="$(intellij_filename "${name}").xml"
+    generate_app_xml "$name" "$auth" "$datastore" "$connectors" > "$env_dir/intellij/$app_filename"
+  fi
+
+  info "Generated IntelliJ run configs"
+
+  # Copy resources and generate bootstrap script
+  if [[ -n "$resources" ]]; then
+    mkdir -p "$env_dir/resources"
+    local resolved_resources=()
+    IFS=',' read -ra resource_list <<< "$resources"
+    for res in "${resource_list[@]}"; do
+      res=$(echo "$res" | xargs)  # trim whitespace
+      [[ -z "$res" ]] && continue
+
+      # Resolve built-in resource names
+      if [[ -f "$RESOURCES_DIR/bpmn/${res}.bpmn" ]]; then
+        res="$RESOURCES_DIR/bpmn/${res}.bpmn"
+      fi
+
+      [[ -f "$res" ]] || die "Resource not found: $res"
+      cp "$res" "$env_dir/resources/"
+      resolved_resources+=("$(basename "$res")")
+    done
+
+    # Generate bootstrap.sh
+    cat > "$env_dir/bootstrap.sh" << 'BOOTSTRAP_HEADER'
+#!/usr/bin/env bash
+set -euo pipefail
+CAMUNDA_URL="${CAMUNDA_URL:-http://localhost:8080}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+echo "Waiting for Camunda at ${CAMUNDA_URL}..."
+for i in $(seq 1 60); do
+  curl -sf "${CAMUNDA_URL}/v2/topology" > /dev/null 2>&1 && break
+  [ "$i" -eq 60 ] && { echo "ERROR: Camunda not ready"; exit 1; }
+  sleep 5
+done
+echo "Camunda is ready."
+
+BOOTSTRAP_HEADER
+
+    for r in "${resolved_resources[@]}"; do
+      cat >> "$env_dir/bootstrap.sh" << BOOTSTRAP_DEPLOY
+echo "Deploying ${r}..."
+curl -sf -X POST "\${CAMUNDA_URL}/v2/deployments" -u demo:demo -F "resources=@\${SCRIPT_DIR}/resources/${r}" || echo "WARNING: Failed to deploy ${r}"
+BOOTSTRAP_DEPLOY
+    done
+
+    echo 'echo "Bootstrap complete."' >> "$env_dir/bootstrap.sh"
+    chmod +x "$env_dir/bootstrap.sh"
+    info "Generated bootstrap.sh with ${#resolved_resources[@]} resource(s)"
+  fi
+
+  # Install unless --no-install
+  if [[ -z "${NO_INSTALL:-}" ]]; then
+    install_configs "$name"
+  fi
+
+  if [[ "$standalone" == "yes" ]]; then
+    printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}docker compose -f .dev/envs/${name}/docker-compose.yml up${RESET}\n"
+    printf "  Or use IntelliJ config: ${CYAN}${name} Infra${RESET}\n\n"
+  else
+    printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}${name}${RESET} from IntelliJ (Run or Debug).\n\n"
+  fi
+
+  if [[ -n "$resources" ]]; then
+    printf "  ${DIM}After Camunda starts, run: .dev/envs/${name}/bootstrap.sh${RESET}\n\n"
+  fi
+}
+
+cmd_list() {
+  printf "\n  ${BOLD}Generated environments:${RESET}\n\n"
+  if [[ ! -d "$ENVS_DIR" ]] || [[ -z "$(ls -A "$ENVS_DIR" 2>/dev/null)" ]]; then
+    printf "    ${DIM}(none)${RESET}\n\n"
+    return
+  fi
+  for dir in "$ENVS_DIR"/*/; do
+    local env_name
+    env_name=$(basename "$dir")
+    [[ "$env_name" == "*" ]] && continue
+
+    # Read compose to determine what's configured
+    local ds="?" conn_str="" mode=""
+    if [[ -f "$dir/docker-compose.yml" ]]; then
+      grep -q "elasticsearch" "$dir/docker-compose.yml" && ds="es"
+      grep -q "opensearch" "$dir/docker-compose.yml" && ds="os"
+      grep -q "postgres" "$dir/docker-compose.yml" && ds="pg"
+      grep -q "mysql:" "$dir/docker-compose.yml" && ds="my"
+      grep -q "mariadb" "$dir/docker-compose.yml" && ds="maria"
+      grep -q "oracle" "$dir/docker-compose.yml" && ds="ora"
+      grep -q "mssql" "$dir/docker-compose.yml" && ds="mssql"
+      grep -q "ollama" "$dir/docker-compose.yml" && conn_str="+agentic" || {
+        grep -q "connectors" "$dir/docker-compose.yml" && conn_str="+runtime"
+      }
+      grep -q "camunda/camunda" "$dir/docker-compose.yml" && mode="standalone" || mode="intellij"
+    fi
+
+    printf "    ${CYAN}%-20s${RESET} ${DIM}%-6s %-10s %s${RESET}\n" "$env_name" "$ds" "$conn_str" "$mode"
+  done
+  printf "\n"
+}
+
+cmd_clean() {
+  local name="${1:-}"
+  [[ -n "$name" ]] || die "Usage: c8env clean <env-name>"
+
+  local env_dir="$ENVS_DIR/$name"
+  [[ -d "$env_dir" ]] || die "Environment '$name' not found"
+
+  # Remove IntelliJ configs
+  if [[ -d "$env_dir/intellij" ]]; then
+    for xml in "$env_dir/intellij/"*.xml; do
+      [[ -f "$xml" ]] || continue
+      local basename
+      basename=$(basename "$xml")
+      rm -f "$IDEA_DIR/$basename"
+    done
+  fi
+
+  # Remove env directory
+  rm -rf "$env_dir"
+  info "Cleaned environment '$name' and removed IntelliJ configs"
+}
+
+cmd_deploy() {
+  local resource="${1:-}"
+  local camunda_url="${CAMUNDA_URL:-http://localhost:8080}"
+
+  if [[ "$resource" == "--list" || -z "$resource" ]]; then
+    printf "\n  ${BOLD}Available resources:${RESET}\n\n"
+    if [[ -d "$RESOURCES_DIR/bpmn" ]]; then
+      for f in "$RESOURCES_DIR/bpmn/"*.bpmn; do
+        [[ -f "$f" ]] || continue
+        printf "    ${CYAN}%s${RESET}\n" "$(basename "$f" .bpmn)"
+      done
+    fi
+    printf "\n  ${BOLD}Usage:${RESET} .dev/c8env deploy <resource-name>\n\n"
+    return
+  fi
+
+  # Find the resource file
+  local bpmn_file=""
+  if [[ -f "$RESOURCES_DIR/bpmn/${resource}.bpmn" ]]; then
+    bpmn_file="$RESOURCES_DIR/bpmn/${resource}.bpmn"
+  elif [[ -f "$resource" ]]; then
+    bpmn_file="$resource"
+  else
+    die "Resource '${resource}' not found. Run '.dev/c8env deploy --list' to see available resources."
+  fi
+
+  # Wait for Camunda
+  printf "  Waiting for Camunda at ${camunda_url}...\n"
+  local max_retries=60
+  for i in $(seq 1 $max_retries); do
+    if curl -sf "${camunda_url}/v2/topology" > /dev/null 2>&1; then
+      info "Camunda is ready"
+      break
+    fi
+    if [[ "$i" -eq "$max_retries" ]]; then
+      die "Camunda did not become ready within $((max_retries * 5))s"
+    fi
+    printf "    ${DIM}Attempt $i/$max_retries...${RESET}\n"
+    sleep 5
+  done
+
+  # Deploy
+  printf "  Deploying %s...\n" "$(basename "$bpmn_file")"
+  local response http_code body
+  response=$(curl -sf -X POST "${camunda_url}/v2/deployments" \
+    -u demo:demo \
+    -F "resources=@${bpmn_file}" \
+    -w "\n%{http_code}" 2>&1) || true
+
+  http_code=$(echo "$response" | tail -1)
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+    info "Deployed successfully!"
+    echo "$body" | python3 -m json.tool 2>/dev/null || echo "$body"
+  else
+    die "Deployment failed (HTTP ${http_code}): ${body}"
+  fi
+}
+
+cmd_start() {
+  local process_id="${1:-}"
+  local camunda_url="${CAMUNDA_URL:-http://localhost:8080}"
+  local variables="${2:-\{\}}"
+
+  [[ -n "$process_id" ]] || die "Usage: c8env start <process-id> [variables-json]"
+
+  printf "  Starting process ${CYAN}%s${RESET}...\n" "$process_id"
+  local response http_code body
+  response=$(curl -sf -X POST "${camunda_url}/v2/process-instances" \
+    -u demo:demo \
+    -H 'Content-Type: application/json' \
+    -d "{\"processDefinitionId\":\"${process_id}\",\"variables\":${variables}}" \
+    -w "\n%{http_code}" 2>&1) || true
+
+  http_code=$(echo "$response" | tail -1)
+  body=$(echo "$response" | sed '$d')
+
+  if [[ "$http_code" -ge 200 && "$http_code" -lt 300 ]]; then
+    info "Process instance started!"
+    echo "$body" | python3 -m json.tool 2>/dev/null || echo "$body"
+  else
+    die "Start failed (HTTP ${http_code}): ${body}"
+  fi
+}
+
+cmd_help() {
+  printf "\n"
+  printf "  ${BOLD}c8env${RESET} — Camunda 8 Dev Environment Generator\n"
+  printf "\n"
+  printf "  ${BOLD}Usage:${RESET}\n"
+  printf "    .dev/c8env                                     Interactive mode\n"
+  printf "    .dev/c8env --name NAME [options]               Flag mode\n"
+  printf "    .dev/c8env list                                List environments\n"
+  printf "    .dev/c8env clean NAME                          Remove an environment\n"
+  printf "    .dev/c8env deploy [NAME|--list]                Deploy a BPMN resource\n"
+  printf "    .dev/c8env start PROCESS-ID [VARS-JSON]        Start a process instance\n"
+  printf "    .dev/c8env help                                Show this help\n"
+  printf "\n"
+  printf "  ${BOLD}Options:${RESET}\n"
+  printf "    --name NAME          Environment name (auto-generated if omitted)\n"
+  printf "    --auth MODE          insecure, basic (default: insecure)\n"
+  printf "    --db DB              elasticsearch, opensearch, postgres,\n"
+  printf "                         mysql, mariadb, oracle, mssql\n"
+  printf "    --connectors MODE    none, runtime, agentic (default: none)\n"
+  printf "    --model MODEL        LLM model for agentic (default: qwen3:0.6b)\n"
+  printf "    --resource PATHS     Comma-separated BPMN/resource paths to bootstrap\n"
+  printf "    --standalone         Run Camunda in Docker instead of IntelliJ\n"
+  printf "    --no-install         Generate without installing to IntelliJ\n"
+  printf "\n"
+  printf "  ${BOLD}Examples:${RESET}\n"
+  printf "    .dev/c8env --db elasticsearch                              ${DIM}→ c8-insecure-es${RESET}\n"
+  printf "    .dev/c8env --connectors agentic                            ${DIM}→ c8-insecure-es-ai${RESET}\n"
+  printf "    .dev/c8env --auth basic --db postgres                      ${DIM}→ c8-basic-pg${RESET}\n"
+  printf "    .dev/c8env --db elasticsearch --standalone                  ${DIM}→ c8-insecure-es (docker)${RESET}\n"
+  printf "    .dev/c8env --connectors agentic --resource agentic-daily-briefing\n"
+  printf "    .dev/c8env --resource path/to/my.bpmn,path/to/other.bpmn\n"
+  printf "    .dev/c8env deploy agentic-daily-briefing\n"
+  printf "    .dev/c8env start agentic-daily-briefing\n"
+  printf "\n"
+}
+
+# ─── Main ────────────────────────────────────────────────────────────────────
+
+main() {
+  printf "\n  ${BOLD}🔧 Camunda 8 Dev Environment Generator${RESET}\n"
+
+  case "${1:-}" in
+    help|--help|-h)
+      cmd_help
+      ;;
+    list)
+      cmd_list
+      ;;
+    clean)
+      shift
+      cmd_clean "${1:-}"
+      ;;
+    deploy)
+      shift
+      cmd_deploy "${1:-}"
+      ;;
+    start)
+      shift
+      cmd_start "$@"
+      ;;
+    *)
+      cmd_generate "$@"
+      ;;
+  esac
+}
+
+main "$@"
