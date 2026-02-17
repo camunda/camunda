@@ -66,10 +66,12 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -77,6 +79,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
+
+  private static final List<ResourceType> SUPPORTED_HISTORY_DELETION_TYPES =
+      List.of(ResourceType.PROCESS_DEFINITION, ResourceType.DECISION_REQUIREMENTS);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -191,7 +196,12 @@ public class ResourceDeletionDeleteProcessor
         untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
-      throw new NoSuchResourceException(value.getResourceKey());
+      if (value.isDeleteHistory()
+          && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
+        deleteHistory(eventKey, command);
+      } else {
+        throw new NoSuchResourceException(value.getResourceKey());
+      }
     }
   }
 
@@ -357,7 +367,7 @@ public class ResourceDeletionDeleteProcessor
 
     if (!hasRunningInstances) {
       if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
-        deleteProcessInstanceHistory(process, eventKey, command.getValue());
+        deleteProcessInstanceHistory(process.getKey(), eventKey, command.getValue());
       }
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
@@ -365,12 +375,37 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
+  private void deleteHistory(
+      final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
+    final var commandValue = command.getValue();
+    switch (commandValue.getResourceType()) {
+      case PROCESS_DEFINITION -> {
+        checkAuthorization(
+            command,
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.DELETE_PROCESS,
+            commandValue.getResourceId(),
+            commandValue.getTenantId());
+        deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      }
+      case DECISION_REQUIREMENTS -> {
+        checkAuthorization(
+            command,
+            AuthorizationResourceType.RESOURCE,
+            PermissionType.DELETE_DRD,
+            commandValue.getResourceId(),
+            commandValue.getTenantId());
+        deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      }
+    }
+  }
+
   private void deleteProcessInstanceHistory(
-      final DeployedProcess process,
+      final long processDefinitionKey,
       final long eventKey,
       final ResourceDeletionRecord resourceDeletionRecord) {
     final var filter =
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(process.getKey()).build();
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(processDefinitionKey).build();
     final long batchOperationKey = keyGenerator.nextKey();
     final var batchOperationRecord =
         new BatchOperationCreationRecord()
@@ -384,7 +419,7 @@ public class ResourceDeletionDeleteProcessor
                 ValueType.HISTORY_DELETION,
                 HistoryDeletionIntent.DELETE,
                 new HistoryDeletionRecord()
-                    .setResourceKey(process.getKey())
+                    .setResourceKey(processDefinitionKey)
                     .setResourceType(HistoryDeletionType.PROCESS_DEFINITION));
     commandWriter.appendFollowUpCommand(
         eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
