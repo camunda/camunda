@@ -13,16 +13,12 @@ import io.camunda.operate.property.ElasticsearchProperties;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.schema.util.ObservableConnector;
 import io.camunda.operate.schema.util.ObservableConnector.OperateTestHttpRequest;
-import java.io.IOException;
+import io.camunda.search.connect.es.builder.ElasticsearchClientBuilder;
+import io.camunda.search.connect.plugin.PluginRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
-import org.apache.http.HttpException;
-import org.apache.http.HttpRequest;
 import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.RequestLine;
-import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
-import org.apache.http.protocol.HttpContext;
 import org.springframework.context.annotation.Conditional;
 
 @Conditional(ElasticsearchCondition.class)
@@ -36,40 +32,32 @@ public class TestElasticsearchConnector extends ElasticsearchConnector
   }
 
   /**
-   * Adds a request interceptor that a test case can plug in, so that we can assert requests made to
-   * Elasticsearch
+   * Overrides the builder configuration to add a request interceptor that test cases can use to
+   * assert requests made to Elasticsearch.
    */
   @Override
-  protected HttpAsyncClientBuilder configureHttpClient(
-      final HttpAsyncClientBuilder httpAsyncClientBuilder,
-      final ElasticsearchProperties elsConfig,
-      final HttpRequestInterceptor... interceptors) {
-    httpAsyncClientBuilder.addInterceptorFirst(
-        new HttpRequestInterceptor() {
+  protected ElasticsearchClientBuilder configureBuilder(
+      final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
+    return super.configureBuilder(elsConfig, pluginRepository)
+        .withRequestInterceptors(
+            (HttpRequestInterceptor)
+                (request, context) -> {
+                  final var requestLine = request.getRequestLine();
+                  requestListeners.forEach(
+                      listener ->
+                          listener.accept(
+                              new OperateTestHttpRequest() {
+                                @Override
+                                public String getUri() {
+                                  return requestLine.getUri();
+                                }
 
-          @Override
-          public void process(final HttpRequest request, final HttpContext context)
-              throws HttpException, IOException {
-            final RequestLine requestLine = request.getRequestLine();
-
-            requestListeners.forEach(
-                listener ->
-                    listener.accept(
-                        new OperateTestHttpRequest() {
-
-                          @Override
-                          public String getUri() {
-                            return requestLine.getUri();
-                          }
-
-                          @Override
-                          public String getMethod() {
-                            return requestLine.getMethod();
-                          }
-                        }));
-          }
-        });
-    return super.configureHttpClient(httpAsyncClientBuilder, elsConfig);
+                                @Override
+                                public String getMethod() {
+                                  return requestLine.getMethod();
+                                }
+                              }));
+                });
   }
 
   @Override

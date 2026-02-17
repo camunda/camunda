@@ -79,7 +79,7 @@ public class ElasticsearchConnector {
     return client;
   }
 
-  private ElasticsearchClientBuilder configureBuilder(
+  protected ElasticsearchClientBuilder configureBuilder(
       final ElasticsearchProperties elsConfig, final PluginRepository pluginRepository) {
     final var builder =
         ElasticsearchClientBuilder.newInstance()
