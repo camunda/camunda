@@ -75,7 +75,9 @@ components:
         - $ref: '#/components/schemas/LongKey'
 
     ScopeKey:
-      description: System-generated key for a scope.
+      description: |
+        System-generated key for a scope. A scope can hold variables and represents either an
+        element instance in a BPMN process or the process instance itself.
       format: ScopeKey
       x-semantic-type: ScopeKey
       example: "2251799813683890"
@@ -364,7 +366,9 @@ components:
             $ref: "#/components/schemas/DecisionDefinitionKey"
 
     ScopeKeyFilterProperty:
-      description: ScopeKey property with full advanced search capabilities.
+      description: |
+        ScopeKey property with full advanced search capabilities. Filter by the key of the
+        element instance or process instance that defines the scope of a variable.
       type: object
       oneOf:
         - type: string

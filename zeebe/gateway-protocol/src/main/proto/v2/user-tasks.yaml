@@ -289,7 +289,10 @@ paths:
         - User task
       operationId: searchUserTaskVariables
       summary: Search user task variables
-      description: Search for user task variables based on given criteria. By default, long variable values in the response are truncated.
+      description: |
+        Search for user task variables based on given criteria. This endpoint returns all variables
+        visible from the user task's scope, including variables from parent scopes in the scope
+        hierarchy. By default, long variable values in the response are truncated.
       parameters:
         - name: userTaskKey
           in: path

@@ -8,7 +8,16 @@ paths:
         - Variable
       operationId: searchVariables
       summary: Search variables
-      description: Search for process and local variables based on given criteria. By default, long variable values in the response are truncated.
+      description: |-
+        Search for variables based on given criteria.
+
+        This endpoint returns variables that exist directly at the specified scopes - it does not
+        include variables from parent scopes that would be visible through the scope hierarchy.
+
+        Variables can be process-level (scoped to the process instance) or local (scoped to specific
+        BPMN elements like tasks, subprocesses, etc.).
+
+        By default, long variable values in the response are truncated.
       parameters:
         - name: truncateValues
           in: query
@@ -45,7 +54,12 @@ paths:
         - Variable
       operationId: getVariable
       summary: Get variable
-      description: Get the variable by the variable key.
+      description: |-
+        Get a variable by its key.
+
+        This endpoint returns both process-level and local (element-scoped) variables.
+        The variable's scopeKey indicates whether it's a process-level variable or scoped to a
+        specific element instance.
       parameters:
         - name: variableKey
           in: path
@@ -138,7 +152,12 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/VariableKeyFilterProperty'
         scopeKey:
-          description: The key of the scope of this variable.
+          description: |
+            The key of the scope that defines where this variable is directly defined. This can be a
+            process instance key (for process-level variables) or an element instance key (for local
+            variables scoped to tasks, subprocesses, gateways, events, etc.). Use this filter to
+            find variables directly defined in specific scopes. Note that this does not include
+            variables from parent scopes that would be visible through the scope hierarchy.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ScopeKeyFilterProperty'
         processInstanceKey:
@@ -199,7 +218,11 @@ components:
         scopeKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ScopeKey'
-          description: The key of the scope of this variable.
+          description: |
+            The key of the scope where this variable is directly defined. For process-level
+            variables, this is the process instance key. For local variables, this is the key of the
+            specific element instance (task, subprocess, gateway, event, etc.) where the variable is
+            directly defined.
         processInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
@@ -230,18 +253,21 @@ components:
           additionalProperties: true
           type: object
         local:
-          description: |
-            If set to true, the variables are merged strictly into the local scope (as specified by the `elementInstanceKey`).
-            Otherwise, the variables are propagated to upper scopes and set at the outermost one.
-            Let’s consider the following example:
-            There are two scopes '1' and '2'.
-            Scope '1' is the parent scope of '2'. The effective variables of the scopes are:
+          description: |-
+            If set to `true`, the variables are merged strictly into the local scope (as specified
+            by the `elementInstanceKey`). Otherwise, the variables are propagated to upper scopes
+            and set at the outermost one.
+
+            Let's consider the following example:
+            There are two scopes '1' and '2'. Scope '1' is the parent scope of '2'. The effective
+            variables of the scopes are:
             1 => { "foo" : 2 }
             2 => { "bar" : 1 }
-            An update request with elementInstanceKey as '2', variables { "foo" : 5 }, and local set
-            to true leaves scope '1' unchanged and adjusts scope '2' to { "bar" : 1, "foo" 5 }.
-            By default, with local set to false, scope '1' will be { "foo": 5 }
-            and scope '2' will be { "bar" : 1 }.
+
+            An update request with elementInstanceKey as '2', variables { "foo": 5 }, and local set
+            to `true` leaves scope '1' unchanged and adjusts scope '2' to { "bar": 1, "foo": 5 }. By
+            default, with local set to `false`, scope '1' will be { "foo": 5 } and scope '2' will be
+            { "bar": 1 }.
           type: boolean
           default: false
         operationReference:
