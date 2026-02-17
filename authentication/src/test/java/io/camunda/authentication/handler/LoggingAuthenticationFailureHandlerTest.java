@@ -15,23 +15,20 @@ import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMoc
 import static io.camunda.authentication.config.controllers.TestApiController.DUMMY_V2_API_ENDPOINT;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
 import com.github.tomakehurst.wiremock.common.Slf4jNotifier;
 import com.github.tomakehurst.wiremock.junit5.WireMockExtension;
 import io.camunda.authentication.config.WebSecurityConfig;
 import io.camunda.authentication.config.controllers.OidcFlowTestContext;
 import io.camunda.security.configuration.OidcAuthenticationConfiguration;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
@@ -84,27 +81,6 @@ class LoggingAuthenticationFailureHandlerTest {
       "/realms/" + REALM + "/.well-known/openid-configuration";
   @Autowired MockMvcTester mockMvcTester;
 
-  private ListAppender<ILoggingEvent> logAppender;
-  private Logger handlerLogger;
-
-  @BeforeEach
-  void setupLogCapture() {
-    // Attach a ListAppender to the handler's logger to capture log events
-    handlerLogger = (Logger) LoggerFactory.getLogger(LoggingAuthenticationFailureHandler.class);
-    logAppender = new ListAppender<>();
-    logAppender.start();
-    handlerLogger.addAppender(logAppender);
-  }
-
-  @AfterEach
-  void cleanupLogCapture() {
-    // Detach and stop the appender
-    if (handlerLogger != null && logAppender != null) {
-      handlerLogger.detachAppender(logAppender);
-      logAppender.stop();
-    }
-  }
-
   @DynamicPropertySource
   static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
     registry.add(
@@ -129,19 +105,13 @@ class LoggingAuthenticationFailureHandlerTest {
             .willReturn(aResponse().withStatus(HttpStatus.INTERNAL_SERVER_ERROR.value())));
   }
 
-  /**
-   * Tests that JWT decoding failures in the API security filter chain are logged at WARN level, not
-   * ERROR level.
-   *
-   * <p>This test uses Logback's {@code ListAppender} to programmatically capture log events and
-   * verify log levels, avoiding brittle string-based assertions.
-   */
   @Test
-  void shouldNotLogOnErrorLevel() {
+  @ExtendWith(OutputCaptureExtension.class)
+  void shouldNotLogOnErrorLevel(final CapturedOutput capturedOutput) {
     // Given: a random access token
     final String accessToken = accessToken();
 
-    // When: accessing an API endpoint with invalid token
+    // When:
     final MvcTestResult apiResult =
         mockMvcTester
             .get()
@@ -149,25 +119,11 @@ class LoggingAuthenticationFailureHandlerTest {
             .accept(MediaType.APPLICATION_JSON)
             .header("Authorization", "Bearer " + accessToken)
             .exchange();
-    // Then: the request should fail with 500 (internal server error from handler)
+    // Then:
     assertThat(apiResult).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-
-    // And: the handler should have logged at WARN level (not ERROR)
-    final var logEvents = logAppender.list;
-    assertThat(logEvents)
-        .as("Handler should log at WARN level for authentication failures")
-        .isNotEmpty()
-        .anySatisfy(
-            event -> {
-              assertThat(event.getLevel()).isEqualTo(Level.WARN);
-              assertThat(event.getFormattedMessage())
-                  .contains("A technical authentication problem occurred");
-            });
-
-    // And: NO log events should be at ERROR level
-    assertThat(logEvents)
-        .as("Handler should NOT log at ERROR level")
-        .noneSatisfy(event -> assertThat(event.getLevel()).isEqualTo(Level.ERROR));
+    assertThat(capturedOutput.getOut())
+        .contains("A technical authentication problem occurred")
+        .doesNotContain("ERROR");
   }
 
   private static String wellKnownResponse() {
