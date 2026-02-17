@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
 
@@ -121,7 +121,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     // First check: PROCESS_DEFINITION[UPDATE_USER_TASK] or USER_TASK[UPDATE]
     final var primaryAuthResult =
         authCheckBehavior.isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionUpdateUserTaskRequest(command, persistedUserTask),
+            buildProcessDefinitionRequest(
+                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE));
 
     if (primaryAuthResult.isRight()) {

@@ -25,18 +25,21 @@ final class UserTaskAuthorizationHelper {
   }
 
   /**
-   * Builds an authorization request for PROCESS_DEFINITION[UPDATE_USER_TASK] permission.
+   * Builds an authorization request for PROCESS_DEFINITION permission.
    *
    * @param command the user task command
    * @param persistedUserTask the persisted user task record
+   * @param permissionType the permission type (e.g., UPDATE_USER_TASK, COMPLETE_USER_TASK)
    * @return the authorization request
    */
-  static AuthorizationRequest buildProcessDefinitionUpdateUserTaskRequest(
-      final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
+  static AuthorizationRequest buildProcessDefinitionRequest(
+      final TypedRecord<UserTaskRecord> command,
+      final UserTaskRecord persistedUserTask,
+      final PermissionType permissionType) {
     return AuthorizationRequest.builder()
         .command(command)
         .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
-        .permissionType(PermissionType.UPDATE_USER_TASK)
+        .permissionType(permissionType)
         .tenantId(persistedUserTask.getTenantId())
         .addResourceId(persistedUserTask.getBpmnProcessId())
         .build();

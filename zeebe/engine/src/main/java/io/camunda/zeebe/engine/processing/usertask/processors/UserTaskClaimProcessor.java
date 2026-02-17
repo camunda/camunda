@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
 
@@ -119,7 +119,8 @@ public final class UserTaskClaimProcessor implements UserTaskCommandProcessor {
       final TypedRecord<UserTaskRecord> command, final UserTaskRecord persistedUserTask) {
     return authCheckBehavior
         .isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionUpdateUserTaskRequest(command, persistedUserTask),
+            buildProcessDefinitionRequest(
+                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.CLAIM))
         .map(ignored -> persistedUserTask);
