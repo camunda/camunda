@@ -106,12 +106,12 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
             </FirstColumn>
             <StructuredListCell>
               {!ActorIcon ? (
-                spaceAndCapitalize(auditLog.actorType)
+                auditLog.actorId
               ) : (
                 <IconText>
                   <ActorIcon />
                   <Snippet hideCopyButton wrapText>
-                    {spaceAndCapitalize(auditLog.actorType)}
+                    {auditLog.actorId}
                   </Snippet>
                 </IconText>
               )}
@@ -119,7 +119,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 <IconTextWithTopDivider>
                   <AiAgentIcon />
                   <Snippet hideCopyButton wrapText>
-                    {spaceAndCapitalize(auditLog.agentElementId)}
+                    {auditLog.agentElementId}
                   </Snippet>
                 </IconTextWithTopDivider>
               )}

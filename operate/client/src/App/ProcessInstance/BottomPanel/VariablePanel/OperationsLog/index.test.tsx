@@ -112,7 +112,7 @@ describe('OperationsLog', () => {
     expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
     expect(screen.getByText(/variable name/i)).toBeInTheDocument();
     expect(screen.getByText('variableValue')).toBeInTheDocument();
-    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(screen.getAllByText('user1').at(0)).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 00:00:00')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /open details/i}),
