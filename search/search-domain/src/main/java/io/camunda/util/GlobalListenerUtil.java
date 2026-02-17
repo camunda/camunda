@@ -13,4 +13,9 @@ public class GlobalListenerUtil {
   public static String generateId(final String id, final GlobalListenerType listenerType) {
     return String.format("%s-%s", listenerType.name(), id);
   }
+
+  public static String generateId(
+      final String id, final io.camunda.search.entities.GlobalListenerType listenerType) {
+    return String.format("%s-%s", listenerType.name(), id);
+  }
 }
