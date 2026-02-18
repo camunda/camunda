@@ -8,7 +8,6 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
-import {OperateDiagramPage} from './OperateDiagramPage';
 import {sleep} from '../utils/sleep';
 
 class OperateProcessesPage {
@@ -96,9 +95,7 @@ class OperateProcessesPage {
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',
     });
-    this.cancelBatchOperationButton = page.getByTestId(
-      'cancel-batch-operation',
-    );
+    this.cancelBatchOperationButton = page.getByLabel('data table toolbar').getByRole('button', {name: 'Cancel'});
     this.applyCancelBatchOperationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
