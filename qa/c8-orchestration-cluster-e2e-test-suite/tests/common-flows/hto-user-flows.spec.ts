@@ -100,6 +100,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     taskPanelPage,
     taskDetailsPage,
     operateLoginPage,
@@ -111,6 +112,11 @@ test.describe('HTO User Flow Tests', () => {
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
       await operateProcessesPage.filterByProcessName('Variable_Process');
+      await operateFiltersPanelPage.selectVersion('1');
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('testVariable');
+      await operateFiltersPanelPage.fillVariableValueFilter('"testValue"');
+      await sleep(3000);
       await operateProcessesPage.clickProcessInstanceLink();
 
       await operateProcessInstancePage.activeIconAssertion();
