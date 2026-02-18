@@ -116,7 +116,8 @@ public class CustomMcpModelPropertiesTest {
                 "requestTimeout",
                 "tags",
                 "tenantId",
-                "variables")));
+                "variables",
+                "businessId")));
   }
 
   @ParameterizedTest

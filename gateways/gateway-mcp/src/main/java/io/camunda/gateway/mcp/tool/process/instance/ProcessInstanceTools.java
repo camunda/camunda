@@ -133,6 +133,7 @@ public class ProcessInstanceTools {
       Optional.ofNullable(creationInstruction.requestTimeout())
           .ifPresent(instruction::requestTimeout);
       Optional.ofNullable(creationInstruction.tenantId()).ifPresent(instruction::tenantId);
+      Optional.ofNullable(creationInstruction.businessId()).ifPresent(instruction::businessId);
 
       final var request =
           SimpleRequestMapper.toCreateProcessInstance(

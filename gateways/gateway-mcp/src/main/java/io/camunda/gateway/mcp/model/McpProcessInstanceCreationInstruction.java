@@ -64,4 +64,11 @@ public record McpProcessInstanceCreationInstruction(
             required = false)
         @Pattern(regexp = "^(<default>|[A-Za-z0-9_@.+-]+)$")
         @Size(min = 1, max = 256)
-        String tenantId) {}
+        String tenantId,
+    @McpToolParam(
+            description =
+                "An optional, user-defined string identifier that identifies the process instance within the scope of the process definition. If provided and uniqueness enforcement is enabled, the engine will reject creation if another root process instance with the same business id is already active for the same process definition. Note that any active child process instances with the same business id are not taken into account.",
+            required = false)
+        @Pattern(regexp = "^(<default>|[A-Za-z0-9_@.+-]+)$")
+        @Size(min = 1, max = 256)
+        String businessId) {}
