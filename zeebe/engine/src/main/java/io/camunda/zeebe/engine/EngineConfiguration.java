@@ -36,6 +36,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
   public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
   public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_WORKER_TYPE_LENGTH = 32 * 1024;
   public static final int DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH = 100;
   public static final int DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH = 30;
   public static final int DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS = 9500;
@@ -64,6 +65,7 @@ public final class EngineConfiguration {
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
+  private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
   private int jobMetricsMaxTypeLength = DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH;
   private int jobMetricsMaxTenantIdLength = DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH;
   private int jobMetricsMaxUniqueKeys = DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS;
@@ -423,6 +425,15 @@ public final class EngineConfiguration {
 
   public EngineConfiguration setMaxNameFieldLength(final int maxNameFieldLength) {
     this.maxNameFieldLength = maxNameFieldLength;
+    return this;
+  }
+
+  public int getMaxWorkerTypeLength() {
+    return maxWorkerTypeLength;
+  }
+
+  public EngineConfiguration setMaxWorkerTypeLength(final int maxWorkerTypeLength) {
+    this.maxWorkerTypeLength = maxWorkerTypeLength;
     return this;
   }
 
