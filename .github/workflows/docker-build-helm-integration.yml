@@ -185,6 +185,7 @@ jobs:
         with:
           dockerhub-readonly: true
           harbor: true
+          minimus: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
