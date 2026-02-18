@@ -429,42 +429,42 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
-#  notify-failure:
-#    name: Notify on failure
-#    runs-on: ubuntu-latest
-#    timeout-minutes: 5
-#    needs: [prepare-versions, run-compatibility-tests]
-#    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
-#    permissions: {}
-#    steps:
-#      - uses: actions/checkout@v6
-#      - name: Notify failure
-#        uses: slackapi/slack-github-action@v2.1.1
-#        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
-#        env:
-#          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-#        with:
-#          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
-#          webhook-type: incoming-webhook
-#          payload: |
-#           {
-#              "blocks": [
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
-#                  }
-#                },
-#                {
-#                  "type": "section",
-#                  "text": {
-#                    "type": "mrkdwn",
-#                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
-#                  }
-#                }
-#              ]
-#            }
+  notify-failure:
+    name: Notify on failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    needs: [prepare-versions, run-compatibility-tests]
+    if: always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled'))
+    permissions: {}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Notify failure
+        uses: slackapi/slack-github-action@v2.1.1
+        if: env.SLACK_CAMUNDA_EX_CI_WEBHOOK != ''
+        env:
+          SLACK_CAMUNDA_EX_CI_WEBHOOK: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+        with:
+          webhook: ${{ secrets.SLACK_CAMUNDA_EX_CI_WEBHOOK }}
+          webhook-type: incoming-webhook
+          payload: |
+           {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Camunda Client Compatibility Tests Failed*"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Branch: `${{ github.ref_name }}`\nPlease check: https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}"
+                  }
+                }
+              ]
+            }
 
       - name: Observe build status
         if: always()
