@@ -21,14 +21,12 @@ export class OperateOperationPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.expandButton = page
-      .getByLabel('Operations')
-      .getByRole('button', {name: 'Expand Operations'});
+    this.expandButton = page.getByRole('button', {name: 'Expand Operations'});
     this.operationList = page.getByTestId('operations-list');
     this.expandedOperationPanel = page
       .getByLabel('Operations')
       .getByTestId('expanded-panel');
-    this.collapseButton = this.expandedOperationPanel.getByRole('button', {
+    this.collapseButton = page.getByRole('button', {
       name: 'Collapse Operations',
     });
     this.collapsedOperationsPanel = page.getByTestId('collapsed-panel');
