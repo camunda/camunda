@@ -847,16 +847,34 @@ cmd_dashboard() {
     fi
   fi
 
-  local page="$ENVS_DIR/$name/index.html"
-  [[ -f "$page" ]] || die "No dashboard found for '$name'. Regenerate with 'c8env generate'."
+  local env_dir="$ENVS_DIR/$name"
+  [[ -d "$env_dir" ]] || die "No environment found for '$name'. Run 'c8env generate' first."
 
-  info "Opening dashboard for ${name}"
-  if command -v open &>/dev/null; then
-    open "$page"
-  elif command -v xdg-open &>/dev/null; then
-    xdg-open "$page"
+  local dashboard_url="http://localhost:8090"
+  local container_name="${name}-dashboard"
+
+  # Prefer the Dockerized dashboard; fall back to local file
+  if docker inspect --format='{{.State.Running}}' "$container_name" 2>/dev/null | grep -q true; then
+    info "Opening dashboard for ${name} at ${dashboard_url}"
+    if command -v open &>/dev/null; then
+      open "$dashboard_url"
+    elif command -v xdg-open &>/dev/null; then
+      xdg-open "$dashboard_url"
+    else
+      info "Open in browser: ${dashboard_url}"
+    fi
   else
-    info "Open in browser: file://$page"
+    local page="$env_dir/index.html"
+    [[ -f "$page" ]] || die "No dashboard found for '$name'. Regenerate with 'c8env generate'."
+    warn "Dashboard container '${container_name}' is not running — opening local file instead"
+    info "Start the infrastructure first, then use 'c8env dashboard' for the full experience"
+    if command -v open &>/dev/null; then
+      open "$page"
+    elif command -v xdg-open &>/dev/null; then
+      xdg-open "$page"
+    else
+      info "Open in browser: file://$page"
+    fi
   fi
 }
 
