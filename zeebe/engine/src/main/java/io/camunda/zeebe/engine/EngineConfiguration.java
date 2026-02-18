@@ -33,12 +33,12 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
-  public static final int DEFAULT_MAX_WORKER_NAME_LENGTH = 100;
+  public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
   public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
   public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
-  public static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 100;
-  public static final int DEFAULT_MAX_TENANT_ID_LENGTH = 30;
-  public static final int DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS = 9500;
+  public static final int DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH = 100;
+  public static final int DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH = 30;
+  public static final int DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS = 9500;
   public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = true;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
@@ -64,10 +64,12 @@ public final class EngineConfiguration {
 
   private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
   private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
-  private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
-  private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
-  private int maxUniqueJobMetricsKeys = DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
-  private int maxWorkerNameLength = DEFAULT_MAX_WORKER_NAME_LENGTH;
+  private int jobMetricsMaxTypeLength = DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH;
+  private int jobMetricsMaxTenantIdLength = DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH;
+  private int jobMetricsMaxUniqueKeys = DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS;
+  private int jobMetricsMaxWorkerNameLength = DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH;
+  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
+  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -92,8 +94,6 @@ public final class EngineConfiguration {
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
-  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
-  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
@@ -389,21 +389,22 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getMaxUniqueJobMetricsKeys() {
-    return maxUniqueJobMetricsKeys;
+  public int getJobMetricsMaxUniqueKeys() {
+    return jobMetricsMaxUniqueKeys;
   }
 
-  public EngineConfiguration setMaxUniqueJobMetricsKeys(final int maxUniqueJobMetricsKeys) {
-    this.maxUniqueJobMetricsKeys = maxUniqueJobMetricsKeys;
+  public EngineConfiguration setJobMetricsMaxUniqueKeys(final int jobMetricsMaxUniqueKeys) {
+    this.jobMetricsMaxUniqueKeys = jobMetricsMaxUniqueKeys;
     return this;
   }
 
-  public int getMaxWorkerNameLength() {
-    return maxWorkerNameLength;
+  public int getJobMetricsMaxWorkerNameLength() {
+    return jobMetricsMaxWorkerNameLength;
   }
 
-  public EngineConfiguration setMaxWorkerNameLength(final int maxWorkerNameLength) {
-    this.maxWorkerNameLength = maxWorkerNameLength;
+  public EngineConfiguration setJobMetricsMaxWorkerNameLength(
+      final int jobMetricsMaxWorkerNameLength) {
+    this.jobMetricsMaxWorkerNameLength = jobMetricsMaxWorkerNameLength;
     return this;
   }
 
@@ -425,21 +426,21 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getMaxJobTypeLength() {
-    return maxJobTypeLength;
+  public int getJobMetricsMaxTypeLength() {
+    return jobMetricsMaxTypeLength;
   }
 
-  public EngineConfiguration setMaxJobTypeLength(final int maxJobTypeLength) {
-    this.maxJobTypeLength = maxJobTypeLength;
+  public EngineConfiguration setJobMetricsMaxTypeLength(final int jobMetricsMaxTypeLength) {
+    this.jobMetricsMaxTypeLength = jobMetricsMaxTypeLength;
     return this;
   }
 
-  public int getMaxTenantIdLength() {
-    return maxTenantIdLength;
+  public int getJobMetricsMaxTenantIdLength() {
+    return jobMetricsMaxTenantIdLength;
   }
 
-  public EngineConfiguration setMaxTenantIdLength(final int maxTenantIdLength) {
-    this.maxTenantIdLength = maxTenantIdLength;
+  public EngineConfiguration setJobMetricsMaxTenantIdLength(final int jobMetricsMaxTenantIdLength) {
+    this.jobMetricsMaxTenantIdLength = jobMetricsMaxTenantIdLength;
     return this;
   }
 
