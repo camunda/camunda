@@ -7,76 +7,82 @@
  */
 package io.camunda.it.exporter;
 
+import static io.camunda.application.commons.search.SearchEngineDatabaseConfiguration.SearchEngineSchemaManagerProperties.CREATE_SCHEMA_PROPERTY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
-import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
-import co.elastic.clients.elasticsearch.core.search.Hit;
-import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
 import io.camunda.client.CamundaClient;
+import io.camunda.exporter.CamundaExporter;
+import io.camunda.it.document.DocumentClient;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbConfigurator;
+import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.camunda.zeebe.exporter.ElasticsearchExporter;
+import io.camunda.zeebe.exporter.opensearch.OpensearchExporter;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneApplication;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import java.io.IOException;
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executor;
 import java.util.stream.Collectors;
 import org.agrona.CloseHelper;
-import org.apache.http.HttpHost;
-import org.elasticsearch.client.RestClient;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.testcontainers.containers.GenericContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Integration test for verifying that process instances are correctly exported to RDBMS and
- * Elasticsearch.
+ * Elasticsearch/Opensearch.
  *
  * <p>This is intentionally no {@link io.camunda.qa.util.multidb.MultiDbTest}, as it always tests
- * the combination of RDBMS as secondary storage and Elasticsearch as exporter, and does not need to
- * be run with different database combinations.
+ * the combination of RDBMS as secondary storage and Elasticsearch-/OpensearchExporter as exporter,
+ * and does not need to be run with different database combinations.
  *
  * <p>This test sets up a Camunda process engine, using RDBMS as secondary storage and an
- * Elasticsearch Testcontainer, deploys a process, starts an instance, and verifies that the process
- * instance is both visible in the RDBMS and indexed in Elasticsearch.
+ * Elasticsearch/Opensearch Testcontainer, deploys a process, starts an instance, and verifies that
+ * the process instance is both visible in the RDBMS and indexed in Elasticsearch/Opensearch.
  */
 @Testcontainers
 @ZeebeIntegration
 public class MultiExporterIT {
+
+  public static final String INDEX_PREFIX = "zeebe-index";
   private static final String PROCESS_ID = "PROCESS_WITH_JOB_BASED_USERTASK";
-
-  @Container
-  private static final GenericContainer<?> SEARCH_CONTAINER =
-      TestSearchContainers.createDefeaultElasticsearchContainer()
-          .withStartupTimeout(Duration.ofMinutes(5))
-          .withEnv("path.repo", "~/");
-
-  protected CamundaClient camundaClient;
 
   @TestZeebe(autoStart = false)
   protected TestStandaloneApplication<?> testStandaloneApplication;
 
-  protected TestEsClient documentClient;
+  protected CamundaClient camundaClient;
+  protected DocumentClient documentClient;
+  private GenericContainer<?> searchContainer;
 
   @AfterEach
   public void tearDown() {
     CloseHelper.quietCloseAll(documentClient, camundaClient);
+    testStandaloneApplication.stop();
+    if (searchContainer != null) {
+      searchContainer.stop();
+    }
   }
 
-  @Test
-  void name() throws Exception {
-    setup();
+  @ParameterizedTest
+  @CsvSource({
+    "ELASTICSEARCH",
+    "OPENSEARCH",
+    // currently this fails when enabled, cf. https://github.com/camunda/camunda/issues/45692
+    // "CAMUNDA"
+  })
+  void shouldExportToRdbmsAndDocumentStore(final ExporterType exporterType) throws Exception {
+    setup(exporterType);
 
     // Deploy the process definition
     camundaClient
@@ -115,15 +121,15 @@ public class MultiExporterIT {
                   .containsExactlyInAnyOrderElementsOf(expectedProcessInstanceKeys);
             });
 
-    // Wait until all process instances are indexed in Elasticsearch
+    // Wait until all process instances are indexed in Elasticsearch/Opensearch
     await()
         .alias("Wait until all process instances are visible in Elasticsearch")
         .atMost(Duration.ofSeconds(60))
         .untilAsserted(
             () -> {
-              final var esKeys = fetchProcessInstanceKeysFromElasticsearch();
-              assertThat(esKeys).hasSize(5);
-              assertThat(esKeys).containsExactlyInAnyOrderElementsOf(expectedProcessInstanceKeys);
+              final var keys = fetchProcessInstanceKeysFromDocumentStore();
+              assertThat(keys).hasSize(5);
+              assertThat(keys).containsExactlyInAnyOrderElementsOf(expectedProcessInstanceKeys);
             });
   }
 
@@ -132,40 +138,42 @@ public class MultiExporterIT {
    *
    * @return Set of processInstanceKey values (as Longs if possible)
    */
-  private Set<Object> fetchProcessInstanceKeysFromElasticsearch() throws IOException {
+  private Set<Object> fetchProcessInstanceKeysFromDocumentStore() throws IOException {
     final String indexName = findProcessInstanceIndexName();
     if (indexName == null) {
       return Set.of();
     }
 
-    // Increase max_result_window to ensure we can fetch all documents in one query (for testing
-    // purposes)
-    documentClient
-        .esClient
-        .indices()
-        .putSettings(b -> b.index(indexName).settings(s -> s.maxResultWindow(10000)));
+    documentClient.setMaxResultWindow(indexName, 10000);
+    documentClient.refresh(indexName);
 
-    return documentClient
-        .esClient
-        .search(b -> b.index(indexName).size(10000), Map.class)
-        .hits()
-        .hits()
-        .stream()
-        .map(Hit::source)
+    return documentClient.search(indexName, 10000).stream()
         .map(source -> source.get("value"))
-        .map(value -> value instanceof Map ? ((Map<?, ?>) value).get("processInstanceKey") : null)
+        .map(
+            value -> {
+              if (value instanceof final Map<?, ?> map) {
+                // Try direct key
+                return map.get("processInstanceKey");
+              } else if (value instanceof final scala.collection.immutable.HashMap scalaMap) {
+                // Convert Scala map to Java map and try key
+                final var key = scalaMap.get("processInstanceKey");
+                if (key != null) {
+                  return key.get();
+                }
+              }
+              return null;
+            })
         .collect(Collectors.toSet());
   }
 
   /**
-   * Finds the first Elasticsearch index containing process-instance documents.
+   * Finds the first index containing process-instance documents.
    *
    * @return Index name or null if not found
    */
   private String findProcessInstanceIndexName() {
     try {
-      return documentClient.esClient.cat().indices().valueBody().stream()
-          .map(IndicesRecord::index)
+      return documentClient.cat(INDEX_PREFIX).stream()
           .filter(name -> name != null && name.contains("process-instance"))
           .findFirst()
           .orElse(null);
@@ -174,7 +182,20 @@ public class MultiExporterIT {
     }
   }
 
-  private void setup() throws Exception {
+  private void setup(final ExporterType exporterType) throws Exception {
+    // Start the correct container based on exporterType
+    if (Objects.requireNonNull(exporterType) == ExporterType.OPENSEARCH) {
+      searchContainer =
+          TestSearchContainers.createDefaultOpensearchContainer()
+              .withStartupTimeout(Duration.ofMinutes(5));
+    } else {
+      searchContainer =
+          TestSearchContainers.createDefeaultElasticsearchContainer()
+              .withStartupTimeout(Duration.ofMinutes(5))
+              .withEnv("path.repo", "~/");
+    }
+    searchContainer.start();
+
     testStandaloneApplication =
         new TestCamundaApplication()
             .withAuthenticationMethod(AuthenticationMethod.BASIC)
@@ -185,21 +206,100 @@ public class MultiExporterIT {
     // configure the app to use RDBMS as secondary storage, with an in-memory H2 database
     configurator.configureRDBMSSupport(false, "jdbc:h2:mem:camunda", "sa", "", "org.h2.Driver");
 
-    final String elasticsearchUrl =
+    final String containerUrl =
         String.format(
-            "http://%s:%d", SEARCH_CONTAINER.getHost(), SEARCH_CONTAINER.getMappedPort(9200));
+            "http://%s:%d", searchContainer.getHost(), searchContainer.getMappedPort(9200));
 
-    // configure the app to use the Elasticsearch exporter, pointing to the Testcontainer
-    testStandaloneApplication.withExporter(
-        ElasticsearchExporter.class.getSimpleName().toLowerCase(),
-        cfg -> {
-          cfg.setClassName(ElasticsearchExporter.class.getName());
-          cfg.setArgs(
-              Map.of(
-                  "url", elasticsearchUrl,
-                  "index", Map.of("prefix", "zeebe-index"),
-                  "bulk", Map.of("size", 1)));
-        });
+    final DatabaseType dbType =
+        switch (exporterType) {
+          case ELASTICSEARCH -> { // configure the app to use the Elasticsearch exporter
+            testStandaloneApplication.withExporter(
+                ElasticsearchExporter.class.getSimpleName().toLowerCase(),
+                cfg -> {
+                  cfg.setClassName(ElasticsearchExporter.class.getName());
+                  cfg.setArgs(
+                      Map.of(
+                          "url", containerUrl,
+                          "index", Map.of("prefix", INDEX_PREFIX),
+                          "bulk", Map.of("size", 1)));
+                });
+            yield DatabaseType.ELASTICSEARCH;
+          }
+          case CAMUNDA -> {
+            final Map<String, Object> elasticsearchProperties = new HashMap<>();
+            elasticsearchProperties.put("camunda.tasklist.zeebeElasticsearch.prefix", INDEX_PREFIX);
+            elasticsearchProperties.put(CREATE_SCHEMA_PROPERTY, true);
+            testStandaloneApplication.withAdditionalProperties(elasticsearchProperties);
+
+            testStandaloneApplication.withExporter(
+                CamundaExporter.class.getSimpleName().toLowerCase(),
+                cfg -> {
+                  cfg.setClassName(CamundaExporter.class.getName());
+                  cfg.setArgs(
+                      Map.of(
+                          "createSchema",
+                          true,
+                          "connect",
+                          Map.of(
+                              "url",
+                              containerUrl,
+                              "indexPrefix",
+                              INDEX_PREFIX,
+                              "type",
+                              io.camunda.search.connect.configuration.DatabaseType.ELASTICSEARCH),
+                          "index",
+                          Map.of("prefix", INDEX_PREFIX),
+                          "history",
+                          Map.of(
+                              "waitPeriodBeforeArchiving",
+                              "1s",
+                              "delayBetweenRuns",
+                              "1000",
+                              "maxDelayBetweenRuns",
+                              "1000",
+                              "retention",
+                              Map.of(
+                                  "enabled",
+                                  false,
+                                  "policyName",
+                                  INDEX_PREFIX + "-ilm",
+                                  "minimumAge",
+                                  "0s",
+                                  "usageMetricsPolicyName",
+                                  INDEX_PREFIX + "-usage-metrics-ilm",
+                                  "usageMetricsMinimumAge",
+                                  "0s")),
+                          "bulk",
+                          Map.of("size", 1)));
+                });
+            yield DatabaseType.ELASTICSEARCH;
+          }
+          case OPENSEARCH -> {
+            testStandaloneApplication.withExporter(
+                OpensearchExporter.class.getSimpleName().toLowerCase(),
+                cfg -> {
+                  cfg.setClassName(OpensearchExporter.class.getName());
+                  cfg.setArgs(
+                      Map.of(
+                          "url",
+                          containerUrl,
+                          "index",
+                          Map.of("prefix", INDEX_PREFIX),
+                          "bulk",
+                          Map.of("size", 1),
+                          "authentication",
+                          Map.of("username", "admin", "password", "admin")));
+                });
+            yield DatabaseType.OPENSEARCH;
+          }
+        };
+
+    // Use DocumentClient abstraction
+    final Executor executor = Runnable::run; // simple executor for tests
+    documentClient = DocumentClient.create(containerUrl, dbType, executor);
+
+    // Ensure indices are clean before starting the test
+    documentClient.deleteAllIndices(INDEX_PREFIX);
 
     testStandaloneApplication.start().awaitCompleteTopology();
 
@@ -209,30 +309,11 @@ public class MultiExporterIT {
             .defaultRequestTimeout(Duration.ofSeconds(1))
             .build();
 
-    documentClient = new TestEsClient(elasticsearchUrl);
-
-    // Ensure Elasticsearch is clean before starting the test
-    documentClient.deleteAllIndices();
   }
 
-  public static class TestEsClient implements AutoCloseable {
-
-    final RestClient restClient;
-    final ElasticsearchClient esClient;
-
-    public TestEsClient(final String url) {
-      restClient = RestClient.builder(HttpHost.create(url)).build();
-      esClient =
-          new ElasticsearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
-    }
-
-    public void deleteAllIndices() throws IOException {
-      esClient.indices().delete(DeleteIndexRequest.of(b -> b.index("*")));
-    }
-
-    @Override
-    public void close() throws Exception {
-      restClient.close();
-    }
+  public enum ExporterType {
+    ELASTICSEARCH,
+    CAMUNDA,
+    OPENSEARCH
   }
 }

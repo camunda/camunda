@@ -13,6 +13,7 @@ import io.camunda.webapps.backup.repository.SnapshotNameProvider;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 
 /**
@@ -103,6 +104,26 @@ public interface DocumentClient extends AutoCloseable {
    * @throws IOException if bulk indexing fails
    */
   void bulkIndex(String indexName, Collection<DocumentWithId> documents) throws IOException;
+
+  /**
+   * Perform a search on the given index with the specified size and return the hits as a list of
+   * maps.
+   *
+   * @param indexName the name of the index
+   * @param size the maximum number of results
+   * @return list of document maps
+   * @throws IOException if the search fails
+   */
+  List<Map<String, Object>> search(String indexName, int size) throws IOException;
+
+  /**
+   * Set the maximum result window for the specified index to allow retrieving more search results.
+   *
+   * @param indexName the name of the index
+   * @param maxResultWindow the maximum number of search results to retrieve
+   * @throws IOException if updating the index settings fails
+   */
+  void setMaxResultWindow(String indexName, int maxResultWindow) throws IOException;
 
   /** Helper record to represent a document with its ID for bulk operations. */
   record DocumentWithId(String id, Object document) {}
