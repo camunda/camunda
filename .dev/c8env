@@ -358,6 +358,89 @@ install_configs() {
   info "Installed IntelliJ configs to .idea/runConfigurations/"
 }
 
+# ─── Modeler Connection ──────────────────────────────────────────────────────
+
+modeler_settings_path() {
+  case "$(uname -s)" in
+    Darwin) echo "$HOME/Library/Application Support/camunda-modeler/settings.json" ;;
+    Linux)  echo "$HOME/.config/camunda-modeler/settings.json" ;;
+    MINGW*|MSYS*|CYGWIN*) echo "$APPDATA/camunda-modeler/settings.json" ;;
+    *) return 1 ;;
+  esac
+}
+
+install_modeler_connection() {
+  local env_name="$1" auth="$2"
+
+  local settings_path
+  settings_path=$(modeler_settings_path 2>/dev/null) || return 0
+
+  local settings_dir
+  settings_dir=$(dirname "$settings_path")
+  mkdir -p "$settings_dir"
+
+  # Build connection JSON
+  local connection
+  if [[ "$auth" == "basic" ]]; then
+    connection=$(cat <<EOF
+{
+  "name": "${env_name}",
+  "targetType": "selfHosted",
+  "authType": "basic",
+  "contactPoint": "http://localhost:8080/",
+  "basicAuthUsername": "demo",
+  "basicAuthPassword": "demo"
+}
+EOF
+    )
+  else
+    connection=$(cat <<EOF
+{
+  "name": "${env_name}",
+  "targetType": "selfHosted",
+  "authType": "none",
+  "contactPoint": "http://localhost:8080/"
+}
+EOF
+    )
+  fi
+
+  # Read existing settings or start fresh
+  local existing="{}"
+  [[ -f "$settings_path" ]] && existing=$(<"$settings_path")
+
+  # Use python3 (available on macOS/Linux) to merge the connection
+  python3 -c "
+import json, sys
+
+settings = json.loads(sys.argv[1])
+new_conn = json.loads(sys.argv[2])
+
+conns = settings.get('connectionManagerPlugin.c8connections', [])
+
+# Upsert: replace if same name exists, otherwise append
+updated = False
+for i, c in enumerate(conns):
+    if c.get('name') == new_conn['name']:
+        # Preserve existing id
+        new_conn['id'] = c.get('id', '')
+        conns[i] = new_conn
+        updated = True
+        break
+
+if not updated:
+    # Generate a short random id
+    import random, string
+    new_conn['id'] = ''.join(random.choices(string.ascii_lowercase + string.digits, k=7))
+    conns.append(new_conn)
+
+settings['connectionManagerPlugin.c8connections'] = conns
+print(json.dumps(settings, indent=2))
+" "$existing" "$connection" > "${settings_path}.tmp" && mv "${settings_path}.tmp" "$settings_path"
+
+  info "Configured Modeler connection '${env_name}' (${auth} auth)"
+}
+
 # ─── Commands ────────────────────────────────────────────────────────────────
 
 cmd_generate() {
@@ -535,6 +618,7 @@ BOOTSTRAP_DEPLOY
   # Install unless --no-install
   if [[ -z "${NO_INSTALL:-}" ]]; then
     install_configs "$name"
+    install_modeler_connection "$name" "$auth"
   fi
 
   if [[ "$standalone" == "yes" ]]; then
@@ -598,9 +682,23 @@ cmd_clean() {
     done
   fi
 
+  # Remove Modeler connection
+  local settings_path
+  settings_path=$(modeler_settings_path 2>/dev/null) || true
+  if [[ -n "${settings_path:-}" && -f "$settings_path" ]]; then
+    python3 -c "
+import json, sys
+settings = json.loads(sys.argv[1])
+conns = settings.get('connectionManagerPlugin.c8connections', [])
+conns = [c for c in conns if c.get('name') != sys.argv[2]]
+settings['connectionManagerPlugin.c8connections'] = conns
+print(json.dumps(settings, indent=2))
+" "$(<"$settings_path")" "$name" > "${settings_path}.tmp" && mv "${settings_path}.tmp" "$settings_path"
+  fi
+
   # Remove env directory
   rm -rf "$env_dir"
-  info "Cleaned environment '$name' and removed IntelliJ configs"
+  info "Cleaned environment '$name' and removed configs"
 }
 
 cmd_deploy() {

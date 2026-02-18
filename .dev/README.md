@@ -68,6 +68,18 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 - **insecure** — No authentication, fastest for development. Uses `dev,insecure` profiles.
 - **basic** — Basic auth with `demo/demo` user. Enables authorization checks.
 
+### Camunda Modeler Integration
+
+`c8env` automatically configures a connection in Camunda Desktop Modeler matching the environment's
+auth mode. The connection is added/updated on `generate` and removed on `clean`.
+
+Settings file locations:
+- **macOS**: `~/Library/Application Support/camunda-modeler/settings.json`
+- **Linux**: `~/.config/camunda-modeler/settings.json`
+- **Windows**: `%APPDATA%\camunda-modeler\settings.json`
+
+Skip with `--no-install`.
+
 ### Connectors
 
 - **none** — Just Camunda + datastore

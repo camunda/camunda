@@ -69,6 +69,27 @@ CLI flags). Both call the same generation functions.
 3. `generate_infra_xml()` creates the Docker Compose IntelliJ run config
 4. `generate_app_xml()` creates the Spring Boot IntelliJ run config (unless standalone)
 5. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
+6. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
+7. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
+
+### Camunda Desktop Modeler Integration
+
+The CLI auto-configures a connection in the Camunda Desktop Modeler `settings.json`:
+
+- **macOS**: `~/Library/Application Support/camunda-modeler/settings.json`
+- **Linux**: `~/.config/camunda-modeler/settings.json`
+- **Windows**: `%APPDATA%\camunda-modeler\settings.json`
+
+Connections are stored under `connectionManagerPlugin.c8connections` array. Each entry has:
+- `id` — short random string (preserved on upsert)
+- `name` — matches the environment name (used as upsert key)
+- `targetType` — always `selfHosted`
+- `authType` — `basic` or `none` (matching the env's auth mode)
+- `contactPoint` — `http://localhost:8080/`
+- `basicAuthUsername` / `basicAuthPassword` — only for `basic` auth
+
+The merge logic uses `python3` to read/write JSON, upserts by `name`, and preserves all other
+settings. Skipped when `--no-install` is passed or when the settings path can't be detected.
 
 ### Template Placeholders
 
