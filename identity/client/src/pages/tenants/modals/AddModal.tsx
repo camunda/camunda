@@ -6,16 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Stack } from "@carbon/react";
+import {
+  Button, InlineNotification,
+  Link,
+  Stack,
+  StructuredListBody,
+  StructuredListCell,
+  StructuredListRow,
+  StructuredListWrapper,
+} from "@carbon/react";
 import { spacing06 } from "@carbon/elements";
+import styled from "styled-components";
+import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
+import Modal, { FormModal, UseModalProps } from "src/components/modal";
+import { docsUrl } from "src/configuration";
 import { useApiCall } from "src/utility/api";
-import useTranslate from "src/utility/localization";
-import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
-import { useNotifications } from "src/components/notifications";
+import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
 
 type FormData = {
@@ -24,9 +34,30 @@ type FormData = {
   description: string;
 };
 
+const StyledStructuredListWrapper = styled(StructuredListWrapper)`
+  margin-bottom: 0;
+`;
+
+const RightAlignedButtonSet = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  gap: ${spacing06};
+`;
+
+const ASSIGN_ENTITY_ITEMS = [
+  "assignUsers",
+  "assignGroups",
+  "assignRoles",
+  "assignMappingRules",
+  "assignClients",
+] as const;
+
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate("tenants");
-  const { enqueueNotification } = useNotifications();
+  const { t, Translate } = useTranslate("tenants");
+  const [createdTenantName, setCreatedTenantName] = useState<string | null>(
+    null,
+  );
   const [callAddTenant, { loading, error }] = useApiCall(createTenant, {
     suppressErrorNotification: true,
   });
@@ -48,16 +79,68 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     });
 
     if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("tenantCreated"),
-        subtitle: t("createTenantSuccess", {
-          name: data.name,
-        }),
-      });
-      onSuccess();
+      setCreatedTenantName(data.name);
     }
   };
+
+  if (createdTenantName) {
+    return (
+      <Modal
+        open={open}
+        headline={t("tenantCreatedSuccessfully", { name: createdTenantName })}
+        confirmLabel={t("close")}
+        onClose={onSuccess}
+        buttons={[
+          <RightAlignedButtonSet key="close">
+            <Button kind="secondary" onClick={onSuccess}>
+              {t("close")}
+            </Button>
+          </RightAlignedButtonSet>,
+        ]}
+      >
+        <Stack gap={spacing06}>
+          <strong>{t("nextStepAssignEntities")}</strong>
+          <StyledStructuredListWrapper>
+            <StructuredListBody>
+              {ASSIGN_ENTITY_ITEMS.map((item) => (
+                <StructuredListRow key={item}>
+                  <StructuredListCell>
+                    {t(item)}
+                    {item === "assignClients" && (
+                      <InlineNotification
+                        kind="info"
+                        lowContrast
+                        hideCloseButton
+                        style={{ marginTop: spacing06 }}
+                      >
+                        t("assignConnectorRoleInfo", {link: "blah"})
+                        <Translate i18nKey="assignConnectorRoleInfo">
+                          Assign the &ldquo;connector&rdquo; role to
+                          automatically assign all clients to this tenant. Your
+                          clients can be configured to
+                          <Link
+                            href={documentationHref(
+                              docsUrl,
+                              "/docs/components/identity/tenant/",
+                            )}
+                            target="_blank"
+                            inline
+                          >
+                            dynamically access assigned tenants
+                          </Link>
+                          .
+                        </Translate>
+                      </InlineNotification>
+                    )}
+                  </StructuredListCell>
+                </StructuredListRow>
+              ))}
+            </StructuredListBody>
+          </StyledStructuredListWrapper>
+        </Stack>
+      </Modal>
+    );
+  }
 
   return (
     <FormModal
