@@ -844,18 +844,20 @@ public final class SearchQueryRequestMapper {
 
   public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQuery(
       final GlobalTaskListenerSearchQueryRequest request) {
-    if (request == null) {
-      return Either.right(SearchQueryBuilders.globalListenerSearchQuery().build());
-    }
-    final var page = SearchQueryRequestMapper.toSearchQueryPage(request.getPage());
+    // Create empty request if not provided, then pass through normal transformation to apply
+    // default values
+    final GlobalTaskListenerSearchQueryRequest actualRequest =
+        request == null ? new GlobalTaskListenerSearchQueryRequest() : request;
+
+    final var page = SearchQueryRequestMapper.toSearchQueryPage(actualRequest.getPage());
     final var sort =
         SearchQuerySortRequestMapper.toSearchQuerySort(
             SearchQuerySortRequestMapper.fromGlobalTaskListenerSearchQuerySortRequest(
-                request.getSort()),
+                actualRequest.getSort()),
             SortOptionBuilders::globalListener,
             SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
     final GlobalListenerFilter filter =
-        SearchQueryFilterMapper.toGlobalTaskListenerFilter(request.getFilter());
+        SearchQueryFilterMapper.toGlobalTaskListenerFilter(actualRequest.getFilter());
     return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
