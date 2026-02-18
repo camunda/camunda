@@ -45,6 +45,7 @@ import {
   getDefinitionIdentifier,
   splitDefinitionIdentifier,
 } from 'modules/hooks/processDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const initialValues: ProcessInstancesFilter = {
   active: true,
@@ -52,6 +53,7 @@ const initialValues: ProcessInstancesFilter = {
 };
 
 const Filters: React.FC = observer(() => {
+  const clientConfig = getClientConfig();
   const isBatchModificationEnabled = batchModificationStore.state.isEnabled;
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -132,7 +134,7 @@ const Filters: React.FC = observer(() => {
                 ]}
               />
               <Stack gap={5}>
-                {window.clientConfig?.multiTenancyEnabled && (
+                {clientConfig.multiTenancyEnabled && (
                   <div>
                     <Title>Tenant</Title>
                     <TenantField

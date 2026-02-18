@@ -26,6 +26,7 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
@@ -128,7 +129,7 @@ const routes = createRoutesFromElements(
 );
 
 const router = createBrowserRouter(routes, {
-  basename: import.meta.env.DEV ? '/' : (window.clientConfig?.baseName ?? '/'),
+  basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
 });
 
 const App: React.FC = () => {

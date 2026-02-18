@@ -19,6 +19,7 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import {notificationsStore} from 'modules/stores/notifications';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
@@ -86,7 +87,8 @@ const LOGOUT_DELAY = 1000;
 
 const AppHeader: React.FC = observer(() => {
   const {data: currentUser} = useCurrentUser();
-  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const clientConfig = getClientConfig();
+  const IS_SAAS = typeof clientConfig.organizationId === 'string';
   const {currentPage} = useCurrentPage();
   const {theme, changeTheme} = currentTheme;
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
@@ -306,7 +308,7 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
-        bottomElements: window.clientConfig?.canLogout
+        bottomElements: clientConfig.canLogout
           ? [
               {
                 key: 'logout',

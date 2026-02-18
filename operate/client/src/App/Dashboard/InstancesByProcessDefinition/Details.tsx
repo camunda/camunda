@@ -18,6 +18,7 @@ import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefi
 import {InlineLoading} from '@carbon/react';
 import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   processDefinitionId: string;
@@ -32,7 +33,7 @@ const Details: React.FC<Props> = ({
   tenantId,
   tabIndex,
 }) => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const tenantsById = useAvailableTenants();
 
   const result = useProcessDefinitionVersionStatistics(processDefinitionId, {

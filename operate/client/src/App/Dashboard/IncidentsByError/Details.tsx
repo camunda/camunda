@@ -18,6 +18,7 @@ import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useIncidentProcessInstanceStatisticsByDefinition} from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByDefinition';
 import {DEFAULT_TENANT} from 'modules/constants';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   errorMessage: string;
@@ -31,7 +32,7 @@ const Details: React.FC<Props> = ({
   tabIndex,
 }) => {
   const tenantsById = useAvailableTenants();
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
 
   const result = useIncidentProcessInstanceStatisticsByDefinition({
     payload: {

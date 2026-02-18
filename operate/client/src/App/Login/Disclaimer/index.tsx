@@ -8,9 +8,12 @@
 
 import {Link} from '@carbon/react';
 import {Container} from './styled';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const Disclaimer: React.FC = () => {
-  return window.clientConfig?.isEnterprise ? null : (
+  const clientConfig = getClientConfig();
+
+  return clientConfig.isEnterprise ? null : (
     <Container>
       Non-Production License. If you would like information on production usage,
       please refer to our{' '}

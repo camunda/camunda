@@ -39,10 +39,12 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';
 import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const initialValues: OperationsLogFilters = {};
 
 const Filters: React.FC = observer(() => {
+  const clientConfig = getClientConfig();
   const navigate = useNavigate();
   const location = useLocation();
   const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
@@ -106,7 +108,7 @@ const Filters: React.FC = observer(() => {
                   ]}
                 />
                 <Stack gap={5}>
-                  {window.clientConfig?.multiTenancyEnabled && (
+                  {clientConfig.multiTenancyEnabled && (
                     <div>
                       <Title>Tenant</Title>
                       <Stack gap={5}>

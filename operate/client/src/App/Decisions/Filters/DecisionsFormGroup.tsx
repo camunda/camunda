@@ -17,9 +17,10 @@ import {
   useDecisionDefinitions,
   useDecisionDefinitionVersions,
 } from 'modules/hooks/decisionDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const DecisionsFormGroup: React.FC = observer(() => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const tenantsById = useAvailableTenants();
 
   const form = useForm();
