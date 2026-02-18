@@ -8,12 +8,10 @@
 package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.opensearch.dto.AddPolicyRequest;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.IndexPolicyResponse;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.VersionUtil;
@@ -39,6 +37,8 @@ import org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
+import org.opensearch.client.opensearch.ism.AddPolicyRequest;
+import org.opensearch.client.opensearch.ism.AddPolicyResponse;
 import org.opensearch.client.opensearch.ism.DeletePolicyRequest;
 import org.opensearch.client.opensearch.ism.DeletePolicyResponse;
 import org.opensearch.client.opensearch.ism.GetPolicyRequest;
@@ -46,6 +46,8 @@ import org.opensearch.client.opensearch.ism.IsmTemplate;
 import org.opensearch.client.opensearch.ism.OpenSearchIsmClient;
 import org.opensearch.client.opensearch.ism.Policy;
 import org.opensearch.client.opensearch.ism.PutPolicyRequest;
+import org.opensearch.client.opensearch.ism.RemovePolicyRequest;
+import org.opensearch.client.opensearch.ism.RemovePolicyResponse;
 import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
 import org.opensearch.client.transport.Endpoint;
@@ -302,41 +304,34 @@ public class OpensearchClient implements AutoCloseable {
 
       final DeletePolicyResponse response = openSearchClient.ism().deletePolicy(request);
       return response.result().equals(Result.Deleted);
-    } catch (final IOException e) {
+    } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to delete index state management policy", e);
     }
   }
 
   public boolean bulkAddISMPolicyToAllZeebeIndices() {
     try {
-      final var request =
-          new Request(
-              "POST",
-              "/_plugins/_ism/add/"
-                  + configuration.index.prefix
-                  + RecordIndexRouter.INDEX_DELIMITER
-                  + "*");
-      final var requestEntity = new AddPolicyRequest(configuration.retention.getPolicyName());
-      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
-      final var response = sendRequest(request, IndexPolicyResponse.class);
-      return !response.failures();
-    } catch (final IOException e) {
+      final AddPolicyRequest addPolicyRequest =
+          AddPolicyRequest.builder()
+              .policyId(configuration.retention.getPolicyName())
+              .index(configuration.index.prefix+ RecordIndexRouter.INDEX_DELIMITER + "*")
+              .build();
+      final AddPolicyResponse response = openSearchClient.ism().addPolicy(addPolicyRequest);
+      return Boolean.FALSE.equals(response.failures());
+    } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to add policy to indices", e);
     }
   }
 
   public boolean bulkRemoveISMPolicyFromAllZeebeIndices() {
     try {
-      final var request =
-          new Request(
-              "POST",
-              "/_plugins/_ism/remove/"
-                  + configuration.index.prefix
-                  + RecordIndexRouter.INDEX_DELIMITER
-                  + "*");
-      final var response = sendRequest(request, IndexPolicyResponse.class);
-      return !response.failures();
-    } catch (final IOException e) {
+
+      final RemovePolicyRequest removePolicyRequest =
+          RemovePolicyRequest.builder().index(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER+ "*").build();
+      final RemovePolicyResponse response =
+          openSearchClient.ism().removePolicy(removePolicyRequest);
+      return Boolean.FALSE.equals(response.failures());
+    } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to remove policy from indices", e);
     }
   }
