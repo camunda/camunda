@@ -10,7 +10,7 @@ ARG BASE_DIGEST="sha256:42225e68749d492e62d348bbebdf3605de6e744ffe08f0424cc23d2b
 # base images like this instead on your own risk.
 # Simply pass `--build-arg BASE=public` in order to build with the Temurin JDK.
 ARG BASE_IMAGE_PUBLIC="eclipse-temurin:21.0.10_7-jre-noble"
-ARG BASE_DIGEST_PUBLIC="sha256:83bbd40dbb4f8022cf8ede33975766aceece33ce022c175a8bc8c39017318e46"
+ARG BASE_DIGEST_PUBLIC="sha256:d79823d08f42c77af16fd656d4ddeaeaac75804238a488a400675d42bf47c88e"
 ARG BASE="hardened"
 
 # set to "build" to build zeebe from scratch instead of using a distball
