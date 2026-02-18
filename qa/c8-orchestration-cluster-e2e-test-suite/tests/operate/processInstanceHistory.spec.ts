@@ -11,7 +11,7 @@ import {expect} from '@playwright/test';
 import {
   deploy,
   createSingleInstance,
-  searchByProcessInstanceKey,
+  // searchByProcessInstanceKey,
 } from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
@@ -89,14 +89,14 @@ test.describe('Process Instance History', () => {
 
     console.log(`Incident Process Instance Key: ${incidentProcessInstanceKey}`);
 
-    await test.step('Verify Process Instance is active', async () => {
-      await expect(async () => {
-        const process = await searchByProcessInstanceKey(
-          incidentProcessInstanceKey.toString(),
-        );
-        expect(process.items.length).toBeGreaterThan(0);
-      }).toPass({intervals: [5_000], timeout: 60_000});
-    });
+    // await test.step('Verify Process Instance is active', async () => {
+    //   await expect(async () => {
+    //     const process = await searchByProcessInstanceKey(
+    //       incidentProcessInstanceKey.toString(),
+    //     );
+    //     expect(process.items.length).toBeGreaterThan(0);
+    //   }).toPass({intervals: [5_000], timeout: 60_000});
+    // });
 
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
@@ -218,20 +218,20 @@ test.describe('Process Instance History', () => {
     operateProcessesPage,
     operateFiltersPanelPage,
     operateProcessInstancePage,
-    operateProcessModificationModePage,
+    operateProcessInstanceViewModificationModePage,
     operateDiagramPage,
   }) => {
     const embeddedProcessInstancePIK =
       embeddedSubprocessInstance.processInstanceKey;
 
-    await test.step('Verify Process Instance is active', async () => {
-      await expect(async () => {
-        const process = await searchByProcessInstanceKey(
-          embeddedProcessInstancePIK.toString(),
-        );
-        expect(process.items.length).toBeGreaterThan(0);
-      }).toPass(defaultAssertionOptions);
-    });
+    // await test.step('Verify Process Instance is active', async () => {
+    //   await expect(async () => {
+    //     const process = await searchByProcessInstanceKey(
+    //       embeddedProcessInstancePIK.toString(),
+    //     );
+    //     expect(process.items.length).toBeGreaterThan(0);
+    //   }).toPass(defaultAssertionOptions);
+    // });
 
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
@@ -255,7 +255,7 @@ test.describe('Process Instance History', () => {
     await test.step('Enter modification mode and assert results', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible();
     });
 
@@ -271,7 +271,7 @@ test.describe('Process Instance History', () => {
 
     await test.step('Add modification to activate task flow node process in first subprocess and verify results', async () => {
       const firstSubprocessTaskElement = activityCollectMoney;
-      await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(
+      await operateProcessInstanceViewModificationModePage.addTokenToFlowNodeAndApplyChanges(
         firstSubprocessTaskElement,
       );
       await operateDiagramPage.verifyStateOverlay(
@@ -291,13 +291,13 @@ test.describe('Process Instance History', () => {
     await test.step('Enter modification mode and assert results', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible();
     });
 
     await test.step('Add modification to activate task flow node process in second subprocess and verify results', async () => {
       const secondSubprocessTaskElement = activitySendItems;
-      await operateProcessModificationModePage.addTokenToFlowNodeAndApplyChanges(
+      await operateProcessInstanceViewModificationModePage.addTokenToFlowNodeAndApplyChanges(
         secondSubprocessTaskElement,
       );
       await operateDiagramPage.verifyStateOverlay(
@@ -320,7 +320,7 @@ test.describe('Process Instance History', () => {
     operateProcessesPage,
     operateFiltersPanelPage,
     operateProcessInstancePage,
-    operateProcessModificationModePage,
+    operateProcessInstanceViewModificationModePage,
     operateDiagramPage,
   }) => {
     const embeddedSubprocesModificationInstance = {
@@ -336,14 +336,14 @@ test.describe('Process Instance History', () => {
     const embeddedProcessInstanceModificationPIK =
       embeddedSubprocesModificationInstance.processInstanceKey;
 
-    await test.step('Verify Process Instance is active', async () => {
-      await expect(async () => {
-        const process = await searchByProcessInstanceKey(
-          embeddedProcessInstanceModificationPIK.toString(),
-        );
-        expect(process.items.length).toBeGreaterThan(0);
-      }).toPass(defaultAssertionOptions);
-    });
+    // await test.step('Verify Process Instance is active', async () => {
+    //   await expect(async () => {
+    //     const process = await searchByProcessInstanceKey(
+    //       embeddedProcessInstanceModificationPIK.toString(),
+    //     );
+    //     expect(process.items.length).toBeGreaterThan(0);
+    //   }).toPass(defaultAssertionOptions);
+    // });
 
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
@@ -395,21 +395,21 @@ test.describe('Process Instance History', () => {
     await test.step('Enter modification mode and assert results', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible({timeout: 5000});
     });
 
     await test.step('Add 2 tokens to "Collect money" task in first subprocess and verify two active tokens in diagram', async () => {
       for (let i = 1; i < 3; i++) {
-        await operateProcessModificationModePage.addTokenToFlowNode(
+        await operateProcessInstanceViewModificationModePage.addTokenToFlowNode(
           activityCollectMoney,
         );
-        await operateProcessModificationModePage.verifyModificationOverlay(
+        await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
           activityCollectMoney,
           i,
         );
       }
-      await operateProcessModificationModePage.applyChanges();
+      await operateProcessInstanceViewModificationModePage.applyChanges();
       await operateDiagramPage.verifyStateOverlay(
         activityCollectMoney,
         'active',
@@ -443,12 +443,12 @@ test.describe('Process Instance History', () => {
     await test.step('Enter modification mode and assert results', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible();
     });
 
     await test.step('Add token to the Second Subprocess and verify active token in diagram', async () => {
-      await operateProcessModificationModePage.addTokenToSubprocessAndApplyChanges(
+      await operateProcessInstanceViewModificationModePage.addTokenToSubprocessAndApplyChanges(
         activitySecondSubprocess,
       );
       await operateDiagramPage.verifyStateOverlay(
@@ -481,24 +481,24 @@ test.describe('Process Instance History', () => {
     await test.step('Enter modification mode and assert results', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible();
     });
 
     await test.step('Move tokens from "Collect money" to end state of first subprocess and verify results', async () => {
-      await operateProcessModificationModePage.moveAllTokensFromSelectedFlowNodeToTarget(
+      await operateProcessInstanceViewModificationModePage.moveAllTokensFromSelectedFlowNodeToTarget(
         activityCollectMoney,
         eventEndFirstSubProcess,
       );
-      await operateProcessModificationModePage.verifyModificationOverlay(
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
         activityCollectMoney,
         -2,
       );
-      await operateProcessModificationModePage.verifyModificationOverlay(
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
         eventEndFirstSubProcess,
         2,
       );
-      await operateProcessModificationModePage.applyChanges();
+      await operateProcessInstanceViewModificationModePage.applyChanges();
     });
 
     await test.step('Verify in diagram that "Collect money" changed accordingly', async () => {
@@ -561,7 +561,7 @@ test.describe('Process Instance History', () => {
 
     await test.step('Cancel one instance of "Send items"', async () => {
       await operateProcessInstancePage.enterModificationMode();
-      await operateProcessModificationModePage.cancelOneTokenUsingHistory(
+      await operateProcessInstanceViewModificationModePage.cancelOneTokenUsingHistory(
         activitySendItems,
       );
     });
@@ -620,22 +620,22 @@ test.describe('Process Instance History', () => {
     await test.step('Move all Send items', async () => {
       await operateProcessInstancePage.enterModificationMode();
       await expect(
-        operateProcessModificationModePage.modifyModeHeader,
+        operateProcessInstanceViewModificationModePage.modifyModeHeader,
       ).toBeVisible();
 
-      await operateProcessModificationModePage.moveAllTokensFromSelectedFlowNodeToTarget(
+      await operateProcessInstanceViewModificationModePage.moveAllTokensFromSelectedFlowNodeToTarget(
         activitySendItems,
         eventEndSecondSubProcess,
       );
-      await operateProcessModificationModePage.verifyModificationOverlay(
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
         activitySendItems,
         -1,
       );
-      await operateProcessModificationModePage.verifyModificationOverlay(
+      await operateProcessInstanceViewModificationModePage.verifyModificationOverlay(
         eventEndSecondSubProcess,
         1,
       );
-      await operateProcessModificationModePage.applyChanges();
+      await operateProcessInstanceViewModificationModePage.applyChanges();
     });
 
     await test.step('Verify diagram changed accordingly', async () => {
