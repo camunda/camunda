@@ -150,7 +150,8 @@ public class UserTaskProcessInstanceMigrationIT {
                                   f.processDefinitionKey(pd2)
                                       .bpmnProcessId(TO_PROCESS_ID)
                                       .processInstanceKey(processInstanceKey)
-                                      .assignee(expectedTask.assignee))
+                                      .assignee(expectedTask.assignee)
+                                      .state(UserTaskState.CREATED))
                           // right task
                           .send()
                           .join()
@@ -178,6 +179,7 @@ public class UserTaskProcessInstanceMigrationIT {
     assertThat(migratedTask.getFormKey()).isEqualTo(expectedTask.formKey);
     assertThat(migratedTask.getExternalFormReference())
         .isEqualTo(expectedTask.externalFormReference);
+    assertThat(migratedTask.getCustomHeaders()).isEqualTo(expectedTask.headers);
 
     verifyFormOperationsWork(migratedTask.getUserTaskKey());
   }
@@ -190,7 +192,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 .zeebeCandidateUsers("u1,u2")
                 .zeebeDueDate(EXAMPLE_DUE_DATE)
                 .zeebeFollowUpDate(EXAMPLE_FOLLOW_UP_DATE)
-                .zeebeAssignee("original");
+                .zeebeAssignee("original")
+                .zeebeTaskHeader("key1", "value1");
     final Consumer<UserTaskBuilder> fromWithoutAssigneeAndPriority =
         t ->
             t.zeebeCandidateGroups("g1,g2")
@@ -210,7 +213,9 @@ public class UserTaskProcessInstanceMigrationIT {
             t.zeebeAssignee("original")
                 .zeebeFormId(FORM_1)
                 .zeebeDueDate(ALTERNATIVE_DUE_DATE)
-                .zeebeFollowUpDate(ALTERNATIVE_FOLLOW_UP_DATE);
+                .zeebeFollowUpDate(ALTERNATIVE_FOLLOW_UP_DATE)
+                .zeebeTaskHeader("key2", "value2")
+                .zeebeTaskHeader("key3", "value3");
     final Consumer<UserTaskBuilder> fromExternalForm =
         t ->
             t.zeebeAssigneeExpression("varAssignee")
@@ -241,6 +246,7 @@ public class UserTaskProcessInstanceMigrationIT {
                 .zeebeCandidateUsers("u3,u4")
                 .zeebeAssignee("targetAssignee")
                 .zeebeTaskPriority("10")
+                .zeebeTaskHeader("key3", "value3")
                 .zeebeFormId(FORM_2);
 
     return Stream.of(
@@ -255,7 +261,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of("g1", "g2"),
                 List.of("u1", "u2"),
                 EXAMPLE_DUE_DATE,
-                EXAMPLE_FOLLOW_UP_DATE)),
+                EXAMPLE_FOLLOW_UP_DATE,
+                Map.of("key1", "value1"))),
         Arguments.of(
             fromWithoutAssigneeAndPriority,
             toWithoutAssigneeAndPriority,
@@ -267,7 +274,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of("g1", "g2"),
                 List.of("u1", "u2"),
                 EXAMPLE_DUE_DATE,
-                EXAMPLE_FOLLOW_UP_DATE)),
+                EXAMPLE_FOLLOW_UP_DATE,
+                Map.of())),
         Arguments.of(
             fromEmbeddedForm,
             toExternalForm,
@@ -279,7 +287,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of("g1", "g2"),
                 List.of("u1", "u2"),
                 EXAMPLE_DUE_DATE,
-                EXAMPLE_FOLLOW_UP_DATE)),
+                EXAMPLE_FOLLOW_UP_DATE,
+                Map.of())),
         Arguments.of(
             fromEmbeddedForm,
             toInternalForm,
@@ -291,7 +300,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of("g1", "g2"),
                 List.of("u1", "u2"),
                 EXAMPLE_DUE_DATE,
-                EXAMPLE_FOLLOW_UP_DATE)),
+                EXAMPLE_FOLLOW_UP_DATE,
+                Map.of())),
         Arguments.of(
             fromInternalForm,
             toExternalForm,
@@ -303,7 +313,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of(),
                 List.of(),
                 ALTERNATIVE_DUE_DATE,
-                ALTERNATIVE_FOLLOW_UP_DATE)),
+                ALTERNATIVE_FOLLOW_UP_DATE,
+                Map.of("key2", "value2", "key3", "value3"))),
         Arguments.of(
             fromExternalForm,
             toExternalForm,
@@ -315,7 +326,8 @@ public class UserTaskProcessInstanceMigrationIT {
                 List.of(),
                 List.of(),
                 EXAMPLE_DUE_DATE,
-                EXAMPLE_FOLLOW_UP_DATE)));
+                EXAMPLE_FOLLOW_UP_DATE,
+                Map.of())));
   }
 
   private static String getForm(final String formId) {
@@ -378,5 +390,6 @@ public class UserTaskProcessInstanceMigrationIT {
       List<String> candidateGroups,
       List<String> candidateUsers,
       String dueDate,
-      String followupDate) {}
+      String followupDate,
+      Map<String, String> headers) {}
 }

@@ -32,7 +32,9 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.HashMap;
 import java.util.Map;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationUserTaskBehavior {
@@ -129,7 +131,12 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     migrateForm(sourceElement, customHeaders, targetProperties, context, userTaskProperties);
 
     final var userTaskRecord =
-        createNewUserTask(targetProperties, context, userTaskProperties, targetUserTask);
+        createNewUserTask(
+            targetProperties,
+            context,
+            userTaskProperties,
+            targetUserTask.getId(),
+            getCustomHeaders(customHeaders));
 
     assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
 
@@ -169,7 +176,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           newProperties,
       final BpmnElementContextImpl context,
       final UserTaskProperties userTaskProperties,
-      final ExecutableUserTask targetElement) {
+      final DirectBuffer id,
+      final Map<String, String> taskHeaders) {
+
     userTaskBehavior
         .evaluatePriorityExpression(
             newProperties.getPriority(),
@@ -178,7 +187,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
         .ifRight(userTaskProperties::priority);
 
     final var userTaskRecord =
-        userTaskBehavior.createNewUserTask(context, targetElement, userTaskProperties);
+        userTaskBehavior.createNewUserTask(context, id, userTaskProperties, taskHeaders);
     userTaskBehavior.userTaskCreated(userTaskRecord);
     elementInstance.setUserTaskKey(userTaskRecord.getUserTaskKey());
     return userTaskRecord;
@@ -286,5 +295,16 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       userTaskProperties.followUpDate(followUpDate);
     }
     return userTaskProperties;
+  }
+
+  // Filter custom headers to only include non-usertask-related headers
+  private Map<String, String> getCustomHeaders(final Map<String, String> customHeaders) {
+    final Map<String, String> newMap = new HashMap<>();
+    for (final Map.Entry<String, String> entry : customHeaders.entrySet()) {
+      if (!entry.getKey().startsWith(Protocol.RESERVED_HEADER_NAME_PREFIX)) {
+        newMap.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return newMap;
   }
 }
