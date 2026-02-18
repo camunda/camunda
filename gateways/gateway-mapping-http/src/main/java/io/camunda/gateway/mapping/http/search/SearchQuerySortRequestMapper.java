@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_SORT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
 
 import io.camunda.gateway.protocol.model.*;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQuerySortRequest.FieldEnum;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
@@ -262,6 +263,16 @@ public class SearchQuerySortRequestMapper {
   public static List<SearchQuerySortRequest<GlobalTaskListenerSearchQuerySortRequest.FieldEnum>>
       fromGlobalTaskListenerSearchQuerySortRequest(
           final List<GlobalTaskListenerSearchQuerySortRequest> requests) {
+    // Add default sorting after provided ones, ensuring a meaningful ordering:
+    // - place "after non global" listeners at the end
+    // - sort by priority (highest priority is returned first)
+    // - sort by id to ensure a deterministic order for listeners with the same priority
+    requests.addAll(
+        List.of(
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.AFTER_NON_GLOBAL),
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.PRIORITY)
+                .order(SortOrderEnum.DESC),
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.ID)));
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
   }
 
