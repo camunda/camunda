@@ -25,7 +25,6 @@ vi.mock('modules/stores/notifications', () => ({
 
 describe('VariablePanel notifications', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');

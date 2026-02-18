@@ -85,7 +85,6 @@ const selectedElementInstance = {
 
 describe('VariablePanel placeholders', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
 

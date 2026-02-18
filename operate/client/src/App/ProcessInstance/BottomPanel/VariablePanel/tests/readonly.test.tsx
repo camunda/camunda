@@ -39,7 +39,6 @@ const selectedElementInstance: ElementInstance = {
 
 describe('VariablePanel readonly', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(
