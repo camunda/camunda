@@ -37,6 +37,11 @@
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
+    <!-- Override server IDs from camunda-release-parent to separate
+         Artifactory (upload) credentials from Nexus (download) credentials -->
+    <nexus.release.repository.id>camunda-artifactory</nexus.release.repository.id>
+    <nexus.snapshot.repository.id>camunda-artifactory</nexus.snapshot.repository.id>
+    <nexus.staging.deploy.id>camunda-artifactory</nexus.staging.deploy.id>
 
     <!-- Camunda License v1.0 header -->
     <license.header.file>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header.file>
@@ -136,7 +141,7 @@
       </snapshots>
       <id>zeebe</id>
       <name>Zeebe Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-releases/</url>
     </repository>
 
     <repository>
@@ -148,7 +153,7 @@
       </snapshots>
       <id>zeebe-snapshots</id>
       <name>Zeebe Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-snapshots/</url>
     </repository>
 
     <repository>
@@ -160,7 +165,7 @@
       </snapshots>
       <id>camunda-identity</id>
       <name>Camunda Identity Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-identity/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-releases/</url>
     </repository>
 
     <repository>
@@ -172,7 +177,7 @@
       </snapshots>
       <id>camunda-identity-snapshots</id>
       <name>Camunda Identity Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-identity-snapshots/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-snapshots/</url>
     </repository>
 
     <repository>
@@ -184,7 +189,7 @@
       </snapshots>
       <id>camunda-bpm</id>
       <name>Camunda BPM Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-releases/</url>
     </repository>
 
     <repository>
@@ -196,7 +201,7 @@
       </snapshots>
       <id>camunda-bpm-snapshots</id>
       <name>Camunda BPM Snapshot Repository</name>
-      <url>https://artifacts.camunda.com/artifactory/camunda-bpm-snapshots/</url>
+      <url>https://repository.nexus.camunda.cloud/repository/camunda-nexus-snapshots/</url>
     </repository>
   </repositories>
 
