@@ -774,6 +774,8 @@ components:
           default: 0
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -849,6 +851,8 @@ components:
             type: string
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -940,6 +944,11 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          nullable: true
+          description: Business id as provided on creation.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceSearchQuerySortRequest:
       type: object
@@ -1512,8 +1521,8 @@ components:
     SourceElementInstanceKeyInstruction:
       type: object
       description: |
-       Defines an instruction with a sourceElementInstanceKey. The move instruction with this sourceType will terminate one active element
-       instance with the sourceElementInstanceKey and activate a new element instance at targetElementId.
+        Defines an instruction with a sourceElementInstanceKey. The move instruction with this sourceType will terminate one active element
+        instance with the sourceElementInstanceKey and activate a new element instance at targetElementId.
       properties:
         sourceType:
           description: The type of source element instruction.
