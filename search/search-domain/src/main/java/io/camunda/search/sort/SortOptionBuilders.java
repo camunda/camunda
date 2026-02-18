@@ -272,6 +272,15 @@ public final class SortOptionBuilders {
     return fn.apply(processDefinitionMessageSubscriptionStatistics()).build();
   }
 
+  public static JobTypeStatisticsSort.Builder jobTypeStatistics() {
+    return new JobTypeStatisticsSort.Builder();
+  }
+
+  public static JobTypeStatisticsSort jobTypeStatistics(
+      final Function<JobTypeStatisticsSort.Builder, ObjectBuilder<JobTypeStatisticsSort>> fn) {
+    return fn.apply(jobTypeStatistics()).build();
+  }
+
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }
