@@ -19,6 +19,7 @@ public record AuditLogDbQuery(
     AuditLogFilter filter,
     AuditLogAuthorizationFilter authorizationFilter,
     List<String> authorizedTenantIds,
+    AuditLogAuthorizationProperties authorizationProperties,
     DbQuerySorting<AuditLogEntity> sort,
     DbQueryPage page) {
 
@@ -33,6 +34,8 @@ public record AuditLogDbQuery(
     private AuditLogFilter filter;
     private AuditLogAuthorizationFilter authorizationFilter;
     private List<String> authorizedTenantIds = List.of();
+    private AuditLogAuthorizationProperties authorizationProperties =
+        AuditLogAuthorizationProperties.EMPTY;
     private DbQuerySorting<AuditLogEntity> sort;
     private DbQueryPage page;
 
@@ -48,6 +51,12 @@ public record AuditLogDbQuery(
 
     public Builder authorizedTenantIds(final List<String> authorizedTenantIds) {
       this.authorizedTenantIds = authorizedTenantIds;
+      return this;
+    }
+
+    public Builder authorizationProperties(
+        final AuditLogAuthorizationProperties authorizationProperties) {
+      this.authorizationProperties = authorizationProperties;
       return this;
     }
 
@@ -81,7 +90,41 @@ public record AuditLogDbQuery(
       authorizationFilter =
           Objects.requireNonNullElse(authorizationFilter, AuditLogAuthorizationFilter.denyAll());
       authorizedTenantIds = Objects.requireNonNullElse(authorizedTenantIds, List.of());
-      return new AuditLogDbQuery(filter, authorizationFilter, authorizedTenantIds, sort, page);
+      authorizationProperties =
+          Objects.requireNonNullElse(
+              authorizationProperties, AuditLogAuthorizationProperties.EMPTY);
+      return new AuditLogDbQuery(
+          filter, authorizationFilter, authorizedTenantIds, authorizationProperties, sort, page);
+    }
+  }
+
+  public record AuditLogAuthorizationProperties(List<String> categories) {
+
+    public static final AuditLogAuthorizationProperties EMPTY =
+        new AuditLogAuthorizationProperties(List.of());
+
+    // used inside AuditLogMapper.xml ("searchFilter"), when building authorization queries
+    public boolean hasAnyProperty() {
+      return (categories != null && !categories.isEmpty());
+    }
+
+    public static Builder builder() {
+      return new Builder();
+    }
+
+    public static class Builder {
+
+      private List<String> categories = List.of();
+
+      public Builder categories(final List<String> categories) {
+        this.categories = categories;
+        return this;
+      }
+
+      public AuditLogAuthorizationProperties build() {
+        return new AuditLogAuthorizationProperties(
+            Objects.requireNonNullElse(categories, List.of()));
+      }
     }
   }
 }

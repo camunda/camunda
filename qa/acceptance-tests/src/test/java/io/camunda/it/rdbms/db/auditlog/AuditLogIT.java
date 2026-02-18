@@ -27,6 +27,7 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtensio
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
+import io.camunda.search.entities.AuditLogEntity.AuditLogTenantScope;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.sort.AuditLogSort;
 import io.camunda.security.auth.Authorization;
@@ -214,16 +215,26 @@ public class AuditLogIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
+
     // Create audit logs with different categories
     final var adminLog =
         AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters, b -> b.category(AuditLogOperationCategory.ADMIN));
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN).processInstanceKey(processInstanceKey));
     final var userTaskLog =
         AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters, b -> b.category(AuditLogOperationCategory.USER_TASKS));
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var deployedResourcesLog =
         AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters, b -> b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                    .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with AUDIT_LOG resource type
     final var resourceAccessChecks =
@@ -238,7 +249,10 @@ public class AuditLogIT {
                                     AuditLogOperationCategory.USER_TASKS.name())))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -256,20 +270,30 @@ public class AuditLogIT {
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
     final var processDefId3 = "process-def-3";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
     // Create audit logs with different process definitions
     final var log1 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
     final var log2 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId2).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId2)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
     final var log3 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId3).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId3)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with PROCESS_DEFINITION + READ_PROCESS_INSTANCE
     final var resourceAccessChecks =
@@ -282,7 +306,10 @@ public class AuditLogIT {
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -299,27 +326,38 @@ public class AuditLogIT {
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
     // Create audit logs with different process definitions and categories
     final var log1 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
     final var log2 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId2).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId2)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
     final var userTaskLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId1)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     // Create a log without process definition ID - should NOT be returned
     final var logWithoutProcessDefId =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(null).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(null)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with wildcard access
     final var resourceAccessChecks =
@@ -332,7 +370,10 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     // Should return all logs that have a process definition ID (including USER_TASKS)
     assertThat(searchResult.items())
@@ -351,6 +392,7 @@ public class AuditLogIT {
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
     final var processDefId3 = "process-def-3";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
     // Create audit logs with different process definitions
     final var log1 =
@@ -358,19 +400,22 @@ public class AuditLogIT {
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId1)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var log2 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId2)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var log3 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId3)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with PROCESS_DEFINITION + READ_USER_TASK
     final var resourceAccessChecks =
@@ -383,7 +428,10 @@ public class AuditLogIT {
                             .resourceIds(List.of(processDefId1, processDefId2)))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -400,6 +448,7 @@ public class AuditLogIT {
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
     // Create audit logs with different process definitions and categories
     final var log1 =
@@ -407,17 +456,22 @@ public class AuditLogIT {
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId1)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var log2 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId2)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var adminLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with wildcard access
     final var resourceAccessChecks =
@@ -430,7 +484,10 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     // Should return all USER_TASKS category logs
     assertThat(searchResult.items())
@@ -448,25 +505,36 @@ public class AuditLogIT {
 
     final var processDefId1 = "process-def-1";
     final var processDefId2 = "process-def-2";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
     // Create audit logs with different categories and process definitions
     final var log1 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId(processDefId1).category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId(processDefId1)
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
     final var log2 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
                 b.processDefinitionId(processDefId2)
-                    .category(AuditLogOperationCategory.USER_TASKS));
+                    .category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
     final var log3 =
         AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters, b -> b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES));
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                    .processInstanceKey(processInstanceKey));
     final var log4 =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
-            b -> b.processDefinitionId("process-def-3").category(AuditLogOperationCategory.ADMIN));
+            b ->
+                b.processDefinitionId("process-def-3")
+                    .category(AuditLogOperationCategory.ADMIN)
+                    .processInstanceKey(processInstanceKey));
 
     // Create composite authorization with multiple resource types and permissions
     final var resourceAccessChecks =
@@ -490,7 +558,10 @@ public class AuditLogIT {
                                 .resourceIds(List.of(processDefId2))))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -505,10 +576,15 @@ public class AuditLogIT {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
     final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
 
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
+
     // Create audit logs
     AuditLogFixtures.createAndSaveAuditLog(
         rdbmsWriters,
-        b -> b.processDefinitionId("process-def-1").category(AuditLogOperationCategory.ADMIN));
+        b ->
+            b.processDefinitionId("process-def-1")
+                .category(AuditLogOperationCategory.ADMIN)
+                .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with non-matching authorization
     final var resourceAccessChecks =
@@ -521,7 +597,10 @@ public class AuditLogIT {
                             .resourceIds(List.of("non-existent-process")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
 
     assertThat(searchResult.total()).isZero();
     assertThat(searchResult.items()).isEmpty();
@@ -768,5 +847,284 @@ public class AuditLogIT {
         .isNotEmpty()
         .extracting(AuditLogEntity::processInstanceKey)
         .containsOnly(processInstanceKey1);
+  }
+
+  @TestTemplate
+  public void shouldFindAuditLogsByPropertyBasedAuthorizationWithCategory(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
+
+    // Create audit logs with authorized categories (ADMIN and USER_TASKS)
+    final var adminLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN).processInstanceKey(processInstanceKey));
+    final var userTaskLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.USER_TASKS)
+                    .processInstanceKey(processInstanceKey));
+
+    // Create audit log with non-authorized category
+    final var deployedResourcesLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                    .processInstanceKey(processInstanceKey));
+
+    // when - use property-based authorization for category
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(b -> b.auditLog().read().authorizedByCategory())),
+            TenantCheck.disabled());
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
+
+    // then - should return only logs with authorized categories (ADMIN and USER_TASKS)
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .contains(adminLog.auditLogKey(), userTaskLog.auditLogKey())
+        .doesNotContain(deployedResourcesLog.auditLogKey());
+  }
+
+  @TestTemplate
+  public void shouldCombinePropertyBasedAuthorizationWithTenantCheck(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
+    // Use unique tenant IDs to avoid test isolation issues
+    final String tenant1 = "tenant-alpha-" + nextKey();
+    final String tenant2 = "tenant-beta-" + nextKey();
+    final String tenant3 = "tenant-gamma-" + nextKey();
+
+    // Create audit logs with authorized categories in different tenants
+    final var adminLogTenant1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN)
+                    .tenantId(tenant1)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .processInstanceKey(processInstanceKey));
+    final var adminLogTenant2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN)
+                    .tenantId(tenant2)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .processInstanceKey(processInstanceKey));
+    final var userTaskLogTenant1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.USER_TASKS)
+                    .tenantId(tenant1)
+                    .tenantScope(AuditLogTenantScope.TENANT)
+                    .processInstanceKey(processInstanceKey));
+
+    // Create audit log with authorized category but in non-authorized tenant
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.category(AuditLogOperationCategory.ADMIN)
+                .tenantId(tenant3)
+                .tenantScope(AuditLogTenantScope.TENANT)
+                .processInstanceKey(processInstanceKey));
+
+    // Create audit log with non-authorized category in authorized tenant
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                .tenantId(tenant1)
+                .tenantScope(AuditLogTenantScope.TENANT)
+                .processInstanceKey(processInstanceKey));
+
+    // when - use property-based authorization AND tenant check
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(b -> b.auditLog().read().authorizedByCategory())),
+            TenantCheck.enabled(List.of(tenant1, tenant2)));
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
+
+    // then - should return only logs matching BOTH category AND tenant criteria
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items()).hasSize(3);
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .containsExactlyInAnyOrder(
+            adminLogTenant1.auditLogKey(),
+            adminLogTenant2.auditLogKey(),
+            userTaskLogTenant1.auditLogKey());
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::tenantId)
+        .containsOnly(tenant1, tenant2);
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::category)
+        .containsOnly(AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.USER_TASKS);
+  }
+
+  @TestTemplate
+  public void shouldCombinePropertyBasedAuthorizationWithResourceIdFiltering(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final var processDefId1 = "process-def-1";
+    final var processDefId2 = "process-def-2";
+    final var processDefId3 = "process-def-3";
+    final Long processInstanceKey = nextKey(); // Unique key for test isolation
+
+    // Create audit logs with authorized categories
+    final var adminLog1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN)
+                    .processDefinitionId(processDefId1)
+                    .processInstanceKey(processInstanceKey));
+    final var adminLog2 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.ADMIN)
+                    .processDefinitionId(processDefId2)
+                    .processInstanceKey(processInstanceKey));
+
+    // Create audit log with non-authorized category but with processDefId3 (authorized by resource
+    // ID)
+    final var deployedResourcesLog =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                    .processDefinitionId(processDefId3)
+                    .processInstanceKey(processInstanceKey));
+
+    // Create audit log with non-authorized category and no process definition ID - should NOT match
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                .processDefinitionId(null)
+                .processInstanceKey(processInstanceKey));
+
+    // when - combine property-based authorization with process definition resource ID authorization
+    // This simulates how AuditLogServices combines authorizations:
+    // - AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION (category-based)
+    // - AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION (process definition resource IDs)
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                AuthorizationConditions.anyOf(
+                    Authorization.of(b -> b.auditLog().read().authorizedByCategory()),
+                    Authorization.of(
+                        b ->
+                            b.processDefinition()
+                                .readProcessInstance()
+                                .resourceIds(List.of(processDefId3))))),
+            TenantCheck.disabled());
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
+            resourceAccessChecks);
+
+    // then - should return logs matching either property-based OR process definition resource ID
+    // authorization
+    assertThat(searchResult.total()).isEqualTo(3);
+    assertThat(searchResult.items()).hasSize(3);
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .containsExactlyInAnyOrder(
+            adminLog1.auditLogKey(), adminLog2.auditLogKey(), deployedResourcesLog.auditLogKey());
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::category)
+        .containsOnly(
+            AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.DEPLOYED_RESOURCES);
+  }
+
+  @TestTemplate
+  public void shouldCombinePropertyBasedAuthorizationWithQueryFilter(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    // Use unique process definition IDs to avoid test isolation issues
+    final var processDefId1 = "process-def-alpha-" + nextKey();
+    final var processDefId2 = "process-def-beta-" + nextKey();
+
+    // Create audit logs with authorized categories and different process definitions
+    final var adminLogProc1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b -> b.category(AuditLogOperationCategory.ADMIN).processDefinitionId(processDefId1));
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b -> b.category(AuditLogOperationCategory.ADMIN).processDefinitionId(processDefId2));
+    final var userTaskLogProc1 =
+        AuditLogFixtures.createAndSaveAuditLog(
+            rdbmsWriters,
+            b ->
+                b.category(AuditLogOperationCategory.USER_TASKS)
+                    .processDefinitionId(processDefId1));
+
+    // Create audit log with non-authorized category but matching process definition
+    AuditLogFixtures.createAndSaveAuditLog(
+        rdbmsWriters,
+        b ->
+            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                .processDefinitionId(processDefId1));
+
+    // when - use property-based authorization AND query filter
+    final var resourceAccessChecks =
+        ResourceAccessChecks.of(
+            AuthorizationCheck.enabled(
+                Authorization.of(b -> b.auditLog().read().authorizedByCategory())),
+            TenantCheck.disabled());
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.filter(f -> f.processDefinitionIds(processDefId1))),
+            resourceAccessChecks);
+
+    // then - should return only logs matching BOTH authorization AND query filter
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::auditLogKey)
+        .containsExactlyInAnyOrder(adminLogProc1.auditLogKey(), userTaskLogProc1.auditLogKey());
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::processDefinitionId)
+        .containsOnly(processDefId1);
+    assertThat(searchResult.items())
+        .extracting(AuditLogEntity::category)
+        .containsOnly(AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.USER_TASKS);
   }
 }
