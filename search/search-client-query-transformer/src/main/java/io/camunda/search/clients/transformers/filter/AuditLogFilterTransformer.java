@@ -7,7 +7,6 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
-import static io.camunda.search.clients.auth.matcher.AuditLogPropertyMatcher.AUTHENTICATED_CATEGORIES;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
@@ -31,6 +30,7 @@ import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import io.camunda.zeebe.protocol.record.value.AuthorizedAuditLogCategoryType;
 import java.util.ArrayList;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -172,7 +172,8 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
 
     for (final var propertyName : resourcePropertyNames) {
       if (Authorization.PROP_CATEGORY.equals(propertyName)) {
-        queries.add(stringTerms(CATEGORY, AUTHENTICATED_CATEGORIES));
+        queries.add(
+            stringTerms(CATEGORY, AuthorizedAuditLogCategoryType.getAuthorizedCategories()));
       } else {
         LOG.warn(
             "Unknown property name '{}' for {} property-based authorization; ignoring.",

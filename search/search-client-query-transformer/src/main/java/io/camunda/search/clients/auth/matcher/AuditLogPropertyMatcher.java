@@ -8,10 +8,9 @@
 package io.camunda.search.clients.auth.matcher;
 
 import io.camunda.search.entities.AuditLogEntity;
-import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.CamundaAuthentication;
-import java.util.List;
+import io.camunda.zeebe.protocol.record.value.AuthorizedAuditLogCategoryType;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,8 +26,6 @@ import org.slf4j.LoggerFactory;
  */
 public class AuditLogPropertyMatcher implements ResourcePropertyMatcher<AuditLogEntity> {
 
-  public static final List<String> AUTHENTICATED_CATEGORIES =
-      List.of(AuditLogOperationCategory.ADMIN.name(), AuditLogOperationCategory.USER_TASKS.name());
   private static final Logger LOG = LoggerFactory.getLogger(AuditLogPropertyMatcher.class);
 
   @Override
@@ -64,7 +61,7 @@ public class AuditLogPropertyMatcher implements ResourcePropertyMatcher<AuditLog
       return false;
     }
 
-    return AUTHENTICATED_CATEGORIES.contains(category.name());
+    return AuthorizedAuditLogCategoryType.getAuthorizedCategories().contains(category.name());
   }
 
   @Override
