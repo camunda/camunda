@@ -39,6 +39,7 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   public static final StringValue VARIABLES_KEY = new StringValue("variables");
   public static final StringValue PROCESS_INSTANCE_KEY_KEY = new StringValue("processInstanceKey");
   public static final StringValue TAGS_KEY = new StringValue("tags");
+  public static final StringValue BUSINESS_ID_KEY = new StringValue("businessId");
 
   private final StringProperty bpmnProcessIdProperty = new StringProperty(BPMN_PROCESS_ID_KEY, "");
   private final LongProperty processDefinitionKeyProperty =
@@ -51,16 +52,18 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
       new LongProperty(PROCESS_INSTANCE_KEY_KEY, -1);
   private final ArrayProperty<StringValue> tagsProperty =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
+  private final StringProperty businessIdProperty = new StringProperty(BUSINESS_ID_KEY, "");
 
   public ProcessInstanceResultRecord() {
-    super(7);
+    super(8);
     declareProperty(bpmnProcessIdProperty)
         .declareProperty(processDefinitionKeyProperty)
         .declareProperty(processInstanceKeyProperty)
         .declareProperty(versionProperty)
         .declareProperty(tenantIdProperty)
         .declareProperty(variablesProperty)
-        .declareProperty(tagsProperty);
+        .declareProperty(tagsProperty)
+        .declareProperty(businessIdProperty);
   }
 
   @Override
@@ -89,22 +92,17 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
   }
 
   @Override
+  public long getProcessInstanceKey() {
+    return processInstanceKeyProperty.getValue();
+  }
+
+  @Override
   public long getProcessDefinitionKey() {
     return processDefinitionKeyProperty.getValue();
   }
 
   public ProcessInstanceResultRecord setProcessDefinitionKey(final long key) {
     processDefinitionKeyProperty.setValue(key);
-    return this;
-  }
-
-  @Override
-  public long getProcessInstanceKey() {
-    return processInstanceKeyProperty.getValue();
-  }
-
-  public ProcessInstanceResultRecord setProcessInstanceKey(final long instanceKey) {
-    processInstanceKeyProperty.setValue(instanceKey);
     return this;
   }
 
@@ -122,6 +120,31 @@ public final class ProcessInstanceResultRecord extends UnifiedRecordValue
       tags.forEach(tag -> tagsProperty.add().wrap(BufferUtil.wrapString(tag)));
     }
     return this;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return bufferAsString(businessIdProperty.getValue());
+  }
+
+  public ProcessInstanceResultRecord setBusinessId(final String businessId) {
+    businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceResultRecord setBusinessId(final DirectBuffer businessId) {
+    businessIdProperty.setValue(businessId);
+    return this;
+  }
+
+  public ProcessInstanceResultRecord setProcessInstanceKey(final long instanceKey) {
+    processInstanceKeyProperty.setValue(instanceKey);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getBusinessIdBuffer() {
+    return businessIdProperty.getValue();
   }
 
   @JsonIgnore
