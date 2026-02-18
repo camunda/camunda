@@ -179,7 +179,9 @@ public class ElasticsearchProcessStore implements ProcessStore {
         new SearchRequest(processIndex.getAlias())
             .source(
                 new SearchSourceBuilder()
-                    .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey)));
+                    .query(QueryBuilders.termQuery(ProcessIndex.KEY, processDefinitionKey))
+                    // Exclude BPMN_XML for performance - use getDiagramByKey() to retrieve XML
+                    .fetchSource(null, new String[] {BPMN_XML}));
 
     try {
       final SearchResponse response = tenantAwareClient.search(searchRequest);

@@ -521,6 +521,27 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
                 firstProcessDefinition.getBpmnProcessId(), TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   }
 
+  @Test
+  public void testGetProcessByKeyReturnsBpmnXmlExcluded() {
+    // given - fetch a process by key
+    final ProcessEntity storedProcess = firstProcessDefinition;
+
+    // when
+    final ProcessEntity retrievedProcess = processStore.getProcessByKey(storedProcess.getKey());
+    final String diagram = processStore.getDiagramByKey(storedProcess.getKey());
+
+    // then - verify the process is retrieved (BPMN_XML exclusion doesn't affect structure)
+    assertThat(retrievedProcess).isNotNull();
+    assertThat(retrievedProcess.getKey()).isEqualTo(storedProcess.getKey());
+    assertThat(retrievedProcess.getName()).isEqualTo(storedProcess.getName());
+    assertThat(retrievedProcess.getBpmnProcessId()).isEqualTo(storedProcess.getBpmnProcessId());
+    assertThat(retrievedProcess.getBpmnXml()).isNull();
+
+    // The diagram can be fetched even though getProcessByKey excludes BPMN_XML
+    assertThat(diagram).isNotNull();
+    assertThat(diagram).isEqualTo(storedProcess.getBpmnXml());
+  }
+
   private String getFullIndexNameForDependant(final String indexName) {
     final ProcessInstanceDependant dependant =
         processInstanceDependantTemplates.stream()

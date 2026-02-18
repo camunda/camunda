@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.store.elasticsearch;
 
-import static io.camunda.webapps.schema.entities.AbstractExporterEntity.DEFAULT_TENANT_ID;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 import static org.mockito.ArgumentMatchers.any;
@@ -29,13 +29,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import org.apache.lucene.search.TotalHits;
+import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -180,7 +183,7 @@ public class ElasticsearchProcessStoreTest {
     when(tenantAwareClient.search(any())).thenThrow(new IOException());
 
     assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> underTest.getProcessesGrouped(DEFAULT_TENANT_ID, Set.of("demoProcess")));
+        .isThrownBy(() -> underTest.getProcessesGrouped("<default>", Set.of("demoProcess")));
   }
 
   @Test
@@ -417,5 +420,104 @@ public class ElasticsearchProcessStoreTest {
             .actual();
     assertThat(exception.getMessage())
         .isEqualTo("Refresh indices needs at least one index to refresh.");
+  }
+
+  @Test
+  public void testGetProcessByKeyExcludesBpmnXml() throws IOException {
+    // Given - mock search response
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final TotalHits mockTotalHits = new TotalHits(1L, Mockito.mock(TotalHits.Relation.class));
+    when(mockResponse.getHits()).thenReturn(mockHits);
+    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
+    when(mockHits.getHits()).thenReturn(new SearchHit[0]);
+    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    when(processIndex.getAlias()).thenReturn("process-index");
+
+    // When - getProcessByKey is called
+    try {
+      underTest.getProcessByKey(123L);
+    } catch (final Exception e) {
+      // Expected - mock doesn't return proper entity
+    }
+
+    // Then - capture the SearchRequest and verify BPMN_XML is excluded
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    Mockito.verify(tenantAwareClient).search(captor.capture());
+
+    final SearchRequest capturedRequest = captor.getValue();
+    assertThat(capturedRequest).isNotNull();
+    assertThat(capturedRequest.source()).isNotNull();
+    assertThat(capturedRequest.source().fetchSource()).isNotNull();
+    assertThat(capturedRequest.source().fetchSource().excludes()).contains(BPMN_XML);
+  }
+
+  @Test
+  public void testGetDiagramByKeyIncludesBpmnXml() throws IOException {
+    // Given - mock search response
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final TotalHits mockTotalHits = new TotalHits(1L, Mockito.mock(TotalHits.Relation.class));
+    when(mockResponse.getHits()).thenReturn(mockHits);
+    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
+    when(mockHits.getHits()).thenReturn(new SearchHit[0]);
+    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    when(processIndex.getAlias()).thenReturn("process-index");
+
+    // When - getDiagramByKey is called
+    try {
+      underTest.getDiagramByKey(123L);
+    } catch (final Exception e) {
+      // Expected - mock doesn't return proper entity
+    }
+
+    // Then - capture the SearchRequest and verify BPMN_XML is NOT excluded (should be included)
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    Mockito.verify(tenantAwareClient).search(captor.capture());
+
+    final SearchRequest capturedRequest = captor.getValue();
+    assertThat(capturedRequest).isNotNull();
+    assertThat(capturedRequest.source()).isNotNull();
+    // getDiagramByKey should include BPMN_XML, not exclude it
+    final var fetchSource = capturedRequest.source().fetchSource();
+    if (fetchSource != null && fetchSource.excludes() != null) {
+      assertThat(fetchSource.excludes()).doesNotContain(BPMN_XML);
+    }
+    // Verify that BPMN_XML is in the includes (the method fetches BPMN_XML explicitly)
+    if (fetchSource != null && fetchSource.includes() != null) {
+      assertThat(fetchSource.includes()).contains(BPMN_XML);
+    }
+  }
+
+  @Test
+  public void testGetProcessByKeyExcludesOnlyBpmnXml() throws IOException {
+    // Given - mock search response
+    final SearchResponse mockResponse = Mockito.mock(SearchResponse.class);
+    final SearchHits mockHits = Mockito.mock(SearchHits.class);
+    final TotalHits mockTotalHits = new TotalHits(1L, Mockito.mock(TotalHits.Relation.class));
+    when(mockResponse.getHits()).thenReturn(mockHits);
+    when(mockHits.getTotalHits()).thenReturn(mockTotalHits);
+    when(mockHits.getHits()).thenReturn(new SearchHit[0]);
+    when(tenantAwareClient.search(any())).thenReturn(mockResponse);
+    when(processIndex.getAlias()).thenReturn("process-index");
+
+    // When - getProcessByKey is called
+    try {
+      underTest.getProcessByKey(456L);
+    } catch (final Exception e) {
+      // Expected - mock doesn't return proper entity
+    }
+
+    // Then - verify ONLY bpmnXml is in the excludes list
+    final ArgumentCaptor<SearchRequest> captor = ArgumentCaptor.forClass(SearchRequest.class);
+    Mockito.verify(tenantAwareClient).search(captor.capture());
+
+    final SearchRequest capturedRequest = captor.getValue();
+    final String[] excludes = capturedRequest.source().fetchSource().excludes();
+    assertThat(excludes).hasSize(1);
+    assertThat(excludes).containsExactly(BPMN_XML);
+
+    // Verify no includes are set (all other fields should be returned)
+    assertThat(capturedRequest.source().fetchSource().includes()).isNullOrEmpty();
   }
 }

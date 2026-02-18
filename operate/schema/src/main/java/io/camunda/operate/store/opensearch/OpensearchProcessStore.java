@@ -14,6 +14,7 @@ import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBuilder;
+import static io.camunda.webapps.schema.descriptors.index.ProcessIndex.BPMN_XML;
 import static io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.webapps.schema.descriptors.template.ListViewTemplate.*;
 import static java.util.function.UnaryOperator.identity;
@@ -99,7 +100,8 @@ public class OpensearchProcessStore implements ProcessStore {
   public ProcessEntity getProcessByKey(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
+            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)))
+            .source(sourceExclude(BPMN_XML));
 
     return richOpenSearchClient
         .doc()
