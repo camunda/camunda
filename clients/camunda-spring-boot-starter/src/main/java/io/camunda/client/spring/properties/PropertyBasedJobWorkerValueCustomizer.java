@@ -89,7 +89,8 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
       copyProperties(defaults, editedJobWorkerValue, OverrideSource.defaults);
     }
     final String workerType = editedJobWorkerValue.getType().value();
-    findWorkerOverride(workerType)
+    final String workerName = editedJobWorkerValue.getName().value();
+    findWorkerOverride(workerType, workerName)
         .ifPresent(
             jobWorkerValue -> {
               LOG.debug("Worker '{}': Applying overrides {}", workerType, jobWorkerValue);
@@ -97,8 +98,10 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
             });
   }
 
-  private Optional<CamundaClientJobWorkerProperties> findWorkerOverride(final String type) {
-    return ofNullable(camundaClientProperties.getWorker().getOverride().get(type));
+  private Optional<CamundaClientJobWorkerProperties> findWorkerOverride(
+      final String type, final String name) {
+    return ofNullable(camundaClientProperties.getWorker().getOverride().get(type))
+        .or(() -> ofNullable(camundaClientProperties.getWorker().getOverride().get(name)));
   }
 
   private Supplier<List<String>> fetchVariablesSuppliers(
