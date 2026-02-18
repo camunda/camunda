@@ -51,7 +51,7 @@ jobs:
     strategy:
       fail-fast: true
     steps:
-      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
 
       - name: Log Input Variables
         run: |
@@ -130,6 +130,7 @@ jobs:
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
           maven-servers: |
             [{
                 "id": "central",
@@ -197,7 +198,7 @@ jobs:
 
       - id: "auth"
         name: "Authenticate to Google Cloud"
-        uses: "google-github-actions/auth@v2"
+        uses: "google-github-actions/auth@v3"
         with:
           token_format: "access_token"
           workload_identity_provider: "projects/271764561088/locations/global/workloadIdentityPools/github/providers/camunda"
@@ -211,7 +212,7 @@ jobs:
           password: ${{ steps.auth.outputs.access_token }}
 
       - name: Checkout release branch
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
         with:
           ref: ${{ env.BRANCH }}
           fetch-depth: 0
@@ -332,7 +333,7 @@ jobs:
           DATE="$(date +%FT%TZ)"
           export DATE
           export REVISION="${REVISION}"
-          export BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev@sha256:6d72cf910cea8b66f3c4691b69371527c0c2dd528eddf87af55c1870e904707d"
+          export BASE_IMAGE="reg.mini.dev/1212/openjre-base-compat:21-dev"
 
           # if CI (GHA) export the variables for pushing in a later step
           if [ "${CI}" = "true" ]; then
@@ -346,12 +347,17 @@ jobs:
               --build-arg VERSION="${RELEASE_VERSION}" \
               --build-arg DATE="${DATE}" \
               --build-arg REVISION="${REVISION}" \
+              --build-arg BASE_IMAGE="${BASE_IMAGE}" \
               --provenance false \
               --load \
               -f optimize.Dockerfile \
               .
 
-          ./optimize/docker/test/verify.sh "${tags[@]}"
+          echo "Docker build completed. Running verification..."
+          echo "Verifying with VERSION=${VERSION}, REVISION=${REVISION}, DATE=${DATE}, BASE_IMAGE=${BASE_IMAGE}"
+
+          # Verify using the most reliable tag (DockerHub)
+          ./optimize/docker/test/verify.sh "${DOCKER_IMAGE_DOCKER_HUB}:${RELEASE_VERSION}"
 
       - name: Start Smoketest
         uses: ./.github/actions/compose
