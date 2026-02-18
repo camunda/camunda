@@ -71,7 +71,7 @@ public final class DeploymentTransformer {
 
     final var formResourceTransformer =
         new FormResourceTransformer(
-            keyGenerator, stateWriter, checksumGenerator, processingState.getFormState());
+            keyGenerator, stateWriter, checksumGenerator, processingState.getFormState(), config);
 
     final var resourceTransformer =
         new RpaTransformer(
