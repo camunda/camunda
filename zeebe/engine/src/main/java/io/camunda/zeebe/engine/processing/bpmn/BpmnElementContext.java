@@ -62,6 +62,8 @@ public interface BpmnElementContext {
 
   Set<String> getTags();
 
+  String getBusinessId();
+
   BpmnElementContext copy(
       long elementInstanceKey, ProcessInstanceRecord recordValue, ProcessInstanceIntent intent);
 }
