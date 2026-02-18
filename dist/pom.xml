@@ -1025,25 +1025,6 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>unpack-openapi-yaml</id>
-            <phase>initialize</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>io.camunda</groupId>
-                  <artifactId>zeebe-gateway-protocol</artifactId>
-                  <includes>v2/**</includes>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-        </executions>
         <configuration>
           <ignoredNonTestScopedDependencies>
             <ignoredNonTestScopedDependency>org.agrona:agrona</ignoredNonTestScopedDependency>
@@ -1094,6 +1075,25 @@
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <id>unpack-openapi-yaml</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-gateway-protocol</artifactId>
+                  <includes>v2/**</includes>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
