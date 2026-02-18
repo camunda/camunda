@@ -16,6 +16,7 @@ We use [Spectral CLI](https://docs.stoplight.io/docs/spectral/) to validate the 
   - Custom naming conventions (e.g., no "flow node" terminology)
   - Property description requirements
   - Key property type validation (`...Key` properties must be strings)
+  - Eventually-consistent annotation validation (command operations must not be marked as eventually consistent)
 
 ## Running Validation Locally
 
@@ -53,6 +54,36 @@ properties:
 required:
   - myField  # ✓ Correct - array at object level
 ```
+
+### `x-eventually-consistent` on Command Operations
+
+Command (mutating) operations must not be marked with `x-eventually-consistent: true`.
+
+**Wrong:**
+
+```yaml
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      x-eventually-consistent: true  # ❌ Invalid for command operations!
+```
+
+**Correct:**
+
+```yaml
+paths:
+  /resources:
+    post:
+      operationId: createResource
+      x-eventually-consistent: false  # ✓ Correct for commands (create, update, delete)
+  /resources/search:
+    post:
+      operationId: searchResources
+      x-eventually-consistent: true   # ✓ Correct for query operations (search, get, statistics)
+```
+
+Query operations (GET requests, POST to `/search` or `/statistics` endpoints) read from eventually-consistent projections and should use `x-eventually-consistent: true`. Command operations (POST, PUT, PATCH, DELETE that create/modify/delete resources) are synchronous writes and must use `x-eventually-consistent: false`. See [#45968](https://github.com/camunda/camunda/issues/45968) for details.
 
 ## CI Integration
 
