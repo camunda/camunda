@@ -7,28 +7,30 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import io.camunda.zeebe.exporter.opensearch.OpensearchClient;
 import io.camunda.zeebe.exporter.opensearch.OpensearchExporterConfiguration;
 import io.camunda.zeebe.exporter.opensearch.RecordIndexRouter;
-import java.util.List;
 import java.util.Optional;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.json.JsonpDeserializer;
 import org.opensearch.client.json.ObjectBuilderDeserializer;
 import org.opensearch.client.json.ObjectDeserializer;
+import org.opensearch.client.opensearch.ism.IsmTemplate;
+import org.opensearch.client.opensearch.ism.Policy;
 import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
 import org.opensearch.client.util.ObjectBuilder;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public record GetIndexStateManagementPolicyResponse(
-    IsmPolicyResponse policy,
-    @JsonProperty("_seq_no") Integer seqNo,
-    @JsonProperty("_primary_term") Integer primaryTerm) {
+    Policy policy, Integer seqNo, Integer primaryTerm) {
 
+  private static final JsonpDeserializer<IsmTemplate> ISM_TEMPLATE_DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(
+          IsmTemplate::builder,
+          GetIndexStateManagementPolicyResponse::setupIsmTemplateDeserializer);
+  private static final JsonpDeserializer<Policy> POLICY_DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(
+          Policy::builder, GetIndexStateManagementPolicyResponse::setupPolicyDeserializer);
   public static final JsonpDeserializer<GetIndexStateManagementPolicyResponse> DESERIALIZER =
       ObjectBuilderDeserializer.lazy(
           GetIndexStateManagementPolicyResponse.Builder::new,
@@ -38,7 +40,7 @@ public record GetIndexStateManagementPolicyResponse(
       final ObjectDeserializer<GetIndexStateManagementPolicyResponse.Builder> deserializer) {
     deserializer.add(
         GetIndexStateManagementPolicyResponse.Builder::policy,
-        IsmPolicyResponse.DESERIALIZER,
+        GetIndexStateManagementPolicyResponse.POLICY_DESERIALIZER,
         "policy");
     deserializer.add(
         GetIndexStateManagementPolicyResponse.Builder::seqNo,
@@ -50,11 +52,52 @@ public record GetIndexStateManagementPolicyResponse(
         "_primary_term");
   }
 
-  @JsonIgnore
+  private static void setupPolicyDeserializer(
+      final ObjectDeserializer<Policy.Builder> deserializer) {
+    deserializer.add(Policy.Builder::policyId, JsonpDeserializer.stringDeserializer(), "policy_id");
+    deserializer.add(
+        Policy.Builder::description, JsonpDeserializer.stringDeserializer(), "description");
+    deserializer.add(
+        Policy.Builder::defaultState, JsonpDeserializer.stringDeserializer(), "default_state");
+    deserializer.add(
+        Policy.Builder::states,
+        JsonpDeserializer.arrayDeserializer(States._DESERIALIZER),
+        "states");
+    deserializer.add(
+        Policy.Builder::schemaVersion, JsonpDeserializer.numberDeserializer(), "schema_version");
+    deserializer.add(
+        Policy.Builder::ismTemplate,
+        JsonpDeserializer.arrayDeserializer(
+            GetIndexStateManagementPolicyResponse.ISM_TEMPLATE_DESERIALIZER),
+        "ism_template");
+
+    // Note: ignoring setting `Policy.Builder::lastUpdatedTime` due to `Policy.lastUpdatedTime` is
+    // an integer and the actual value in `last_updated_time` is a long that throws overflow
+    // exception when deserializing.
+    // Also ignoring `Policy.Builder::errorNotification` since it's not used in the exporter
+    // and the `ErrorNotification::Builder::destination` also has last updated time field
+    // that has the same issue.
+  }
+
+  private static void setupIsmTemplateDeserializer(
+      final ObjectDeserializer<IsmTemplate.Builder> deserializer) {
+    deserializer.add(
+        IsmTemplate.Builder::indexPatterns,
+        JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
+        "index_patterns");
+
+    deserializer.add(
+        IsmTemplate.Builder::priority, JsonpDeserializer.numberDeserializer(), "priority");
+
+    // Note: ignoring setting `IsmTemplate.Builder::lastUpdatedTime` due to
+    // `IsmTemplate.lastUpdatedTime` is an integer and the actual value in `last_updated_time`
+    // field is a long that throws overflow exception when deserializing.
+  }
+
   public boolean equalsConfiguration(final OpensearchExporterConfiguration configuration) {
-    final boolean hasEqualName = policy.policyId.equals(configuration.retention.getPolicyName());
+    final boolean hasEqualName = policy.policyId().equals(configuration.retention.getPolicyName());
     final boolean hasEqualDescription =
-        policy.description.equals(configuration.retention.getPolicyDescription());
+        policy.description().equals(configuration.retention.getPolicyDescription());
 
     return hasEqualName
         && hasEqualDescription
@@ -64,7 +107,7 @@ public record GetIndexStateManagementPolicyResponse(
 
   private boolean hasEqualMinimumAge(final OpensearchExporterConfiguration configuration) {
     final Optional<States> maybeState =
-        policy.states.stream()
+        policy.states().stream()
             .filter(state -> OpensearchClient.ISM_INITIAL_STATE.equals(state.name()))
             .findFirst();
 
@@ -95,136 +138,25 @@ public record GetIndexStateManagementPolicyResponse(
   }
 
   private boolean hasEqualIndexPrefix(final OpensearchExporterConfiguration configuration) {
-    final Optional<IsmTemplate> maybeIsmTemplate = policy.ismTemplates.stream().findFirst();
+    final Optional<IsmTemplate> maybeIsmTemplate = policy.ismTemplate().stream().findFirst();
 
     if (maybeIsmTemplate.isEmpty()) {
       return false;
     }
 
     final IsmTemplate ismTemplate = maybeIsmTemplate.get();
-    return ismTemplate.indexPatterns.stream()
+    return ismTemplate.indexPatterns().stream()
         .findFirst()
         .map(indexPattern -> (configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER+ "*").equals(indexPattern))
         .orElse(false);
   }
 
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public record IsmPolicyResponse(
-      @JsonProperty("policy_id") String policyId,
-      String description,
-      @JsonProperty("default_state") String defaultState,
-      List<States> states,
-      @JsonProperty("ism_template") List<IsmTemplate> ismTemplates) {
-
-    static final JsonpDeserializer<IsmPolicyResponse> DESERIALIZER =
-        ObjectBuilderDeserializer.lazy(
-            IsmPolicyResponse.Builder::new, IsmPolicyResponse::setupDeserializer);
-
-    private static void setupDeserializer(
-        final ObjectDeserializer<IsmPolicyResponse.Builder> deserializer) {
-      deserializer.add(
-          IsmPolicyResponse.Builder::policyId, JsonpDeserializer.stringDeserializer(), "policy_id");
-      deserializer.add(
-          IsmPolicyResponse.Builder::description,
-          JsonpDeserializer.stringDeserializer(),
-          "description");
-      deserializer.add(
-          IsmPolicyResponse.Builder::defaultState,
-          JsonpDeserializer.stringDeserializer(),
-          "default_state");
-      deserializer.add(
-          IsmPolicyResponse.Builder::states,
-          JsonpDeserializer.arrayDeserializer(States._DESERIALIZER),
-          "states");
-      deserializer.add(
-          IsmPolicyResponse.Builder::ismTemplates,
-          JsonpDeserializer.arrayDeserializer(IsmTemplate.DESERIALIZER),
-          "ism_template");
-    }
-
-    static class Builder implements ObjectBuilder<IsmPolicyResponse> {
-      private String policyId;
-      private String description;
-      private String defaultState;
-      private List<States> states;
-      private List<IsmTemplate> ismTemplates;
-
-      public Builder policyId(final String policyId) {
-        this.policyId = policyId;
-        return this;
-      }
-
-      public Builder description(final String description) {
-        this.description = description;
-        return this;
-      }
-
-      public Builder defaultState(final String defaultState) {
-        this.defaultState = defaultState;
-        return this;
-      }
-
-      public Builder states(final List<States> states) {
-        this.states = states;
-        return this;
-      }
-
-      public Builder ismTemplates(final List<IsmTemplate> ismTemplates) {
-        this.ismTemplates = ismTemplates;
-        return this;
-      }
-
-      @Override
-      public IsmPolicyResponse build() {
-        return new IsmPolicyResponse(policyId, description, defaultState, states, ismTemplates);
-      }
-    }
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  public record IsmTemplate(
-      @JsonProperty("index_patterns") List<String> indexPatterns, Integer priority) {
-
-    static final JsonpDeserializer<IsmTemplate> DESERIALIZER =
-        ObjectBuilderDeserializer.lazy(IsmTemplate.Builder::new, IsmTemplate::setupDeserializer);
-
-    private static void setupDeserializer(
-        final ObjectDeserializer<IsmTemplate.Builder> deserializer) {
-      deserializer.add(
-          IsmTemplate.Builder::indexPatterns,
-          JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
-          "index_patterns");
-      deserializer.add(
-          IsmTemplate.Builder::priority, JsonpDeserializer.integerDeserializer(), "priority");
-    }
-
-    static class Builder implements ObjectBuilder<IsmTemplate> {
-      private List<String> indexPatterns;
-      private Integer priority;
-
-      public Builder indexPatterns(final List<String> indexPatterns) {
-        this.indexPatterns = indexPatterns;
-        return this;
-      }
-
-      public Builder priority(final Integer priority) {
-        this.priority = priority;
-        return this;
-      }
-
-      @Override
-      public IsmTemplate build() {
-        return new IsmTemplate(indexPatterns, priority);
-      }
-    }
-  }
-
   static class Builder implements ObjectBuilder<GetIndexStateManagementPolicyResponse> {
-    private IsmPolicyResponse policy;
+    private Policy policy;
     private Integer seqNo;
     private Integer primaryTerm;
 
-    public Builder policy(final IsmPolicyResponse policy) {
+    public Builder policy(final Policy policy) {
       this.policy = policy;
       return this;
     }

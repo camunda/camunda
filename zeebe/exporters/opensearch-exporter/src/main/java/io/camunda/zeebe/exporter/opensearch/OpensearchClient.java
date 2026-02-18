@@ -18,7 +18,6 @@ import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -412,47 +411,22 @@ public class OpensearchClient implements AutoCloseable {
             GetPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
         GET_ENDPOINT =
             new SimpleEndpoint<>(
-                // Request method
-                request -> "GET",
-                // Request path
-                request -> {
-                  final StringBuilder buf = new StringBuilder();
-                  buf.append("/_plugins/_ism/policies/");
-                  SimpleEndpoint.pathEncode(request.policyId(), buf);
-                  return buf.toString();
-                },
-                SimpleEndpoint.emptyMap(), // query parameters, none used
-                SimpleEndpoint.emptyMap(), // headers, none used
-                false,
+                GetPolicyRequest._ENDPOINT::method,
+                GetPolicyRequest._ENDPOINT::requestUrl,
+                GetPolicyRequest._ENDPOINT::queryParameters,
+                GetPolicyRequest._ENDPOINT::headers,
+                GetPolicyRequest._ENDPOINT.hasRequestBody(),
                 GetIndexStateManagementPolicyResponse.DESERIALIZER);
 
     public static final Endpoint<
             PutPolicyRequest, GetIndexStateManagementPolicyResponse, ErrorResponse>
         PUT_ENDPOINT =
             new SimpleEndpoint<>(
-                // Request method
-                request -> "PUT",
-                // Request path
-                request -> {
-                  final StringBuilder buf = new StringBuilder();
-                  buf.append("/_plugins/_ism/policies/");
-                  SimpleEndpoint.pathEncode(request.policyId(), buf);
-                  return buf.toString();
-                },
-                request -> {
-                  // add seq_no and primary_term as query parameters
-                  final var params = new HashMap<String, String>();
-                  if (request.ifSeqNo() != null) {
-                    params.put("if_seq_no", request.ifSeqNo().toString());
-                  }
-                  if (request.ifPrimaryTerm() != null) {
-                    params.put("if_primary_term", request.ifPrimaryTerm().toString());
-                  }
-                  return params;
-                },
-                SimpleEndpoint.emptyMap(), // headers, none used
-                true, // include request body in request
-                // the response is the same as for the GET request, so we can reuse the deserializer
+                PutPolicyRequest._ENDPOINT::method,
+                PutPolicyRequest._ENDPOINT::requestUrl,
+                PutPolicyRequest._ENDPOINT::queryParameters,
+                PutPolicyRequest._ENDPOINT::headers,
+                PutPolicyRequest._ENDPOINT.hasRequestBody(),
                 GetIndexStateManagementPolicyResponse.DESERIALIZER);
 
     public static GetIndexStateManagementPolicyResponse getIsmPolicyResponse(

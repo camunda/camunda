@@ -329,7 +329,7 @@ final class OpensearchExporterIT {
     final var deleteAction = deleteState.actions().getFirst();
     assertThat(deleteAction.delete()).as("Delete action deleted index").isNotNull();
 
-    final var ismTemplate = policy.ismTemplates().getFirst();
+    final var ismTemplate = policy.ismTemplate().getFirst();
     assertThat(ismTemplate.indexPatterns())
         .as("Has 1 configured index pattern")
         .containsOnly(config.index.prefix + "_*");
