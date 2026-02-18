@@ -40,7 +40,7 @@
   </decision>
   <dmndi:DMNDI>
     <dmndi:DMNDiagram>
-      <dmndi:DMNShape dmnElementRef="jedi_or_sith">
+      <dmndi:DMNShape dmnElementRef="this_is_an_extreme_and_very_long_id_for_a_decision1">
         <dc:Bounds height="80" width="180" x="160" y="100" />
       </dmndi:DMNShape>
     </dmndi:DMNDiagram>
