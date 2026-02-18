@@ -193,6 +193,54 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     }
   }
 
+  @Test
+  void shouldRestoreWithoutArguments() throws Exception {
+    // given - deploy a process and create instances, then take continuous backups.
+    final long processKey;
+
+    try (final var client = broker.newClientBuilder().build()) {
+      processKey = deployTestProcess(client);
+      createProcessInstancesAndTakeBackups(client, processKey);
+    }
+    takeAndAwaitBackup();
+
+    final var exporterActuator = ExportersActuator.of(broker);
+    exporterActuator.disableExporter(RDBMS_EXPORTER_NAME);
+
+    Awaitility.await("Until backup is greater or equal to exported position")
+        .pollDelay(Duration.ofSeconds(2))
+        .atMost(Duration.ofSeconds(300))
+        .untilAsserted(
+            () -> {
+              final var backup = takeAndAwaitBackup();
+              final var position = exporterPositionMapper.findOne(1).lastExportedPosition();
+              final var details = backup.getDetails().getFirst();
+              assertThat(details)
+                  .returns(1, PartitionBackupInfo::getPartitionId)
+                  .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
+              assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
+            });
+    // when - stop broker, delete data, restore from time range with RDBMS
+    broker.stop();
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
+    try (final var restore = testRestoreApp()) {
+      restore.start();
+    }
+    broker.start();
+
+    try (final var client = broker.newClientBuilder().build()) {
+      final var jobActivationResult =
+          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(10).send().join();
+
+      assertThat(jobActivationResult.getJobs()).hasSize(4);
+
+      for (final var job : jobActivationResult.getJobs()) {
+        client.newCompleteCommand(job.getKey()).send().join();
+      }
+    }
+  }
+
   private static long deployTestProcess(final CamundaClient client) {
     return client
         .newDeployResourceCommand()

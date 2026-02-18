@@ -137,7 +137,6 @@ public class RestoreManager implements CloseableSilently {
 
     final var exportedPositions = exportedPositions(partitionCount).join();
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var interval = Interval.closed(from, to);
     final var restoreInfos =
         rangeResolver
             .getRestoreInfoForAllPartitions(

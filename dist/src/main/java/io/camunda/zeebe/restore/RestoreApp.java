@@ -217,11 +217,6 @@ public class RestoreApp implements ApplicationRunner {
     final boolean hasBackupId = hasBackupId();
     final boolean hasTimeRange = hasTimeRange();
 
-    if (!hasBackupId && !hasTimeRange) {
-      throw new IllegalArgumentException(
-          "Either --backupId or both --from and --to parameters must be provided");
-    }
-
     if (hasBackupId && hasTimeRange) {
       throw new IllegalArgumentException(
           "Cannot specify both --backupId and --from/--to parameters. Choose one approach.");
@@ -247,7 +242,7 @@ public class RestoreApp implements ApplicationRunner {
     } else if (hasTimeRange()) {
       return String.valueOf(Objects.hash(from, to));
     } else {
-      throw new IllegalStateException("No valid restore parameters provided");
+      return "latest";
     }
   }
 
