@@ -17,6 +17,7 @@ package io.camunda.client.annotation.value;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.bean.MethodInfo;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public class JobWorkerValue {
   private SourceAware<Duration> streamTimeout = new Empty<>();
   private SourceAware<Integer> maxRetries = new Empty<>();
   private SourceAware<Duration> retryBackoff = new Empty<>();
+  private SourceAware<TenantFilterMode> tenantFilterMode = new Empty<>();
   // cannot be changed from change set
   private SourceAware<Boolean> autoComplete = new Empty<>();
 
@@ -63,7 +65,8 @@ public class JobWorkerValue {
       final SourceAware<Boolean> streamEnabled,
       final SourceAware<Duration> streamTimeout,
       final SourceAware<Integer> maxRetries,
-      final SourceAware<Duration> retryBackoff) {
+      final SourceAware<Duration> retryBackoff,
+      final SourceAware<TenantFilterMode> tenantFilterMode) {
     this.type = type;
     this.name = name;
     this.timeout = timeout;
@@ -79,6 +82,7 @@ public class JobWorkerValue {
     this.streamTimeout = streamTimeout;
     this.maxRetries = maxRetries;
     this.retryBackoff = retryBackoff;
+    this.tenantFilterMode = tenantFilterMode;
   }
 
   public SourceAware<String> getType() {
@@ -201,6 +205,14 @@ public class JobWorkerValue {
     this.retryBackoff = retryBackoff;
   }
 
+  public SourceAware<TenantFilterMode> getTenantFilterMode() {
+    return tenantFilterMode;
+  }
+
+  public void setTenantFilterMode(final SourceAware<TenantFilterMode> tenantFilterMode) {
+    this.tenantFilterMode = tenantFilterMode;
+  }
+
   @Deprecated(forRemoval = true, since = "8.9")
   public MethodInfo getMethodInfo() {
     return methodInfo;
@@ -228,6 +240,7 @@ public class JobWorkerValue {
         streamTimeout,
         maxRetries,
         retryBackoff,
+        tenantFilterMode,
         autoComplete);
   }
 
@@ -251,6 +264,7 @@ public class JobWorkerValue {
         && Objects.equals(streamTimeout, that.streamTimeout)
         && Objects.equals(maxRetries, that.maxRetries)
         && Objects.equals(retryBackoff, that.retryBackoff)
+        && Objects.equals(tenantFilterMode, that.tenantFilterMode)
         && Objects.equals(autoComplete, that.autoComplete);
   }
 
@@ -259,6 +273,8 @@ public class JobWorkerValue {
     return "JobWorkerValue{"
         + "autoComplete="
         + autoComplete
+        + ", tenantFilterMode="
+        + tenantFilterMode
         + ", retryBackoff="
         + retryBackoff
         + ", maxRetries="

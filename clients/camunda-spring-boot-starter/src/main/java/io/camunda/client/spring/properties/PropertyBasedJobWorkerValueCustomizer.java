@@ -191,6 +191,12 @@ public class PropertyBasedJobWorkerValueCustomizer implements JobWorkerValueCust
         source::getRetryBackoff,
         target::setRetryBackoff,
         target.getRetryBackoff());
+    copyProperty(
+        "tenantFilterMode",
+        overrideSource,
+        source::getTenantFilterMode,
+        target::setTenantFilterMode,
+        target.getTenantFilterMode());
   }
 
   private <T> void copyPropertyList(
