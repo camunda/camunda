@@ -244,6 +244,27 @@ public final class CreateProcessInstanceWithResultTest extends ClientTest {
     assertThat(new HashSet(piRequest.getTagsList())).isEqualTo(tags);
   }
 
+  @Test
+  public void shouldAddBusinessId() {
+    // given
+    final Long processDefinitionKey = 1L;
+    final String businessId = "order-12345";
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(processDefinitionKey)
+        .businessId(businessId)
+        .withResult()
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceWithResultRequest request = gatewayService.getLastRequest();
+    final CreateProcessInstanceRequest piRequest = request.getRequest();
+    assertThat(piRequest.getBusinessId()).isEqualTo(businessId);
+  }
+
   private static final class VariablesPojo {
     String key;
 
