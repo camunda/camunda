@@ -272,6 +272,13 @@ message CreateProcessInstanceRequest {
 
   // a list of tags that can be attached as meta-data to process instances
   repeated string tags = 9;
+
+  // an optional, user-defined string identifier that identifies the process instance
+  // within the scope of the process definition (scoped by tenant). If provided and uniqueness
+  // enforcement is enabled, the engine will reject creation if another root process instance
+  // with the same business id is already active for the same process definition.
+  // Note that any active child process instances with the same business id are not taken into account.
+  string businessId = 10;
 }
 
 message ProcessInstanceCreationStartInstruction {
@@ -314,6 +321,8 @@ message CreateProcessInstanceResponse {
   string tenantId = 5;
   // tags attached to a process instance
   repeated string tags = 6;
+  // the business id of the created process instance, or empty if not set
+  string businessId = 7;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -345,6 +354,8 @@ message CreateProcessInstanceWithResultResponse {
   string tenantId = 6;
   // tags attached to a process instance
   repeated string tags = 7;
+  // the business id of the created process instance, or empty if not set
+  string businessId = 8;
 }
 
 message EvaluateDecisionRequest {
