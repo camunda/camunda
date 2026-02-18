@@ -16,7 +16,8 @@
   <name>Zeebe Distribution</name>
 
   <properties>
-    <spring-boot.run.jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
+    <spring-boot.run.jvmArguments>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
+      --add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
   </properties>
 
   <dependencies>
@@ -899,6 +900,7 @@
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <extraJvmArguments>-XX:+ExitOnOutOfMemoryError
             -Dfile.encoding=UTF-8 -Xshare:auto
+            --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED
             --add-opens=java.base/java.io=ALL-UNNAMED</extraJvmArguments>
           <!-- This will be added to the classpath as /urs/local/camunda/driver-lib/* -->
           <endorsedDir>driver-lib</endorsedDir>
