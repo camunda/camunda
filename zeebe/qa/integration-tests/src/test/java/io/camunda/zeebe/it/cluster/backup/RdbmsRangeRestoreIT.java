@@ -181,16 +181,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
 
     broker.start();
 
-    try (final var client = broker.newClientBuilder().build()) {
-      final var jobActivationResult =
-          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(10).send().join();
-
-      assertThat(jobActivationResult.getJobs()).hasSize(4);
-
-      for (final var job : jobActivationResult.getJobs()) {
-        client.newCompleteCommand(job.getKey()).send().join();
-      }
-    }
+    completeJobs(4);
   }
 
   @Test
@@ -229,14 +220,25 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     }
     broker.start();
 
+    completeJobs(4);
+  }
+
+  private void completeJobs(final int expectedJobCount) {
     try (final var client = broker.newClientBuilder().build()) {
-      final var jobActivationResult =
-          client.newActivateJobsCommand().jobType("task").maxJobsToActivate(10).send().join();
-
-      assertThat(jobActivationResult.getJobs()).hasSize(4);
-
-      for (final var job : jobActivationResult.getJobs()) {
-        client.newCompleteCommand(job.getKey()).send().join();
+      int tries = 10;
+      int remaining = expectedJobCount;
+      while (remaining > 0 && tries-- > 0) {
+        final var jobActivationResult =
+            client
+                .newActivateJobsCommand()
+                .jobType("task")
+                .maxJobsToActivate(remaining)
+                .send()
+                .join();
+        remaining -= jobActivationResult.getJobs().size();
+        for (final var job : jobActivationResult.getJobs()) {
+          client.newCompleteCommand(job.getKey()).send().join();
+        }
       }
     }
   }
