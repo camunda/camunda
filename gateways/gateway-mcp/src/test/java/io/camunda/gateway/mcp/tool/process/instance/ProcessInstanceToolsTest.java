@@ -492,6 +492,68 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldCreateProcessInstanceWithAwaitCompletionAndRequestTimeout() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      final var variables = Map.of("foo", "bar", "nested", Map.of("x", 1));
+      final var createResponse =
+          new ProcessInstanceResultRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(7)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(variables)))
+              .setTags(Set.of("mcp-tool:abc"));
+
+      when(processInstanceServices.createProcessInstanceWithResult(
+              any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersion",
+                          7,
+                          "variables",
+                          variables,
+                          "awaitCompletion",
+                          true,
+                          "requestTimeout",
+                          60000L,
+                          "tags",
+                          Set.of("mcp-tool:abc")))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices)
+          .createProcessInstanceWithResult(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.awaitCompletion()).isTrue();
+      assertThat(capturedRequest.requestTimeout()).isEqualTo(60000L);
+
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("<default>");
+      assertThat(actualResult.getVariables())
+          .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+    }
+
+    @Test
     void shouldFailCreateProcessInstanceOnException() {
       // given
       when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);

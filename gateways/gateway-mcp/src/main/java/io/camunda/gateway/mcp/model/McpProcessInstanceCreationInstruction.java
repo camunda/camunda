@@ -44,6 +44,11 @@ public record McpProcessInstanceCreationInstruction(
         Boolean awaitCompletion,
     @McpToolParam(
             description =
+                "Timeout in milliseconds the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied.",
+            required = false)
+        Long requestTimeout,
+    @McpToolParam(
+            description =
                 "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
             required = false)
         List<@NotBlank String> fetchVariables,

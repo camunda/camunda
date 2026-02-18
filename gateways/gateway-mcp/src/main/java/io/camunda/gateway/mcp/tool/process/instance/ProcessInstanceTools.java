@@ -110,7 +110,9 @@ public class ProcessInstanceTools {
           When using the awaitCompletion flag, the tool will wait for the process instance to complete
           and return its result variables. When using awaitCompletion, always include a unique tag
           `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
-          of timeouts.""")
+          of timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,
+          will timeout more likely. You can increase the timeout to wait for completion by defining
+          a longer requestTimeout.""")
   public CallToolResult createProcessInstance(
       @McpToolParamsUnwrapped @Valid
           final McpProcessInstanceCreationInstruction creationInstruction) {
@@ -128,6 +130,8 @@ public class ProcessInstanceTools {
       Optional.ofNullable(creationInstruction.fetchVariables())
           .ifPresent(instruction::fetchVariables);
       Optional.ofNullable(creationInstruction.tags()).ifPresent(instruction::tags);
+      Optional.ofNullable(creationInstruction.requestTimeout())
+          .ifPresent(instruction::requestTimeout);
 
       final var request =
           SimpleRequestMapper.toCreateProcessInstance(
