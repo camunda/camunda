@@ -21,7 +21,7 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
-import com.azure.storage.common.implementation.Constants;
+import com.azure.storage.common.implementation.Constants.HeaderConstants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -157,6 +157,8 @@ public final class ManifestManager {
           case FAILED -> manifest.asFailed();
           case COMPLETED -> manifest.asCompleted().fail(failureReason);
           case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
+          case DELETED ->
+              throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
         };
 
     if (manifest != updatedManifest) {
@@ -261,7 +263,7 @@ public final class ManifestManager {
   public static void disableOverwrite(final BlobRequestConditions blobRequestConditions) {
     // Optionally limit requests to resources that do not match the passed ETag.
     // None will match therefore it will not overwrite.
-    blobRequestConditions.setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
+    blobRequestConditions.setIfNoneMatch(HeaderConstants.ETAG_WILDCARD);
   }
 
   record PersistedManifest(String eTag, InProgressManifest manifest) {}

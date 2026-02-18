@@ -365,6 +365,7 @@ public final class BackupApiRequestHandler
       case IN_PROGRESS -> BackupStatusCode.IN_PROGRESS;
       case COMPLETED -> BackupStatusCode.COMPLETED;
       case FAILED -> BackupStatusCode.FAILED;
+      case DELETED -> BackupStatusCode.DELETED;
     };
   }
 }

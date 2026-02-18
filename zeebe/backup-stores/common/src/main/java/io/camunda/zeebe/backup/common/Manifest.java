@@ -60,6 +60,8 @@ public sealed interface Manifest {
 
   FailedManifest asFailed();
 
+  DeletedManifest asDeleted();
+
   static BackupStatus toStatus(final Manifest manifest) {
     return switch (manifest.statusCode()) {
       case IN_PROGRESS ->
@@ -86,6 +88,14 @@ public sealed interface Manifest {
               Optional.ofNullable(manifest.asFailed().failureReason()),
               Optional.ofNullable(manifest.createdAt()),
               Optional.ofNullable(manifest.modifiedAt()));
+      case DELETED ->
+          new BackupStatusImpl(
+              manifest.id(),
+              Optional.ofNullable(manifest.descriptor()),
+              BackupStatusCode.DELETED,
+              Optional.empty(),
+              Optional.ofNullable(manifest.createdAt()),
+              Optional.ofNullable(manifest.modifiedAt()));
     };
   }
 
@@ -94,11 +104,15 @@ public sealed interface Manifest {
     CompletedManifest complete();
 
     FailedManifest fail(final String failureReason);
+
+    DeletedManifest delete();
   }
 
   sealed interface CompletedManifest extends Manifest permits ManifestImpl {
 
     FailedManifest fail(final String failureReason);
+
+    DeletedManifest delete();
 
     FileSet snapshot();
 
@@ -108,11 +122,16 @@ public sealed interface Manifest {
   sealed interface FailedManifest extends Manifest permits ManifestImpl {
 
     String failureReason();
+
+    DeletedManifest delete();
   }
+
+  sealed interface DeletedManifest extends Manifest permits ManifestImpl {}
 
   enum StatusCode {
     IN_PROGRESS,
     COMPLETED,
-    FAILED
+    FAILED,
+    DELETED
   }
 }
