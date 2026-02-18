@@ -43,7 +43,7 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 | Option | Values | Default |
 |--------|--------|---------|
 | `--name` | any short name | auto from components |
-| `--auth` | `insecure`, `basic` | `insecure` |
+| `--auth` | `insecure`, `basic`, `oidc` | `insecure` |
 | `--db` | `elasticsearch`, `opensearch`, `postgres`, `mysql`, `mariadb`, `oracle`, `mssql` | `elasticsearch` |
 | `--connectors` | `none`, `runtime`, `agentic` | `none` |
 | `--model` | Ollama model name | `qwen3:0.6b` |
@@ -69,6 +69,13 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 
 - **insecure** — No authentication, fastest for development. Uses `dev,insecure` profiles.
 - **basic** — Basic auth with `demo/demo` user. Enables authorization checks.
+- **oidc** — OpenID Connect via Keycloak (port 18080). Pre-configured realm with `demo/demo` user.
+  Keycloak admin: `admin/admin` at `http://<name>.localhost:18080/`.
+  Authorization checks are **disabled** (`authorizations.enabled=false`) so the demo user can
+  access all webapps without mapping rules. To test authorization, enable it manually and
+  configure [mapping rules](https://docs.camunda.io/docs/self-managed/identity/mapping-rules/).
+  Note: the realm is imported on first start only. If you change the realm config, run
+  `docker compose -f .dev/envs/<name>/docker-compose.yml down -v` to recreate.
 
 ### Camunda Modeler Integration
 

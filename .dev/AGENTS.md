@@ -25,10 +25,14 @@ extending anything under `.dev/`.
 │   │   ├── connectors.yml             # Connectors bundle service
 │   │   ├── ollama.yml                 # Ollama + init container
 │   │   ├── camunda.yml                # Standalone Camunda container
+│   │   ├── keycloak.yml               # Keycloak OIDC provider
+│   │   ├── keycloak/                  # Keycloak config files
+│   │   │   └── camunda-dev-realm.json # Pre-configured realm (demo/demo user)
 │   │   ├── volumes.yml                # Ollama volume
 │   │   └── camunda-env/               # Env var fragments for standalone Camunda container
 │   │       ├── common.yml             # Gateway security disable (always included)
 │   │       ├── auth-basic.yml         # Basic auth env vars
+│   │       ├── auth-oidc.yml          # OIDC auth env vars (Keycloak issuer)
 │   │       ├── connector-agentic.yml  # MCP enabled flag
 │   │       ├── db-elasticsearch.yml   # Exporter config for ES
 │   │       ├── db-opensearch.yml      # Exporter config for OS
@@ -40,6 +44,7 @@ extending anything under `.dev/`.
 │       ├── spring-boot.xml            # Main Spring Boot template (placeholders below)
 │       ├── docker-infra.xml           # Docker Compose run config template
 │       ├── stop-envs.xml              # Shell Script to stop all envs (Before Launch task)
+│       ├── wait-for-keycloak.xml      # Shell Script to wait for Keycloak readiness (OIDC)
 │       ├── env/                       # Environment variable fragments (<env> XML elements)
 │       │   ├── common.xml             # Partition count, wait-for-importers
 │       │   ├── auth-demo-user.xml     # Demo user init (insecure mode)
@@ -48,6 +53,7 @@ extending anything under `.dev/`.
 │       │   └── db-opensearch.xml      # CamundaExporter config for OS + secondary storage
 │       └── params/                    # Additional Spring Boot params (<param> XML elements)
 │           ├── auth-basic.xml         # Basic auth + gateway security + demo user + authorizations
+│           ├── auth-oidc.xml          # OIDC auth + Keycloak issuer + client config
 │           ├── db-postgres.xml        # RDBMS connection for Postgres
 │           ├── db-mysql.xml           # RDBMS connection for MySQL/MariaDB ({{DB_TYPE}} placeholder)
 │           ├── db-oracle.xml          # RDBMS connection for Oracle
@@ -101,6 +107,8 @@ Templates use `{{PLACEHOLDER}}` syntax, replaced via Bash string substitution:
 - `{{APP_NAME}}` — Spring Boot run config name (same as env name)
 - `{{INFRA_NAME}}` — Docker infra config name (`<env_name> Infra`)
 - `{{STOP_NAME}}` — Shell Script config name (`<env_name> Stop Envs`)
+- `{{WAIT_KC_NAME}}` — Shell Script config name (`<env_name> Wait for Keycloak`)
+- `{{BEFORE_LAUNCH_EXTRA}}` — optional Before Launch tasks (e.g. wait-for-keycloak for OIDC)
 - `{{PROFILES}}` — Spring Boot active profiles
 - `{{ENV_VARS}}` — assembled `<env>` XML elements from `intellij/env/` fragments
 - `{{ADDITIONAL_PARAMS}}` — assembled `<additionalParameters>` block from `intellij/params/`
@@ -126,6 +134,7 @@ The `dev` profile is **always** included for all environments. Profile sets:
 
 - **insecure**: `dev,identity,tasklist,operate,broker,consolidated-auth,insecure`
 - **basic**: `dev,broker,consolidated-auth,identity,tasklist,operate`
+- **oidc**: `dev,broker,consolidated-auth,identity,tasklist,operate` (same as basic; OIDC config via additionalParameters)
 
 ### Key Design Decisions
 
@@ -136,6 +145,9 @@ The `dev` profile is **always** included for all environments. Profile sets:
 - **insecure** auth sets demo user via env vars; **basic** auth sets demo user via
   `additionalParameters` (Spring Boot properties) because basic auth also needs `authentication.method`,
   `authorizations.enabled`, and `unprotected-api` configured as Spring properties.
+- **oidc** auth uses `additionalParameters` like basic, plus a Keycloak container on port 18080.
+  The realm JSON at `templates/docker-compose/keycloak/camunda-dev-realm.json` is auto-imported on first start
+  and includes a `demo/demo` user and `camunda` client with `camunda-secret`.
 - **IntelliJ XML filenames**: spaces become `___`, special chars become `_`.
 
 ## How to Add a New Database

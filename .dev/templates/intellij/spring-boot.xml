@@ -20,7 +20,7 @@
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="{{STOP_NAME}}" run_configuration_type="ShConfigurationType" />
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="{{INFRA_NAME}}" run_configuration_type="docker-deploy" />
-      <option name="Make" enabled="true" />
+{{BEFORE_LAUNCH_EXTRA}}      <option name="Make" enabled="true" />
     </method>
   </configuration>
 </component>

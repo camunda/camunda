@@ -192,6 +192,11 @@ generate_compose() {
     # Auth-specific env
     if [[ "$auth" == "basic" ]]; then
       camunda_extra_env+=$'\n'$(cat "$TEMPLATES_DIR/docker-compose/camunda-env/auth-basic.yml")
+    elif [[ "$auth" == "oidc" ]]; then
+      local oidc_env
+      oidc_env=$(<"$TEMPLATES_DIR/docker-compose/camunda-env/auth-oidc.yml")
+      oidc_env="${oidc_env//\{\{ENV_NAME\}\}/$env_name}"
+      camunda_extra_env+=$'\n'"$oidc_env"
     fi
 
     # Agentic env
@@ -238,6 +243,16 @@ generate_compose() {
   mod_template="${mod_template//\{\{LANDING_PAGE_PATH\}\}/$landing_page_path}"
   output+="$mod_template"
 
+  # Keycloak (OIDC auth)
+  if [[ "$auth" == "oidc" ]]; then
+    local kc_template realm_path
+    realm_path="$(cd "$SCRIPT_DIR" && pwd)/templates/docker-compose/keycloak/camunda-dev-realm.json"
+    kc_template=$(<"$TEMPLATES_DIR/docker-compose/keycloak.yml")
+    kc_template="${kc_template//\{\{ENV_NAME\}\}/$env_name}"
+    kc_template="${kc_template//\{\{REALM_PATH\}\}/$realm_path}"
+    output+="$kc_template"
+  fi
+
   # Volumes section (must come after all services)
   local volumes=$'\n'"volumes:"
   # Datastore volume
@@ -254,9 +269,9 @@ generate_compose() {
   if [[ "$connectors" == "agentic" ]]; then
     volumes+=$'\n'"  ${env_name}-ollama-data:"
   fi
-  # Keycloak volume
+  # Keycloak volume not needed — realm is imported from JSON on each start
   if [[ "$auth" == "oidc" ]]; then
-    volumes+=$'\n'"  ${env_name}-keycloak-data:"
+    : # no persistent volume for keycloak
   fi
   output+="$volumes"
 
@@ -264,7 +279,7 @@ generate_compose() {
 }
 
 generate_infra_xml() {
-  local env_name="$1" datastore="$2" connectors="$3" standalone="$4"
+  local env_name="$1" datastore="$2" connectors="$3" standalone="$4" auth="$5"
   local infra_name="${env_name} Infra"
   local compose_path=".dev/envs/${env_name}/docker-compose.yml"
 
@@ -285,6 +300,10 @@ generate_infra_xml() {
 
   services_list+=$'\n'"            <option value=\"dashboard\" />"
 
+  if [[ "$auth" == "oidc" ]]; then
+    services_list+=$'\n'"            <option value=\"keycloak\" />"
+  fi
+
   local template
   template=$(<"$TEMPLATES_DIR/intellij/docker-infra.xml")
 
@@ -302,6 +321,17 @@ generate_stop_xml() {
   local template
   template=$(<"$TEMPLATES_DIR/intellij/stop-envs.xml")
   template="${template//\{\{STOP_NAME\}\}/$stop_name}"
+
+  echo "$template"
+}
+
+generate_wait_kc_xml() {
+  local env_name="$1"
+  local wait_kc_name="${env_name} Wait for Keycloak"
+
+  local template
+  template=$(<"$TEMPLATES_DIR/intellij/wait-for-keycloak.xml")
+  template="${template//\{\{WAIT_KC_NAME\}\}/$wait_kc_name}"
 
   echo "$template"
 }
@@ -344,6 +374,9 @@ generate_app_xml() {
   if [[ "$auth" == "basic" ]]; then
     additional_params="    <additionalParameters>"
     additional_params+=$'\n'$(cat "$TEMPLATES_DIR/intellij/params/auth-basic.xml")
+  elif [[ "$auth" == "oidc" ]]; then
+    additional_params="    <additionalParameters>"
+    additional_params+=$'\n'$(cat "$TEMPLATES_DIR/intellij/params/auth-oidc.xml")
   fi
 
   # RDBMS datastore params
@@ -378,6 +411,14 @@ generate_app_xml() {
   template="${template//\{\{ADDITIONAL_PARAMS\}\}/$additional_params}"
   template="${template//\{\{ENV_VARS\}\}/$env_vars}"
 
+  # Before Launch extra tasks (e.g. wait-for-keycloak for OIDC)
+  local before_launch_extra=""
+  if [[ "$auth" == "oidc" ]]; then
+    local wait_kc_name="${env_name} Wait for Keycloak"
+    before_launch_extra="      <option name=\"RunConfigurationTask\" enabled=\"true\" run_configuration_name=\"${wait_kc_name}\" run_configuration_type=\"ShConfigurationType\" />"$'\n'
+  fi
+  template="${template//\{\{BEFORE_LAUNCH_EXTRA\}\}/$before_launch_extra}"
+
   echo "$template"
 }
 
@@ -395,6 +436,9 @@ generate_landing_page() {
   if [[ "$auth" == "basic" ]]; then
     sed_args+=(-e "s|{{DEFAULT_USER}}|demo|g")
     sed_args+=(-e "s|{{DEFAULT_PASS}}|demo|g")
+  elif [[ "$auth" == "oidc" ]]; then
+    sed_args+=(-e "s|{{DEFAULT_USER}}||g")
+    sed_args+=(-e "s|{{DEFAULT_PASS}}||g")
   else
     sed_args+=(-e "s|{{DEFAULT_USER}}||g")
     sed_args+=(-e "s|{{DEFAULT_PASS}}||g")
@@ -538,7 +582,8 @@ cmd_generate() {
     if [[ -z "$auth" ]]; then
       menu_select auth "Auth mode:" \
         "insecure" \
-        "basic"
+        "basic" \
+        "oidc"
     fi
 
     if [[ -z "$datastore" ]]; then
@@ -622,11 +667,18 @@ cmd_generate() {
   local infra_filename
   infra_filename="$(intellij_filename "${name}___Infra").xml"
 
-  generate_infra_xml "$name" "$datastore" "$connectors" "$standalone" > "$env_dir/intellij/$infra_filename"
+  generate_infra_xml "$name" "$datastore" "$connectors" "$standalone" "$auth" > "$env_dir/intellij/$infra_filename"
 
   local stop_filename
   stop_filename="$(intellij_filename "${name}___Stop___Envs").xml"
   generate_stop_xml "$name" > "$env_dir/intellij/$stop_filename"
+
+  # Wait-for-Keycloak run config (OIDC only)
+  if [[ "$auth" == "oidc" ]]; then
+    local wait_kc_filename
+    wait_kc_filename="$(intellij_filename "${name}___Wait___for___Keycloak").xml"
+    generate_wait_kc_xml "$name" > "$env_dir/intellij/$wait_kc_filename"
+  fi
 
   if [[ "$standalone" != "yes" ]]; then
     local app_filename
@@ -697,11 +749,17 @@ BOOTSTRAP_DEPLOY
   if [[ "$standalone" == "yes" ]]; then
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}docker compose -f .dev/envs/${name}/docker-compose.yml up${RESET}\n"
     printf "  Or use IntelliJ config: ${CYAN}${name} Infra${RESET}\n"
-    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n\n"
+    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n"
   else
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}${name}${RESET} from IntelliJ (Run or Debug).\n"
-    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n\n"
+    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n"
   fi
+
+  if [[ "$auth" == "oidc" ]]; then
+    printf "  ${DIM}Keycloak:  http://${name}.localhost:18080/ (admin/admin)${RESET}\n"
+    printf "  ${DIM}Login:     demo / demo${RESET}\n"
+  fi
+  printf "\n"
 
   if [[ -n "$resources" ]]; then
     printf "  ${DIM}After Camunda starts, run: .dev/envs/${name}/bootstrap.sh${RESET}\n\n"
@@ -972,7 +1030,7 @@ cmd_help() {
   printf "\n"
   printf "  ${BOLD}Options:${RESET}\n"
   printf "    --name NAME          Environment name (auto-generated if omitted)\n"
-  printf "    --auth MODE          insecure, basic (default: insecure)\n"
+  printf "    --auth MODE          insecure, basic, oidc (default: insecure)\n"
   printf "    --db DB              elasticsearch, opensearch, postgres,\n"
   printf "                         mysql, mariadb, oracle, mssql\n"
   printf "    --connectors MODE    none, runtime, agentic (default: none)\n"
@@ -985,6 +1043,7 @@ cmd_help() {
   printf "    .dev/c8env --db elasticsearch                              ${DIM}→ c8-insecure-es${RESET}\n"
   printf "    .dev/c8env --connectors agentic                            ${DIM}→ c8-insecure-es-ai${RESET}\n"
   printf "    .dev/c8env --auth basic --db postgres                      ${DIM}→ c8-basic-pg${RESET}\n"
+  printf "    .dev/c8env --auth oidc --db postgres                       ${DIM}→ c8-oidc-pg (Keycloak)${RESET}\n"
   printf "    .dev/c8env --db elasticsearch --standalone                  ${DIM}→ c8-insecure-es (docker)${RESET}\n"
   printf "    .dev/c8env --connectors agentic --resource agentic-daily-briefing\n"
   printf "    .dev/c8env --resource path/to/my.bpmn,path/to/other.bpmn\n"

@@ -1,0 +1,7 @@
+      <param><option name="enabled" value="true" /><option name="name" value="zeebe.broker.gateway.security.enabled" /><option name="value" value="false" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.method" /><option name="value" value="oidc" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.issuer-uri" /><option name="value" value="http://localhost:18080/realms/camunda-platform" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.client-id" /><option name="value" value="camunda" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.client-secret" /><option name="value" value="camunda-secret" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.oidc.username-claim" /><option name="value" value="preferred_username" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authorizations.enabled" /><option name="value" value="false" /></param>

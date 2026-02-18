@@ -1,0 +1,17 @@
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0
+    container_name: {{ENV_NAME}}-keycloak
+    command: start-dev --import-realm
+    environment:
+      - KC_HEALTH_ENABLED=true
+      - KC_HTTP_PORT=8080
+      - KEYCLOAK_ADMIN=admin
+      - KEYCLOAK_ADMIN_PASSWORD=admin
+    volumes:
+      - {{REALM_PATH}}:/opt/keycloak/data/import/camunda-dev-realm.json:ro
+    ports:
+      - "18080:8080"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

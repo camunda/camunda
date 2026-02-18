@@ -1,0 +1,16 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="{{WAIT_KC_NAME}}" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="echo 'Waiting for Keycloak...' &amp;&amp; i=0 &amp;&amp; while [ $i -lt 30 ]; do curl -sf http://localhost:18080/realms/camunda-platform/.well-known/openid-configuration > /dev/null 2>&amp;1 &amp;&amp; echo 'Keycloak is ready.' &amp;&amp; exit 0; i=$((i+1)); sleep 2; done; echo 'Keycloak did not start in time.' &amp;&amp; exit 1" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
+    <option name="SCRIPT_PATH" value="" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
+    <option name="INTERPRETER_PATH" value="/bin/bash" />
+    <option name="INTERPRETER_OPTIONS" value="-c" />
+    <option name="EXECUTE_IN_TERMINAL" value="false" />
+    <option name="EXECUTE_SCRIPT_FILE" value="false" />
+    <method v="2" />
+  </configuration>
+</component>
