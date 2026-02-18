@@ -19,11 +19,13 @@
   <packaging>jar</packaging>
   <name>Camunda Gateway Model</name>
 
-  <properties>
-    <openapi.dir>${maven.multiModuleProjectDirectory}/zeebe/gateway-protocol/src/main/proto/v2</openapi.dir>
-  </properties>
-
   <dependencies>
+    <!-- required to unpack OpenAPI specs at build time -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-protocol</artifactId>
+      <scope>provided</scope>
+    </dependency>
     <!-- required for OpenAPI model generation -->
     <dependency>
       <groupId>org.springframework</groupId>
@@ -82,7 +84,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
               <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/advanced</templateDirectory>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <inputSpec>${project.build.directory}/v2/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
               <typeMappings>
                 <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
@@ -135,7 +137,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
-              <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
+              <inputSpec>${project.build.directory}/v2/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model.simple</modelPackage>
               <templateDirectory>${project.basedir}/src/main/resources/templates/java-spring/simple</templateDirectory>
               <typeMappings>
@@ -271,6 +273,25 @@
             <dependency>jakarta.annotation:jakarta.annotation-api</dependency>
           </usedDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <id>unpack-openapi-specs</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-gateway-protocol</artifactId>
+                  <includes>v2/**</includes>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
     </plugins>
   </build>
