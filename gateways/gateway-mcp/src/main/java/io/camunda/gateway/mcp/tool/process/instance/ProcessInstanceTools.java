@@ -111,7 +111,7 @@ public class ProcessInstanceTools {
           and return its result variables. When using awaitCompletion, always include a unique tag
           `mcp-tool:<uniqueId>` which can be used to search for the started process instance in case
           of timeouts. Processes with wait states, like service tasks, user tasks, or defined listeners,
-          will timeout more likely. You can increase the timeout to wait for completion by defining
+          are more likely to time out. You can increase the timeout to wait for completion by defining
           a longer requestTimeout.""")
   public CallToolResult createProcessInstance(
       @McpToolParamsUnwrapped @Valid
