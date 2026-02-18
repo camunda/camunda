@@ -60,10 +60,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(maxJobTypeLength)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(maxJobTypeLength)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String tooLongJobType = "a".repeat(maxJobTypeLength + 1);
 
@@ -88,10 +88,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(maxJobTypeLength)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(maxJobTypeLength)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(10000));
       final String exactLengthJobType = "a".repeat(maxJobTypeLength);
 
       // when
@@ -114,10 +114,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(maxJobTypeLength)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(maxJobTypeLength)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String shortJobType = "a".repeat(maxJobTypeLength - 1);
 
@@ -145,10 +145,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(maxTenantIdLength)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(maxTenantIdLength)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String tooLongTenantId = "t".repeat(maxTenantIdLength + 1);
 
@@ -172,10 +172,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(maxTenantIdLength)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(maxTenantIdLength)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String exactLengthTenantId = "t".repeat(maxTenantIdLength);
 
@@ -203,10 +203,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(maxWorkerNameLength)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(maxWorkerNameLength)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String tooLongWorkerName = "w".repeat(maxWorkerNameLength + 1);
 
@@ -230,10 +230,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(maxWorkerNameLength)
-                  .setMaxUniqueJobMetricsKeys(10000));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(maxWorkerNameLength)
+                  .setJobMetricsMaxUniqueKeys(10000));
 
       final String exactLengthWorkerName = "w".repeat(maxWorkerNameLength);
 
@@ -261,10 +261,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(maxUniqueKeys));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(maxUniqueKeys));
 
       // when - add exactly maxUniqueKeys entries
       state.incrementMetric(
@@ -301,10 +301,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(maxUniqueKeys));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(maxUniqueKeys));
 
       state.incrementMetric(
           new JobRecord().setType("jobType1").setTenantId("tenant").setWorker("worker"),
@@ -334,10 +334,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(maxUniqueKeys));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(maxUniqueKeys));
 
       // when - add 2 unique keys, then increment existing one multiple times
       state.incrementMetric(
@@ -369,10 +369,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(100)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(maxUniqueKeys));
+                  .setJobMetricsMaxTypeLength(100)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(maxUniqueKeys));
 
       // when - add exactly maxUniqueKeys entries with different combinations
       state.incrementMetric(
@@ -410,10 +410,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(maxJobTypeLength)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(2));
+                  .setJobMetricsMaxTypeLength(maxJobTypeLength)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(2));
 
       // when - first add a valid metric, then exceed limit, then try to add more valid metrics
       state.incrementMetric(
@@ -446,10 +446,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(maxJobTypeLength)
-                  .setMaxTenantIdLength(100)
-                  .setMaxWorkerNameLength(100)
-                  .setMaxUniqueJobMetricsKeys(2));
+                  .setJobMetricsMaxTypeLength(maxJobTypeLength)
+                  .setJobMetricsMaxTenantIdLength(100)
+                  .setJobMetricsMaxWorkerNameLength(100)
+                  .setJobMetricsMaxUniqueKeys(2));
 
       // exceed limit
       state.incrementMetric(
@@ -477,10 +477,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(5)
-                  .setMaxTenantIdLength(5)
-                  .setMaxWorkerNameLength(5)
-                  .setMaxUniqueJobMetricsKeys(100));
+                  .setJobMetricsMaxTypeLength(5)
+                  .setJobMetricsMaxTenantIdLength(5)
+                  .setJobMetricsMaxWorkerNameLength(5)
+                  .setJobMetricsMaxUniqueKeys(100));
 
       // when - violate job type limit
       state.incrementMetric(
@@ -505,10 +505,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(3)
-                  .setMaxTenantIdLength(3)
-                  .setMaxWorkerNameLength(3)
-                  .setMaxUniqueJobMetricsKeys(100));
+                  .setJobMetricsMaxTypeLength(3)
+                  .setJobMetricsMaxTenantIdLength(3)
+                  .setJobMetricsMaxWorkerNameLength(3)
+                  .setJobMetricsMaxUniqueKeys(100));
 
       // when - exceed all length limits
       state.incrementMetric(
@@ -529,10 +529,10 @@ class DbJobMetricsStateSizeLimitsTest {
               transactionContext,
               InstantSource.system(),
               new EngineConfiguration()
-                  .setMaxJobTypeLength(3)
-                  .setMaxTenantIdLength(3)
-                  .setMaxWorkerNameLength(3)
-                  .setMaxUniqueJobMetricsKeys(100));
+                  .setJobMetricsMaxTypeLength(3)
+                  .setJobMetricsMaxTenantIdLength(3)
+                  .setJobMetricsMaxWorkerNameLength(3)
+                  .setJobMetricsMaxUniqueKeys(100));
 
       // when - only job type exceeds
       state.incrementMetric(
