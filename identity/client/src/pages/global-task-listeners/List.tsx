@@ -99,7 +99,7 @@ const List: FC = () => {
           {
             header: t("eventType"),
             key: "eventTypesDisplay",
-            isSortable: true,
+            isSortable: false,
           },
           { header: t("retries"), key: "retries", isSortable: true },
           {
