@@ -12,8 +12,10 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}INCIDENT i
-    <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+    FROM (SELECT 1
+          FROM ${prefix}INCIDENT i
+          <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+          LIMIT 10001) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

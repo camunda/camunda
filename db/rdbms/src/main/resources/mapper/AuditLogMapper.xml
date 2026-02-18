@@ -12,8 +12,10 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}AUDIT_LOG
-    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+    FROM (SELECT 1
+          FROM ${prefix}AUDIT_LOG
+          <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+          LIMIT 10001) t
   </select>
 
   <select id="search"
