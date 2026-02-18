@@ -35,9 +35,8 @@ import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.sql.DataSource;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -87,7 +86,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
       new TestStandaloneBroker()
           .withSecondaryStorageType(SecondaryStorageType.rdbms)
           .withAdditionalProperties(H2_PROPERTIES)
-          .withProperty("zeebe.clock.controlled", true)
           .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;
@@ -99,14 +97,6 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     workingDirectory = broker.getWorkingDirectory();
     exporterPositionMapper = broker.bean(ExporterPositionMapper.class);
     pinClock(broker);
-
-    try {
-      ExportersActuator.of(broker).enableExporter(RDBMS_EXPORTER_NAME);
-    } catch (final Exception e) {
-      if (!e.getMessage().contains("already enabled")) {
-        throw e;
-      }
-    }
   }
 
   @AfterEach
@@ -124,43 +114,42 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // given - deploy a process and create instances, then take continuous backups.
     final long processKey;
 
+    final Interval<Instant> interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      final var interval = deployProcessAndTakeBackups(client, processKey);
+      interval = createProcessInstancesAndTakeBackups(client, processKey);
 
-      final var lastBackup = takeAndAwaitBackup();
+      takeAndAwaitBackup();
       progressClock(broker, 2000);
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
       client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
+    }
 
-      // when - stop broker, delete data, restore from time range with RDBMS
-      LOG.info("Stopping broker");
-      broker.stop();
+    // when - stop broker, delete data, restore from time range with RDBMS
+    broker.stop();
+    FileUtil.deleteFolder(workingDirectory);
+    FileUtil.ensureDirectoryExists(workingDirectory);
 
-      FileUtil.deleteFolder(workingDirectory);
-      FileUtil.ensureDirectoryExists(workingDirectory);
-
-      LOG.info("Deleted working directory {}", workingDirectory);
-
-      assertThatThrownBy(() -> testRestoreApp(interval).start())
-          .hasCauseInstanceOf(IllegalStateException.class)
+    // then
+    try (final var restoreApp = testRestoreApp(interval)) {
+      assertThatThrownBy(restoreApp::start)
+          .rootCause()
+          .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("is less than exporter position");
     }
   }
 
   @Test
   void shouldRestoreFromATimeRange() throws Exception {
-    // given - deploy a process and create instances, then take continuous backups.
-    // The backup manifest's "created" timestamp uses Instant.now() (system clock), so we use
-    // Thread.sleep to space out backups and ensure the from/to range reliably covers them.
+    // given - some process instances with backups between them
     final long processKey;
 
-    Interval<Instant> interval;
+    final Interval<Instant> interval;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
-      interval = deployProcessAndTakeBackups(client, processKey);
+      interval = createProcessInstancesAndTakeBackups(client, processKey);
     }
     takeAndAwaitBackup();
 
@@ -180,33 +169,25 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
                   .returns(StateCode.COMPLETED, PartitionBackupInfo::getState);
               assertThat(details.getCheckpointPosition()).isGreaterThanOrEqualTo(position);
             });
-    interval = interval.withEnd(currentTime(broker));
+
     // when - stop broker, delete data, restore from time range with RDBMS
-    LOG.info("Stopping broker");
+    broker.stop();
 
     FileUtil.deleteFolder(workingDirectory);
     FileUtil.ensureDirectoryExists(workingDirectory);
-
-    LOG.info("Deleted working directory {}", workingDirectory);
-
-    try (final var restore = testRestoreApp(interval).start()) {
-      // empty, just to ensure it's closed.
+    try (final var restore = testRestoreApp(interval)) {
+      restore.start();
     }
 
     broker.start();
 
     try (final var client = broker.newClientBuilder().build()) {
-      final var jobs =
+      final var jobActivationResult =
           client.newActivateJobsCommand().jobType("task").maxJobsToActivate(10).send().join();
 
-      // We created 3 instances before the backup range completed (2 before first backup, 1 between
-      // backups). The 4th instance was created after the time range and should not survive.
-      // The exact count depends on which backups were selected by the RDBMS-aware range resolver,
-      // but we should have at least 2 jobs (from the first two instances created before any
-      // backup).
-      assertThat(jobs.getJobs()).hasSize(4);
+      assertThat(jobActivationResult.getJobs()).hasSize(4);
 
-      for (final var job : jobs.getJobs()) {
+      for (final var job : jobActivationResult.getJobs()) {
         client.newCompleteCommand(job.getKey()).send().join();
       }
     }
@@ -229,8 +210,8 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  private Interval<Instant> deployProcessAndTakeBackups(
-      final CamundaClient client, final long processKey) throws InterruptedException {
+  private Interval<Instant> createProcessInstancesAndTakeBackups(
+      final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
     client.newCreateInstanceCommand().processDefinitionKey(processKey).send().join();
@@ -259,11 +240,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   private BackupInfo takeAndAwaitBackup() {
     progressClock(broker, 2000);
     final var res = backupActuator.take();
-    LOG.debug("Took backup: {}", res.getMessage());
-    final Pattern pattern = Pattern.compile("backup with id (\\d+)");
-    final Matcher matcher = pattern.matcher(res.getMessage());
-    matcher.find();
-    final long backupId = Long.parseLong(matcher.group(1));
+    final long backupId = Optional.ofNullable(res.getBackupId()).orElseThrow();
 
     await("backup is completed")
         .timeout(Duration.ofSeconds(30))
@@ -277,6 +254,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   }
 
   private void configureBroker(final Camunda cfg) {
+    cfg.getSystem().setClockControlled(true);
     // Filesystem backup store
     final var fsConfig = new Filesystem();
     fsConfig.setBasePath(backupDir.toAbsolutePath().toString());
@@ -304,12 +282,20 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     cfg.getData().getPrimaryStorage().getBackup().setStore(BackupStoreType.FILESYSTEM);
   }
 
+  @SuppressWarnings("resource")
   private TestRestoreApp testRestoreApp(final Interval<Instant> interval) {
     return new TestRestoreApp()
         .withUnifiedConfig(this::configureRestoreApp)
         .withAdditionalProperties(H2_PROPERTIES)
         .withWorkingDirectory(workingDirectory)
-        .withTimeRange(interval.start(), interval.end())
-        .start();
+        .withTimeRange(interval.start(), interval.end());
+  }
+
+  @SuppressWarnings("resource")
+  private TestRestoreApp testRestoreApp() {
+    return new TestRestoreApp()
+        .withUnifiedConfig(this::configureRestoreApp)
+        .withAdditionalProperties(H2_PROPERTIES)
+        .withWorkingDirectory(workingDirectory);
   }
 }
