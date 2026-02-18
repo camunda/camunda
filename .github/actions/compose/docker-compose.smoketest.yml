@@ -22,7 +22,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'",
+          "wget -q -O - http://localhost:9200/_cat/health | grep -qE 'green|yellow'",
         ]
       interval: 30s
       timeout: 5s
