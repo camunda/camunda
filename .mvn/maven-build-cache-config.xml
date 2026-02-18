@@ -11,12 +11,30 @@
     <hashAlgorithm>XX</hashAlgorithm>
     <validateXml>true</validateXml>
     <local>
-      <maxBuildsCached>5</maxBuildsCached>
+      <maxBuildsCached>10</maxBuildsCached>
     </local>
+    <!-- Save generated sources alongside the JAR so they are restored on cache hits.
+         This covers protobuf, openapi, and SBE generated Java files. -->
+    <attachedOutputs>
+      <dirNames>
+        <dirName>generated-sources</dirName>
+      </dirNames>
+    </attachedOutputs>
   </configuration>
   <input>
     <global>
-      <glob>{*.java,*.xml,*.properties, *.proto, resources/api/*.xml, rest-api*.yml }</glob>
+      <!-- Match all common source/config file types recursively across modules.
+           XML and YAML are restricted to src/main to avoid IDE (.idea/), tool configs (spotbugs/),
+           CI workflows (.github/), and Docker Compose files from invalidating the cache.
+           pom.xml is matched separately at the module root. -->
+      <glob>{*.java,pom.xml,src/main/**/*.xml,src/main/**/*.yaml,src/main/**/*.yml
+            ,*.properties,*.proto,*.factories,*.imports,*.json}</glob>
+      <includes>
+        <!-- Explicit include for the parent POM directory: changes to shared build config
+             affect all modules but may not be detected via effective-POM checksumming alone. -->
+        <include recursive="false" glob="pom.xml">parent</include>
+      </includes>
     </global>
   </input>
+
 </cache>
