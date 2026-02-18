@@ -11,12 +11,32 @@
     <hashAlgorithm>XX</hashAlgorithm>
     <validateXml>true</validateXml>
     <local>
-      <maxBuildsCached>5</maxBuildsCached>
+      <maxBuildsCached>10</maxBuildsCached>
     </local>
+    <!-- Save generated sources alongside the JAR so they are restored on cache hits.
+         This covers protobuf, openapi, and SBE generated Java files. -->
+    <attachedOutputs>
+      <dirNames>
+        <dirName>generated-sources</dirName>
+      </dirNames>
+    </attachedOutputs>
   </configuration>
   <input>
     <global>
-      <glob>{*.java,*.xml,*.properties, *.proto, resources/api/*.xml, rest-api*.yml }</glob>
+      <!-- Match all common source/config file types recursively across modules.
+           Note: *.xml also covers pom.xml and SBE schema files. -->
+      <glob>{*.java,*.xml,*.properties,*.proto,*.factories,*.imports,*.json}</glob>
+      <includes>
+        <!-- Explicit include for the parent POM directory: changes to shared build config
+             affect all modules but may not be detected via effective-POM checksumming alone. -->
+        <include recursive="false" glob="pom.xml">parent</include>
+      </includes>
+      <!-- Exclude target/ entirely: unpacked proto/YAML files land there and would
+           invalidate the cache on every clean since they don't exist before initialize. -->
+      <excludes>
+        <exclude>target</exclude>
+      </excludes>
     </global>
   </input>
+
 </cache>

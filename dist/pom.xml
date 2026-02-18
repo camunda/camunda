@@ -17,6 +17,10 @@
 
   <properties>
     <spring-boot.run.jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
+    <!-- Build cache: openapi-generator reads YAML specs from src/main/resources/api/ directly;
+         input.N dirs are scanned with glob=* so only the targeted api/ directory picks up YAML,
+         avoiding cache misses from unrelated application-*.yaml Spring Boot profile changes. -->
+    <maven.build.cache.input.1>src/main/resources/api</maven.build.cache.input.1>
   </properties>
 
   <dependencies>
@@ -1109,6 +1113,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/backup-management-api.yaml</inputSpec>
               <modelPackage>io.camunda.management.backups</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1119,6 +1127,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/cluster-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
           <execution>
@@ -1129,6 +1141,10 @@
             <configuration>
               <inputSpec>${project.basedir}/src/main/resources/api/cluster/exporter-api.yaml</inputSpec>
               <modelPackage>io.camunda.zeebe.management.cluster</modelPackage>
+              <minimalUpdate>true</minimalUpdate>
+              <configOptions>
+                <hideGenerationTimestamp>true</hideGenerationTimestamp>
+              </configOptions>
             </configuration>
           </execution>
         </executions>
