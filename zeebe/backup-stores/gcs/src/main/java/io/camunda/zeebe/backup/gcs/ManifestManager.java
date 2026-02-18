@@ -204,6 +204,30 @@ public final class ManifestManager {
     client.delete(manifestBlobInfo(id).getBlobId());
   }
 
+  public void markAsDeleted(final BackupIdentifier id) {
+    final var blobInfo = manifestBlobInfo(id);
+    final var blob = client.get(blobInfo.getBlobId());
+    if (blob != null) {
+      try {
+        final var existingManifest = MAPPER.readValue(blob.getContent(), Manifest.class);
+        final var deletedManifest =
+            switch (existingManifest.statusCode()) {
+              case DELETED -> existingManifest;
+              case COMPLETED -> existingManifest.asCompleted().delete();
+              case IN_PROGRESS -> existingManifest.asInProgress().delete();
+              case FAILED -> existingManifest.asFailed().delete();
+            };
+        if (existingManifest != deletedManifest) {
+          client.create(blobInfo, MAPPER.writeValueAsBytes(deletedManifest));
+        }
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      } catch (final IOException e) {
+        throw new UncheckedIOException(e);
+      }
+    }
+  }
+
   private BlobInfo manifestBlobInfo(final BackupIdentifier id) {
     final var blobName =
         MANIFEST_PATH_FORMAT.formatted(
