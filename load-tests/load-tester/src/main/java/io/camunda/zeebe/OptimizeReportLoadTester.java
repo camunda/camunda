@@ -370,23 +370,43 @@ public class OptimizeReportLoadTester {
       // Remove result object
       objectNode.remove("result");
 
-      // Transform data.view if it exists
-      if (objectNode.has("data") && objectNode.get("data").has("view")) {
-        final JsonNode viewNode = objectNode.get("data").get("view");
-        if (viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-          final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
-              (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
+      // Transform data if it exists
+      if (objectNode.has("data")) {
+        final JsonNode dataNode = objectNode.get("data");
+        if (dataNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+          final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode =
+              (com.fasterxml.jackson.databind.node.ObjectNode) dataNode;
 
-          // Remove entity field
-          viewObjectNode.remove("entity");
+          // Transform data.view if it exists
+          if (dataObjectNode.has("view")) {
+            final JsonNode viewNode = dataObjectNode.get("view");
+            if (viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+              final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
+                  (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
 
-          // Replace properties array with rawData field containing "rawData" string
-          if (viewObjectNode.has("properties")) {
-            viewObjectNode.remove("properties");
-            final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
-                OBJECT_MAPPER.createArrayNode();
-            rawDataArray.add("rawData");
-            viewObjectNode.set("properties", rawDataArray);
+              // Remove entity field
+              viewObjectNode.remove("entity");
+
+              // Replace properties array with rawData field containing "rawData" string
+              if (viewObjectNode.has("properties")) {
+                viewObjectNode.remove("properties");
+                final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
+                    OBJECT_MAPPER.createArrayNode();
+                rawDataArray.add("rawData");
+                viewObjectNode.set("properties", rawDataArray);
+              }
+            }
+          }
+
+          // Set data.groupBy.type to "none" if groupBy exists
+          if (dataObjectNode.has("groupBy")) {
+            final JsonNode groupByNode = dataObjectNode.get("groupBy");
+            if (groupByNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+              final com.fasterxml.jackson.databind.node.ObjectNode groupByObjectNode =
+                  (com.fasterxml.jackson.databind.node.ObjectNode) groupByNode;
+              groupByObjectNode.put("type", "none");
+              groupByObjectNode.remove("value");
+            }
           }
         }
       }
