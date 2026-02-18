@@ -90,7 +90,7 @@ const emptyJobsResponse = {
   page: {totalItems: 0},
 };
 
-const setupCommonMocks = (statistics = defaultStatistics) => {
+const setupElementStateMocks = (statistics = defaultStatistics) => {
   mockFetchProcessInstance().withSuccess(mockProcessInstance);
   mockFetchProcessDefinitionXml().withSuccess(
     mockProcessWithInputOutputMappingsXML,
@@ -194,13 +194,13 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
   return Wrapper;
 };
 
-describe('VariablePanel', () => {
+describe('VariablePanel element states', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it('should display correct state for element that has only one running token on it', async () => {
-    setupCommonMocks();
+    setupElementStateMocks();
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {totalItems: 1},
@@ -330,7 +330,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for element that has no running or finished tokens on it', async () => {
-    setupCommonMocks();
+    setupElementStateMocks();
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
@@ -458,7 +458,7 @@ describe('VariablePanel', () => {
   });
 
   it('should display correct state for element that has only one finished token on it', async () => {
-    setupCommonMocks(finishedTokenStatistics);
+    setupElementStateMocks(finishedTokenStatistics);
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchVariables().withSuccess({
       items: [createVariable()],

@@ -8,24 +8,19 @@
 
 import {VariablePanel} from '../index';
 import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
   type FlowNodeModification,
 } from 'modules/stores/modifications';
-import {useEffect, act} from 'react';
-import {Paths} from 'modules/Routes';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {act} from 'react';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
 const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
   type: 'token',
@@ -108,54 +103,22 @@ const TestSelectionControls: React.FC = () => {
   );
 };
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
-) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        modificationsStore.reset();
-      };
-    }, []);
+const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
+  const BaseWrapper = getBaseWrapper(...args);
 
-    return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route
-                path={Paths.processInstance()}
-                element={
-                  <>
-                    <TestSelectionControls />
-                    {children}
-                  </>
-                }
-              />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
-  };
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <BaseWrapper>
+      <>
+        <TestSelectionControls />
+        {children}
+      </>
+    </BaseWrapper>
+  );
+
   return Wrapper;
 };
 
 describe('Undo variable modifications from different scope', () => {
-  const mockProcessInstance: ProcessInstance = {
-    processInstanceKey: 'instance_id',
-    state: 'ACTIVE',
-    startDate: '2018-06-21',
-    processDefinitionKey: '2',
-    processDefinitionVersion: 1,
-    processDefinitionId: 'someKey',
-    tenantId: '<default>',
-    processDefinitionName: 'someProcessName',
-    hasIncident: false,
-  };
-
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -213,7 +176,7 @@ describe('Undo variable modifications from different scope', () => {
       state: 'ACTIVE',
       startDate: '2018-06-21',
       processDefinitionId: 'someKey',
-      processInstanceKey: 'instance_id',
+      processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
       hasIncident: false,
       tenantId: '<default>',
@@ -295,7 +258,7 @@ describe('Undo variable modifications from different scope', () => {
       state: 'ACTIVE',
       startDate: '2018-06-21',
       processDefinitionId: 'someKey',
-      processInstanceKey: 'instance_id',
+      processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
       hasIncident: false,
       tenantId: '<default>',

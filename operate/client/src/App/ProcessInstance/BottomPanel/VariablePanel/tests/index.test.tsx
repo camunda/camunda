@@ -14,20 +14,13 @@ import {
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
-import {modificationsStore} from 'modules/stores/modifications';
-import {act, useEffect} from 'react';
-import {Paths} from 'modules/Routes';
+import {act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
@@ -36,6 +29,7 @@ import {mockUpdateElementInstanceVariables} from 'modules/mocks/api/v2/elementIn
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -97,54 +91,22 @@ const TestSelectionControls: React.FC = () => {
   );
 };
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
-) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        modificationsStore.reset();
-      };
-    }, []);
+const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
+  const BaseWrapper = getBaseWrapper(...args);
 
-    return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route
-                path={Paths.processInstance()}
-                element={
-                  <>
-                    <TestSelectionControls />
-                    {children}
-                  </>
-                }
-              />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
-  };
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <BaseWrapper>
+      <>
+        <TestSelectionControls />
+        {children}
+      </>
+    </BaseWrapper>
+  );
+
   return Wrapper;
 };
 
 describe('VariablePanel', () => {
-  const mockProcessInstance: ProcessInstance = {
-    processInstanceKey: 'instance_id',
-    state: 'ACTIVE',
-    startDate: '2018-06-21',
-    processDefinitionKey: '2',
-    processDefinitionVersion: 1,
-    processDefinitionId: 'someKey',
-    tenantId: '<default>',
-    processDefinitionName: 'someProcessName',
-    hasIncident: false,
-  };
-
   const statistics = [
     {
       elementId: 'TEST_FLOW_NODE',
@@ -213,7 +175,9 @@ describe('VariablePanel', () => {
 
   it('should add new variable', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
-    mockUpdateElementInstanceVariables(':instance_id').withDelay(null);
+    mockUpdateElementInstanceVariables(
+      `:${mockProcessInstance.processInstanceKey}`,
+    ).withDelay(null);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -366,7 +330,9 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockUpdateElementInstanceVariables(':instance_id').withSuccess(null);
+    mockUpdateElementInstanceVariables(
+      `:${mockProcessInstance.processInstanceKey}`,
+    ).withSuccess(null);
 
     await act(async () => {
       await vi.runOnlyPendingTimersAsync();
@@ -396,7 +362,7 @@ describe('VariablePanel', () => {
       state: 'ACTIVE',
       startDate: '2018-06-21',
       processDefinitionId: 'someKey',
-      processInstanceKey: 'instance_id',
+      processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
       hasIncident: false,
       tenantId: '<default>',
@@ -462,7 +428,9 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockUpdateElementInstanceVariables(':instance_id').withServerError(400);
+    mockUpdateElementInstanceVariables(
+      `:${mockProcessInstance.processInstanceKey}`,
+    ).withServerError(400);
 
     await waitFor(() =>
       expect(
@@ -524,7 +492,7 @@ describe('VariablePanel', () => {
       state: 'ACTIVE',
       startDate: '2018-06-21',
       processDefinitionId: 'someKey',
-      processInstanceKey: 'instance_id',
+      processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
       hasIncident: true,
       tenantId: '<default>',
@@ -556,7 +524,7 @@ describe('VariablePanel', () => {
           state: 'COMPLETED',
           startDate: '2018-06-21',
           processDefinitionId: 'someKey',
-          processInstanceKey: 'instance_id',
+          processInstanceKey: mockProcessInstance.processInstanceKey,
           processDefinitionKey: '2',
           hasIncident: false,
           tenantId: '<default>',
@@ -605,7 +573,7 @@ describe('VariablePanel', () => {
           state: 'COMPLETED',
           startDate: '2018-06-21',
           processDefinitionId: 'someKey',
-          processInstanceKey: 'instance_id',
+          processInstanceKey: mockProcessInstance.processInstanceKey,
           processDefinitionKey: '2',
           hasIncident: false,
           tenantId: '<default>',
