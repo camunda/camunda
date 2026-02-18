@@ -855,4 +855,53 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByText(/needs to be canceled./i)).toBeInTheDocument();
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
+
+  it('should disable Apply and show an error when orphaned variable modifications exist', async () => {
+    render(<ModificationSummaryModal open setOpen={() => {}} />, {
+      wrapper: getWrapper(),
+    });
+
+    act(() => {
+      createAddVariableModification({
+        scopeId: 'orphaned-scope',
+        flowNodeName: 'some flow node',
+        name: 'myVar',
+        value: '"hello"',
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled(),
+    );
+
+    expect(
+      screen.getByText(
+        /Some planned variable modifications cannot be applied./i,
+      ),
+    ).toBeInTheDocument();
+
+    act(() => {
+      modificationsStore.addModification({
+        type: 'token',
+        payload: {
+          operation: 'ADD_TOKEN',
+          scopeId: 'orphaned-scope',
+          flowNode: {id: 'some-flow-node', name: 'some flow node'},
+          affectedTokenCount: 1,
+          visibleAffectedTokenCount: 1,
+          parentScopeIds: {},
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(screen.getByRole('button', {name: 'Apply'})).toBeEnabled(),
+    );
+
+    expect(
+      screen.queryByText(
+        /Some planned variable modifications cannot be applied./i,
+      ),
+    ).not.toBeInTheDocument();
+  });
 });

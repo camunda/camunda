@@ -1230,4 +1230,169 @@ describe('stores/modifications', () => {
     ).toBeNull();
     expect(modificationsStore.state.status).toBe('enabled');
   });
+
+  it('should consider variables orphaned when not scoped to a token modification', () => {
+    const processInstanceKey = 'some-process-instance-key';
+    const addScopeId = generateUniqueID();
+    const moveScopeId = generateUniqueID();
+    const parentScopeId = generateUniqueID();
+
+    // No variable modifications yet
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+
+    // Scoped to ADD modification
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: addScopeId,
+        flowNode: {id: 'task-1', name: 'task-1'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    createAddVariableModification({
+      scopeId: addScopeId,
+      flowNodeName: 'task-1',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+
+    // Scoped to MOVE modification
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'MOVE_TOKEN',
+        flowNode: {id: 'task-1', name: 'task-1'},
+        targetFlowNode: {id: 'task-2', name: 'task-2'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        scopeIds: [moveScopeId],
+        parentScopeIds: {},
+      },
+    });
+    createAddVariableModification({
+      scopeId: moveScopeId,
+      flowNodeName: 'task-2',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+
+    // Scoped to parent scope
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: generateUniqueID(),
+        flowNode: {id: 'task-1', name: 'task-1'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {'parent-flow-node': parentScopeId},
+      },
+    });
+    createAddVariableModification({
+      scopeId: parentScopeId,
+      flowNodeName: 'parent-flow-node',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+
+    // Variable without matching token modification
+    createAddVariableModification({
+      scopeId: 'lonely-scope',
+      flowNodeName: 'task-1',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(true);
+  });
+
+  it('should consider root variables orphaned when no ADD/MOVE modification exists', () => {
+    const processInstanceKey = 'some-process-instance-key';
+
+    createAddVariableModification({
+      scopeId: processInstanceKey,
+      flowNodeName: 'process',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(true);
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId: generateUniqueID(),
+        flowNode: {id: 'task-1', name: 'task-1'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+  });
+
+  it('should reconsider orphaned status when token modifications are removed again', () => {
+    const processInstanceKey = 'some-process-instance-key';
+    const scopeId = generateUniqueID();
+
+    modificationsStore.addModification({
+      type: 'token',
+      payload: {
+        operation: 'ADD_TOKEN',
+        scopeId,
+        flowNode: {id: 'task-1', name: 'task-1'},
+        affectedTokenCount: 1,
+        visibleAffectedTokenCount: 1,
+        parentScopeIds: {},
+      },
+    });
+    createAddVariableModification({
+      scopeId,
+      flowNodeName: 'task-1',
+      name: 'var1',
+      value: '"value1"',
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(false);
+
+    modificationsStore.removeFlowNodeModification({
+      operation: 'ADD_TOKEN',
+      scopeId,
+      flowNode: {id: 'task-1', name: 'task-1'},
+      affectedTokenCount: 1,
+      visibleAffectedTokenCount: 1,
+      parentScopeIds: {},
+    });
+
+    expect(
+      modificationsStore.hasOrphanedVariableModifications(processInstanceKey),
+    ).toBe(true);
+  });
 });
