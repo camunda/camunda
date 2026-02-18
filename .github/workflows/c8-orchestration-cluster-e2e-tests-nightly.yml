@@ -35,7 +35,7 @@ jobs:
           else
             echo "Using standalone camunda container"
             echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
-            DATABASE=elasticsearch docker compose up -d camunda
+            DATABASE=elasticsearch docker compose up -d camunda mcp-test-server connectors
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
 
@@ -227,12 +227,12 @@ jobs:
             echo "Using standalone camunda container"
             if [[ "${{ matrix.tasklist_mode }}" == "v1" ]]; then
               echo "Starting with Tasklist V1 mode enabled"
-              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda
+              CAMUNDA_TASKLIST_V2_MODE_ENABLED=false DATABASE=elasticsearch docker compose up -d camunda mcp-test-server connectors
             else
               echo "Starting with default Tasklist V2 mode"
               export DATABASE=elasticsearch
             echo "Starting Camunda with NON_STANDALONE:$NON_STANDALONE, database:$DATABASE"
-            DATABASE=elasticsearch docker compose up -d camunda
+            DATABASE=elasticsearch docker compose up -d camunda mcp-test-server connectors
             fi
           fi
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
