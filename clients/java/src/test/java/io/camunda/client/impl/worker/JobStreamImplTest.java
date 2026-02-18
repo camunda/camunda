@@ -17,7 +17,7 @@ package io.camunda.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -211,7 +211,7 @@ final class JobStreamImplTest {
         streamingTimeout,
         ignored -> 10_000L,
         scheduler,
-        TenantFilterMode.PROVIDED);
+        TenantFilter.PROVIDED);
   }
 
   private static final class Service extends GatewayImplBase {

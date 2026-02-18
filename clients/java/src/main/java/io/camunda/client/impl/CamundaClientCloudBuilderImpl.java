@@ -33,7 +33,7 @@ import io.camunda.client.CredentialsProvider;
 import io.camunda.client.LegacyZeebeClientProperties;
 import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.impl.oauth.OAuthCredentialsProviderBuilder;
 import io.camunda.client.impl.util.AddressUtil;
@@ -172,9 +172,8 @@ public class CamundaClientCloudBuilderImpl
   }
 
   @Override
-  public CamundaClientBuilder defaultJobWorkerTenantFilterMode(
-      final TenantFilterMode tenantFilterMode) {
-    innerBuilder.defaultJobWorkerTenantFilterMode(tenantFilterMode);
+  public CamundaClientBuilder defaultJobWorkerTenantFilter(final TenantFilter tenantFilter) {
+    innerBuilder.defaultJobWorkerTenantFilter(tenantFilter);
     return this;
   }
 

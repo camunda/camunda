@@ -28,7 +28,7 @@ import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotat
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromDefaultProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import java.time.Duration;
 import java.util.Collection;
@@ -545,10 +545,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilterMode(TenantFilterMode.ASSIGNED);
+    properties.setTenantFilter(TenantFilter.ASSIGNED);
 
     // then
-    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -557,10 +557,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilterMode(TenantFilterMode.PROVIDED);
+    properties.setTenantFilter(TenantFilter.PROVIDED);
 
     // then
-    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.PROVIDED);
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
   @Test
@@ -569,7 +569,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties(true);
 
     // then
-    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.PROVIDED);
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
   private record Input<T>(

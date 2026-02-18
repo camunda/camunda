@@ -56,7 +56,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
@@ -1178,11 +1178,11 @@ public final class CamundaClientTest {
             .withClusterId("clusterId")
             .withClientId("clientId")
             .withClientSecret("clientSecret")
-            .defaultJobWorkerTenantFilterMode(TenantFilterMode.ASSIGNED)
+            .defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED)
             .build();
 
-    assertThat(client.getConfiguration().getDefaultJobWorkerTenantFilterMode())
-        .isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1191,12 +1191,12 @@ public final class CamundaClientTest {
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
 
     // when
-    builder.defaultJobWorkerTenantFilterMode(TenantFilterMode.ASSIGNED);
+    builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
     final CamundaClient clientBuilder = builder.build();
 
     // then
-    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilterMode())
-        .isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1208,8 +1208,8 @@ public final class CamundaClientTest {
     final CamundaClient clientBuilder = builder.build();
 
     // then
-    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilterMode())
-        .isEqualTo(TenantFilterMode.PROVIDED);
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.PROVIDED);
   }
 
   @Test
@@ -1224,7 +1224,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1237,7 +1237,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1250,7 +1250,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1263,7 +1263,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test
@@ -1278,7 +1278,7 @@ public final class CamundaClientTest {
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.PROVIDED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
   @Test
@@ -1288,14 +1288,14 @@ public final class CamundaClientTest {
     properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "PROVIDED");
     Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
     final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
-    builder.defaultJobWorkerTenantFilterMode(TenantFilterMode.PROVIDED);
+    builder.defaultJobWorkerTenantFilter(TenantFilter.PROVIDED);
     builder.withProperties(properties);
 
     // when
     builder.build();
 
     // then
-    assertThat(builder.getDefaultJobWorkerTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test

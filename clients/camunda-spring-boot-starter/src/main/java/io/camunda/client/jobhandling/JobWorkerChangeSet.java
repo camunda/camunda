@@ -20,7 +20,7 @@ import static java.util.function.Predicate.not;
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -298,15 +298,12 @@ public sealed interface JobWorkerChangeSet {
     }
   }
 
-  record TenantFilterModeChangeSet(TenantFilterMode tenantFilterMode)
-      implements JobWorkerChangeSet {
+  record TenantFilterChangeSet(TenantFilter tenantFilter) implements JobWorkerChangeSet {
 
     @Override
     public boolean applyChanges(final JobWorkerValue jobWorkerValue) {
       return updateIfChanged(
-          jobWorkerValue.getTenantFilterMode(),
-          tenantFilterMode,
-          jobWorkerValue::setTenantFilterMode);
+          jobWorkerValue.getTenantFilter(), tenantFilter, jobWorkerValue::setTenantFilter);
     }
   }
 }

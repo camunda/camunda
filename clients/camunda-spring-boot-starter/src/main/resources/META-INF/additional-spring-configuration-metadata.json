@@ -127,7 +127,7 @@
     },
     {
       "name": "camunda.client.worker.defaults.tenant-filter-mode",
-      "type": "io.camunda.client.api.command.enums.TenantFilterMode",
+      "type": "io.camunda.client.api.command.enums.TenantFilter",
       "defaultValue": "PROVIDED"
     },
     {

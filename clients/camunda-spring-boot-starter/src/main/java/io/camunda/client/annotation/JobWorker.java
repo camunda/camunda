@@ -16,7 +16,7 @@
 package io.camunda.client.annotation;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.exception.BpmnError;
 import io.camunda.client.exception.JobError;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
@@ -123,5 +123,5 @@ public @interface JobWorker {
   long retryBackoff() default -1L;
 
   /** Set the tenant filter mode for job activation */
-  TenantFilterMode[] tenantFilterMode() default {};
+  TenantFilter[] TenantFilter() default {};
 }

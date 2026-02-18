@@ -16,7 +16,7 @@
 package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.grpc.ClientInterceptor;
 import java.net.URI;
@@ -49,9 +49,9 @@ public interface CamundaClientConfiguration {
   List<String> getDefaultJobWorkerTenantIds();
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerTenantFilterMode(TenantFilterMode)
+   * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
    */
-  TenantFilterMode getDefaultJobWorkerTenantFilterMode();
+  TenantFilter getDefaultJobWorkerTenantFilter();
 
   /**
    * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)

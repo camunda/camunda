@@ -22,7 +22,6 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep2;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
-import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
 import io.camunda.client.impl.http.HttpCamundaFuture;
@@ -140,7 +139,7 @@ public final class ActivateJobsCommandImpl
   }
 
   @Override
-  public FinalCommandStep<ActivateJobsResponse> requestTimeout(final Duration requestTimeout) {
+  public ActivateJobsCommandStep3 requestTimeout(final Duration requestTimeout) {
     grpcRequestObjectBuilder.setRequestTimeout(requestTimeout.toMillis());
     httpRequestObject.setRequestTimeout(requestTimeout.toMillis());
     this.requestTimeout = requestTimeout;

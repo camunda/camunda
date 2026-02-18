@@ -21,7 +21,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -68,7 +68,7 @@ public final class JobWorkerBuilderImpl
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
-  private TenantFilterMode tenantFilterMode;
+  private TenantFilter tenantFilter;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
@@ -89,7 +89,7 @@ public final class JobWorkerBuilderImpl
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
-    tenantFilterMode = configuration.getDefaultJobWorkerTenantFilterMode();
+    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
@@ -192,8 +192,8 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 tenantFilterMode(final TenantFilterMode tenantFilterMode) {
-    this.tenantFilterMode = tenantFilterMode;
+  public JobWorkerBuilderStep3 TenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
     return this;
   }
 
@@ -218,7 +218,7 @@ public final class JobWorkerBuilderImpl
             fetchVariables,
             getTenantIds(),
             maxJobsActive,
-            tenantFilterMode);
+            tenantFilter);
 
     final Executor jobExecutor;
     if (enableStreaming) {
@@ -237,7 +237,7 @@ public final class JobWorkerBuilderImpl
               streamingTimeout,
               backoffSupplier,
               scheduledExecutor,
-              tenantFilterMode);
+              tenantFilter);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();

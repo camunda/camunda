@@ -25,7 +25,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TI
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
 import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMING_TIMEOUT;
 
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.List;
 
@@ -80,7 +80,7 @@ public class CamundaClientJobWorkerProperties {
    * Sets the tenant filter for the job worker, which determines how the worker considers tenant IDs
    * when activating jobs.
    */
-  private TenantFilterMode tenantFilterMode;
+  private TenantFilter tenantFilter;
 
   /** Sets whether all variables are fetched. Overrides `fetch-variables`. */
   private Boolean forceFetchAllVariables;
@@ -125,7 +125,7 @@ public class CamundaClientJobWorkerProperties {
   public CamundaClientJobWorkerProperties(final boolean initWithDefaults) {
     if (initWithDefaults) {
       tenantIds = DEFAULT_JOB_WORKER_TENANT_IDS;
-      tenantFilterMode = DEFAULT_JOB_WORKER_TENANT_FILTER;
+      tenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
       timeout = DEFAULT_JOB_TIMEOUT;
       maxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
@@ -221,12 +221,12 @@ public class CamundaClientJobWorkerProperties {
     this.tenantIds = tenantIds;
   }
 
-  public TenantFilterMode getTenantFilterMode() {
-    return tenantFilterMode;
+  public TenantFilter getTenantFilter() {
+    return tenantFilter;
   }
 
-  public void setTenantFilterMode(final TenantFilterMode tenantFilterMode) {
-    this.tenantFilterMode = tenantFilterMode;
+  public void setTenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
   }
 
   public Boolean getForceFetchAllVariables() {

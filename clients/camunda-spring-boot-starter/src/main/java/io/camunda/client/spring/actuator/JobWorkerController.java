@@ -17,7 +17,7 @@ package io.camunda.client.spring.actuator;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.api.command.enums.TenantFilterMode;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.jobhandling.JobWorkerChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ComposedChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.EnabledChangeSet;
@@ -32,7 +32,7 @@ import io.camunda.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.RetryBackoffChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
-import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantFilterModeChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantFilterChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TypeChangeSet;
@@ -83,7 +83,7 @@ public class JobWorkerController {
       @Nullable final Duration streamTimeout,
       @Nullable final Integer maxRetries,
       @Nullable final Duration retryBackoff,
-      @Nullable final String tenantFilterMode,
+      @Nullable final String tenantFilter,
       @Nullable final Boolean reset) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorkers();
@@ -104,7 +104,7 @@ public class JobWorkerController {
               streamTimeout,
               maxRetries,
               retryBackoff,
-              tenantFilterMode));
+              tenantFilter));
     }
   }
 
@@ -125,7 +125,7 @@ public class JobWorkerController {
       @Nullable final Duration streamTimeout,
       @Nullable final Integer maxRetries,
       @Nullable final Duration retryBackoff,
-      @Nullable final String tenantFilterMode,
+      @Nullable final String tenantFilter,
       @Nullable final Boolean reset) {
     if (reset != null && reset) {
       jobWorkerManager.resetJobWorker(typeSelector);
@@ -147,7 +147,7 @@ public class JobWorkerController {
               streamTimeout,
               maxRetries,
               retryBackoff,
-              tenantFilterMode));
+              tenantFilter));
     }
   }
 
@@ -166,7 +166,7 @@ public class JobWorkerController {
       final Duration streamTimeout,
       final Integer maxRetries,
       final Duration retryBackoff,
-      final String tenantFilterMode) {
+      final String tenantFilter) {
     final List<JobWorkerChangeSet> changeSets = new ArrayList<>();
     if (enabled != null) {
       changeSets.add(new EnabledChangeSet(enabled));
@@ -213,8 +213,8 @@ public class JobWorkerController {
     if (retryBackoff != null) {
       changeSets.add(new RetryBackoffChangeSet(retryBackoff));
     }
-    if (tenantFilterMode != null) {
-      changeSets.add(new TenantFilterModeChangeSet(TenantFilterMode.from(tenantFilterMode)));
+    if (tenantFilter != null) {
+      changeSets.add(new TenantFilterChangeSet(TenantFilter.from(tenantFilter)));
     }
     if (changeSets.isEmpty()) {
       return new NoopChangeSet();
@@ -249,7 +249,7 @@ public class JobWorkerController {
         jobWorkerValue.getStreamTimeout().value(),
         jobWorkerValue.getMaxRetries().value(),
         jobWorkerValue.getRetryBackoff().value(),
-        jobWorkerValue.getTenantFilterMode().value());
+        jobWorkerValue.getTenantFilter().value());
   }
 
   public record JobWorkerDto(
@@ -268,5 +268,5 @@ public class JobWorkerController {
       Duration streamTimeout,
       int maxRetries,
       Duration retryBackoff,
-      TenantFilterMode tenantFilterMode) {}
+      TenantFilter tenantFilter) {}
 }
