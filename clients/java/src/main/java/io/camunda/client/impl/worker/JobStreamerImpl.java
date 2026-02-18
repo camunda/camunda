@@ -18,6 +18,7 @@ package io.camunda.client.impl.worker;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
@@ -52,6 +53,7 @@ final class JobStreamerImpl implements JobStreamer {
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final Lock streamLock;
+  private final TenantFilterMode tenantFilterMode;
 
   @GuardedBy("streamLock")
   private CamundaFuture<StreamJobsResponse> streamControl;
@@ -77,7 +79,8 @@ final class JobStreamerImpl implements JobStreamer {
       final List<String> tenantIds,
       final Duration streamTimeout,
       final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService executor) {
+      final ScheduledExecutorService executor,
+      final TenantFilterMode tenantFilterMode) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -87,6 +90,7 @@ final class JobStreamerImpl implements JobStreamer {
     this.streamTimeout = streamTimeout;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
+    this.tenantFilterMode = tenantFilterMode;
 
     streamLock = new ReentrantLock();
   }
@@ -163,8 +167,11 @@ final class JobStreamerImpl implements JobStreamer {
             .jobType(jobType)
             .consumer(jobConsumer)
             .workerName(workerName)
-            .tenantIds(tenantIds)
-            .timeout(timeout);
+            .timeout(timeout)
+            .tenantFilterMode(tenantFilterMode);
+    if (tenantFilterMode == TenantFilterMode.PROVIDED) {
+      command.tenantIds(tenantIds);
+    }
 
     if (fetchVariables != null) {
       command = command.fetchVariables(fetchVariables);

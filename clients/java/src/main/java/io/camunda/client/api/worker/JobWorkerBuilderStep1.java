@@ -17,6 +17,7 @@ package io.camunda.client.api.worker;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.command.CommandWithOneOrMoreTenantsStep;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import java.time.Duration;
 import java.util.List;
 
@@ -262,6 +263,15 @@ public interface JobWorkerBuilderStep1 {
      * @return the builder for this worker
      */
     JobWorkerBuilderStep3 jobExceptionHandler(JobExceptionHandler jobExceptionHandler);
+
+    /**
+     * The behavior to adopt when filtering jobs during activation by this worker. See {@link
+     * TenantFilterMode} for possible values. Defaults to {@link *
+     * io.camunda.client.CamundaClientBuilder#defaultJobWorkerTenantFilter(tenantFilter)}.
+     *
+     * @param tenantFilterMode the default filter to use for all workers
+     */
+    JobWorkerBuilderStep3 tenantFilterMode(TenantFilterMode tenantFilterMode);
 
     /**
      * Open the worker and start to work on available tasks.

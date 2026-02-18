@@ -21,6 +21,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -67,6 +68,7 @@ public final class JobWorkerBuilderImpl
   private Duration streamingTimeout;
   private JobWorkerMetrics metrics = JobWorkerMetrics.noop();
   private JobExceptionHandler jobExceptionHandler;
+  private TenantFilterMode tenantFilterMode;
 
   public JobWorkerBuilderImpl(
       final CamundaClientConfiguration configuration,
@@ -87,6 +89,7 @@ public final class JobWorkerBuilderImpl
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
+    tenantFilterMode = configuration.getDefaultJobWorkerTenantFilterMode();
     customTenantIds = new ArrayList<>();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
@@ -189,6 +192,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 tenantFilterMode(final TenantFilterMode tenantFilterMode) {
+    this.tenantFilterMode = tenantFilterMode;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -208,7 +217,8 @@ public final class JobWorkerBuilderImpl
             timeout,
             fetchVariables,
             getTenantIds(),
-            maxJobsActive);
+            maxJobsActive,
+            tenantFilterMode);
 
     final Executor jobExecutor;
     if (enableStreaming) {
@@ -226,7 +236,8 @@ public final class JobWorkerBuilderImpl
               getTenantIds(),
               streamingTimeout,
               backoffSupplier,
-              scheduledExecutor);
+              scheduledExecutor,
+              tenantFilterMode);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();
