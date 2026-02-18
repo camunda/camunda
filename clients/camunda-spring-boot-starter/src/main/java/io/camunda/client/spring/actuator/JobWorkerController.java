@@ -28,6 +28,7 @@ import io.camunda.client.jobhandling.JobWorkerChangeSet.NameChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.NoopChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.PollIntervalChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.RequestTimeoutChangeSet;
+import io.camunda.client.jobhandling.JobWorkerChangeSet.RetryBackoffChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamEnabledChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.StreamTimeoutChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.TenantIdsChangeSet;
@@ -39,11 +40,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.actuate.endpoint.annotation.ReadOperation;
 import org.springframework.boot.actuate.endpoint.annotation.Selector;
 import org.springframework.boot.actuate.endpoint.annotation.WriteOperation;
 import org.springframework.boot.actuate.endpoint.web.annotation.WebEndpoint;
-import org.springframework.lang.Nullable;
 
 @WebEndpoint(id = "jobworkers")
 public class JobWorkerController {
@@ -201,6 +202,9 @@ public class JobWorkerController {
     }
     if (maxRetries != null) {
       changeSets.add(new MaxRetriesChangeSet(maxRetries));
+    }
+    if (retryBackoff != null) {
+      changeSets.add(new RetryBackoffChangeSet(retryBackoff));
     }
     if (changeSets.isEmpty()) {
       return new NoopChangeSet();
