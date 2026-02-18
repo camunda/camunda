@@ -16,7 +16,7 @@
   </Appenders>
 
   <Loggers>
-    <Logger name="io.camunda.appint.exporter" level="trace"/>
+    <Logger name="io.camunda.exporter.appint" level="trace"/>
     <Logger name="org.apache.http.client" level="trace"/>
     <Logger name="com.github.tomakehurst.wiremock" level="trace"/>
 
