@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.gcs;
 
 import com.google.cloud.storage.Blob;
+import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
@@ -25,6 +27,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.util.Map;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
@@ -209,5 +212,146 @@ final class ManifestManagerTest {
     Assertions.assertThatThrownBy(() -> manager.completeManifest(persisted))
         .isInstanceOf(StorageException.class)
         .hasMessageContaining("expected but unhandled");
+  }
+
+  @Nested
+  class ManifestDeleteTransitionTest {
+    @Test
+    void shouldMarkInProgressManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var inProgressManifest = Manifest.createInProgress(backup);
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(inProgressManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(backup.id());
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(inProgressManifest.id());
+    }
+
+    @Test
+    void shouldMarkCompletedManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var completedManifest = Manifest.createInProgress(backup).complete();
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(completedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(backup.id());
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(completedManifest.id());
+    }
+
+    @Test
+    void shouldMarkFailedManifestAsDeleted() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var failedManifest = Manifest.createInProgress(backup).fail("failure reason");
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(failedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(backup.id());
+
+      // then
+      final var captor = ArgumentCaptor.forClass(byte[].class);
+      Mockito.verify(client).create(Mockito.any(BlobInfo.class), captor.capture());
+
+      final var actualManifest =
+          ManifestManager.MAPPER.readValue(captor.getValue(), Manifest.class);
+      Assertions.assertThat(actualManifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      Assertions.assertThat(actualManifest.id()).isEqualTo(failedManifest.id());
+    }
+
+    @Test
+    void shouldNotUpdateAlreadyDeletedManifest() throws IOException {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+      final var backup =
+          new BackupImpl(
+              new BackupIdentifierImpl(1, 2, 3),
+              new BackupDescriptorImpl(
+                  1, 1, "version", Instant.now(), CheckpointType.MANUAL_BACKUP),
+              new NamedFileSetImpl(Map.of()),
+              new NamedFileSetImpl(Map.of()));
+      final var deletedManifest = Manifest.createInProgress(backup).complete().delete();
+
+      final var blob = Mockito.mock(Blob.class);
+      Mockito.when(blob.getContent())
+          .thenReturn(ManifestManager.MAPPER.writeValueAsBytes(deletedManifest));
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
+
+      // when
+      manager.markAsDeleted(backup.id());
+
+      // then - should not call create since manifest is already deleted
+      Mockito.verify(client, Mockito.never()).create(Mockito.any(BlobInfo.class), Mockito.any());
+    }
+
+    @Test
+    void shouldDoNothingWhenMarkingNonExistentManifestAsDeleted() {
+      // given
+      final var client = Mockito.mock(Storage.class);
+      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
+      final var backupId = new BackupIdentifierImpl(1, 2, 3);
+
+      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(null);
+
+      // when
+      manager.markAsDeleted(backupId);
+
+      // then - should not call create since manifest does not exist
+      Mockito.verify(client, Mockito.never()).create(Mockito.any(BlobInfo.class), Mockito.any());
+    }
   }
 }

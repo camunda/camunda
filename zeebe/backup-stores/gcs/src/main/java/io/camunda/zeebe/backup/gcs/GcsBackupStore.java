@@ -139,11 +139,13 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
+
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.deleteManifest(id);
+          manifestManager.markAsDeleted(id);
           fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          manifestManager.deleteManifest(id);
         },
         executor);
   }

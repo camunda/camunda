@@ -170,6 +170,32 @@ public final class ManifestManager {
     }
   }
 
+  void markAsDeleted(final BackupIdentifier manifestId) {
+    assureContainerCreated();
+
+    final Manifest manifest = getManifest(manifestId);
+    if (manifest == null) {
+      return;
+    }
+
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+
+    if (manifest != deletedManifest) {
+      try {
+        final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
+        blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
   public void deleteManifest(final BackupIdentifier id) {
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(id));
     final Manifest manifest = getManifest(id);

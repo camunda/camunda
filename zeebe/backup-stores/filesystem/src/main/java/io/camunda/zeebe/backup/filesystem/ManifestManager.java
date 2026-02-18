@@ -130,10 +130,31 @@ public final class ManifestManager {
               throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
         };
 
-    if (manifest != updatedManifest) {
+    updateManifestFile(manifest, updatedManifest);
+  }
+
+  void markAsDeleted(final BackupIdentifier manifestId) {
+    final Manifest manifest = getManifest(manifestId);
+    if (manifest == null) {
+      return;
+    }
+
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+
+    updateManifestFile(manifest, deletedManifest);
+  }
+
+  private void updateManifestFile(final Manifest originManifest, final Manifest updatedManifest) {
+    if (originManifest != updatedManifest) {
       try {
         final var serializedManifest = MAPPER.writeValueAsBytes(updatedManifest);
-        final var path = manifestPath(manifest);
+        final var path = manifestPath(originManifest);
         Files.write(path, serializedManifest, StandardOpenOption.SYNC);
       } catch (final IOException e) {
         throw new UncheckedIOException("Unable to write updated manifest", e);

@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -265,6 +266,7 @@ public final class S3BackupStore implements BackupStore {
                 return manifest;
               }
             })
+        .thenCompose(manifest -> markAsDeleted(id, manifest))
         .thenComposeAsync(
             manifest ->
                 listObjects(manifest, Directory.MANIFESTS)
@@ -315,7 +317,7 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> key.substring(prefix.length()))
                     .map(BackupRangeMarker::fromName)
-                    .filter(marker -> marker != null)
+                    .filter(Objects::nonNull)
                     .toList());
   }
 
@@ -366,6 +368,15 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
+  }
+
+  private CompletableFuture<Manifest> markAsDeleted(
+      final BackupIdentifier id, final Manifest manifest) {
+    if (manifest instanceof final ValidBackupManifest validManifest) {
+      return updateManifestObject(id, m -> validManifest.asDeleted())
+          .thenApply(Manifest.class::cast);
+    }
+    return CompletableFuture.completedFuture(manifest);
   }
 
   private String rangeMarkersPrefix(final int partitionId) {

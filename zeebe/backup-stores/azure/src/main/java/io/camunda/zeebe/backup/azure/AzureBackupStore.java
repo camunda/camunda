@@ -173,9 +173,10 @@ public final class AzureBackupStore implements BackupStore {
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.deleteManifest(id);
+          manifestManager.markAsDeleted(id);
           fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
+          manifestManager.deleteManifest(id);
         },
         executor);
   }
