@@ -7,6 +7,7 @@
  */
 package io.camunda.search.clients.transformers.filter;
 
+import static io.camunda.search.clients.auth.matcher.AuditLogPropertyMatcher.AUTHENTICATED_CATEGORIES;
 import static io.camunda.search.clients.query.SearchQueryBuilders.and;
 import static io.camunda.search.clients.query.SearchQueryBuilders.dateTimeOperations;
 import static io.camunda.search.clients.query.SearchQueryBuilders.exists;
@@ -26,12 +27,18 @@ import io.camunda.search.clients.query.SearchQuery;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.security.auth.Authorization;
+import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.reader.TenantCheck;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogTenantScope;
+import java.util.ArrayList;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFilter> {
+
+  private static final Logger LOG = LoggerFactory.getLogger(AuditLogFilterTransformer.class);
 
   public AuditLogFilterTransformer(final IndexDescriptor indexDescriptor) {
     super(indexDescriptor);
@@ -141,5 +148,43 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
 
     // in case unknown authorization, deny any access
     return matchNone();
+  }
+
+  @Override
+  protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
+      final Authorization<?> authorization, final CamundaAuthentication authentication) {
+
+    if (authorization.resourceType() != AUDIT_LOG) {
+      LOG.warn(
+          "Property-based authorization is only supported for {} resource type, "
+              + "but received '{}'; returning a match-none query.",
+          AUDIT_LOG,
+          authorization.resourceType());
+      return matchNone();
+    }
+
+    final var resourcePropertyNames = authorization.resourcePropertyNames();
+    if (resourcePropertyNames == null || resourcePropertyNames.isEmpty()) {
+      return matchNone();
+    }
+
+    final var queries = new ArrayList<SearchQuery>();
+
+    for (final var propertyName : resourcePropertyNames) {
+      if (Authorization.PROP_CATEGORY.equals(propertyName)) {
+        queries.add(stringTerms(CATEGORY, AUTHENTICATED_CATEGORIES));
+      } else {
+        LOG.warn(
+            "Unknown property name '{}' for {} property-based authorization; ignoring.",
+            propertyName,
+            AUDIT_LOG);
+      }
+    }
+
+    if (queries.isEmpty()) {
+      return matchNone();
+    }
+
+    return or(queries);
   }
 }
