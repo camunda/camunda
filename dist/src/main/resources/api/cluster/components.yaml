@@ -330,6 +330,7 @@ schemas:
           - PARTITION_DELETE_EXPORTER
           - UPDATE_INCARNATION_NUMBER
           - PRE_SCALING
+          - POST_SCALING
       brokerId:
         $ref: "components.yaml#/schemas/BrokerId"
       partitionId:

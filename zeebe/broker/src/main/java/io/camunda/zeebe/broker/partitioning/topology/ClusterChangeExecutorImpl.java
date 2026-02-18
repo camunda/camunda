@@ -18,6 +18,7 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -88,6 +89,12 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
         });
 
     return result;
+  }
+
+  @Override
+  public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
+    // TODO: implement actual logic here
+    return CompletableActorFuture.completed();
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {

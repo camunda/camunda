@@ -86,6 +86,21 @@ public sealed interface ClusterConfigurationChangeOperation {
     }
   }
 
+  /**
+   * Operation to finalize scaling. This operation is executed after scaling is complete.
+   *
+   * @param memberId the member id of the member that will apply this operation
+   * @param clusterMembers the list of member ids that are part of the cluster after scaling is
+   *     completed
+   */
+  record PostScalingOperation(MemberId memberId, SortedSet<MemberId> clusterMembers)
+      implements ClusterConfigurationChangeOperation {
+
+    public PostScalingOperation(final MemberId memberId, final Set<MemberId> clusterMembers) {
+      this(memberId, ImmutableSortedSet.copyOf(clusterMembers));
+    }
+  }
+
   sealed interface ScaleUpOperation extends ClusterConfigurationChangeOperation {
     /**
      * Operation to initiate partition scale up. This instructs the cluster to redistribute
