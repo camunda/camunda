@@ -126,6 +126,8 @@ public final class ManifestManager {
           case FAILED -> manifest.asFailed();
           case COMPLETED -> manifest.asCompleted().fail(failureReason);
           case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
+          case DELETED ->
+              throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
         };
 
     if (manifest != updatedManifest) {

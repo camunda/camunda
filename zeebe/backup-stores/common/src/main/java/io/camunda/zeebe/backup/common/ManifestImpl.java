@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.common;
 
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.DELETED;
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 
@@ -24,7 +25,10 @@ public record ManifestImpl(
     Instant createdAt,
     Instant modifiedAt,
     String failureReason)
-    implements Manifest.InProgressManifest, Manifest.CompletedManifest, Manifest.FailedManifest {
+    implements Manifest.InProgressManifest,
+        Manifest.CompletedManifest,
+        Manifest.FailedManifest,
+        Manifest.DeletedManifest {
 
   public static final String ERROR_MSG_WRONG_STATE =
       "Expected a failed Manifest to set failureReason '%s', but was in state '%s'.";
@@ -60,6 +64,12 @@ public record ManifestImpl(
   }
 
   @Override
+  public DeletedManifest delete() {
+    return new ManifestImpl(
+        id, descriptor, DELETED, snapshot, segments, createdAt, Instant.now(), null);
+  }
+
+  @Override
   public InProgressManifest asInProgress() {
     if (statusCode != IN_PROGRESS) {
       throw new UnexpectedManifestState(IN_PROGRESS, statusCode);
@@ -81,6 +91,15 @@ public record ManifestImpl(
   public FailedManifest asFailed() {
     if (statusCode != FAILED) {
       throw new UnexpectedManifestState(FAILED, statusCode);
+    }
+
+    return this;
+  }
+
+  @Override
+  public DeletedManifest asDeleted() {
+    if (statusCode != DELETED) {
+      throw new UnexpectedManifestState(DELETED, statusCode);
     }
 
     return this;

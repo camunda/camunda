@@ -157,7 +157,7 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS ->
+            case FAILED, DELETED, IN_PROGRESS ->
                 throw new RuntimeException(
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
