@@ -462,7 +462,7 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockUpdateElementInstanceVariables('instance_id').withServerError(400);
+    mockUpdateElementInstanceVariables(':instance_id').withServerError(400);
 
     await waitFor(() =>
       expect(
@@ -536,6 +536,7 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
