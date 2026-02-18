@@ -209,25 +209,33 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           "Expected to acquire initial lease, but lease is already acquired: " + currentLease);
     }
     var i = 0;
-    var retryRound = 0;
+    var availableLeaseCount = clusterSize;
     NodeIdRepository.StoredLease storedLease = null;
     while (currentLease == null) {
-      if (i % clusterSize == 0) {
-        retryRound++;
+      if (i % availableLeaseCount == 0 && i > 0) {
+        // Refresh available lease count - a scale operation might have added new leases
+        final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
+        if (refreshedCount > availableLeaseCount) {
+          LOG.debug(
+              "Available lease count increased from {} to {} (likely due to scale operation)",
+              availableLeaseCount,
+              refreshedCount);
+          availableLeaseCount = refreshedCount;
+        }
+
         // wait a bit before retrying on all leases again.
-        if (retryRound > 1) {
-          try {
-            final var currentDelay = backoff.nextDelay();
-            LOG.debug(
-                "Attempt to acquire the lease failed for all nodeIds, sleeping {} and retrying again",
-                currentDelay);
-            Thread.sleep(currentDelay);
-          } catch (final InterruptedException e) {
-            break;
-          }
+        try {
+          final var currentDelay = backoff.nextDelay();
+          LOG.debug(
+              "Attempt to acquire the lease failed for all {} nodeIds, sleeping {} and retrying again",
+              availableLeaseCount,
+              currentDelay);
+          Thread.sleep(currentDelay);
+        } catch (final InterruptedException e) {
+          break;
         }
       }
-      final var nodeId = i++ % clusterSize;
+      final var nodeId = i++ % availableLeaseCount;
       storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
     }

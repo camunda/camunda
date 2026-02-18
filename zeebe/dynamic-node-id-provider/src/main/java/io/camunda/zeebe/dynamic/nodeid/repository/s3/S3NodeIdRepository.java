@@ -231,6 +231,25 @@ public class S3NodeIdRepository implements NodeIdRepository {
     }
   }
 
+  @Override
+  public int getAvailableLeaseCount() {
+    final var request = ListObjectsV2Request.builder().bucket(config.bucketName).build();
+    try {
+      final var response = client.listObjectsV2(request);
+      if (response.hasContents() && !response.contents().isEmpty()) {
+        return (int) response.contents().stream().filter(o -> isNodeIdLease(o.key())).count();
+      }
+      return 0;
+    } catch (final S3Exception e) {
+      if (e.statusCode() == 404) {
+        LOG.warn("Bucket {} does not exist", config.bucketName);
+        throw e;
+      }
+      LOG.warn("Failed to list objects in bucket {}", config.bucketName, e);
+      throw e;
+    }
+  }
+
   private void markInitialized() {
     // concurrent puts to these object is fine as the content is not relevant.
     final var request =
@@ -264,24 +283,6 @@ public class S3NodeIdRepository implements NodeIdRepository {
         return false;
       }
       LOG.warn("Failed to check if node ID repository is initialized", e);
-      throw e;
-    }
-  }
-
-  private int getAvailableLeaseCount() {
-    final var request = ListObjectsV2Request.builder().bucket(config.bucketName).build();
-    try {
-      final var response = client.listObjectsV2(request);
-      if (response.hasContents() && !response.contents().isEmpty()) {
-        return (int) response.contents().stream().filter(o -> isNodeIdLease(o.key())).count();
-      }
-      return 0;
-    } catch (final S3Exception e) {
-      if (e.statusCode() == 404) {
-        LOG.warn("Bucket {} does not exist", config.bucketName);
-        throw e;
-      }
-      LOG.warn("Failed to list objects in bucket {}", config.bucketName, e);
       throw e;
     }
   }

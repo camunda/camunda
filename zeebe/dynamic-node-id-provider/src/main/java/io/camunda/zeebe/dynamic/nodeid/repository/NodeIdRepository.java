@@ -82,6 +82,15 @@ public interface NodeIdRepository extends AutoCloseable {
   StoredRestoreStatus getRestoreStatus(final String restoreId);
 
   /**
+   * Get the count of available leases in the repository. This can be used to refresh the available
+   * lease count during lease acquisition, especially when a concurrent scale operation might have
+   * added new leases.
+   *
+   * @return the number of available leases
+   */
+  int getAvailableLeaseCount();
+
+  /**
    * A StoredLease represents the Lease stored in a Repository such as S3. It can be
    *
    * <ul>
