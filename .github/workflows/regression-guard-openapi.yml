@@ -42,7 +42,7 @@ jobs:
           wget -qO /tmp/act.tar.gz \
             "https://github.com/nektos/act/releases/download/v${ACT_VERSION}/act_Linux_x86_64.tar.gz"
           echo "${ACT_SHA256}  /tmp/act.tar.gz" | sha256sum -c -
-          sudo tar xz -C /usr/local/bin act < /tmp/act.tar.gz
+          sudo tar xzf /tmp/act.tar.gz -C /usr/local/bin act
           rm -f /tmp/act.tar.gz
           act --version
 
