@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ENV_NAME}} — Camunda Dev Environment</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔧</text></svg>" />
+
+  <!-- Camunda Cloud (Zeebe) Modeler -->
+  <link rel="stylesheet" href="https://unpkg.com/camunda-bpmn-js@5.22.1/dist/assets/camunda-cloud-modeler.css" />
+  <script src="https://unpkg.com/camunda-bpmn-js@5.22.1/dist/camunda-cloud-modeler.development.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono&display=swap');
+    :root {
+      --toolbar-bg: #161616; --toolbar-border: #333;
+      --text: #161616; --text-2: #525252; --text-3: #a8a8a8;
+      --accent: #fc5d0d; --accent-hover: #e04e00;
+      --btn-hover: #e8e8e8; --btn-active: #d0d0d0;
+      --danger: #da1e28; --success: #198038; --warning: #f1c21b;
+      --overlay-bg: rgba(22,22,22,0.5);
+      --border: #e0e0e0;
+      --font: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --mono: 'IBM Plex Mono', monospace;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; font-family: var(--font); color: var(--text); background: #fff; overflow: hidden; }
+
+    /* ─── Top bar (dark, compact) ──────────────────────────────────────── */
+    #topbar {
+      display: flex; align-items: center;
+      height: 36px; padding: 0 12px;
+      background: var(--toolbar-bg); color: #f4f4f4;
+      user-select: none; z-index: 20; position: relative;
+      font-size: 13px;
+    }
+    #topbar .spacer { flex: 1; }
+    .env-name {
+      position: relative; display: inline-flex; align-items: center; gap: 6px;
+      font-weight: 600; font-size: 13px; cursor: default;
+      padding: 4px 10px; border-radius: 4px;
+    }
+    .env-name .health-dot {
+      width: 7px; height: 7px; border-radius: 50%; background: var(--warning);
+      flex-shrink: 0; transition: background 0.3s;
+    }
+    .env-name .health-dot.up { background: var(--success); }
+    .env-name .health-dot.down { background: var(--danger); }
+
+    /* Hover popup */
+    .env-popup {
+      display: none; position: absolute; top: 100%; left: 0;
+      margin-top: 4px; background: #fff; color: var(--text);
+      border-radius: 6px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      min-width: 200px; padding: 10px 14px; z-index: 30;
+      font-size: 12px;
+    }
+    .env-name:hover .env-popup { display: block; }
+    .env-popup .ep-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; color: var(--text-3); margin-bottom: 8px; }
+    .env-popup .ep-pills { display: flex; flex-wrap: wrap; gap: 6px; }
+    .env-popup .ep-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-family: var(--mono); font-size: 10px; font-weight: 500;
+      padding: 3px 8px; border-radius: 10px;
+      background: #f4f4f4; color: var(--text-2);
+    }
+    .env-popup .ep-pill .pill-label { font-family: var(--font); font-size: 10px; color: var(--text-3); }
+
+    .topbar-link {
+      color: #c6c6c6; text-decoration: none; font-size: 12px; font-weight: 500;
+      padding: 4px 10px; border-radius: 4px; transition: color 0.1s, background 0.1s;
+    }
+    .topbar-link:hover { color: #fff; background: rgba(255,255,255,0.08); }
+    .topbar-links { display: flex; align-items: center; gap: 2px; }
+
+    /* ─── Toolbar (file actions) ───────────────────────────────────────── */
+    #toolbar {
+      display: flex; align-items: center; gap: 2px;
+      height: 38px; padding: 0 8px;
+      background: #f4f4f4; border-bottom: 1px solid var(--border);
+      user-select: none; position: relative;
+    }
+    #toolbar .group { display: flex; align-items: center; gap: 2px; }
+    #toolbar .group + .group { margin-left: 4px; padding-left: 6px; border-left: 1px solid var(--border); }
+    #toolbar .spacer { flex: 1; }
+    .tb-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      height: 30px; padding: 0 10px;
+      border: none; border-radius: 4px;
+      background: transparent; color: var(--text);
+      font: 500 12px/1 var(--font); cursor: pointer;
+      transition: background 0.1s; white-space: nowrap;
+    }
+    .tb-btn:hover { background: var(--btn-hover); }
+    .tb-btn:active { background: var(--btn-active); }
+    .tb-btn svg { width: 14px; height: 14px; fill: currentColor; }
+    .tb-btn.accent { color: var(--accent); }
+    .tb-btn.accent:hover { background: rgba(252,93,13,0.08); }
+    .tb-btn.deploy { background: var(--accent); color: #fff; font-weight: 600; }
+    .tb-btn.deploy:hover { background: var(--accent-hover); }
+    #fileName {
+      font-size: 12px; font-weight: 500; color: var(--text-2);
+      max-width: 240px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+      padding: 0 4px;
+    }
+    input[type="file"] { display: none; }
+
+    /* ─── Modeler area ─────────────────────────────────────────────────── */
+    #main { display: flex; flex-direction: column; height: calc(100% - 36px); }
+    #modeler-area { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    #canvas { flex: 1; }
+    #container { display: flex; height: 100%; }
+    #properties {
+      width: 340px; border-left: 1px solid var(--border);
+      overflow-y: auto; background: #fafafa;
+    }
+
+    /* ─── Toast notifications ──────────────────────────────────────────── */
+    #toasts {
+      position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+      z-index: 200; display: flex; flex-direction: column-reverse; gap: 8px;
+      pointer-events: none; max-width: 560px; width: 90%;
+    }
+    .toast {
+      padding: 10px 16px; border-radius: 4px; font: 13px/1.4 var(--font);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15); pointer-events: auto;
+      animation: toast-in 0.25s ease-out;
+      display: flex; align-items: flex-start; gap: 8px;
+    }
+    .toast .icon { font-size: 15px; flex-shrink: 0; line-height: 1; }
+    .toast .msg { flex: 1; word-break: break-word; }
+    .toast.success { background: #defbe6; color: #044317; border-left: 3px solid var(--success); }
+    .toast.error { background: #fff1f1; color: #750e13; border-left: 3px solid var(--danger); }
+    .toast.info { background: #edf5ff; color: #002d9c; border-left: 3px solid #4589ff; }
+    @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ─── Modal overlays ───────────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--overlay-bg); z-index: 100;
+    }
+    .modal-overlay.visible { display: flex; justify-content: center; align-items: center; }
+    .modal-panel {
+      background: #fff; border-radius: 6px; padding: 24px; width: 400px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    }
+    .modal-panel h3 { font-size: 16px; font-weight: 600; margin-bottom: 20px; }
+    .modal-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 4px; }
+    .modal-actions button {
+      padding: 8px 20px; border: 1px solid var(--border); border-radius: 4px;
+      font: 500 13px/1 var(--font); cursor: pointer; background: #fff; color: var(--text);
+    }
+    .modal-actions button:hover { background: var(--btn-hover); }
+
+    .modal-panel.file-list { width: 460px; max-height: 60vh; overflow-y: auto; }
+    .file-item {
+      padding: 10px 12px; border-bottom: 1px solid #f0f0f0;
+      cursor: pointer; font-size: 13px; transition: background 0.1s;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .file-item:last-child { border-bottom: none; }
+    .file-item:hover { background: #f4f4f4; }
+    .file-item svg { width: 16px; height: 16px; fill: var(--text-3); flex-shrink: 0; }
+    .file-empty { color: var(--text-3); font-style: italic; padding: 12px 0; font-size: 13px; }
+  </style>
+</head>
+<body>
+
+<!-- Dark top bar: env name + links (left), health dot -->
+<div id="topbar">
+  <div class="env-name">
+    <span class="health-dot" id="globalHealthDot"></span>
+    <span>{{ENV_NAME}}</span>
+    <div class="env-popup">
+      <div class="ep-section">Configuration</div>
+      <div class="ep-pills">
+        <span class="ep-pill"><span class="pill-label">Auth</span> {{AUTH_MODE}}</span>
+        <span class="ep-pill"><span class="pill-label">DB</span> {{DATASTORE}}</span>
+        <span class="ep-pill"><span class="pill-label">Connectors</span> {{CONNECTORS}}</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="topbar-links">
+    <a class="topbar-link" href="http://localhost:8080/operate" target="_blank">Operate</a>
+    <a class="topbar-link" href="http://localhost:8080/tasklist" target="_blank">Tasklist</a>
+  </div>
+
+  <div class="spacer"></div>
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <div class="group">
+      <button class="tb-btn" id="btnNew" title="New diagram (Ctrl+N)">
+        <svg viewBox="0 0 16 16"><path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5l-4-4zm3 13H4V2h4v4h4v8z"/><path d="M7 7h2v2h1V7h2V6H10V4H9v2H7z"/></svg>
+        New
+      </button>
+      <button class="tb-btn" id="btnOpen" title="Open file (Ctrl+O)">
+        <svg viewBox="0 0 16 16"><path d="M14 4H8.4L7.1 2.3A1 1 0 0 0 6.3 2H2a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V5a1 1 0 0 0-1-1zm0 9H2V3h4.3l1.3 1.7a1 1 0 0 0 .8.3H14v8z"/></svg>
+        Open
+      </button>
+      <input type="file" id="fileInput" accept=".bpmn,.xml" />
+      <button class="tb-btn" id="btnSave" title="Save file (Ctrl+S)">
+        <svg viewBox="0 0 16 16"><path d="M13.7 3.3l-1-1A1 1 0 0 0 12 2H4a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a1 1 0 0 0-.3-.7zM8 13a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm3-8H5V3h6v2z"/></svg>
+        Save
+      </button>
+    </div>
+
+    <span id="fileName">(new diagram)</span>
+    <div class="spacer"></div>
+
+    <div class="group">
+      <button class="tb-btn deploy" id="btnDeploy" title="Deploy to Camunda">
+        <svg viewBox="0 0 16 16" fill="white"><path d="M8 1l5 5h-3v4H6V6H3l5-5zM2 12h12v2H2z"/></svg>
+        Deploy
+      </button>
+      <button class="tb-btn accent" id="btnStart" title="Start process instance">
+        <svg viewBox="0 0 16 16"><path d="M4 2l10 6-10 6z"/></svg>
+        Start
+      </button>
+    </div>
+  </div>
+
+  <div id="modeler-area">
+    <div id="container">
+      <div id="canvas"></div>
+      <div id="properties"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toasts"></div>
+
+<!-- File list modal -->
+<div class="modal-overlay" id="file-list-overlay">
+  <div class="modal-panel file-list">
+    <h3>Open</h3>
+    <div id="fileListContent"><span class="file-empty">Loading...</span></div>
+    <div class="modal-actions" style="margin-top: 16px;">
+      <button onclick="closeFileList()">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ─── Guard ──────────────────────────────────────────────────────────────
+  if (typeof window.BpmnModeler !== 'function') {
+    document.body.innerHTML = '<div style="padding:40px;font-family:sans-serif;color:#c00">' +
+      '<h2>⚠️ Failed to load Camunda BPMN Modeler</h2>' +
+      '<p><code>camunda-bpmn-js</code> did not load from CDN. Check your internet connection and try a hard refresh (Cmd+Shift+R).</p></div>';
+    throw new Error('BpmnModeler not loaded');
+  }
+
+  // ─── Config ─────────────────────────────────────────────────────────────
+  const isSameOriginProxy = location.port === '8090';
+  const DEFAULTS = { url: isSameOriginProxy ? location.origin : 'http://localhost:8080', user: '{{DEFAULT_USER}}', pass: '{{DEFAULT_PASS}}' };
+
+  function getConfig() {
+    const baseUrl = isSameOriginProxy ? location.origin : (localStorage.getItem('c8_url') || DEFAULTS.url);
+    return {
+      url: baseUrl,
+      user: localStorage.getItem('c8_user') || DEFAULTS.user,
+      pass: localStorage.getItem('c8_pass') || DEFAULTS.pass
+    };
+  }
+
+  function authHeaders() {
+    const cfg = getConfig();
+    const h = {};
+    if (cfg.user) h['Authorization'] = 'Basic ' + btoa(cfg.user + ':' + cfg.pass);
+    return h;
+  }
+
+  // ─── Toast notifications ────────────────────────────────────────────────
+  const toastsEl = document.getElementById('toasts');
+  function toast(msg, type, duration) {
+    type = type || 'info';
+    duration = duration || (type === 'error' ? 8000 : 4000);
+    const icons = { success: '✓', error: '✕', info: 'ℹ' };
+    const el = document.createElement('div');
+    el.className = 'toast ' + type;
+    el.innerHTML = '<span class="icon">' + (icons[type] || '') + '</span><span class="msg">' + msg + '</span>';
+    toastsEl.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.3s'; setTimeout(() => el.remove(), 300); }, duration);
+  }
+
+  // ─── Health check (Camunda only) ────────────────────────────────────
+  const camundaHealthUrl = isSameOriginProxy
+    ? location.origin + '/v2/topology'
+    : 'http://localhost:8080/v2/topology';
+
+  async function checkHealth() {
+    const globalDot = document.getElementById('globalHealthDot');
+    try {
+      const opts = { method: 'GET', mode: 'cors', signal: AbortSignal.timeout(3000), headers: authHeaders() };
+      const resp = await fetch(camundaHealthUrl, opts);
+      const ok = resp.ok || resp.status === 401;
+      globalDot.className = 'health-dot ' + (ok ? 'up' : 'down');
+    } catch (e) {
+      globalDot.className = 'health-dot down';
+    }
+  }
+  checkHealth();
+  setInterval(checkHealth, 10000);
+
+  // ─── Modeler ────────────────────────────────────────────────────────────
+  const modeler = new window.BpmnModeler({
+    container: '#canvas',
+    propertiesPanel: { parent: '#properties' }
+  });
+
+  let currentFileName = 'diagram.bpmn';
+
+  const NEW_DIAGRAM = `<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+                  xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+                  xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+                  xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+                  xmlns:modeler="http://camunda.org/schema/modeler/1.0"
+                  id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn"
+                  exporter="c8env" exporterVersion="1.0.0"
+                  modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.8.0">
+  <bpmn:process id="Process_1" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_1">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_1" bpmnElement="StartEvent_1">
+        <dc:Bounds x="179" y="159" width="36" height="36" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>`;
+
+  async function openDiagram(xml, fileName) {
+    try {
+      await modeler.importXML(xml);
+      modeler.get('canvas').zoom('fit-viewport');
+      currentFileName = fileName || 'diagram.bpmn';
+      document.getElementById('fileName').textContent = currentFileName;
+      toast('Opened ' + currentFileName, 'success');
+    } catch (err) { toast('Failed to open: ' + err.message, 'error'); }
+  }
+  openDiagram(NEW_DIAGRAM, '(new diagram)');
+
+  // ─── New ────────────────────────────────────────────────────────────────
+  document.getElementById('btnNew').addEventListener('click', () => openDiagram(NEW_DIAGRAM, '(new diagram)'));
+
+  // ─── Open ───────────────────────────────────────────────────────────────
+  const fileInput = document.getElementById('fileInput');
+
+  document.getElementById('btnOpen').addEventListener('click', async () => {
+    if ('showOpenFilePicker' in window) {
+      try {
+        const [handle] = await window.showOpenFilePicker({
+          types: [{ description: 'BPMN files', accept: { 'application/xml': ['.bpmn', '.xml'] } }],
+          multiple: false
+        });
+        const file = await handle.getFile();
+        openDiagram(await file.text(), file.name);
+        return;
+      } catch (err) { if (err.name === 'AbortError') return; }
+    }
+
+    // Fallback: modal with server files + disk browse
+    const overlay = document.getElementById('file-list-overlay');
+    const content = document.getElementById('fileListContent');
+    overlay.classList.add('visible');
+    content.innerHTML = '<span class="file-empty">Loading…</span>';
+
+    let html = '<div class="file-item" id="openFromDisk">' +
+      '<svg viewBox="0 0 16 16"><path d="M14 14H2V2h5l2 2h5v10zM8 6v3H6l3 4 3-4h-2V6z"/></svg>' +
+      '<span>Browse from disk…</span></div>';
+
+    try {
+      const resp = await fetch('/bpmn/');
+      if (resp.ok) {
+        const doc = new DOMParser().parseFromString(await resp.text(), 'text/html');
+        const files = [...doc.querySelectorAll('a')].map(a => a.getAttribute('href') || '').filter(h => h.endsWith('.bpmn'));
+        if (files.length) {
+          html += '<div style="padding:8px 12px;font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.5px">Resources</div>';
+          files.forEach(f => {
+            const name = decodeURIComponent(f);
+            html += '<div class="file-item" data-server-file="' + f + '"><svg viewBox="0 0 16 16"><path d="M9 1H4a1 1 0 0 0-1 1v12a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5l-4-4zm3 13H4V2h4v4h4v8z"/></svg><span>' + name + '</span></div>';
+          });
+        }
+      }
+    } catch(e) {}
+
+    content.innerHTML = html;
+    document.getElementById('openFromDisk').addEventListener('click', () => { closeFileList(); fileInput.click(); });
+    content.querySelectorAll('[data-server-file]').forEach(el => {
+      el.addEventListener('click', async () => {
+        try { openDiagram(await (await fetch('/bpmn/' + el.dataset.serverFile)).text(), el.dataset.serverFile); closeFileList(); }
+        catch (err) { toast('Failed to load: ' + err.message, 'error'); }
+      });
+    });
+  });
+
+  fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0]; if (!file) return;
+    openDiagram(await file.text(), file.name); fileInput.value = '';
+  });
+
+  // ─── Save ───────────────────────────────────────────────────────────────
+  document.getElementById('btnSave').addEventListener('click', async () => {
+    try {
+      const { xml } = await modeler.saveXML({ format: true });
+      const blob = new Blob([xml], { type: 'application/xml' });
+      if ('showSaveFilePicker' in window) {
+        try {
+          const h = await window.showSaveFilePicker({ suggestedName: currentFileName, types: [{ description: 'BPMN', accept: { 'application/xml': ['.bpmn'] } }] });
+          const w = await h.createWritable(); await w.write(blob); await w.close();
+          toast('Saved ' + currentFileName, 'success'); return;
+        } catch (e) { if (e.name === 'AbortError') return; }
+      }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = currentFileName; a.click();
+      toast('Downloaded ' + currentFileName, 'success');
+    } catch (err) { toast('Save failed: ' + err.message, 'error'); }
+  });
+
+  // ─── Deploy ─────────────────────────────────────────────────────────────
+  document.getElementById('btnDeploy').addEventListener('click', async () => {
+    try {
+      const { xml } = await modeler.saveXML({ format: true });
+      const cfg = getConfig();
+      const fd = new FormData();
+      fd.append('resources', new Blob([xml], { type: 'application/xml' }), currentFileName);
+      toast('Deploying ' + currentFileName + '…', 'info', 2000);
+      const resp = await fetch(cfg.url + '/v2/deployments', { method: 'POST', headers: authHeaders(), body: fd });
+      const body = await resp.text();
+      if (resp.ok) {
+        let d = ''; try { d = JSON.parse(body).deploymentKey ? ' (key: ' + JSON.parse(body).deploymentKey + ')' : ''; } catch(e) {}
+        toast('Deployed successfully' + d, 'success');
+      } else {
+        let m = body; try { m = JSON.parse(body).detail || body; } catch(e) {}
+        toast('Deploy failed (' + resp.status + '): ' + m, 'error');
+      }
+    } catch (err) { toast('Deploy failed: ' + err.message, 'error'); }
+  });
+
+  // ─── Start Instance ─────────────────────────────────────────────────────
+  document.getElementById('btnStart').addEventListener('click', async () => {
+    try {
+      const defs = modeler.getDefinitions();
+      const proc = defs && defs.rootElements ? defs.rootElements.find(e => e.$type === 'bpmn:Process') : null;
+      if (!proc || !proc.id) { toast('No process found in diagram', 'error'); return; }
+      const cfg = getConfig();
+      toast('Starting ' + proc.id + '…', 'info', 2000);
+      const resp = await fetch(cfg.url + '/v2/process-instances', {
+        method: 'POST', headers: { ...authHeaders(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ processDefinitionId: proc.id })
+      });
+      const body = await resp.text();
+      if (resp.ok) {
+        let k = ''; try { k = JSON.parse(body).processInstanceKey || ''; } catch(e) {}
+        toast('Instance started' + (k ? ' (key: ' + k + ')' : ''), 'success');
+      } else {
+        let m = body; try { m = JSON.parse(body).detail || body; } catch(e) {}
+        toast('Start failed (' + resp.status + '): ' + m, 'error');
+      }
+    } catch (err) { toast('Start failed: ' + err.message, 'error'); }
+  });
+
+  // ─── File list modal ────────────────────────────────────────────────────
+  function closeFileList() { document.getElementById('file-list-overlay').classList.remove('visible'); }
+  document.getElementById('file-list-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeFileList(); });
+
+  // ─── Keyboard shortcuts ─────────────────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); document.getElementById('btnSave').click(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'o') { e.preventDefault(); document.getElementById('btnOpen').click(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'n') { e.preventDefault(); document.getElementById('btnNew').click(); }
+  });
+</script>
+</body>
+</html>

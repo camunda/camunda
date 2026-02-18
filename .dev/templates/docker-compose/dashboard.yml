@@ -1,0 +1,15 @@
+
+  dashboard:
+    image: nginx:alpine
+    container_name: {{ENV_NAME}}-dashboard
+    ports:
+      - "8090:80"
+    volumes:
+      - {{RESOURCES_PATH}}:/usr/share/nginx/html:ro
+      - {{NGINX_CONF_PATH}}:/etc/nginx/conf.d/default.conf:ro
+      - {{LANDING_PAGE_PATH}}:/app/index.html:ro
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - {{ENV_NAME}}
+    restart: always

@@ -60,6 +60,7 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 .dev/c8env deploy <resource>          # Deploy a BPMN resource to Camunda
 .dev/c8env deploy --list              # List available BPMN resources
 .dev/c8env start <process-id>         # Start a process instance
+.dev/c8env dashboard [name]           # Open environment dashboard in browser
 .dev/c8env help                       # Show usage
 ```
 
@@ -107,6 +108,24 @@ Use `--resource` to bundle BPMN files with your environment. They get copied int
 By default, Camunda runs from IntelliJ (debuggable). With `--standalone`, Camunda runs as a
 Docker container — no IDE needed, just `docker compose up`.
 
+### Dashboard & BPMN Editor
+
+Every generated environment includes a browser-based dashboard at **http://localhost:8090/**
+served by an nginx container. It combines environment health monitoring with a full Camunda Cloud
+BPMN editor powered by `camunda-bpmn-js`.
+
+Features:
+- Collapsible sidebar with live health status for Camunda, datastore, connectors, and Ollama
+- Full Camunda 8 / Zeebe properties panel (task types, I/O mappings, headers)
+- Open files from disk or browse mounted `.dev/resources/bpmn/` directory
+- Save to disk (download or File System Access API in Chrome)
+- Deploy directly to Camunda REST API (`POST /v2/deployments`)
+- Start process instances (`POST /v2/process-instances`)
+- Configurable endpoint URL and basic auth credentials (persisted in localStorage)
+- Keyboard shortcuts: Ctrl+S (save), Ctrl+O (open)
+
+The dashboard opens automatically when launching the Spring Boot run config from IntelliJ.
+
 ### Model Presets (for `--connectors agentic`)
 
 | Model | Size | Notes |
@@ -125,8 +144,9 @@ You can also specify any Ollama model name (e.g. `mistral:7b`).
 ├── README.md                # This file
 ├── .gitignore               # Ignores envs/ (generated, personal)
 ├── templates/               # Template fragments for generation
-│   ├── docker-compose/      # Docker service blocks (ES, PG, Ollama, etc.)
-│   └── intellij/            # IntelliJ run config templates
+│   ├── docker-compose/      # Docker service blocks (ES, PG, Ollama, dashboard, etc.)
+│   ├── intellij/            # IntelliJ run config templates
+│   └── landing/             # Dashboard + BPMN editor template (index.html)
 ├── resources/               # Sample BPMN processes and resources
 │   └── bpmn/
 │       └── agentic-daily-briefing.bpmn

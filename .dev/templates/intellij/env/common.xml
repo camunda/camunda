@@ -1,2 +1,3 @@
       <env name="ZEEBE_BROKER_CLUSTER_PARTITIONSCOUNT" value="3" />
       <env name="CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS" value="false" />
+      <env name="CAMUNDA_SECURITY_CSRF_ENABLED" value="false" />
