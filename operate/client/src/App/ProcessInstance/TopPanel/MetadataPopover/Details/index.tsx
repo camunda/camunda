@@ -108,7 +108,7 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
         }}
       />
       <Stack gap={5}>
-        {!isCamundaUserTask(businessObject) && (
+        {type === 'USER_TASK' && !isCamundaUserTask(businessObject) && (
           <SummaryText>
             User tasks with job worker implementation are deprecated. Consider
             migrating to Camunda user tasks.
