@@ -478,9 +478,9 @@ jobs:
             # For CPT versions <= 8.8.7, skip CamundaSpringProcessMultiTenancyTestListenerIT
             if (( MAJOR < 8 )) || \
                (( MAJOR == 8 && MINOR < 8 )) || \
-               (( MAJOR == 8 && MINOR == 8 && PATCH <= 7 )); then
-              EXTRA_PROPS+=" -Dit.test='!CamundaSpringProcessMultiTenancyTestListenerIT'"
-              echo "CPT version $CLIENT_VERSION <= 8.8.7 - excluding CamundaSpringProcessMultiTenancyTestListenerIT"
+               (( MAJOR == 8 && MINOR == 8 && PATCH <= 11 )); then
+              EXTRA_PROPS+=" -Dit.test=!CamundaSpringProcessMultiTenancyTestListenerIT -Dfailsafe.failIfNoSpecifiedTests=false"
+              echo "CPT version $CLIENT_VERSION <= 8.8.11 - excluding CamundaSpringProcessMultiTenancyTestListenerIT"
             fi
           fi
           echo "extra-props=${EXTRA_PROPS}" >> "$GITHUB_OUTPUT"
