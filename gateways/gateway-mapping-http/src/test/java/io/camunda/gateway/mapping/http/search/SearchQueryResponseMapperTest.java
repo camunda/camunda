@@ -42,6 +42,9 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.entities.SequenceFlowEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.UserTaskEntity.UserTaskState;
+import io.camunda.search.entities.GlobalListenerEntity;
+import io.camunda.search.entities.GlobalListenerSource;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.SearchQueryResult;
 import java.time.OffsetDateTime;
@@ -671,5 +674,97 @@ class SearchQueryResponseMapperTest {
 
     // then
     assertThat(response.getRootProcessInstanceKey()).isNull();
+  }
+
+  @Test
+  void shouldConvertGlobalTaskListenerEntity() {
+    // given
+    final GlobalListenerEntity entity =
+        new GlobalListenerEntity(
+            "global-listener-1",
+            "listener-id-123",
+            "my.listener.Type",
+            List.of("creating", "created", "completing"),
+            3,
+            true,
+            10,
+            GlobalListenerSource.API,
+            GlobalListenerType.TASK_LISTENER);
+
+    // when
+    final var response = SearchQueryResponseMapper.toGlobalTaskListenerResult(entity);
+
+    // then
+    assertThat(response.getId()).isEqualTo("listener-id-123");
+    assertThat(response.getType()).isEqualTo("my.listener.Type");
+    assertThat(response.getRetries()).isEqualTo(3);
+    assertThat(response.getEventTypes()).containsExactly(
+        io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum.CREATING,
+        io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum.CREATED,
+        io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum.COMPLETING);
+    assertThat(response.getAfterNonGlobal()).isTrue();
+    assertThat(response.getPriority()).isEqualTo(10);
+    assertThat(response.getSource())
+        .isEqualTo(io.camunda.gateway.protocol.model.GlobalListenerSourceEnum.API);
+  }
+
+  @Test
+  void shouldConvertGlobalTaskListenerSearchQueryResponse() {
+    // given
+    final GlobalListenerEntity entity1 =
+        new GlobalListenerEntity(
+            "global-listener-1",
+            "listener-id-123",
+            "my.listener.Type",
+            List.of("creating"),
+            3,
+            true,
+            10,
+            GlobalListenerSource.API,
+            GlobalListenerType.TASK_LISTENER);
+
+    final GlobalListenerEntity entity2 =
+        new GlobalListenerEntity(
+            "global-listener-2",
+            "listener-id-456",
+            "another.Type",
+            List.of("completed"),
+            5,
+            false,
+            20,
+            GlobalListenerSource.CONFIGURATION,
+            GlobalListenerType.TASK_LISTENER);
+
+    final SearchQueryResult<GlobalListenerEntity> searchResult =
+        SearchQueryResult.<GlobalListenerEntity>builder()
+            .total(2)
+            .items(List.of(entity1, entity2))
+            .build();
+
+    // when
+    final var response =
+        SearchQueryResponseMapper.toGlobalTaskListenerSearchQueryResponse(searchResult);
+
+    // then
+    assertThat(response.getPage().getTotalItems()).isEqualTo(2L);
+    assertThat(response.getItems()).hasSize(2);
+
+    final var item1 = response.getItems().get(0);
+    assertThat(item1.getId()).isEqualTo("listener-id-123");
+    assertThat(item1.getType()).isEqualTo("my.listener.Type");
+    assertThat(item1.getRetries()).isEqualTo(3);
+    assertThat(item1.getAfterNonGlobal()).isTrue();
+    assertThat(item1.getPriority()).isEqualTo(10);
+    assertThat(item1.getSource())
+        .isEqualTo(io.camunda.gateway.protocol.model.GlobalListenerSourceEnum.API);
+
+    final var item2 = response.getItems().get(1);
+    assertThat(item2.getId()).isEqualTo("listener-id-456");
+    assertThat(item2.getType()).isEqualTo("another.Type");
+    assertThat(item2.getRetries()).isEqualTo(5);
+    assertThat(item2.getAfterNonGlobal()).isFalse();
+    assertThat(item2.getPriority()).isEqualTo(20);
+    assertThat(item2.getSource())
+        .isEqualTo(io.camunda.gateway.protocol.model.GlobalListenerSourceEnum.CONFIGURATION);
   }
 }
