@@ -17,7 +17,7 @@ import {
   Link,
   Stack,
 } from "@carbon/react";
-import { ArrowRight, InformationFilled } from "@carbon/icons-react";
+import { ArrowRight, InformationFilled } from "@carbon/react/icons";
 import { spacing03, spacing06 } from "@carbon/elements";
 import styled from "styled-components";
 import { documentationHref } from "src/components/documentation";
@@ -112,7 +112,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
       <Modal
         open={open}
         headline={t("tenantCreatedSuccessfully", { name: createdTenant.name })}
-        confirmLabel={t("close")}
+        passiveModal
         onClose={onSuccess}
         buttons={[
           <RightAlignedButtonSet key="close">
@@ -130,11 +130,12 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                 <IconButton
                   label={t(item)}
                   kind="ghost"
-                  onClick={() =>
+                  onClick={() => {
+                    onClose?.();
                     navigate(
                       `/tenants/${createdTenant.tenantId}/${ITEM_TO_TAB[item]}`,
-                    )
-                  }
+                    );
+                  }}
                 >
                   <ArrowRight />
                 </IconButton>

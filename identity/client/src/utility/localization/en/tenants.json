@@ -83,6 +83,5 @@
   "pleaseEnterValidTenantId": "Please enter a valid Tenant ID (only characters, numbers and . _ - and max 31 characters)",
   "tenantNameRequired": "Tenant name is required",
   "searchByTenantId": "Search by tenant ID",
-  "close": "Close",
   "gotIt": "Got it"
 }
