@@ -116,15 +116,6 @@ public interface DocumentClient extends AutoCloseable {
    */
   List<Map<String, Object>> search(String indexName, int size) throws IOException;
 
-  /**
-   * Set the maximum result window for the specified index to allow retrieving more search results.
-   *
-   * @param indexName the name of the index
-   * @param maxResultWindow the maximum number of search results to retrieve
-   * @throws IOException if updating the index settings fails
-   */
-  void setMaxResultWindow(String indexName, int maxResultWindow) throws IOException;
-
   /** Helper record to represent a document with its ID for bulk operations. */
   record DocumentWithId(String id, Object document) {}
 }

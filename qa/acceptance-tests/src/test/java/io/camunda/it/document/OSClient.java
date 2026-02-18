@@ -174,14 +174,6 @@ public class OSClient implements DocumentClient {
   }
 
   @Override
-  public void setMaxResultWindow(final String indexName, final int maxResultWindow)
-      throws IOException {
-    opensearchClient
-        .indices()
-        .putSettings(b -> b.index(indexName).settings(s -> s.maxResultWindow(maxResultWindow)));
-  }
-
-  @Override
   public void close() throws Exception {
     transport.close();
   }

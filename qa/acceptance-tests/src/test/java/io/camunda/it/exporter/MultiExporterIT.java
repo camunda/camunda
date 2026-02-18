@@ -144,7 +144,6 @@ public class MultiExporterIT {
       return Set.of();
     }
 
-    documentClient.setMaxResultWindow(indexName, 10000);
     documentClient.refresh(indexName);
 
     return documentClient.search(indexName, 10000).stream()
@@ -308,7 +307,6 @@ public class MultiExporterIT {
             .newClientBuilder()
             .defaultRequestTimeout(Duration.ofSeconds(1))
             .build();
-
   }
 
   public enum ExporterType {
