@@ -40,7 +40,6 @@ import {
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
 import {useMemo} from 'react';
-import {Snippet} from '../Snippet';
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 
 type Props = {
@@ -110,17 +109,13 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               ) : (
                 <IconText>
                   <ActorIcon />
-                  <Snippet hideCopyButton wrapText>
-                    {auditLog.actorId}
-                  </Snippet>
+                  <CodeSnippet wrapText>{auditLog.actorId}</CodeSnippet>
                 </IconText>
               )}
               {auditLog.agentElementId && (
                 <IconTextWithTopMargin>
                   <AiAgentIcon />
-                  <Snippet hideCopyButton wrapText>
-                    {auditLog.agentElementId}
-                  </Snippet>
+                  <CodeSnippet wrapText>{auditLog.agentElementId}</CodeSnippet>
                 </IconTextWithTopMargin>
               )}
             </StructuredListCell>

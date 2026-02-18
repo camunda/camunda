@@ -7,13 +7,15 @@
  */
 
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {AuthorTooltip, OperationLogName} from '../styled';
+import type {
+  AuditLog,
+  AuditLogActorType,
+} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import {AuthorTooltip, OperationLogName, TooltipCodeSnippet} from '../styled';
 import {useMemo} from 'react';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Tooltip} from '@carbon/react';
 import {getActorIcon} from 'modules/utils/operationsLog';
-import {Snippet} from 'modules/components/Snippet';
 
 type Props = {
   item: AuditLog;
@@ -22,7 +24,7 @@ type Props = {
 const CellActor: React.FC<Props> = ({item}) => {
   const ActorIcon = useMemo(() => getActorIcon(item), [item]);
 
-  const getTooltipActorContent = (actor: AuditLog['actorType'] | 'AGENT') => {
+  const getTooltipActorContent = (actor: AuditLogActorType | 'AGENT') => {
     const label =
       actor !== 'AGENT'
         ? spaceAndCapitalize(actor)
@@ -30,9 +32,9 @@ const CellActor: React.FC<Props> = ({item}) => {
     return (
       <AuthorTooltip>
         <span>{label}</span>
-        <Snippet theme="dark" hideCopyButton wrapText>
+        <TooltipCodeSnippet wrapText>
           {actor === 'AGENT' ? item.agentElementId : item.actorId}
-        </Snippet>
+        </TooltipCodeSnippet>
       </AuthorTooltip>
     );
   };
