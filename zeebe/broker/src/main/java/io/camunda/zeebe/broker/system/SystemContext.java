@@ -185,7 +185,8 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -200,7 +201,7 @@ public final class SystemContext {
         jwtDecoder,
         searchClientsProxy,
         brokerRequestAuthorizationConverter,
-        null);
+        nodeIdProvider);
   }
 
   private void initSystemContext() {

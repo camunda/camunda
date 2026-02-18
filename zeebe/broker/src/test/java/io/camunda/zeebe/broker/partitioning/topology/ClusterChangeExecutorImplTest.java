@@ -48,7 +48,10 @@ public class ClusterChangeExecutorImplTest {
 
     final var executor =
         new ClusterChangeExecutorImpl(
-            new TestConcurrencyControl(), repository, null, new SimpleMeterRegistry());
+            new TestConcurrencyControl(),
+            repository,
+            mock(NodeIdProvider.class),
+            new SimpleMeterRegistry());
 
     // when
     final Future<Void> result = executor.deleteHistory();

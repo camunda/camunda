@@ -384,7 +384,7 @@ public class ClusteringRule extends ExternalResource {
             null,
             null,
             null,
-            null);
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     final Broker broker =
         new Broker(

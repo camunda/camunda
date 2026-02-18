@@ -20,6 +20,7 @@ import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
+import java.util.Objects;
 import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,7 +40,7 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
       final MeterRegistry meterRegistry) {
     this.concurrencyControl = concurrencyControl;
     this.exporterRepository = exporterRepository;
-    this.nodeIdProvider = nodeIdProvider;
+    this.nodeIdProvider = Objects.requireNonNull(nodeIdProvider);
     this.meterRegistry = meterRegistry;
   }
 
@@ -70,11 +71,6 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
       return result;
     }
 
-    if (nodeIdProvider == null) {
-      result.completeExceptionally(
-          new IllegalStateException("NodeIdProvider is required for scaling operations"));
-      return result;
-    }
     concurrencyControl.run(
         () -> {
           try {
