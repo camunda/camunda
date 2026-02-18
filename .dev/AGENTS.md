@@ -39,6 +39,7 @@ extending anything under `.dev/`.
 │   └── intellij/                      # IntelliJ run config templates
 │       ├── spring-boot.xml            # Main Spring Boot template (placeholders below)
 │       ├── docker-infra.xml           # Docker Compose run config template
+│       ├── stop-envs.xml              # Shell Script to stop all envs (Before Launch task)
 │       ├── env/                       # Environment variable fragments (<env> XML elements)
 │       │   ├── common.xml             # Partition count, wait-for-importers
 │       │   ├── auth-demo-user.xml     # Demo user init (insecure mode)
@@ -67,10 +68,11 @@ CLI flags). Both call the same generation functions.
 1. User selects options: `auth`, `db`, `connectors`, `model`, `standalone`, `resources`
 2. `generate_compose()` assembles docker-compose.yml from template fragments
 3. `generate_infra_xml()` creates the Docker Compose IntelliJ run config
-4. `generate_app_xml()` creates the Spring Boot IntelliJ run config (unless standalone)
-5. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
-6. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
-7. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
+4. `generate_stop_xml()` creates the Shell Script run config to stop all envs before launch
+5. `generate_app_xml()` creates the Spring Boot IntelliJ run config (unless standalone)
+6. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
+7. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
+8. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
 
 ### Camunda Desktop Modeler Integration
 
@@ -98,6 +100,7 @@ Templates use `{{PLACEHOLDER}}` syntax, replaced via Bash string substitution:
 - `{{ENV_NAME}}` — environment name (e.g. `c8-insecure-es-ai`)
 - `{{APP_NAME}}` — Spring Boot run config name (same as env name)
 - `{{INFRA_NAME}}` — Docker infra config name (`<env_name> Infra`)
+- `{{STOP_NAME}}` — Shell Script config name (`<env_name> Stop Envs`)
 - `{{PROFILES}}` — Spring Boot active profiles
 - `{{ENV_VARS}}` — assembled `<env>` XML elements from `intellij/env/` fragments
 - `{{ADDITIONAL_PARAMS}}` — assembled `<additionalParameters>` block from `intellij/params/`

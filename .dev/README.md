@@ -57,6 +57,7 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 .dev/c8env                            # Generate environment (interactive)
 .dev/c8env list                       # List generated environments
 .dev/c8env clean <name>               # Remove environment + IntelliJ configs
+.dev/c8env stop [name|--all]          # Stop environment Docker containers
 .dev/c8env deploy <resource>          # Deploy a BPMN resource to Camunda
 .dev/c8env deploy --list              # List available BPMN resources
 .dev/c8env start <process-id>         # Start a process instance
@@ -108,11 +109,23 @@ Use `--resource` to bundle BPMN files with your environment. They get copied int
 By default, Camunda runs from IntelliJ (debuggable). With `--standalone`, Camunda runs as a
 Docker container — no IDE needed, just `docker compose up`.
 
+### Switching Environments
+
+All environments share the same host ports, so only one can run at a time. When launching from
+IntelliJ, the Spring Boot run config automatically stops any running environments before starting
+the new one (via a Before Launch task). You can also manage this manually:
+
+```bash
+.dev/c8env stop                       # Stop the current environment
+.dev/c8env stop c8-insecure-es        # Stop a specific environment
+.dev/c8env stop --all                 # Stop all environments
+```
+
 ### Dashboard & BPMN Editor
 
-Every generated environment includes a browser-based dashboard at **http://localhost:8090/**
-served by an nginx container. It combines environment health monitoring with a full Camunda Cloud
-BPMN editor powered by `camunda-bpmn-js`.
+Every generated environment includes a browser-based dashboard at **http://\<name\>.localhost:8090/**
+served by an nginx container (e.g. `http://c8-insecure-es.localhost:8090/`). The `*.localhost`
+subdomain resolves to `127.0.0.1` automatically — no DNS or `/etc/hosts` setup needed.
 
 Features:
 - Collapsible sidebar with live health status for Camunda, datastore, connectors, and Ollama

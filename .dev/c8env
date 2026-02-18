@@ -280,6 +280,17 @@ generate_infra_xml() {
   echo "$template"
 }
 
+generate_stop_xml() {
+  local env_name="$1"
+  local stop_name="${env_name} Stop Envs"
+
+  local template
+  template=$(<"$TEMPLATES_DIR/intellij/stop-envs.xml")
+  template="${template//\{\{STOP_NAME\}\}/$stop_name}"
+
+  echo "$template"
+}
+
 generate_app_xml() {
   local env_name="$1" auth="$2" datastore="$3" connectors="$4"
   local app_name="${env_name}"
@@ -344,8 +355,10 @@ generate_app_xml() {
   local template
   template=$(<"$TEMPLATES_DIR/intellij/spring-boot.xml")
 
+  local stop_name="${env_name} Stop Envs"
   template="${template//\{\{APP_NAME\}\}/$app_name}"
   template="${template//\{\{INFRA_NAME\}\}/$infra_name}"
+  template="${template//\{\{STOP_NAME\}\}/$stop_name}"
   template="${template//\{\{PROFILES\}\}/$profiles}"
   template="${template//\{\{ADDITIONAL_PARAMS\}\}/$additional_params}"
   template="${template//\{\{ENV_VARS\}\}/$env_vars}"
@@ -423,7 +436,7 @@ install_modeler_connection() {
   "name": "${env_name}",
   "targetType": "selfHosted",
   "authType": "basic",
-  "contactPoint": "http://localhost:8080/",
+  "contactPoint": "http://${env_name}.localhost:8080/",
   "basicAuthUsername": "demo",
   "basicAuthPassword": "demo"
 }
@@ -435,7 +448,7 @@ EOF
   "name": "${env_name}",
   "targetType": "selfHosted",
   "authType": "none",
-  "contactPoint": "http://localhost:8080/"
+  "contactPoint": "http://${env_name}.localhost:8080/"
 }
 EOF
     )
@@ -578,7 +591,7 @@ cmd_generate() {
   printf "    Connectors: ${CYAN}%s${RESET}\n" "$connectors"
   [[ "$connectors" == "agentic" ]] && printf "    Model:      ${CYAN}%s${RESET}\n" "$model"
   printf "    Camunda:    ${CYAN}%s${RESET}\n" "$( [[ "$standalone" == "yes" ]] && echo "Docker (standalone)" || echo "IntelliJ (debuggable)" )"
-  printf "    Dashboard:  ${CYAN}%s${RESET}\n" "http://localhost:8090/"
+  printf "    Dashboard:  ${CYAN}%s${RESET}\n" "http://${name}.localhost:8090/"
   [[ -n "$resources" ]] && printf "    Resources:  ${CYAN}%s${RESET}\n" "$resources"
   printf "\n"
 
@@ -595,6 +608,10 @@ cmd_generate() {
   infra_filename="$(intellij_filename "${name}___Infra").xml"
 
   generate_infra_xml "$name" "$datastore" "$connectors" "$standalone" > "$env_dir/intellij/$infra_filename"
+
+  local stop_filename
+  stop_filename="$(intellij_filename "${name}___Stop___Envs").xml"
+  generate_stop_xml "$name" > "$env_dir/intellij/$stop_filename"
 
   if [[ "$standalone" != "yes" ]]; then
     local app_filename
@@ -664,10 +681,11 @@ BOOTSTRAP_DEPLOY
 
   if [[ "$standalone" == "yes" ]]; then
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}docker compose -f .dev/envs/${name}/docker-compose.yml up${RESET}\n"
-    printf "  Or use IntelliJ config: ${CYAN}${name} Infra${RESET}\n\n"
+    printf "  Or use IntelliJ config: ${CYAN}${name} Infra${RESET}\n"
+    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n\n"
   else
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}${name}${RESET} from IntelliJ (Run or Debug).\n"
-    printf "  ${DIM}Dashboard: http://localhost:8090/${RESET}\n\n"
+    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n\n"
   fi
 
   if [[ -n "$resources" ]]; then
@@ -829,6 +847,50 @@ cmd_start() {
   fi
 }
 
+stop_env() {
+  local name="$1"
+  local compose_file="$ENVS_DIR/$name/docker-compose.yml"
+  [[ -f "$compose_file" ]] || return 0
+  info "Stopping environment '${name}'..."
+  docker compose -f "$compose_file" down --remove-orphans 2>/dev/null || true
+}
+
+cmd_stop() {
+  local name="${1:-}"
+
+  if [[ "$name" == "--all" ]]; then
+    local found=0
+    for d in "$ENVS_DIR"/*/; do
+      [[ -d "$d" ]] || continue
+      local env_name
+      env_name=$(basename "$d")
+      [[ -f "$d/docker-compose.yml" ]] || continue
+      stop_env "$env_name"
+      found=1
+    done
+    [[ $found -eq 1 ]] && info "All environments stopped" || warn "No environments found"
+    return
+  fi
+
+  # Auto-detect: if only one environment exists, use it
+  if [[ -z "$name" ]]; then
+    local envs=()
+    for d in "$ENVS_DIR"/*/; do
+      [[ -d "$d" ]] && envs+=("$(basename "$d")")
+    done
+    if [[ ${#envs[@]} -eq 1 ]]; then
+      name="${envs[0]}"
+    elif [[ ${#envs[@]} -eq 0 ]]; then
+      die "No environments found. Run 'c8env generate' first."
+    else
+      die "Multiple environments found. Specify one: ${envs[*]} (or use --all)"
+    fi
+  fi
+
+  [[ -d "$ENVS_DIR/$name" ]] || die "Environment '$name' not found"
+  stop_env "$name"
+}
+
 cmd_dashboard() {
   local name="${1:-}"
 
@@ -850,7 +912,7 @@ cmd_dashboard() {
   local env_dir="$ENVS_DIR/$name"
   [[ -d "$env_dir" ]] || die "No environment found for '$name'. Run 'c8env generate' first."
 
-  local dashboard_url="http://localhost:8090"
+  local dashboard_url="http://${name}.localhost:8090"
   local container_name="${name}-dashboard"
 
   # Prefer the Dockerized dashboard; fall back to local file
@@ -887,6 +949,7 @@ cmd_help() {
   printf "    .dev/c8env --name NAME [options]               Flag mode\n"
   printf "    .dev/c8env list                                List environments\n"
   printf "    .dev/c8env clean NAME                          Remove an environment\n"
+  printf "    .dev/c8env stop [NAME|--all]                   Stop environment containers\n"
   printf "    .dev/c8env deploy [NAME|--list]                Deploy a BPMN resource\n"
   printf "    .dev/c8env start PROCESS-ID [VARS-JSON]        Start a process instance\n"
   printf "    .dev/c8env dashboard [NAME]                    Open environment dashboard\n"
@@ -930,6 +993,10 @@ main() {
     clean)
       shift
       cmd_clean "${1:-}"
+      ;;
+    stop)
+      shift
+      cmd_stop "${1:-}"
       ;;
     deploy)
       shift

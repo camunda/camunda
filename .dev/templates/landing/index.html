@@ -182,8 +182,8 @@
   </div>
 
   <div class="topbar-links">
-    <a class="topbar-link" href="http://localhost:8080/operate" target="_blank">Operate</a>
-    <a class="topbar-link" href="http://localhost:8080/tasklist" target="_blank">Tasklist</a>
+    <a class="topbar-link" href="http://{{ENV_NAME}}.localhost:8080/operate" target="_blank">Operate</a>
+    <a class="topbar-link" href="http://{{ENV_NAME}}.localhost:8080/tasklist" target="_blank">Tasklist</a>
   </div>
 
   <div class="spacer"></div>
@@ -254,7 +254,7 @@
 
   // ─── Config ─────────────────────────────────────────────────────────────
   const isSameOriginProxy = location.port === '8090';
-  const DEFAULTS = { url: isSameOriginProxy ? location.origin : 'http://localhost:8080', user: '{{DEFAULT_USER}}', pass: '{{DEFAULT_PASS}}' };
+  const DEFAULTS = { url: isSameOriginProxy ? location.origin : 'http://{{ENV_NAME}}.localhost:8080', user: '{{DEFAULT_USER}}', pass: '{{DEFAULT_PASS}}' };
 
   function getConfig() {
     const baseUrl = isSameOriginProxy ? location.origin : (localStorage.getItem('c8_url') || DEFAULTS.url);
@@ -288,7 +288,7 @@
   // ─── Health check (Camunda only) ────────────────────────────────────
   const camundaHealthUrl = isSameOriginProxy
     ? location.origin + '/v2/topology'
-    : 'http://localhost:8080/v2/topology';
+    : 'http://{{ENV_NAME}}.localhost:8080/v2/topology';
 
   async function checkHealth() {
     const globalDot = document.getElementById('globalHealthDot');
