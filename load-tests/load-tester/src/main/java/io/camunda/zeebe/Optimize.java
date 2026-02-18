@@ -45,6 +45,20 @@ public class Optimize extends App {
   private Counter reportSuccessCounter;
   private Counter reportErrorCounter;
 
+  // Instant Benchmark Metrics
+  private Timer benchmarkDashboardResponseTimer;
+  private Timer benchmarkReportEvaluationTimer;
+  private Timer benchmarkDetailedEvaluationTimer;
+  private Timer benchmarkMaxReportEvaluationTimer;
+  private Timer benchmarkMaxDetailedEvaluationTimer;
+  private Timer benchmarkTotalLoadTimer;
+  private Counter benchmarkDashboardSuccessCounter;
+  private Counter benchmarkDashboardErrorCounter;
+  private Counter benchmarkReportEvaluationSuccessCounter;
+  private Counter benchmarkReportEvaluationErrorCounter;
+  private Counter benchmarkDetailedEvaluationSuccessCounter;
+  private Counter benchmarkDetailedEvaluationErrorCounter;
+
   Optimize(final AppCfg config) {
     super(config);
     optimizeCfg = config.getOptimize();
@@ -150,6 +164,67 @@ public class Optimize extends App {
         Counter.builder("optimize.report.error")
             .description("Failed report evaluations")
             .register(registry);
+
+    // Instant Benchmark Metrics
+    benchmarkDashboardResponseTimer =
+        Timer.builder("optimize.benchmark.dashboard.response.time")
+            .description("Response time for instant benchmark dashboard evaluation")
+            .register(registry);
+
+    benchmarkReportEvaluationTimer =
+        Timer.builder("optimize.benchmark.report.evaluation.time")
+            .description("Response time for benchmark report evaluation")
+            .register(registry);
+
+    benchmarkDetailedEvaluationTimer =
+        Timer.builder("optimize.benchmark.detailed.evaluation.time")
+            .description("Response time for benchmark detailed evaluation")
+            .register(registry);
+
+    benchmarkMaxReportEvaluationTimer =
+        Timer.builder("optimize.benchmark.report.max.evaluation.time")
+            .description("Maximum (slowest) report evaluation time per benchmark cycle")
+            .register(registry);
+
+    benchmarkMaxDetailedEvaluationTimer =
+        Timer.builder("optimize.benchmark.detailed.max.evaluation.time")
+            .description("Maximum (slowest) detailed evaluation time per benchmark cycle")
+            .register(registry);
+
+    benchmarkTotalLoadTimer =
+        Timer.builder("optimize.benchmark.total.load.time")
+            .description("Total load time for instant benchmark flow")
+            .register(registry);
+
+    benchmarkDashboardSuccessCounter =
+        Counter.builder("optimize.benchmark.dashboard.success")
+            .description("Successful benchmark dashboard evaluations")
+            .register(registry);
+
+    benchmarkDashboardErrorCounter =
+        Counter.builder("optimize.benchmark.dashboard.error")
+            .description("Failed benchmark dashboard evaluations")
+            .register(registry);
+
+    benchmarkReportEvaluationSuccessCounter =
+        Counter.builder("optimize.benchmark.report.evaluation.success")
+            .description("Successful benchmark report evaluations")
+            .register(registry);
+
+    benchmarkReportEvaluationErrorCounter =
+        Counter.builder("optimize.benchmark.report.evaluation.error")
+            .description("Failed benchmark report evaluations")
+            .register(registry);
+
+    benchmarkDetailedEvaluationSuccessCounter =
+        Counter.builder("optimize.benchmark.detailed.evaluation.success")
+            .description("Successful benchmark detailed evaluations")
+            .register(registry);
+
+    benchmarkDetailedEvaluationErrorCounter =
+        Counter.builder("optimize.benchmark.detailed.evaluation.error")
+            .description("Failed benchmark detailed evaluations")
+            .register(registry);
   }
 
   private ScheduledFuture<?> scheduleEvaluations(
@@ -239,6 +314,101 @@ public class Optimize extends App {
     } catch (final Exception e) {
       dashboardErrorCounter.increment();
       THROTTLED_LOGGER.error("Failed to evaluate dashboard and reports", e);
+    }
+  }
+
+  private void evaluateInstantBenchmark() {
+    LOG.info("Starting instant benchmark evaluation cycle");
+
+    try {
+      // Ensure token is valid before making requests
+      loadTester.ensureValidToken();
+
+      // Evaluate instant benchmark flow
+      final OptimizeReportLoadTester.InstantBenchmarkResult result =
+          loadTester.evaluateInstantBenchmark();
+
+      // Record dashboard metrics
+      final OptimizeReportLoadTester.DashboardEvaluationResult dashboardResult =
+          result.getDashboardResult();
+      benchmarkDashboardResponseTimer.record(
+          dashboardResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+
+      if (dashboardResult.isSuccess()) {
+        benchmarkDashboardSuccessCounter.increment();
+        LOG.info(
+            "Benchmark dashboard evaluated successfully in {}ms",
+            dashboardResult.getResponseTimeMs());
+      } else {
+        benchmarkDashboardErrorCounter.increment();
+        LOG.error(
+            "Benchmark dashboard evaluation failed with status {}",
+            dashboardResult.getStatusCode());
+      }
+
+      // Record report evaluation metrics
+      final List<OptimizeReportLoadTester.ReportEvaluationResult> reportEvalResults =
+          result.getReportEvaluationResults();
+      for (final OptimizeReportLoadTester.ReportEvaluationResult reportResult : reportEvalResults) {
+        benchmarkReportEvaluationTimer.record(
+            reportResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+
+        if (reportResult.isSuccess()) {
+          benchmarkReportEvaluationSuccessCounter.increment();
+          LOG.info(
+              "Benchmark report {} evaluated successfully in {}ms",
+              reportResult.getReportId(),
+              reportResult.getResponseTimeMs());
+        } else {
+          benchmarkReportEvaluationErrorCounter.increment();
+          LOG.error(
+              "Benchmark report {} evaluation failed with status {}",
+              reportResult.getReportId(),
+              reportResult.getStatusCode());
+        }
+      }
+
+      // Record detailed evaluation metrics
+      final List<OptimizeReportLoadTester.ReportEvaluationResult> detailedResults =
+          result.getDetailedEvaluationResults();
+      for (final OptimizeReportLoadTester.ReportEvaluationResult detailedResult : detailedResults) {
+        benchmarkDetailedEvaluationTimer.record(
+            detailedResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+
+        if (detailedResult.isSuccess()) {
+          benchmarkDetailedEvaluationSuccessCounter.increment();
+          LOG.info(
+              "Benchmark detailed evaluation for report {} completed in {}ms",
+              detailedResult.getReportId(),
+              detailedResult.getResponseTimeMs());
+        } else {
+          benchmarkDetailedEvaluationErrorCounter.increment();
+          LOG.error(
+              "Benchmark detailed evaluation for report {} failed with status {}",
+              detailedResult.getReportId(),
+              detailedResult.getStatusCode());
+        }
+      }
+
+      // Record max times and total load time
+      benchmarkMaxReportEvaluationTimer.record(
+          result.getMaxReportEvaluationTimeMs(), TimeUnit.MILLISECONDS);
+      benchmarkMaxDetailedEvaluationTimer.record(
+          result.getMaxDetailedEvaluationTimeMs(), TimeUnit.MILLISECONDS);
+      benchmarkTotalLoadTimer.record(result.getTotalResponseTimeMs(), TimeUnit.MILLISECONDS);
+
+      LOG.info(
+          "Instant benchmark cycle completed - Dashboard: {}ms, Report evaluations: {}, Detailed evaluations: {}, Max report eval: {}ms, Max detailed eval: {}ms, Total: {}ms",
+          dashboardResult.getResponseTimeMs(),
+          reportEvalResults.size(),
+          detailedResults.size(),
+          result.getMaxReportEvaluationTimeMs(),
+          result.getMaxDetailedEvaluationTimeMs(),
+          result.getTotalResponseTimeMs());
+
+    } catch (final Exception e) {
+      benchmarkDashboardErrorCounter.increment();
+      THROTTLED_LOGGER.error("Failed to evaluate instant benchmark", e);
     }
   }
 

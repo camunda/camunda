@@ -314,6 +314,90 @@ public class OptimizeReportLoadTester {
   }
 
   /**
+   * Calls the detailed evaluate API for a report with the given request body.
+   *
+   * @param reportId the report ID to evaluate
+   * @param requestBody the request body obtained from the evaluate API call
+   * @return the evaluation result containing response time and status
+   * @throws Exception if the request fails
+   */
+  public ReportEvaluationResult evaluateReportDetailed(
+      final String reportId, final String requestBody) throws Exception {
+    ensureValidToken();
+
+    // Transform the request body: remove result object, remove entity field from data.view, rename properties to rawData
+    final String transformedBody = transformRequestBodyForDetailedEvaluate(requestBody);
+
+    final String url = String.format("%s/api/report/evaluate?=null", optimizeBaseUrl);
+
+    final long startTime = System.currentTimeMillis();
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Cookie", "X-Optimize-Authorization_0=" + accessToken)
+            .header("Content-Type", "application/json")
+            .header("X-Optimize-Client-Timezone", "UTC")
+            .POST(HttpRequest.BodyPublishers.ofString(transformedBody))
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    final long responseTime = System.currentTimeMillis() - startTime;
+
+    return new ReportEvaluationResult(
+        reportId, response.statusCode(), responseTime, response.body());
+  }
+
+  /**
+   * Transforms the request body for detailed evaluate API by:
+   * 1. Removing the result object
+   * 2. Removing the entity field from data.view
+   * 3. Renaming properties to rawData in data.view
+   *
+   * @param responseBody the original response body from evaluate API
+   * @return the transformed request body
+   * @throws Exception if JSON parsing fails
+   */
+  private String transformRequestBodyForDetailedEvaluate(final String responseBody) throws Exception {
+    final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
+
+    if (rootNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+      final com.fasterxml.jackson.databind.node.ObjectNode objectNode =
+          (com.fasterxml.jackson.databind.node.ObjectNode) rootNode;
+
+      // Remove result object
+      objectNode.remove("result");
+
+      // Transform data.view if it exists
+      if (objectNode.has("data") && objectNode.get("data").has("view")) {
+        final JsonNode viewNode = objectNode.get("data").get("view");
+        if (viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
+          final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
+              (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
+
+          // Remove entity field
+          viewObjectNode.remove("entity");
+
+          // Replace properties array with rawData field containing "rawData" string
+          if (viewObjectNode.has("properties")) {
+            viewObjectNode.remove("properties");
+            final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
+                OBJECT_MAPPER.createArrayNode();
+            rawDataArray.add("rawData");
+            viewObjectNode.set("properties", rawDataArray);
+          }
+        }
+      }
+
+      return OBJECT_MAPPER.writeValueAsString(objectNode);
+    }
+
+    return responseBody;
+  }
+
+  /**
    * Evaluates the management dashboard and returns the response time in milliseconds.
    *
    * @return the evaluation result containing response time and status
@@ -346,6 +430,38 @@ public class OptimizeReportLoadTester {
   }
 
   /**
+   * Fetches the instant benchmark dashboard and returns the response.
+   *
+   * @return the evaluation result containing response time and status
+   * @throws Exception if the request fails
+   */
+  public DashboardEvaluationResult evaluateInstantBenchmarkDashboard() throws Exception {
+    ensureValidToken();
+
+    final String url = String.format("%s/api/dashboard/instant/benchmark", optimizeBaseUrl);
+
+    final long startTime = System.currentTimeMillis();
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Cookie", "X-Optimize-Authorization_0=" + accessToken)
+            .header("Content-Type", "application/json")
+            .header("X-Optimize-Client-Timezone", "UTC")
+            .header("X-Optimize-Client-Locale", "en")
+            .GET()
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    final long responseTime = System.currentTimeMillis() - startTime;
+
+    return new DashboardEvaluationResult(
+        "instant_benchmark", response.statusCode(), responseTime, response.body());
+  }
+
+  /**
    * Parses the dashboard response body to extract report IDs from tiles.
    *
    * @param dashboardResponseBody the JSON response body from the dashboard API
@@ -363,8 +479,10 @@ public class OptimizeReportLoadTester {
         // Extract reportId from tile.id
         if (tile.has("id")) {
           final String reportId = tile.get("id").asText();
-          reportIds.add(reportId);
-          LOG.info("Found report ID in dashboard: {}", reportId);
+          if (reportId != null && !reportId.trim().isEmpty()) {
+            reportIds.add(reportId);
+            LOG.info("Found report ID in dashboard: {}", reportId);
+          }
         }
       }
     }
@@ -414,6 +532,76 @@ public class OptimizeReportLoadTester {
     return new DashboardWithReportsResult(dashboardResult, reportResults);
   }
 
+  /**
+   * Evaluates the instant benchmark dashboard, then evaluates all reports and finally calls
+   * detailed evaluate API for each report.
+   *
+   * @return a result containing dashboard metrics, report evaluations, and detailed evaluations
+   * @throws Exception if any request fails
+   */
+  public InstantBenchmarkResult evaluateInstantBenchmark() throws Exception {
+    // Step 1: Fetch instant benchmark dashboard
+    final DashboardEvaluationResult dashboardResult = evaluateInstantBenchmarkDashboard();
+
+    if (!dashboardResult.isSuccess()) {
+      throw new RuntimeException(
+          String.format(
+              "Instant benchmark dashboard evaluation failed with status %d",
+              dashboardResult.getStatusCode()));
+    }
+
+    // Step 2: Extract report IDs from dashboard response
+    final List<String> reportIds = extractReportIdsFromDashboard(dashboardResult.getResponseBody());
+
+    // Step 3: Evaluate each report using the standard evaluate API
+    final List<ReportEvaluationResult> reportEvaluationResults = new java.util.ArrayList<>();
+    for (final String reportId : reportIds) {
+      LOG.info("Evaluating report: {}", reportId);
+      try {
+        final ReportEvaluationResult reportResult = evaluateReport(reportId);
+        reportEvaluationResults.add(reportResult);
+        LOG.info(
+            "Instant Report {} evaluated in {}ms - Status: {}",
+            reportId,
+            reportResult.getResponseTimeMs(),
+            reportResult.getStatusCode());
+      } catch (final Exception e) {
+        LOG.error("Failed to evaluate report {}", reportId, e);
+        reportEvaluationResults.add(new ReportEvaluationResult(reportId, 0, 0, e.getMessage()));
+      }
+    }
+
+    // Step 4: Call detailed evaluate API for each report using the response body from Step 3
+    final List<ReportEvaluationResult> detailedEvaluationResults = new java.util.ArrayList<>();
+    for (final ReportEvaluationResult reportEvalResult : reportEvaluationResults) {
+      if (reportEvalResult.isSuccess()) {
+        LOG.info("Calling detailed evaluate API for report: {}", reportEvalResult.getReportId());
+        try {
+          final ReportEvaluationResult detailedResult =
+              evaluateReportDetailed(
+                  reportEvalResult.getReportId(), reportEvalResult.getResponseBody());
+          detailedEvaluationResults.add(detailedResult);
+          LOG.info(
+              "Detailed evaluation for report {} completed in {}ms - Status: {}",
+              reportEvalResult.getReportId(),
+              detailedResult.getResponseTimeMs(),
+              detailedResult.getStatusCode());
+        } catch (final Exception e) {
+          LOG.error("Failed to call detailed evaluate for report {}", reportEvalResult.getReportId(), e);
+          detailedEvaluationResults.add(
+              new ReportEvaluationResult(reportEvalResult.getReportId(), 0, 0, e.getMessage()));
+        }
+      } else {
+        LOG.warn(
+            "Skipping detailed evaluate for report {} due to failed evaluation",
+            reportEvalResult.getReportId());
+      }
+    }
+
+    return new InstantBenchmarkResult(
+        dashboardResult, reportEvaluationResults, detailedEvaluationResults);
+  }
+
   /** Example usage. */
   public static void main(final String[] args) {
     try {
@@ -424,8 +612,8 @@ public class OptimizeReportLoadTester {
               "camunda-platform",
               "optimize",
               "demo",
-              "demo",
-              "demo-optimize-secret");
+              "XjKoMcGtYIMfMZgs",
+              "1mpb492ddYNqJcxv");
 
       tester.authenticateWithAuthorizationCodeFlow();
 
@@ -439,6 +627,14 @@ public class OptimizeReportLoadTester {
             "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
       }
       System.out.println("Total time: " + result.getTotalResponseTimeMs() + "ms");
+
+      final InstantBenchmarkResult instantBenchmarkResult = tester.evaluateInstantBenchmark();
+      System.out.println("Instant benchmark dashboard load time: " + instantBenchmarkResult.getDashboardResult().getResponseTimeMs() + "ms");
+      for (final ReportEvaluationResult report : instantBenchmarkResult.getReportEvaluationResults()) {
+        System.out.println(
+            "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
+      }
+      System.out.println("Total time: " + instantBenchmarkResult.getTotalResponseTimeMs() + "ms");
 
     } catch (final Exception e) {
       LOG.error("Load test failed", e);
@@ -609,6 +805,96 @@ public class OptimizeReportLoadTester {
           "DashboardWithReportsResult{dashboard=%s, reports=%d, totalTimeMs=%d, allSuccess=%b}",
           dashboardResult.getDashboardType(),
           reportResults.size(),
+          getTotalResponseTimeMs(),
+          isAllSuccess());
+    }
+  }
+
+  /**
+   * Result object containing instant benchmark dashboard, report evaluations, and detailed
+   * evaluations.
+   */
+  public static class InstantBenchmarkResult {
+    private final DashboardEvaluationResult dashboardResult;
+    private final List<ReportEvaluationResult> reportEvaluationResults;
+    private final List<ReportEvaluationResult> detailedEvaluationResults;
+
+    public InstantBenchmarkResult(
+        final DashboardEvaluationResult dashboardResult,
+        final List<ReportEvaluationResult> reportEvaluationResults,
+        final List<ReportEvaluationResult> detailedEvaluationResults) {
+      this.dashboardResult = dashboardResult;
+      this.reportEvaluationResults = reportEvaluationResults;
+      this.detailedEvaluationResults = detailedEvaluationResults;
+    }
+
+    public DashboardEvaluationResult getDashboardResult() {
+      return dashboardResult;
+    }
+
+    public List<ReportEvaluationResult> getReportEvaluationResults() {
+      return reportEvaluationResults;
+    }
+
+    public List<ReportEvaluationResult> getDetailedEvaluationResults() {
+      return detailedEvaluationResults;
+    }
+
+    public long getTotalResponseTimeMs() {
+      long total = dashboardResult.getResponseTimeMs();
+      for (final ReportEvaluationResult result : reportEvaluationResults) {
+        total += result.getResponseTimeMs();
+      }
+      for (final ReportEvaluationResult result : detailedEvaluationResults) {
+        total += result.getResponseTimeMs();
+      }
+      return total;
+    }
+
+    public long getMaxReportEvaluationTimeMs() {
+      long max = 0;
+      for (final ReportEvaluationResult result : reportEvaluationResults) {
+        if (result.getResponseTimeMs() > max) {
+          max = result.getResponseTimeMs();
+        }
+      }
+      return max;
+    }
+
+    public long getMaxDetailedEvaluationTimeMs() {
+      long max = 0;
+      for (final ReportEvaluationResult result : detailedEvaluationResults) {
+        if (result.getResponseTimeMs() > max) {
+          max = result.getResponseTimeMs();
+        }
+      }
+      return max;
+    }
+
+    public boolean isAllSuccess() {
+      if (!dashboardResult.isSuccess()) {
+        return false;
+      }
+      for (final ReportEvaluationResult result : reportEvaluationResults) {
+        if (!result.isSuccess()) {
+          return false;
+        }
+      }
+      for (final ReportEvaluationResult result : detailedEvaluationResults) {
+        if (!result.isSuccess()) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    @Override
+    public String toString() {
+      return String.format(
+          "InstantBenchmarkResult{dashboard=%s, reportEvaluations=%d, detailedEvaluations=%d, totalTimeMs=%d, allSuccess=%b}",
+          dashboardResult.getDashboardType(),
+          reportEvaluationResults.size(),
+          detailedEvaluationResults.size(),
           getTotalResponseTimeMs(),
           isAllSuccess());
     }
