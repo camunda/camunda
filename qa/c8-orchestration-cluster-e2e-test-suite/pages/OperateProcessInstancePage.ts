@@ -711,6 +711,27 @@ class OperateProcessInstancePage {
   async clickViewParentInstance(): Promise<void> {
     await this.viewParentInstanceLink.click();
   }
+
+  /**
+   * Gets the JSON value of a variable by name
+   */
+  async getVariableJsonValue(variableName: string): Promise<any> {
+    const variable = this.existingVariableByName(variableName);
+    await expect(variable.value).toBeVisible();
+    const valueText = await variable.value.textContent();
+    return JSON.parse(valueText || '{}');
+  }
+
+  /**
+   * Verifies that a variable exists and contains expected JSON content
+   */
+  async verifyVariableJsonContent(
+    variableName: string,
+    assertions: (value: any) => void | Promise<void>,
+  ): Promise<void> {
+    const value = await this.getVariableJsonValue(variableName);
+    await assertions(value);
+  }
 }
 
 export {OperateProcessInstancePage};

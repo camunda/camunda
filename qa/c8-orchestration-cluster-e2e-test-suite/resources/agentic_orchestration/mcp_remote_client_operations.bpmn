@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:modeler="http://camunda.org/schema/modeler/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.42.0" modeler:executionPlatform="Camunda Cloud" modeler:executionPlatformVersion="8.9.0">
+  <bpmn:process id="mcp_remote_client" name="mcp_remote_client" isExecutable="true">
+    <bpmn:startEvent id="StartEvent_1">
+      <bpmn:outgoing>Flow_19r4gtr</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:endEvent id="Event_0ap30yg">
+      <bpmn:incoming>Flow_04ss29d</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:serviceTask id="Activity_1jtuozy" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="tools/list" target="data.connectorMode.operation.type" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="listToolsResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_09bmgpl</bpmn:incoming>
+      <bpmn:outgoing>Flow_0bn4gzd</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0j3esn0" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="tools/call" target="data.connectorMode.operation.type" />
+          <zeebe:input source="greet" target="data.connectorMode.operation.toolName" />
+          <zeebe:input source="={&#34;name&#34;:&#34;John&#34;}" target="data.connectorMode.operation.toolArguments" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="callToolResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0fuwo6o</bpmn:incoming>
+      <bpmn:outgoing>Flow_0fkg4z8</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0zsf5oj" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="resources/list" target="data.connectorMode.operation.type" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="listResourcesResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0e9natv</bpmn:incoming>
+      <bpmn:outgoing>Flow_0dpz6ey</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0k2qxvu" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="resources/templates/list" target="data.connectorMode.operation.type" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="listResourcesTemplateResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1ciwaem</bpmn:incoming>
+      <bpmn:outgoing>Flow_0kporap</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_14ycte5" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="resources/read" target="data.connectorMode.operation.type" />
+          <zeebe:input source="file://jokes-guide.md" target="data.connectorMode.operation.resourceUri" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="readResourceResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_1fi3ugo</bpmn:incoming>
+      <bpmn:outgoing>Flow_03iv4xt</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_11go5c5" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="prompts/list" target="data.connectorMode.operation.type" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="listPromptsResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0gvh6fv</bpmn:incoming>
+      <bpmn:outgoing>Flow_04potql</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Activity_0k2do0i" zeebe:modelerTemplate="io.camunda.connectors.agenticai.mcp.remoteclient.v0" zeebe:modelerTemplateVersion="2" zeebe:modelerTemplateIcon="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSJub25lIiB2aWV3Qm94PSIwIDAgMjAwIDIwMCI+CiAgICA8cGF0aCBkPSJNMjUgOTcuODUyOEw5Mi44ODIzIDI5Ljk3MDZDMTAyLjI1NSAyMC41OTggMTE3LjQ1MSAyMC41OTggMTI2LjgyMyAyOS45NzA2VjI5Ljk3MDZDMTM2LjE5NiAzOS4zNDMxIDEzNi4xOTYgNTQuNTM5MSAxMjYuODIzIDYzLjkxMTdMNzUuNTU4MSAxMTUuMTc3IiBzdHJva2U9ImJsYWNrIiBzdHJva2Utd2lkdGg9IjEyIiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KICAgIDxwYXRoIGQ9Ik03Ni4yNjUzIDExNC40N0wxMjYuODIzIDYzLjkxMTdDMTM2LjE5NiA1NC41MzkxIDE1MS4zOTIgNTQuNTM5MSAxNjAuNzY1IDYzLjkxMTdMMTYxLjExOCA2NC4yNjUyQzE3MC40OTEgNzMuNjM3OCAxNzAuNDkxIDg4LjgzMzggMTYxLjExOCA5OC4yMDYzTDk5LjcyNDggMTU5LjZDOTYuNjAwNiAxNjIuNzI0IDk2LjYwMDYgMTY3Ljc4OSA5OS43MjQ4IDE3MC45MTNMMTEyLjMzMSAxODMuNTIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgogICAgPHBhdGggZD0iTTEwOS44NTMgNDYuOTQxMUw1OS42NDgyIDk3LjE0NTdDNTAuMjc1NyAxMDYuNTE4IDUwLjI3NTcgMTIxLjcxNCA1OS42NDgyIDEzMS4wODdWMTMxLjA4N0M2OS4wMjA4IDE0MC40NTkgODQuMjE2OCAxNDAuNDU5IDkzLjU4OTQgMTMxLjA4N0wxNDMuNzk0IDgwLjg4MjIiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMTIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIvPgo8L3N2Zz4K">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="io.camunda.agenticai:mcpremoteclient:1" retries="3" />
+        <zeebe:ioMapping>
+          <zeebe:input source="http" target="data.transport.type" />
+          <zeebe:input source="http://mcp-test-server:12001/mcp" target="data.transport.http.url" />
+          <zeebe:input source="noAuth" target="data.transport.http.authentication.type" />
+          <zeebe:input source="=false" target="data.options.clientCache" />
+          <zeebe:input source="standalone" target="data.connectorMode.type" />
+          <zeebe:input source="prompts/get" target="data.connectorMode.operation.type" />
+          <zeebe:input source="get-greeting" target="data.connectorMode.operation.promptName" />
+          <zeebe:input source="={&#34;name&#34;:&#34;John&#34;}" target="data.connectorMode.operation.promptArguments" />
+        </zeebe:ioMapping>
+        <zeebe:taskHeaders>
+          <zeebe:header key="elementTemplateVersion" value="2" />
+          <zeebe:header key="elementTemplateId" value="io.camunda.connectors.agenticai.mcp.remoteclient.v0" />
+          <zeebe:header key="resultVariable" value="getPromptResult" />
+          <zeebe:header key="retryBackoff" value="PT0S" />
+        </zeebe:taskHeaders>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_0wrcjqf</bpmn:incoming>
+      <bpmn:outgoing>Flow_1lva7ht</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="Flow_19r4gtr" sourceRef="StartEvent_1" targetRef="Gateway_0qasxtq" />
+    <bpmn:parallelGateway id="Gateway_0qasxtq">
+      <bpmn:incoming>Flow_19r4gtr</bpmn:incoming>
+      <bpmn:outgoing>Flow_09bmgpl</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0fuwo6o</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0e9natv</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1ciwaem</bpmn:outgoing>
+      <bpmn:outgoing>Flow_1fi3ugo</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0gvh6fv</bpmn:outgoing>
+      <bpmn:outgoing>Flow_0wrcjqf</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_09bmgpl" sourceRef="Gateway_0qasxtq" targetRef="Activity_1jtuozy" />
+    <bpmn:sequenceFlow id="Flow_0fuwo6o" sourceRef="Gateway_0qasxtq" targetRef="Activity_0j3esn0" />
+    <bpmn:sequenceFlow id="Flow_0e9natv" sourceRef="Gateway_0qasxtq" targetRef="Activity_0zsf5oj" />
+    <bpmn:sequenceFlow id="Flow_1ciwaem" sourceRef="Gateway_0qasxtq" targetRef="Activity_0k2qxvu" />
+    <bpmn:sequenceFlow id="Flow_1fi3ugo" sourceRef="Gateway_0qasxtq" targetRef="Activity_14ycte5" />
+    <bpmn:sequenceFlow id="Flow_0gvh6fv" sourceRef="Gateway_0qasxtq" targetRef="Activity_11go5c5" />
+    <bpmn:sequenceFlow id="Flow_0wrcjqf" sourceRef="Gateway_0qasxtq" targetRef="Activity_0k2do0i" />
+    <bpmn:sequenceFlow id="Flow_0kporap" sourceRef="Activity_0k2qxvu" targetRef="Gateway_1ov4hn7" />
+    <bpmn:parallelGateway id="Gateway_1ov4hn7">
+      <bpmn:incoming>Flow_0kporap</bpmn:incoming>
+      <bpmn:incoming>Flow_0bn4gzd</bpmn:incoming>
+      <bpmn:incoming>Flow_0fkg4z8</bpmn:incoming>
+      <bpmn:incoming>Flow_0dpz6ey</bpmn:incoming>
+      <bpmn:incoming>Flow_03iv4xt</bpmn:incoming>
+      <bpmn:incoming>Flow_04potql</bpmn:incoming>
+      <bpmn:incoming>Flow_1lva7ht</bpmn:incoming>
+      <bpmn:outgoing>Flow_04ss29d</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:sequenceFlow id="Flow_0bn4gzd" sourceRef="Activity_1jtuozy" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_0fkg4z8" sourceRef="Activity_0j3esn0" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_0dpz6ey" sourceRef="Activity_0zsf5oj" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_03iv4xt" sourceRef="Activity_14ycte5" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_04potql" sourceRef="Activity_11go5c5" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_1lva7ht" sourceRef="Activity_0k2do0i" targetRef="Gateway_1ov4hn7" />
+    <bpmn:sequenceFlow id="Flow_04ss29d" sourceRef="Gateway_1ov4hn7" targetRef="Event_0ap30yg" />
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="mcp_remote_client">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="152" y="502" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Event_0ap30yg_di" bpmnElement="Event_0ap30yg">
+        <dc:Bounds x="792" y="502" width="36" height="36" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Activity_0igv5yz_di" bpmnElement="Activity_1jtuozy">
+        <dc:Bounds x="410" y="80" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_15pxi0s" bpmnElement="Activity_0j3esn0">
+        <dc:Bounds x="410" y="210" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1au9rye" bpmnElement="Activity_0zsf5oj">
+        <dc:Bounds x="410" y="340" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0uhgah9" bpmnElement="Activity_0k2qxvu">
+        <dc:Bounds x="410" y="480" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_0no6wy4" bpmnElement="Activity_14ycte5">
+        <dc:Bounds x="410" y="630" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1y907en" bpmnElement="Activity_11go5c5">
+        <dc:Bounds x="410" y="770" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="BPMNShape_1tqyk7b" bpmnElement="Activity_0k2do0i">
+        <dc:Bounds x="410" y="910" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_1ksk3eq_di" bpmnElement="Gateway_0qasxtq">
+        <dc:Bounds x="245" y="495" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_069darl_di" bpmnElement="Gateway_1ov4hn7">
+        <dc:Bounds x="585" y="495" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_19r4gtr_di" bpmnElement="Flow_19r4gtr">
+        <di:waypoint x="188" y="520" />
+        <di:waypoint x="245" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_09bmgpl_di" bpmnElement="Flow_09bmgpl">
+        <di:waypoint x="270" y="495" />
+        <di:waypoint x="270" y="120" />
+        <di:waypoint x="410" y="120" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0fuwo6o_di" bpmnElement="Flow_0fuwo6o">
+        <di:waypoint x="270" y="495" />
+        <di:waypoint x="270" y="250" />
+        <di:waypoint x="410" y="250" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0e9natv_di" bpmnElement="Flow_0e9natv">
+        <di:waypoint x="270" y="495" />
+        <di:waypoint x="270" y="380" />
+        <di:waypoint x="410" y="380" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1ciwaem_di" bpmnElement="Flow_1ciwaem">
+        <di:waypoint x="295" y="520" />
+        <di:waypoint x="410" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1fi3ugo_di" bpmnElement="Flow_1fi3ugo">
+        <di:waypoint x="270" y="545" />
+        <di:waypoint x="270" y="670" />
+        <di:waypoint x="410" y="670" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0gvh6fv_di" bpmnElement="Flow_0gvh6fv">
+        <di:waypoint x="270" y="545" />
+        <di:waypoint x="270" y="810" />
+        <di:waypoint x="410" y="810" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0wrcjqf_di" bpmnElement="Flow_0wrcjqf">
+        <di:waypoint x="270" y="545" />
+        <di:waypoint x="270" y="950" />
+        <di:waypoint x="410" y="950" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0kporap_di" bpmnElement="Flow_0kporap">
+        <di:waypoint x="510" y="520" />
+        <di:waypoint x="585" y="520" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0bn4gzd_di" bpmnElement="Flow_0bn4gzd">
+        <di:waypoint x="510" y="120" />
+        <di:waypoint x="610" y="120" />
+        <di:waypoint x="610" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0fkg4z8_di" bpmnElement="Flow_0fkg4z8">
+        <di:waypoint x="510" y="250" />
+        <di:waypoint x="610" y="250" />
+        <di:waypoint x="610" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_0dpz6ey_di" bpmnElement="Flow_0dpz6ey">
+        <di:waypoint x="510" y="380" />
+        <di:waypoint x="610" y="380" />
+        <di:waypoint x="610" y="495" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_03iv4xt_di" bpmnElement="Flow_03iv4xt">
+        <di:waypoint x="510" y="670" />
+        <di:waypoint x="610" y="670" />
+        <di:waypoint x="610" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04potql_di" bpmnElement="Flow_04potql">
+        <di:waypoint x="510" y="810" />
+        <di:waypoint x="610" y="810" />
+        <di:waypoint x="610" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_1lva7ht_di" bpmnElement="Flow_1lva7ht">
+        <di:waypoint x="510" y="950" />
+        <di:waypoint x="610" y="950" />
+        <di:waypoint x="610" y="545" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_04ss29d_di" bpmnElement="Flow_04ss29d">
+        <di:waypoint x="635" y="520" />
+        <di:waypoint x="792" y="520" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>
