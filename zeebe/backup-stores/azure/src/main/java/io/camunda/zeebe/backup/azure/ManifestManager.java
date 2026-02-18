@@ -106,7 +106,6 @@ public final class ManifestManager {
   void completeManifest(final PersistedManifest inProgressManifest) {
     final byte[] serializedManifest;
     final var completed = inProgressManifest.manifest().complete();
-    assureContainerCreated();
     try {
       serializedManifest = MAPPER.writeValueAsBytes(completed);
     } catch (final JsonProcessingException e) {
@@ -144,7 +143,6 @@ public final class ManifestManager {
   }
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
-    assureContainerCreated();
 
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
     Manifest manifest = getManifest(manifestId);
@@ -170,13 +168,7 @@ public final class ManifestManager {
     }
   }
 
-  void markAsDeleted(final BackupIdentifier manifestId) {
-    assureContainerCreated();
-
-    final Manifest manifest = getManifest(manifestId);
-    if (manifest == null) {
-      return;
-    }
+  void markAsDeleted(final Manifest manifest) {
 
     final var deletedManifest =
         switch (manifest.statusCode()) {
@@ -188,7 +180,8 @@ public final class ManifestManager {
 
     if (manifest != deletedManifest) {
       try {
-        final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
+        final BlobClient blobClient =
+            blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
         blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
@@ -196,21 +189,13 @@ public final class ManifestManager {
     }
   }
 
-  public void deleteManifest(final BackupIdentifier id) {
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(id));
-    final Manifest manifest = getManifest(id);
-    if (manifest == null) {
-      return;
-    } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
-      throw new UnexpectedManifestState(
-          "Cannot delete Backup with id '%s' while saving is in progress."
-              .formatted(id.toString()));
-    }
-
+  public void deleteManifest(final Manifest manifest) {
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
     blobClient.delete();
   }
 
   Manifest getManifest(final BackupIdentifier id) {
+    assureContainerCreated();
     return getManifestWithPath(
         MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
   }

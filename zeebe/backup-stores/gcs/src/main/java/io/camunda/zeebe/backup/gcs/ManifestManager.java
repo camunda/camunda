@@ -200,30 +200,25 @@ public final class ManifestManager {
         .toList();
   }
 
-  public void deleteManifest(final BackupIdentifier id) {
-    client.delete(manifestBlobInfo(id).getBlobId());
+  public void deleteManifest(final Manifest manifest) {
+    final var blobInfo = manifestBlobInfo(manifest.id());
+    client.delete(blobInfo.getBlobId());
   }
 
-  public void markAsDeleted(final BackupIdentifier id) {
-    final var blobInfo = manifestBlobInfo(id);
-    final var blob = client.get(blobInfo.getBlobId());
-    if (blob != null) {
+  public void markAsDeleted(final Manifest manifest) {
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+    if (manifest != deletedManifest) {
+      final var blobInfo = manifestBlobInfo(manifest.id());
       try {
-        final var existingManifest = MAPPER.readValue(blob.getContent(), Manifest.class);
-        final var deletedManifest =
-            switch (existingManifest.statusCode()) {
-              case DELETED -> existingManifest;
-              case COMPLETED -> existingManifest.asCompleted().delete();
-              case IN_PROGRESS -> existingManifest.asInProgress().delete();
-              case FAILED -> existingManifest.asFailed().delete();
-            };
-        if (existingManifest != deletedManifest) {
-          client.create(blobInfo, MAPPER.writeValueAsBytes(deletedManifest));
-        }
+        client.create(blobInfo, MAPPER.writeValueAsBytes(deletedManifest));
       } catch (final JsonProcessingException e) {
         throw new RuntimeException(e);
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
       }
     }
   }

@@ -236,7 +236,7 @@ final class ManifestManagerTest {
       Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
 
       // when
-      manager.markAsDeleted(backup.id());
+      manager.markAsDeleted(inProgressManifest);
 
       // then
       final var captor = ArgumentCaptor.forClass(byte[].class);
@@ -268,7 +268,7 @@ final class ManifestManagerTest {
       Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
 
       // when
-      manager.markAsDeleted(backup.id());
+      manager.markAsDeleted(completedManifest);
 
       // then
       final var captor = ArgumentCaptor.forClass(byte[].class);
@@ -300,7 +300,7 @@ final class ManifestManagerTest {
       Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
 
       // when
-      manager.markAsDeleted(backup.id());
+      manager.markAsDeleted(failedManifest);
 
       // then
       final var captor = ArgumentCaptor.forClass(byte[].class);
@@ -332,25 +332,9 @@ final class ManifestManagerTest {
       Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(blob);
 
       // when
-      manager.markAsDeleted(backup.id());
+      manager.markAsDeleted(deletedManifest);
 
       // then - should not call create since manifest is already deleted
-      Mockito.verify(client, Mockito.never()).create(Mockito.any(BlobInfo.class), Mockito.any());
-    }
-
-    @Test
-    void shouldDoNothingWhenMarkingNonExistentManifestAsDeleted() {
-      // given
-      final var client = Mockito.mock(Storage.class);
-      final var manager = new ManifestManager(client, BucketInfo.of("bucket"), "basePath");
-      final var backupId = new BackupIdentifierImpl(1, 2, 3);
-
-      Mockito.when(client.get(Mockito.any(BlobId.class))).thenReturn(null);
-
-      // when
-      manager.markAsDeleted(backupId);
-
-      // then - should not call create since manifest does not exist
       Mockito.verify(client, Mockito.never()).create(Mockito.any(BlobInfo.class), Mockito.any());
     }
   }

@@ -133,12 +133,7 @@ public final class ManifestManager {
     updateManifestFile(manifest, updatedManifest);
   }
 
-  void markAsDeleted(final BackupIdentifier manifestId) {
-    final Manifest manifest = getManifest(manifestId);
-    if (manifest == null) {
-      return;
-    }
-
+  void markAsDeleted(final Manifest manifest) {
     final var deletedManifest =
         switch (manifest.statusCode()) {
           case DELETED -> manifest;
@@ -162,23 +157,14 @@ public final class ManifestManager {
     }
   }
 
-  void deleteManifest(final BackupIdentifier id) {
-    final Manifest manifest = getManifest(id);
-    if (manifest == null) {
-      return;
-    } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
-      throw new UnexpectedManifestState(
-          "Cannot delete Backup with id '%s' while saving is in progress."
-              .formatted(id.toString()));
-    }
-
+  void deleteManifest(final Manifest manifest) {
     try {
       final var path = manifestPath(manifest);
       Files.delete(path);
-      final var dirLimit = manifestsPath.resolve(String.valueOf(id.partitionId()));
+      final var dirLimit = manifestsPath.resolve(String.valueOf(manifest.id().partitionId()));
       FilesystemBackupStore.backtrackDeleteEmptyParents(path.getParent(), dirLimit);
     } catch (final NoSuchFileException e) {
-      LOGGER.warn("Try to remove unknown manifest with id {}", id);
+      LOGGER.warn("Try to remove unknown manifest with id {}", manifest.id());
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to delete manifest", e);
     }

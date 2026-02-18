@@ -116,7 +116,7 @@ class ManifestManagerTest {
     final var inProgressManifest = createInitialManifest();
     manifestManager.completeManifest(inProgressManifest);
 
-    manifestManager.deleteManifest(backupIdentifier);
+    manifestManager.deleteManifest(inProgressManifest);
 
     final var manifestPath = tempDir.resolve("0/42/1337/manifest.json");
     assertThat(Files.exists(manifestPath)).isFalse();
