@@ -44,7 +44,8 @@ public class SimpleRequestMapper {
                   .awaitCompletion(request.getAwaitCompletion())
                   .fetchVariables(request.getFetchVariables())
                   .requestTimeout(request.getRequestTimeout())
-                  .tags(request.getTags()),
+                  .tags(request.getTags())
+                  .businessId(request.getBusinessId()),
           multiTenancyEnabled);
     }
 
@@ -62,7 +63,8 @@ public class SimpleRequestMapper {
                 .awaitCompletion(request.getAwaitCompletion())
                 .requestTimeout(request.getRequestTimeout())
                 .fetchVariables(request.getFetchVariables())
-                .tags(request.getTags()),
+                .tags(request.getTags())
+                .businessId(request.getBusinessId()),
         multiTenancyEnabled);
   }
 

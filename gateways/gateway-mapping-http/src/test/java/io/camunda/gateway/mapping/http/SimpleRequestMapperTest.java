@@ -212,5 +212,25 @@ class SimpleRequestMapperTest {
                 assertThat(i.getAfterElementId()).isEqualTo("after-element");
               });
     }
+
+    @Test
+    void shouldMapBusinessId() {
+      // given
+      final var businessId = "order-12345";
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionKey("123")
+              .businessId(businessId);
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
+
+      // then
+      assertThat(result.isRight()).isTrue();
+      final var mapped = result.get();
+      assertThat(mapped.processDefinitionKey()).isEqualTo(123L);
+      assertThat(mapped.businessId()).isEqualTo(businessId);
+    }
   }
 }

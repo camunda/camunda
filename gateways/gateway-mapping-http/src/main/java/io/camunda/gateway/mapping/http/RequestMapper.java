@@ -678,7 +678,8 @@ public class RequestMapper {
                         })
                     .toList(),
                 request.getFetchVariables(),
-                request.getTags()));
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -720,7 +721,8 @@ public class RequestMapper {
                         })
                     .toList(),
                 request.getFetchVariables(),
-                request.getTags()));
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(
