@@ -506,6 +506,47 @@ class DefaultResourceAccessProviderTest {
     assertThat(result.authorization()).isEqualTo(authorization);
   }
 
+  @Test
+  void shouldResolveResourceAccessForCategoryProperty() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.auditLog().read().authorizedByCategory());
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of(AuthorizationScope.property(Authorization.PROP_CATEGORY)));
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isFalse();
+    assertThat(result.allowed()).isTrue();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames())
+        .containsExactly(Authorization.PROP_CATEGORY);
+  }
+
+  @Test
+  void shouldDenyResourceAccessWhenCategoryPropertyNotAuthorized() {
+    // given
+    final var authentication = CamundaAuthentication.of(a -> a.user("foo"));
+    final var authorization = Authorization.of(a -> a.auditLog().read().authorizedByCategory());
+
+    when(authorizationChecker.retrieveAuthorizedAuthorizationScopes(
+            any(CamundaAuthentication.class), any(Authorization.class)))
+        .thenReturn(List.of());
+
+    // when
+    final var result = resourceAccessProvider.resolveResourceAccess(authentication, authorization);
+
+    // then
+    assertThat(result.denied()).isTrue();
+    assertThat(result.allowed()).isFalse();
+    assertThat(result.wildcard()).isFalse();
+    assertThat(result.authorization().resourcePropertyNames()).isEmpty();
+  }
+
   private UserTaskEntity createUserTask(final String assignee) {
     final var mockedTask = mock(UserTaskEntity.class);
     lenient().when(mockedTask.assignee()).thenReturn(assignee);

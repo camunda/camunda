@@ -299,6 +299,23 @@ class ResourceAccessChecksTest {
       assertThat(result.get(AuthorizationResourceType.PROCESS_DEFINITION.name()))
           .containsExactly("tenantId");
     }
+
+    @Test
+    void shouldReturnCategoryPropertyForAuditLog() {
+      // given
+      final var authorization = Authorization.of(b -> b.auditLog().read().authorizedByCategory());
+      final var condition = AuthorizationConditions.single(authorization);
+      final var checks =
+          ResourceAccessChecks.of(AuthorizationCheck.enabled(condition), TenantCheck.disabled());
+
+      // when
+      final var result = checks.getAuthorizedResourcePropertyNamesByType();
+
+      // then
+      assertThat(result).containsOnlyKeys(AuthorizationResourceType.AUDIT_LOG.name());
+      assertThat(result.get(AuthorizationResourceType.AUDIT_LOG.name()))
+          .containsExactly(Authorization.PROP_CATEGORY);
+    }
   }
 
   @Nested
