@@ -528,31 +528,18 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
 
     // when
     final ProcessEntity retrievedProcess = processStore.getProcessByKey(storedProcess.getKey());
+    final String diagram = processStore.getDiagramByKey(storedProcess.getKey());
 
     // then - verify the process is retrieved (BPMN_XML exclusion doesn't affect structure)
     assertThat(retrievedProcess).isNotNull();
     assertThat(retrievedProcess.getKey()).isEqualTo(storedProcess.getKey());
     assertThat(retrievedProcess.getName()).isEqualTo(storedProcess.getName());
     assertThat(retrievedProcess.getBpmnProcessId()).isEqualTo(storedProcess.getBpmnProcessId());
-    // Note: BPMN_XML may be null due to exclusion from search, but xmlByKey() method can be used
-    // to explicitly fetch the XML when needed
-  }
+    assertThat(retrievedProcess.getBpmnXml()).isNull();
 
-  @Test
-  public void testGetProcessByKeyAndGetDiagramByKeyUseDifferentMethods() {
-    // given - a stored process with BPMN XML
-    final ProcessEntity storedProcess = firstProcessDefinition;
-
-    // when - get process by key (excludes BPMN_XML)
-    final ProcessEntity process = processStore.getProcessByKey(storedProcess.getKey());
-    // and get diagram by key (explicitly includes XML)
-    final String diagram = processStore.getDiagramByKey(storedProcess.getKey());
-
-    // then
-    assertThat(process).isNotNull();
+    // The diagram can be fetched even though getProcessByKey excludes BPMN_XML
     assertThat(diagram).isNotNull();
     assertThat(diagram).isEqualTo(storedProcess.getBpmnXml());
-    // The diagram can be fetched even though getProcessByKey excludes BPMN_XML
   }
 
   private String getFullIndexNameForDependant(final String indexName) {
