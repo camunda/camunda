@@ -26,6 +26,7 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
@@ -173,10 +174,18 @@ public final class AzureBackupStore implements BackupStore {
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.markAsDeleted(id);
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return;
+          } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
+            throw new UnexpectedManifestState(
+                "Cannot delete Backup with id '%s' while saving is in progress."
+                    .formatted(id.toString()));
+          }
+          manifestManager.markAsDeleted(manifest);
           fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
-          manifestManager.deleteManifest(id);
+          manifestManager.deleteManifest(manifest);
         },
         executor);
   }
