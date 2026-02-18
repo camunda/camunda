@@ -8,93 +8,87 @@
 
 import {VariablePanel} from '../index';
 import {render, screen} from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createInstance,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {useEffect, act} from 'react';
-import {Paths} from 'modules/Routes';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
-vi.mock('modules/stores/notifications', () => ({
-  notificationsStore: {
-    displayNotification: vi.fn(() => () => {}),
-  },
-}));
+const TestSelectionControls: React.FC = () => {
+  const {selectElement, selectElementInstance} =
+    useProcessInstanceElementSelection();
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
-) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
-        modificationsStore.reset();
-        processInstanceDetailsStore.reset();
-      };
-    }, []);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElement({
+            elementId: 'TEST_FLOW_NODE',
+          })
+        }
+      >
+        select flow node
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'TEST_FLOW_NODE',
+            elementInstanceKey: '2',
+          })
+        }
+      >
+        select flow node instance
+      </button>
+    </>
+  );
+};
 
-    return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
-  };
+const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
+  const BaseWrapper = getBaseWrapper(...args);
+
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <BaseWrapper>
+      <>
+        <TestSelectionControls />
+        {children}
+      </>
+    </BaseWrapper>
+  );
+
   return Wrapper;
 };
 
-// TODO: fix test with #44450
-describe.skip('VariablePanel', () => {
+const selectedElementInstance = {
+  elementInstanceKey: '2',
+  elementId: 'TEST_FLOW_NODE',
+  elementName: 'Test Flow Node',
+  type: 'SERVICE_TASK' as const,
+  state: 'ACTIVE' as const,
+  startDate: '2018-06-21',
+  processDefinitionId: 'someKey',
+  processInstanceKey: '1',
+  processDefinitionKey: '2',
+  hasIncident: false,
+  tenantId: '<default>',
+};
+
+describe('VariablePanel placeholders', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
-    const mockProcessInstanceDeprecated = createInstance();
-
+    vi.clearAllMocks();
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
+
     const statistics = [
       {
         elementId: 'TEST_FLOW_NODE',
@@ -119,33 +113,14 @@ describe.skip('VariablePanel', () => {
       items: statistics,
     });
 
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
-      page: {
-        totalItems: 1,
-      },
-    });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-    init('process-instance', statistics);
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
   });
 
   it.each([true, false])(
@@ -155,24 +130,41 @@ describe.skip('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      mockFetchFlowNodeMetadata().withSuccess({
-        ...singleInstanceMetadata,
-        flowNodeInstanceId: null,
-        instanceCount: 2,
-        instanceMetadata: null,
+      mockSearchElementInstances().withSuccess({
+        items: [
+          selectedElementInstance,
+          {
+            ...selectedElementInstance,
+            elementInstanceKey: '3',
+          },
+        ],
+        page: {totalItems: 2},
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
       });
 
-      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-        wrapper: getWrapper(),
-      });
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
-      act(() => {
-        flowNodeSelectionStore.setSelection({
-          flowNodeId: 'TEST_FLOW_NODE',
-        });
-      });
+      await user.click(
+        screen.getByRole('button', {name: /^select flow node$/i}),
+      );
 
       expect(
         await screen.findByText(
@@ -192,21 +184,28 @@ describe.skip('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-        wrapper: getWrapper(),
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
       });
+
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
-      mockSearchVariables().withServerError();
+      mockFetchElementInstance('2').withSuccess(selectedElementInstance);
       mockSearchVariables().withServerError();
 
-      act(() => {
-        flowNodeSelectionStore.setSelection({
-          flowNodeId: 'TEST_FLOW_NODE',
-          flowNodeInstanceId: '2',
-        });
-      });
+      await user.click(
+        screen.getByRole('button', {name: /^select flow node instance$/i}),
+      );
 
       expect(
         await screen.findByText('Variables could not be fetched'),
@@ -224,20 +223,28 @@ describe.skip('VariablePanel', () => {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-        wrapper: getWrapper(),
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
       });
+
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
+      mockFetchElementInstance('2').withSuccess(selectedElementInstance);
       mockSearchVariables().withNetworkError();
 
-      act(() => {
-        flowNodeSelectionStore.setSelection({
-          flowNodeId: 'TEST_FLOW_NODE',
-          flowNodeInstanceId: '2',
-        });
-      });
+      await user.click(
+        screen.getByRole('button', {name: /^select flow node instance$/i}),
+      );
 
       expect(
         await screen.findByText('Variables could not be fetched'),
@@ -249,26 +256,39 @@ describe.skip('VariablePanel', () => {
   );
 
   it.each([true, false])(
-    'should show failed placeholder if network error occurs while fetching process instance flow-node metadata - modification mode: %p',
+    'should show failed placeholder if network error occurs while fetching selected flow node instance metadata - modification mode: %p',
     async (enableModificationMode) => {
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
       }
 
-      render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-        wrapper: getWrapper(),
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
       });
+
+      const {user} = render(
+        <VariablePanel setListenerTabVisibility={vi.fn()} />,
+        {
+          wrapper: getWrapper(),
+        },
+      );
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
-      mockFetchFlowNodeMetadata().withNetworkError();
-
-      act(() => {
-        flowNodeSelectionStore.setSelection({
-          flowNodeId: 'TEST_FLOW_NODE',
-          flowNodeInstanceId: '2',
-        });
+      mockFetchElementInstance('2').withNetworkError();
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+        },
       });
+
+      await user.click(
+        screen.getByRole('button', {name: /^select flow node instance$/i}),
+      );
 
       expect(
         await screen.findByText('Variables could not be fetched'),
