@@ -43,7 +43,7 @@ public class HttpTransportTest {
   }
 
   @Test
-  public void testSuccessfulTransport() {
+  public void testForStatusCode2XX() {
     wireMock.stubFor(post("/").willReturn(ok()));
 
     transport.send(new ArrayList<>());
@@ -54,9 +54,9 @@ public class HttpTransportTest {
   }
 
   @Test
-  public void testRetryForStatusCode500() {
+  public void testRetryForStatusCode3XX() {
     wireMock.stubFor(
-        post("/").willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
+        post("/").willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(302)));
 
     Assertions.assertThatCode(() -> transport.send(new ArrayList<>()))
         .isInstanceOf(TransportException.class);
@@ -76,6 +76,19 @@ public class HttpTransportTest {
 
     wireMock.verify(
         exactly(1),
+        postRequestedFor(urlEqualTo("/")).withHeader(ApiKey.HEADER_NAME, equalTo("test-key")));
+  }
+
+  @Test
+  public void testRetryForStatusCode5XX() {
+    wireMock.stubFor(
+        post("/").willReturn(ResponseDefinitionBuilder.responseDefinition().withStatus(500)));
+
+    Assertions.assertThatCode(() -> transport.send(new ArrayList<>()))
+        .isInstanceOf(TransportException.class);
+
+    wireMock.verify(
+        exactly(3),
         postRequestedFor(urlEqualTo("/")).withHeader(ApiKey.HEADER_NAME, equalTo("test-key")));
   }
 }

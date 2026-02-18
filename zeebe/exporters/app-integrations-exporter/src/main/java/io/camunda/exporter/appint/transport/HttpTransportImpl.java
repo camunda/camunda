@@ -114,7 +114,7 @@ public class HttpTransportImpl implements Transport<Event> {
     final String responseReason = response.getStatusLine().getReasonPhrase();
     if (statusCode >= 200 && statusCode < 300) {
       log.debug("Successfully posted records to: {}", responseReason);
-    } else if (statusCode >= 400 && statusCode <= 499) {
+    } else if (statusCode >= 400 && statusCode < 500) {
       log.debug("Failed posting records. Status: {} reason: {}", statusCode, responseReason);
       throw new TransportClientException(
           "Failed to post records. Status: " + statusCode + " reason: " + responseReason);
