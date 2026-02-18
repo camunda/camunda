@@ -245,11 +245,12 @@ public class Optimize extends App {
 
           try {
             evaluateDashboardAndReports();
+            evaluateInstantBenchmark();
           } catch (final Exception e) {
             THROTTLED_LOGGER.error("Error during evaluation cycle", e);
           }
         },
-        60,
+        10,
         intervalSeconds,
         TimeUnit.SECONDS);
   }
@@ -287,14 +288,16 @@ public class Optimize extends App {
         if (reportResult.isSuccess()) {
           reportSuccessCounter.increment();
           LOG.info(
-              "Report {} evaluated successfully in {}ms",
+              "Report {} [{}] evaluated successfully in {}ms",
               reportResult.getReportId(),
+              reportResult.getReportName(),
               reportResult.getResponseTimeMs());
         } else {
           reportErrorCounter.increment();
           LOG.error(
-              "Report {} evaluation failed with status {}",
+              "Report {} [{}] evaluation failed with status {}",
               reportResult.getReportId(),
+              reportResult.getReportName(),
               reportResult.getStatusCode());
         }
       }
@@ -356,14 +359,16 @@ public class Optimize extends App {
         if (reportResult.isSuccess()) {
           benchmarkReportEvaluationSuccessCounter.increment();
           LOG.info(
-              "Benchmark report {} evaluated successfully in {}ms",
+              "Benchmark report {} [{}] evaluated successfully in {}ms",
               reportResult.getReportId(),
+              reportResult.getReportName(),
               reportResult.getResponseTimeMs());
         } else {
           benchmarkReportEvaluationErrorCounter.increment();
           LOG.error(
-              "Benchmark report {} evaluation failed with status {}",
+              "Benchmark report {} [{}] evaluation failed with status {}",
               reportResult.getReportId(),
+              reportResult.getReportName(),
               reportResult.getStatusCode());
         }
       }
@@ -378,14 +383,16 @@ public class Optimize extends App {
         if (detailedResult.isSuccess()) {
           benchmarkDetailedEvaluationSuccessCounter.increment();
           LOG.info(
-              "Benchmark detailed evaluation for report {} completed in {}ms",
+              "Benchmark detailed evaluation for report {} [{}] completed in {}ms",
               detailedResult.getReportId(),
+              detailedResult.getReportName(),
               detailedResult.getResponseTimeMs());
         } else {
           benchmarkDetailedEvaluationErrorCounter.increment();
           LOG.error(
-              "Benchmark detailed evaluation for report {} failed with status {}",
+              "Benchmark detailed evaluation for report {} [{}] failed with status {}",
               detailedResult.getReportId(),
+              detailedResult.getReportName(),
               detailedResult.getStatusCode());
         }
       }

@@ -363,58 +363,94 @@ public class OptimizeReportLoadTester {
   private String transformRequestBodyForDetailedEvaluate(final String responseBody) throws Exception {
     final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
 
-    if (rootNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-      final com.fasterxml.jackson.databind.node.ObjectNode objectNode =
-          (com.fasterxml.jackson.databind.node.ObjectNode) rootNode;
-
-      // Remove result object
-      objectNode.remove("result");
-
-      // Transform data if it exists
-      if (objectNode.has("data")) {
-        final JsonNode dataNode = objectNode.get("data");
-        if (dataNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-          final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode =
-              (com.fasterxml.jackson.databind.node.ObjectNode) dataNode;
-
-          // Transform data.view if it exists
-          if (dataObjectNode.has("view")) {
-            final JsonNode viewNode = dataObjectNode.get("view");
-            if (viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-              final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
-                  (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
-
-              // Remove entity field
-              viewObjectNode.remove("entity");
-
-              // Replace properties array with rawData field containing "rawData" string
-              if (viewObjectNode.has("properties")) {
-                viewObjectNode.remove("properties");
-                final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
-                    OBJECT_MAPPER.createArrayNode();
-                rawDataArray.add("rawData");
-                viewObjectNode.set("properties", rawDataArray);
-              }
-            }
-          }
-
-          // Set data.groupBy.type to "none" if groupBy exists
-          if (dataObjectNode.has("groupBy")) {
-            final JsonNode groupByNode = dataObjectNode.get("groupBy");
-            if (groupByNode instanceof com.fasterxml.jackson.databind.node.ObjectNode) {
-              final com.fasterxml.jackson.databind.node.ObjectNode groupByObjectNode =
-                  (com.fasterxml.jackson.databind.node.ObjectNode) groupByNode;
-              groupByObjectNode.put("type", "none");
-              groupByObjectNode.remove("value");
-            }
-          }
-        }
-      }
-
-      return OBJECT_MAPPER.writeValueAsString(objectNode);
+    if (!(rootNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+      return responseBody;
     }
 
-    return responseBody;
+    final com.fasterxml.jackson.databind.node.ObjectNode objectNode =
+        (com.fasterxml.jackson.databind.node.ObjectNode) rootNode;
+
+    // Remove result object
+    objectNode.remove("result");
+
+    // Transform data section
+    transformDataSection(objectNode);
+
+    return OBJECT_MAPPER.writeValueAsString(objectNode);
+  }
+
+  /**
+   * Transforms the data section of the report for detailed evaluate API.
+   *
+   * @param objectNode the root object node containing the data section
+   */
+  private void transformDataSection(final com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+    if (!objectNode.has("data")) {
+      return;
+    }
+
+    final JsonNode dataNode = objectNode.get("data");
+    if (!(dataNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+      return;
+    }
+
+    final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode =
+        (com.fasterxml.jackson.databind.node.ObjectNode) dataNode;
+
+    transformViewSection(dataObjectNode);
+    transformGroupBySection(dataObjectNode);
+  }
+
+  /**
+   * Transforms the view section by removing entity and setting properties to ["rawData"].
+   *
+   * @param dataObjectNode the data object node containing the view section
+   */
+  private void transformViewSection(final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+    if (!dataObjectNode.has("view")) {
+      return;
+    }
+
+    final JsonNode viewNode = dataObjectNode.get("view");
+    if (!(viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+      return;
+    }
+
+    final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
+        (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
+
+    // Remove entity field
+    viewObjectNode.remove("entity");
+
+    // Replace properties array with ["rawData"]
+    if (viewObjectNode.has("properties")) {
+      viewObjectNode.remove("properties");
+      final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
+          OBJECT_MAPPER.createArrayNode();
+      rawDataArray.add("rawData");
+      viewObjectNode.set("properties", rawDataArray);
+    }
+  }
+
+  /**
+   * Transforms the groupBy section by setting type to "none".
+   *
+   * @param dataObjectNode the data object node containing the groupBy section
+   */
+  private void transformGroupBySection(final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+    if (!dataObjectNode.has("groupBy")) {
+      return;
+    }
+
+    final JsonNode groupByNode = dataObjectNode.get("groupBy");
+    if (!(groupByNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+      return;
+    }
+
+    final com.fasterxml.jackson.databind.node.ObjectNode groupByObjectNode =
+        (com.fasterxml.jackson.databind.node.ObjectNode) groupByNode;
+    groupByObjectNode.put("type", "none");
+    groupByObjectNode.remove("value");
   }
 
   /**
@@ -538,8 +574,9 @@ public class OptimizeReportLoadTester {
         final ReportEvaluationResult reportResult = evaluateReport(reportId);
         reportResults.add(reportResult);
         LOG.info(
-            "Report {} evaluated in {}ms - Status: {}",
+            "Report {} [{}] evaluated in {}ms - Status: {}",
             reportId,
+            reportResult.getReportName(),
             reportResult.getResponseTimeMs(),
             reportResult.getStatusCode());
       } catch (final Exception e) {
@@ -581,8 +618,9 @@ public class OptimizeReportLoadTester {
         final ReportEvaluationResult reportResult = evaluateReport(reportId);
         reportEvaluationResults.add(reportResult);
         LOG.info(
-            "Instant Report {} evaluated in {}ms - Status: {}",
+            "Report {} [{}] evaluated in {}ms - Status: {}",
             reportId,
+            reportResult.getReportName(),
             reportResult.getResponseTimeMs(),
             reportResult.getStatusCode());
       } catch (final Exception e) {
@@ -595,26 +633,35 @@ public class OptimizeReportLoadTester {
     final List<ReportEvaluationResult> detailedEvaluationResults = new java.util.ArrayList<>();
     for (final ReportEvaluationResult reportEvalResult : reportEvaluationResults) {
       if (reportEvalResult.isSuccess()) {
-        LOG.info("Calling detailed evaluate API for report: {}", reportEvalResult.getReportId());
+        LOG.info(
+            "Calling detailed evaluate API for report: {} [{}]",
+            reportEvalResult.getReportId(),
+            reportEvalResult.getReportName());
         try {
           final ReportEvaluationResult detailedResult =
               evaluateReportDetailed(
                   reportEvalResult.getReportId(), reportEvalResult.getResponseBody());
           detailedEvaluationResults.add(detailedResult);
           LOG.info(
-              "Detailed evaluation for report {} completed in {}ms - Status: {}",
+              "Detailed evaluation for report {} [{}] completed in {}ms - Status: {}",
               reportEvalResult.getReportId(),
+              reportEvalResult.getReportName(),
               detailedResult.getResponseTimeMs(),
               detailedResult.getStatusCode());
         } catch (final Exception e) {
-          LOG.error("Failed to call detailed evaluate for report {}", reportEvalResult.getReportId(), e);
+          LOG.error(
+              "Failed to call detailed evaluate for report {} [{}]",
+              reportEvalResult.getReportId(),
+              reportEvalResult.getReportName(),
+              e);
           detailedEvaluationResults.add(
               new ReportEvaluationResult(reportEvalResult.getReportId(), 0, 0, e.getMessage()));
         }
       } else {
         LOG.warn(
-            "Skipping detailed evaluate for report {} due to failed evaluation",
-            reportEvalResult.getReportId());
+            "Skipping detailed evaluate for report {} [{}] due to failed evaluation",
+            reportEvalResult.getReportId(),
+            reportEvalResult.getReportName());
       }
     }
 
@@ -710,6 +757,7 @@ public class OptimizeReportLoadTester {
   /** Result object containing report evaluation metrics. */
   public static class ReportEvaluationResult {
     private final String reportId;
+    private final String reportName;
     private final int statusCode;
     private final long responseTimeMs;
     private final String responseBody;
@@ -720,13 +768,30 @@ public class OptimizeReportLoadTester {
         final long responseTimeMs,
         final String responseBody) {
       this.reportId = reportId;
+      this.reportName = extractReportName(responseBody);
       this.statusCode = statusCode;
       this.responseTimeMs = responseTimeMs;
       this.responseBody = responseBody;
     }
 
+    private String extractReportName(final String responseBody) {
+      try {
+        final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
+        if (rootNode.has("name")) {
+          return rootNode.get("name").asText();
+        }
+      } catch (final Exception e) {
+        LOG.debug("Failed to extract report name from response", e);
+      }
+      return null;
+    }
+
     public String getReportId() {
       return reportId;
+    }
+
+    public String getReportName() {
+      return reportName;
     }
 
     public int getStatusCode() {
@@ -748,8 +813,8 @@ public class OptimizeReportLoadTester {
     @Override
     public String toString() {
       return String.format(
-          "ReportEvaluationResult{reportId='%s', statusCode=%d, responseTimeMs=%d, success=%b}",
-          reportId, statusCode, responseTimeMs, isSuccess());
+          "ReportEvaluationResult{reportId='%s', reportName='%s', statusCode=%d, responseTimeMs=%d, success=%b}",
+          reportId, reportName, statusCode, responseTimeMs, isSuccess());
     }
   }
 
