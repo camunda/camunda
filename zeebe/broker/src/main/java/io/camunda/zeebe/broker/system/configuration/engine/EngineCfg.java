@@ -182,6 +182,7 @@ public final class EngineCfg implements ConfigurationEntry {
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
         .setMaxIdFieldLength(validators.getMaxIdFieldLength())
         .setMaxNameFieldLength(validators.getMaxNameFieldLength())
+        .setMaxWorkerTypeLength(validators.getMaxWorkerTypeLength())
         .setBatchOperationSchedulerInterval(batchOperations.getSchedulerInterval())
         .setBatchOperationChunkSize(batchOperations.getChunkSize())
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
