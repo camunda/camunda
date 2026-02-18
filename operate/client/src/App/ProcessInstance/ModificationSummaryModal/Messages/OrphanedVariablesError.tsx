@@ -20,7 +20,7 @@ const OrphanedVariablesError: React.FC = () => {
           Some planned variable modifications cannot be applied. They must be
           scoped to elements with a pending ADD or MOVE token modification. For
           global variable modifications (scoped to the process instance), at
-          least one ADD or MOVE modification must be planned.
+          least one ADD or MOVE token modification must be planned.
         </Text>
       }
     />
