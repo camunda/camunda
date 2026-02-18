@@ -219,8 +219,8 @@ public final class BufferUtil {
    *
    * @param writer the writer whose content to encode
    * @param encoder the SBE encoder to write into; its limit is advanced after writing
-   * @param headerLength the byte width of the length prefix field (typically 4, as returned by
-   *     e.g. {@code RecordMetadataEncoder.authorizationHeaderLength()})
+   * @param headerLength the byte width of the length prefix field (typically 4, as returned by e.g.
+   *     {@code RecordMetadataEncoder.authorizationHeaderLength()})
    * @param byteOrder the byte order for the length header
    */
   public static void writeLengthPrefixed(
