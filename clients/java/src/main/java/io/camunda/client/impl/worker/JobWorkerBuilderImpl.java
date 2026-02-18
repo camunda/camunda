@@ -192,7 +192,7 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
-  public JobWorkerBuilderStep3 TenantFilter(final TenantFilter tenantFilter) {
+  public JobWorkerBuilderStep3 tenantFilter(final TenantFilter tenantFilter) {
     this.tenantFilter = tenantFilter;
     return this;
   }

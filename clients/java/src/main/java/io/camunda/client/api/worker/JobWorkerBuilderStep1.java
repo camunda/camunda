@@ -269,9 +269,9 @@ public interface JobWorkerBuilderStep1 {
      * TenantFilter} for possible values. Defaults to {@link *
      * io.camunda.client.CamundaClientBuilder#defaultJobWorkerTenantFilter(tenantFilter)}.
      *
-     * @param TenantFilter the default filter to use for all workers
+     * @param tenantFilter the default filter to use for all workers
      */
-    JobWorkerBuilderStep3 TenantFilter(TenantFilter TenantFilter);
+    JobWorkerBuilderStep3 tenantFilter(TenantFilter tenantFilter);
 
     /**
      * Open the worker and start to work on available tasks.

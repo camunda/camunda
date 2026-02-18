@@ -116,6 +116,6 @@ public interface ActivateJobsCommandStep1
      * @return the configured command
      */
     @Override
-    ActivateJobsCommandStep3 requestTimeout(Duration requestTimeout);
+    FinalCommandStep<ActivateJobsResponse> requestTimeout(Duration requestTimeout);
   }
 }

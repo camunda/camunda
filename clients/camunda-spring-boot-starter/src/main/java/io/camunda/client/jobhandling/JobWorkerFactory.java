@@ -89,7 +89,7 @@ public class JobWorkerFactory {
               .toList());
     }
     if (jobWorkerValue.getTenantFilter() != null) {
-      builder.TenantFilter(jobWorkerValue.getTenantFilter().value());
+      builder.tenantFilter(jobWorkerValue.getTenantFilter().value());
     }
     if (jobWorkerValue.getTenantIds() != null && !jobWorkerValue.getTenantIds().isEmpty()) {
       builder.tenantIds(
