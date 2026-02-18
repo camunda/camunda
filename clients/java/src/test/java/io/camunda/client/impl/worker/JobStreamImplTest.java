@@ -17,7 +17,6 @@ package io.camunda.client.impl.worker;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -210,8 +209,7 @@ final class JobStreamImplTest {
         Arrays.asList("test-tenant"),
         streamingTimeout,
         ignored -> 10_000L,
-        scheduler,
-        TenantFilter.PROVIDED);
+        scheduler);
   }
 
   private static final class Service extends GatewayImplBase {

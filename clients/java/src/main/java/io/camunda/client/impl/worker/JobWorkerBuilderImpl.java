@@ -217,8 +217,7 @@ public final class JobWorkerBuilderImpl
             timeout,
             fetchVariables,
             getTenantIds(),
-            maxJobsActive,
-            tenantFilter);
+            maxJobsActive);
 
     final Executor jobExecutor;
     if (enableStreaming) {
@@ -236,8 +235,7 @@ public final class JobWorkerBuilderImpl
               getTenantIds(),
               streamingTimeout,
               backoffSupplier,
-              scheduledExecutor,
-              tenantFilter);
+              scheduledExecutor);
       jobExecutor = new BlockingExecutor(jobHandlingExecutor, maxJobsActive, timeout);
     } else {
       jobStreamer = JobStreamer.noop();

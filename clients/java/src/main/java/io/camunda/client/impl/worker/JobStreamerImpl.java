@@ -18,7 +18,6 @@ package io.camunda.client.impl.worker;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
-import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.api.worker.BackoffSupplier;
@@ -53,7 +52,6 @@ final class JobStreamerImpl implements JobStreamer {
   private final BackoffSupplier backoffSupplier;
   private final ScheduledExecutorService executor;
   private final Lock streamLock;
-  private final TenantFilter tenantFilter;
 
   @GuardedBy("streamLock")
   private CamundaFuture<StreamJobsResponse> streamControl;
@@ -79,8 +77,7 @@ final class JobStreamerImpl implements JobStreamer {
       final List<String> tenantIds,
       final Duration streamTimeout,
       final BackoffSupplier backoffSupplier,
-      final ScheduledExecutorService executor,
-      final TenantFilter tenantFilter) {
+      final ScheduledExecutorService executor) {
     this.jobClient = jobClient;
     this.jobType = jobType;
     this.workerName = workerName;
@@ -90,7 +87,6 @@ final class JobStreamerImpl implements JobStreamer {
     this.streamTimeout = streamTimeout;
     this.backoffSupplier = backoffSupplier;
     this.executor = executor;
-    this.TenantFilter = TenantFilter;
 
     streamLock = new ReentrantLock();
   }
@@ -167,11 +163,8 @@ final class JobStreamerImpl implements JobStreamer {
             .jobType(jobType)
             .consumer(jobConsumer)
             .workerName(workerName)
-            .timeout(timeout)
-            .TenantFilter(TenantFilter);
-    if (TenantFilter == TenantFilter.PROVIDED) {
-      command.tenantIds(tenantIds);
-    }
+            .tenantIds(tenantIds)
+            .timeout(timeout);
 
     if (fetchVariables != null) {
       command = command.fetchVariables(fetchVariables);
