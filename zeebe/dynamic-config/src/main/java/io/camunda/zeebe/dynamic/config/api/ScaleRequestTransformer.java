@@ -11,6 +11,7 @@ import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.dynamic.config.changes.ConfigurationChangeCoordinator.ConfigurationChangeRequest;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.util.Either;
 import java.util.ArrayList;
@@ -50,15 +51,12 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
       final ClusterConfiguration clusterConfiguration) {
     generatedOperations.clear();
 
-    if (!clusterConfiguration.members().keySet().equals(members)) {
-      // Could be any broker, we simply select the first member.
-      final var coordinatorId =
-          clusterConfiguration.members().keySet().stream()
-              .findFirst()
-              .orElseThrow(
-                  () ->
-                      new IllegalArgumentException(
-                          "Cannot perform scaling operation on an empty cluster"));
+    // Could be any broker, we simply use the default coordinator which is normally member 0.
+    final MemberId coordinatorId =
+        ClusterConfigurationCoordinatorSupplier.of(() -> clusterConfiguration)
+            .getDefaultCoordinator();
+    final boolean isBrokerScaling = !clusterConfiguration.members().keySet().equals(members);
+    if (isBrokerScaling) {
       final var preScaleOperation = new PreScalingOperation(coordinatorId, members);
       generatedOperations.add(preScaleOperation);
     }
@@ -83,7 +81,15 @@ public class ScaleRequestTransformer implements ConfigurationChangeRequest {
                       .collect(Collectors.toSet());
               return new RemoveMembersTransformer(membersToRemove).operations(clusterConfiguration);
             })
-        .map(this::addToOperations);
+        .map(this::addToOperations)
+        .map(
+            list -> {
+              if (isBrokerScaling) {
+                final var postScaleOperation = new PostScalingOperation(coordinatorId, members);
+                list.add(postScaleOperation);
+              }
+              return list;
+            });
   }
 
   private ArrayList<ClusterConfigurationChangeOperation> addToOperations(

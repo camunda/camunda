@@ -34,6 +34,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
@@ -251,7 +252,8 @@ final class ClusterConfigurationManagementApiTest {
             new PreScalingOperation(id0, Set.of(id0, id1)),
             new MemberJoinOperation(id1),
             new PartitionJoinOperation(id1, 2, 1),
-            new PartitionLeaveOperation(id0, 2, 1));
+            new PartitionLeaveOperation(id0, 2, 1),
+            new PostScalingOperation(id0, Set.of(id0, id1)));
   }
 
   @Test
@@ -270,8 +272,9 @@ final class ClusterConfigurationManagementApiTest {
 
     // then
     assertThat(changeStatus.plannedChanges())
-        .hasSize(5)
+        .hasSize(6)
         .startsWith(new PreScalingOperation(id0, Set.of(id0, id1)))
+        .endsWith(new PostScalingOperation(id0, Set.of(id0, id1)))
         .contains(new MemberJoinOperation(id1), new PartitionJoinOperation(id1, 2, 2))
         .containsSequence(
             new PartitionJoinOperation(id1, 1, 1),
@@ -379,7 +382,8 @@ final class ClusterConfigurationManagementApiTest {
             new StartPartitionScaleUp(id0, 3),
             new PartitionBootstrapOperation(id0, 3, 1, true),
             new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));
+            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))),
+            new PostScalingOperation(id0, Set.of(id0, id1)));
   }
 
   @Test
@@ -407,7 +411,8 @@ final class ClusterConfigurationManagementApiTest {
             new StartPartitionScaleUp(id0, 3),
             new PartitionBootstrapOperation(id0, 3, 1, true),
             new AwaitRedistributionCompletion(id0, 3, new TreeSet<>(List.of(3))),
-            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))));
+            new AwaitRelocationCompletion(id0, 3, new TreeSet<>(List.of(3))),
+            new PostScalingOperation(id0, Set.of(id0, id1)));
   }
 
   @Test
