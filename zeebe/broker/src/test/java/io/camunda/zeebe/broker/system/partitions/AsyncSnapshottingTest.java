@@ -17,6 +17,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.engine.state.DefaultZeebeDbFactory;
@@ -58,6 +59,7 @@ public final class AsyncSnapshottingTest {
   private AsyncSnapshotDirector asyncSnapshotDirector;
   private StreamProcessor mockStreamProcessor;
   private FileBasedSnapshotStore persistedSnapshotStore;
+  private StatePositionSupplier positionSupplier;
 
   @Before
   public void setup() throws IOException {
@@ -69,6 +71,24 @@ public final class AsyncSnapshottingTest {
             0, partitionId, rootDirectory, snapshotPath -> Map.of(), meterRegistry);
     actorSchedulerRule.submitActor(persistedSnapshotStore).join();
 
+    positionSupplier =
+        new StatePositionSupplier() {
+          @Override
+          public long getLowestExportedPosition() {
+            return Long.MAX_VALUE;
+          }
+
+          @Override
+          public long getHighestExportedPosition() {
+            return 0L;
+          }
+
+          @Override
+          public long getHighestBackupPosition() {
+            return Long.MAX_VALUE;
+          }
+        };
+
     snapshotController =
         new StateControllerImpl(
             DefaultZeebeDbFactory.defaultFactory(),
@@ -78,8 +98,7 @@ public final class AsyncSnapshottingTest {
                 Optional.of(
                     new TestIndexedRaftLogEntry(
                         l + 100, 1, new SerializedApplicationEntry(1, 10, new UnsafeBuffer()))),
-            db -> Long.MAX_VALUE,
-            db -> Long.MAX_VALUE,
+            db -> positionSupplier,
             new TestConcurrencyControl());
 
     snapshotController.recover().join();
@@ -114,7 +133,8 @@ public final class AsyncSnapshottingTest {
             snapshotController,
             mode,
             Duration.ofMinutes(1),
-            () -> CompletableFuture.completedFuture(null));
+            () -> CompletableFuture.completedFuture(null),
+            positionSupplier);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
   }
 
@@ -233,7 +253,8 @@ public final class AsyncSnapshottingTest {
             snapshotController,
             StreamProcessorMode.PROCESSING,
             Duration.ofMinutes(1),
-            () -> flushFuture);
+            () -> flushFuture,
+            positionSupplier);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
     setCommitPosition(100L);
 
@@ -260,7 +281,8 @@ public final class AsyncSnapshottingTest {
             snapshotController,
             StreamProcessorMode.REPLAY,
             Duration.ofMinutes(1),
-            () -> flushFuture);
+            () -> flushFuture,
+            positionSupplier);
     actorSchedulerRule.submitActor(asyncSnapshotDirector).join();
 
     // when

@@ -28,7 +28,7 @@ import io.camunda.zeebe.util.FileUtil;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
-import java.util.function.ToLongFunction;
+import java.util.function.Function;
 import org.agrona.CloseHelper;
 import org.slf4j.Logger;
 
@@ -41,13 +41,13 @@ public class StateControllerImpl implements StateController {
 
   private final Path runtimeDirectory;
   private final ZeebeDbFactory zeebeDbFactory;
-  private final ToLongFunction<ZeebeDb> exporterPositionSupplier;
-  private final ToLongFunction<ZeebeDb> backupPositionSupplier;
+  private final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory;
   private final AtomixRecordEntrySupplier entrySupplier;
   private final ConstructableSnapshotStore constructableSnapshotStore;
   private final ConcurrencyControl concurrencyControl;
 
   private ZeebeDb db;
+  private StatePositionSupplier positionSupplier;
   private ScheduledTimer metricsExportTimer;
 
   public StateControllerImpl(
@@ -55,15 +55,13 @@ public class StateControllerImpl implements StateController {
       final ConstructableSnapshotStore constructableSnapshotStore,
       final Path runtimeDirectory,
       final AtomixRecordEntrySupplier entrySupplier,
-      final ToLongFunction<ZeebeDb> exporterPositionSupplier,
-      final ToLongFunction<ZeebeDb> backupPositionSupplier,
+      final Function<ZeebeDb, StatePositionSupplier> positionSupplierFactory,
       final ConcurrencyControl concurrencyControl) {
     this.constructableSnapshotStore = requireNonNull(constructableSnapshotStore);
     this.runtimeDirectory = requireNonNull(runtimeDirectory);
     this.zeebeDbFactory = requireNonNull(zeebeDbFactory);
     this.entrySupplier = requireNonNull(entrySupplier);
-    this.exporterPositionSupplier = requireNonNull(exporterPositionSupplier);
-    this.backupPositionSupplier = backupPositionSupplier;
+    this.positionSupplierFactory = requireNonNull(positionSupplierFactory);
     this.concurrencyControl = requireNonNull(concurrencyControl);
 
     concurrencyControl.execute(this::scheduleDbMetricsExport);
@@ -196,8 +194,8 @@ public class StateControllerImpl implements StateController {
 
   private NextSnapshotId tryFindNextSnapshotId(final long lastProcessedPosition)
       throws NoEntryAtSnapshotPosition {
-    final var exportedPosition = exporterPositionSupplier.applyAsLong(db);
-    final var backupPosition = backupPositionSupplier.applyAsLong(db);
+    final var exportedPosition = positionSupplier.getLowestExportedPosition();
+    final var backupPosition = positionSupplier.getHighestBackupPosition();
     if (exportedPosition == -1 || backupPosition == -1 || lastProcessedPosition == 0) {
       final var latestSnapshot = constructableSnapshotStore.getLatestSnapshot();
       if (latestSnapshot.isPresent()) {
@@ -245,6 +243,7 @@ public class StateControllerImpl implements StateController {
     try {
       if (db == null) {
         db = zeebeDbFactory.createDb(runtimeDirectory.toFile());
+        positionSupplier = positionSupplierFactory.apply(db);
         LOG.debug("Opened database from '{}'.", runtimeDirectory);
         future.complete(db);
       }
@@ -285,16 +284,14 @@ public class StateControllerImpl implements StateController {
               db.createSnapshot(snapshotDir.toFile());
             });
 
-    snapshotTaken
-        .thenApply(
-            ignored -> {
-              // After taking the snapshot, determine the highest exported position again so that we
-              // can include it in the snapshot metadata.
-              return snapshot.withMaxExportedPosition(
-                  StatePositionSupplier.getHighestExportedPosition(db));
-            },
-            concurrencyControl)
-        .onComplete(transientSnapshotFuture, concurrencyControl);
+    snapshotTaken.onComplete(
+        (ok, error) -> {
+          if (error != null) {
+            transientSnapshotFuture.completeExceptionally(error);
+          } else {
+            transientSnapshotFuture.complete(snapshot);
+          }
+        });
   }
 
   private record NextSnapshotId(

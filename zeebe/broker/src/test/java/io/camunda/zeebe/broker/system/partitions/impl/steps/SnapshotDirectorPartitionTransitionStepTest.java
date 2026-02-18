@@ -22,6 +22,7 @@ import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamReader;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -56,6 +57,7 @@ class SnapshotDirectorPartitionTransitionStepTest {
   void setup() {
     transitionContext.setComponentHealthMonitor(mock(HealthMonitor.class));
     transitionContext.setStreamProcessor(mock(StreamProcessor.class));
+    transitionContext.setZeebeDb(mock(ZeebeDb.class));
     transitionContext.setBrokerCfg(new BrokerCfg());
     transitionContext.setLogStream(logStream);
 
