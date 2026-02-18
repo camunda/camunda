@@ -283,6 +283,10 @@ class PartitionRestoreServiceTest {
           }
         });
 
-    return transientSnapshot.withLastFollowupEventPosition(lastWrittenPosition).persist().join();
+    return transientSnapshot
+        .withLastFollowupEventPosition(lastWrittenPosition)
+        .withMaxExportedPosition(lastWrittenPosition)
+        .persist()
+        .join();
   }
 }
