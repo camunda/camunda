@@ -15,7 +15,7 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {DecisionViewer} from 'modules/components/DecisionViewer';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useDecisionDefinitionXml} from 'modules/queries/decisionDefinitions/useDecisionDefinitionXml';
-import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinition';
+import {useDecisionDefinitionSelection} from 'modules/hooks/decisionDefinitions';
 
 const Decision: React.FC = observer(() => {
   const [_, setParams] = useSearchParams();

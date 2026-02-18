@@ -16,7 +16,7 @@ import {
   getDefinitionIdFromIdentifier,
   useDecisionDefinitions,
   useDecisionDefinitionVersions,
-} from 'modules/hooks/decisionDefinition';
+} from 'modules/hooks/decisionDefinitions';
 
 const DecisionsFormGroup: React.FC = observer(() => {
   const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
