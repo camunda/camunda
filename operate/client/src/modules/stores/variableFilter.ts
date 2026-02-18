@@ -10,18 +10,28 @@ import isEqual from 'lodash/isEqual';
 import {makeAutoObservable, type IReactionDisposer} from 'mobx';
 import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 
-type Variable = {
+type VariableFilterOperator =
+  | 'equals'
+  | 'notEqual'
+  | 'contains'
+  | 'oneOf'
+  | 'exists'
+  | 'doesNotExist';
+
+type VariableCondition = {
+  id: string;
   name: string;
-  values: string;
+  operator: VariableFilterOperator;
+  value: string;
 };
 
 type State = {
-  variable?: Variable;
+  conditions: VariableCondition[];
   isInMultipleMode: boolean;
 };
 
 const DEFAULT_STATE: State = {
-  variable: undefined,
+  conditions: [],
   isInMultipleMode: false,
 };
 
@@ -37,9 +47,10 @@ class VariableFilter {
     this.state = {...DEFAULT_STATE};
   };
 
-  setVariable = (variable?: Variable) => {
-    if (!isEqual(this.state.variable, variable)) {
-      this.state.variable = variable;
+  setConditions = (conditions: VariableCondition[]) => {
+    if (!isEqual(this.state.conditions, conditions)) {
+      this.state.conditions = conditions;
+      this.state.isInMultipleMode = conditions.length > 1;
     }
   };
 
@@ -47,26 +58,38 @@ class VariableFilter {
     this.state.isInMultipleMode = isInMultipleMode;
   };
 
-  get variable() {
-    return this.state.variable;
+  get conditions() {
+    return this.state.conditions;
   }
 
+  get hasActiveFilters() {
+    return this.state.conditions.length > 0;
+  }
+
+  /**
+   * Backward-compatible getter that derives a single {name, values} variable
+   * from the first "equals" condition. Used by the migration flow.
+   */
   get variableWithValidatedValues() {
-    if (!this.state.variable) {
+    const equalsCondition = this.state.conditions.find(
+      (c) => c.operator === 'equals' && c.name.trim() !== '',
+    );
+
+    if (!equalsCondition) {
       return undefined;
     }
 
     const values =
-      getValidVariableValues(this.state.variable.values)?.map((value) =>
+      getValidVariableValues(equalsCondition.value)?.map((value) =>
         JSON.stringify(value),
       ) ?? [];
 
     return {
-      name: this.state.variable.name,
+      name: equalsCondition.name,
       values,
     };
   }
 }
 
 export const variableFilterStore = new VariableFilter();
-export type {Variable};
+export type {VariableCondition, VariableFilterOperator};

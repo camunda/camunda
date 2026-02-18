@@ -374,9 +374,9 @@ describe('validators', () => {
       validateMultipleVariableValuesValid('2, {"tes}', {variableName: 'test'}),
     ).resolves.toBe(ERRORS.variables.multipleValueInvalid);
 
-    await expect(validateMultipleVariableValuesValid('a,a', {})).resolves.toBe(
-      ERRORS.variables.multipleValueInvalid,
-    );
+    await expect(
+      validateMultipleVariableValuesValid('"a, {invalid', {}),
+    ).resolves.toBe(ERRORS.variables.multipleValueInvalid);
 
     expect(setTimeoutSpy).toHaveBeenCalledTimes(2);
   });

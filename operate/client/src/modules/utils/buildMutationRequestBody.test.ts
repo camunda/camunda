@@ -380,10 +380,9 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'foo',
-        values: '"a","b"',
-      },
+      variableConditions: [
+        {id: '1', name: 'foo', operator: 'oneOf', value: '"a","b"'},
+      ],
     });
 
     expect(body).toEqual({
@@ -466,10 +465,9 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending"',
-      },
+      variableConditions: [
+        {id: '1', name: 'status', operator: 'equals', value: '"pending"'},
+      ],
     });
 
     expect(body).toEqual({
@@ -479,7 +477,7 @@ describe('buildMutationRequestBody', () => {
         variables: [
           {
             name: 'status',
-            value: '"pending"',
+            value: {$eq: '"pending"'},
           },
         ],
       },
@@ -495,10 +493,14 @@ describe('buildMutationRequestBody', () => {
       searchParams,
       includeIds: [],
       excludeIds: [],
-      variableFilter: {
-        name: 'status',
-        values: '"pending","active","completed"',
-      },
+      variableConditions: [
+        {
+          id: '1',
+          name: 'status',
+          operator: 'oneOf',
+          value: '"pending","active","completed"',
+        },
+      ],
     });
 
     expect(body).toEqual({

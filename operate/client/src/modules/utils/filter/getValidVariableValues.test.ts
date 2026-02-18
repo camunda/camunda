@@ -18,8 +18,8 @@ describe('getValidVariableValues', () => {
       {i: ',"test",', o: ['test']},
       {i: '"test",,', o: ['test']},
       {i: ',,"test"', o: ['test']},
-      {i: 'invalid', o: undefined},
-      {i: '+', o: undefined},
+      {i: 'invalid', o: ['invalid']},
+      {i: '+', o: ['+']},
       {i: '', o: []},
       {i: ',', o: []},
     ];
@@ -37,7 +37,7 @@ describe('getValidVariableValues', () => {
         i: ',,,"a", [1, "2", 3], 0.1, {"user": "Bob"},,,',
         o: ['a', [1, '2', 3], 0.1, {user: 'Bob'}],
       },
-      {i: '+, -, §', o: undefined},
+      {i: '+, -, §', o: ['+, -, §']},
     ];
 
     test.each(values)('input: $i', ({i: input, o: output}) => {

@@ -14,8 +14,6 @@ type ProcessInstanceFilterField =
   | 'errorMessage'
   | 'incidentErrorHashCode'
   | 'flowNodeId'
-  | 'variableName'
-  | 'variableValues'
   | 'operationId'
   | 'active'
   | 'incidents'
@@ -36,8 +34,6 @@ type ProcessInstanceFilters = {
   errorMessage?: string;
   incidentErrorHashCode?: number;
   flowNodeId?: string;
-  variableName?: string;
-  variableValues?: string;
   operationId?: string;
   active?: boolean;
   incidents?: boolean;
@@ -59,8 +55,6 @@ const PROCESS_INSTANCE_FILTER_FIELDS: ProcessInstanceFilterField[] = [
   'errorMessage',
   'incidentErrorHashCode',
   'flowNodeId',
-  'variableName',
-  'variableValues',
   'operationId',
   'active',
   'incidents',

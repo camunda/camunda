@@ -10,7 +10,6 @@ import {z} from 'zod';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import type {ProcessInstanceFilters} from 'modules/utils/filter/shared';
 import type {RequestFilters} from 'modules/utils/filter';
-import {getValidVariableValues} from 'modules/utils/filter/getValidVariableValues';
 import {buildProcessInstanceKeyCriterion} from 'modules/mutations/processes/buildProcessInstanceKeyCriterion';
 import type {QueryProcessInstancesRequestBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
@@ -59,8 +58,6 @@ const inputFilterSchema = z
     operationId: z.string().optional(),
     tenant: z.string().optional(),
     version: z.string().optional(),
-    variableName: z.string().optional(),
-    variableValues: z.string().optional(),
     activityId: z.string().optional(),
     batchOperationId: z.string().optional(),
     tenantId: z.string().optional(),
@@ -115,15 +112,7 @@ const inputFilterSchema = z
       normalized.processDefinitionKey = data.processIds;
     }
 
-    if (data.variableName && data.variableValues) {
-      const parsed = (getValidVariableValues(data.variableValues) ?? []).map(
-        (v) => JSON.stringify(v),
-      );
-      normalized.variable = {
-        name: data.variableName,
-        values: parsed,
-      };
-    } else if (data.variable) {
+    if (data.variable) {
       normalized.variable = data.variable;
     }
 

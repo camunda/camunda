@@ -155,12 +155,16 @@ const Footer: React.FC = observer(() => {
                     searchParams,
                     includeIds,
                     excludeIds,
-                    variableFilter:
+                    variableConditions:
                       variable !== undefined
-                        ? {
-                            name: variable.name,
-                            values: variable.values.join(','),
-                          }
+                        ? [
+                            {
+                              id: 'migration',
+                              name: variable.name,
+                              operator: 'oneOf' as const,
+                              value: variable.values.join(','),
+                            },
+                          ]
                         : undefined,
                     processDefinitionKey:
                       sourceProcessDefinitionKey ?? undefined,

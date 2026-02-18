@@ -9,17 +9,19 @@
 import {validateMultipleVariableValues} from '../validateMultipleVariableValues';
 
 describe('validateMultipleVariableValues', () => {
-  it.each(['invalid', 'invalid,invalid', ',', ' ', '{'])(
-    'should return false for %p',
-    (input) => {
-      expect(validateMultipleVariableValues(input)).toBe(false);
-    },
-  );
+  it.each([',', ' ', '{'])('should return false for %p', (input) => {
+    expect(validateMultipleVariableValues(input)).toBe(false);
+  });
 
-  it.each(['"valid"', '1,2', '[1,2]', '"valid", "and valid"', ''])(
-    'should return true for %p',
-    (input) => {
-      expect(validateMultipleVariableValues(input)).toBe(true);
-    },
-  );
+  it.each([
+    '"valid"',
+    '1,2',
+    '[1,2]',
+    '"valid", "and valid"',
+    '',
+    'invalid',
+    'invalid,invalid',
+  ])('should return true for %p', (input) => {
+    expect(validateMultipleVariableValues(input)).toBe(true);
+  });
 });

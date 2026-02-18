@@ -152,6 +152,7 @@ test.describe('Process Instance Variables', () => {
       await operateFiltersPanelPage.fillVariableValueFilter(
         '"secondTestValue"',
       );
+      await operateFiltersPanelPage.applyVariableFilter();
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         processInstanceKey,
       );
