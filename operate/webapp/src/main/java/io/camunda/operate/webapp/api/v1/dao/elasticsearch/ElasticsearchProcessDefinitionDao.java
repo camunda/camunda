@@ -50,6 +50,8 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
     logger.debug("search {}", query);
     final SearchSourceBuilder searchSourceBuilder =
         buildQueryOn(query, ProcessDefinition.KEY, new SearchSourceBuilder());
+    // Exclude BPMN XML from search results for performance
+    searchSourceBuilder.fetchSource(null, new String[] {BPMN_XML});
     try {
       final SearchRequest searchRequest =
           new SearchRequest().indices(processIndex.getAlias()).source(searchSourceBuilder);
