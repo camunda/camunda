@@ -35,7 +35,7 @@ import {TenantField} from 'modules/components/TenantField';
 import {
   getDefinitionIdentifier,
   getDefinitionIdFromIdentifier,
-} from 'modules/hooks/decisionDefinition';
+} from 'modules/hooks/decisionDefinitions';
 
 const initialValues: DecisionsFilter = {
   evaluated: true,
