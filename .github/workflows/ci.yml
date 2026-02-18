@@ -1284,6 +1284,8 @@ jobs:
           user_description: "General"
 
   openapi-lint:
+    # owner: Camunda-Ex #team-camunda-ex on Slack
+    # DRI: Josh Wulf <josh.wulf@camunda.com>
     name: "Lint / C8 REST OpenAPI"
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
@@ -1311,6 +1313,14 @@ jobs:
           spectral lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml
           --ruleset zeebe/gateway-protocol/.spectral.yaml
           --fail-severity error
+        shell: bash
+      - name: Lint x-eventually-consistent annotations
+        # owner: Camunda-Ex #team-camunda-ex on Slack
+        # DRI: Josh Wulf <josh.wulf@camunda.com>
+        # See: https://github.com/camunda/camunda/issues/45966
+        # Command (mutating) operations must not be marked x-eventually-consistent.
+        # Only query operations (search, statistics, get) should use this annotation.
+        run: bash .github/scripts/lint-eventually-consistent.sh zeebe/gateway-protocol/src/main/proto/v2
         shell: bash
       - name: Observe build status
         if: always()
