@@ -125,6 +125,20 @@ describe('MetadataPopover <Details />', () => {
     ).not.toBeInTheDocument();
   });
 
+  it('should not display deprecation warning for non-user task elements', () => {
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockJobWorkerUserTaskBusinessObject}
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    expect(
+      screen.queryByText(/job worker implementation are deprecated/),
+    ).not.toBeInTheDocument();
+  });
+
   it('should display job retries when available', async () => {
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 
