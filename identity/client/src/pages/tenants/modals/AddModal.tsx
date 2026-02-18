@@ -132,7 +132,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                   kind="ghost"
                   onClick={() => {
                     onClose?.();
-                    navigate(
+                    void navigate(
                       `/tenants/${createdTenant.tenantId}/${ITEM_TO_TAB[item]}`,
                     );
                   }}
