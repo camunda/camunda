@@ -18,7 +18,7 @@ package io.camunda.client;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
-import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -62,7 +62,7 @@ public final class ClientProperties {
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "camunda.client.worker.tenantIds";
 
   /**
-   * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
+   * @see CamundaClientBuilder#defaultJobWorkerTenantFilterMode(TenantFilterMode)
    */
   public static final String DEFAULT_JOB_WORKER_TENANT_FILTER_MODE =
       "camunda.client.worker.tenantFilterMode";

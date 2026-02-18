@@ -22,96 +22,96 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-public class TenantFilterTest {
+public class TenantFilterModeTest {
 
   @Test
   public void shouldConvertUppercaseAssigned() {
     // when
-    final TenantFilter result = TenantFilter.from("ASSIGNED");
+    final TenantFilterMode result = TenantFilterMode.from("ASSIGNED");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(result).isEqualTo(TenantFilterMode.ASSIGNED);
   }
 
   @Test
   public void shouldConvertLowercaseAssigned() {
     // when
-    final TenantFilter result = TenantFilter.from("assigned");
+    final TenantFilterMode result = TenantFilterMode.from("assigned");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(result).isEqualTo(TenantFilterMode.ASSIGNED);
   }
 
   @Test
   public void shouldConvertMixedCaseAssigned() {
     // when
-    final TenantFilter result = TenantFilter.from("AsSiGnEd");
+    final TenantFilterMode result = TenantFilterMode.from("AsSiGnEd");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(result).isEqualTo(TenantFilterMode.ASSIGNED);
   }
 
   @Test
   public void shouldConvertUppercaseProvided() {
     // when
-    final TenantFilter result = TenantFilter.from("PROVIDED");
+    final TenantFilterMode result = TenantFilterMode.from("PROVIDED");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.PROVIDED);
+    assertThat(result).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   @Test
   public void shouldConvertLowercaseProvided() {
     // when
-    final TenantFilter result = TenantFilter.from("provided");
+    final TenantFilterMode result = TenantFilterMode.from("provided");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.PROVIDED);
+    assertThat(result).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   @Test
   public void shouldConvertMixedCaseProvided() {
     // when
-    final TenantFilter result = TenantFilter.from("PrOvIdEd");
+    final TenantFilterMode result = TenantFilterMode.from("PrOvIdEd");
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.PROVIDED);
+    assertThat(result).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {" ASSIGNED", "ASSIGNED ", " ASSIGNED ", "  ASSIGNED  "})
   public void shouldTrimWhitespaceForAssigned(final String value) {
     // when
-    final TenantFilter result = TenantFilter.from(value);
+    final TenantFilterMode result = TenantFilterMode.from(value);
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(result).isEqualTo(TenantFilterMode.ASSIGNED);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {" PROVIDED", "PROVIDED ", " PROVIDED ", "  PROVIDED  "})
   public void shouldTrimWhitespaceForProvided(final String value) {
     // when
-    final TenantFilter result = TenantFilter.from(value);
+    final TenantFilterMode result = TenantFilterMode.from(value);
 
     // then
-    assertThat(result).isEqualTo(TenantFilter.PROVIDED);
+    assertThat(result).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   @ParameterizedTest
   @ValueSource(strings = {" assigned ", " provided ", "  ASSIGNED  ", "  PROVIDED  "})
   public void shouldHandleBothCaseAndWhitespace(final String value) {
     // when
-    final TenantFilter result = TenantFilter.from(value);
+    final TenantFilterMode result = TenantFilterMode.from(value);
 
     // then
-    assertThat(result).isIn(TenantFilter.ASSIGNED, TenantFilter.PROVIDED);
+    assertThat(result).isIn(TenantFilterMode.ASSIGNED, TenantFilterMode.PROVIDED);
   }
 
   @Test
   public void shouldThrowExceptionForNullValue() {
     // when/then
-    assertThatThrownBy(() -> TenantFilter.from(null))
+    assertThatThrownBy(() -> TenantFilterMode.from(null))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Tenant filter value cannot be null")
         .hasMessageContaining("Expected 'ASSIGNED' or 'PROVIDED'");
@@ -120,7 +120,7 @@ public class TenantFilterTest {
   @Test
   public void shouldThrowExceptionForInvalidValue() {
     // when/then
-    assertThatThrownBy(() -> TenantFilter.from("INVALID"))
+    assertThatThrownBy(() -> TenantFilterMode.from("INVALID"))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid tenant filter value: 'INVALID'")
         .hasMessageContaining("Expected 'ASSIGNED' or 'PROVIDED' (case-insensitive)");
@@ -129,7 +129,7 @@ public class TenantFilterTest {
   @Test
   public void shouldThrowExceptionForEmptyString() {
     // when/then
-    assertThatThrownBy(() -> TenantFilter.from(""))
+    assertThatThrownBy(() -> TenantFilterMode.from(""))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid tenant filter value");
   }
@@ -137,7 +137,7 @@ public class TenantFilterTest {
   @Test
   public void shouldThrowExceptionForWhitespaceOnlyString() {
     // when/then
-    assertThatThrownBy(() -> TenantFilter.from("   "))
+    assertThatThrownBy(() -> TenantFilterMode.from("   "))
         .isInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining("Invalid tenant filter value");
   }

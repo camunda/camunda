@@ -22,7 +22,7 @@ package io.camunda.client.api.command.enums;
  *
  * <p>Used only during job activation.
  */
-public enum TenantFilter {
+public enum TenantFilterMode {
   /**
    * When set, the tenants assigned to the authenticated principal (for example, a user or client)
    * are resolved dynamically when the job is activated. This means you don't need to know in
@@ -46,7 +46,7 @@ public enum TenantFilter {
    * @return the corresponding TenantFilter enum value
    * @throws IllegalArgumentException if the value doesn't match any TenantFilter value
    */
-  public static TenantFilter from(final String value) {
+  public static TenantFilterMode from(final String value) {
     if (value == null) {
       throw new IllegalArgumentException(
           "Tenant filter value cannot be null. Expected 'ASSIGNED' or 'PROVIDED'");
@@ -54,7 +54,7 @@ public enum TenantFilter {
 
     final String normalizedValue = value.trim().toUpperCase();
     try {
-      return TenantFilter.valueOf(normalizedValue);
+      return TenantFilterMode.valueOf(normalizedValue);
     } catch (final IllegalArgumentException e) {
       throw new IllegalArgumentException(
           String.format(

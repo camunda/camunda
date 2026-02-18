@@ -28,6 +28,7 @@ import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotat
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromDefaultProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.api.response.ActivatedJob;
 import java.time.Duration;
 import java.util.Collection;
@@ -544,11 +545,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilterMode(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
+    properties.setTenantFilterMode(TenantFilterMode.ASSIGNED);
 
     // then
-    assertThat(properties.getTenantFilterMode())
-        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.ASSIGNED);
+    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.ASSIGNED);
   }
 
   @Test
@@ -557,11 +557,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
 
     // when
-    properties.setTenantFilterMode(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+    properties.setTenantFilterMode(TenantFilterMode.PROVIDED);
 
     // then
-    assertThat(properties.getTenantFilterMode())
-        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   @Test
@@ -570,8 +569,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties(true);
 
     // then
-    assertThat(properties.getTenantFilterMode())
-        .isEqualTo(io.camunda.client.api.command.enums.TenantFilter.PROVIDED);
+    assertThat(properties.getTenantFilterMode()).isEqualTo(TenantFilterMode.PROVIDED);
   }
 
   private record Input<T>(

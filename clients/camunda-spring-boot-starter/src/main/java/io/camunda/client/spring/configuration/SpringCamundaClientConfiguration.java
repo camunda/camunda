@@ -18,7 +18,7 @@ package io.camunda.client.spring.configuration;
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.jobhandling.CamundaClientExecutorService;
 import io.camunda.client.jobhandling.JobExceptionHandlerSupplier;
@@ -83,7 +83,7 @@ public class SpringCamundaClientConfiguration implements CamundaClientConfigurat
   }
 
   @Override
-  public TenantFilter getDefaultJobWorkerTenantFilter() {
+  public TenantFilterMode getDefaultJobWorkerTenantFilterMode() {
     return camundaClientProperties.getWorker().getDefaults().getTenantFilterMode();
   }
 

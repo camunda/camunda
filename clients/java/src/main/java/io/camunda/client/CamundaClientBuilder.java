@@ -17,7 +17,7 @@ package io.camunda.client;
 
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CommandWithTenantStep;
-import io.camunda.client.api.command.enums.TenantFilter;
+import io.camunda.client.api.command.enums.TenantFilterMode;
 import io.camunda.client.api.worker.JobExceptionHandler;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -81,11 +81,11 @@ public interface CamundaClientBuilder {
 
   /**
    * The behavior to adopt when filtering jobs during activation by a given worker. See {@link
-   * TenantFilter} for possible values. The default value is {@link TenantFilter#PROVIDED}.
+   * TenantFilterMode} for possible values. The default value is {@link TenantFilterMode#PROVIDED}.
    *
-   * @param tenantFilter the default filter to use for all workers
+   * @param tenantFilterMode the default filter to use for all workers
    */
-  CamundaClientBuilder defaultJobWorkerTenantFilter(TenantFilter tenantFilter);
+  CamundaClientBuilder defaultJobWorkerTenantFilterMode(TenantFilterMode tenantFilterMode);
 
   /**
    * @param maxJobsActive Default value for {@link JobWorkerBuilderStep3#maxJobsActive(int)}.
