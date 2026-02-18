@@ -64,15 +64,17 @@
   <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
     <constructor>
       <idArg column="ID" javaType="java.lang.String"/>
-      <arg column="LISTENER_ID" javaType="java.lang.String"/>
-      <arg column="TYPE" javaType="java.lang.String"/>
-      <arg column="RETRIES" javaType="java.lang.Integer"/>
-      <arg column="AFTER_NON_GLOBAL" javaType="java.lang.Boolean"/>
-      <arg column="PRIORITY" javaType="java.lang.Integer"/>
-      <arg column="SOURCE" javaType="io.camunda.search.entities.GlobalListenerSource"/>
-      <arg column="LISTENER_TYPE" javaType="io.camunda.search.entities.GlobalListenerType"/>
-      <arg column="EVENT_TYPE" javaType="java.util.List"/>
     </constructor>
+    <result property="listenerId" column="LISTENER_ID" javaType="java.lang.String"/>
+    <result property="type" column="TYPE" javaType="java.lang.String"/>
+    <result property="retries" column="RETRIES" javaType="java.lang.Integer"/>
+    <result property="afterNonGlobal" column="AFTER_NON_GLOBAL" javaType="java.lang.Boolean"/>
+    <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
+    <result property="source" column="SOURCE" javaType="io.camunda.search.entities.GlobalListenerSource"/>
+    <result property="listenerType" column="LISTENER_TYPE" javaType="io.camunda.search.entities.GlobalListenerType"/>
+    <collection property="eventTypes" ofType="java.lang.String" javaType="java.util.List">
+      <id column="EVENT_TYPE"/>
+    </collection>
   </resultMap>
 
   <select id="get" parameterType="java.lang.String"

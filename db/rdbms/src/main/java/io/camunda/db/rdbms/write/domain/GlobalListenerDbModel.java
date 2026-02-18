@@ -13,16 +13,115 @@ import io.camunda.util.GlobalListenerUtil;
 import io.camunda.util.ObjectBuilder;
 import java.util.List;
 
-public record GlobalListenerDbModel(
-    String id,
-    String listenerId,
-    String type,
-    Integer retries,
-    List<String> eventTypes,
-    boolean afterNonGlobal,
-    Integer priority,
-    GlobalListenerSource source,
-    GlobalListenerType listenerType) {
+// Note: this is not a record in order to be able to use <collection> to aggregate event types in
+// the MyBatis mapping file
+public class GlobalListenerDbModel {
+  private String id;
+  private String listenerId;
+  private String type;
+  private int retries;
+  private List<String> eventTypes;
+  private boolean afterNonGlobal;
+  private Integer priority;
+  private GlobalListenerSource source;
+  private GlobalListenerType listenerType;
+
+  public GlobalListenerDbModel(final String id) {
+    this.id = id;
+  }
+
+  public GlobalListenerDbModel(
+      final String id,
+      final String listenerId,
+      final String type,
+      final Integer retries,
+      final List<String> eventTypes,
+      final boolean afterNonGlobal,
+      final Integer priority,
+      final GlobalListenerSource source,
+      final GlobalListenerType listenerType) {
+    this.id = id;
+    this.listenerId = listenerId;
+    this.type = type;
+    this.retries = retries;
+    this.eventTypes = eventTypes;
+    this.afterNonGlobal = afterNonGlobal;
+    this.priority = priority;
+    this.source = source;
+    this.listenerType = listenerType;
+  }
+
+  public String id() {
+    return id;
+  }
+
+  public void id(final String id) {
+    this.id = id;
+  }
+
+  public String listenerId() {
+    return listenerId;
+  }
+
+  public void listenerId(final String listenerId) {
+    this.listenerId = listenerId;
+  }
+
+  public String type() {
+    return type;
+  }
+
+  public void type(final String type) {
+    this.type = type;
+  }
+
+  public Integer retries() {
+    return retries;
+  }
+
+  public void retries(final Integer retries) {
+    this.retries = retries;
+  }
+
+  public List<String> eventTypes() {
+    return eventTypes;
+  }
+
+  public void eventTypes(final List<String> eventTypes) {
+    this.eventTypes = eventTypes;
+  }
+
+  public boolean afterNonGlobal() {
+    return afterNonGlobal;
+  }
+
+  public void afterNonGlobal(final boolean afterNonGlobal) {
+    this.afterNonGlobal = afterNonGlobal;
+  }
+
+  public Integer priority() {
+    return priority;
+  }
+
+  public void priority(final Integer priority) {
+    this.priority = priority;
+  }
+
+  public GlobalListenerSource source() {
+    return source;
+  }
+
+  public void source(final GlobalListenerSource source) {
+    this.source = source;
+  }
+
+  public GlobalListenerType listenerType() {
+    return listenerType;
+  }
+
+  public void listenerType(final GlobalListenerType listenerType) {
+    this.listenerType = listenerType;
+  }
 
   public static class GlobalListenerDbModelBuilder implements ObjectBuilder<GlobalListenerDbModel> {
     private String listenerId;
