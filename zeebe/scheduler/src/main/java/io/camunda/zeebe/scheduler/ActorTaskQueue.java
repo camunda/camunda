@@ -7,9 +7,8 @@
  */
 package io.camunda.zeebe.scheduler;
 
-import static org.agrona.UnsafeAccess.UNSAFE;
-
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
+import org.agrona.UnsafeApi;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 
 /** Adapted from Agrona's {@link ManyToOneConcurrentLinkedQueue}. */
@@ -21,7 +20,7 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
 
   public ActorTaskQueue() {
     headOrdered(empty);
-    UNSAFE.putOrderedObject(this, TAIL_OFFSET, empty);
+    UnsafeApi.putReferenceRelease(this, TAIL_OFFSET, empty);
   }
 
   /** appends a task at the end (tail) of the list */
@@ -108,16 +107,16 @@ public final class ActorTaskQueue extends ActorTaskQueueHead {
   }
 
   private void headOrdered(final ActorTaskQueueNode head) {
-    UNSAFE.putOrderedObject(this, HEAD_OFFSET, head);
+    UnsafeApi.putReferenceRelease(this, HEAD_OFFSET, head);
   }
 
   private ActorTaskQueueNode swapTail(final ActorTaskQueueNode newTail) {
-    return (ActorTaskQueueNode) UNSAFE.getAndSetObject(this, TAIL_OFFSET, newTail);
+    return (ActorTaskQueueNode) UnsafeApi.getAndSetReference(this, TAIL_OFFSET, newTail);
   }
 
   private boolean casTail(
       final ActorTaskQueueNode expectedNode, final ActorTaskQueueNode updateNode) {
-    return UNSAFE.compareAndSwapObject(this, TAIL_OFFSET, expectedNode, updateNode);
+    return UnsafeApi.compareAndSetReference(this, TAIL_OFFSET, expectedNode, updateNode);
   }
 }
 
@@ -128,8 +127,8 @@ class ActorTaskQueueNode {
 
   static {
     try {
-      PREV_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
+      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
+      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
@@ -137,12 +136,12 @@ class ActorTaskQueueNode {
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UNSAFE (see NEXT_OFFSET usage)")
+      justification = "Written using UnsafeApi (see NEXT_OFFSET usage)")
   volatile ActorTaskQueueNode next;
 
   @SuppressFBWarnings(
       value = "UWF_UNWRITTEN_FIELD",
-      justification = "Written using UNSAFE (see PREV_OFFSET usage)")
+      justification = "Written using UnsafeApi (see PREV_OFFSET usage)")
   volatile ActorTaskQueueNode prev;
 
   long stateCount;
@@ -150,12 +149,12 @@ class ActorTaskQueueNode {
 
   void nextOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UNSAFE.putOrderedObject(this, NEXT_OFFSET, t);
+    UnsafeApi.putReferenceRelease(this, NEXT_OFFSET, t);
   }
 
   void prevOrdered(final ActorTaskQueueNode t) {
     assert t != this;
-    UNSAFE.putObjectVolatile(this, PREV_OFFSET, t);
+    UnsafeApi.putReferenceVolatile(this, PREV_OFFSET, t);
   }
 
   public void setTask(final ActorTask task) {
@@ -173,11 +172,12 @@ class ActorTaskQueuePadding1 {
 
   static {
     try {
-      HEAD_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueHead.class.getDeclaredField("head"));
-      TAIL_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueTail.class.getDeclaredField("tail"));
-      PREV_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
-      NEXT_OFFSET = UNSAFE.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
-      STATE_COUNT_OFFSET = UNSAFE.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
+      HEAD_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueHead.class.getDeclaredField("head"));
+      TAIL_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueTail.class.getDeclaredField("tail"));
+      PREV_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("prev"));
+      NEXT_OFFSET = UnsafeApi.objectFieldOffset(ActorTaskQueueNode.class.getDeclaredField("next"));
+      STATE_COUNT_OFFSET =
+          UnsafeApi.objectFieldOffset(ActorTask.class.getDeclaredField("stateCount"));
     } catch (final Exception ex) {
       throw new RuntimeException(ex);
     }
