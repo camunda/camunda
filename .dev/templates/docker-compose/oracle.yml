@@ -8,5 +8,7 @@
       APP_USER_PASSWORD: camunda
     ports:
       - "1521:1521"
+    volumes:
+      - {{ENV_NAME}}-oracle-data:/opt/oracle/oradata
     networks:
       - {{ENV_NAME}}

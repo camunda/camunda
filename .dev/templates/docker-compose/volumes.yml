@@ -1,3 +1,0 @@
-
-volumes:
-  {{ENV_NAME}}-ollama-data:

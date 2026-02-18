@@ -16,5 +16,7 @@
         hard: -1
     ports:
       - "9200:9200"
+    volumes:
+      - {{ENV_NAME}}-opensearch-data:/usr/share/opensearch/data
     networks:
       - {{ENV_NAME}}

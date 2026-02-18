@@ -8,6 +8,8 @@
       POSTGRES_PASSWORD: camunda
     ports:
       - "5432:5432"
+    volumes:
+      - {{ENV_NAME}}-postgres-data:/var/lib/postgresql/data
     networks:
       - {{ENV_NAME}}
     restart: always

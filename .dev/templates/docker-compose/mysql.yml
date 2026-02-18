@@ -9,6 +9,8 @@
       MYSQL_PASSWORD: camunda
     ports:
       - "3306:3306"
+    volumes:
+      - {{ENV_NAME}}-mysql-data:/var/lib/mysql
     networks:
       - {{ENV_NAME}}
     restart: always

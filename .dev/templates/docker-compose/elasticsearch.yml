@@ -15,6 +15,8 @@
         hard: -1
     ports:
       - "9200:9200"
+    volumes:
+      - {{ENV_NAME}}-elasticsearch-data:/usr/share/elasticsearch/data
     networks:
       - {{ENV_NAME}}
     restart: always

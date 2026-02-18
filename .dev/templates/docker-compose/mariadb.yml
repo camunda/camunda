@@ -12,6 +12,8 @@
       - --collation-server=utf8mb4_uca1400_ai_ci
     ports:
       - "3306:3306"
+    volumes:
+      - {{ENV_NAME}}-mariadb-data:/var/lib/mysql
     networks:
       - {{ENV_NAME}}
     restart: always

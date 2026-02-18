@@ -239,11 +239,26 @@ generate_compose() {
   output+="$mod_template"
 
   # Volumes section (must come after all services)
+  local volumes=$'\n'"volumes:"
+  # Datastore volume
+  case "$datastore" in
+    elasticsearch) volumes+=$'\n'"  ${env_name}-elasticsearch-data:" ;;
+    opensearch)    volumes+=$'\n'"  ${env_name}-opensearch-data:" ;;
+    postgres)      volumes+=$'\n'"  ${env_name}-postgres-data:" ;;
+    mysql)         volumes+=$'\n'"  ${env_name}-mysql-data:" ;;
+    mariadb)       volumes+=$'\n'"  ${env_name}-mariadb-data:" ;;
+    mssql)         volumes+=$'\n'"  ${env_name}-mssql-data:" ;;
+    oracle)        volumes+=$'\n'"  ${env_name}-oracle-data:" ;;
+  esac
+  # Ollama volume
   if [[ "$connectors" == "agentic" ]]; then
-    local vol_template
-    vol_template=$(<"$TEMPLATES_DIR/docker-compose/volumes.yml")
-    output+=$'\n'"${vol_template//\{\{ENV_NAME\}\}/$env_name}"
+    volumes+=$'\n'"  ${env_name}-ollama-data:"
   fi
+  # Keycloak volume
+  if [[ "$auth" == "oidc" ]]; then
+    volumes+=$'\n'"  ${env_name}-keycloak-data:"
+  fi
+  output+="$volumes"
 
   echo "$output"
 }
