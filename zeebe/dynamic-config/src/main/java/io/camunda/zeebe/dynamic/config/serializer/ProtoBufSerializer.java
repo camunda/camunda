@@ -53,6 +53,7 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.*;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateIncarnationNumberOperation;
@@ -515,6 +516,12 @@ public class ProtoBufSerializer
                   .addAllClusterMembers(
                       preScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
                   .build());
+      case final PostScalingOperation postScalingOperation ->
+          builder.setPostScaling(
+              Topology.PostScalingOperation.newBuilder()
+                  .addAllClusterMembers(
+                      postScalingOperation.clusterMembers().stream().map(MemberId::id).toList())
+                  .build());
     }
     return builder.build();
   }
@@ -774,6 +781,13 @@ public class ProtoBufSerializer
       return new PreScalingOperation(
           memberId,
           preScalingOperation.getClusterMembersList().stream()
+              .map(MemberId::from)
+              .collect(Collectors.toSet()));
+    } else if (topologyChangeOperation.hasPostScaling()) {
+      final var postScalingOperation = topologyChangeOperation.getPostScaling();
+      return new PostScalingOperation(
+          memberId,
+          postScalingOperation.getClusterMembersList().stream()
               .map(MemberId::from)
               .collect(Collectors.toSet()));
     } else {

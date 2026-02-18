@@ -39,6 +39,17 @@ public interface ClusterChangeExecutor {
    */
   ActorFuture<Void> preScaling(final int currentClusterSize, Set<MemberId> clusterMembers);
 
+  /**
+   * This method will start an asynchronous post-scaling operation, finalizing the member after a
+   * cluster scaling event.
+   *
+   * <p>This operation should be idempotent, as it may be retried multiple times until successful.
+   *
+   * @param clusterMembers the set of member ids that are part of the cluster after scaling
+   * @return future when the operation is completed
+   */
+  ActorFuture<Void> postScaling(Set<MemberId> clusterMembers);
+
   final class NoopClusterChangeExecutor implements ClusterChangeExecutor {
     @Override
     public ActorFuture<Void> deleteHistory() {
@@ -48,6 +59,11 @@ public interface ClusterChangeExecutor {
     @Override
     public ActorFuture<Void> preScaling(
         final int currentClusterSize, final Set<MemberId> clusterMembers) {
+      return CompletableActorFuture.completed(null);
+    }
+
+    @Override
+    public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
       return CompletableActorFuture.completed(null);
     }
   }

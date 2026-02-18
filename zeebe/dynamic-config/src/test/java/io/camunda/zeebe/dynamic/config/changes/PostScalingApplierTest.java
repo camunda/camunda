@@ -22,23 +22,23 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.Test;
 
-final class PreScalingApplierTest {
+final class PostScalingApplierTest {
 
   @Test
   void shouldSucceedOnInitIfMemberExists() {
     // given
     final var memberId = MemberId.from("1");
     final var newMemberId = MemberId.from("2");
-    final var newClusterMembers = Set.of(memberId, newMemberId);
+    final var clusterMembers = Set.of(memberId, newMemberId);
     final var clusterChangeExecutor = new ClusterChangeExecutor.NoopClusterChangeExecutor();
-    final var preScalingApplier =
-        new PreScalingApplier(memberId, newClusterMembers, clusterChangeExecutor);
+    final var postScalingApplier =
+        new PostScalingApplier(memberId, clusterMembers, clusterChangeExecutor);
 
     final var clusterConfigurationWithMember =
         ClusterConfiguration.init().addMember(memberId, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = preScalingApplier.init(clusterConfigurationWithMember);
+    final var result = postScalingApplier.init(clusterConfigurationWithMember);
 
     // then
     EitherAssert.assertThat(result).isRight();
@@ -49,17 +49,17 @@ final class PreScalingApplierTest {
     // given
     final var memberId = MemberId.from("1");
     final var otherMemberId = MemberId.from("2");
-    final var newClusterMembers = Set.of(memberId, otherMemberId);
+    final var clusterMembers = Set.of(memberId, otherMemberId);
     final var clusterChangeExecutor = new ClusterChangeExecutor.NoopClusterChangeExecutor();
-    final var preScalingApplier =
-        new PreScalingApplier(memberId, newClusterMembers, clusterChangeExecutor);
+    final var postScalingApplier =
+        new PostScalingApplier(memberId, clusterMembers, clusterChangeExecutor);
 
     final var clusterConfigWithoutMember =
         ClusterConfiguration.init()
             .addMember(otherMemberId, MemberState.initializeAsActive(Map.of()));
 
     // when
-    final var result = preScalingApplier.init(clusterConfigWithoutMember);
+    final var result = postScalingApplier.init(clusterConfigWithoutMember);
 
     // then
     EitherAssert.assertThat(result).isLeft();
@@ -70,18 +70,18 @@ final class PreScalingApplierTest {
     // given
     final var member1Id = MemberId.from("1");
     final var member2Id = MemberId.from("2");
-    final var newClusterMembers = Set.of(member1Id, member2Id);
+    final var clusterMembers = Set.of(member1Id, member2Id);
     final var clusterChangeExecutor = new ClusterChangeExecutor.NoopClusterChangeExecutor();
 
     final var initialConfiguration =
         ClusterConfiguration.init()
             .addMember(member1Id, MemberState.initializeAsActive(Map.of()))
             .addMember(member2Id, MemberState.initializeAsActive(Map.of()));
-    final var preScalingApplier =
-        new PreScalingApplier(member1Id, newClusterMembers, clusterChangeExecutor);
+    final var postScalingApplier =
+        new PostScalingApplier(member1Id, clusterMembers, clusterChangeExecutor);
     final var initializedConfiguration =
-        preScalingApplier.init(initialConfiguration).get().apply(initialConfiguration);
-    final var updater = preScalingApplier.apply().join();
+        postScalingApplier.init(initialConfiguration).get().apply(initialConfiguration);
+    final var updater = postScalingApplier.apply().join();
     final var updatedConfiguration = updater.apply(initializedConfiguration);
 
     // when
@@ -94,7 +94,7 @@ final class PreScalingApplierTest {
     // given
     final var member1Id = MemberId.from("1");
     final var member2Id = MemberId.from("2");
-    final var newClusterMembers = Set.of(member1Id, member2Id);
+    final var clusterMembers = Set.of(member1Id, member2Id);
     final var failingExecutor =
         new ClusterChangeExecutor() {
           @Override
@@ -105,13 +105,13 @@ final class PreScalingApplierTest {
           @Override
           public ActorFuture<Void> preScaling(
               final int currentClusterSize, final Set<MemberId> clusterMembers) {
-            return CompletableActorFuture.completedExceptionally(
-                new RuntimeException("Failed to execute operation"));
+            return null;
           }
 
           @Override
           public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
-            return null;
+            return CompletableActorFuture.completedExceptionally(
+                new RuntimeException("Failed to execute operation"));
           }
         };
 
@@ -119,12 +119,12 @@ final class PreScalingApplierTest {
         ClusterConfiguration.init()
             .addMember(member1Id, MemberState.initializeAsActive(Map.of()))
             .addMember(member2Id, MemberState.initializeAsActive(Map.of()));
-    final var preScalingApplier =
-        new PreScalingApplier(member1Id, newClusterMembers, failingExecutor);
-    preScalingApplier.init(initialConfiguration);
+    final var postScalingApplier =
+        new PostScalingApplier(member1Id, clusterMembers, failingExecutor);
+    postScalingApplier.init(initialConfiguration);
 
     // when
-    final var applyFuture = preScalingApplier.apply();
+    final var applyFuture = postScalingApplier.apply();
 
     // then
     assertThat(applyFuture)

@@ -107,6 +107,7 @@ message TopologyChangeOperation {
     PartitionDeleteExporterOperation partitionDeleteExporter = 17;
     UpdateIncarnationNumberOperation updateIncarnationNumber = 18;
     PreScalingOperation preScaling = 19;
+    PostScalingOperation postScaling = 20;
   }
 }
 
@@ -177,6 +178,10 @@ message UpdateRoutingState{
 message UpdateIncarnationNumberOperation {}
 
 message PreScalingOperation {
+  repeated string clusterMembers = 1;
+}
+
+message PostScalingOperation {
   repeated string clusterMembers = 1;
 }
 
