@@ -246,7 +246,7 @@ public class MultiPartitionDeploymentLifecycleTest {
 
     // first one is skipped
     engine.getClock().addTime(EngineConfiguration.DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL);
-    Awaitility.await()
+    RecordingExporter.await()
         .untilAsserted(
             () -> {
               // continue to add time to the clock until the deployment is re-distributed

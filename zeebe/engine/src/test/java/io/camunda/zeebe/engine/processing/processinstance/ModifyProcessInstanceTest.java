@@ -2950,7 +2950,8 @@ public class ModifyProcessInstanceTest {
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId("A"))
+                .withElementId("A")
+                .limit(4))
         .extracting(Record::getIntent)
         .containsSequence(
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);
@@ -3000,7 +3001,8 @@ public class ModifyProcessInstanceTest {
             RecordingExporter.processInstanceRecords()
                 .onlyEvents()
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementId("A"))
+                .withElementId("A")
+                .limit(4))
         .extracting(Record::getIntent)
         .containsSequence(
             ProcessInstanceIntent.ELEMENT_TERMINATING, ProcessInstanceIntent.ELEMENT_TERMINATED);

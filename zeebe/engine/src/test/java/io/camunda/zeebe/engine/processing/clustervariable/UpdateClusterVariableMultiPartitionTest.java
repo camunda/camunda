@@ -62,7 +62,7 @@ public final class UpdateClusterVariableMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE
@@ -130,7 +130,7 @@ public final class UpdateClusterVariableMultiPartitionTest {
             RecordingExporter.records()
                 .withPartitionId(1)
                 .limitByCount(
-                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 3)
+                    record -> record.getIntent().equals(CommandDistributionIntent.FINISHED), 2)
                 .filter(
                     record ->
                         record.getValueType() == ValueType.CLUSTER_VARIABLE

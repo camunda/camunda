@@ -54,6 +54,7 @@ public final class CallActivityTest {
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
+  private static final String CHILD_TASK = "child-task";
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -75,7 +76,7 @@ public final class CallActivityTest {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
-            .serviceTask("child-task", t -> t.zeebeJobType(jobType));
+            .serviceTask(CHILD_TASK, t -> t.zeebeJobType(jobType));
 
     consumer.accept(builder);
 
@@ -1290,12 +1291,30 @@ public final class CallActivityTest {
     // when
     final long rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
 
-    final var rootInstanceRecords = getInstancesOf(rootInstanceKey);
+    final var processInstanceRecords =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    r.getValue().getElementId().equals(CHILD_TASK)
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .map(Record::getValue)
+            .toList();
+
+    final var rootInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == rootInstanceKey)
+            .toList();
     final var parentInstanceKey = getChildInstanceOf(rootInstanceKey).getProcessInstanceKey();
-    final var parentInstanceRecords = getInstancesOf(parentInstanceKey);
+    final var parentInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == parentInstanceKey)
+            .toList();
     final var childProcessInstanceKey =
         getChildInstanceOf(parentInstanceKey).getProcessInstanceKey();
-    final var childInstanceRecords = getInstancesOf(childProcessInstanceKey);
+    final var childInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == childProcessInstanceKey)
+            .toList();
 
     // then
     assertThat(rootInstanceRecords)
@@ -1354,13 +1373,6 @@ public final class CallActivityTest {
         .withParentProcessInstanceKey(processInstanceKey)
         .getFirst()
         .getValue();
-  }
-
-  private List<ProcessInstanceRecordValue> getInstancesOf(final long processInstanceKey) {
-    return RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(processInstanceKey)
-        .map(Record::getValue)
-        .toList();
   }
 
   private long getCallActivityInstanceKey(final long processInstanceKey) {
