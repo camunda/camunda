@@ -34,5 +34,13 @@ public interface ProcessInstanceEvent {
   /** Tenant identifier that owns this process instance */
   String getTenantId();
 
+  /** Tags attached to this process instance */
   Set<String> getTags();
+
+  /**
+   * The business id of this process instance.
+   *
+   * @return the business id, or an empty string if not set
+   */
+  String getBusinessId();
 }

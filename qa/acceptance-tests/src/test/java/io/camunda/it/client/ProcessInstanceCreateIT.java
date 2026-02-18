@@ -29,6 +29,7 @@ public class ProcessInstanceCreateIT {
 
   private static CamundaClient camundaClient;
   private static final Set<String> TAGS = Set.of("tag1", "tag2");
+  private static final String BUSINESS_ID = "order-12345";
 
   private static Process process;
 
@@ -134,5 +135,66 @@ public class ProcessInstanceCreateIT {
 
     assertThat(result.getTenantId()).isEqualTo("<default>");
     assertThat(result.getTags()).isEqualTo(TAGS);
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithBusinessId() {
+    // given
+    final var processInstanceCreation =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .businessId(BUSINESS_ID)
+            .send()
+            .join();
+
+    assertThat(processInstanceCreation).isNotNull();
+    assertThat(processInstanceCreation.getProcessInstanceKey()).isNotNull();
+    assertThat(processInstanceCreation.getBpmnProcessId()).isEqualTo(process.getBpmnProcessId());
+    assertThat(processInstanceCreation.getProcessDefinitionKey())
+        .isEqualTo(process.getProcessDefinitionKey());
+    assertThat(processInstanceCreation.getVersion()).isEqualTo(process.getVersion());
+    assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
+    assertThat(processInstanceCreation.getBusinessId()).isEqualTo(BUSINESS_ID);
+
+    // we are not checking the business id in the process instance result as it is not supported in
+    // fetching the process instance result yet.
+    // FIXME add assertion for business id in the process instance result once visibility of
+    // business id in the process instance result is supported.
+    // https://github.com/camunda/product-hub/issues/3436
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithResultAndBusinessId() {
+    final Map<String, Object> variables = Maps.of(entry("foo", "bar"));
+    // given
+    final var processInstanceCreation =
+        camundaClient
+            .newCreateInstanceCommand()
+            .bpmnProcessId("process")
+            .latestVersion()
+            .variables(variables)
+            .businessId(BUSINESS_ID + "-with-result")
+            .withResult()
+            .fetchVariables("foo")
+            .send()
+            .join();
+
+    assertThat(processInstanceCreation).isNotNull();
+    assertThat(processInstanceCreation.getProcessInstanceKey()).isNotNull();
+    assertThat(processInstanceCreation.getBpmnProcessId()).isEqualTo(process.getBpmnProcessId());
+    assertThat(processInstanceCreation.getProcessDefinitionKey())
+        .isEqualTo(process.getProcessDefinitionKey());
+    assertThat(processInstanceCreation.getVersion()).isEqualTo(process.getVersion());
+    assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
+    assertThat(processInstanceCreation.getVariablesAsMap()).isEqualTo(variables);
+    assertThat(processInstanceCreation.getBusinessId()).isEqualTo(BUSINESS_ID + "-with-result");
+
+    // we are not checking the business id in the process instance result as it is not supported in
+    // fetching the process instance result yet.
+    // FIXME add assertion for business id in the process instance result once visibility of
+    // business id in the process instance result is supported.
+    // https://github.com/camunda/product-hub/issues/3436
   }
 }
