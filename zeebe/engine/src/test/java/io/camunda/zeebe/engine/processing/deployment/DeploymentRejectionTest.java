@@ -35,6 +35,7 @@ import org.junit.Test;
 public class DeploymentRejectionTest {
   public static final int MAX_ID_FIELD_LENGTH = 100;
   public static final int MAX_NAME_FIELD_LENGTH = 100;
+  public static final int MAX_WORKER_TYPE_LENGTH = 100;
 
   @ClassRule
   public static final EngineRule ENGINE =
@@ -43,7 +44,8 @@ public class DeploymentRejectionTest {
               config ->
                   config
                       .setMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
-                      .setMaxNameFieldLength(MAX_NAME_FIELD_LENGTH));
+                      .setMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
+                      .setMaxWorkerTypeLength(MAX_WORKER_TYPE_LENGTH));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -565,6 +567,35 @@ public class DeploymentRejectionTest {
         .contains(
             "- ERROR: Names must not be longer than the configured max-name-length of %s characters"
                 .formatted(MAX_NAME_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfWorkerTypeExceedsLimit() {
+    final var workerType = "a".repeat(MAX_WORKER_TYPE_LENGTH + 1);
+
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent")
+            .serviceTask("serviceTask", t -> t.zeebeJobType(workerType))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- ERROR: Worker types must not be longer than the configured max-worker-type-length of %s characters"
+                .formatted(MAX_WORKER_TYPE_LENGTH));
   }
 
   @Test
