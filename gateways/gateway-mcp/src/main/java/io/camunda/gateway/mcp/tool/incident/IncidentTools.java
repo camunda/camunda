@@ -20,9 +20,9 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpIncidentFilter;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -67,7 +67,7 @@ public class IncidentTools {
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<IncidentSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page) {
+          final SearchQueryPageRequest page) {
     try {
       final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(filter, page, sort);
 

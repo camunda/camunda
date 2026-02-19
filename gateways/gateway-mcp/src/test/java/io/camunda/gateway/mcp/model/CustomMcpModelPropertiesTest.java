@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -76,8 +77,8 @@ public class CustomMcpModelPropertiesTest {
             Set.of(
                 "isTruncated", "name", "processInstanceKey", "scopeKey", "value", "variableKey")),
         Arguments.argumentSet(
-            "McpSearchQueryPageRequest",
-            McpSearchQueryPageRequest.class,
+            "SearchQueryPageRequest",
+            SearchQueryPageRequest.class,
             Set.of("after", "before", "from", "limit")),
         Arguments.argumentSet(
             "McpUserTaskFilter",

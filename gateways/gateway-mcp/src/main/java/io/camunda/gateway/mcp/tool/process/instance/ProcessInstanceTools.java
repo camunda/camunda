@@ -22,9 +22,9 @@ import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
 import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.ProcessInstanceServices;
@@ -64,7 +64,7 @@ public class ProcessInstanceTools {
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<ProcessInstanceSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page) {
+          final SearchQueryPageRequest page) {
     try {
       final var query = SearchQueryRequestMapper.toProcessInstanceQuery(filter, page, sort);
       if (query.isLeft()) {
@@ -119,20 +119,20 @@ public class ProcessInstanceTools {
     try {
       final var instruction =
           new ProcessInstanceCreationInstruction()
-              .processDefinitionKey(creationInstruction.processDefinitionKey())
-              .processDefinitionId(creationInstruction.processDefinitionId())
-              .processDefinitionVersion(creationInstruction.processDefinitionVersion())
+              .processDefinitionKey(creationInstruction.getProcessDefinitionKey())
+              .processDefinitionId(creationInstruction.getProcessDefinitionId())
+              .processDefinitionVersion(creationInstruction.getProcessDefinitionVersion())
               .awaitCompletion(
-                  creationInstruction.awaitCompletion() != null
-                      && creationInstruction.awaitCompletion());
+                  creationInstruction.getAwaitCompletion() != null
+                      && creationInstruction.getAwaitCompletion());
 
-      Optional.ofNullable(creationInstruction.variables()).ifPresent(instruction::variables);
-      Optional.ofNullable(creationInstruction.fetchVariables())
+      Optional.ofNullable(creationInstruction.getVariables()).ifPresent(instruction::variables);
+      Optional.ofNullable(creationInstruction.getFetchVariables())
           .ifPresent(instruction::fetchVariables);
-      Optional.ofNullable(creationInstruction.tags()).ifPresent(instruction::tags);
-      Optional.ofNullable(creationInstruction.requestTimeout())
+      Optional.ofNullable(creationInstruction.getTags()).ifPresent(instruction::tags);
+      Optional.ofNullable(creationInstruction.getRequestTimeout())
           .ifPresent(instruction::requestTimeout);
-      Optional.ofNullable(creationInstruction.tenantId()).ifPresent(instruction::tenantId);
+      Optional.ofNullable(creationInstruction.getTenantId()).ifPresent(instruction::tenantId);
       Optional.ofNullable(creationInstruction.businessId()).ifPresent(instruction::businessId);
 
       final var request =
