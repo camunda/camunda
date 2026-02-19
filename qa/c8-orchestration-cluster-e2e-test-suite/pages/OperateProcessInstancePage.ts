@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { Page, Locator, expect } from '@playwright/test';
-import { sleep } from 'utils/sleep';
+import {Page, Locator, expect} from '@playwright/test';
+import {sleep} from 'utils/sleep';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -137,11 +137,11 @@ class OperateProcessInstancePage {
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
     );
-    this.addVariableButton = page.getByRole('button', { name: 'Add variable' });
-    this.saveVariableButton = page.getByRole('button', { name: 'Save variable' });
-    this.newVariableNameField = page.getByRole('textbox', { name: 'Name' });
-    this.newVariableValueField = page.getByRole('textbox', { name: 'Value' });
-    this.editVariableValueField = page.getByRole('textbox', { name: 'Value' });
+    this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
+    this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
+    this.newVariableNameField = page.getByRole('textbox', {name: 'Name'});
+    this.newVariableValueField = page.getByRole('textbox', {name: 'Value'});
+    this.editVariableValueField = page.getByRole('textbox', {name: 'Value'});
     this.variableSpinner = page.getByTestId('full-variable-loader');
     this.operationSpinner = page.getByTestId('operation-spinner');
     this.executionCountToggleOn = this.instanceHistory.getByLabel(
@@ -359,7 +359,7 @@ class OperateProcessInstancePage {
   getListenerTypeFilterOption = (
     option: 'Execution listeners' | 'User task listeners' | 'All listeners',
   ) => {
-    return this.listenerTypeFilter.getByText(option, { exact: true });
+    return this.listenerTypeFilter.getByText(option, {exact: true});
   };
 
   getExecutionListenerText(exact = false): Locator {
@@ -733,7 +733,7 @@ class OperateProcessInstancePage {
     return this.incidentsTable.getByRole('row').filter({
       has: this.page
         .getByTestId('cell-errorMessage')
-        .filter({ hasText: errorMessage }),
+        .filter({hasText: errorMessage}),
     });
   }
 
@@ -765,7 +765,7 @@ class OperateProcessInstancePage {
     mainProcessName: string,
   ): Promise<number> {
     const expandingElements = this.instanceHistory
-      .getByLabel(mainProcessName, { exact: true })
+      .getByLabel(mainProcessName, {exact: true})
       .getByRole('group')
       .locator('.cds--tree-parent-node__toggle-icon');
     return await expandingElements.count();
@@ -839,7 +839,7 @@ class OperateProcessInstancePage {
       });
     }
 
-    return filteredElementsData; 
+    return filteredElementsData;
   }
 
   /**
@@ -864,4 +864,4 @@ class OperateProcessInstancePage {
   }
 }
 
-export { OperateProcessInstancePage };
+export {OperateProcessInstancePage};

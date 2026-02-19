@@ -114,7 +114,11 @@ export class OperateProcessInstanceViewModificationModePage {
       'Select the target flow node in the diagram',
     );
     this.diagram = this.page.getByTestId('diagram');
-    this.multipleInstancesAlert = page.getByTestId('popover').getByText('To modify a specific instance, select it in the Instance History below.');
+    this.multipleInstancesAlert = page
+      .getByTestId('popover')
+      .getByText(
+        'To modify a specific instance, select it in the Instance History below.',
+      );
     this.history = page.getByTestId('instance-history');
 
     this.continueButton = page.getByRole('button', {name: 'Continue'});

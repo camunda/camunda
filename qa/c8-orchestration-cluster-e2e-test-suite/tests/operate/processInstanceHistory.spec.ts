@@ -117,7 +117,9 @@ test.describe('Process Instance History', () => {
     await test.step('Wait for incident to appear', async () => {
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
       await page.waitForTimeout(5000);
-      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         incidentProcessInstanceKey.toString(),
       );
@@ -132,7 +134,9 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
-          await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+          await operateFiltersPanelPage.displayOptionalFilter(
+            'Process Instance Key(s)',
+          );
           await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
             incidentProcessInstanceKey.toString(),
           );
@@ -234,7 +238,9 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page and verify results', async () => {
       await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
       await operateFiltersPanelPage.selectVersion('1');
-      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         embeddedProcessInstancePIK.toString(),
       );
@@ -341,7 +347,9 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page and verify results', async () => {
       await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
       await operateFiltersPanelPage.selectVersion('1');
-      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         embeddedProcessInstanceModificationPIK.toString(),
       );
