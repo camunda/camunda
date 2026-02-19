@@ -572,8 +572,18 @@ cmd_generate() {
     esac
   done
 
-  # In flag mode, apply defaults for unset values; in interactive mode, prompt
+  # In flag mode, restore saved settings from existing env before applying defaults
   if [[ "$has_flags" == true ]]; then
+    if [[ -n "$name" && -f "$ENVS_DIR/$name/.c8env" ]]; then
+      local _saved_auth _saved_datastore _saved_connectors _saved_standalone _saved_model
+      # shellcheck source=/dev/null
+      source "$ENVS_DIR/$name/.c8env"
+      [[ -z "$auth" ]] && auth="${_saved_auth:-}"
+      [[ -z "$datastore" ]] && datastore="${_saved_datastore:-}"
+      [[ -z "$connectors" ]] && connectors="${_saved_connectors:-}"
+      [[ -z "$standalone" ]] && standalone="${_saved_standalone:-}"
+      [[ -z "$model" ]] && model="${_saved_model:-}"
+    fi
     [[ -z "$auth" ]] && auth="insecure"
     [[ -z "$datastore" ]] && datastore="elasticsearch"
     [[ -z "$connectors" ]] && connectors="none"
@@ -658,6 +668,15 @@ cmd_generate() {
   # Create output directory
   local env_dir="$ENVS_DIR/$name"
   mkdir -p "$env_dir/intellij"
+
+  # Save settings for future regeneration via --name
+  cat > "$env_dir/.c8env" << EOF
+_saved_auth=$auth
+_saved_datastore=$datastore
+_saved_connectors=$connectors
+_saved_standalone=$standalone
+_saved_model=$model
+EOF
 
   # Generate docker-compose
   generate_compose "$name" "$datastore" "$connectors" "$model" "$standalone" "$auth" > "$env_dir/docker-compose.yml"

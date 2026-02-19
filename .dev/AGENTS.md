@@ -76,9 +76,28 @@ CLI flags). Both call the same generation functions.
 3. `generate_infra_xml()` creates the Docker Compose IntelliJ run config
 4. `generate_stop_xml()` creates the Shell Script run config to stop all envs before launch
 5. `generate_app_xml()` creates the Spring Boot IntelliJ run config (unless standalone)
-6. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
-7. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
-8. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
+6. A `.c8env` metadata file is saved to the env directory (see below)
+7. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
+8. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
+9. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
+
+### Regeneration via `--name`
+
+Each generated environment stores its settings in `.dev/envs/<name>/.c8env`:
+```bash
+_saved_auth=basic
+_saved_datastore=elasticsearch
+_saved_connectors=agentic
+_saved_standalone=no
+_saved_model=qwen3:0.6b
+```
+
+When `--name` is used in flag mode and the env already exists, saved settings are restored for
+any flags not explicitly provided. This allows quick regeneration:
+```bash
+.dev/c8env --name c8-basic-es-ai          # restores all saved settings
+.dev/c8env --name c8-basic-es-ai --db pg  # overrides only db, keeps rest
+```
 
 ### Camunda Desktop Modeler Integration
 
