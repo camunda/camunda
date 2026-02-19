@@ -6,16 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-type ProcessInstanceOperationsLogFilterField = 'operationType' | 'entityType';
-
 type ProcessInstanceOperationsLogFilters = {
   operationType?: string;
   entityType?: string;
 };
 
-const PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS: (keyof ProcessInstanceOperationsLogFilters)[] =
-  ['operationType', 'entityType'];
+type ProcessInstanceOperationsLogFilterField =
+  keyof ProcessInstanceOperationsLogFilters;
 
+const PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS: ProcessInstanceOperationsLogFilterField[] =
+  ['operationType', 'entityType'];
 export type {
   ProcessInstanceOperationsLogFilters,
   ProcessInstanceOperationsLogFilterField,
