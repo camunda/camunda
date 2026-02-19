@@ -1391,6 +1391,7 @@ jobs:
       - general-unit-tests
       - history-tests
       - identity-frontend-tests
+      - identity-tests
       - integration-tests
       - java-checks
       - maven-spotless-linter
