@@ -335,6 +335,7 @@ generate_stop_xml() {
   local template
   template=$(<"$TEMPLATES_DIR/intellij/stop-envs.xml")
   template="${template//\{\{STOP_NAME\}\}/$stop_name}"
+  template="${template//\{\{ENV_NAME\}\}/$env_name}"
 
   echo "$template"
 }
@@ -969,23 +970,29 @@ stop_env() {
   local compose_file="$ENVS_DIR/$name/docker-compose.yml"
   [[ -f "$compose_file" ]] || return 0
   info "Stopping environment '${name}'..."
-  docker compose -f "$compose_file" down --remove-orphans 2>/dev/null || true
+  docker compose -f "$compose_file" stop 2>/dev/null || true
 }
 
 cmd_stop() {
   local name="${1:-}"
+  local except=""
 
+  # Parse --except flag (used by Before Launch to skip the current env)
   if [[ "$name" == "--all" ]]; then
+    if [[ "${2:-}" == "--except" && -n "${3:-}" ]]; then
+      except="$3"
+    fi
     local found=0
     for d in "$ENVS_DIR"/*/; do
       [[ -d "$d" ]] || continue
       local env_name
       env_name=$(basename "$d")
       [[ -f "$d/docker-compose.yml" ]] || continue
+      [[ "$env_name" == "$except" ]] && continue
       stop_env "$env_name"
       found=1
     done
-    [[ $found -eq 1 ]] && info "All environments stopped" || warn "No environments found"
+    [[ $found -eq 1 ]] && info "All environments stopped" || warn "No environments to stop"
     return
   fi
 
@@ -1064,7 +1071,7 @@ main() {
       ;;
     stop)
       shift
-      cmd_stop "${1:-}"
+      cmd_stop "$@"
       ;;
     deploy)
       shift

@@ -118,13 +118,22 @@ Docker container — no IDE needed, just `docker compose up`.
 ### Switching Environments
 
 All environments share the same host ports, so only one can run at a time. When launching from
-IntelliJ, the Spring Boot run config automatically stops any running environments before starting
-the new one (via a Before Launch task). You can also manage this manually:
+IntelliJ, the Spring Boot run config automatically stops other running environments before
+starting (via a Before Launch task), while keeping the current environment's containers intact.
+Database state is preserved across restarts — containers are stopped, not removed.
+
+You can also manage this manually:
 
 ```bash
 .dev/c8env stop                       # Stop the current environment
 .dev/c8env stop c8-insecure-es        # Stop a specific environment
 .dev/c8env stop --all                 # Stop all environments
+```
+
+To fully reset an environment (remove containers and volumes), use:
+
+```bash
+docker compose -f .dev/envs/<name>/docker-compose.yml down -v
 ```
 
 ### Camunda Desktop Modeler Integration
