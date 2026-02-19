@@ -7,7 +7,7 @@
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.21.0",
-    "@camunda/camunda-optimize-composite-components": "^0.0.17-rc1",
+    "@camunda/camunda-optimize-composite-components": "^0.0.17",
     "@carbon/icons-react": "^11.41.0",
     "@carbon/react": "^1.77.0",
     "@lexical/react": "^0.40.0",
