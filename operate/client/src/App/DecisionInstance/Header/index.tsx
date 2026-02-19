@@ -16,6 +16,7 @@ import {formatDate} from 'modules/utils/date';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 import type {DrdPanelState} from 'modules/queries/decisionInstances/useDrdPanelState';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const getHeaderColumns = (isMultiTenancyEnabled: boolean = false) => {
   return [
@@ -59,7 +60,7 @@ const Header: React.FC<HeaderProps> = ({
   decisionEvaluationInstanceKey,
   onChangeDrdPanelState,
 }) => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const headerColumns = getHeaderColumns(isMultiTenancyEnabled);
   const tenantsById = useAvailableTenants();
   const {data: decisionInstance, status} = useDecisionInstance(

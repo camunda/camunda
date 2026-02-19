@@ -23,7 +23,7 @@ function mockResponses({
   batchOperations,
   batchOperation,
   processDefinitions,
-  statisticsV2,
+  statistics,
   processInstances,
   processXml,
   deleteProcess,
@@ -32,7 +32,7 @@ function mockResponses({
   batchOperations?: QueryBatchOperationsResponseBody;
   batchOperation?: OperationEntity;
   processDefinitions?: QueryProcessDefinitionsResponseBody['items'];
-  statisticsV2?: GetProcessDefinitionStatisticsResponseBody;
+  statistics?: GetProcessDefinitionStatisticsResponseBody;
   processInstances?: QueryProcessInstancesResponseBody;
   processXml?: string;
   deleteProcess?: BatchOperationDto;
@@ -177,8 +177,8 @@ function mockResponses({
 
     if (route.request().url().includes('statistics/element-instances')) {
       return route.fulfill({
-        status: statisticsV2 === undefined ? 400 : 200,
-        body: JSON.stringify(statisticsV2),
+        status: statistics === undefined ? 400 : 200,
+        body: JSON.stringify(statistics),
         headers: {
           'content-type': 'application/json',
         },
@@ -1676,7 +1676,7 @@ const mockAhspProcessInstances: QueryProcessInstancesResponseBody = {
   ],
 };
 
-const mockStatisticsV2 = {
+const mockStatistics = {
   items: [
     {
       elementId: 'eventSubprocess',
@@ -1943,7 +1943,7 @@ export {
   mockBatchOperations,
   mockProcessInstances,
   mockProcessInstancesWithOperationError,
-  mockStatisticsV2,
+  mockStatistics,
   mockProcessXml,
   mockResponses,
   mockNewDeleteOperation,

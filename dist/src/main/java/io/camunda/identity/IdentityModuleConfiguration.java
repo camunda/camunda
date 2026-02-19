@@ -17,6 +17,6 @@ import org.springframework.context.annotation.Profile;
 @ComponentScan(
     basePackages = "io.camunda.identity.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@Profile("identity")
+@Profile({"identity", "admin"})
 @ConditionalOnSecondaryStorageEnabled
 public class IdentityModuleConfiguration {}

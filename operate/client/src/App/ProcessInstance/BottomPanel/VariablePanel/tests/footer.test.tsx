@@ -7,29 +7,76 @@
  */
 
 import {render, screen, waitFor} from 'modules/testing-library';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {getWrapper, mockProcessInstance} from './mocks';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {
-  createInstance,
-  mockProcessWithInputOutputMappingsXML,
-} from 'modules/testUtils';
-import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {act} from 'react';
+import {mockProcessInstance} from './mocks';
+import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {mockvariables} from './index.setup';
+import {mockVariables} from './index.setup';
 import {VariablePanel} from '../index';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {MemoryRouter, Route, Routes} from 'react-router-dom';
+import {useEffect} from 'react';
+import {modificationsStore} from 'modules/stores/modifications';
+import {Paths} from 'modules/Routes';
+import {QueryClientProvider} from '@tanstack/react-query';
+import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 
-const instanceMock = createInstance({id: '1'});
+const TestSelectionControls: React.FC = () => {
+  const {selectElementInstance} = useProcessInstanceElementSelection();
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        selectElementInstance({
+          elementId: 'neverFails',
+          elementInstanceKey: '3',
+        })
+      }
+    >
+      select completed element
+    </button>
+  );
+};
+
+const getWrapper = (
+  initialEntries: React.ComponentProps<
+    typeof MemoryRouter
+  >['initialEntries'] = [Paths.processInstance('1')],
+) => {
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
+    useEffect(() => {
+      return () => {
+        modificationsStore.reset();
+      };
+    }, []);
+
+    return (
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TestSelectionControls />
+                    {children}
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
+    );
+  };
+  return Wrapper;
+};
 
 describe('Footer', () => {
   beforeEach(() => {
@@ -37,7 +84,6 @@ describe('Footer', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockProcessInstanceDeprecated().withSuccess(instanceMock);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -56,38 +102,12 @@ describe('Footer', () => {
         },
       ],
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    init('process-instance', [
-      {
-        elementId: 'start',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-      {
-        elementId: 'neverFails',
-        active: 0,
-        canceled: 0,
-        incidents: 0,
-        completed: 1,
-      },
-    ]);
-  });
-
-  afterEach(() => {
-    act(() => {
-      flowNodeSelectionStore.reset();
-      flowNodeMetaDataStore.reset();
-      processInstanceDetailsStore.reset();
-    });
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
@@ -122,9 +142,7 @@ describe('Footer', () => {
     expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
   });
 
-  // TODO: fix test with #44450
-  it.skip('should disable add variable button when selected flow node is not running', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
+  it('should disable add variable button when selected element is not running', async () => {
     const mockSearchVariablesPayload = {
       items: [],
       page: {
@@ -134,65 +152,67 @@ describe('Footer', () => {
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
-    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
-    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    const mockFetchFlowNodeMetadataPayload = {
-      ...singleInstanceMetadata,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
+
+    mockFetchElementInstance('2').withSuccess({
+      elementInstanceKey: '2',
+      elementId: 'start',
+      elementName: 'Start',
+      type: 'START_EVENT',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('1')}?elementId=start&elementInstanceKey=2`,
+        ]),
       },
-    };
-    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
-    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
-    mockFetchFlowNodeMetadata().withSuccess(mockFetchFlowNodeMetadataPayload);
-
-    init('process-instance', []);
-
-    flowNodeSelectionStore.setSelection({
-      flowNodeId: 'start',
-      flowNodeInstanceId: '2',
-      isMultiInstance: false,
-    });
-
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper(),
-    });
-
-    await waitFor(() =>
-      expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
-      ).toEqual(null),
     );
 
     await waitFor(() =>
       expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled(),
     );
 
-    act(() =>
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'neverFails',
-        flowNodeInstanceId: '3',
-        isMultiInstance: false,
-      }),
+    mockSearchVariables().withSuccess(mockSearchVariablesPayload);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+
+    mockFetchElementInstance('3').withSuccess({
+      elementInstanceKey: '3',
+      elementId: 'neverFails',
+      elementName: 'Never Fails',
+      type: 'SERVICE_TASK',
+      state: 'COMPLETED',
+      startDate: '2018-06-21',
+      endDate: '2018-06-21',
+      processDefinitionId: 'someKey',
+      processInstanceKey: '1',
+      processDefinitionKey: '2',
+      hasIncident: false,
+      tenantId: '<default>',
+    });
+
+    await user.click(
+      screen.getByRole('button', {name: /select completed element/i}),
     );
 
     await waitFor(() =>
       expect(
-        flowNodeMetaDataStore.state.metaData?.instanceMetadata?.endDate,
-      ).toEqual(MOCK_TIMESTAMP),
+        screen.getByRole('button', {name: /add variable/i}),
+      ).toBeDisabled(),
     );
-
-    expect(screen.getByRole('button', {name: /add variable/i})).toBeDisabled();
   });
 
   it('should disable add variable button when loading', async () => {
-    processInstanceDetailsStore.setProcessInstance(instanceMock);
-
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),
@@ -204,16 +224,12 @@ describe('Footer', () => {
   });
 
   it('should disable add variable button if instance state is cancelled', async () => {
-    processInstanceDetailsStore.setProcessInstance({
-      ...instanceMock,
-      state: 'CANCELED',
-    });
     mockFetchProcessInstance().withSuccess({
       ...mockProcessInstance,
       state: 'TERMINATED',
     });
-    mockSearchVariables().withSuccess(mockvariables);
-    mockSearchVariables().withSuccess(mockvariables);
+    mockSearchVariables().withSuccess(mockVariables);
+    mockSearchVariables().withSuccess(mockVariables);
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),

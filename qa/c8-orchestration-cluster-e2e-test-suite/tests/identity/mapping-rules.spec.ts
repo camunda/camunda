@@ -36,7 +36,7 @@ test.describe.serial('mapping rules CRUD', () => {
   });
 
   test.beforeEach(async ({page, loginPage}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await mockOIDCModeUI(page);
     await loginPage.login(
       LOGIN_CREDENTIALS.username,

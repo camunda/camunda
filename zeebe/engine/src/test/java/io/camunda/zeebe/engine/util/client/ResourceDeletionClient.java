@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionReco
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -47,6 +48,21 @@ public class ResourceDeletionClient {
     return this;
   }
 
+  public ResourceDeletionClient withResourceType(final ResourceType resourceType) {
+    resourceDeletionRecord.setResourceType(resourceType);
+    return this;
+  }
+
+  public ResourceDeletionClient withResourceId(final String resourceId) {
+    resourceDeletionRecord.setResourceId(resourceId);
+    return this;
+  }
+
+  public ResourceDeletionClient withTenantId(final String tenantId) {
+    resourceDeletionRecord.setTenantId(tenantId);
+    return this;
+  }
+
   public ResourceDeletionClient withDeleteHistory(final boolean deleteHistory) {
     resourceDeletionRecord.setDeleteHistory(deleteHistory);
     return this;
@@ -74,7 +90,8 @@ public class ResourceDeletionClient {
 
   public Record<ResourceDeletionRecordValue> delete(final String username) {
     return delete(
-        AuthorizationUtil.getUsernameAuthInfo(username, TenantOwned.DEFAULT_TENANT_IDENTIFIER));
+        AuthorizationUtil.getUsernameAuthInfo(
+            username, authorizedTenantIds.toArray(new String[0])));
   }
 
   public ResourceDeletionClient expectRejection() {

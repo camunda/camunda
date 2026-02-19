@@ -49,6 +49,7 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
@@ -137,6 +138,7 @@ public final class SystemContext {
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final NodeIdProvider nodeIdProvider;
   private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
@@ -152,7 +154,8 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -166,6 +169,7 @@ public final class SystemContext {
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    this.nodeIdProvider = nodeIdProvider;
     globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
@@ -181,7 +185,8 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -195,7 +200,8 @@ public final class SystemContext {
         passwordEncoder,
         jwtDecoder,
         searchClientsProxy,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        nodeIdProvider);
   }
 
   private void initSystemContext() {
@@ -747,5 +753,9 @@ public final class SystemContext {
 
   public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
     return brokerRequestAuthorizationConverter;
+  }
+
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
   }
 }

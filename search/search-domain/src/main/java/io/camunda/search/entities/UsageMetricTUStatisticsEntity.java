@@ -8,10 +8,18 @@
 package io.camunda.search.entities;
 
 import io.camunda.util.ObjectBuilder;
+import java.util.HashMap;
 import java.util.Map;
 
 public record UsageMetricTUStatisticsEntity(
     long totalTu, Map<String, UsageMetricTUStatisticsEntityTenant> tenants) {
+
+  public UsageMetricTUStatisticsEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
+    tenants = tenants != null ? tenants : new HashMap<>();
+  }
 
   public record UsageMetricTUStatisticsEntityTenant(long tu) {
 

@@ -12,6 +12,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {mockLogin} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const mockUserResponse = createUser();
 
@@ -91,7 +92,8 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: false,
     });
@@ -133,7 +135,8 @@ describe('authentication store', () => {
         href: mockHref,
       });
 
-      vi.stubGlobal('clientConfig', {
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -175,7 +178,8 @@ describe('authentication store', () => {
         reload: mockReload,
       });
 
-      vi.stubGlobal('clientConfig', {
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -218,7 +222,8 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: true,
     });

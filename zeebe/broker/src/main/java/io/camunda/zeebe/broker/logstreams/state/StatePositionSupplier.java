@@ -7,24 +7,15 @@
  */
 package io.camunda.zeebe.broker.logstreams.state;
 
-import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
-import io.camunda.zeebe.broker.exporter.stream.ExportersState;
-import io.camunda.zeebe.db.ZeebeDb;
+/** Supplies various positions from the persisted state. */
+public interface StatePositionSupplier {
 
-public final class StatePositionSupplier {
-  private StatePositionSupplier() {}
+  /** Returns the lowest position across all exporters. */
+  long getLowestExportedPosition();
 
-  public static long getHighestExportedPosition(final ZeebeDb zeebeDb) {
-    final var exporterState = new ExportersState(zeebeDb, zeebeDb.createContext());
-    if (exporterState.hasExporters()) {
-      return exporterState.getLowestPosition();
-    } else {
-      return Long.MAX_VALUE;
-    }
-  }
+  /** Returns the highest position across all exporters. */
+  long getHighestExportedPosition();
 
-  public static long getHighestBackupPosition(final ZeebeDb zeebeDb) {
-    final var checkpointState = new DbCheckpointState(zeebeDb, zeebeDb.createContext());
-    return checkpointState.getLatestBackupPosition();
-  }
+  /** Returns the highest backup position. */
+  long getHighestBackupPosition();
 }

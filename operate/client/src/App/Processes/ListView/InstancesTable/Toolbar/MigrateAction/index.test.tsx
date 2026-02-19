@@ -210,12 +210,8 @@ describe('<MigrateAction />', () => {
     ).toBeInTheDocument();
   });
 
-  it.skip('should set correct store states after migrate click', async () => {
+  it.todo('should set correct store states after migrate click', async () => {
     const SEARCH_STRING = `?process=${PROCESS_DEFINITION_ID}&version=1&active=true&incidents=false`;
-    vi.stubGlobal('clientConfig', {
-      ...window.clientConfig,
-      search: SEARCH_STRING,
-    });
 
     const {user} = render(<MigrateAction />, {
       wrapper: createWrapper({

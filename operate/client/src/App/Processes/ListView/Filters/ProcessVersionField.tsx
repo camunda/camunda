@@ -15,9 +15,10 @@ import {
   splitDefinitionIdentifier,
   useProcessDefinitionVersions,
 } from 'modules/hooks/processDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const ProcessVersionField: React.FC = observer(() => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const form = useForm();
   const processValue = useField('process').input.value;
   const {definitionId, tenantId} = splitDefinitionIdentifier(processValue);

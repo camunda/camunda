@@ -83,7 +83,7 @@ describe('Filters', () => {
     await selectFlowNode({user, option: 'Start Event 1'});
 
     expect(screen.getByRole('combobox', {name: /version/i})).toBeEnabled();
-    expect(screen.getByRole('combobox', {name: /flow node/i})).toBeEnabled();
+    expect(screen.getByRole('combobox', {name: /element/i})).toBeEnabled();
 
     await user.click(
       screen.getByRole('button', {name: /enter batch modification mode/i}),
@@ -91,6 +91,6 @@ describe('Filters', () => {
 
     expect(screen.getByRole('combobox', {name: /name/i})).toBeDisabled();
     expect(screen.getByRole('combobox', {name: /version/i})).toBeDisabled();
-    expect(screen.getByRole('combobox', {name: /flow node/i})).toBeDisabled();
+    expect(screen.getByRole('combobox', {name: /element/i})).toBeDisabled();
   });
 });

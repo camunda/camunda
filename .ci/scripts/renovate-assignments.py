@@ -20,7 +20,7 @@ DELAYED_OPTION_ID = "47fc9ee4"  # "Delayed" option ID
 TEAM_SLUGS = {
     "area/backend": "monorepo-backend-engineers",
     "area/frontend": "monorepo-frontend-engineers",
-    "area/devops": "monorepo-devops-engineers"
+    "area/build": "monorepo-devops-engineers"
 }
 
 # Polling parameters

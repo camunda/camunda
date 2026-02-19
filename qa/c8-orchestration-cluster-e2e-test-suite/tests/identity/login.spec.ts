@@ -14,7 +14,7 @@ import {relativizePath, Paths} from 'utils/relativizePath';
 
 test.describe.parallel('login page', () => {
   test.beforeEach(async ({page}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
   });
 
   test.afterEach(async ({page}, testInfo) => {
@@ -46,7 +46,7 @@ test.describe.parallel('login page', () => {
     await expect(page).toHaveURL(`${relativizePath(Paths.users())}`);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/identity/`,
+      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
     );
   });
 

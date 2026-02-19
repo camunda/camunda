@@ -1058,6 +1058,8 @@ jobs:
           --label="version:$ZCL_TARGET_REV" \
           --org camunda --repo camunda
 
+          sleep 15 # eventual consistency wait for GitHub to return labeled issues in the API call
+
           # The following command will print the markdown code to sysout - we are storing this into our variable "changelog"
           changelog=$(./zcl generate \
           --token=${{ secrets.GITHUB_TOKEN }} \

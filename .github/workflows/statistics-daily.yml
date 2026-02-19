@@ -9,7 +9,7 @@ on:
   pull_request:
     paths:
       - '.github/workflows/statistics-daily.yml'
-      - '.ci/scripts/setup-medic-lookup.sh'
+      - '.ci/scripts/ci/setup-medic-lookup.sh'
   workflow_dispatch: {}
 
 env:
@@ -126,7 +126,7 @@ jobs:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "${{ steps.message.outputs.MESSAGE }}"
+                  text: ${{ toJSON(steps.message.outputs.MESSAGE) }}
 
       - name: Observe build status
         if: always()

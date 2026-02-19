@@ -56,11 +56,14 @@ public class AWSSearchDBExtension extends SearchDBExtension {
     // as all tests use the same endpoint, we need a per-test unique prefix
     config.index.prefix = PREFIX_AWS_OS_TESTS + UUID.randomUUID() + "-test-record";
     config.url = awsSearchDbUrl;
+    config.getSecurity().setEnabled(true);
+    config.getSecurity().setSelfSigned(true);
     testClient = new TestClient(config, indexRouter);
     client =
         new OpensearchClient(
             config,
             bulkRequest,
+            OpensearchConnector.of(config).createClient(),
             RestClientFactory.of(config, true),
             indexRouter,
             templateReader,

@@ -175,8 +175,8 @@ describe('OperationsLog InstancesTable', () => {
     expect(await screen.findByText('Resource')).toBeInTheDocument();
     expect(screen.getByTestId('SUCCESS-icon')).toBeInTheDocument();
     expect(screen.getByTestId('FAIL-icon')).toBeInTheDocument();
-    expect(screen.getByText('user1')).toBeInTheDocument();
-    expect(screen.getByText('user2')).toBeInTheDocument();
+    expect(screen.getAllByText('user1').at(0)).toBeInTheDocument();
+    expect(screen.getAllByText('user2').at(0)).toBeInTheDocument();
     expect(screen.getByText(/variable name/i)).toBeInTheDocument();
     expect(await screen.findByText(/error code/i)).toBeInTheDocument();
     expect(screen.getByText('variableName')).toBeInTheDocument();

@@ -157,7 +157,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional with tenant identifiers [], but no tenant identifier was provided.",
+            "detail":"Expected to handle request Evaluate Conditional with multi-tenancy enabled, but no tenant identifier was provided.",
             "instance":"/v2/conditionals/evaluation"
          }""";
 

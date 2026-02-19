@@ -273,6 +273,7 @@ public class FileBasedReceivedSnapshot implements ReceivedSnapshot {
                 snapshotId.getProcessedPosition(),
                 snapshotId.getExportedPosition(),
                 Long.MAX_VALUE,
+                Long.MAX_VALUE,
                 false);
       }
       final PersistedSnapshot value =

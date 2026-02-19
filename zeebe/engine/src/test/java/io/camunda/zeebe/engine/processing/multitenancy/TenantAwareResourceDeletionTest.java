@@ -22,6 +22,7 @@ import io.camunda.zeebe.protocol.record.RecordAssert;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.protocol.record.value.EntityType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
@@ -54,10 +55,12 @@ public class TenantAwareResourceDeletionTest {
                       .getDefaultRoles()
                       .put("admin", Map.of("users", List.of(USERNAME))));
 
+  private static final String PROCESS_ID = "test";
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table.dmn";
+  private static final String DRG_ID = "force_users";
   private static final String TEST_FORM_1 = "/form/test-form-1.form";
   private static final BpmnModelInstance PROCESS =
-      Bpmn.createExecutableProcess("test").startEvent().endEvent().done();
+      Bpmn.createExecutableProcess(PROCESS_ID).startEvent().endEvent().done();
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -229,5 +232,129 @@ public class TenantAwareResourceDeletionTest {
             tuple(ResourceDeletionIntent.DELETE, key),
             tuple(ResourceDeletionIntent.DELETING, key),
             tuple(ResourceDeletionIntent.DELETED, key));
+  }
+
+  @Test
+  public void shouldDeleteProcessHistoryOfNonExistingResourceForAuthorizedTenant() {
+    // given
+    final var resourceKey = 123;
+
+    // when
+    final var deleted =
+        ENGINE
+            .resourceDeletion()
+            .withResourceKey(resourceKey)
+            .withResourceType(ResourceType.PROCESS_DEFINITION)
+            .withResourceId(PROCESS_ID)
+            .withTenantId(TENANT_ID_A)
+            .withDeleteHistory(true)
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .delete(USERNAME);
+
+    // then
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
+    verifyResourceHistoryIsDeleted(resourceKey);
+  }
+
+  @Test
+  public void shouldNotDeleteProcessHistoryOfNonExistingResourceForUnauthorizedTenant() {
+    // given
+    final var resourceKey = 456;
+
+    // when
+    final var rejection =
+        ENGINE
+            .resourceDeletion()
+            .withResourceKey(resourceKey)
+            .withResourceType(ResourceType.PROCESS_DEFINITION)
+            .withResourceId(PROCESS_ID)
+            .withTenantId(TENANT_ID_B)
+            .withDeleteHistory(true)
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .expectRejection()
+            .delete(USERNAME);
+
+    // then
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expect resource is not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete resource but no resource found with key `%d`"
+                .formatted(resourceKey));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .resourceDeletionRecords()
+                        .withIntent(ResourceDeletionIntent.DELETED)
+                        .exists()))
+        .isFalse();
+  }
+
+  @Test
+  public void shouldDeleteDrgHistoryOfNonExistingResourceForAuthorizedTenant() {
+    // given
+    final var resourceKey = 789;
+
+    // when
+    final var deleted =
+        ENGINE
+            .resourceDeletion()
+            .withResourceKey(resourceKey)
+            .withResourceType(ResourceType.DECISION_REQUIREMENTS)
+            .withResourceId(DRG_ID)
+            .withTenantId(TENANT_ID_A)
+            .withDeleteHistory(true)
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .delete(USERNAME);
+
+    // then
+    Assertions.assertThat(deleted.getValue()).hasTenantId(TENANT_ID_A);
+    verifyResourceHistoryIsDeleted(resourceKey);
+  }
+
+  @Test
+  public void shouldNotDeleteDrgHistoryOfNonExistingResourceForUnauthorizedTenant() {
+    // given
+    final var resourceKey = 1011;
+
+    // when
+    final var rejection =
+        ENGINE
+            .resourceDeletion()
+            .withResourceKey(resourceKey)
+            .withResourceType(ResourceType.DECISION_REQUIREMENTS)
+            .withResourceId(DRG_ID)
+            .withTenantId(TENANT_ID_B)
+            .withDeleteHistory(true)
+            .withAuthorizedTenantIds(TENANT_ID_A)
+            .expectRejection()
+            .delete(USERNAME);
+
+    // then
+    RecordAssert.assertThat(rejection)
+        .describedAs("Expect resource is not found")
+        .hasRejectionType(RejectionType.NOT_FOUND)
+        .hasRejectionReason(
+            "Expected to delete resource but no resource found with key `%d`"
+                .formatted(resourceKey));
+    assertThat(
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .resourceDeletionRecords()
+                        .withIntent(ResourceDeletionIntent.DELETED)
+                        .exists()))
+        .isFalse();
+  }
+
+  private void verifyResourceHistoryIsDeleted(final long key) {
+    assertThat(
+            RecordingExporter.resourceDeletionRecords()
+                .limit(r -> r.getIntent().equals(ResourceDeletionIntent.DELETED)))
+        .describedAs("Expect resource to be deleted")
+        .extracting(Record::getIntent, r -> r.getValue().getResourceKey())
+        .containsOnly(
+            tuple(ResourceDeletionIntent.DELETE, key), tuple(ResourceDeletionIntent.DELETED, key));
   }
 }

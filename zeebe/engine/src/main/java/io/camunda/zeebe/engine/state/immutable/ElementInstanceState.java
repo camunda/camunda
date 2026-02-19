@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
@@ -37,6 +38,18 @@ public interface ElementInstanceState {
    */
   void forEachChild(
       long parentKey, long startAtKey, BiFunction<Long, ElementInstance, Boolean> visitor);
+
+  /**
+   * Applies the provided visitor to each child element key of the given parent. The visitor can
+   * indicate via its return value whether the iteration should continue or not. This means that if
+   * the visitor returns {@code false}, the iteration will stop and no further child keys will be
+   * visited.
+   *
+   * @param parentKey the key of the parent element instance whose child keys should be visited
+   * @param visitor the visitor which is applied to each child key; returning {@code true} to
+   *     continue iteration, or {@code false} to stop it
+   */
+  void forEachChildKey(long parentKey, Function<Long, Boolean> visitor);
 
   /**
    * Applies the provided visitor to each child element of the given parent. The visitor can

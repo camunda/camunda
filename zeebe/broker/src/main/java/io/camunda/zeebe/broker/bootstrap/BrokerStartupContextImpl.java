@@ -34,13 +34,12 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
-import io.camunda.zeebe.util.VisibleForTesting;
 import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -69,6 +68,7 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   private final PasswordEncoder passwordEncoder;
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
+  private final NodeIdProvider nodeIdProvider;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
 
   private ConcurrencyControl concurrencyControl;
@@ -104,7 +104,8 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
 
     this.brokerInfo = requireNonNull(brokerInfo);
     this.configuration = requireNonNull(configuration);
@@ -122,48 +123,9 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
     this.passwordEncoder = passwordEncoder;
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
+    this.nodeIdProvider = requireNonNull(nodeIdProvider);
     partitionListeners.addAll(additionalPartitionListeners);
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
-  }
-
-  @VisibleForTesting
-  public BrokerStartupContextImpl(
-      final BrokerInfo brokerInfo,
-      final BrokerCfg configuration,
-      final SpringBrokerBridge springBrokerBridge,
-      final ActorSchedulingService actorScheduler,
-      final BrokerHealthCheckService healthCheckService,
-      final ExporterRepository exporterRepository,
-      final ClusterServicesImpl clusterServices,
-      final BrokerClient brokerClient,
-      final List<PartitionListener> additionalPartitionListeners,
-      final Duration shutdownTimeout,
-      final SecurityConfiguration securityConfiguration,
-      final UserServices userServices,
-      final PasswordEncoder passwordEncoder,
-      final JwtDecoder jwtDecoder,
-      final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
-
-    this(
-        brokerInfo,
-        configuration,
-        null,
-        springBrokerBridge,
-        actorScheduler,
-        healthCheckService,
-        exporterRepository,
-        clusterServices,
-        brokerClient,
-        additionalPartitionListeners,
-        shutdownTimeout,
-        new SimpleMeterRegistry(),
-        securityConfiguration,
-        userServices,
-        passwordEncoder,
-        jwtDecoder,
-        searchClientsProxy,
-        brokerRequestAuthorizationConverter);
   }
 
   @Override
@@ -426,5 +388,10 @@ public final class BrokerStartupContextImpl implements BrokerStartupContext {
   public void setCheckpointSchedulingService(
       final CheckpointSchedulingService checkpointSchedulingService) {
     this.checkpointSchedulingService = checkpointSchedulingService;
+  }
+
+  @Override
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
   }
 }

@@ -26,15 +26,15 @@ const FlowNodeField: React.FC = observer(() => {
     <Field name="flowNodeId">
       {({input}) => (
         <ComboBox
-          titleText="Flow Node"
+          titleText="Element"
           id="flowNodeId"
-          aria-label="Select a Flow Node"
+          aria-label="Select an Element"
           onChange={({selectedItem}) => {
             input.onChange(selectedItem?.id);
           }}
           items={processDefinitionData?.flowNodeFilterOptions ?? []}
           value={input.value}
-          placeholder="Search by Process Flow Node"
+          placeholder="Search by Process Element"
           disabled={isDisabled}
           title={
             batchModificationStore.state.isEnabled

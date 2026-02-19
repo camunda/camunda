@@ -10,21 +10,11 @@ package io.camunda.zeebe.broker.bootstrap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.UserServices;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitorActor;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
@@ -34,12 +24,9 @@ import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
 import java.time.Duration;
-import java.util.Collections;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class CommandApiServiceStepTest {
   public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
@@ -56,7 +43,7 @@ class CommandApiServiceStepTest {
 
   private final ActorScheduler mockActorSchedulingService = mock(ActorScheduler.class);
 
-  private BrokerStartupContextImpl testBrokerStartupContext;
+  private MockBrokerStartupContext testBrokerStartupContext;
 
   private final CommandApiServiceStep sut = new CommandApiServiceStep();
 
@@ -65,24 +52,11 @@ class CommandApiServiceStepTest {
     when(mockActorSchedulingService.submitActor(any()))
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
 
-    testBrokerStartupContext =
-        new BrokerStartupContextImpl(
-            TEST_BROKER_INFO,
-            TEST_BROKER_CONFIG,
-            mock(SpringBrokerBridge.class),
-            mockActorSchedulingService,
-            mock(BrokerHealthCheckService.class),
-            mock(ExporterRepository.class),
-            mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
-            mock(BrokerClient.class),
-            Collections.emptyList(),
-            TEST_SHUTDOWN_TIMEOUT,
-            new SecurityConfiguration(),
-            mock(UserServices.class),
-            mock(PasswordEncoder.class),
-            mock(JwtDecoder.class),
-            mock(SearchClientsProxy.class),
-            mock(BrokerRequestAuthorizationConverter.class));
+    testBrokerStartupContext = new MockBrokerStartupContext();
+    testBrokerStartupContext.setBrokerInfo(TEST_BROKER_INFO);
+    testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+    testBrokerStartupContext.setActorSchedulingService(mockActorSchedulingService);
+    testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
     testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
     testBrokerStartupContext.setDiskSpaceUsageMonitor(mock(DiskSpaceUsageMonitorActor.class));
     testBrokerStartupContext.setGatewayBrokerTransport(mock(AtomixServerTransport.class));

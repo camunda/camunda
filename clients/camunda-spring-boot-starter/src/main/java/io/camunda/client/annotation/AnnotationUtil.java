@@ -218,7 +218,9 @@ public class AnnotationUtil {
                       : new FromAnnotation<>(annotation.maxRetries()),
                   annotation.retryBackoff() == -1
                       ? new Empty<>()
-                      : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff()))))
+                      : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff())),
+                  fromSingletonArray(
+                      annotation.TenantFilter(), "tenantFilterName", methodInfo.getMethodName())))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
@@ -226,6 +228,28 @@ public class AnnotationUtil {
               });
     }
     return Optional.empty();
+  }
+
+  private static <T> SourceAware<T> fromSingletonArray(
+      final T[] annotationProperty,
+      final Supplier<SourceAware<T>> defaultValue,
+      final String propertyName,
+      final String methodName) {
+    if (annotationProperty.length == 0) {
+      return defaultValue.get();
+    }
+    if (annotationProperty.length == 1) {
+      return new FromAnnotation<>(annotationProperty[0]);
+    }
+    throw new IllegalArgumentException(
+        String.format(
+            "Illegal configuration of property '%s' on @JobWorker method '%s'",
+            propertyName, methodName));
+  }
+
+  private static <T> SourceAware<T> fromSingletonArray(
+      final T[] annotationProperty, final String propertyName, final String methodName) {
+    return fromSingletonArray(annotationProperty, Empty::new, propertyName, methodName);
   }
 
   private static SourceAware<Boolean> fromSingletonBooleanArray(
@@ -344,6 +368,7 @@ public class AnnotationUtil {
                   annotation.maxRetries() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxRetries()),
+                  new Empty<>(),
                   new Empty<>()))
           .map(
               v -> {

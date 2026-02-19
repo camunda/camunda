@@ -32,6 +32,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {useEffect} from 'react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -178,7 +179,10 @@ describe('IncidentsByError', () => {
   });
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
 
     mockIncidentQueries();
 

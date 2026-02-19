@@ -60,6 +60,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
                  "resourceId": "2",
+                 "resourcePropertyName": null,
                  "permissionTypes": ["CREATE"]
                },
                {
@@ -68,6 +69,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerType": "USER",
                  "resourceType": "RESOURCE",
                  "resourceId": "*",
+                 "resourcePropertyName": null,
                  "permissionTypes": ["CREATE"]
                },
                {
@@ -75,6 +77,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "USER_TASK",
+                 "resourceId": null,
                  "resourcePropertyName": "assignee",
                  "permissionTypes": ["CLAIM"]
                }
@@ -169,6 +172,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   "ownerType": "USER",
                   "resourceId": "resourceId",
                   "resourceType": "PROCESS_DEFINITION",
+                  "resourcePropertyName": null,
                   "permissionTypes": ["CREATE"]
                 }""",
             JsonCompareMode.STRICT);

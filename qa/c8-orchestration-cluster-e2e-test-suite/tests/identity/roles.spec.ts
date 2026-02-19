@@ -33,7 +33,7 @@ test.describe.serial('roles CRUD', () => {
   });
 
   test.beforeEach(async ({page, loginPage, identityHeader}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,
@@ -81,7 +81,7 @@ test.describe.serial('roles CRUD', () => {
 
 test.describe('Roles functionalities', () => {
   test.beforeEach(async ({page, loginPage, identityGroupsPage}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login('demo', 'demo');
     await expect(identityGroupsPage.groupsList).toBeVisible();
   });

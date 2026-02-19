@@ -28,19 +28,17 @@ import {
   getSubprocessOverlayFromIncidentFlowNodes,
 } from 'modules/utils/flowNodes';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {FlowNodeState} from 'modules/types/operate';
 import {parseProcessInstancesFilter} from 'modules/utils/filter/v2/processInstancesSearch';
 import {
   getProcessDefinitionName,
   useProcessDefinitionSelection,
 } from 'modules/hooks/processDefinitions';
-
-const OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE = 'batchModificationsBadge';
-
-type ModificationBadgePayload = {
-  newTokenCount: number;
-  cancelledTokenCount: number;
-};
+import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
+import {useProcessInstanceStatisticsFilters} from 'modules/hooks/useProcessInstanceStatisticsFilters';
+import {
+  isStatisticsPayload,
+  isModificationBadgePayload,
+} from 'modules/bpmn-js/overlayTypes';
 
 const DiagramPanel: React.FC = observer(() => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -81,12 +79,12 @@ const DiagramPanel: React.FC = observer(() => {
   }, [definitionSelection, definitionSelectionStatus, setSearchParams]);
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
-    ({type}) => type.match(/^statistics/) !== null,
+    ({type}) => type.startsWith('statistics-'),
   );
 
   const batchModificationBadgeOverlays =
     diagramOverlaysStore.state.overlays.filter(
-      ({type}) => type === OVERLAY_TYPE_BATCH_MODIFICATIONS_BADGE,
+      ({type}) => type === 'batchModificationsBadge',
     );
 
   const {
@@ -102,14 +100,23 @@ const DiagramPanel: React.FC = observer(() => {
 
   const {data: businessObjects} = useBusinessObjects();
 
+  const baseFilters = useProcessInstanceStatisticsFilters();
+  const processInstanceKeyFilter = getSelectedProcessInstancesFilter();
+
   const {data: processInstanceOverlayData} = useProcessInstancesOverlayData(
-    {},
+    baseFilters,
     selectedDefinitionKey,
   );
 
   const {selectedTargetElementId} = batchModificationStore.state;
   const {data: batchOverlayData} = useBatchModificationOverlayData(
-    {},
+    {
+      ...baseFilters,
+      filter: {
+        ...baseFilters.filter,
+        processInstanceKey: processInstanceKeyFilter,
+      },
+    },
     {
       sourceFlowNodeId: flowNodeId,
       targetFlowNodeId: selectedTargetElementId ?? undefined,
@@ -145,6 +152,76 @@ const DiagramPanel: React.FC = observer(() => {
     }
   };
 
+  const getSelectedFlowNodeIds = () => {
+    if (!batchModificationStore.state.isEnabled) {
+      return flowNodeId ? [flowNodeId] : undefined;
+    }
+
+    const ids: string[] = [];
+    if (flowNodeId) {
+      ids.push(flowNodeId);
+    }
+    if (selectedTargetElementId) {
+      ids.push(selectedTargetElementId);
+    }
+    return ids;
+  };
+
+  const getSelectableFlowNodes = () => {
+    if (!batchModificationStore.state.isEnabled) {
+      return selectableIds;
+    }
+
+    return selectableIds?.filter((selectedFlowNodeId) => {
+      if (selectedFlowNodeId === flowNodeId) {
+        return false;
+      }
+      if (selectedFlowNodeId === undefined) {
+        return false;
+      }
+
+      const flowNode = getFlowNode({
+        businessObjects: processDefinitionXML?.diagramModel.elementsById,
+        flowNodeId: selectedFlowNodeId,
+      });
+
+      return isMoveModificationTarget(flowNode);
+    });
+  };
+
+  const getOverlaysData = () => {
+    const baseOverlays = processInstanceOverlayData ?? [];
+
+    if (batchModificationStore.state.isEnabled) {
+      return [...baseOverlays, ...(batchOverlayData ?? [])];
+    }
+
+    return [...baseOverlays, ...(subprocessOverlays ?? [])];
+  };
+
+  const handleFlowNodeSelection = (
+    selectedFlowNodeId: string | null | undefined,
+  ) => {
+    if (batchModificationStore.state.isEnabled) {
+      return batchModificationStore.selectTargetElement(
+        selectedFlowNodeId ?? null,
+      );
+    }
+
+    if (selectedFlowNodeId === null || selectedFlowNodeId === undefined) {
+      setSearchParams((p) => {
+        p.delete('flowNodeId');
+        return p;
+      });
+      return;
+    }
+
+    setSearchParams((p) => {
+      p.set('flowNodeId', selectedFlowNodeId);
+      return p;
+    });
+  };
+
   return (
     <Section aria-label="Diagram Panel">
       <DiagramHeader processDefinitionSelection={definitionSelection} />
@@ -167,87 +244,35 @@ const DiagramPanel: React.FC = observer(() => {
           <Diagram
             xml={processDefinitionXML.xml}
             processDefinitionKey={selectedDefinitionKey}
-            {...(batchModificationStore.state.isEnabled
-              ? // Props for batch modification mode
-                {
-                  // Source and target flow node
-                  selectedFlowNodeIds: [
-                    ...(flowNodeId ? [flowNodeId] : []),
-                    ...(selectedTargetElementId
-                      ? [selectedTargetElementId]
-                      : []),
-                  ],
-                  onFlowNodeSelection: (flowNodeId) => {
-                    return batchModificationStore.selectTargetElement(
-                      flowNodeId ?? null,
-                    );
-                  },
-                  overlaysData: [
-                    ...(processInstanceOverlayData ?? []),
-                    ...(batchOverlayData ?? []),
-                  ],
-                  // All flow nodes that can be a move modification target,
-                  // except the source flow node
-                  selectableFlowNodes: selectableIds?.filter(
-                    (selectedFlowNodeId) =>
-                      selectedFlowNodeId !== flowNodeId &&
-                      selectedFlowNodeId !== undefined &&
-                      isMoveModificationTarget(
-                        getFlowNode({
-                          businessObjects:
-                            processDefinitionXML?.diagramModel.elementsById,
-                          flowNodeId: selectedFlowNodeId,
-                        }),
-                      ),
-                  ),
-                }
-              : // Props for regular mode
-                {
-                  selectedFlowNodeIds: flowNodeId ? [flowNodeId] : undefined,
-                  onFlowNodeSelection: (flowNodeId) => {
-                    if (flowNodeId === null || flowNodeId === undefined) {
-                      setSearchParams((p) => {
-                        p.delete('flowNodeId');
-                        return p;
-                      });
-                    } else {
-                      setSearchParams((p) => {
-                        p.set('flowNodeId', flowNodeId);
-                        return p;
-                      });
-                    }
-                  },
-                  overlaysData: [
-                    ...(processInstanceOverlayData ?? []),
-                    ...(subprocessOverlays ?? []),
-                  ],
-                  selectableFlowNodes: selectableIds,
-                })}
+            selectedFlowNodeIds={getSelectedFlowNodeIds()}
+            onFlowNodeSelection={handleFlowNodeSelection}
+            overlaysData={getOverlaysData()}
+            selectableFlowNodes={getSelectableFlowNodes()}
           >
             {statisticsOverlays?.map((overlay) => {
-              const payload = overlay.payload as {
-                flowNodeState: FlowNodeState;
-                count: number;
-              };
-
+              if (!isStatisticsPayload(overlay.payload)) {
+                return null;
+              }
               return (
                 <StateOverlay
-                  testId={`state-overlay-${overlay.flowNodeId}-${payload.flowNodeState}`}
-                  key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
-                  state={payload.flowNodeState}
-                  count={payload.count}
+                  testId={`state-overlay-${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
+                  key={`${overlay.flowNodeId}-${overlay.payload.flowNodeState}`}
+                  state={overlay.payload.flowNodeState}
+                  count={overlay.payload.count}
                   container={overlay.container}
                 />
               );
             })}
             {batchModificationBadgeOverlays?.map((overlay) => {
-              const payload = overlay.payload as ModificationBadgePayload;
+              if (!isModificationBadgePayload(overlay.payload)) {
+                return null;
+              }
               return (
                 <ModificationBadgeOverlay
                   key={overlay.flowNodeId}
                   container={overlay.container}
-                  newTokenCount={payload.newTokenCount}
-                  cancelledTokenCount={payload.cancelledTokenCount}
+                  newTokenCount={overlay.payload.newTokenCount ?? 0}
+                  cancelledTokenCount={overlay.payload.cancelledTokenCount ?? 0}
                 />
               );
             })}

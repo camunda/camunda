@@ -29,7 +29,7 @@ final class CamundaApplicationSpringDependenciesTest extends AbstractSpringDepen
               Profile.BROKER,
               Profile.OPERATE,
               Profile.TASKLIST,
-              Profile.IDENTITY);
+              Profile.ADMIN);
 
   @BeforeEach
   void setUp() {

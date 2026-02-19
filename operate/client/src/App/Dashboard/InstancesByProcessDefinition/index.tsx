@@ -22,6 +22,7 @@ import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import type {ProcessDefinitionInstanceStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
 import {DEFAULT_TENANT} from 'modules/constants';
 import {InlineLoading} from '@carbon/react';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   status: 'pending' | 'error' | 'success';
@@ -43,7 +44,7 @@ const InstancesByProcessDefinition: React.FC<Props> = ({
   onScrollEndReach,
 }) => {
   const tenantsById = useAvailableTenants();
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
 
   const rows = useMemo(
     () =>

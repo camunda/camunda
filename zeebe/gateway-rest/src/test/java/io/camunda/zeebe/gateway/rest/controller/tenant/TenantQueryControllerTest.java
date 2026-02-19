@@ -571,6 +571,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
                   ],
                   "page": {
                     "totalItems":3,
+                    "startCursor": null,
+                    "endCursor": null,
                     "hasMoreTotalItems": false
                   }
                 }
@@ -615,6 +617,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
                   ],
                   "page": {
                     "totalItems": 3,
+                    "startCursor": null,
+                    "endCursor": null,
                     "hasMoreTotalItems": false
                   }
                 }
@@ -659,6 +663,8 @@ public class TenantQueryControllerTest extends RestControllerTest {
                   ],
                   "page": {
                     "totalItems":3,
+                    "startCursor": null,
+                    "endCursor": null,
                     "hasMoreTotalItems": false
                   }
                 }

@@ -12,7 +12,6 @@ import {useBatchModificationOverlayData} from './useBatchModificationOverlayData
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MODIFICATIONS} from 'modules/bpmn-js/badgePositions';
-import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 
 describe('useBatchModificationOverlayData', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
@@ -20,13 +19,6 @@ describe('useBatchModificationOverlayData', () => {
       {children}
     </QueryClientProvider>
   );
-
-  beforeEach(() => {
-    vi.spyOn(
-      filterModule,
-      'useProcessInstanceStatisticsFilters',
-    ).mockReturnValue({});
-  });
 
   it('should fetch batch modification overlay data successfully', async () => {
     const mockData = {

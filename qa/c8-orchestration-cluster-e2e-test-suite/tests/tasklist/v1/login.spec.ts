@@ -90,15 +90,15 @@ test.describe.parallel('Login Tests', () => {
     await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist/123');
 
+    await page.goto('/tasklist?filter=unassigned');
     await tasklistHeaderV1.logout();
 
-    await page.goto('/tasklist?filter=unassigned');
     await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist?filter=unassigned');
 
+    await page.goto('/tasklist/123?filter=unassigned');
     await tasklistHeaderV1.logout();
 
-    await page.goto('/tasklist/123?filter=unassigned');
     await loginPage.login('demo', 'demo');
     await expect(page).toHaveURL('/tasklist/123?filter=unassigned');
   });

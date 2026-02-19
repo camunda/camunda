@@ -13,12 +13,9 @@ import {BatchModificationNotification} from '.';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockProcessXML} from 'modules/testUtils';
-
-vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 
 const notificationText1 =
   'Please select where you want to move the selected instances on the diagram.';
@@ -49,10 +46,6 @@ describe('BatchModificationNotification', () => {
       ...window.location,
       search: queryString,
     });
-    vi.spyOn(
-      filterModule,
-      'useProcessInstanceStatisticsFilters',
-    ).mockReturnValue({filter: {}});
     mockFetchProcessInstancesStatistics().withSuccess({
       items: [],
     });

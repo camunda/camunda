@@ -51,6 +51,7 @@ import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
@@ -633,6 +634,26 @@ public class RecordFixtures {
             ImmutableBatchOperationCreationRecordValue.builder()
                 .from((ImmutableBatchOperationCreationRecordValue) recordValueRecord.getValue())
                 .withBatchOperationType(type)
+                .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getBatchOperationInitializedRecord(
+      final Long batchOperationKey) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_INITIALIZATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationIntent.INITIALIZED)
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationInitializationRecordValue.builder()
+                .from(
+                    (ImmutableBatchOperationInitializationRecordValue) recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
                 .build())
         .build();
   }

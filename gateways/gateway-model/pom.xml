@@ -116,7 +116,7 @@
               <skipValidateSpec>false</skipValidateSpec>
               <openapiNormalizer>REF_AS_PARENT_IN_ALLOF=true</openapiNormalizer>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>
@@ -193,7 +193,7 @@
               <!-- no validation needed, done in the advanced execution already -->
               <skipValidateSpec>true</skipValidateSpec>
               <configOptions>
-                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)</additionalModelTypeAnnotations>
+                <additionalModelTypeAnnotations>@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS)</additionalModelTypeAnnotations>
                 <serializationLibrary>jackson</serializationLibrary>
                 <library>spring-boot</library>
                 <jdk8>true</jdk8>

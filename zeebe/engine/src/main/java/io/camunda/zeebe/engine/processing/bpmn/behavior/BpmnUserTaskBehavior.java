@@ -49,8 +49,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,10 +153,21 @@ public final class BpmnUserTaskBehavior {
       final BpmnElementContext context,
       final ExecutableUserTask element,
       final UserTaskProperties userTaskProperties) {
+    return createNewUserTask(
+        context,
+        element.getId(),
+        userTaskProperties,
+        element.getUserTaskProperties().getTaskHeaders());
+  }
+
+  public UserTaskRecord createNewUserTask(
+      final BpmnElementContext context,
+      final DirectBuffer id,
+      final UserTaskProperties userTaskProperties,
+      final Map<String, String> headers) {
     final var userTaskKey = keyGenerator.nextKey();
 
-    final var encodedHeaders =
-        headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
+    final var encodedHeaders = headerEncoder.encode(headers);
 
     final var userTaskRecord =
         new UserTaskRecord()
@@ -172,7 +185,7 @@ public final class BpmnUserTaskBehavior {
             .setProcessDefinitionVersion(context.getProcessVersion())
             .setProcessDefinitionKey(context.getProcessDefinitionKey())
             .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setElementId(element.getId())
+            .setElementId(id)
             .setElementInstanceKey(context.getElementInstanceKey())
             .setTenantId(context.getTenantId())
             .setPriority(userTaskProperties.getPriority())

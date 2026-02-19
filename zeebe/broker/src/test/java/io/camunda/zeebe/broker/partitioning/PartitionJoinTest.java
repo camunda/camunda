@@ -19,6 +19,7 @@ import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
 import io.camunda.zeebe.dynamic.config.state.DynamicPartitionConfig;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
@@ -119,7 +120,8 @@ final class PartitionJoinTest {
             null,
             null,
             null,
-            null);
+            null,
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

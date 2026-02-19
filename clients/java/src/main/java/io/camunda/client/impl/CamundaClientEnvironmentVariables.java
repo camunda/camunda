@@ -28,6 +28,8 @@ public final class CamundaClientEnvironmentVariables {
   public static final String DEFAULT_TENANT_ID_VAR = "CAMUNDA_DEFAULT_TENANT_ID";
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS_VAR =
       "CAMUNDA_DEFAULT_JOB_WORKER_TENANT_IDS";
+  public static final String DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR =
+      "CAMUNDA_DEFAULT_JOB_WORKER_TENANT_FILTER_MODE";
   public static final String USE_DEFAULT_RETRY_POLICY_VAR =
       "CAMUNDA_CLIENT_USE_DEFAULT_RETRY_POLICY";
 

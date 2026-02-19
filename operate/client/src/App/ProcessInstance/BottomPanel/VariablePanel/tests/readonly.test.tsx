@@ -8,83 +8,44 @@
 
 import {VariablePanel} from '../index';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createInstance,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
-  searchResult,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {useEffect, act} from 'react';
-import {Paths} from 'modules/Routes';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {getWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init as initFlowNodeMetadata} from 'modules/utils/flowNodeMetadata';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {Paths} from 'modules/Routes';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
-) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
-        modificationsStore.reset();
-        processInstanceDetailsStore.reset();
-      };
-    }, []);
-
-    return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
-  };
-  return Wrapper;
-};
-
-const mockProcessInstance: ProcessInstance = {
-  processInstanceKey: 'instance_id',
+const selectedElementInstance: ElementInstance = {
+  elementInstanceKey: '2',
+  elementId: 'Activity_0qtp1k6',
+  elementName: 'Activity',
+  type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
-  processDefinitionKey: '2',
-  processDefinitionVersion: 1,
   processDefinitionId: 'someKey',
-  tenantId: '<default>',
-  processDefinitionName: 'someProcessName',
+  processInstanceKey: '1',
+  processDefinitionKey: '2',
   hasIncident: false,
+  tenantId: '<default>',
 };
 
-describe('VariablePanel', () => {
+describe('VariablePanel readonly', () => {
   beforeEach(() => {
-    const mockProcessInstanceDeprecated = createInstance();
-
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
+    );
+    mockFetchProcessDefinitionXml().withSuccess(
+      mockProcessWithInputOutputMappingsXML,
     );
 
     const statistics = [
@@ -107,43 +68,23 @@ describe('VariablePanel', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: statistics,
+    });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-    initFlowNodeMetadata('process-instance', statistics);
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
   });
 
   it('should be readonly if root node is selected and no add/move modification is created yet', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
-    mockSearchVariables().withSuccess(searchResult([createVariable()]));
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: null,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
-    });
-
     modificationsStore.enableModificationMode();
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {totalItems: 1},
+    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
+      wrapper: getWrapper(),
     });
+
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -159,26 +100,17 @@ describe('VariablePanel', () => {
   });
 
   it('should be readonly if root node is selected and only cancel modifications exist', async () => {
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
-    );
-    mockSearchVariables().withSuccess(searchResult([createVariable()]));
-
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: null,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
-    });
-
     modificationsStore.enableModificationMode();
     modificationsStore.cancelToken('some-element-id', 'some-instance-key', {});
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {totalItems: 1},
+    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper([Paths.processInstance('processInstanceId123')]),
+      wrapper: getWrapper(),
     });
+
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
@@ -193,41 +125,19 @@ describe('VariablePanel', () => {
     ).not.toBeInTheDocument();
   });
 
-  // TODO: fix test with #44450
-  it.skip('should be readonly for existing nodes without add/move modifications', async () => {
-    mockSearchVariables().withSuccess(searchResult([]));
-    mockFetchFlowNodeMetadata().withSuccess({
-      ...singleInstanceMetadata,
-      flowNodeInstanceId: '2251799813695856',
-      instanceCount: 1,
-      instanceMetadata: {
-        ...singleInstanceMetadata.instanceMetadata!,
-        endDate: null,
-      },
+  it('should be readonly for existing nodes without add/move modifications', async () => {
+    modificationsStore.enableModificationMode();
+    mockFetchElementInstance('2').withSuccess(selectedElementInstance);
+    mockSearchVariables().withSuccess({
+      items: [createVariable({scopeKey: '2'})],
+      page: {totalItems: 1},
     });
-
-    act(() => {
-      modificationsStore.enableModificationMode();
-    });
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper(),
-    });
-    expect(
-      await screen.findByText('The Flow Node has no Variables'),
-    ).toBeInTheDocument();
-
-    mockSearchVariables().withSuccess(searchResult([createVariable()]));
-    mockSearchJobs().withSuccess(searchResult([]));
-
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'Activity_0qtp1k6',
-          flowNodeInstanceId: '2251799813695856',
-        },
-      );
+      wrapper: getWrapper([
+        `${Paths.processInstance('1')}?elementId=Activity_0qtp1k6&elementInstanceKey=2`,
+      ]),
     });
 
     await waitFor(() => {

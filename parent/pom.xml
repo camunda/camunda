@@ -104,10 +104,10 @@
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
-    <version.feel-scala>1.20.0</version.feel-scala>
+    <version.feel-scala>1.20.1</version.feel-scala>
     <version.dmn-scala>1.11.0</version.dmn-scala>
     <version.rest-assured>6.0.0</version.rest-assured>
-    <version.spring>7.0.4</version.spring>
+    <version.spring>7.0.5</version.spring>
     <version.spring-security>7.0.3</version.spring-security>
     <version.spring-boot>4.0.2</version.spring-boot>
     <version.spring-ai>2.0.0-M2</version.spring-ai>
@@ -118,7 +118,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jetbrains-annotations>26.0.2-1</version.jetbrains-annotations>
+    <version.jetbrains-annotations>26.1.0</version.jetbrains-annotations>
     <version.jqwik>1.9.3</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
@@ -140,11 +140,11 @@
     <version.jnr-ffi>2.2.18</version.jnr-ffi>
     <version.jnr-posix>3.1.21</version.jnr-posix>
     <version.jnr-constants>0.10.4</version.jnr-constants>
-    <version.zpt>8.8.12</version.zpt>
+    <version.zpt>8.8.13</version.zpt>
     <version.feign>13.8</version.feign>
     <version.google-sdk>26.76.0</version.google-sdk>
     <version.azure-sdk>1.3.3</version.azure-sdk>
-    <version.awssdk>2.41.31</version.awssdk>
+    <version.awssdk>2.41.32</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
     <version.jackson-databind-nullable>0.2.9</version.jackson-databind-nullable>

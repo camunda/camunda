@@ -5,6 +5,7 @@ extends: [[spectral:oas, recommended]]
 functions:
   - verifyKeyTypesPaths
   - verifyKeyTypesSchemas
+  - verifyEventuallyConsistent
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -102,3 +103,11 @@ rules:
     then:
       function: verifyKeyTypesSchemas
     message: Make the `...Key` property a `string`.
+  
+  no-eventually-consistent-on-commands:
+    description: "Command (mutating) operations must not have x-eventually-consistent: true."
+    severity: error
+    given: $.paths[*][*]
+    then:
+      function: verifyEventuallyConsistent
+    message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."

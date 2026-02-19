@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationActivateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
@@ -75,6 +76,16 @@ public class BatchOperationWriter implements RdbmsWriter {
             batchOperation));
     LOGGER.trace("Force flush to directly create batch operation: {}", batchOperation);
     executionQueue.flush();
+  }
+
+  public void activate(final String batchOperationKey, final OffsetDateTime startDate) {
+    executionQueue.executeInQueue(
+        new QueueItem(
+            ContextType.BATCH_OPERATION,
+            WriteStatementType.UPDATE,
+            batchOperationKey,
+            "io.camunda.db.rdbms.sql.BatchOperationMapper.activate",
+            new BatchOperationActivateDto(batchOperationKey, startDate)));
   }
 
   public void updateBatchAndInsertItems(

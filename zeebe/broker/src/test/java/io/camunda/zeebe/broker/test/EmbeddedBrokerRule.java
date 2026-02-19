@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.TestLoggers;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.system.SystemContext;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.clock.ControlledActorClock;
@@ -255,7 +256,8 @@ public final class EmbeddedBrokerRule extends ExternalResource {
             null,
             null,
             null,
-            null);
+            null,
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     final var additionalListeners = new ArrayList<>(Arrays.asList(listeners));
     final CountDownLatch latch = new CountDownLatch(brokerCfg.getCluster().getPartitionsCount());

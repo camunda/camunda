@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class OpensearchExporterConfiguration implements FilterConfiguration {
 
@@ -31,7 +35,24 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
   private final ProxyConfiguration proxy = new ProxyConfiguration();
+  private final SecurityConfiguration security = new SecurityConfiguration();
   private boolean includeEnabledRecords = false;
+  @JsonIgnore // ensure this doesn't get injected when creating the config during serialization
+  private ObjectMapper objectMapper = new ObjectMapper();
+
+  public String getUrl() {
+    return url;
+  }
+
+  public List<String> getUrls() {
+    return Optional.ofNullable(url)
+        .map(urls -> Arrays.stream(urls.split(",")).toList())
+        .orElse(List.of());
+  }
+
+  public int getRequestTimeoutMs() {
+    return requestTimeoutMs;
+  }
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -39,6 +60,10 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public SecurityConfiguration getSecurity() {
+    return security;
   }
 
   public boolean hasProxyConfigured() {
@@ -51,6 +76,27 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
   public List<PluginConfiguration> getInterceptorPlugins() {
     return interceptorPlugins;
+  }
+
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
+  }
+
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  public void setObjectMapper(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public OpensearchExporterConfiguration withObjectMapper(final ObjectMapper objectMapper) {
+    setObjectMapper(objectMapper);
+    return this;
   }
 
   @Override
@@ -158,14 +204,6 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   @Override
   public IndexConfig filterIndexConfig() {
     return index;
-  }
-
-  public boolean getIsIncludeEnabledRecords() {
-    return includeEnabledRecords;
-  }
-
-  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
-    this.includeEnabledRecords = includeEnabledRecords;
   }
 
   public static class IndexConfiguration implements IndexConfig {
@@ -562,6 +600,30 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     }
   }
 
+  public static class SecurityConfiguration {
+    private static final boolean ENABLED_DEFAULT = false;
+    private static final boolean SELF_SIGNED_DEFAULT = false;
+
+    private boolean enabled = ENABLED_DEFAULT;
+    private boolean selfSigned = SELF_SIGNED_DEFAULT;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isSelfSigned() {
+      return selfSigned;
+    }
+
+    public void setSelfSigned(final boolean selfSigned) {
+      this.selfSigned = selfSigned;
+    }
+  }
+
   public static class AwsConfiguration {
 
     private static final String AWS_REGION_ENV_VARIABLE = "AWS_REGION";
@@ -574,6 +636,30 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     // The AWS_REGION gets injected into the pod by AWS. If we are running on AWS this should always
     // be available.
     public String region = System.getenv(AWS_REGION_ENV_VARIABLE);
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getServiceName() {
+      return serviceName;
+    }
+
+    public void setServiceName(final String serviceName) {
+      this.serviceName = serviceName;
+    }
+
+    public String getRegion() {
+      return region;
+    }
+
+    public void setRegion(final String region) {
+      this.region = region;
+    }
 
     @Override
     public String toString() {

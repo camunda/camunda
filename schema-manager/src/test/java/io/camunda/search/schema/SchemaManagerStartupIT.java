@@ -110,7 +110,7 @@ class SchemaManagerStartupIT {
       camunda
           .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,dev")
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECK_ENABLED", "false");
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECKENABLED", "false");
     } else {
       camunda
           .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")

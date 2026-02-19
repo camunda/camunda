@@ -23,6 +23,7 @@ final class PreScalingApplier implements ClusterOperationApplier {
   private final MemberId memberId;
   private final Set<MemberId> clusterMembers;
   private final ClusterChangeExecutor clusterChangeExecutor;
+  private int currentClusterSize;
 
   public PreScalingApplier(
       final MemberId memberId,
@@ -44,13 +45,14 @@ final class PreScalingApplier implements ClusterOperationApplier {
                   + memberId
                   + " is not part of the current cluster configuration."));
     }
+    currentClusterSize = currentClusterConfiguration.clusterSize();
     return Either.right(UnaryOperator.identity());
   }
 
   @Override
   public ActorFuture<UnaryOperator<ClusterConfiguration>> apply() {
     return clusterChangeExecutor
-        .preScaling(clusterMembers)
+        .preScaling(currentClusterSize, clusterMembers)
         .thenApply(ignore -> UnaryOperator.identity());
   }
 }

@@ -1306,6 +1306,7 @@ jobs:
         # Spectral provides comprehensive OpenAPI validation including:
         # - Schema structure validation (catches issues like required: false at property level)
         # - Custom business rules (flow node terminology, key properties, descriptions)
+        # - x-eventually-consistent annotation correctness (command operations must not be marked eventually consistent)
         # - Works correctly with multi-part specs using external $ref
         run: >
           spectral lint zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml

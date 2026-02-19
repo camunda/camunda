@@ -39,7 +39,8 @@ public class LicenseControllerTest extends RestControllerTest {
       {
           "validLicense": true,
           "licenseType": "saas",
-          "isCommercial": true
+          "isCommercial": true,
+          "expiresAt": null
       }""";
 
   @MockitoBean ManagementServices managementServices;

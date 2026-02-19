@@ -12,7 +12,7 @@ export interface UseAttachedMenuReturn {
 }
 
 export function useAttachedMenu(
-	anchor: RefObject<HTMLElement> | HTMLElement,
+	anchor: RefObject<HTMLElement | null> | HTMLElement,
 ): UseAttachedMenuReturn {
 	const [open, setOpen] = useState(false)
 	const [position, setPosition] = useState<TwoCoordinates[]>([

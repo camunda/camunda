@@ -7,86 +7,76 @@
  */
 package io.camunda.zeebe.exporter.opensearch.dto;
 
-import static java.util.Optional.ofNullable;
-
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Consumer;
+import org.opensearch.client.json.JsonpDeserializer;
+import org.opensearch.client.json.ObjectBuilderDeserializer;
+import org.opensearch.client.json.ObjectDeserializer;
+import org.opensearch.client.opensearch.indices.put_index_template.IndexTemplateMapping;
+import org.opensearch.client.util.ObjectBuilder;
 
 /**
  * Index template representation. You can read more about index templates <a
  * href="https://opensearch.org/docs/latest/im-plugin/index-templates/">here</a>.
  */
-@JsonInclude(Include.NON_EMPTY)
 public record Template(
-    @JsonProperty("index_patterns") List<String> patterns,
-    @JsonProperty("composed_of") List<String> composedOf,
-    TemplateProperty template,
+    Long version,
     Long priority,
-    Long version) {
+    List<String> composedOf,
+    List<String> indexPatterns,
+    IndexTemplateMapping template) {
 
-  @JsonInclude(Include.NON_EMPTY)
-  public record TemplateProperty(
-      Map<String, Object> aliases, Map<String, Object> settings, Map<String, Object> mappings) {
-    public static TemplateProperty mutableCopyOf(final TemplateProperty templateProperty) {
-      if (templateProperty == null) {
-        return new TemplateProperty(new HashMap<>(), new HashMap<>(), new HashMap<>());
-      }
-      return new TemplateProperty(
-          ofNullable(templateProperty.aliases).map(HashMap::new).orElseGet(HashMap::new),
-          ofNullable(templateProperty.settings).map(HashMap::new).orElseGet(HashMap::new),
-          ofNullable(templateProperty.mappings).map(HashMap::new).orElseGet(HashMap::new));
-    }
+  public static final JsonpDeserializer<Template> DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(Template.Builder::new, Template::setupDeserializer);
+
+  private static void setupDeserializer(final ObjectDeserializer<Builder> deserializer) {
+    deserializer.add(Builder::version, JsonpDeserializer.longDeserializer(), "version");
+    deserializer.add(Builder::priority, JsonpDeserializer.longDeserializer(), "priority");
+    deserializer.add(
+        Builder::composedOf,
+        JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
+        "composed_of");
+    deserializer.add(
+        Builder::indexPatterns,
+        JsonpDeserializer.arrayDeserializer(JsonpDeserializer.stringDeserializer()),
+        "index_patterns");
+    deserializer.add(Builder::template, IndexTemplateMapping._DESERIALIZER, "template");
   }
 
-  public static final class MutableCopyBuilder {
-    private List<String> patterns;
-    private List<String> composedOf;
-    private TemplateProperty template;
-    private Long priority;
-    private Long version;
+  static class Builder implements ObjectBuilder<Template> {
+    Long version;
+    Long priority;
+    List<String> composedOf;
+    List<String> indexPatterns;
+    IndexTemplateMapping template;
 
-    private MutableCopyBuilder() {}
-
-    public static MutableCopyBuilder copyOf(final Template template) {
-      final MutableCopyBuilder builder = new MutableCopyBuilder();
-      builder.patterns =
-          ofNullable(template.patterns).map(ArrayList::new).orElseGet(ArrayList::new);
-      builder.composedOf =
-          ofNullable(template.composedOf).map(ArrayList::new).orElseGet(ArrayList::new);
-      builder.template = TemplateProperty.mutableCopyOf(template.template);
-      builder.priority = template.priority;
-      builder.version = template.version;
-      return builder;
-    }
-
-    public MutableCopyBuilder updatePatterns(final Consumer<List<String>> patternsConsumer) {
-      patternsConsumer.accept(patterns);
+    Template.Builder version(final Long version) {
+      this.version = version;
       return this;
     }
 
-    public MutableCopyBuilder updateComposedOf(final Consumer<List<String>> composedOfConsumer) {
-      composedOfConsumer.accept(composedOf);
-      return this;
-    }
-
-    public MutableCopyBuilder updateAliases(final Consumer<Map<String, Object>> aliasesConsumer) {
-      aliasesConsumer.accept(template.aliases);
-      return this;
-    }
-
-    public MutableCopyBuilder withPriority(final Long priority) {
+    Template.Builder priority(final Long priority) {
       this.priority = priority;
       return this;
     }
 
+    Template.Builder composedOf(final List<String> composedOf) {
+      this.composedOf = composedOf;
+      return this;
+    }
+
+    Template.Builder indexPatterns(final List<String> indexPatterns) {
+      this.indexPatterns = indexPatterns;
+      return this;
+    }
+
+    Template.Builder template(final IndexTemplateMapping template) {
+      this.template = template;
+      return this;
+    }
+
+    @Override
     public Template build() {
-      return new Template(patterns, composedOf, template, priority, version);
+      return new Template(version, priority, composedOf, indexPatterns, template);
     }
   }
 }

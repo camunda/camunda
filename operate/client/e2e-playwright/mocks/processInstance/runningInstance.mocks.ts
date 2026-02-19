@@ -141,7 +141,7 @@ const runningInstance: InstanceMock = {
       },
     ],
   },
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'Activity_0dex012',

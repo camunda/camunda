@@ -22,6 +22,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockSearchDecisionDefinitions} from 'modules/mocks/api/v2/decisionDefinitions/searchDecisionDefinitions';
 import {createDecisionDefinition} from 'modules/mocks/mockDecisionDefinitions';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 function getWrapper(initialPath: string = Paths.decisions()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -104,7 +105,10 @@ describe('<Filters />', () => {
   });
 
   it('should write filters to url', async () => {
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
 
     const MOCK_VALUES = {
       name: 'invoice-assign-approver',
@@ -160,7 +164,10 @@ describe('<Filters />', () => {
   });
 
   it('initialize filter values from url', async () => {
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
 
     render(<Filters />, {
       wrapper: getWrapper(`/?${new URLSearchParams(MOCK_FILTERS_PARAMS)}`),
@@ -195,7 +202,10 @@ describe('<Filters />', () => {
   });
 
   it('should disable decision name field when tenant is not selected', async () => {
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
     render(<Filters />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();
@@ -208,7 +218,10 @@ describe('<Filters />', () => {
     mockSearchDecisionDefinitions().withSuccess(
       searchResult([createDecisionDefinition()]),
     );
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
     const {user} = render(<Filters />, {wrapper: getWrapper()});
 
     expect(screen.getByRole('combobox', {name: 'Name'})).toBeDisabled();

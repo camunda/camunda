@@ -21,7 +21,7 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.usernameInput = page.getByLabel('Username');
+    this.usernameInput = page.getByRole('textbox', {name: 'Username'});
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
     this.errorMessage = page.locator('.cds--inline-notification__title');

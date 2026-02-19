@@ -10,7 +10,7 @@ package io.camunda.search.result;
 import io.camunda.util.ObjectBuilder;
 import java.util.function.Function;
 
-public record ProcessInstanceQueryResultConfig(Boolean onlyKey) implements QueryResultConfig {
+public record ProcessInstanceQueryResultConfig(Boolean onlyKeys) implements QueryResultConfig {
 
   public static ProcessInstanceQueryResultConfig of(
       final Function<Builder, ObjectBuilder<ProcessInstanceQueryResultConfig>> fn) {
@@ -19,18 +19,18 @@ public record ProcessInstanceQueryResultConfig(Boolean onlyKey) implements Query
 
   public static final class Builder implements ObjectBuilder<ProcessInstanceQueryResultConfig> {
 
-    private static final Boolean DEFAULT_ONLY_KEY = false;
+    private static final Boolean DEFAULT_ONLY_KEYS = false;
 
-    private Boolean onlyKey = DEFAULT_ONLY_KEY;
+    private Boolean onlyKeys = DEFAULT_ONLY_KEYS;
 
-    public Builder onlyKey(final boolean onlyKey) {
-      this.onlyKey = onlyKey;
+    public Builder onlyKeys(final boolean onlyKey) {
+      onlyKeys = onlyKey;
       return this;
     }
 
     @Override
     public ProcessInstanceQueryResultConfig build() {
-      return new ProcessInstanceQueryResultConfig(onlyKey);
+      return new ProcessInstanceQueryResultConfig(onlyKeys);
     }
   }
 }

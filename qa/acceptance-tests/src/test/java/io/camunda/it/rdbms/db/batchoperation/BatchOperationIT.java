@@ -110,6 +110,8 @@ public class BatchOperationIT {
     assertThat(updatedItems.items()).hasSize(3);
     assertThat(updatedItems.items().stream().map(BatchOperationItemEntity::state))
         .containsOnly(BatchOperationItemState.ACTIVE);
+    assertThat(updatedItems.items().getFirst().processInstanceKey()).isNotNull();
+    assertThat(updatedItems.items().getFirst().rootProcessInstanceKey()).isNotNull();
   }
 
   @TestTemplate
@@ -166,6 +168,9 @@ public class BatchOperationIT {
             .get();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
     assertThat(firstItem.operationType()).isEqualTo(batchOperation.operationType());
+    assertThat(firstItem.processInstanceKey()).isEqualTo(items.getFirst().processInstanceKey());
+    assertThat(firstItem.rootProcessInstanceKey())
+        .isEqualTo(items.getFirst().rootProcessInstanceKey());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(firstItem.errorMessage()).isNull();
@@ -230,6 +235,8 @@ public class BatchOperationIT {
     final var updatedItem = updatedItems.getFirst();
 
     assertThat(updatedItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(updatedItem.processInstanceKey()).isEqualTo(item.processInstanceKey());
+    assertThat(updatedItem.rootProcessInstanceKey()).isEqualTo(item.rootProcessInstanceKey());
     assertThat(updatedItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(updatedItem.errorMessage()).isNotNull();
@@ -281,6 +288,9 @@ public class BatchOperationIT {
     assertThat(updatedItems).hasSize(1);
     final var firstItem = updatedItems.getFirst();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(firstItem.processInstanceKey()).isEqualTo(items.getFirst().processInstanceKey());
+    assertThat(firstItem.rootProcessInstanceKey())
+        .isEqualTo(items.getFirst().rootProcessInstanceKey());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(firstItem.errorMessage()).isNull();
@@ -339,6 +349,9 @@ public class BatchOperationIT {
             .findFirst()
             .orElseThrow();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.FAILED);
+    assertThat(firstItem.processInstanceKey()).isEqualTo(items.getFirst().processInstanceKey());
+    assertThat(firstItem.rootProcessInstanceKey())
+        .isEqualTo(items.getFirst().rootProcessInstanceKey());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(firstItem.errorMessage()).isEqualTo("error");
@@ -405,6 +418,9 @@ public class BatchOperationIT {
             .findFirst()
             .orElseThrow();
     assertThat(firstItem.state()).isEqualTo(BatchOperationItemState.SKIPPED);
+    assertThat(firstItem.processInstanceKey()).isEqualTo(items.getFirst().processInstanceKey());
+    assertThat(firstItem.rootProcessInstanceKey())
+        .isEqualTo(items.getFirst().rootProcessInstanceKey());
     assertThat(firstItem.processedDate())
         .isCloseTo(NOW, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
 
@@ -627,6 +643,36 @@ public class BatchOperationIT {
             .findFirst()
             .orElseThrow();
     assertThat(error.message().length()).isEqualTo(4000);
+  }
+
+  @TestTemplate
+  public void shouldActivateBatchOperation(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    // given
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+    final var batchOperation =
+        createAndSaveBatchOperation(
+            writer, b -> b.state(BatchOperationState.CREATED).startDate(null).endDate(null));
+
+    // when
+    final OffsetDateTime startDate = OffsetDateTime.now();
+    writer.getBatchOperationWriter().activate(batchOperation.batchOperationKey(), startDate);
+    writer.flush();
+
+    // then
+    final var updatedBatchOperation = getBatchOperation(rdbmsService, batchOperation);
+
+    assertThat(updatedBatchOperation).isNotNull();
+    assertThat(updatedBatchOperation.items())
+        .singleElement()
+        .satisfies(
+            batchOperationEntity -> {
+              assertThat(batchOperationEntity.state()).isEqualTo(BatchOperationState.ACTIVE);
+              assertThat(batchOperationEntity.startDate())
+                  .isCloseTo(startDate, new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+              assertThat(batchOperationEntity.endDate()).isNull();
+            });
   }
 
   @TestTemplate

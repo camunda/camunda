@@ -33,6 +33,7 @@ import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTask
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const mockSingleIncident: Incident = {
   incidentKey: '2251799813696584',
@@ -116,6 +117,20 @@ describe('MetadataPopover <Details />', () => {
       <Details
         elementInstance={userTaskInstance}
         businessObject={mockCamundaUserTaskBusinessObject}
+      />,
+      {wrapper: TestWrapper},
+    );
+
+    expect(
+      screen.queryByText(/job worker implementation are deprecated/),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should not display deprecation warning for non-user task elements', () => {
+    render(
+      <Details
+        elementInstance={mockElementInstance}
+        businessObject={mockJobWorkerUserTaskBusinessObject}
       />,
       {wrapper: TestWrapper},
     );
@@ -211,7 +226,10 @@ describe('MetadataPopover <Details />', () => {
 
   it('should render Tasklist link for user tasks when configured', () => {
     const tasklistUrl = 'https://tasklist.example.com';
-    vi.stubGlobal('clientConfig', {tasklistUrl});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl,
+    });
 
     const userTaskInstance: ElementInstance = {
       ...mockElementInstance,
@@ -237,7 +255,10 @@ describe('MetadataPopover <Details />', () => {
 
   it('should not render Tasklist link for non-user tasks', () => {
     const tasklistUrl = 'https://tasklist.example.com';
-    vi.stubGlobal('clientConfig', {tasklistUrl});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl,
+    });
 
     mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
 

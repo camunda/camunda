@@ -11,7 +11,9 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import java.util.OptionalLong;
+import java.util.Set;
 
 interface InProgressBackup {
 
@@ -21,7 +23,7 @@ interface InProgressBackup {
 
   BackupIdentifier id();
 
-  ActorFuture<Void> findValidSnapshot();
+  ActorFuture<Set<PersistedSnapshot>> findValidSnapshot();
 
   ActorFuture<Void> reserveSnapshot();
 

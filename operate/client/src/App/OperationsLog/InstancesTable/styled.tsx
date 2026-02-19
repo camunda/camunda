@@ -8,6 +8,7 @@
 
 import styled from 'styled-components';
 import {styles} from '@carbon/elements';
+import {CodeSnippet} from '@carbon/react';
 
 const Container = styled.section`
   height: 100%;
@@ -25,4 +26,20 @@ const PropertyText = styled.div`
   ${styles.caption01}
 `;
 
-export {Container, OperationLogName, PropertyText};
+const AuthorTooltip = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-spacing-02);
+`;
+
+const TooltipCodeSnippet = styled(CodeSnippet)`
+  color: var(--cds-text-secondary);
+`;
+
+export {
+  Container,
+  OperationLogName,
+  PropertyText,
+  AuthorTooltip,
+  TooltipCodeSnippet,
+};

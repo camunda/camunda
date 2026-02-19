@@ -15,7 +15,9 @@ import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.ResourceDeletionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
 
 public class ResourceDeletionRecord extends UnifiedRecordValue
     implements ResourceDeletionRecordValue {
@@ -26,6 +28,8 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   private static final StringValue DELETE_HISTORY_KEY = new StringValue("deleteHistory");
   private static final StringValue BATCH_OPERATION_KEY = new StringValue("batchOperationKey");
   private static final StringValue BATCH_OPERATION_TYPE = new StringValue("batchOperationType");
+  private static final StringValue RESOURCE_TYPE = new StringValue("resourceType");
+  private static final StringValue RESOURCE_ID = new StringValue("resourceId");
 
   private final LongProperty resourceKeyProp = new LongProperty(RESOURCE_KEY_KEY);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
@@ -36,14 +40,19 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
           BATCH_OPERATION_TYPE,
           BatchOperationType.class,
           BatchOperationType.DELETE_PROCESS_INSTANCE);
+  private final EnumProperty<ResourceType> resourceTypeProp =
+      new EnumProperty<>(RESOURCE_TYPE, ResourceType.class, ResourceType.UNKNOWN);
+  private final StringProperty resourceIdProp = new StringProperty(RESOURCE_ID, "");
 
   public ResourceDeletionRecord() {
-    super(5);
+    super(7);
     declareProperty(resourceKeyProp)
         .declareProperty(tenantIdProp)
         .declareProperty(deleteHistoryProp)
         .declareProperty(batchOperationKeyProp)
-        .declareProperty(batchOperationTypeProp);
+        .declareProperty(batchOperationTypeProp)
+        .declareProperty(resourceTypeProp)
+        .declareProperty(resourceIdProp);
   }
 
   @Override
@@ -67,6 +76,41 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
   }
 
   @Override
+  public BatchOperationType getBatchOperationType() {
+    return batchOperationTypeProp.getValue();
+  }
+
+  public ResourceDeletionRecord setBatchOperationType(final BatchOperationType batchOperationType) {
+    batchOperationTypeProp.setValue(batchOperationType);
+    return this;
+  }
+
+  @Override
+  public ResourceType getResourceType() {
+    return resourceTypeProp.getValue();
+  }
+
+  public ResourceDeletionRecord setResourceType(final ResourceType resourceType) {
+    resourceTypeProp.setValue(resourceType);
+    return this;
+  }
+
+  @Override
+  public String getResourceId() {
+    return BufferUtil.bufferAsString(resourceIdProp.getValue());
+  }
+
+  public ResourceDeletionRecord setResourceId(final String resourceId) {
+    resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  public ResourceDeletionRecord setResourceId(final DirectBuffer resourceId) {
+    resourceIdProp.setValue(resourceId);
+    return this;
+  }
+
+  @Override
   public String getTenantId() {
     return BufferUtil.bufferAsString(tenantIdProp.getValue());
   }
@@ -83,16 +127,6 @@ public class ResourceDeletionRecord extends UnifiedRecordValue
 
   public ResourceDeletionRecord setBatchOperationKey(final long batchOperationKey) {
     batchOperationKeyProp.setValue(batchOperationKey);
-    return this;
-  }
-
-  @Override
-  public BatchOperationType getBatchOperationType() {
-    return batchOperationTypeProp.getValue();
-  }
-
-  public ResourceDeletionRecord setBatchOperationType(final BatchOperationType batchOperationType) {
-    batchOperationTypeProp.setValue(batchOperationType);
     return this;
   }
 }

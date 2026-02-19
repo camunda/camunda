@@ -37,6 +37,7 @@ import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscr
 import {mockFetchDecisionDefinition} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinition';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {searchResult} from 'modules/testUtils';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -393,7 +394,10 @@ describe('MetadataPopover', () => {
   it('should render link to tasklist', async () => {
     const tasklistUrl = 'https://tasklist:8080';
 
-    vi.stubGlobal('clientConfig', {tasklistUrl});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl,
+    });
 
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,

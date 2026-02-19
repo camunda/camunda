@@ -25,7 +25,7 @@ public class SearchQueryBuilderTest {
     final var searchQueryPage = new SearchQueryPage.Builder().size(50).build();
     final var searchQuerySort = ProcessInstanceSort.of(builder -> builder.startDate().asc());
     final var searchQueryResultConfig =
-        ProcessInstanceQueryResultConfig.of(builder -> builder.onlyKey(true));
+        ProcessInstanceQueryResultConfig.of(builder -> builder.onlyKeys(true));
     final var filter = new ProcessInstanceFilter.Builder().build(); // all
 
     // when

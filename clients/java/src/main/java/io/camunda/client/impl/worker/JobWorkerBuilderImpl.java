@@ -21,6 +21,7 @@ import static io.camunda.client.impl.command.ArgumentUtil.ensureNotNullNorEmpty;
 import static io.camunda.client.impl.command.ArgumentUtil.ensurePositive;
 
 import io.camunda.client.CamundaClientConfiguration;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.BackoffSupplier;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobExceptionHandler;
@@ -61,6 +62,7 @@ public final class JobWorkerBuilderImpl
   private List<String> fetchVariables;
   private final List<String> defaultTenantIds;
   private final List<String> customTenantIds;
+  private TenantFilter tenantFilter;
   private BackoffSupplier backoffSupplier;
   private BackoffSupplier streamNoJobsBackoffSupplier;
   private boolean enableStreaming;
@@ -88,6 +90,7 @@ public final class JobWorkerBuilderImpl
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
     customTenantIds = new ArrayList<>();
+    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -189,6 +192,12 @@ public final class JobWorkerBuilderImpl
   }
 
   @Override
+  public JobWorkerBuilderStep3 tenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
+    return this;
+  }
+
+  @Override
   public JobWorker open() {
     ensureNotNullNorEmpty("jobType", jobType);
     ensureNotNull("jobHandler", handler);
@@ -208,6 +217,7 @@ public final class JobWorkerBuilderImpl
             timeout,
             fetchVariables,
             getTenantIds(),
+            tenantFilter,
             maxJobsActive);
 
     final Executor jobExecutor;

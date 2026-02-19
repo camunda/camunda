@@ -183,7 +183,7 @@ public class OpensearchExporterSchemaManager {
   }
 
   private void createIndexStateManagementPolicy() {
-    final var policyOptional = client.getIndexStateManagementPolicy();
+    final var policyOptional = client.maybeGetIndexStateManagementPolicy();
 
     // Create the policy if it doesn't exist yet
     if (policyOptional.isEmpty()) {
@@ -203,7 +203,7 @@ public class OpensearchExporterSchemaManager {
   }
 
   private void deleteIndexStateManagementPolicy() {
-    final var policyOptional = client.getIndexStateManagementPolicy();
+    final var policyOptional = client.maybeGetIndexStateManagementPolicy();
     if (policyOptional.isEmpty()) {
       return;
     }
@@ -232,7 +232,7 @@ public class OpensearchExporterSchemaManager {
     if (configuration.retention.isEnabled()) {
       successful = client.bulkAddISMPolicyToAllZeebeIndices();
     } else {
-      successful = client.bulkRemoveISMPolicyToAllZeebeIndices();
+      successful = client.bulkRemoveISMPolicyFromAllZeebeIndices();
     }
 
     if (!successful) {

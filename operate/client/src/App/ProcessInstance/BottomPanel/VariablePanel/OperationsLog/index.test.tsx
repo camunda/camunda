@@ -96,7 +96,10 @@ describe('OperationsLog', () => {
     });
 
     expect(
-      screen.getByRole('columnheader', {name: /operation/i}),
+      screen.getByRole('columnheader', {name: /operation type/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /entity type/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /property/i}),
@@ -109,10 +112,11 @@ describe('OperationsLog', () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByTestId('SUCCESS-icon')).toBeInTheDocument();
-    expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
+    expect(await screen.findByText('Update')).toBeInTheDocument();
+    expect(await screen.findByText('Variable')).toBeInTheDocument();
     expect(screen.getByText(/variable name/i)).toBeInTheDocument();
     expect(screen.getByText('variableValue')).toBeInTheDocument();
-    expect(screen.getByText('user1')).toBeInTheDocument();
+    expect(screen.getAllByText('user1').at(0)).toBeInTheDocument();
     expect(screen.getByText('2024-01-01 00:00:00')).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: /open details/i}),

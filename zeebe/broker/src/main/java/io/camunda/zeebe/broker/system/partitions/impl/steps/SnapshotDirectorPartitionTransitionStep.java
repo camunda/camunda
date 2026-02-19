@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
 import io.atomix.raft.RaftServer.Role;
+import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.system.partitions.impl.AsyncSnapshotDirector;
@@ -56,6 +57,8 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
       final Duration snapshotPeriod = context.getBrokerCfg().getData().getSnapshotPeriod();
 
       final var processingMode = StreamProcessorMode.fromRole(targetRole.isLeader());
+      final var zeebeDb = context.getZeebeDb();
+      final var continuousBackup = context.getBrokerCfg().getData().getBackup().isContinuous();
       final var director =
           AsyncSnapshotDirector.of(
               context.getPartitionId(),
@@ -63,7 +66,8 @@ public final class SnapshotDirectorPartitionTransitionStep implements PartitionT
               context.getStateController(),
               processingMode,
               snapshotPeriod,
-              flushLog);
+              flushLog,
+              new DbPositionSupplier(zeebeDb, continuousBackup));
 
       final var future =
           context.getActorSchedulingService().submitActor(director, SchedulingHints.cpuBound());

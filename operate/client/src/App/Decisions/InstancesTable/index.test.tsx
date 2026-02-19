@@ -28,6 +28,7 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -275,7 +276,8 @@ describe('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      vi.stubGlobal('clientConfig', {
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         multiTenancyEnabled: true,
       });
 
@@ -296,7 +298,8 @@ describe('<InstancesTable />', () => {
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 

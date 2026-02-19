@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -383,7 +384,8 @@ final class SystemContextTest {
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),
         mock(SearchClientsProxy.class),
-        mock(BrokerRequestAuthorizationConverter.class));
+        mock(BrokerRequestAuthorizationConverter.class),
+        mock(NodeIdProvider.class));
   }
 
   @Test

@@ -1,6 +1,6 @@
 services:
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -111,7 +111,7 @@ services:
       - 8000:8000
     restart: always
   operate-opensearch:
-    image: camunda/operate:8.8.12
+    image: camunda/operate:8.8.13
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080

@@ -36,6 +36,17 @@ import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstan
 import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
 import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
 import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
+import {Filters} from './Filters';
+import {
+  auditLogEntityTypeSchema,
+  auditLogOperationTypeSchema,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {
+  PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS,
+  type ProcessInstanceOperationsLogFilterField,
+  type ProcessInstanceOperationsLogFilters,
+} from './operationsLogFilters';
 
 type Props = {
   isVisible: boolean;
@@ -47,9 +58,14 @@ const headerColumns = [
     key: 'result',
   },
   {
-    header: 'Operation',
+    header: 'Operation Type',
     key: 'operationType',
     sortKey: 'operationType',
+  },
+  {
+    header: 'Entity Type',
+    key: 'entityType',
+    sortKey: 'entityType',
   },
   {
     header: 'Property',
@@ -89,6 +105,11 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   const hasMultipleInstances =
     resolvedElementInstance?.elementInstanceKey === undefined && hasSelection;
 
+  const filterValues = getFilters<
+    ProcessInstanceOperationsLogFilterField,
+    ProcessInstanceOperationsLogFilters
+  >(location.search, PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS, []);
+
   const request = useMemo(
     (): QueryAuditLogsRequestBody => ({
       sort: [
@@ -101,9 +122,30 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
         category: {$neq: 'ADMIN'},
         processInstanceKey,
         elementInstanceKey: elementInstanceKey ?? undefined,
+        operationType: filterValues.operationType
+          ? {
+              $in: filterValues.operationType
+                .split(',')
+                .map((v) => auditLogOperationTypeSchema.parse(v)),
+            }
+          : undefined,
+        entityType: filterValues.entityType
+          ? {
+              $in: filterValues.entityType
+                .split(',')
+                .map((v) => auditLogEntityTypeSchema.parse(v)),
+            }
+          : undefined,
       },
     }),
-    [sortBy, sortParams.sortOrder, processInstanceKey, elementInstanceKey],
+    [
+      sortBy,
+      sortParams.sortOrder,
+      processInstanceKey,
+      elementInstanceKey,
+      filterValues.operationType,
+      filterValues.entityType,
+    ],
   );
 
   const {
@@ -154,9 +196,8 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
         result: <CellResult item={item} />,
-        operationType: `${spaceAndCapitalize(item.operationType.toString())} ${spaceAndCapitalize(
-          item.entityType.toString(),
-        )}`,
+        operationType: spaceAndCapitalize(item.operationType.toString()),
+        entityType: spaceAndCapitalize(item.entityType.toString()),
         property: <CellProperty item={item} />,
         user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
@@ -207,6 +248,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
 
   return (
     <Container>
+      <Filters />
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}

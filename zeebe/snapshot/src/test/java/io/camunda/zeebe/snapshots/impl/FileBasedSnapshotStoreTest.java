@@ -110,10 +110,14 @@ public class FileBasedSnapshotStoreTest {
   }
 
   @Test
-  public void shouldLoadExistingSnapshotWithMetadata() throws IOException {
+  public void shouldLoadExistingSnapshotWithMetadata() {
     // given
     final var persistedSnapshot =
-        takeTransientSnapshot().withLastFollowupEventPosition(100L).persist().join();
+        takeTransientSnapshot()
+            .withLastFollowupEventPosition(100L)
+            .withMaxExportedPosition(90L)
+            .persist()
+            .join();
 
     // when
     snapshotStore.close();

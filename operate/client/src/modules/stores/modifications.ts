@@ -445,6 +445,30 @@ class Modifications {
     return scopeMap;
   }
 
+  #getScopeMapForModification(
+    modification: FlowNodeModificationPayload,
+  ): ScopeMap {
+    switch (modification.operation) {
+      case 'ADD_TOKEN': {
+        return this.#getScopeMap(
+          [modification.scopeId],
+          modification.flowNode.id,
+          modification.parentScopeIds,
+        );
+      }
+      case 'MOVE_TOKEN': {
+        return this.#getScopeMap(
+          modification.scopeIds,
+          modification.targetFlowNode.id,
+          modification.parentScopeIds,
+        );
+      }
+      default: {
+        return {};
+      }
+    }
+  }
+
   #getVariableInstructionsForScopeMap(
     scopeMap: ScopeMap,
   ): VariableInstruction[] {
@@ -475,11 +499,7 @@ class Modifications {
           break;
         }
         case 'ADD_TOKEN': {
-          const scopeMap = this.#getScopeMap(
-            [modification.scopeId],
-            modification.flowNode.id,
-            modification.parentScopeIds,
-          );
+          const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: ActivateInstruction = {
             elementId: modification.flowNode.id,
@@ -493,11 +513,7 @@ class Modifications {
           break;
         }
         case 'MOVE_TOKEN': {
-          const scopeMap = this.#getScopeMap(
-            modification.scopeIds,
-            modification.targetFlowNode.id,
-            modification.parentScopeIds,
-          );
+          const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: MoveInstruction = {
             sourceElementInstruction: modification.flowNodeInstanceKey
@@ -588,6 +604,38 @@ class Modifications {
     }
 
     this.reset();
+  };
+
+  hasOrphanedVariableModifications = (processInstanceKey: string): boolean => {
+    const variableModifications = this.variableModifications;
+    if (variableModifications.length === 0) {
+      return false;
+    }
+
+    let allPendingScopeIds = new Set<string>();
+    let hasAddOrMoveToken = false;
+
+    for (const modification of this.flowNodeModifications) {
+      const operation = modification.operation;
+      if (operation !== 'ADD_TOKEN' && operation !== 'MOVE_TOKEN') {
+        continue;
+      }
+
+      hasAddOrMoveToken = true;
+      const scopeMap = this.#getScopeMapForModification(modification);
+      for (const id of Object.keys(scopeMap)) {
+        allPendingScopeIds.add(id);
+      }
+    }
+
+    return variableModifications.some((modification) => {
+      // Root variable modification cannot be applied without an ADD/MOVE token modification
+      if (modification.scopeId === processInstanceKey) {
+        return !hasAddOrMoveToken;
+      }
+
+      return !allPendingScopeIds.has(modification.scopeId);
+    });
   };
 
   getParentScopeId = (flowNodeId: string) => {

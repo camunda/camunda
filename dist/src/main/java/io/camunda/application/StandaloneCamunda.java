@@ -48,7 +48,7 @@ public class StandaloneCamunda {
           Profile.OPERATE.getId(),
           Profile.TASKLIST.getId(),
           Profile.BROKER.getId(),
-          Profile.IDENTITY.getId(),
+          Profile.ADMIN.getId(),
           Profile.CONSOLIDATED_AUTH.getId());
 
   public static void main(final String[] args) {

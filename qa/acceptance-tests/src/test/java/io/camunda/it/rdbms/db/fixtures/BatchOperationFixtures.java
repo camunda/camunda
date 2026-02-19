@@ -96,8 +96,8 @@ public final class BatchOperationFixtures {
                     new BatchOperationItemDbModel(
                         batchOperationKey,
                         itemKey,
-                        itemKey,
-                        itemKey,
+                        itemKey + 10_000L, // process instance key
+                        itemKey + 20_000L, // root process instance key
                         BatchOperationItemState.ACTIVE,
                         NOW,
                         null))

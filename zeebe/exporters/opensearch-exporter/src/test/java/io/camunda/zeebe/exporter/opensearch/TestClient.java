@@ -15,40 +15,35 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.IsmTemplate;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Action;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.DeleteAction;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition;
-import io.camunda.zeebe.exporter.opensearch.dto.PutIndexStateManagementPolicyRequest.Policy.State.Transition.Conditions;
-import io.camunda.zeebe.exporter.opensearch.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.util.CloseableSilently;
-import io.camunda.zeebe.util.VersionUtil;
+import io.micrometer.core.instrument.Metrics;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.net.URISyntaxException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
-import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.Request;
 import org.opensearch.client.ResponseException;
 import org.opensearch.client.RestClient;
-import org.opensearch.client.json.jackson.JacksonJsonpMapper;
+import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
-import org.opensearch.client.transport.OpenSearchTransport;
-import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBuilder;
+import org.opensearch.client.opensearch.indices.GetIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.GetIndexTemplateResponse;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
+import org.opensearch.client.opensearch.ism.Action;
+import org.opensearch.client.opensearch.ism.ActionDelete;
+import org.opensearch.client.opensearch.ism.IsmTemplate;
+import org.opensearch.client.opensearch.ism.Policy;
+import org.opensearch.client.opensearch.ism.PutPolicyRequest;
+import org.opensearch.client.opensearch.ism.States;
+import org.opensearch.client.opensearch.ism.Transition;
 
 /**
  * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
@@ -57,24 +52,31 @@ import org.opensearch.client.transport.httpclient5.ApacheHttpClient5TransportBui
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
-
+  final OpensearchClient opensearchClient;
   private final OpensearchExporterConfiguration config;
   private final RestClient restClient;
   private final OpenSearchClient osClient;
   private final RecordIndexRouter indexRouter;
 
   TestClient(final OpensearchExporterConfiguration config, final RecordIndexRouter indexRouter) {
-    this(config, indexRouter, RestClientFactory.of(config, true));
+    this(
+        config,
+        indexRouter,
+        RestClientFactory.of(config, true),
+        OpensearchConnector.of(config.withObjectMapper(MAPPER)).createClient());
   }
 
   TestClient(
       final OpensearchExporterConfiguration config,
       final RecordIndexRouter indexRouter,
-      final RestClient restClient) {
+      final RestClient restClient,
+      final OpenSearchClient osClient) {
     this.config = config;
     this.indexRouter = indexRouter;
     this.restClient = restClient;
-    osClient = new OpenSearchClient(createTransport(config));
+    this.osClient = osClient;
+
+    opensearchClient = new OpensearchClient(config, Metrics.globalRegistry, osClient, restClient);
   }
 
   @SuppressWarnings("rawtypes")
@@ -89,60 +91,42 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType, final String version) {
+  Optional<IndexTemplateItem> maybeGetIndexTemplate(
+      final ValueType valueType, final String version) {
     try {
-      final var request =
-          new Request(
-              "GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType, version));
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), IndexTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
+      final GetIndexTemplateRequest request =
+          GetIndexTemplateRequest.builder()
+              .name(indexRouter.indexPrefixForValueType(valueType, version))
+              .build();
+      final GetIndexTemplateResponse response = osClient.indices().getIndexTemplate(request);
+      return response.indexTemplates().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  Optional<ComponentTemplateWrapper> getComponentTemplate() {
-    try {
-      final var request =
-          new Request(
-              "GET",
-              "/_component_template/"
-                  + config.index.prefix
-                  + "-"
-                  + VersionUtil.getVersionLowerCase());
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), ComponentTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  Optional<GetComponentTemplateResponse> maybeGetComponentTemplate() {
+    return opensearchClient.maybeGetComponentTemplate();
   }
 
-  GetIndexStateManagementPolicyResponse getIndexStateManagementPolicy() {
-    try {
-      final var request =
-          new Request("GET", "/_plugins/_ism/policies/" + config.retention.getPolicyName());
-      final var response = restClient.performRequest(request);
-      return MAPPER.readValue(
-          response.getEntity().getContent(), GetIndexStateManagementPolicyResponse.class);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
-    }
+  Optional<GetIndexStateManagementPolicyResponse> maybeGetIndexStateManagementPolicy() {
+    return opensearchClient.maybeGetIndexStateManagementPolicy();
   }
 
   void putIndexStateManagementPolicy(final String minimumAge) {
     try {
-      final var request =
-          new Request("PUT", "/_plugins/_ism/policies/" + config.retention.getPolicyName());
-      decoratePolicyVersionSeq(request);
-      final var requestEntity = createPutIndexManagementPolicyRequest(minimumAge);
-      request.setJsonEntity(MAPPER.writeValueAsString(requestEntity));
-      restClient.performRequest(request);
+      final PutPolicyRequest request =
+          PutPolicyRequest.of(
+              req -> {
+                req.policyId(config.retention.getPolicyName());
+                req.policy(getIsmPolicy(minimumAge));
+                decoratePolicyVersionSeq(req);
+                return req;
+              });
+
+      opensearchClient.putIndexStateManagementPolicy(request);
     } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+      throw new OpensearchExporterException("Failed to put index state management policy", e);
     }
   }
 
@@ -164,38 +148,6 @@ final class TestClient implements CloseableSilently {
   @Override
   public void close() {
     CloseHelper.quietCloseAll(osClient._transport());
-  }
-
-  private void decoratePolicyVersionSeq(final Request request) {
-    try {
-      final GetIndexStateManagementPolicyResponse policy = getIndexStateManagementPolicy();
-      request.addParameter("if_seq_no", String.valueOf(policy.seqNo()));
-      request.addParameter("if_primary_term", String.valueOf(policy.primaryTerm()));
-    } catch (final Exception e) {
-      if (!(e.getCause() instanceof final ResponseException responseException
-          && responseException.getResponse().getStatusLine().getStatusCode() == 404)) {
-        throw e;
-      }
-    }
-  }
-
-  private PutIndexStateManagementPolicyRequest createPutIndexManagementPolicyRequest(
-      final String minimumAge) {
-    final var initialState =
-        new State(
-            ISM_INITIAL_STATE,
-            Collections.emptyList(),
-            List.of(new Transition(ISM_DELETE_STATE, new Conditions(minimumAge))));
-    final var deleteState =
-        new State(
-            ISM_DELETE_STATE, List.of(new Action(new DeleteAction())), Collections.emptyList());
-    final var policy =
-        new Policy(
-            config.retention.getPolicyDescription(),
-            ISM_INITIAL_STATE,
-            List.of(initialState, deleteState),
-            new IsmTemplate(List.of(config.index.prefix + "*"), 1));
-    return new PutIndexStateManagementPolicyRequest(policy);
   }
 
   public Optional<IndexISMPolicyDto> explainIndex(final String index) {
@@ -256,33 +208,50 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  void deleteIndicesByPattern(final String pattern) {
+  private void decoratePolicyVersionSeq(final PutPolicyRequest.Builder builder) {
     try {
-      final var request = new Request("DELETE", pattern + "?expand_wildcards=all");
-      restClient.performRequest(request);
-    } catch (final IOException e) {
-      throw new UncheckedIOException(e);
+      final Optional<GetIndexStateManagementPolicyResponse> maybePolicy =
+          maybeGetIndexStateManagementPolicy();
+      if (maybePolicy.isEmpty()) {
+        return;
+      }
+      final GetIndexStateManagementPolicyResponse policy = maybePolicy.get();
+      builder.ifSeqNo(policy.seqNo().longValue());
+      builder.ifPrimaryTerm(policy.primaryTerm());
+    } catch (final Exception e) {
+      if (!(e.getCause() instanceof final ResponseException responseException
+          && responseException.getResponse().getStatusLine().getStatusCode() == 404)) {
+        throw e;
+      }
     }
   }
 
-  private OpenSearchTransport createTransport(final OpensearchExporterConfiguration config) {
-    try {
-      return ApacheHttpClient5TransportBuilder.builder(HttpHost.create(config.url))
-          .setMapper(new JacksonJsonpMapper(MAPPER))
-          .build();
-    } catch (final URISyntaxException e) {
-      throw new RuntimeException(e);
-    }
-  }
+  private Policy getIsmPolicy(final String minimumAge) {
+    final States initialState =
+        States.builder()
+            .name(ISM_INITIAL_STATE)
+            .transitions(
+                Transition.builder()
+                    .stateName(ISM_DELETE_STATE)
+                    .conditions("min_index_age", JsonData.of(minimumAge))
+                    .build())
+            .build();
+    final States deleteState =
+        States.builder()
+            .name(ISM_DELETE_STATE)
+            .actions(Action.builder().delete(ActionDelete._INSTANCE).build())
+            .build();
 
-  record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {
-    record IndexTemplateWrapper(String name, @JsonProperty("index_template") Template template) {}
-  }
+    final IsmTemplate ismTemplate =
+        IsmTemplate.builder().indexPatterns(config.index.prefix + "*").priority(1).build();
 
-  record ComponentTemplatesDto(
-      @JsonProperty("component_templates") List<ComponentTemplateWrapper> wrappers) {
-    record ComponentTemplateWrapper(
-        String name, @JsonProperty("component_template") Template template) {}
+    return Policy.builder()
+        .policyId(config.retention.getPolicyName())
+        .description(config.retention.getPolicyDescription())
+        .defaultState(ISM_INITIAL_STATE)
+        .states(List.of(initialState, deleteState))
+        .ismTemplate(ismTemplate)
+        .build();
   }
 
   record IndexISMPolicyDto(String policyId) {}

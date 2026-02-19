@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.atomix.raft.storage.log.entry.SerializedApplicationEntry;
+import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.AtomixRecordEntrySupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.TestIndexedRaftLogEntry;
@@ -81,8 +82,23 @@ public final class StateControllerImplTest {
             store,
             runtimeDirectory,
             l -> atomixRecordEntrySupplier.get().getPreviousIndexedEntry(l),
-            db -> exporterPosition.get(),
-            db -> backupPosition.get(),
+            db ->
+                new StatePositionSupplier() {
+                  @Override
+                  public long getLowestExportedPosition() {
+                    return exporterPosition.get();
+                  }
+
+                  @Override
+                  public long getHighestExportedPosition() {
+                    return 0L;
+                  }
+
+                  @Override
+                  public long getHighestBackupPosition() {
+                    return backupPosition.get();
+                  }
+                },
             store);
 
     autoCloseableRule.manage(snapshotController);

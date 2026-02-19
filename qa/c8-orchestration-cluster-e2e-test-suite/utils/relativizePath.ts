@@ -8,28 +8,34 @@
 
 export const Paths = {
   login(application: string): string {
+    if (application === 'identity') {
+      return '/admin/login';
+    }
     return `/${application}/login`;
   },
   forbidden(application: string): string {
+    if (application === 'identity') {
+      return '/admin/forbidden';
+    }
     return `/${application}/forbidden`;
   },
   mappingRules() {
-    return '/identity/mapping-rules';
+    return '/admin/mapping-rules';
   },
   users() {
-    return '/identity/users';
+    return '/admin/users';
   },
   groups() {
-    return '/identity/groups';
+    return '/admin/groups';
   },
   roles() {
-    return '/identity/roles';
+    return '/admin/roles';
   },
   tenants() {
-    return '/identity/tenants';
+    return '/admin/tenants';
   },
   authorizations() {
-    return '/identity/authorizations';
+    return '/admin/authorizations';
   },
   operateDashboard() {
     return '/operate';

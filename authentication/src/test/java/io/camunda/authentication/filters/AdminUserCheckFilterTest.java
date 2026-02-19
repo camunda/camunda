@@ -54,7 +54,7 @@ class AdminUserCheckFilterTest {
     adminUserCheckFilter.doFilterInternal(request, response, filterChain);
 
     // then
-    verify(response).sendRedirect("localhost:8080/identity/setup");
+    verify(response).sendRedirect("localhost:8080/admin/setup");
   }
 
   @Test
@@ -99,7 +99,7 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     when(request.getContextPath()).thenReturn("");
-    when(request.getRequestURI()).thenReturn("/identity/setup");
+    when(request.getRequestURI()).thenReturn("/admin/setup");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 
@@ -115,7 +115,7 @@ class AdminUserCheckFilterTest {
     // given
     final var securityConfig = new SecurityConfiguration();
     when(request.getContextPath()).thenReturn("");
-    when(request.getRequestURI()).thenReturn("/identity/assets/some-asset.js");
+    when(request.getRequestURI()).thenReturn("/admin/assets/some-asset.js");
     final AdminUserCheckFilter adminUserCheckFilter =
         new AdminUserCheckFilter(securityConfig, roleServices);
 

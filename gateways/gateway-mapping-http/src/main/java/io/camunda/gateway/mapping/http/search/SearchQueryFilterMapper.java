@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
@@ -49,6 +50,7 @@ import io.camunda.search.filter.GlobalJobStatisticsFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
+import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
@@ -411,6 +413,31 @@ public class SearchQueryFilterMapper {
     }
 
     Optional.ofNullable(jobType).ifPresent(builder::jobType);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, JobTypeStatisticsFilter> toJobTypeStatisticsFilter(
+      final io.camunda.gateway.protocol.model.JobTypeStatisticsFilter filter) {
+    final var builder = FilterBuilders.jobTypeStatistics();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter == null) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
+      return Either.left(validationErrors);
+    }
+
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
+    Optional.ofNullable(from).ifPresent(builder::from);
+
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
+    Optional.ofNullable(to).ifPresent(builder::to);
+
+    Optional.ofNullable(filter.getJobType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::jobTypeOperations);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())

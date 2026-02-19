@@ -44,6 +44,11 @@ public record McpProcessInstanceCreationInstruction(
         Boolean awaitCompletion,
     @McpToolParam(
             description =
+                "Timeout in milliseconds the request waits for the process to complete. By default or when set to 0, the generic request timeout configured in the cluster is applied.",
+            required = false)
+        Long requestTimeout,
+    @McpToolParam(
+            description =
                 "List of variables by name to be included in the response when awaitCompletion is set to true. If empty, all visible variables in the root scope will be returned.",
             required = false)
         List<@NotBlank String> fetchVariables,
@@ -52,4 +57,11 @@ public record McpProcessInstanceCreationInstruction(
                 "List of tags to apply to the process instance. Tags must start with a letter, followed by letters, digits, or the special characters `_`, `-`, `:`, or `.`; length ≤ 100.",
             required = false)
         Set<@Pattern(regexp = "^[A-Za-z][A-Za-z0-9_\\-:.]{0,99}$") @Size(min = 1, max = 100) String>
-            tags) {}
+            tags,
+    @McpToolParam(
+            description =
+                "The tenant id of the process definition. If multi-tenancy is enabled, provide the tenant id of the process definition to start a process instance of. If multi-tenancy is disabled, don't provide this parameter.",
+            required = false)
+        @Pattern(regexp = "^(<default>|[A-Za-z0-9_@.+-]+)$")
+        @Size(min = 1, max = 256)
+        String tenantId) {}

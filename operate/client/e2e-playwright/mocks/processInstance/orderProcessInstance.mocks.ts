@@ -249,7 +249,7 @@ const orderProcessInstance: {
       ],
       page: {totalItems: 4},
     },
-    statisticsV2: {
+    statistics: {
       items: [
         {
           elementId: 'Activity_0c23arx',
@@ -523,7 +523,7 @@ const orderProcessInstance: {
       ],
       page: {totalItems: 5},
     },
-    statisticsV2: {
+    statistics: {
       items: [
         {
           elementId: 'Activity_089u4uu',
@@ -789,7 +789,7 @@ const orderProcessInstance: {
       ],
       page: {totalItems: 7},
     },
-    statisticsV2: {
+    statistics: {
       items: [
         {
           elementId: 'Activity_089u4uu',

@@ -121,7 +121,11 @@ public class HealthConfigurationInitializer
   protected boolean shouldEnableProbes(final List<String> activeProfiles) {
     return activeProfiles.stream()
         .anyMatch(
-            Set.of(Profile.OPERATE.getId(), Profile.TASKLIST.getId(), Profile.IDENTITY.getId())
+            Set.of(
+                    Profile.OPERATE.getId(),
+                    Profile.TASKLIST.getId(),
+                    Profile.IDENTITY.getId(),
+                    Profile.ADMIN.getId())
                 ::contains);
   }
 
@@ -132,7 +136,8 @@ public class HealthConfigurationInitializer
                     Profile.OPERATE.getId(),
                     Profile.TASKLIST.getId(),
                     Profile.BROKER,
-                    Profile.IDENTITY.getId())
+                    Profile.IDENTITY.getId(),
+                    Profile.ADMIN.getId())
                 ::contains);
   }
 
@@ -168,7 +173,9 @@ public class HealthConfigurationInitializer
       healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
     }
 
-    if (secondaryStorageEnabled && activeProfiles.contains(Profile.IDENTITY.getId())) {
+    if (secondaryStorageEnabled
+        && (activeProfiles.contains(Profile.IDENTITY.getId())
+            || activeProfiles.contains(Profile.ADMIN.getId()))) {
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
     }
 

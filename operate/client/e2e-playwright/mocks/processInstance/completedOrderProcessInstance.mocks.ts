@@ -27,7 +27,7 @@ const completedOrderProcessInstance: InstanceMock = {
   },
   callHierarchy: [],
   xml: openFile('./e2e-playwright/mocks/resources/orderProcess.bpmn'),
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'EndEvent_042s0oc',

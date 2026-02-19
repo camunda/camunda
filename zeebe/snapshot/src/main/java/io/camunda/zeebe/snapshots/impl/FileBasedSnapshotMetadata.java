@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.snapshots.impl;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,24 +19,34 @@ import java.io.OutputStream;
 public record FileBasedSnapshotMetadata(
     int version,
     long processedPosition,
-    long exportedPosition,
+    @JsonProperty("exportedPosition") long minExportedPosition,
+    long maxExportedPosition,
     long lastFollowupEventPosition,
-    @JsonProperty(defaultValue = "false") boolean isBootstrap)
+    @JsonProperty("bootstrap") boolean isBootstrap)
     implements SnapshotMetadata {
 
   private static final ObjectMapper OBJECTMAPPER = new ObjectMapper();
 
-  // Constructor for backward compatibility
+  @JsonCreator
   public FileBasedSnapshotMetadata(
-      final int version,
-      final long processedPosition,
-      final long exportedPosition,
-      final long lastFollowupEventPosition) {
-    this(version, processedPosition, exportedPosition, lastFollowupEventPosition, false);
+      @JsonProperty("version") final int version,
+      @JsonProperty("processedPosition") final long processedPosition,
+      @JsonProperty("exportedPosition") final long minExportedPosition,
+      @JsonProperty("maxExportedPosition") final Long maxExportedPosition,
+      @JsonProperty("lastFollowupEventPosition") final long lastFollowupEventPosition,
+      @JsonProperty("bootstrap") final boolean isBootstrap) {
+    this(
+        version,
+        processedPosition,
+        minExportedPosition,
+        // Backwards compatibility
+        maxExportedPosition == null ? Long.MAX_VALUE : maxExportedPosition,
+        lastFollowupEventPosition,
+        isBootstrap);
   }
 
   public static FileBasedSnapshotMetadata forBootstrap(final int version) {
-    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, true);
+    return new FileBasedSnapshotMetadata(version, 0L, 0L, 0L, 0L, true);
   }
 
   public void encode(final OutputStream output) throws IOException {

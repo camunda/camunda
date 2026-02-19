@@ -8,15 +8,12 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Disclaimer} from './index';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const DISCLAIMER_TEXT =
   'Non-Production License. If you would like information on production usage, please refer to our terms & conditions page or contact sales.';
 
 describe('<Disclaimer />', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
-  });
-
   it('should show the disclaimer', () => {
     const {rerender} = render(<Disclaimer />);
 
@@ -39,9 +36,6 @@ describe('<Disclaimer />', () => {
       'https://camunda.com/contact/',
     );
 
-    window.clientConfig = {
-      isEnterprise: false,
-    };
     rerender(<Disclaimer />);
 
     expect(
@@ -64,9 +58,11 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    window.clientConfig = {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isEnterprise: true,
-    };
+    });
+
     render(<Disclaimer />);
 
     expect(

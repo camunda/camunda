@@ -23,6 +23,7 @@ import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.engine.state.QueryService;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -77,7 +78,8 @@ public final class SimpleBrokerStartTest {
                       mock(PasswordEncoder.class),
                       mock(JwtDecoder.class),
                       mock(SearchClientsProxy.class),
-                      mock(BrokerRequestAuthorizationConverter.class));
+                      mock(BrokerRequestAuthorizationConverter.class),
+                      mock(NodeIdProvider.class));
               new Broker(systemContext, TEST_SPRING_BROKER_BRIDGE, emptyList());
             });
 
@@ -108,7 +110,8 @@ public final class SimpleBrokerStartTest {
             mock(PasswordEncoder.class),
             mock(JwtDecoder.class),
             mock(SearchClientsProxy.class),
-            mock(BrokerRequestAuthorizationConverter.class));
+            mock(BrokerRequestAuthorizationConverter.class),
+            mock(NodeIdProvider.class));
 
     final var leaderLatch = new CountDownLatch(1);
     final var listener =

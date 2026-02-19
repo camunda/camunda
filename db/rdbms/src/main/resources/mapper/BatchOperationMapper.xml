@@ -86,6 +86,14 @@
     </foreach>
   </insert>
 
+  <update id="activate"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationActivateDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET STATE      = 'ACTIVE',
+        START_DATE = #{startDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
   <update id="updateCompleted"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION

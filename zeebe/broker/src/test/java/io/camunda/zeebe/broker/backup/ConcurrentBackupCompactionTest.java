@@ -219,6 +219,10 @@ public class ConcurrentBackupCompactionTest extends DynamicAutoCloseable {
           }
         });
 
-    return transientSnapshot.withLastFollowupEventPosition(lastWrittenPosition).persist().join();
+    return transientSnapshot
+        .withMaxExportedPosition(lastWrittenPosition)
+        .withLastFollowupEventPosition(lastWrittenPosition)
+        .persist()
+        .join();
   }
 }

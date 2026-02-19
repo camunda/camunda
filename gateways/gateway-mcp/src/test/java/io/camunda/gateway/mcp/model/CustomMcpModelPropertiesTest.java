@@ -103,7 +103,20 @@ public class CustomMcpModelPropertiesTest {
         Arguments.argumentSet(
             "McpUserTaskAssignmentRequest",
             McpUserTaskAssignmentRequest.class,
-            Set.of("action", "allowOverride")));
+            Set.of("action", "allowOverride")),
+        Arguments.argumentSet(
+            "McpProcessInstanceCreationInstruction",
+            McpProcessInstanceCreationInstruction.class,
+            Set.of(
+                "awaitCompletion",
+                "fetchVariables",
+                "processDefinitionId",
+                "processDefinitionKey",
+                "processDefinitionVersion",
+                "requestTimeout",
+                "tags",
+                "tenantId",
+                "variables")));
   }
 
   @ParameterizedTest

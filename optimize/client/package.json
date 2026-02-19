@@ -7,7 +7,7 @@
   "dependencies": {
     "@bpmn-io/element-templates-icons-renderer": "^0.3.0",
     "@camunda/camunda-composite-components": "^0.21.0",
-    "@camunda/camunda-optimize-composite-components": "^0.0.16",
+    "@camunda/camunda-optimize-composite-components": "^0.0.17",
     "@carbon/icons-react": "^11.41.0",
     "@carbon/react": "^1.77.0",
     "@lexical/react": "^0.40.0",
@@ -89,7 +89,7 @@
     "@types/react-dom": "^18.3.0",
     "@types/react-router-dom": "^5.3.3",
     "@types/react-table": "7.7.20",
-    "@vitejs/plugin-react": "^4.3.1",
+    "@vitejs/plugin-react": "^5.0.0",
     "@vzeta/rollup-plugin-sbom": "2.0.0",
     "@wojtekmaj/enzyme-adapter-react-17": "^0.8.0",
     "ansi-html": "^0.0.9",

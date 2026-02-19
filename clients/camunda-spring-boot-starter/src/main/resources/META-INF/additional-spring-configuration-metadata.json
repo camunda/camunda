@@ -126,6 +126,11 @@
       "defaultValue": ["<default>"]
     },
     {
+      "name": "camunda.client.worker.defaults.tenant-filter",
+      "type": "io.camunda.client.api.command.enums.TenantFilter",
+      "defaultValue": "PROVIDED"
+    },
+    {
       "name": "camunda.client.worker.defaults.timeout",
       "defaultValue": "PT5M"
     },

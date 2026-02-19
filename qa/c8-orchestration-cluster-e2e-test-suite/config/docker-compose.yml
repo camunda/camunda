@@ -15,7 +15,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:9.3.0
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -101,7 +101,7 @@ services:
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda
-      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,identity
+      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,admin
       - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
       - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC

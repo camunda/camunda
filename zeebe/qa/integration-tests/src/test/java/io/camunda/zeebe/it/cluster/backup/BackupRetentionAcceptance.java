@@ -39,9 +39,12 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   int PARTITION_COUNT = 3;
   int BROKER_COUNT = 3;
   int REPLICATION_FACTOR = 3;
+  // Backup tolerance to account for clock skew when taking a backup after advancing the clock
+  int BACKUP_TOLERANCE_MILLIS = 200;
   Duration BACKUP_INTERVAL = Duration.ofSeconds(5);
   Duration CLEANUP_INTERVAL = Duration.ofSeconds(3);
-  Duration RETENTION_WINDOW = Duration.ofSeconds(5);
+  // Retention window is slightly longer than backup interval to account for clock drift
+  Duration RETENTION_WINDOW = BACKUP_INTERVAL.plus(Duration.ofSeconds(3));
 
   TestCluster getTestCluster();
 
@@ -95,7 +98,7 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   }
 
   default long awaitNewBackup(final long previousBackup) {
-    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis());
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Backup is created")
         .atMost(Duration.ofSeconds(30))
