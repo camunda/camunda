@@ -22,7 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.process.test.api.testCases.TestCase;
-import io.camunda.process.test.api.testCases.TestScenario;
+import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.CreateProcessInstanceInstruction;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,8 +30,8 @@ import org.junit.jupiter.api.Test;
 
 public class DeserializationTest {
 
-  private static final String EMPTY_TEST_SCENARIO = "/empty-test-scenario.json";
-  private static final String EXAMPLE_TEST_SCENARIO = "/example-test-scenario.json";
+  private static final String EMPTY_TEST_CASES = "/empty-test-cases.json";
+  private static final String EXAMPLE_TEST_CASES = "/example-test-cases.json";
 
   private final ObjectMapper objectMapper =
       new ObjectMapper()
@@ -39,18 +39,18 @@ public class DeserializationTest {
           .registerModules(new Jdk8Module(), new JavaTimeModule());
 
   @Test
-  void shouldParseEmptyTestScenario() throws IOException {
+  void shouldParseEmptyTestCases() throws IOException {
     // given
-    final InputStream json = getClass().getResourceAsStream(EMPTY_TEST_SCENARIO);
+    final InputStream json = getClass().getResourceAsStream(EMPTY_TEST_CASES);
 
     // when
-    final TestScenario testScenario = objectMapper.readValue(json, TestScenario.class);
+    final TestCases testCases = objectMapper.readValue(json, TestCases.class);
 
     // then
-    assertThat(testScenario).isNotNull();
-    assertThat(testScenario.getTestCases()).hasSize(1);
+    assertThat(testCases).isNotNull();
+    assertThat(testCases.getTestCases()).hasSize(1);
 
-    final TestCase testCase = testScenario.getTestCases().get(0);
+    final TestCase testCase = testCases.getTestCases().get(0);
     assertThat(testCase.getName()).isEqualTo("Test Case 1");
     assertThat(testCase.getDescription())
         .hasValue("A human-readable description of what this test case is verifying.");
@@ -58,18 +58,18 @@ public class DeserializationTest {
   }
 
   @Test
-  void shouldParseExampleTestScenario() throws IOException {
+  void shouldParseExampleTestCases() throws IOException {
     // given
-    final InputStream json = getClass().getResourceAsStream(EXAMPLE_TEST_SCENARIO);
+    final InputStream json = getClass().getResourceAsStream(EXAMPLE_TEST_CASES);
 
     // when
-    final TestScenario testScenario = objectMapper.readValue(json, TestScenario.class);
+    final TestCases testCases = objectMapper.readValue(json, TestCases.class);
 
     // then
-    assertThat(testScenario).isNotNull();
-    assertThat(testScenario.getTestCases()).hasSize(1);
+    assertThat(testCases).isNotNull();
+    assertThat(testCases.getTestCases()).hasSize(1);
 
-    final TestCase testCase = testScenario.getTestCases().get(0);
+    final TestCase testCase = testCases.getTestCases().get(0);
     assertThat(testCase.getName()).isEqualTo("Happy path order processing");
     assertThat(testCase.getDescription())
         .hasValue(

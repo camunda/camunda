@@ -32,7 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class SchemaValidationTest {
 
-  private static final String DSL_SCHEMA = "/schema/cpt-test-cases.schema.json";
+  private static final String JSON_SCHEMA_PATH = "/schema/cpt-test-cases.schema.json";
 
   private static JsonSchema jsonSchema;
 
@@ -41,17 +41,14 @@ public class SchemaValidationTest {
   @BeforeAll
   static void setup() {
     final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(VersionFlag.V7);
-    jsonSchema = factory.getSchema(SchemaValidationTest.class.getResourceAsStream(DSL_SCHEMA));
+    jsonSchema =
+        factory.getSchema(SchemaValidationTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
   }
 
   @ParameterizedTest
   @ValueSource(
-      strings = {
-        "/empty-test-scenario.json",
-        "/example-test-scenario.json",
-        "/full-test-scenario.json"
-      })
-  void shouldValidateScenario(final String filePath) throws IOException {
+      strings = {"/empty-test-cases.json", "/example-test-cases.json", "/full-test-cases.json"})
+  void shouldValidateTestCases(final String filePath) throws IOException {
     // given
     final JsonNode jsonNode = objectMapper.readTree(getClass().getResourceAsStream(filePath));
 
@@ -66,7 +63,7 @@ public class SchemaValidationTest {
   void shouldReportValidationErrors() throws IOException {
     // given
     final JsonNode jsonNode =
-        objectMapper.readTree(getClass().getResourceAsStream("/invalid-test-scenario.json"));
+        objectMapper.readTree(getClass().getResourceAsStream("/invalid-test-cases.json"));
 
     // when
     final Set<ValidationMessage> errors = jsonSchema.validate(jsonNode);
