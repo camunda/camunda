@@ -114,8 +114,8 @@ class SchemaManagerStartupIT {
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,tasklist,dev")
           .withEnv("CAMUNDA_OPERATE_IMPORTER_ENABLED", "true")
           .withEnv("CAMUNDA_TASKLIST_IMPORTER_ENABLED", "true")
-          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HEALTHCHECK_ENABLED", "false")
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECK_ENABLED", "false");
+          .withEnv("CAMUNDA_TASKLIST_ELASTICSEARCH_HEALTHCHECKENABLED", "false")
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECKENABLED", "false");
     } else {
       camunda
           .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
