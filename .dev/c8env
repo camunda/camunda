@@ -233,16 +233,6 @@ generate_compose() {
     output+="$ollama_template"
   fi
 
-  # Dashboard (nginx serving resources + landing page)
-  local mod_template landing_page_path
-  landing_page_path="$(cd "$SCRIPT_DIR" && pwd)/envs/${env_name}/index.html"
-  mod_template=$(<"$TEMPLATES_DIR/docker-compose/dashboard.yml")
-  mod_template="${mod_template//\{\{ENV_NAME\}\}/$env_name}"
-  mod_template="${mod_template//\{\{RESOURCES_PATH\}\}/$RESOURCES_DIR}"
-  mod_template="${mod_template//\{\{NGINX_CONF_PATH\}\}/$TEMPLATES_DIR/docker-compose/dashboard-nginx.conf}"
-  mod_template="${mod_template//\{\{LANDING_PAGE_PATH\}\}/$landing_page_path}"
-  output+="$mod_template"
-
   # Keycloak (OIDC auth)
   if [[ "$auth" == "oidc" ]]; then
     local kc_template realm_path
@@ -283,7 +273,7 @@ generate_infra_xml() {
   local infra_name="${env_name} Infra"
   local compose_path=".dev/envs/${env_name}/docker-compose.yml"
 
-  # Build services list — dashboard always included
+  # Build services list
   local services_list="            <option value=\"${datastore}\" />"
 
   if [[ "$standalone" == "yes" ]]; then
@@ -297,8 +287,6 @@ generate_infra_xml() {
     services_list+=$'\n'"            <option value=\"ollama\" />"
     services_list+=$'\n'"            <option value=\"ollama-init\" />"
   fi
-
-  services_list+=$'\n'"            <option value=\"dashboard\" />"
 
   if [[ "$auth" == "oidc" ]]; then
     services_list+=$'\n'"            <option value=\"keycloak\" />"
@@ -422,31 +410,6 @@ generate_app_xml() {
   echo "$template"
 }
 
-generate_landing_page() {
-  local env_name="$1" auth="$2" datastore="$3" connectors="$4" model="$5"
-
-  # Build sed expressions for placeholder replacement
-  local sed_args=()
-  sed_args+=(-e "s|{{ENV_NAME}}|${env_name}|g")
-  sed_args+=(-e "s|{{AUTH_MODE}}|${auth}|g")
-  sed_args+=(-e "s|{{DATASTORE}}|${datastore}|g")
-  sed_args+=(-e "s|{{CONNECTORS}}|${connectors}|g")
-
-  # Auth defaults
-  if [[ "$auth" == "basic" ]]; then
-    sed_args+=(-e "s|{{DEFAULT_USER}}|demo|g")
-    sed_args+=(-e "s|{{DEFAULT_PASS}}|demo|g")
-  elif [[ "$auth" == "oidc" ]]; then
-    sed_args+=(-e "s|{{DEFAULT_USER}}||g")
-    sed_args+=(-e "s|{{DEFAULT_PASS}}||g")
-  else
-    sed_args+=(-e "s|{{DEFAULT_USER}}||g")
-    sed_args+=(-e "s|{{DEFAULT_PASS}}||g")
-  fi
-
-  sed "${sed_args[@]}" "$TEMPLATES_DIR/landing/index.html"
-}
-
 # ─── Install ─────────────────────────────────────────────────────────────────
 
 install_configs() {
@@ -475,6 +438,42 @@ modeler_settings_path() {
     MINGW*|MSYS*|CYGWIN*) echo "$APPDATA/camunda-modeler/settings.json" ;;
     *) return 1 ;;
   esac
+}
+
+# Detect Camunda Desktop Modeler installation. Sets MODELER_CMD if found.
+detect_modeler() {
+  MODELER_CMD=""
+  case "$(uname -s)" in
+    Darwin)
+      if [[ -d "/Applications/Camunda Modeler.app" ]]; then
+        MODELER_CMD='open -a "Camunda Modeler"'
+        return 0
+      fi
+      ;;
+    Linux)
+      if command -v camunda-modeler &>/dev/null; then
+        MODELER_CMD="camunda-modeler"
+        return 0
+      fi
+      for p in /opt/camunda-modeler/camunda-modeler /snap/bin/camunda-modeler; do
+        if [[ -x "$p" ]]; then
+          MODELER_CMD="$p"
+          return 0
+        fi
+      done
+      ;;
+    MINGW*|MSYS*|CYGWIN*)
+      if [[ -n "${LOCALAPPDATA:-}" && -d "$LOCALAPPDATA/Programs/camunda-modeler" ]]; then
+        MODELER_CMD="$LOCALAPPDATA/Programs/camunda-modeler/Camunda Modeler.exe"
+        return 0
+      fi
+      if command -v camunda-modeler &>/dev/null; then
+        MODELER_CMD="camunda-modeler"
+        return 0
+      fi
+      ;;
+  esac
+  return 1
 }
 
 install_modeler_connection() {
@@ -547,6 +546,13 @@ print(json.dumps(settings, indent=2))
 " "$existing" "$connection" > "${settings_path}.tmp" && mv "${settings_path}.tmp" "$settings_path"
 
   info "Configured Modeler connection '${env_name}' (${auth} auth)"
+
+  # Detect Modeler installation and provide guidance
+  if detect_modeler; then
+    printf "  ${GREEN}✓${RESET} Restart Camunda Modeler to pick up the new connection: ${DIM}${MODELER_CMD}${RESET}\n"
+  else
+    printf "  ${YELLOW}⚠${RESET} Camunda Modeler not found. Download: ${CYAN}https://camunda.com/download/modeler/${RESET}\n"
+  fi
 }
 
 # ─── Commands ────────────────────────────────────────────────────────────────
@@ -661,7 +667,6 @@ cmd_generate() {
   printf "    Connectors: ${CYAN}%s${RESET}\n" "$connectors"
   [[ "$connectors" == "agentic" ]] && printf "    Model:      ${CYAN}%s${RESET}\n" "$model"
   printf "    Camunda:    ${CYAN}%s${RESET}\n" "$( [[ "$standalone" == "yes" ]] && echo "Docker (standalone)" || echo "IntelliJ (debuggable)" )"
-  printf "    Dashboard:  ${CYAN}%s${RESET}\n" "http://${name}.localhost:8090/"
   [[ -n "$resources" ]] && printf "    Resources:  ${CYAN}%s${RESET}\n" "$resources"
   printf "\n"
 
@@ -706,10 +711,6 @@ EOF
   fi
 
   info "Generated IntelliJ run configs"
-
-  # Generate landing page
-  generate_landing_page "$name" "$auth" "$datastore" "$connectors" "$model" > "$env_dir/index.html"
-  info "Generated dashboard: .dev/envs/${name}/index.html"
 
   # Copy resources and generate bootstrap script
   if [[ -n "$resources" ]]; then
@@ -768,10 +769,8 @@ BOOTSTRAP_DEPLOY
   if [[ "$standalone" == "yes" ]]; then
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}docker compose -f .dev/envs/${name}/docker-compose.yml up${RESET}\n"
     printf "  Or use IntelliJ config: ${CYAN}${name} Infra${RESET}\n"
-    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n"
   else
     printf "\n  ${GREEN}${BOLD}Done!${RESET} Run ${CYAN}${name}${RESET} from IntelliJ (Run or Debug).\n"
-    printf "  ${DIM}Dashboard: http://${name}.localhost:8090/${RESET}\n"
   fi
 
   if [[ "$auth" == "oidc" ]]; then
@@ -983,55 +982,6 @@ cmd_stop() {
   stop_env "$name"
 }
 
-cmd_dashboard() {
-  local name="${1:-}"
-
-  # Auto-detect: if only one environment exists, use it
-  if [[ -z "$name" ]]; then
-    local envs=()
-    for d in "$ENVS_DIR"/*/; do
-      [[ -d "$d" ]] && envs+=("$(basename "$d")")
-    done
-    if [[ ${#envs[@]} -eq 1 ]]; then
-      name="${envs[0]}"
-    elif [[ ${#envs[@]} -eq 0 ]]; then
-      die "No environments found. Run 'c8env generate' first."
-    else
-      die "Multiple environments found. Specify one: ${envs[*]}"
-    fi
-  fi
-
-  local env_dir="$ENVS_DIR/$name"
-  [[ -d "$env_dir" ]] || die "No environment found for '$name'. Run 'c8env generate' first."
-
-  local dashboard_url="http://${name}.localhost:8090"
-  local container_name="${name}-dashboard"
-
-  # Prefer the Dockerized dashboard; fall back to local file
-  if docker inspect --format='{{.State.Running}}' "$container_name" 2>/dev/null | grep -q true; then
-    info "Opening dashboard for ${name} at ${dashboard_url}"
-    if command -v open &>/dev/null; then
-      open "$dashboard_url"
-    elif command -v xdg-open &>/dev/null; then
-      xdg-open "$dashboard_url"
-    else
-      info "Open in browser: ${dashboard_url}"
-    fi
-  else
-    local page="$env_dir/index.html"
-    [[ -f "$page" ]] || die "No dashboard found for '$name'. Regenerate with 'c8env generate'."
-    warn "Dashboard container '${container_name}' is not running — opening local file instead"
-    info "Start the infrastructure first, then use 'c8env dashboard' for the full experience"
-    if command -v open &>/dev/null; then
-      open "$page"
-    elif command -v xdg-open &>/dev/null; then
-      xdg-open "$page"
-    else
-      info "Open in browser: file://$page"
-    fi
-  fi
-}
-
 cmd_help() {
   printf "\n"
   printf "  ${BOLD}c8env${RESET} — Camunda 8 Dev Environment Generator\n"
@@ -1044,7 +994,6 @@ cmd_help() {
   printf "    .dev/c8env stop [NAME|--all]                   Stop environment containers\n"
   printf "    .dev/c8env deploy [NAME|--list]                Deploy a BPMN resource\n"
   printf "    .dev/c8env start PROCESS-ID [VARS-JSON]        Start a process instance\n"
-  printf "    .dev/c8env dashboard [NAME]                    Open environment dashboard\n"
   printf "    .dev/c8env help                                Show this help\n"
   printf "\n"
   printf "  ${BOLD}Options:${RESET}\n"
@@ -1098,10 +1047,6 @@ main() {
     start)
       shift
       cmd_start "$@"
-      ;;
-    dashboard)
-      shift
-      cmd_dashboard "${1:-}"
       ;;
     *)
       cmd_generate "$@"

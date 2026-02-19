@@ -28,7 +28,6 @@ extending anything under `.dev/`.
 │   │   ├── keycloak.yml               # Keycloak OIDC provider
 │   │   ├── keycloak/                  # Keycloak config files
 │   │   │   └── camunda-dev-realm.json # Pre-configured realm (demo/demo user)
-│   │   ├── volumes.yml                # Ollama volume
 │   │   └── camunda-env/               # Env var fragments for standalone Camunda container
 │   │       ├── common.yml             # Gateway security disable (always included)
 │   │       ├── auth-basic.yml         # Basic auth env vars
@@ -78,7 +77,8 @@ CLI flags). Both call the same generation functions.
 5. `generate_app_xml()` creates the Spring Boot IntelliJ run config (unless standalone)
 6. A `.c8env` metadata file is saved to the env directory (see below)
 7. Configs are written to `.dev/envs/<name>/` and optionally installed to `.idea/runConfigurations/`
-8. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`
+8. `install_modeler_connection()` upserts a connection in Camunda Desktop Modeler's `settings.json`;
+   `detect_modeler()` checks if the Modeler is installed and prints a restart hint or download link
 9. `cmd_clean()` removes the env, IntelliJ configs, and the Modeler connection
 
 ### Regeneration via `--name`

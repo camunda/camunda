@@ -61,7 +61,6 @@ Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 .dev/c8env deploy <resource>          # Deploy a BPMN resource to Camunda
 .dev/c8env deploy --list              # List available BPMN resources
 .dev/c8env start <process-id>         # Start a process instance
-.dev/c8env dashboard [name]           # Open environment dashboard in browser
 .dev/c8env help                       # Show usage
 ```
 
@@ -128,23 +127,13 @@ the new one (via a Before Launch task). You can also manage this manually:
 .dev/c8env stop --all                 # Stop all environments
 ```
 
-### Dashboard & BPMN Editor
+### Camunda Desktop Modeler Integration
 
-Every generated environment includes a browser-based dashboard at **\<name\>.localhost:8090/http://**
-served by an nginx container (e.g. `http://c8-insecure-es.localhost:8090/`). The `*.localhost`
-subdomain resolves to `127.0.0.1` automatically — no DNS or `/etc/hosts` setup needed.
+The CLI auto-configures a connection in Camunda Desktop Modeler's `settings.json` so you can
+deploy BPMN diagrams directly from the Modeler. If the Modeler is not installed, a warning is
+printed with a download link.
 
-Features:
-- Collapsible sidebar with live health status for Camunda, datastore, connectors, and Ollama
-- Full Camunda 8 / Zeebe properties panel (task types, I/O mappings, headers)
-- Open files from disk or browse mounted `.dev/resources/bpmn/` directory
-- Save to disk (download or File System Access API in Chrome)
-- Deploy directly to Camunda REST API (`POST /v2/deployments`)
-- Start process instances (`POST /v2/process-instances`)
-- Configurable endpoint URL and basic auth credentials (persisted in localStorage)
-- Keyboard shortcuts: Ctrl+S (save), Ctrl+O (open)
-
-The dashboard opens automatically when launching the Spring Boot run config from IntelliJ.
+After generating an environment, restart the Modeler to pick up the new connection settings.
 
 ### Model Presets (for `--connectors agentic`)
 
@@ -164,9 +153,8 @@ You can also specify any Ollama model name (e.g. `mistral:7b`).
 ├── README.md                # This file
 ├── .gitignore               # Ignores envs/ (generated, personal)
 ├── templates/               # Template fragments for generation
-│   ├── docker-compose/      # Docker service blocks (ES, PG, Ollama, dashboard, etc.)
-│   ├── intellij/            # IntelliJ run config templates
-│   └── landing/             # Dashboard + BPMN editor template (index.html)
+│   ├── docker-compose/      # Docker service blocks (ES, PG, Ollama, Keycloak, etc.)
+│   └── intellij/            # IntelliJ run config templates
 ├── resources/               # Sample BPMN processes and resources
 │   └── bpmn/
 │       └── agentic-daily-briefing.bpmn
