@@ -268,6 +268,12 @@
     <skipUTs>${skipTests}</skipUTs>
     <skipITs>${skipTests}</skipITs>
     <jacoco.skip>${skipUTs}</jacoco.skip>
+    <!--
+      JVM module opens required across the project:
+      - java.base/java.io: required for NativeFS raw file descriptor access
+      - java.base/jdk.internal.misc: required for agrona's UnsafeApi
+    -->
+    <jvm.module.opens>--add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</jvm.module.opens>
 
     <!--
       you can use the following to disable specific check plugins. this can also be used to skip the
@@ -2523,9 +2529,7 @@
           <artifactId>maven-surefire-plugin</artifactId>
           <version>${plugin.version.surefire}</version>
           <configuration>
-            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
-            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED
-              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
+            <argLine>${jvm.module.opens}</argLine>
             <!-- by default, exclude performance and strace tests -->
             <excludedGroups>performance, strace</excludedGroups>
             <failIfNoTests>false</failIfNoTests>
@@ -2564,9 +2568,7 @@
           <artifactId>maven-failsafe-plugin</artifactId>
           <version>${plugin.version.failsafe}</version>
           <configuration>
-            <!-- Required to access the raw file descriptor from FileDescriptor for NativeFS -->
-            <argLine>--add-opens=java.base/java.io=ALL-UNNAMED
-              --add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</argLine>
+            <argLine>${jvm.module.opens}</argLine>
             <failIfNoTests>false</failIfNoTests>
             <trimStackTrace>false</trimStackTrace>
             <redirectTestOutputToFile>true</redirectTestOutputToFile>
