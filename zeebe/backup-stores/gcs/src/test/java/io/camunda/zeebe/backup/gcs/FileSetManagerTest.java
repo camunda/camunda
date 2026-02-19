@@ -20,12 +20,13 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
+import java.util.zip.GZIPOutputStream;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,85 +41,12 @@ final class FileSetManagerTest {
 
   FileSetManagerTest(@Mock final Storage storage) {
     this.storage = storage;
-    manager =
-        new FileSetManager(
-            storage,
-            BucketInfo.of("bucket"),
-            "basePath",
-            Executors.newVirtualThreadPerTaskExecutor(),
-            50);
+    manager = new FileSetManager(storage, BucketInfo.of("bucket"), "basePath");
   }
 
-  @Test
-  void shouldSaveSnapshotFilesInParallel(@TempDir final Path tempDir) throws IOException {
-    // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    final var file1 = Files.createFile(tempDir.resolve("file1"));
-    final var file2 = Files.createFile(tempDir.resolve("file2"));
-    final var namedFileSet =
-        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
-
-    // when
-    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
-
-    // then - snapshots are uploaded in parallel using the executor
-    verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
-  }
-
-  @Test
-  void shouldThrowExceptionOnSaveSnapshotWhenUploadFails(@TempDir final Path tempDir)
-      throws IOException {
-    // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    final var file1 = Files.createFile(tempDir.resolve("file1"));
-    final var file2 = Files.createFile(tempDir.resolve("file2"));
-    final var namedFileSet =
-        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
-    when(storage.createFrom(any(), any(InputStream.class), any()))
-        .thenThrow(new StorageException(412, "expected"));
-
-    // when throw
-    Assertions.assertThatThrownBy(
-            () ->
-                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
-        .hasCauseInstanceOf(StorageException.class)
-        .hasMessageContaining("expected");
-  }
-
-  @Test
-  void shouldSaveSegmentFilesInParallel(@TempDir final Path tempDir) throws IOException {
-    // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    final var file1 = Files.createFile(tempDir.resolve("file1"));
-    final var file2 = Files.createFile(tempDir.resolve("file2"));
-    final var namedFileSet =
-        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
-
-    // when
-    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
-
-    // then - segments are uploaded in parallel using the executor
-    verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
-  }
-
-  @Test
-  void shouldThrowExceptionOnSaveSegments(@TempDir final Path tempDir) throws IOException {
-    // given
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    final var file1 = Files.createFile(tempDir.resolve("file1"));
-    final var file2 = Files.createFile(tempDir.resolve("file2"));
-    final var namedFileSet =
-        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
-    when(storage.createFrom(any(), any(InputStream.class), any()))
-        .thenThrow(new StorageException(412, "expected"));
-
-    // when throw
-    Assertions.assertThatThrownBy(
-            () ->
-                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
-        .hasCauseInstanceOf(StorageException.class)
-        .hasMessageContaining("expected");
-  }
+  // Note: Save tests that verify TransferManager behavior are covered by integration tests
+  // (GcsBackupStoreIT) since TransferManager creates its own internal service and cannot
+  // be easily mocked.
 
   @SuppressWarnings("unchecked")
   @Test
@@ -169,39 +97,98 @@ final class FileSetManagerTest {
   }
 
   @Test
-  void shouldRestoreFileSet() {
+  void shouldRestoreFileSetFromArchive(@TempDir final Path tempDir) throws IOException {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
-    final Path restorePath = Path.of("restorePath");
+    final Path restorePath = tempDir.resolve("restore");
+    Files.createDirectories(restorePath);
+
+    // Create a mock archive that will be "downloaded"
+    doAnswer(
+            invocation -> {
+              final Path targetPath = invocation.getArgument(1);
+              createTestArchive(
+                  targetPath,
+                  Map.of(
+                      "snapshotFile", "content1",
+                      "snapshotFile2", "content2"));
+              return null;
+            })
+        .when(storage)
+        .downloadTo(any(), any(Path.class));
 
     // when
     final var namedFileSet = manager.restore(backupIdentifier, "filesetName", fileSet, restorePath);
 
     // then
-    final Path expectedPath1 = Path.of("restorePath/snapshotFile");
-    final Path expectedPath2 = Path.of("restorePath/snapshotFile2");
+    Assertions.assertThat(namedFileSet.namedFiles()).hasSize(2);
+    Assertions.assertThat(namedFileSet.namedFiles().get("snapshotFile"))
+        .isEqualTo(restorePath.resolve("snapshotFile"));
+    Assertions.assertThat(namedFileSet.namedFiles().get("snapshotFile2"))
+        .isEqualTo(restorePath.resolve("snapshotFile2"));
+    Assertions.assertThat(Files.readString(restorePath.resolve("snapshotFile")))
+        .isEqualTo("content1");
+    Assertions.assertThat(Files.readString(restorePath.resolve("snapshotFile2")))
+        .isEqualTo("content2");
 
-    Assertions.assertThat(namedFileSet.namedFiles())
-        .isEqualTo(Map.of("snapshotFile", expectedPath1, "snapshotFile2", expectedPath2));
-
-    verify(storage).downloadTo(any(), eq(expectedPath1));
-    verify(storage).downloadTo(any(), eq(expectedPath2));
+    // Verify single archive download
+    verify(storage, times(1)).downloadTo(any(), any(Path.class));
   }
 
   @Test
-  void shouldThrowRestoreFileSetWhenDownloadToFails() {
+  void shouldReturnEmptyFileSetWhenNoFilesToRestore(@TempDir final Path tempDir) {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var fileSet = new FileSet(List.of());
+
+    // when
+    final var namedFileSet = manager.restore(backupIdentifier, "filesetName", fileSet, tempDir);
+
+    // then
+    Assertions.assertThat(namedFileSet.namedFiles()).isEmpty();
+    verifyNoInteractions(storage);
+  }
+
+  @Test
+  void shouldNotSaveWhenFileSetIsEmpty() {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var namedFileSet = new NamedFileSetImpl(Map.of());
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
+
+    // then - no upload should happen
+    verifyNoInteractions(storage);
+  }
+
+  @Test
+  void shouldThrowRestoreFileSetWhenDownloadToFails(@TempDir final Path tempDir) {
     // given
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
-    final Path restorePath = Path.of("restorePath");
+    final Path restorePath = tempDir.resolve("restore");
     doThrow(new StorageException(412, "expected")).when(storage).downloadTo(any(), any(Path.class));
 
     // when - then throw
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))
         .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
+  }
+
+  private void createTestArchive(final Path archivePath, final Map<String, String> files)
+      throws IOException {
+    try (final var fileOut = Files.newOutputStream(archivePath);
+        final var gzipOut = new GZIPOutputStream(fileOut);
+        final var zipOut = new ZipOutputStream(gzipOut)) {
+      for (final var entry : files.entrySet()) {
+        zipOut.putNextEntry(new ZipEntry(entry.getKey()));
+        zipOut.write(entry.getValue().getBytes());
+        zipOut.closeEntry();
+      }
+    }
   }
 }

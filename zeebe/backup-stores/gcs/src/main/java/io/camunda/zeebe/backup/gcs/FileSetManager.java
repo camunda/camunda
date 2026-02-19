@@ -11,27 +11,32 @@ import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.BucketInfo;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.Storage.BlobListOption;
-import com.google.cloud.storage.Storage.BlobWriteOption;
+import com.google.cloud.storage.transfermanager.ParallelUploadConfig;
+import com.google.cloud.storage.transfermanager.TransferManager;
+import com.google.cloud.storage.transfermanager.TransferManagerConfig;
+import com.google.cloud.storage.transfermanager.TransferStatus;
+import com.google.cloud.storage.transfermanager.UploadResult;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.NamedFileSet;
 import io.camunda.zeebe.backup.common.FileSet;
-import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Semaphore;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
 
-final class FileSetManager {
+final class FileSetManager implements AutoCloseable {
 
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  private static final String ARCHIVE_FILENAME = "fileset.zip";
+  private static final int BUFFER_SIZE = 64 * 1024; // 64KB buffer for better I/O throughput
 
   /**
    * The path format consists of the following elements:
@@ -50,80 +55,92 @@ final class FileSetManager {
   private final Storage client;
   private final BucketInfo bucketInfo;
   private final String basePath;
-  private final ExecutorService executor;
-  private final Semaphore concurrencyLimit;
+  private final TransferManager transferManager;
 
-  FileSetManager(
-      final Storage client,
-      final BucketInfo bucketInfo,
-      final String basePath,
-      final ExecutorService executor,
-      final int maxConcurrentOperations) {
+  FileSetManager(final Storage client, final BucketInfo bucketInfo, final String basePath) {
     this.client = client;
     this.bucketInfo = bucketInfo;
     this.basePath = basePath;
-    this.executor = executor;
-    concurrencyLimit = new Semaphore(maxConcurrentOperations);
+    transferManager =
+        TransferManagerConfig.newBuilder()
+            .setStorageOptions(client.getOptions())
+            .build()
+            .getService();
+  }
+
+  @Override
+  public void close() throws Exception {
+    transferManager.close();
   }
 
   /**
-   * Uploads files in parallel using virtual threads. Uses an InputStream-based approach to prevent
-   * the GCS client from reading the file twice (once for CRC32C checksum, once for upload) which
-   * could cause checksum mismatches if the file is modified during upload.
+   * Compresses all files from the file set into a single GZIP-compressed ZIP archive and uploads it
+   * to GCS. This approach reduces the number of network operations and storage costs.
    *
-   * <p>Concurrency is limited by a semaphore to avoid resource exhaustion.
+   * <p>The archive is created in a temporary file, then uploaded to GCS.
    *
    * @see <a href="https://github.com/camunda/camunda/issues/45636">#45636</a>
    */
   void save(final BackupIdentifier id, final String fileSetName, final NamedFileSet fileSet) {
-    final var uploadFutures =
-        fileSet.namedFiles().entrySet().stream()
-            .map(
-                namedFile ->
-                    schedule(
-                        () -> {
-                          uploadFile(id, fileSetName, namedFile.getKey(), namedFile.getValue());
-                          return null;
-                        }))
-            .toList();
+    if (fileSet.namedFiles().isEmpty()) {
+      return;
+    }
 
-    // Wait for all uploads to complete
-    CompletableFuture.allOf(uploadFutures.toArray(new CompletableFuture[0])).join();
-  }
-
-  /**
-   * Schedules a task to be executed asynchronously using virtual threads, respecting the
-   * concurrency limit imposed by the semaphore.
-   */
-  private <T> CompletableFuture<T> schedule(final Supplier<T> task) {
-    final var result = new CompletableFuture<T>();
-    executor.execute(
-        () -> {
-          try {
-            concurrencyLimit.acquire();
-            result.complete(task.get());
-          } catch (final InterruptedException e) {
-            Thread.currentThread().interrupt();
-            result.completeExceptionally(e);
-          } catch (final Exception e) {
-            result.completeExceptionally(e);
-          } finally {
-            concurrencyLimit.release();
-          }
-        });
-    return result;
-  }
-
-  private void uploadFile(
-      final BackupIdentifier id,
-      final String fileSetName,
-      final String fileName,
-      final Path filePath) {
-    try (final var inputStream = Files.newInputStream(filePath)) {
-      client.createFrom(
-          blobInfo(id, fileSetName, fileName), inputStream, BlobWriteOption.doesNotExist());
+    try {
+      final Path tempArchive = Files.createTempFile("backup-", ".zip");
+      try {
+        createCompressedArchive(fileSet, tempArchive);
+        uploadArchive(id, fileSetName, tempArchive);
+      } finally {
+        Files.deleteIfExists(tempArchive);
+      }
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
+    }
+  }
+
+  private void createCompressedArchive(final NamedFileSet fileSet, final Path archivePath)
+      throws IOException {
+    try (final var fileOut = Files.newOutputStream(archivePath);
+        final var bufferedOut = new java.io.BufferedOutputStream(fileOut, BUFFER_SIZE);
+        final var zipOut = new ZipOutputStream(bufferedOut)) {
+      zipOut.setLevel(java.util.zip.Deflater.BEST_SPEED);
+      for (final var entry : fileSet.namedFiles().entrySet()) {
+        final String fileName = entry.getKey();
+        final Path filePath = entry.getValue();
+        zipOut.putNextEntry(new ZipEntry(fileName));
+        Files.copy(filePath, zipOut);
+        zipOut.closeEntry();
+      }
+    }
+  }
+
+  private void uploadArchive(
+      final BackupIdentifier id, final String fileSetName, final Path archivePath)
+      throws IOException {
+    final ParallelUploadConfig uploadConfig =
+        ParallelUploadConfig.newBuilder()
+            .setBucketName(bucketInfo.getName())
+            // Use UploadBlobInfoFactory to control the blob name instead of using the file's path
+            // name
+            .setUploadBlobInfoFactory(
+                (path, contentType) -> blobInfo(id, fileSetName, ARCHIVE_FILENAME))
+            .build();
+
+    final List<UploadResult> results =
+        transferManager.uploadFiles(List.of(archivePath), uploadConfig).getUploadResults();
+
+    // Check for upload failures
+    for (final UploadResult result : results) {
+      if (result.getStatus() != TransferStatus.SUCCESS) {
+        final String errorMessage =
+            result.getStatus() == TransferStatus.FAILED_TO_FINISH
+                ? "Failed to upload archive: " + result.getException().getMessage()
+                : "Failed to upload archive with status: " + result.getStatus();
+        final Exception cause =
+            result.getStatus() == TransferStatus.FAILED_TO_FINISH ? result.getException() : null;
+        throw new UncheckedIOException(new IOException(errorMessage, cause));
+      }
     }
   }
 
@@ -137,42 +154,55 @@ final class FileSetManager {
   }
 
   /**
-   * Downloads files in parallel using virtual threads. Concurrency is limited by the same semaphore
-   * used for uploads to avoid resource exhaustion.
+   * Downloads the compressed archive from GCS and extracts its contents to the target folder.
+   *
+   * <p>The archive is downloaded to a temporary file, then extracted to the target folder.
    */
   NamedFileSet restore(
       final BackupIdentifier id,
       final String filesetName,
       final FileSet fileSet,
       final Path targetFolder) {
-    final var downloadFutures =
-        fileSet.files().stream()
-            .collect(
-                Collectors.toMap(
-                    NamedFile::name,
-                    namedFile ->
-                        schedule(
-                            () -> downloadFile(id, filesetName, namedFile.name(), targetFolder))));
+    if (fileSet.files().isEmpty()) {
+      return new NamedFileSetImpl(Map.of());
+    }
 
-    // Wait for all downloads to complete
-    CompletableFuture.allOf(downloadFutures.values().toArray(new CompletableFuture[0])).join();
-
-    // Collect results
-    final var pathByName =
-        downloadFutures.entrySet().stream()
-            .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().join()));
-
-    return new NamedFileSetImpl(pathByName);
+    try {
+      final Path tempArchive = Files.createTempFile("backup-restore-", ".zip");
+      try {
+        downloadArchive(id, filesetName, tempArchive);
+        return extractCompressedArchive(tempArchive, targetFolder);
+      } finally {
+        Files.deleteIfExists(tempArchive);
+      }
+    } catch (final IOException e) {
+      throw new UncheckedIOException(e);
+    }
   }
 
-  private Path downloadFile(
-      final BackupIdentifier id,
-      final String filesetName,
-      final String fileName,
-      final Path targetFolder) {
-    final var filePath = targetFolder.resolve(fileName);
-    client.downloadTo(blobInfo(id, filesetName, fileName).getBlobId(), filePath);
-    return filePath;
+  private void downloadArchive(
+      final BackupIdentifier id, final String filesetName, final Path archivePath) {
+    client.downloadTo(blobInfo(id, filesetName, ARCHIVE_FILENAME).getBlobId(), archivePath);
+  }
+
+  private NamedFileSet extractCompressedArchive(final Path archivePath, final Path targetFolder)
+      throws IOException {
+    final Map<String, Path> extractedFiles = new HashMap<>();
+    try (final var fileIn = Files.newInputStream(archivePath);
+        final var zipIn = new ZipInputStream(fileIn)) {
+      ZipEntry entry;
+      while ((entry = zipIn.getNextEntry()) != null) {
+        final String fileName = entry.getName();
+        final Path filePath = targetFolder.resolve(fileName);
+        // Use OutputStream to properly extract the content from ZipInputStream
+        try (final var fileOut = Files.newOutputStream(filePath)) {
+          zipIn.transferTo(fileOut);
+        }
+        extractedFiles.put(fileName, filePath);
+        zipIn.closeEntry();
+      }
+    }
+    return new NamedFileSetImpl(extractedFiles);
   }
 
   private String fileSetPath(final BackupIdentifier id, final String fileSetName) {

@@ -63,8 +63,7 @@ public final class GcsBackupStore implements BackupStore {
     this.client = client;
     executor = Executors.newVirtualThreadPerTaskExecutor();
     manifestManager = new ManifestManager(client, bucketInfo, basePath);
-    fileSetManager =
-        new FileSetManager(client, bucketInfo, basePath, executor, config.maxConcurrentTransfers());
+    fileSetManager = new FileSetManager(client, bucketInfo, basePath);
   }
 
   public static BackupStore of(final GcsBackupConfig config) {
@@ -255,6 +254,7 @@ public final class GcsBackupStore implements BackupStore {
             if (!closed) {
               executor.shutdownNow();
             }
+            fileSetManager.close();
             client.close();
           } catch (final Exception e) {
             throw new RuntimeException(e);
