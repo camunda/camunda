@@ -13,6 +13,7 @@ import io.camunda.db.rdbms.sql.AuditLogMapper.UpdateHistoryCleanupDateDto;
 import io.camunda.db.rdbms.sql.HistoryCleanupMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
@@ -93,10 +94,27 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
                 .build()));
   }
 
+  public void scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+      final List<Long> keys, final HistoryDeletionTypeDbModel historyDeletionType) {
+    final OffsetDateTime historyCleanupDate =
+        OffsetDateTime.now().plus(resolveRetentionTime(historyDeletionType));
+    mapper.updateUnsetAuditLogEntityHistoryCleanupDates(
+        keys, historyDeletionType, historyCleanupDate);
+  }
+
   public int cleanupHistory(
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
     return mapper.cleanupHistory(
         new HistoryCleanupMapper.CleanupHistoryDto(partitionId, cleanupDate, limit));
+  }
+
+  private Duration resolveRetentionTime(final HistoryDeletionTypeDbModel historyDeletionType) {
+    return switch (historyDeletionType) {
+      case PROCESS_INSTANCE -> resolveRetentionTime(AuditLogEntityType.PROCESS_INSTANCE);
+      case PROCESS_DEFINITION, DECISION_REQUIREMENTS ->
+          resolveRetentionTime(AuditLogEntityType.RESOURCE);
+      case DECISION_INSTANCE -> resolveRetentionTime(AuditLogEntityType.DECISION);
+    };
   }
 
   private Duration resolveRetentionTime(final AuditLogEntityType entityType) {
