@@ -15,8 +15,8 @@
  */
 package io.camunda.process.test.impl.extension;
 
-import io.camunda.process.test.api.dsl.TestCase;
-import io.camunda.process.test.api.dsl.TestCaseInstruction;
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestCaseInstruction;
 import java.util.List;
 import java.util.Optional;
 

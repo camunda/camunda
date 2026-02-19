@@ -17,8 +17,8 @@ package io.camunda.process.test.impl;
 
 import static org.mockito.Mockito.doThrow;
 
-import io.camunda.process.test.api.dsl.TestCase;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestScenarioRunner;
 import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;

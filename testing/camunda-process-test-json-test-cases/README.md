@@ -7,5 +7,5 @@ Schema: [cpt-test-cases.schema.json](src/main/resources/schema/cpt-test-cases.sc
 
 A test scenario JSON file can be deserialized with [Jackson](https://github.com/FasterXML/jackson)
 into a Java object of the
-type [TestScenario.java](src/main/java/io/camunda/process/test/api/dsl/TestScenario.java).
+type [TestScenario.java](src/main/java/io/camunda/process/test/api/testCases/TestScenario.java).
 

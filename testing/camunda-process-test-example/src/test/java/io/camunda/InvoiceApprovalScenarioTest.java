@@ -16,9 +16,9 @@
 package io.camunda;
 
 import io.camunda.process.test.api.CamundaSpringProcessTest;
-import io.camunda.process.test.api.dsl.TestCase;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
-import io.camunda.process.test.api.dsl.TestScenarioSource;
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestScenarioSource;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
