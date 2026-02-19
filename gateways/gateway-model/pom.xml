@@ -136,6 +136,7 @@
               <generatorName>spring</generatorName>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model.simple</modelPackage>
+              <templateDirectory>${project.basedir}/src/main/resources/spring-java-simple/templates</templateDirectory>
               <typeMappings>
                 <!-- map OffsetDateTime to String to avoid timezone issues and do validation manually -->
                 <typeMapping>OffsetDateTime=String</typeMapping>
