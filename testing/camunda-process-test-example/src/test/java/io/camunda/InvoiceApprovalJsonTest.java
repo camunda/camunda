@@ -24,18 +24,18 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 /**
- * This test class demonstrates how to run process test scenarios using Camunda Process Test.
+ * This test class demonstrates how to run process JSON test cases using Camunda Process Test.
  * InvoiceApprovalTest is the equivalent test class that uses CPT's Java API.
  */
 @SpringBootTest(properties = {"camunda.client.worker.defaults.enabled=false"})
 @CamundaSpringProcessTest
-public class InvoiceApprovalScenarioTest {
+public class InvoiceApprovalJsonTest {
 
   @Autowired private TestCaseRunner testCaseRunner;
 
   @ParameterizedTest
   @TestCaseSource
-  void shouldPass(final TestCase testCase, final String scenarioFile) {
+  void shouldPass(final TestCase testCase, final String filename) {
     // given: the process definitions are deployed via Spring Boot application
 
     // when/then: run and verify the test case
