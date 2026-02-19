@@ -402,4 +402,64 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .describedAs("Expect two active child instances with the same business id")
         .allSatisfy(r -> assertThat(r.getValue()).hasBusinessId(businessId));
   }
+
+  @Test
+  public void shouldAllowCallActivityToCreateProcessInstanceWithBusinessIdInUse() {
+    final String processUnderTestId = helper.getBpmnProcessId() + "_underTest";
+    final String processWithCallActivityId = helper.getBpmnProcessId() + "_callActivity";
+    final String businessId = "biz-123";
+
+    // given:
+    // - two processes: process under test and call activity process
+    // - and an instance of the process under test with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processUnderTestId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processWithCallActivityId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(processUnderTestId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // and an already active instance of the process under test with business id
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processUnderTestId)
+            .withBusinessId(businessId)
+            .create();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect business id in use")
+        .hasBusinessId(businessId);
+
+    // when
+    final var callActivityInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processWithCallActivityId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withParentProcessInstanceKey(callActivityInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect called process instance created even with business id already in use")
+        .hasBusinessId(businessId);
+  }
 }
