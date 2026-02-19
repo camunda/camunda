@@ -28,7 +28,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-dsl</artifactId>
+      <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
     <dependency>
