@@ -61,7 +61,8 @@ final class ProcessInstanceElementActivatingV3Applier
         elementInstanceState.newInstance(
             flowScopeInstance, elementInstanceKey, value, ProcessInstanceIntent.ELEMENT_ACTIVATING);
 
-    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS
+        && !value.hasParentProcessInstance()) {
       insertBusinessIdIndex(value);
     }
 
