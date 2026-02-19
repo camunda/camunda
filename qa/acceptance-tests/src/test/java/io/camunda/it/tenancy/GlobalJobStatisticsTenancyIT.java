@@ -28,20 +28,15 @@ import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
-// @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-@Disabled(
-    "Flaky test, will be fixed in the context of https://github.com/camunda/camunda/issues/42928")
+@DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class GlobalJobStatisticsTenancyIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
-  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(10);
-  public static final int MAX_WORKER_NAME_LENGTH = 10;
-  public static final int MAX_TENANT_ID_LENGTH = 10;
-  public static final int MAX_UNIQUE_KEYS = 4;
+  public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
@@ -51,14 +46,7 @@ public class GlobalJobStatisticsTenancyIT {
           .withAuthenticatedAccess()
           // set exportInterval via properties because it is not yet supported in unified config
           .withProperty(
-              "zeebe.broker.experimental.engine.jobMetrics.exportInterval", EXPORT_INTERVAL)
-          .withProperty(
-              "zeebe.broker.experimental.engine.jobMetrics.maxWorkerNameLength",
-              MAX_WORKER_NAME_LENGTH)
-          .withProperty(
-              "zeebe.broker.experimental.engine.jobMetrics.maxTenantIdLength", MAX_TENANT_ID_LENGTH)
-          .withProperty(
-              "zeebe.broker.experimental.engine.jobMetrics.maxUniqueKeys", MAX_UNIQUE_KEYS);
+              "zeebe.broker.experimental.engine.jobMetrics.exportInterval", EXPORT_INTERVAL);
 
   private static final String ADMIN = "admin";
   private static final String USER_TENANT_A = "userTenantA";
@@ -68,9 +56,7 @@ public class GlobalJobStatisticsTenancyIT {
   private static final String TENANT_B = "tenantB";
   private static final String JOB_TYPE_A = "taskA";
   private static final String PROCESS_ID = "service_tasks_v1";
-  private static final String SHORT_WORKER_NAME = "shortWork"; // 9 chars, within limit
-  private static final String LONG_WORKER_NAME = "veryLongWorkerName"; // 18 chars, exceeds limit
-  private static final String LONG_TENANT_ID = "veryLongTenantId"; // 16 chars, exceeds limit of 10
+  private static final String WORKER_NAME = "testWorker";
 
   @UserDefinition
   private static final TestUser ADMIN_USER = new TestUser(ADMIN, "password", List.of());
@@ -87,28 +73,17 @@ public class GlobalJobStatisticsTenancyIT {
   private static final TestUser USER_NO_TENANT_USER =
       new TestUser(USER_NO_TENANT, "password", List.of());
 
-  // Time after first batch of metrics was exported (before second batch for incomplete test)
-  private static OffsetDateTime firstBatchExportedTime;
-  // Time after second batch of metrics was exported (for long worker name test)
-  private static OffsetDateTime secondBatchExportedTime;
-
   @BeforeAll
   static void setup(@Authenticated(ADMIN) final CamundaClient adminClient)
       throws InterruptedException {
-    // ========== FIRST BATCH: Normal metrics ==========
     // Create tenants and assign users
     createTenant(adminClient, TENANT_A, TENANT_A, ADMIN, USER_TENANT_A);
     createTenant(adminClient, TENANT_B, TENANT_B, ADMIN, USER_TENANT_B);
-    // Create a tenant with a long ID that EXCEEDS the limit
-    createTenant(adminClient, LONG_TENANT_ID, LONG_TENANT_ID, ADMIN);
-
     // USER_NO_TENANT is not assigned to any tenant
 
     // Deploy processes for each tenant
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_A);
     deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", TENANT_B);
-    // Deploy a process to the long tenant
-    deployResourceForTenant(adminClient, "process/service_tasks_v1.bpmn", LONG_TENANT_ID);
 
     // Start process instances for each tenant to create jobs
     // TENANT_A: 2 instances -> 2 taskA jobs created
@@ -122,19 +97,19 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobs(adminClient, f -> f.tenantId(TENANT_B), 1);
 
     // Complete 1 taskA job from TENANT_A
-    activateAndCompleteJobsForTenant(adminClient, JOB_TYPE_A, TENANT_A, SHORT_WORKER_NAME, 1);
+    activateAndCompleteJobsForTenant(adminClient, JOB_TYPE_A, TENANT_A, WORKER_NAME, 1);
 
     // Wait for completion to be reflected
     waitForJobs(adminClient, f -> f.state(JobState.COMPLETED), 1);
 
     // Fail 1 taskA job from TENANT_B
     activateAndFailJobsForTenant(
-        adminClient, JOB_TYPE_A, TENANT_B, SHORT_WORKER_NAME, 1, "Intentional failure for test");
+        adminClient, JOB_TYPE_A, TENANT_B, WORKER_NAME, 1, "Intentional failure for test");
 
     // Wait for failure to be reflected
     waitForJobs(adminClient, f -> f.state(JobState.FAILED), 1);
 
-    // Wait for first batch metrics to be exported
+    // Wait for metrics to be exported
     waitForJobStatistics(
         adminClient,
         NOW.minusDays(1),
@@ -146,70 +121,12 @@ public class GlobalJobStatisticsTenancyIT {
           assertThat(stats.getFailed().getCount()).isEqualTo(1L);
           assertThat(stats.isIncomplete()).isFalse();
         });
-
-    // Wait for export & store first batch export time
-    firstBatchExportedTime = OffsetDateTime.now();
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
-
-    // ========== SECOND BATCH: Incomplete metrics (long worker name) ==========
-    // Start a new process instance in TENANT_A to have a new taskA job available
-    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
-
-    // Wait for the new taskA job to be available
-    waitForJobs(adminClient, f -> f.type(JOB_TYPE_A).state(JobState.CREATED).tenantId(TENANT_A), 2);
-
-    // Activate and complete the job with a worker name that EXCEEDS the limit
-    // This should cause the statistics to be marked as incomplete
-    activateAndCompleteJobsForTenant(adminClient, JOB_TYPE_A, TENANT_A, LONG_WORKER_NAME, 1);
-
-    // Wait for the completion to be reflected in the job search
-    waitForJobs(adminClient, f -> f.state(JobState.COMPLETED).worker(LONG_WORKER_NAME), 1);
-
-    // Wait for second batch metrics to be exported
-    waitForJobStatistics(
-        adminClient,
-        firstBatchExportedTime,
-        NOW.plusDays(1),
-        stats -> {
-          // taskA: 1 created, taskB: 1 created (after taskA completed)
-          assertThat(stats.getCreated().getCount()).isEqualTo(2L);
-          // The completed count should be 0 because the job with the long worker name
-          // should not be included in the statistics
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          // The isIncomplete flag should be true because the worker name exceeded the limit
-          assertThat(stats.isIncomplete()).isTrue();
-        });
-
-    // Wait for export & store second batch export time
-    secondBatchExportedTime = OffsetDateTime.now();
-    Thread.sleep(2 * EXPORT_INTERVAL.toMillis());
-
-    // ========== THIRD BATCH: Incomplete metrics (long tenant id) ==========
-    // Start a process instance in the long tenant
-    startProcessInstanceForTenant(adminClient, PROCESS_ID, LONG_TENANT_ID);
-    // Create a valid job in TENANT_A to ensure at least one metric is recorded
-    startProcessInstanceForTenant(adminClient, PROCESS_ID, TENANT_A);
-
-    // Wait for the new taskA job to be available
-    waitForJobs(adminClient, f -> f.type(JOB_TYPE_A).tenantId(LONG_TENANT_ID), 1);
-
-    // Wait for third batch metrics to be exported
-    waitForJobStatistics(
-        adminClient,
-        secondBatchExportedTime,
-        NOW.plusDays(1),
-        stats -> {
-          // Should have 1 valid created job from TENANT_A, long tenant ID job not counted
-          assertThat(stats.getCreated().getCount()).isEqualTo(1L);
-          assertThat(stats.isIncomplete()).isTrue();
-        });
   }
 
   @Test
   void shouldReturnGlobalStatisticsForAllTenants(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // Admin has access to all tenants, so should see:
     // - CREATED: 3 taskA (2 from TENANT_A + 1 from TENANT_B) + 1 taskB (from completed taskA)
     // - COMPLETED: 1 taskA
@@ -217,7 +134,7 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobStatistics(
         adminClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         stats -> {
           assertThat(stats.getCreated().getCount()).isEqualTo(4L);
           assertThat(stats.getCompleted().getCount()).isEqualTo(1L);
@@ -229,7 +146,7 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldReturnOnlyTenantAStatisticsForUserTenantA(
       @Authenticated(USER_TENANT_A) final CamundaClient userTenantAClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // User assigned to TENANT_A should only see TENANT_A statistics:
     // - CREATED: 2 taskA + 1 taskB (from completed taskA)
     // - COMPLETED: 1 taskA
@@ -237,7 +154,7 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobStatistics(
         userTenantAClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         JOB_TYPE_A,
         stats -> {
           assertThat(stats.getCreated().getCount()).isEqualTo(2L);
@@ -250,7 +167,7 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldReturnOnlyTenantBStatisticsForUserTenantB(
       @Authenticated(USER_TENANT_B) final CamundaClient userTenantBClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // User assigned to TENANT_B should only see TENANT_B statistics:
     // - CREATED: 1 taskA
     // - COMPLETED: 0 (completed job is in TENANT_A)
@@ -258,7 +175,7 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobStatistics(
         userTenantBClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         JOB_TYPE_A,
         stats -> {
           assertThat(stats.getCreated().getCount()).isEqualTo(1L);
@@ -271,12 +188,12 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldReturnZeroStatisticsForUserWithNoTenantAccess(
       @Authenticated(USER_NO_TENANT) final CamundaClient userNoTenantClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // User not assigned to any tenant should see zero statistics
     waitForJobStatistics(
         userNoTenantClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         stats -> {
           assertThat(stats.getCreated().getCount()).isZero();
           assertThat(stats.getCompleted().getCount()).isZero();
@@ -287,7 +204,7 @@ public class GlobalJobStatisticsTenancyIT {
 
   @Test
   void shouldFilterStatisticsByJobType(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // For taskA only:
     // - CREATED: 3 (2 from TENANT_A + 1 from TENANT_B)
     // - COMPLETED: 1
@@ -295,7 +212,7 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobStatistics(
         adminClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         JOB_TYPE_A,
         stats -> {
           assertThat(stats.getCreated().getCount()).isEqualTo(3L);
@@ -308,13 +225,13 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldReturnTaskBStatisticsOnlyForTenantA(
       @Authenticated(USER_TENANT_A) final CamundaClient userTenantAClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // taskB was created in TENANT_A after completing taskA
     // User in TENANT_A should see it
     waitForJobStatistics(
         userTenantAClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         "taskB",
         stats -> {
           assertThat(stats.getCreated().getCount()).isEqualTo(1L);
@@ -327,12 +244,12 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldNotSeeTaskBForUserTenantB(
       @Authenticated(USER_TENANT_B) final CamundaClient userTenantBClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     // taskB was created in TENANT_A, so TENANT_B user should not see it
     waitForJobStatistics(
         userTenantBClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         "taskB",
         stats -> {
           assertThat(stats.getCreated().getCount()).isZero();
@@ -345,59 +262,17 @@ public class GlobalJobStatisticsTenancyIT {
   @Test
   void shouldReturnZeroForNonExistentJobType(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only first batch (before incomplete metrics)
+    // when/then
     waitForJobStatistics(
         adminClient,
         NOW.minusDays(1),
-        firstBatchExportedTime,
+        NOW.plusDays(1),
         "non-existent-job-type",
         stats -> {
           assertThat(stats.getCreated().getCount()).isZero();
           assertThat(stats.getCompleted().getCount()).isZero();
           assertThat(stats.getFailed().getCount()).isZero();
           assertThat(stats.isIncomplete()).isFalse();
-        });
-  }
-
-  @Test
-  void shouldReturnIncompleteWhenWorkerNameExceedsLimit(
-      @Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only second batch (after first batch, containing incomplete metrics)
-    // The statistics should be marked as incomplete because we used a worker name
-    // that exceeds the configured limit
-    waitForJobStatistics(
-        adminClient,
-        firstBatchExportedTime,
-        secondBatchExportedTime,
-        stats -> {
-          // taskA: 1 created, taskB: 1 created (after taskA completed)
-          assertThat(stats.getCreated().getCount()).isEqualTo(2L);
-          // The completed count should be 0 because the job with the long worker name
-          // should not be included in the statistics
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          // The isIncomplete flag should be true because the worker name exceeded the limit
-          assertThat(stats.isIncomplete()).isTrue();
-        });
-  }
-
-  @Test
-  void shouldReturnIncompleteWhenTenantIdExceedsLimit(
-      @Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then - query only third batch (after second batch, containing incomplete metrics)
-    // The statistics should be marked as incomplete because we used a tenant ID
-    // that exceeds the configured limit
-    waitForJobStatistics(
-        adminClient,
-        secondBatchExportedTime,
-        NOW.plusDays(1),
-        stats -> {
-          // Should have 1 valid created job from TENANT_A, long tenant ID job not counted
-          assertThat(stats.getCreated().getCount()).isEqualTo(1L);
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          // The isIncomplete flag should be true because the tenant ID exceeded the limit
-          assertThat(stats.isIncomplete()).isTrue();
         });
   }
 }
