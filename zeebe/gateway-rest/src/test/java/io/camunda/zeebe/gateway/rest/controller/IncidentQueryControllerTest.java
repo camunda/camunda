@@ -169,6 +169,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             ],
             "page": {
               "totalItems": 1,
+              "startCursor": null,
+              "endCursor": null,
               "hasMoreTotalItems": false
             }
           }
@@ -185,6 +187,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             ],
             "page": {
               "totalItems": 1,
+              "startCursor": null,
+              "endCursor": null,
               "hasMoreTotalItems": false
             }
           }

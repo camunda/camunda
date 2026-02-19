@@ -46,7 +46,9 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "lastUpdatedDate": "2025-07-05T12:11:00.975Z",
                   "messageName": "Message_1f8cu1e",
                   "correlationKey": "test",
-                  "tenantId": "test-tenant"
+                  "tenantId": "test-tenant",
+                  "processDefinitionKey": null,
+                  "rootProcessInstanceKey": null
                 }
             ],
             "page": {
@@ -96,7 +98,8 @@ public class MessageSubscriptionQueryControllerTest extends RestControllerTest {
                   "processDefinitionKey": "2251799813685848",
                   "processInstanceKey": "2251799813685849",
                   "subscriptionKey": "2251799813685860",
-                  "tenantId": "test-tenant"
+                  "tenantId": "test-tenant",
+                  "rootProcessInstanceKey": null
                 }
             ],
             "page": {

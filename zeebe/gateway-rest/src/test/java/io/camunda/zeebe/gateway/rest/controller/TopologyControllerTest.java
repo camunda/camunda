@@ -157,6 +157,11 @@ public class TopologyControllerTest extends RestControllerTest {
     final var expectedResponse =
         """
         {
+          "clusterId": null,
+          "clusterSize": null,
+          "partitionsCount": null,
+          "replicationFactor": null,
+          "lastCompletedChangeId": null,
           "brokers":[],
           "gatewayVersion": "%s"
         }

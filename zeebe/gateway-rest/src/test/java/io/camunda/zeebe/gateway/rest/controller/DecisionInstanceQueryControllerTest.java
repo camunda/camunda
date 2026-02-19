@@ -68,7 +68,8 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                        "decisionDefinitionType": "DECISION_TABLE",
                        "rootDecisionDefinitionKey": "123457",
                        "result": "result",
-                       "tenantId": "tenantId"
+                       "tenantId": "tenantId",
+                       "evaluationFailure": null
                    }
                ],
                "page": {
@@ -297,6 +298,7 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                      "rootDecisionDefinitionKey": "123457",
                      "result": "result",
                      "tenantId": "tenantId",
+                     "evaluationFailure": null,
                      "evaluatedInputs": [
                          {
                              "inputId": "1",
@@ -312,7 +314,9 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                  {
                                      "outputId": "3",
                                      "outputName": "name3",
-                                     "outputValue": "value3"
+                                     "outputValue": "value3",
+                                     "ruleId": null,
+                                     "ruleIndex": null
                                  }
                              ]
                          },
@@ -323,12 +327,16 @@ public class DecisionInstanceQueryControllerTest extends RestControllerTest {
                                  {
                                      "outputId": "1",
                                      "outputName": "name1",
-                                     "outputValue": "value1"
+                                     "outputValue": "value1",
+                                     "ruleId": null,
+                                     "ruleIndex": null
                                  },
                                  {
                                      "outputId": "2",
                                      "outputName": "name2",
-                                     "outputValue": "value2"
+                                     "outputValue": "value2",
+                                     "ruleId": null,
+                                     "ruleIndex": null
                                  }
                              ]
                          }
