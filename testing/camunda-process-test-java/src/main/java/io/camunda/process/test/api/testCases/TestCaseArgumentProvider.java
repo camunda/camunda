@@ -28,16 +28,16 @@ import org.junit.jupiter.params.support.AnnotationConsumer;
 import org.junit.jupiter.params.support.ParameterDeclarations;
 
 /**
- * A JUnit argument provider that reads test scenarios from files in a given directory or from
- * specific files. The test scenarios are parsed and each test case is provided as an argument of
- * the type {@link TestCase} to the parameterized test. The name of the source file is provided as a
- * second argument.
+ * A JUnit argument provider that reads test cases from files in a given directory or from specific
+ * files. The test cases are parsed and each test case is provided as an argument of the type {@link
+ * TestCase} to the parameterized test. The name of the source file is provided as a second
+ * argument.
  *
- * <p>The provider reads the configuration from the {@link TestScenarioSource} annotation on the
+ * <p>The provider reads the configuration from the {@link TestCaseSource} annotation on the
  * parameterized test method.
  */
-public class TestScenarioArgumentProvider
-    implements ArgumentsProvider, AnnotationConsumer<TestScenarioSource> {
+public class TestCaseArgumentProvider
+    implements ArgumentsProvider, AnnotationConsumer<TestCaseSource> {
 
   private static final FilenameFilter ACCEPT_ALL_FILES_FILTER = (dir, name) -> true;
 
@@ -48,17 +48,15 @@ public class TestScenarioArgumentProvider
   private String sourceFileExtension;
 
   @Override
-  public void accept(final TestScenarioSource testScenarioSource) {
+  public void accept(final TestCaseSource testCaseSource) {
+    Objects.requireNonNull(testCaseSource.directory(), "The source directory must not be null.");
+    Objects.requireNonNull(testCaseSource.fileNames(), "The source file names must not be null.");
     Objects.requireNonNull(
-        testScenarioSource.directory(), "The source directory must not be null.");
-    Objects.requireNonNull(
-        testScenarioSource.fileNames(), "The source file names must not be null.");
-    Objects.requireNonNull(
-        testScenarioSource.fileExtension(), "The source file extension must not be null.");
+        testCaseSource.fileExtension(), "The source file extension must not be null.");
 
-    sourceDirectory = testScenarioSource.directory();
-    sourceFileNames = Arrays.asList(testScenarioSource.fileNames());
-    sourceFileExtension = testScenarioSource.fileExtension();
+    sourceDirectory = testCaseSource.directory();
+    sourceFileNames = Arrays.asList(testCaseSource.fileNames());
+    sourceFileExtension = testCaseSource.fileExtension();
   }
 
   @Override
@@ -78,7 +76,7 @@ public class TestScenarioArgumentProvider
   private File readDirectory(final Class<?> testClass) {
     final URL resource = testClass.getResource(sourceDirectory);
     if (resource == null) {
-      throw new TestScenarioReadException(
+      throw new TestCaseReadException(
           String.format("The directory '%s' does not exist.", sourceDirectory));
     }
 
@@ -86,11 +84,11 @@ public class TestScenarioArgumentProvider
 
     // validate the directory
     if (!directory.isDirectory()) {
-      throw new TestScenarioReadException(
+      throw new TestCaseReadException(
           String.format("The path '%s' is not a directory.", sourceDirectory));
     }
     if (!directory.canRead()) {
-      throw new TestScenarioReadException(
+      throw new TestCaseReadException(
           String.format("The directory '%s' is not readable.", sourceDirectory));
     }
     return directory;
@@ -107,7 +105,7 @@ public class TestScenarioArgumentProvider
             .filter(filesInDirectory -> !filesInDirectory.isEmpty())
             .orElseThrow(
                 () ->
-                    new TestScenarioReadException(
+                    new TestCaseReadException(
                         String.format(
                             "No files found with extension '%s' in directory '%s'.",
                             sourceFileExtension, sourceDirectory)));
@@ -130,7 +128,7 @@ public class TestScenarioArgumentProvider
       missingSourceFileNames.removeAll(existingSourceFileNames);
 
       if (!missingSourceFileNames.isEmpty()) {
-        throw new TestScenarioReadException(
+        throw new TestCaseReadException(
             String.format(
                 "The directory '%s' doesn't contain the files: %s",
                 sourceDirectory, missingSourceFileNames));
@@ -144,7 +142,7 @@ public class TestScenarioArgumentProvider
       return testCasesReader.read(inputStream);
 
     } catch (final Exception e) {
-      throw new TestScenarioReadException(
+      throw new TestCaseReadException(
           String.format("The file '%s' contains invalid test cases.", testCasesFile.getName()), e);
     }
   }

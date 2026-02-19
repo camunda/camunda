@@ -5,16 +5,15 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.process.test.api.testCases;
+package io.camunda.process.test.impl.testCases;
 
-/** Exception indicating that a test scenario could not be read or parsed. */
-public final class TestScenarioReadException extends IllegalArgumentException {
-
-  public TestScenarioReadException(final String message) {
+/** Exception indicating that a test case could not be executed. */
+public class TestCaseRunException extends RuntimeException {
+  public TestCaseRunException(final String message) {
     super(message);
   }
 
-  public TestScenarioReadException(final String message, final Throwable cause) {
+  public TestCaseRunException(final String message, final Throwable cause) {
     super(message, cause);
   }
 }

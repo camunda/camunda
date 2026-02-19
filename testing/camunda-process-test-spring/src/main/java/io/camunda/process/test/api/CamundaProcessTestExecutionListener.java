@@ -37,7 +37,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
-import io.camunda.process.test.impl.testCases.CamundaTestScenarioRunner;
+import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -165,7 +165,7 @@ public class CamundaProcessTestExecutionListener implements TestExecutionListene
     testContext
         .getApplicationContext()
         .getBean(TestScenarioRunnerProxy.class)
-        .setRunner(new CamundaTestScenarioRunner(camundaProcessTestContext));
+        .setRunner(new CamundaTestCaseRunner(camundaProcessTestContext));
 
     // publish Zeebe client
     testContext

@@ -18,7 +18,7 @@ import io.camunda.process.test.api.assertions.UserTaskAssert;
 import io.camunda.process.test.api.assertions.UserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.testCases.instructions.AssertDecisionInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertElementInstanceInstructionHandler;
 import io.camunda.process.test.impl.testCases.instructions.AssertElementInstancesInstructionHandler;
@@ -54,9 +54,9 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CamundaTestScenarioRunner implements TestScenarioRunner {
+public class CamundaTestCaseRunner implements TestCaseRunner {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestScenarioRunner.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(CamundaTestCaseRunner.class);
 
   private static final Map<Class<? extends TestCaseInstruction>, TestCaseInstructionHandler<?>>
       INSTRUCTION_HANDLERS = new HashMap<>();
@@ -94,11 +94,11 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
   private final CamundaProcessTestContext context;
   private final AssertionFacade assertionFacade;
 
-  public CamundaTestScenarioRunner(final CamundaProcessTestContext context) {
-    this(context, new TestScenarioAssertionFacade());
+  public CamundaTestCaseRunner(final CamundaProcessTestContext context) {
+    this(context, new TestCaseAssertionFacade());
   }
 
-  public CamundaTestScenarioRunner(
+  public CamundaTestCaseRunner(
       final CamundaProcessTestContext context, final AssertionFacade assertionFacade) {
     this.context = context;
     this.assertionFacade = assertionFacade;
@@ -138,7 +138,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
       instructionHandler.execute(instruction, context, camundaClient, assertionFacade);
 
     } catch (final Exception e) {
-      throw new TestScenarioRunException(
+      throw new TestCaseRunException(
           String.format(
               "Failed to execute instruction '%s': %s", instruction.getType(), instruction),
           e);
@@ -165,7 +165,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
                     "Could not determine instruction interface of: " + instruction));
   }
 
-  private static final class TestScenarioAssertionFacade implements AssertionFacade {
+  private static final class TestCaseAssertionFacade implements AssertionFacade {
 
     @Override
     public ProcessInstanceAssert assertThatProcessInstance(final ProcessInstanceSelector selector) {

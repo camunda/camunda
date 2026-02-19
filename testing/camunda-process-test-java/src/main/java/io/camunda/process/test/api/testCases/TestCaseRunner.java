@@ -7,8 +7,8 @@
  */
 package io.camunda.process.test.api.testCases;
 
-/** Runs a test scenario represented by a {@link TestCase}. */
-public interface TestScenarioRunner {
+/** Runs a test case represented by a {@link TestCase}. */
+public interface TestCaseRunner {
 
   /**
    * Runs the given {@link TestCase} by executing its instructions. If an assertion instruction
