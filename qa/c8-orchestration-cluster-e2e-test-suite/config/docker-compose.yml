@@ -72,26 +72,23 @@ services:
       - zeebe_network
 
   keycloak:
-    depends_on:
-      - postgres
     container_name: keycloak
-    image: bitnami/keycloak:26.3.3
+    image: quay.io/keycloak/keycloak:23.0
+    command: start-dev --import-realm
     ports:
       - '18080:8080'
+    volumes:
+      - ./keycloak/camunda-platform-realm.json:/opt/keycloak/data/import/camunda-platform-realm.json:ro
     environment:
-      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
-      KEYCLOAK_DATABASE_HOST: postgres
-      KEYCLOAK_DATABASE_NAME: identity
-      KEYCLOAK_DATABASE_USER: identity
-      KEYCLOAK_DATABASE_PASSWORD: 't2L@!AqSMg8%I%NmHM'
-      KEYCLOAK_ADMIN_USER: admin
+      KC_HTTP_RELATIVE_PATH: /auth
+      KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
     healthcheck:
-      test: ['CMD', 'curl', '-f', 'http://localhost:8080/auth']
+      test: ['CMD-SHELL', 'exec 3<>/dev/tcp/127.0.0.1/8080;echo -e "GET /auth/health/ready HTTP/1.1\r\nhost: 127.0.0.1:8080\r\nConnection: close\r\n\r\n" >&3;if [ $? -eq 0 ]; then exit 0;else exit 1;fi;']
       interval: 30s
       timeout: 15s
       retries: 8
-      start_period: 30s
+      start_period: 60s
     networks:
       - zeebe_network
 
@@ -108,6 +105,59 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+
+  mcp-test-server-basic:
+    container_name: mcp-test-server-basic
+    image: registry.camunda.cloud/mcp/mcp-test-server:latest
+    ports:
+      - 12002:12001
+    networks:
+      - zeebe_network
+    environment:
+      - SPRING_PROFILES_ACTIVE=auth-basic
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-u", "test-user:test-password", "http://localhost:12001/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mcp-test-server-apikey:
+    container_name: mcp-test-server-apikey
+    image: registry.camunda.cloud/mcp/mcp-test-server:latest
+    ports:
+      - 12003:12001
+    networks:
+      - zeebe_network
+    environment:
+      - SPRING_PROFILES_ACTIVE=auth-api-key
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:12001/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mcp-test-server-oauth:
+    container_name: mcp-test-server-oauth
+    image: registry.camunda.cloud/mcp/mcp-test-server:latest
+    ports:
+      - 12004:12001
+    networks:
+      - zeebe_network
+    environment:
+      - SPRING_PROFILES_ACTIVE=auth-oauth2
+      - MCP_SERVER_AUTH_OAUTH2_ISSUERURL=http://keycloak:8080/auth/realms/camunda-platform
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    restart: on-failure
+    healthcheck:
+      test: ["CMD", "curl", "-s", "http://localhost:12001/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
 
   connectors:
     container_name: connectors
@@ -130,6 +180,12 @@ services:
       camunda:
         condition: service_started
       mcp-test-server:
+        condition: service_healthy
+      mcp-test-server-basic:
+        condition: service_healthy
+      mcp-test-server-apikey:
+        condition: service_healthy
+      mcp-test-server-oauth:
         condition: service_healthy
     networks:
       - zeebe_network

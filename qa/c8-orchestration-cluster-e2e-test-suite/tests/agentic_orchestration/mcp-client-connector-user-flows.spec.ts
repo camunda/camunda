@@ -14,6 +14,7 @@ import {validateConnectorsHealth} from 'utils/connectorsRuntimeHelpers';
 import {deploy, createInstances} from 'utils/zeebeClient';
 import {sleep} from 'utils/sleep';
 import {captureScreenshot, captureFailureVideo} from '@setup';
+import {getAccessToken} from 'utils/keycloakHelpers';
 
 test.beforeAll(async () => {
   await validateMcpServerHealth();
@@ -149,6 +150,143 @@ test.describe('MCP Client connector tests', () => {
           expect(value.messages[0].role).toBe('user');
           expect(value.messages[0].content.text).toContain('John');
           expect(value.messages[0].content.text).toContain('greet tool');
+        },
+      );
+    });
+  });
+});
+
+test.describe('MCP Client connector authentication tests', () => {
+  let bearerToken: string;
+
+  test.beforeAll(async () => {
+    await validateMcpServerHealth();
+    await validateConnectorsHealth();
+
+    // Fetch Bearer token from Keycloak for bearer auth test
+    bearerToken = await getAccessToken();
+
+    // Deploy all authentication test BPMNs
+    await deploy([
+      './resources/agentic_orchestration/mcp_remote_client_basic_auth.bpmn',
+      './resources/agentic_orchestration/mcp_remote_client_bearer_auth.bpmn',
+      './resources/agentic_orchestration/mcp_remote_client_oauth_auth.bpmn',
+    ]);
+  });
+
+  test.beforeEach(async ({page, loginPage, operateHomePage}) => {
+    await navigateToApp(page, 'operate');
+    await loginPage.login('demo', 'demo');
+    await expect(operateHomePage.operateBanner).toBeVisible();
+  });
+
+  test.afterEach(async ({page}, testInfo) => {
+    await captureScreenshot(page, testInfo);
+    await captureFailureVideo(page, testInfo);
+  });
+
+  test('As a user I can authenticate with Basic Auth', async ({
+    operateHomePage,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    operateProcessInstancePage,
+  }) => {
+    test.slow();
+
+    await test.step('Create process instance with Basic Auth', async () => {
+      await createInstances('mcp_remote_client_basic_auth', 1, 1);
+      await sleep(2000);
+    });
+
+    await test.step('Navigate to completed process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.selectProcess('mcp_remote_client_basic_auth');
+      await sleep(100);
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.completedIcon).toBeVisible({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Verify authenticated request succeeded', async () => {
+      await operateProcessInstancePage.verifyVariableJsonContent(
+        'listToolsResult',
+        (value) => {
+          expect(value.toolDefinitions).toBeDefined();
+          expect(value.toolDefinitions.length).toBeGreaterThan(0);
+        },
+      );
+    });
+  });
+
+  test('As a user I can authenticate with Bearer Token', async ({
+    operateHomePage,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    operateProcessInstancePage,
+  }) => {
+    test.slow();
+
+    await test.step('Create process instance with Bearer Token', async () => {
+      await createInstances('mcp_remote_client_bearer_auth', 1, 1, {
+        bearerToken,
+      });
+      await sleep(2000);
+    });
+
+    await test.step('Navigate to completed process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.selectProcess('mcp_remote_client_bearer_auth');
+      await sleep(100);
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.completedIcon).toBeVisible({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Verify authenticated request succeeded', async () => {
+      await operateProcessInstancePage.verifyVariableJsonContent(
+        'listToolsResult',
+        (value) => {
+          expect(value.toolDefinitions).toBeDefined();
+          expect(value.toolDefinitions.length).toBeGreaterThan(0);
+        },
+      );
+    });
+  });
+
+  test('As a user I can authenticate with OAuth Client Credentials', async ({
+    operateHomePage,
+    operateProcessesPage,
+    operateFiltersPanelPage,
+    operateProcessInstancePage,
+  }) => {
+    test.slow();
+
+    await test.step('Create process instance with OAuth', async () => {
+      await createInstances('mcp_remote_client_oauth_auth', 1, 1);
+      await sleep(2000);
+    });
+
+    await test.step('Navigate to completed process instance', async () => {
+      await operateHomePage.clickProcessesTab();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.selectProcess('mcp_remote_client_oauth_auth');
+      await sleep(100);
+      await operateProcessesPage.clickProcessInstanceLink();
+      await expect(operateProcessInstancePage.completedIcon).toBeVisible({
+        timeout: 60000,
+      });
+    });
+
+    await test.step('Verify OAuth auto-fetched token and succeeded', async () => {
+      await operateProcessInstancePage.verifyVariableJsonContent(
+        'listToolsResult',
+        (value) => {
+          expect(value.toolDefinitions).toBeDefined();
+          expect(value.toolDefinitions.length).toBeGreaterThan(0);
         },
       );
     });
