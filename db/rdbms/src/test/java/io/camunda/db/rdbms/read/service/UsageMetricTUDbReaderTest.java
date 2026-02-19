@@ -34,7 +34,7 @@ class UsageMetricTUDbReaderTest {
     final var result = reader.usageMetricTUStatistics(query, resourceAccessChecks);
 
     assertThat(result.totalTu()).isEqualTo(100L);
-    assertThat(result.tenants()).isNull();
+    assertThat(result.tenants()).isNotNull().isEmpty();
     verify(usageMetricTUMapper).usageMetricTUStatistics(any());
   }
 }
