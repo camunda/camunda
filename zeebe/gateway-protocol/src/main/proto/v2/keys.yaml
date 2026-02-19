@@ -18,18 +18,6 @@ components:
       allOf:
         - $ref: '#/components/schemas/LongKey'
 
-    RootProcessInstanceKey:
-      description: |
-        The key of the root process instance. The root process instance is the top-level
-        ancestor in the process instance hierarchy. This field is only present for data
-        belonging to process instance hierarchies created in version 8.9 or later.
-      format: ProcessInstanceKey
-      x-semantic-type: ProcessInstanceKey
-      example: "2251799813690746"
-      type: string
-      allOf:
-        - $ref: '#/components/schemas/LongKey'
-
     ProcessDefinitionKey:
       description: System-generated key for a deployed process definition.
       format: ProcessDefinitionKey
