@@ -10,7 +10,7 @@
 		"strict": true,
 		"forceConsistentCasingInFileNames": true,
 		"module": "ESNext",
-		"moduleResolution": "Node",
+		"moduleResolution": "Bundler",
 		"jsx": "react-jsx",
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
@@ -20,11 +20,11 @@
 		"strictNullChecks": true,
 		"declaration": true,
 		"outDir": "lib/esm",
-    "baseUrl": ".",
-    "paths": {
-      "src/*": ["src/*"]
-    }
+		"baseUrl": ".",
+		"paths": {
+			"src/*": ["src/*"]
+		}
 	},
 	"include": ["src"],
-	"exclude": ["node_modules", "lib"],
+	"exclude": ["node_modules", "lib"]
 }

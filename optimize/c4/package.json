@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-optimize-composite-components",
-	"version": "0.0.16",
+	"version": "0.0.17-rc1",
 	"description": "Camunda Optimize Composite Components",
 	"main": "./lib/esm/index.js",
 	"types": "./lib/esm/index.d.ts",
@@ -27,12 +27,12 @@
 		"@storybook/addon-styling-webpack": "^3.0.0",
 		"@storybook/addon-webpack5-compiler-swc": "^4.0.1",
 		"@storybook/react-webpack5": "10.2.8",
-		"@types/react": "^18.0.0",
+		"@types/react": "^19.0.0",
 		"classnames": "^2.3.2",
 		"css-loader": "^7.1.2",
 		"prop-types": "^15.8.1",
-		"react": "17.0.2",
-		"react-dom": "17.0.2",
+		"react": "19.0.0",
+		"react-dom": "19.0.0",
 		"sass": "^1.81.0",
 		"sass-loader": "^16.0.3",
 		"storybook": "10.2.8",
@@ -41,8 +41,8 @@
 	},
 	"peerDependencies": {
 		"@carbon/react": "^1.91.0",
-		"react": "17.0.2",
-		"react-dom": "17.0.2"
+		"react": "19.0.0",
+		"react-dom": "19.0.0"
 	},
 	"packageManager": "yarn@4.12.0"
 }
