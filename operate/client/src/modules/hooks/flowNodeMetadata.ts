@@ -6,39 +6,19 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {
-  useHasRunningOrFinishedTokens,
-  useNewTokenCountForSelectedNode,
-} from './flowNodeSelection';
-import {useElementInstancesCount} from './useElementInstancesCount';
+import {useNewTokenCountForSelectedNode} from './flowNodeSelection';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 
 const useHasMultipleInstances = () => {
-  const hasRunningOrFinishedTokens = useHasRunningOrFinishedTokens();
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  const {
-    isSelectedInstanceMultiInstanceBody,
-    selectedElementId,
-    selectedElementInstanceKey,
-    resolvedElementInstance,
-  } = useProcessInstanceElementSelection();
-  const elementInstancesCount = useElementInstancesCount(
-    selectedElementId ?? undefined,
-  );
+  let {selectedInstancesCount} = useProcessInstanceElementSelection();
+  selectedInstancesCount ??= 0;
 
-  if (isSelectedInstanceMultiInstanceBody && resolvedElementInstance !== null) {
-    return false;
+  if (selectedInstancesCount === 1) {
+    return newTokenCountForSelectedNode >= 1;
   }
 
-  if (selectedElementInstanceKey !== null) {
-    return false;
-  }
-
-  if (!hasRunningOrFinishedTokens) {
-    return newTokenCountForSelectedNode > 1;
-  }
-
-  return (elementInstancesCount ?? 0) > 1 || newTokenCountForSelectedNode > 0;
+  return selectedInstancesCount > 1 || newTokenCountForSelectedNode > 1;
 };
 
 export {useHasMultipleInstances};

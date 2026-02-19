@@ -360,7 +360,7 @@ describe('MetadataPopover', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/This element instance triggered 10 times/),
+        screen.getByText(/This element instance triggered 2 times/),
       ).toBeInTheDocument();
     });
     expect(
@@ -369,7 +369,7 @@ describe('MetadataPopover', () => {
       ),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
+    expect(await screen.findByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: labels.showIncidents}),
     ).toBeInTheDocument();
