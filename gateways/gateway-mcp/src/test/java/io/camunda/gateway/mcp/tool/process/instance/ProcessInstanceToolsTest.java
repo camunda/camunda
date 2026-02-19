@@ -53,6 +53,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -618,6 +620,174 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(problemDetail.getDetail())
           .contains("Only one of [processDefinitionId, processDefinitionKey] is allowed");
+    }
+
+    @Test
+    void shouldCreateProcessInstanceByKeyWithMultiTenancy() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
+
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(-1)
+              .setProcessInstanceKey(456L)
+              .setTenantId("tenant-a")
+              .setTags(Set.of());
+
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionKey",
+                          "123",
+                          "variables",
+                          Map.of("foo", "bar"),
+                          "tags",
+                          Set.of("mcp-tool:abc"),
+                          "tenantId",
+                          "tenant-a"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
+
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+      assertThat(capturedRequest.tenantId()).isEqualTo("tenant-a");
+      assertThat(capturedRequest.variables()).containsExactly(entry("foo", "bar"));
+      assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
+
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(-1);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).isEmpty();
+    }
+
+    @Test
+    void shouldCreateProcessInstanceByIdWithMultiTenancy() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
+
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(7)
+              .setProcessInstanceKey(456L)
+              .setTenantId("tenant-a")
+              .setTags(Set.of("mcp-tool:abc"));
+
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(
+                      Map.of(
+                          "processDefinitionId",
+                          "testProcessId",
+                          "processDefinitionVersion",
+                          7,
+                          "variables",
+                          Map.of("foo", "bar"),
+                          "tags",
+                          Set.of("mcp-tool:abc"),
+                          "tenantId",
+                          "tenant-a"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.bpmnProcessId()).contains("testProcessId");
+      assertThat(capturedRequest.version()).isEqualTo(7);
+      assertThat(capturedRequest.tenantId()).isEqualTo("tenant-a");
+      assertThat(capturedRequest.variables()).containsExactly(entry("foo", "bar"));
+      assertThat(capturedRequest.awaitCompletion()).isFalse();
+      assertThat(capturedRequest.tags()).containsExactly("mcp-tool:abc");
+
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessDefinitionKey()).isEqualTo("123");
+      assertThat(actualResult.getProcessDefinitionId()).isEqualTo("testProcessId");
+      assertThat(actualResult.getProcessDefinitionVersion()).isEqualTo(7);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
+      assertThat(actualResult.getVariables()).isEmpty();
+      assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   "})
+    void shouldFailCreateProcessInstanceWhenMultiTenancyEnabledButEmptyTenantProvided(
+        final String tenantId) {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(Map.of("processDefinitionKey", "123", "tenantId", tenantId))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+      assertThat(result.structuredContent()).isNull();
+      assertThat(result.content())
+          .hasSize(1)
+          .first()
+          .isInstanceOfSatisfying(
+              TextContent.class,
+              textContent ->
+                  assertThat(textContent.text())
+                      .contains("tenantId: must match \"^(<default>|[A-Za-z0-9_@.+-]+)$\""));
+    }
+
+    @Test
+    void shouldFailCreateProcessInstanceWhenMultiTenancyEnabledButNoTenantProvided() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(Map.of("processDefinitionKey", "123"))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isTrue();
+
+      final var problemDetail =
+          objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
+      assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
+      assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(problemDetail.getDetail())
+          .contains(
+              "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
     }
   }
 }
