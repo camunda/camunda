@@ -32,7 +32,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 public class SchemaValidationTest {
 
-  private static final String DSL_SCHEMA = "/schema/test-scenario-dsl.schema.json";
+  private static final String DSL_SCHEMA = "/schema/cpt-test-cases.schema.json";
 
   private static JsonSchema jsonSchema;
 
