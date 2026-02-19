@@ -1,12 +1,12 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://camunda.org/schema/cpt-test-cases/1.0/cpt-test-cases.schema.json",
-  "title": "Test Scenario DSL",
-  "description": "A test scenario with test cases to validate the business process.",
+  "title": "CPT JSON test cases",
+  "description": "A collection of test cases to validate the business process in a JSON format compatible with Camunda Process Test (CPT).",
   "type": "object",
   "properties": {
     "testCases": {
-      "description": "The test cases of the scenario.",
+      "description": "The test cases to validate the business process.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/TestCase"
