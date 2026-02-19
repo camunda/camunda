@@ -211,16 +211,13 @@ public final class BufferUtil {
   }
 
   /**
-   * Writes a {@link BufferWriter} into an SBE encoder as a variable-length field.
-   *
-   * <p>At the encoder's current limit, writes the content length as a 4-byte integer header (using
-   * {@code byteOrder}), followed by the content bytes, then advances the encoder's limit by {@code
-   * headerLength + contentLength}.
+   * Writes a {@link BufferWriter} into an SBE encoder as a variable-length field. The content
+   * length is written at `encoder.limit()` and the content itself is written at `encoder.limit() +
+   * headerLength`. Then, the `encoder.limit` is increased by the written bytes
    *
    * @param writer the writer whose content to encode
-   * @param encoder the SBE encoder to write into; its limit is advanced after writing
-   * @param headerLength the byte width of the length prefix field (typically 4, as returned by e.g.
-   *     {@code RecordMetadataEncoder.authorizationHeaderLength()})
+   * @param encoder the SBE encoder to write into
+   * @param headerLength the byte width of the length prefix field (typically 4)
    * @param byteOrder the byte order for the length header
    */
   public static void writeLengthPrefixed(
