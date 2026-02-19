@@ -1083,6 +1083,7 @@ jobs:
       - docker-checks
       - general-unit-tests
       - history-tests
+      - identity-tests
       - integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
@@ -1113,6 +1114,11 @@ jobs:
         id: history-matrix-read
         with:
           matrix-step-name: history-tests
+      - name: Read identity tests matrix outputs
+        uses: cloudposse/github-action-matrix-outputs-read@v1
+        id: identity-matrix-read
+        with:
+          matrix-step-name: identity-tests
       - name: Collect flaky test results
         id: collect-results
         uses: ./.github/actions/collect-flaky-tests
@@ -1123,6 +1129,8 @@ jobs:
           database-matrix-output-result: ${{ steps.database-integration-matrix-read.outputs.result }}
           history-tests-result: ${{ needs.history-tests.result }}
           history-matrix-output-result: ${{ steps.history-matrix-read.outputs.result }}
+          identity-tests-result: ${{ needs.identity-tests.result }}
+          identity-matrix-output-result: ${{ steps.identity-matrix-read.outputs.result }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
           rdbms-tests-flaky: ${{ needs.rdbms-integration-tests.outputs.flakyTests }}
           docker-checks-result: ${{ needs.docker-checks.result }}
