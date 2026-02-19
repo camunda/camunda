@@ -8,9 +8,7 @@
 
 import {createAddVariableModification} from 'modules/mocks/modifications';
 import {modificationsStore} from 'modules/stores/modifications';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {createInstance} from 'modules/testUtils';
 import {ModificationSummaryModal} from './index';
 import {open} from 'modules/mocks/diagrams';
 import {useEffect, act} from 'react';
@@ -55,7 +53,6 @@ const getWrapper = (
     useEffect(() => {
       return () => {
         modificationsStore.reset();
-        processInstanceDetailsStore.reset();
       };
     }, []);
 
@@ -78,7 +75,6 @@ describe('Modification Summary Modal', () => {
   beforeEach(() => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
-    processInstanceDetailsStore.setProcessInstance(createInstance({id: '1'}));
   });
 
   it('should render information message', async () => {
