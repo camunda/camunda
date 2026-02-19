@@ -61,7 +61,7 @@ test.describe('Identity User Flows', () => {
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/identity/`,
+      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
     );
 
     await test.step(`Deleted user cannot access Identity`, async () => {
