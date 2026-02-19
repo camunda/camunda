@@ -41,12 +41,20 @@ import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
 } from '@camunda/camunda-api-zod-schemas/8.9';
+<<<<<<< HEAD
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+=======
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters.ts';
+>>>>>>> 685f9df6 (feat: add operation and entity type filter to PI Operations Log)
 import {
   PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS,
   type ProcessInstanceOperationsLogFilterField,
   type ProcessInstanceOperationsLogFilters,
+<<<<<<< HEAD
 } from './operationsLogFilters';
+=======
+} from './operationsLogFilters.ts';
+>>>>>>> 685f9df6 (feat: add operation and entity type filter to PI Operations Log)
 
 type Props = {
   isVisible: boolean;

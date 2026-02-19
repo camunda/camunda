@@ -39,7 +39,10 @@ import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';
 import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
+<<<<<<< HEAD
 import {getClientConfig} from 'modules/utils/getClientConfig';
+=======
+>>>>>>> 685f9df6 (feat: add operation and entity type filter to PI Operations Log)
 
 const initialValues: OperationsLogFilters = {};
 
