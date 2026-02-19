@@ -9,6 +9,7 @@ package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANT;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_TENANTS;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_MISSING_TENANT;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.createProblemDetail;
 import static io.camunda.security.validation.IdentifierValidator.TENANT_ID_MASK;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
@@ -72,9 +73,7 @@ public final class MultiTenancyValidator {
 
     final List<String> violations = new ArrayList<>();
     if (!hasTenantId) {
-      violations.add(
-          ERROR_MESSAGE_INVALID_TENANTS.formatted(
-              commandName, tenantIds, "no tenant identifier was provided"));
+      violations.add(ERROR_MESSAGE_MISSING_TENANT.formatted(commandName));
     } else {
       tenantIds.forEach(
           tenantId -> {
