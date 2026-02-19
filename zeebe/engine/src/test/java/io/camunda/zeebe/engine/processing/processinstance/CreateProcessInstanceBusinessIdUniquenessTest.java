@@ -310,4 +310,49 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .hasBusinessId(businessId)
         .hasProcessInstanceKey(secondProcessInstanceKey);
   }
+
+  @Test
+  public void shouldInheritBusinessIdFromParentProcessInstance() {
+    final String processUnderTestId = helper.getBpmnProcessId() + "_underTest";
+    final String processWithCallActivityId = helper.getBpmnProcessId() + "_callActivity";
+    final String businessId = "biz-123";
+
+    // given:
+    // - two processes: process under test and call activity process
+    // - and an instance of the process under test with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processUnderTestId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processWithCallActivityId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(processUnderTestId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var callActivityInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processWithCallActivityId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withParentProcessInstanceKey(callActivityInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect the called process instance to inherit the business id from the call activity instance")
+        .hasBusinessId(businessId);
+  }
 }
