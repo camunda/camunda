@@ -97,9 +97,9 @@ public final class CallActivityProcessor
               final var activated =
                   stateTransitionBehavior.transitionToActivated(context, element.getEventType());
 
-              final var processIntance =
+              final var processInstance =
                   stateBehavior.getElementInstance(context.getProcessInstanceKey());
-              final String businessId = processIntance.getValue().getBusinessId();
+              final String businessId = processInstance.getValue().getBusinessId();
 
               final var childProcessInstanceKey =
                   stateTransitionBehavior.createChildProcessInstance(process, context, businessId);
