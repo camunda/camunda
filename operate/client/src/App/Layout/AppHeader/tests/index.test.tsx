@@ -77,18 +77,14 @@ describe('Header', () => {
 
     await user.click(within(nav).getByText(/^Operations$/));
 
-    await user.click(
-      screen.getByRole('link', {name: /^Batch operations$/i}),
-    );
+    await user.click(screen.getByRole('link', {name: /^Batch operations$/i}));
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       /^\/batch-operations$/,
     );
 
     await user.click(within(nav).getByText(/^Operations$/));
 
-    await user.click(
-      screen.getByRole('link', {name: /^Operations log$/i}),
-    );
+    await user.click(screen.getByRole('link', {name: /^Operations log$/i}));
     expect(screen.getByTestId('pathname')).toHaveTextContent(
       /^\/operations-log$/,
     );
