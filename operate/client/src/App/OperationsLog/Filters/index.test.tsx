@@ -14,6 +14,21 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/utils/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/utils/getClientConfig')
+>('modules/utils/getClientConfig');
+
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 function getWrapper(initialPath = '/operations-log') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -33,6 +48,7 @@ function getWrapper(initialPath = '/operations-log') {
 
 describe('OperationsLog Filters', () => {
   beforeEach(() => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockMe().withSuccess(createUser());
     mockSearchProcessDefinitions().withSuccess({
       items: [
@@ -69,7 +85,8 @@ describe('OperationsLog Filters', () => {
   });
 
   it('should render tenant field when multi-tenancy is enabled', () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
 

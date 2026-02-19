@@ -28,6 +28,21 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/utils/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/utils/getClientConfig')
+>('modules/utils/getClientConfig');
+
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -52,6 +67,7 @@ const createWrapper = (
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockSearchDecisionInstances().withSuccess(
       mockDecisionInstancesSearchResult,
     );
@@ -275,7 +291,8 @@ describe('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      vi.stubGlobal('clientConfig', {
+      mockGetClientConfig.mockReturnValue({
+        ...actualGetClientConfig(),
         multiTenancyEnabled: true,
       });
 
@@ -296,7 +313,8 @@ describe('<InstancesTable />', () => {
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
 

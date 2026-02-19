@@ -22,9 +22,25 @@ import {
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/utils/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/utils/getClientConfig')
+>('modules/utils/getClientConfig');
+
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 describe('Filters', () => {
   beforeEach(() => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
@@ -40,7 +56,8 @@ describe('Filters', () => {
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(
@@ -125,7 +142,8 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL when multi tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(
@@ -204,7 +222,8 @@ describe('Filters', () => {
   });
 
   it('should disable processes field when tenant is not selected', async () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
 
@@ -216,7 +235,8 @@ describe('Filters', () => {
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
-    vi.stubGlobal('clientConfig', {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(

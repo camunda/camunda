@@ -8,13 +8,28 @@
 
 import {render, screen} from 'modules/testing-library';
 import {Disclaimer} from './index';
+import {getClientConfig} from 'modules/utils/getClientConfig';
+
+vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import('modules/utils/getClientConfig')>();
+  return {
+    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
+  };
+});
+
+const {getClientConfig: actualGetClientConfig} = await vi.importActual<
+  typeof import('modules/utils/getClientConfig')
+>('modules/utils/getClientConfig');
+
+const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const DISCLAIMER_TEXT =
   'Non-Production License. If you would like information on production usage, please refer to our terms & conditions page or contact sales.';
 
 describe('<Disclaimer />', () => {
-  afterEach(() => {
-    window.clientConfig = undefined;
+  beforeEach(() => {
+    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
   });
 
   it('should show the disclaimer', () => {
@@ -39,9 +54,6 @@ describe('<Disclaimer />', () => {
       'https://camunda.com/contact/',
     );
 
-    window.clientConfig = {
-      isEnterprise: false,
-    };
     rerender(<Disclaimer />);
 
     expect(
@@ -64,9 +76,11 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    window.clientConfig = {
+    mockGetClientConfig.mockReturnValue({
+      ...actualGetClientConfig(),
       isEnterprise: true,
-    };
+    });
+
     render(<Disclaimer />);
 
     expect(
