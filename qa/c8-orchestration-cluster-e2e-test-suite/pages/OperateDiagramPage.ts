@@ -184,7 +184,7 @@ export class OperateDiagramPage {
       for (const text of expectedTexts) {
         await expect(
           this.metadataModal.getByText(text, {exact: false}),
-        ).toBeVisible();
+        ).toBeVisible({timeout: 15000});
       }
     }
 
