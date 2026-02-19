@@ -19,15 +19,15 @@ import {LinkWrapper, ErrorMessage, LoadingContainer} from '../styled';
 import {EmptyState} from 'modules/components/EmptyState';
 import EmptyStateProcessIncidents from 'modules/components/Icon/empty-state-process-incidents.svg?react';
 import {
+  PAGE_LIMIT,
   useIncidentProcessInstanceStatisticsByErrorPaginated,
-  PAGES_LIMIT,
 } from 'modules/queries/incidentStatistics/useIncidentProcessInstanceStatisticsByErrorPaginated';
 import type {IncidentProcessInstanceStatisticsByError} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Details} from './Details';
 import {InlineLoading} from '@carbon/react';
 
 const ROW_HEIGHT = 64;
-const SMOOTH_SCROLL_STEP_SIZE = PAGES_LIMIT * ROW_HEIGHT;
+const SMOOTH_SCROLL_STEP_SIZE = PAGE_LIMIT * ROW_HEIGHT;
 
 type Props = {
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
