@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.clustervariable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
@@ -164,12 +165,16 @@ public final class CreateClusterVariableTest {
   @MethodSource("retrieveInvalidClusterVariableName")
   public void checkClusterVariableRecordValidator(
       final String clusterVariableName, final String rejectionReason) {
+
+    final var engineConfiguration = new EngineConfiguration();
+    engineConfiguration.setMaxNameFieldLength(10);
+
     // given
     final ClusterVariableRecord clusterVariableRecord =
         new ClusterVariableRecord().setName(clusterVariableName);
     final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
     final ClusterVariableRecordValidator clusterVariableRecordValidator =
-        new ClusterVariableRecordValidator(clusterVariableState);
+        new ClusterVariableRecordValidator(clusterVariableState, engineConfiguration);
     // when
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
     // then
@@ -182,6 +187,9 @@ public final class CreateClusterVariableTest {
             "test key",
             "Invalid cluster variable name: 'test key'. The name must not contains any whitespace."),
         Arguments.of(
-            "", "Invalid cluster variable name: ''. Cluster variable can not be null or empty."));
+            "", "Invalid cluster variable name: ''. Cluster variable can not be null or empty."),
+        Arguments.of(
+            "this-is-a-very-long-cluster-variable-name-that-exceeds-the-maximum-length",
+            "Invalid cluster variable name: 'this-is-a-very-long-cluster-variable-name-that-exceeds-the-maximum-length'. The name must not be longer than 10 characters."));
   }
 }

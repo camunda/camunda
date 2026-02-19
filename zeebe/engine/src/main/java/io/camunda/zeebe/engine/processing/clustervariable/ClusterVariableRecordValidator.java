@@ -43,6 +43,15 @@ public class ClusterVariableRecordValidator {
               "Invalid cluster variable name: '%s'. The name must not contains any whitespace."
                   .formatted(name)));
     }
+
+    if (name.length() > engineConfiguration.getMaxNameFieldLength()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Invalid cluster variable name: '%s'. The name must not be longer than %s characters."
+                  .formatted(name, engineConfiguration.getMaxNameFieldLength())));
+    }
+
     return Either.right(record);
   }
 
