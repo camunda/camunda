@@ -18,8 +18,7 @@ import {
   Stack,
 } from "@carbon/react";
 import { ArrowRight, InformationFilled } from "@carbon/react/icons";
-import { spacing03, spacing06 } from "@carbon/elements";
-import styled from "styled-components";
+import { spacing06 } from "@carbon/elements";
 import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
 import Modal, { FormModal, UseModalProps } from "src/components/modal";
@@ -28,29 +27,13 @@ import { useApiCall } from "src/utility/api";
 import { createTenant } from "src/utility/api/tenants";
 import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
+import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
 
 type FormData = {
   name: string;
   tenantId: string;
   description: string;
 };
-
-const RightAlignedButtonSet = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  width: 100%;
-  gap: ${spacing06};
-`;
-
-const InfoHint = styled.div`
-  display: flex;
-  align-items: flex-start;
-  gap: ${spacing03};
-  margin-top: ${spacing03};
-  color: var(--cds-text-primary);
-  font-size: var(--cds-helper-text-01-font-size, 0.75rem);
-  line-height: var(--cds-helper-text-01-line-height, 1.34);
-`;
 
 const ITEM_TO_TAB: Record<string, string> = {
   assignUsers: "users",
