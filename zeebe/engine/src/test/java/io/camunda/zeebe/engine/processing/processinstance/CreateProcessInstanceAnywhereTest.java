@@ -14,8 +14,11 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
+<<<<<<< HEAD
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
+=======
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -948,17 +951,28 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
+<<<<<<< HEAD
   public void shouldActivateElementWithinAdHocSubProcess() {
     // given
     final String subProcessTaskId = "subprocessTask";
     final String adhocProcessId = "adhoc";
     final String adhocInnerElementId =
         adhocProcessId + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+=======
+  public void shouldActivateProcessInstanceWithStartInstructionInAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String adhocProcessId = "adhoc";
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(
                 adhocProcessId, adHocSubProcess -> adHocSubProcess.task(subProcessTaskId))
+<<<<<<< HEAD
+=======
+            .endEvent()
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
             .done();
 
     ENGINE.deployment().withXmlResource(process).deploy();
@@ -975,6 +989,7 @@ public class CreateProcessInstanceAnywhereTest {
     Assertions.assertThat(
             RecordingExporter.processInstanceRecords()
                 .withProcessInstanceKey(processInstanceKey)
+<<<<<<< HEAD
                 .onlyEvents()
                 .limitToProcessInstanceCompleted())
         .extracting(r -> r.getValue().getElementId(), Record::getIntent)
@@ -1063,12 +1078,34 @@ public class CreateProcessInstanceAnywhereTest {
     final String adhocProcessId = "adhoc";
     final String adhocInnerElementId =
         adhocProcessId + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+=======
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldActivateProcessInstanceWithStartInstructionInJobBasedAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String adhocProcessId = "adhoc";
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess(PROCESS_ID)
             .startEvent()
             .adHocSubProcess(
                 adhocProcessId, adHocSubProcess -> adHocSubProcess.task(subProcessTaskId))
+<<<<<<< HEAD
             .zeebeJobType(jobType)
+=======
+            .zeebeJobType("task")
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
             .endEvent()
             .done();
 
@@ -1082,6 +1119,7 @@ public class CreateProcessInstanceAnywhereTest {
             .withStartInstruction(subProcessTaskId)
             .create();
 
+<<<<<<< HEAD
     completeJob(jobType, true, false);
 
     // then
@@ -1185,5 +1223,21 @@ public class CreateProcessInstanceAnywhereTest {
             .setCompletionConditionFulfilled(completionConditionFulfilled)
             .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+=======
+    // then
+    final String adhocInnerElementId =
+        adhocProcessId + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+>>>>>>> 1fed7a52 (feat: remove validation for start instructions in adhoc subprocess)
   }
 }
