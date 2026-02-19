@@ -365,7 +365,7 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
     return this;
   }
 
-  public boolean hasParentProcess() {
+  public boolean hasParentProcessInstance() {
     return getParentProcessInstanceKey() != -1L;
   }
 
