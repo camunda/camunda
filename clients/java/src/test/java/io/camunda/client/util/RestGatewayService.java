@@ -486,7 +486,7 @@ public class RestGatewayService {
         response);
   }
 
-  public void onJobStatisticsRequest(
+  public void onJobTypeStatisticsRequest(
       final io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult response) {
     register(
         WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobTypeStatisticsUrl())),
