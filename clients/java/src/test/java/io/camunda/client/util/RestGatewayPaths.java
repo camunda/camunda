@@ -123,6 +123,7 @@ public class RestGatewayPaths {
   private static final String URL_INCIDENT_PROCESS_INSTANCE_STATISTICS_BY_ERROR =
       REST_API_PATH + "/incidents/statistics/process-instances-by-error";
   private static final String URL_GLOBAL_JOB_STATISTICS = REST_API_PATH + "/jobs/statistics/global";
+  private static final String URL_JOB_TYPE_STATISTICS = REST_API_PATH + "/jobs/statistics/by-types";
 
   /**
    * @return the topology request URL
@@ -457,6 +458,10 @@ public class RestGatewayPaths {
 
   public static String getGlobalJobStatisticsUrl() {
     return URL_GLOBAL_JOB_STATISTICS;
+  }
+
+  public static String getJobTypeStatisticsUrl() {
+    return URL_JOB_TYPE_STATISTICS;
   }
 
   public static String getResourceDeletionUrl(final long resourceKey) {
