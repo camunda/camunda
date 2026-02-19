@@ -1,0 +1,13 @@
+{
+  "name": "camunda-spectral-functions-tests",
+  "version": "1.0.0",
+  "description": "Tests for custom Spectral functions",
+  "private": true,
+  "scripts": {
+    "test": "node test/verifyAllFieldsRequired.test.js"
+  },
+  "devDependencies": {},
+  "engines": {
+    "node": ">=18"
+  }
+}

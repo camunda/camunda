@@ -6,6 +6,7 @@ functions:
   - verifyKeyTypesPaths
   - verifyKeyTypesSchemas
   - verifyEventuallyConsistent
+  - verifyAllFieldsRequired
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -111,3 +112,11 @@ rules:
     then:
       function: verifyEventuallyConsistent
     message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."
+  
+  all-fields-required-or-nullable:
+    description: "All schema properties must be in the required array or explicitly marked as nullable."
+    severity: error
+    given: $.components.schemas[*]
+    then:
+      function: verifyAllFieldsRequired
+    message: "All fields in this schema must be in the required array of the schema. If any field is optionally present at runtime, explicitly mark that field as nullable."
