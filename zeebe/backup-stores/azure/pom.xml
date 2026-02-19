@@ -116,5 +116,17 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 </project>
