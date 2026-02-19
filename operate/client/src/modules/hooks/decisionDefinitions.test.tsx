@@ -44,19 +44,19 @@ const getWrapper = (searchParams?: {name?: string; version?: string}) => {
 describe('getDefinitionIdentifier', () => {
   it('should combine a decisionDefinitionId and tenantId into an identifier', () => {
     const identifier = getDefinitionIdentifier('testDecision', 'tenantA');
-    expect(identifier).toBe('testDecision--tenantA');
+    expect(identifier).toBe('testDecision##tenantA');
   });
 
   it('should use DEFAULT_TENANT when tenantId is omitted', () => {
     const identifier = getDefinitionIdentifier('testDecision');
-    expect(identifier).toBe('testDecision--<default>');
+    expect(identifier).toBe('testDecision##<default>');
   });
 });
 
 describe('getDefinitionIdFromIdentifier', () => {
   it('should extract the decisionDefinitionId from a given identifier', () => {
     const decisionDefinitionId = getDefinitionIdFromIdentifier(
-      'testDecision--myTenant',
+      'testDecision##myTenant',
     );
     expect(decisionDefinitionId).toBe('testDecision');
   });
@@ -87,9 +87,9 @@ describe('useDecisionDefinitions', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data![0].name).toBe('Decision A');
-    expect(result.current.data![0].identifier).toBe('decisionA--<default>');
+    expect(result.current.data![0].identifier).toBe('decisionA##<default>');
     expect(result.current.data![1].name).toBe('Decision B');
-    expect(result.current.data![1].identifier).toBe('decisionB--<default>');
+    expect(result.current.data![1].identifier).toBe('decisionB##<default>');
   });
 });
 
