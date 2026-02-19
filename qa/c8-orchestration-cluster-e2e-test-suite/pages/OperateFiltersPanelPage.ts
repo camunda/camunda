@@ -98,7 +98,7 @@ export class OperateFiltersPanelPage {
       name: 'process instance key',
     });
     this.flowNodeFilter = this.page.getByRole('combobox', {
-      name: 'flow node',
+      name: 'element',
     });
     this.operationIdFilter = this.page.getByRole('textbox', {
       name: 'operation id',
