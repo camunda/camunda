@@ -85,6 +85,7 @@ const OperationsActions: React.FC<Props> = ({
     <ActionsContainer gap={2} orientation="horizontal">
       {allowedActions.includes('SUSPEND') && (
         <Button
+          size="md"
           kind="tertiary"
           renderIcon={Pause}
           onClick={() => {
@@ -97,6 +98,7 @@ const OperationsActions: React.FC<Props> = ({
       )}
       {allowedActions.includes('RESUME') && (
         <Button
+          size="md"
           kind="tertiary"
           renderIcon={Play}
           onClick={() => {
@@ -108,7 +110,7 @@ const OperationsActions: React.FC<Props> = ({
         </Button>
       )}
       {allowedActions.includes('CANCEL') && (
-        <OverflowMenu aria-label="overflow-menu" flipped>
+        <OverflowMenu size="md" aria-label="overflow-menu" flipped>
           <OverflowMenuItem
             itemText="Cancel"
             isDelete
