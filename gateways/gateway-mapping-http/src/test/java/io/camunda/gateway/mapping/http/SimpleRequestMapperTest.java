@@ -31,7 +31,7 @@ class SimpleRequestMapperTest {
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
-          SimpleRequestMapper.toCreateProcessInstance(request, true);
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
 
       // then
       assertThat(result.isLeft()).isTrue();
@@ -51,7 +51,7 @@ class SimpleRequestMapperTest {
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
-          SimpleRequestMapper.toCreateProcessInstance(request, true);
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
 
       // then
       assertThat(result.isLeft()).isTrue();
@@ -71,7 +71,7 @@ class SimpleRequestMapperTest {
 
       // when
       final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
-          SimpleRequestMapper.toCreateProcessInstance(request, true);
+          SimpleRequestMapper.toCreateProcessInstance(request, false);
 
       // then
       assertThat(result.isLeft()).isTrue();
@@ -104,7 +104,7 @@ class SimpleRequestMapperTest {
     }
 
     @Test
-    void shouldMapByKeyAndRunMultiTenancyValidation() {
+    void shouldMapByKeyAndFailTenantWithMultiTenancyDisabled() {
       // given
       final var request =
           new ProcessInstanceCreationInstruction()
@@ -129,6 +129,33 @@ class SimpleRequestMapperTest {
       assertThat(result.getLeft().getDetail())
           .isEqualTo(
               "Expected to handle request Create Process Instance with tenant identifier 'tenant-a', but multi-tenancy is disabled");
+    }
+
+    @Test
+    void shouldMapByKeyAndFailMissingTenantWithMultiTenancyEnabled() {
+      // given
+      final var request =
+          new ProcessInstanceCreationInstruction()
+              .processDefinitionKey("123")
+              .startInstructions(
+                  List.of(new ProcessInstanceCreationStartInstruction().elementId("start-element")))
+              .runtimeInstructions(
+                  List.of(
+                      new ProcessInstanceCreationTerminateInstruction()
+                          .type("TERMINATE_PROCESS_INSTANCE")
+                          .afterElementId("after-element")));
+
+      // when
+      final Either<ProblemDetail, ProcessInstanceCreateRequest> result =
+          SimpleRequestMapper.toCreateProcessInstance(request, true);
+
+      // then
+      assertThat(result.isLeft()).isTrue();
+      assertThat(result.getLeft().getStatus()).isEqualTo(400);
+      assertThat(result.getLeft().getTitle()).isEqualTo("INVALID_ARGUMENT");
+      assertThat(result.getLeft().getDetail())
+          .isEqualTo(
+              "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
     }
 
     @Test
