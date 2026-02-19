@@ -28,7 +28,7 @@ test.describe('Identity User Flows', () => {
   const createdUsernames: string[] = [];
 
   test.beforeEach(async ({loginPage, page}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login('demo', 'demo');
   });
 
@@ -61,7 +61,7 @@ test.describe('Identity User Flows', () => {
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/identity/`,
+      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
     );
 
     await test.step(`Deleted user cannot access Identity`, async () => {
@@ -362,7 +362,7 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step('Login with demo user and create authorization for the group', async () => {
-      await navigateToApp(page, 'identity');
+      await navigateToApp(page, 'admin');
       await loginPage.login('demo', 'demo');
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
