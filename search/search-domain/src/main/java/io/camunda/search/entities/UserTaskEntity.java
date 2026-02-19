@@ -9,6 +9,8 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +43,15 @@ public record UserTaskEntity(
     Integer priority,
     Set<String> tags)
     implements TenantOwnedEntity {
+
+  public UserTaskEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    candidateGroups = candidateGroups != null ? candidateGroups : new ArrayList<>();
+    candidateUsers = candidateUsers != null ? candidateUsers : new ArrayList<>();
+    tags = tags != null ? tags : new HashSet<>();
+  }
 
   public UserTaskEntity withName(final String newName) {
     return new UserTaskEntity(

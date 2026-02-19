@@ -249,7 +249,8 @@ public class JobIT {
         .usingRecursiveComparison()
         // date fields are ignored because different engines produce different precisions
         // e.g., date may look like 2025-11-21T16:02:57.376Z or 2025-11-21T16:02:57.376207580Z
-        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime")
+        // customHeaders may be null on db record level but defaults to an empty Map on the Entity
+        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime", "customHeaders")
         .isEqualTo(original);
     assertThat(instance.jobKey()).isEqualTo(original.jobKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());

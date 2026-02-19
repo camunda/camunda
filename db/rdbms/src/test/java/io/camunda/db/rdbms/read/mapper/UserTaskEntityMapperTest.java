@@ -61,7 +61,9 @@ public class UserTaskEntityMapperTest {
             "completionDate",
             "dueDate",
             "followUpDate",
-            "processName")
+            "processName",
+            // will be initialized to empty set in the entity, but is null in the db model
+            "tags")
         .isEqualTo(dbModel);
 
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
@@ -73,6 +75,7 @@ public class UserTaskEntityMapperTest {
         .isCloseTo(dbModel.dueDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
     assertThat(entity.followUpDate())
         .isCloseTo(dbModel.followUpDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+    assertThat(entity.tags()).isNotNull().isEmpty();
   }
 
   @Test
@@ -114,7 +117,9 @@ public class UserTaskEntityMapperTest {
             "completionDate",
             "dueDate",
             "followUpDate",
-            "processName")
+            "processName",
+            // will be initialized to empty set in the entity, but is null in the db model
+            "tags")
         .isEqualTo(dbModel);
 
     assertThat(entity.customHeaders()).isEqualTo(Map.of("key", "value"));
@@ -123,5 +128,6 @@ public class UserTaskEntityMapperTest {
     assertThat(entity.completionDate()).isNull();
     assertThat(entity.dueDate()).isNull();
     assertThat(entity.followUpDate()).isNull();
+    assertThat(entity.tags()).isNotNull().isEmpty();
   }
 }
