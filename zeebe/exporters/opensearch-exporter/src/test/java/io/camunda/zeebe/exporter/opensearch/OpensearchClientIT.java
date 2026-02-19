@@ -183,11 +183,11 @@ public class OpensearchClientIT {
     SEARCH_DB.client().createIndexStateManagementPolicy();
 
     // then
-    final var maybeIsmPolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
-    assertThat(maybeIsmPolicy).isPresent();
-    final var policy = maybeIsmPolicy.get().policy();
-    assertThat(policy.ismTemplates()).isNotEmpty();
-    for (final var ismTemplate : policy.ismTemplates()) {
+    final var maybePolicy = SEARCH_DB.client().maybeGetIndexStateManagementPolicy();
+    assertThat(maybePolicy).isPresent();
+    final var policy = maybePolicy.get().policy();
+    assertThat(policy.ismTemplate()).isNotEmpty();
+    for (final var ismTemplate : policy.ismTemplate()) {
       assertThat(ismTemplate.indexPatterns())
           .as("ISM template should only apply to zeebe indices")
           .containsOnly(SEARCH_DB.config().index.prefix + "_*");

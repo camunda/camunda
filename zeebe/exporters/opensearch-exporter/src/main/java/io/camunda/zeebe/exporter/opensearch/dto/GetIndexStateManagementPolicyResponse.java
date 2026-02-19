@@ -24,17 +24,19 @@ import org.opensearch.client.util.ObjectBuilder;
 public record GetIndexStateManagementPolicyResponse(
     Policy policy, Integer seqNo, Integer primaryTerm) {
 
-  private static final JsonpDeserializer<IsmTemplate> ISM_TEMPLATE_DESERIALIZER =
-      ObjectBuilderDeserializer.lazy(
-          IsmTemplate::builder,
-          GetIndexStateManagementPolicyResponse::setupIsmTemplateDeserializer);
-  private static final JsonpDeserializer<Policy> POLICY_DESERIALIZER =
-      ObjectBuilderDeserializer.lazy(
-          Policy::builder, GetIndexStateManagementPolicyResponse::setupPolicyDeserializer);
   public static final JsonpDeserializer<GetIndexStateManagementPolicyResponse> DESERIALIZER =
       ObjectBuilderDeserializer.lazy(
           GetIndexStateManagementPolicyResponse.Builder::new,
           GetIndexStateManagementPolicyResponse::setupDeserializer);
+
+  private static final JsonpDeserializer<IsmTemplate> ISM_TEMPLATE_DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(
+          IsmTemplate::builder,
+          GetIndexStateManagementPolicyResponse::setupIsmTemplateDeserializer);
+
+  private static final JsonpDeserializer<Policy> POLICY_DESERIALIZER =
+      ObjectBuilderDeserializer.lazy(
+          Policy::builder, GetIndexStateManagementPolicyResponse::setupPolicyDeserializer);
 
   private static void setupDeserializer(
       final ObjectDeserializer<GetIndexStateManagementPolicyResponse.Builder> deserializer) {
@@ -147,7 +149,10 @@ public record GetIndexStateManagementPolicyResponse(
     final IsmTemplate ismTemplate = maybeIsmTemplate.get();
     return ismTemplate.indexPatterns().stream()
         .findFirst()
-        .map(indexPattern -> (configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER+ "*").equals(indexPattern))
+        .map(
+            indexPattern ->
+                indexPattern.equals(
+                    configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*"))
         .orElse(false);
   }
 

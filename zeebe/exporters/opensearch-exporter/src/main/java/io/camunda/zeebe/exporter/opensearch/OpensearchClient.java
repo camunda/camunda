@@ -313,7 +313,7 @@ public class OpensearchClient implements AutoCloseable {
       final AddPolicyRequest addPolicyRequest =
           AddPolicyRequest.builder()
               .policyId(configuration.retention.getPolicyName())
-              .index(configuration.index.prefix+ RecordIndexRouter.INDEX_DELIMITER + "*")
+              .index(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*")
               .build();
       final AddPolicyResponse response = openSearchClient.ism().addPolicy(addPolicyRequest);
       return Boolean.FALSE.equals(response.failures());
@@ -326,7 +326,9 @@ public class OpensearchClient implements AutoCloseable {
     try {
 
       final RemovePolicyRequest removePolicyRequest =
-          RemovePolicyRequest.builder().index(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER+ "*").build();
+          RemovePolicyRequest.builder()
+              .index(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*")
+              .build();
       final RemovePolicyResponse response =
           openSearchClient.ism().removePolicy(removePolicyRequest);
       return Boolean.FALSE.equals(response.failures());
@@ -394,7 +396,10 @@ public class OpensearchClient implements AutoCloseable {
             .build();
 
     final IsmTemplate ismTemplate =
-        IsmTemplate.builder().indexPatterns(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER +"*").priority(1).build();
+        IsmTemplate.builder()
+            .indexPatterns(configuration.index.prefix + RecordIndexRouter.INDEX_DELIMITER + "*")
+            .priority(1)
+            .build();
 
     return Policy.builder()
         .policyId(configuration.retention.getPolicyName())
