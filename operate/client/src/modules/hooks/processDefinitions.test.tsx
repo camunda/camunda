@@ -46,12 +46,12 @@ const getWrapper = (searchParams?: {process?: string; version?: string}) => {
 describe('getDefinitionIdentifier', () => {
   it('should combine a processDefinitionId and tenantId into an identifier', () => {
     const identifier = getDefinitionIdentifier('testProcess', 'tenantA');
-    expect(identifier).toBe('testProcess--tenantA');
+    expect(identifier).toBe('testProcess##tenantA');
   });
 
   it('should use DEFAULT_TENANT when tenantId is omitted', () => {
     const identifier = getDefinitionIdentifier('testProcess');
-    expect(identifier).toBe('testProcess--<default>');
+    expect(identifier).toBe('testProcess##<default>');
   });
 });
 
@@ -75,7 +75,7 @@ describe('getProcessDefinitionName', () => {
 
 describe('splitDefinitionIdentifier', () => {
   it('should split an identifier into definitionId and tenantId', () => {
-    const result = splitDefinitionIdentifier('testProcess--tenantA');
+    const result = splitDefinitionIdentifier('testProcess##tenantA');
     expect(result).toEqual({
       definitionId: 'testProcess',
       tenantId: 'tenantA',
@@ -112,9 +112,9 @@ describe('useProcessDefinitions', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data![0].label).toBe('Process A');
-    expect(result.current.data![0].identifier).toBe('processA--<default>');
+    expect(result.current.data![0].identifier).toBe('processA##<default>');
     expect(result.current.data![1].label).toBe('Process B');
-    expect(result.current.data![1].identifier).toBe('processB--<default>');
+    expect(result.current.data![1].identifier).toBe('processB##<default>');
   });
 });
 

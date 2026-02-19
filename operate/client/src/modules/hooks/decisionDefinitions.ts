@@ -14,7 +14,7 @@ import {useDecisionDefinitionsSearch} from 'modules/queries/decisionDefinitions/
 import {DEFAULT_TENANT} from 'modules/constants';
 
 interface DecisionDefinitionWithIdentifier extends DecisionDefinition {
-  /** A `definitionId`--`tenantId` tuple that is almost unique but not unique across versions. */
+  /** A `definitionId`##`tenantId` tuple that is almost unique but not unique across versions. */
   identifier: string;
 }
 
@@ -27,13 +27,13 @@ type DecisionDefinitionSelection =
     };
 
 function getDefinitionIdentifier(definitionId: string, tenantId?: string) {
-  return `${definitionId}--${tenantId ?? DEFAULT_TENANT}`;
+  return `${definitionId}##${tenantId ?? DEFAULT_TENANT}`;
 }
 
 function getDefinitionIdFromIdentifier(
   identifier?: string,
 ): string | undefined {
-  return identifier?.split('--')[0];
+  return identifier?.split('##')[0];
 }
 
 /**
