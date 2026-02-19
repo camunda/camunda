@@ -16,6 +16,7 @@ import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beans.LegacyBrokerBasedProperties;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.zeebe.broker.exporter.context.ExporterConfiguration;
@@ -94,6 +95,7 @@ public class StandaloneSchemaManager implements CommandLineRunner {
             SearchEngineConnectPropertiesOverride.class,
             SearchEngineIndexPropertiesOverride.class,
             SearchEngineRetentionPropertiesOverride.class,
+            SearchEngineSchemaManagerPropertiesOverride.class,
             // ---
             StandaloneSchemaManagerConfiguration.class)
         .initializers(new StandaloneSchemaManagerInitializer())
