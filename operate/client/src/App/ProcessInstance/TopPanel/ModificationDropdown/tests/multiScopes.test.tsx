@@ -17,6 +17,7 @@ import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fe
 import {Paths} from 'modules/Routes';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {searchResult} from 'modules/testUtils';
 
 const stats = {
   items: [
@@ -176,5 +177,51 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
+
+  it('should display visible child instances count when multi instance body element with multiple child instances is selected', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'TaskB',
+          active: 3,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813686200',
+          processInstanceKey: '1',
+          processDefinitionKey: 'processName',
+          processDefinitionId: 'processName',
+          state: 'ACTIVE' as const,
+          type: 'MULTI_INSTANCE_BODY' as const,
+          elementId: 'TaskB',
+          elementName: 'Task B',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2018-12-12T00:00:02.000+0000',
+        },
+      ]),
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=TaskB&isMultiInstanceBody=true`,
+    ]);
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/),
+    ).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() => screen.queryByTitle(/loading/i));
+
+    expect(
+      await screen.findByText(/Selected running instances: 3/),
+    ).toBeInTheDocument();
   });
 });
