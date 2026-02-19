@@ -445,7 +445,10 @@ export function CREATE_TXT_DOC_RESPONSE_BODY(name: string, size: number) {
     metadata: {
       contentType: 'text/plain',
       fileName: `${name}.txt`,
+      expiresAt: null,
       size: size,
+      processDefinitionId: null,
+      processInstanceKey: null,
       customProperties: {},
     },
   };
@@ -461,6 +464,7 @@ export function CREATE_TXT_DOC_RESPONSE_WITH_METADATA(
     metadata: {
       contentType: 'text/plain',
       fileName: `${name}.txt`,
+      expiresAt: null,
       size: size,
       processDefinitionId: name,
       processInstanceKey: '123456',
@@ -551,6 +555,8 @@ export function EVALUATED_DECISION_EXPECTED_BODY(
                 outputId: matchedRuleOptions.outputId,
                 outputName: matchedRuleOptions.outputName,
                 outputValue: matchedRuleOptions.outputValue,
+                ruleId: null,
+                ruleIndex: null,
               },
             ],
           },
