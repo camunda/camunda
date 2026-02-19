@@ -741,7 +741,9 @@ components:
     ## Enums
 
     UserTaskStateEnum:
-      description: The state of the user task.
+      description: |
+        The state of the user task.
+        Note: FAILED state is only for legacy job-worker-based tasks.
       type: string
       enum:
         - CREATING
