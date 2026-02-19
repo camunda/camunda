@@ -742,7 +742,7 @@ The `chat.tools.terminal.autoApprove` setting in `.vscode/settings.json` control
 
 ### How to deal with CI alerts that fire?
 
-Follow the Monorepo CI medic routines and check out the available [CI runbooks](https://github.com/camunda/camunda/wiki/CI-Runbooks) for each alert.
+Follow the Monorepo CI medic routines and check out the available [CI runbooks](./ci-runbooks.md) for each alert.
 
 ### Why is my CI check failing?
 
