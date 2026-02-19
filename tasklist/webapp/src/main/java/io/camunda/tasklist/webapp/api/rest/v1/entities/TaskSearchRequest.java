@@ -24,7 +24,9 @@ import java.util.Objects;
 @Schema(description = "Request object to search tasks by provided params.")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class TaskSearchRequest {
-  @Schema(description = "The state of the tasks.")
+  @Schema(
+      description =
+          "The state of the tasks. Note: FAILED state is only for legacy job-worker-based tasks.")
   private TaskState state;
 
   @Schema(description = "Are the tasks assigned?")
