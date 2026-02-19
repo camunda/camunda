@@ -56,7 +56,7 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public Map<String, String> backupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars() {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE", "S3",
         "ZEEBE_BROKER_DATA_BACKUP_S3_BUCKETNAME", BUCKET_NAME,
@@ -71,7 +71,7 @@ final class S3BackupCompatibilityIT implements BackupCompatibilityAcceptance, Af
   }
 
   @Override
-  public void configureBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.S3);
 

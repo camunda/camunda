@@ -61,13 +61,14 @@ public interface BackupCompatibilityAcceptance {
    * compatible with 8.8 and earlier. Endpoints should use internal (container-to-container)
    * addresses.
    */
-  Map<String, String> backupStoreEnvVars();
+  Map<String, String> oldBrokerBackupStoreEnvVars();
 
   /**
-   * Configures the backup store on the {@link TestRestoreApp} via the unified {@link Camunda}
-   * config. Endpoints should use external (host-accessible) addresses.
+   * Configures the backup store on the current version's {@link TestRestoreApp} and {@link
+   * TestStandaloneBroker} via the unified {@link Camunda} config. Endpoints should use external
+   * (host-accessible) addresses.
    */
-  void configureBackupStore(Camunda cfg);
+  void configureCurrentBackupStore(Camunda cfg);
 
   /**
    * Optional hook to further customize the old broker container beyond env vars. Implementations
@@ -91,7 +92,7 @@ public interface BackupCompatibilityAcceptance {
     final Path restoredDataDir;
     try (final var restoreApp =
         new TestRestoreApp()
-            .withUnifiedConfig(this::configureBackupStore)
+            .withUnifiedConfig(this::configureCurrentBackupStore)
             .withBackupId(backupId)
             .start()) {
       restoredDataDir = restoreApp.getWorkingDirectory();
@@ -198,7 +199,7 @@ public interface BackupCompatibilityAcceptance {
             .withEnv("CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI", "true");
 
     // Apply backup store specific env vars
-    backupStoreEnvVars().forEach(broker::withEnv);
+    oldBrokerBackupStoreEnvVars().forEach(broker::withEnv);
 
     // Allow implementations to add bind mounts, dependencies, etc.
     customizeOldBroker(broker);
@@ -209,7 +210,7 @@ public interface BackupCompatibilityAcceptance {
   @SuppressWarnings("resource")
   private TestStandaloneBroker createCurrentBroker(final Path dataDir) {
     return new TestStandaloneBroker()
-        .withUnifiedConfig(this::configureBackupStore)
+        .withUnifiedConfig(this::configureCurrentBackupStore)
         .withUnifiedConfig(cfg -> cfg.getSystem().getUpgrade().setEnableVersionCheck(false))
         .withWorkingDirectory(dataDir);
   }

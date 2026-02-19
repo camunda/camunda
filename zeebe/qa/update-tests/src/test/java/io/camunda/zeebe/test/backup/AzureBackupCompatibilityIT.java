@@ -42,7 +42,7 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance,
   }
 
   @Override
-  public Map<String, String> backupStoreEnvVars() {
+  public Map<String, String> oldBrokerBackupStoreEnvVars() {
     return Map.of(
         "ZEEBE_BROKER_DATA_BACKUP_STORE",
         "AZURE",
@@ -53,7 +53,7 @@ final class AzureBackupCompatibilityIT implements BackupCompatibilityAcceptance,
   }
 
   @Override
-  public void configureBackupStore(final Camunda cfg) {
+  public void configureCurrentBackupStore(final Camunda cfg) {
     final var backup = cfg.getData().getPrimaryStorage().getBackup();
     backup.setStore(PrimaryStorageBackup.BackupStoreType.AZURE);
 
