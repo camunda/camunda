@@ -20,10 +20,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.when;
 
-import io.camunda.process.test.api.dsl.TestCase;
-import io.camunda.process.test.api.dsl.TestScenarioArgumentProvider;
-import io.camunda.process.test.api.dsl.TestScenarioReadException;
-import io.camunda.process.test.api.dsl.TestScenarioSource;
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestScenarioArgumentProvider;
+import io.camunda.process.test.api.testCases.TestScenarioReadException;
+import io.camunda.process.test.api.testCases.TestScenarioSource;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;

@@ -15,7 +15,7 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestScenarioRunner;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;

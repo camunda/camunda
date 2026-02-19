@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestScenarioRunner;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;

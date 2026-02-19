@@ -18,9 +18,9 @@ package io.camunda.process.test.api;
 import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.byProcessId;
 
 import io.camunda.client.CamundaClient;
-import io.camunda.process.test.api.dsl.TestCase;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
-import io.camunda.process.test.api.dsl.TestScenarioSource;
+import io.camunda.process.test.api.testCases.TestCase;
+import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestScenarioSource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.params.ParameterizedTest;
