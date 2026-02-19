@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.streamprocessor.TypedRecordProcessors;
@@ -23,21 +24,37 @@ public class ClusterVariableProcessors {
       final ClusterVariableState clusterVariableState,
       final Writers writers,
       final CommandDistributionBehavior distributionBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final EngineConfiguration engineConfiguration) {
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.CREATE,
         new ClusterVariableCreateProcessor(
-            keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
+            keyGenerator,
+            writers,
+            authCheckBehavior,
+            distributionBehavior,
+            clusterVariableState,
+            engineConfiguration));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.UPDATE,
         new ClusterVariableUpdateProcessor(
-            keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
+            keyGenerator,
+            writers,
+            authCheckBehavior,
+            distributionBehavior,
+            clusterVariableState,
+            engineConfiguration));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.DELETE,
         new ClusterVariableDeleteProcessor(
-            keyGenerator, writers, authCheckBehavior, distributionBehavior, clusterVariableState));
+            keyGenerator,
+            writers,
+            authCheckBehavior,
+            distributionBehavior,
+            clusterVariableState,
+            engineConfiguration));
   }
 }

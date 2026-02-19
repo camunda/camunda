@@ -364,7 +364,8 @@ public final class EngineProcessors {
         processingState.getClusterVariableState(),
         writers,
         commandDistributionBehavior,
-        authCheckBehavior);
+        authCheckBehavior,
+        config);
 
     UsageMetricsProcessors.addUsageMetricsProcessors(
         typedRecordProcessors, config, clock, processingState, writers, keyGenerator);

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
@@ -17,9 +18,13 @@ import org.apache.commons.lang3.StringUtils;
 public class ClusterVariableRecordValidator {
 
   private final ClusterVariableState clusterVariableState;
+  private final EngineConfiguration engineConfiguration;
 
-  public ClusterVariableRecordValidator(final ClusterVariableState clusterVariableState) {
+  public ClusterVariableRecordValidator(
+      final ClusterVariableState clusterVariableState,
+      final EngineConfiguration engineConfiguration) {
     this.clusterVariableState = clusterVariableState;
+    this.engineConfiguration = engineConfiguration;
   }
 
   public Either<Rejection, ClusterVariableRecord> validateName(final ClusterVariableRecord record) {
