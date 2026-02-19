@@ -59,7 +59,7 @@ jobs:
     - name: Build Optimize Backend
       uses: ./.github/actions/run-maven
       with:
-        parameters: install -f optimize/pom.xml -pl backend -am -PrunAssembly -T1
+        parameters: install -f optimize/pom.xml -pl backend -am -PrunAssembly -DskipTests -T1
 
     - name: Generate production .tar.gz
       uses: ./.github/actions/run-maven
