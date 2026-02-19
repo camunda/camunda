@@ -351,7 +351,7 @@
           <artifactId>nexus-staging-maven-plugin</artifactId>
           <extensions>true</extensions>
           <configuration>
-            <serverId>camunda-artifactory</serverId>
+            <serverId>camunda-nexus</serverId>
             <nexusUrl>https://artifacts.camunda.com/artifactory/</nexusUrl>
             <skipStaging>true</skipStaging>
           </configuration>

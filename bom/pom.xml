@@ -37,11 +37,6 @@
     <!-- release parent settings -->
     <nexus.snapshot.repository>https://artifacts.camunda.com/artifactory/zeebe-io-snapshots/</nexus.snapshot.repository>
     <nexus.release.repository>https://artifacts.camunda.com/artifactory/zeebe-io/</nexus.release.repository>
-    <!-- Override server IDs from camunda-release-parent to separate
-         Artifactory (upload) credentials from Nexus (download) credentials -->
-    <nexus.release.repository.id>camunda-artifactory</nexus.release.repository.id>
-    <nexus.snapshot.repository.id>camunda-artifactory</nexus.snapshot.repository.id>
-    <nexus.staging.deploy.id>camunda-artifactory</nexus.staging.deploy.id>
 
     <!-- Camunda License v1.0 header -->
     <license.header.file>${maven.multiModuleProjectDirectory}/parent/COPYING-HEADER.txt</license.header.file>

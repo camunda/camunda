@@ -18,10 +18,5 @@
       <username>${env.NEXUS_USR}</username>
       <password>${env.NEXUS_PSW}</password>
     </server>
-    <server>
-      <id>camunda-artifactory</id>
-      <username>${env.ARTIFACTORY_USR}</username>
-      <password>${env.ARTIFACTORY_PSW}</password>
-    </server>
   </servers>
 </settings>
