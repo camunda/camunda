@@ -21,6 +21,7 @@ import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestSta
 import io.camunda.zeebe.backup.common.Manifest;
 import io.camunda.zeebe.backup.common.Manifest.FailedManifest;
 import io.camunda.zeebe.backup.common.Manifest.InProgressManifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
@@ -35,6 +36,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -176,5 +178,73 @@ class ManifestManagerTest {
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
         new NamedFileSetImpl(Map.of()));
+  }
+
+  @Nested
+  class ManifestDeleteTransitionTest {
+    @Test
+    void shouldMarkInProgressManifestAsDeleted() throws IOException {
+      // given
+      final var inProgressManifest = createInitialManifest();
+
+      // when
+      manifestManager.markAsDeleted(inProgressManifest);
+
+      // then
+      final var manifest = manifestManager.getManifest(backupIdentifier);
+      assertThat(manifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      assertThat(manifest.id()).isEqualTo(inProgressManifest.id());
+    }
+
+    @Test
+    void shouldMarkCompletedManifestAsDeleted() throws IOException {
+      // given
+      final var inProgressManifest = createInitialManifest();
+      manifestManager.completeManifest(inProgressManifest);
+      final var completedManifest = manifestManager.getManifest(backupIdentifier);
+
+      // when
+      manifestManager.markAsDeleted(completedManifest);
+
+      // then
+      final var manifest = manifestManager.getManifest(backupIdentifier);
+      assertThat(manifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      assertThat(manifest.id()).isEqualTo(inProgressManifest.id());
+    }
+
+    @Test
+    void shouldMarkFailedManifestAsDeleted() throws IOException {
+      // given
+      final var inProgressManifest = createInitialManifest();
+      manifestManager.markAsFailed(backupIdentifier, "failure reason");
+      final var failedManifest = manifestManager.getManifest(backupIdentifier);
+
+      // when
+      manifestManager.markAsDeleted(failedManifest);
+
+      // then
+      final var manifest = manifestManager.getManifest(backupIdentifier);
+      assertThat(manifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      assertThat(manifest.id()).isEqualTo(inProgressManifest.id());
+    }
+
+    @Test
+    void shouldNotUpdateAlreadyDeletedManifest() throws IOException {
+      // given
+      final var inProgressManifest = createInitialManifest();
+      manifestManager.completeManifest(inProgressManifest);
+      final var completedManifest = manifestManager.getManifest(backupIdentifier);
+      manifestManager.markAsDeleted(completedManifest);
+      final var deletedManifest = manifestManager.getManifest(backupIdentifier);
+      final var modifiedAt = deletedManifest.asDeleted().modifiedAt();
+
+      // when
+      manifestManager.markAsDeleted(deletedManifest);
+
+      // then - manifest should remain deleted and unchanged
+      final var manifest = manifestManager.getManifest(backupIdentifier);
+      assertThat(manifest.statusCode()).isEqualTo(StatusCode.DELETED);
+      assertThat(manifest.asDeleted().modifiedAt()).isEqualTo(modifiedAt);
+    }
   }
 }
