@@ -16,8 +16,11 @@
   "clusterVariables": "Cluster variables",
   "clusterVariable": "Cluster variable",
   "operationsLog": "Operations Log",
+<<<<<<< HEAD
   "globalTaskListeners": "Global user task listeners",
   "globalTaskListener": "Global user task listener",
+=======
+>>>>>>> 002ee00d (feat: use title case for Operations Log in Identity frontend)
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
