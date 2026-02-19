@@ -22,12 +22,12 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
 import io.camunda.gateway.mcp.model.McpUserTaskFilter;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
@@ -63,7 +63,7 @@ public class UserTaskTools {
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<UserTaskSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page) {
+          final SearchQueryPageRequest page) {
     try {
       final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(filter, page, sort);
 
@@ -180,7 +180,7 @@ public class UserTaskTools {
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<UserTaskVariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page,
+          final SearchQueryPageRequest page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {
