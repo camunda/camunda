@@ -162,7 +162,7 @@ runs:
         secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
   - name: Logs on to Minimus    # Minimus login is disabled for fork PRs
     if: >-      
-      steps.is-fork.outputs.is-fork != 'true' &&
+      steps.checks.outputs.is-fork != 'true' &&
       inputs.minimus == 'true'    
     uses: docker/login-action@v3    
     with:

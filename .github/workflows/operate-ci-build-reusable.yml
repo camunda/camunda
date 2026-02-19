@@ -94,7 +94,6 @@ jobs:
           exportEnv: false # we rely on step outputs, no need for environment variables
           secrets: |
             secret/data/products/operate/ci/github-actions OPERATE_CI_ALERT_WEBHOOK_URL;
-            secret/data/products/camunda/ci/github-actions REGISTRY_MINIMUS_PSW | minimus-token
 
       #########################################################################
       # Setup and configure Maven, Docker, and settings
