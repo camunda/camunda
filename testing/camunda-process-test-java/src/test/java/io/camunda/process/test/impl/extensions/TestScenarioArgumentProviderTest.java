@@ -21,9 +21,9 @@ import static org.assertj.core.groups.Tuple.tuple;
 import static org.mockito.Mockito.when;
 
 import io.camunda.process.test.api.testCases.TestCase;
-import io.camunda.process.test.api.testCases.TestScenarioArgumentProvider;
-import io.camunda.process.test.api.testCases.TestScenarioReadException;
-import io.camunda.process.test.api.testCases.TestScenarioSource;
+import io.camunda.process.test.api.testCases.TestCaseArgumentProvider;
+import io.camunda.process.test.api.testCases.TestCaseReadException;
+import io.camunda.process.test.api.testCases.TestCaseSource;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +44,7 @@ public class TestScenarioArgumentProviderTest {
   @Mock private ExtensionContext extensionContext;
   @Mock private ParameterDeclarations parameterDeclarations;
 
-  @Mock private TestScenarioSource testScenarioSource;
+  @Mock private TestCaseSource testCaseSource;
 
   @BeforeEach
   void configureMocks() {
@@ -55,13 +55,13 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldProvideScenarioArguments() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {});
-    when(testScenarioSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {});
+    when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when
     final Stream<? extends Arguments> argumentStream =
@@ -82,13 +82,13 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFilterByFileNames() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
-    when(testScenarioSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
+    when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when
     final Stream<? extends Arguments> argumentStream =
@@ -108,13 +108,13 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFilterByFileExtension() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {});
-    when(testScenarioSource.fileExtension()).thenReturn(".scenario");
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {});
+    when(testCaseSource.fileExtension()).thenReturn(".scenario");
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when
     final Stream<? extends Arguments> argumentStream =
@@ -132,13 +132,13 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFilterByFileNamesAndIgnoreFileExtension() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
-    when(testScenarioSource.fileExtension()).thenReturn(".fun");
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
+    when(testCaseSource.fileExtension()).thenReturn(".fun");
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when
     final Stream<? extends Arguments> argumentStream =
@@ -158,40 +158,40 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFailIfDirectoryDoesntExist() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
     final String directory = SCENARIO_DIRECTORY + "/non-existing";
 
-    when(testScenarioSource.directory()).thenReturn(directory);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {});
-    when(testScenarioSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
+    when(testCaseSource.directory()).thenReturn(directory);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {});
+    when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when/then
     assertThatThrownBy(
             () -> argumentProvider.provideArguments(parameterDeclarations, extensionContext))
-        .isInstanceOf(TestScenarioReadException.class)
+        .isInstanceOf(TestCaseReadException.class)
         .hasMessageContaining("The directory '%s' does not exist.", directory);
   }
 
   @Test
   void shouldFailIfDirectoryIsEmpty() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
     final String fileExtension = ".fun";
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {});
-    when(testScenarioSource.fileExtension()).thenReturn(fileExtension);
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {});
+    when(testCaseSource.fileExtension()).thenReturn(fileExtension);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when/then
     assertThatThrownBy(
             () -> argumentProvider.provideArguments(parameterDeclarations, extensionContext))
-        .isInstanceOf(TestScenarioReadException.class)
+        .isInstanceOf(TestCaseReadException.class)
         .hasMessageContaining(
             "No files found with extension '%s' in directory '%s'.",
             fileExtension, SCENARIO_DIRECTORY);
@@ -200,14 +200,14 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFailIfFilesDoesntExist() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames())
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames())
         .thenReturn(new String[] {"scenario1.json", "non-existing.json"});
-    when(testScenarioSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
+    when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when/then
     assertThatThrownBy(
@@ -220,13 +220,13 @@ public class TestScenarioArgumentProviderTest {
   @Test
   void shouldFailIfFileIsInvalid() {
     // given
-    final TestScenarioArgumentProvider argumentProvider = new TestScenarioArgumentProvider();
+    final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testScenarioSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testScenarioSource.fileNames()).thenReturn(new String[] {"scenario4.invalid"});
-    when(testScenarioSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
+    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario4.invalid"});
+    when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
-    argumentProvider.accept(testScenarioSource);
+    argumentProvider.accept(testCaseSource);
 
     // when/then
     assertThatThrownBy(

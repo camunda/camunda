@@ -22,7 +22,7 @@ import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableCreateProcessInstanceInstruction;
 import io.camunda.process.test.api.testCases.instructions.assertProcessInstance.ProcessInstanceState;
@@ -33,7 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TestScenarioRunnerTest {
+public class TestCaseRunnerTest {
 
   @Mock private CamundaProcessTestContext processTestContext;
 
@@ -45,7 +45,7 @@ public class TestScenarioRunnerTest {
   @Test
   void shouldExecuteInstruction() {
     // given
-    final TestScenarioRunner runner = new CamundaTestScenarioRunner(processTestContext);
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
     when(processTestContext.createClient()).thenReturn(camundaClient);
 
     final TestCase testCase =
@@ -67,7 +67,7 @@ public class TestScenarioRunnerTest {
   @Test
   void shouldIgnoreEmptyInstructions() {
     // given
-    final TestScenarioRunner runner = new CamundaTestScenarioRunner(processTestContext);
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
 
     final TestCase testCaseWithoutInstructions = ImmutableTestCase.builder().name("test").build();
 
@@ -78,7 +78,7 @@ public class TestScenarioRunnerTest {
   @Test
   void shouldFailIfInstructionIsUnknown() {
     // given
-    final TestScenarioRunner runner = new CamundaTestScenarioRunner(processTestContext);
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
 
     final TestCaseInstruction unknownInstruction = mock(TestCaseInstruction.class);
     final TestCase testCase = createTestCase(unknownInstruction);
@@ -93,7 +93,7 @@ public class TestScenarioRunnerTest {
   @Test
   void shouldFailIfInstructionExecutionThrowsException() {
     // given
-    final TestScenarioRunner runner = new CamundaTestScenarioRunner(processTestContext);
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext);
 
     when(processTestContext.createClient()).thenReturn(camundaClient);
     final ClientException clientException = new ClientException("expected");
@@ -108,7 +108,7 @@ public class TestScenarioRunnerTest {
 
     // when/then
     assertThatThrownBy(() -> runner.run(testCase))
-        .isInstanceOf(TestScenarioRunException.class)
+        .isInstanceOf(TestCaseRunException.class)
         .hasMessageContaining(
             "Failed to execute instruction '%s': %s", instruction.getType(), instruction.toString())
         .hasCause(clientException);
@@ -117,8 +117,7 @@ public class TestScenarioRunnerTest {
   @Test
   void shouldThrowAssertionError() {
     // given
-    final TestScenarioRunner runner =
-        new CamundaTestScenarioRunner(processTestContext, assertionFacade);
+    final TestCaseRunner runner = new CamundaTestCaseRunner(processTestContext, assertionFacade);
 
     final AssertionError assertionError = new AssertionError("expected");
     when(assertionFacade.assertThatProcessInstance(any())).thenThrow(assertionError);

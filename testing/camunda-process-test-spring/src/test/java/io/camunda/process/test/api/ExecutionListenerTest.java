@@ -27,7 +27,7 @@ import io.camunda.client.api.JsonMapper;
 import io.camunda.client.spring.event.CamundaClientClosingSpringEvent;
 import io.camunda.client.spring.event.CamundaClientCreatedSpringEvent;
 import io.camunda.client.spring.properties.CamundaClientProperties;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.configuration.CamundaProcessTestRuntimeConfiguration;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
@@ -97,7 +97,7 @@ public class ExecutionListenerTest {
   @Mock private io.camunda.zeebe.client.api.JsonMapper zeebeClientJsonMapper;
   @Captor private ArgumentCaptor<ZeebeClient> zeebeClientArgumentCaptor;
   @Captor private ArgumentCaptor<CamundaProcessTestContext> camundaProcessTestContextArgumentCaptor;
-  @Captor private ArgumentCaptor<TestScenarioRunner> testScenarioRunnerArgumentCaptor;
+  @Captor private ArgumentCaptor<TestCaseRunner> testScenarioRunnerArgumentCaptor;
 
   @Captor
   private ArgumentCaptor<CamundaClientCreatedSpringEvent> camundaClientCreatedEventArgumentCaptor;
@@ -224,8 +224,8 @@ public class ExecutionListenerTest {
     // then
     verify(testScenarioRunnerProxy).setRunner(testScenarioRunnerArgumentCaptor.capture());
 
-    final TestScenarioRunner testScenarioRunner = testScenarioRunnerArgumentCaptor.getValue();
-    assertThat(testScenarioRunner).isNotNull();
+    final TestCaseRunner testCaseRunner = testScenarioRunnerArgumentCaptor.getValue();
+    assertThat(testCaseRunner).isNotNull();
   }
 
   @Test

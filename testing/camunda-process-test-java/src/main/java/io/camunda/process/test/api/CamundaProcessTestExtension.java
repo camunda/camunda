@@ -18,7 +18,7 @@ package io.camunda.process.test.api;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientBuilder;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.assertions.CamundaDataSource;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
@@ -29,7 +29,7 @@ import io.camunda.process.test.impl.extension.CamundaProcessTestContextImpl;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestContainerRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
-import io.camunda.process.test.impl.testCases.CamundaTestScenarioRunner;
+import io.camunda.process.test.impl.testCases.CamundaTestCaseRunner;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultCollector;
 import io.camunda.process.test.impl.testresult.CamundaProcessTestResultPrinter;
 import io.camunda.process.test.impl.testresult.ProcessTestResult;
@@ -244,8 +244,8 @@ public class CamundaProcessTestExtension
       injectField(context, CamundaProcessTestContext.class, () -> camundaProcessTestContext);
       injectField(
           context,
-          TestScenarioRunner.class,
-          () -> new CamundaTestScenarioRunner(camundaProcessTestContext));
+          TestCaseRunner.class,
+          () -> new CamundaTestCaseRunner(camundaProcessTestContext));
     } catch (final Exception e) {
       closeCreatedClients();
       runtime.close();

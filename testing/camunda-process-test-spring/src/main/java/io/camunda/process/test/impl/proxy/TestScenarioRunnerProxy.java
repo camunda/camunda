@@ -15,21 +15,21 @@
  */
 package io.camunda.process.test.impl.proxy;
 
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
- * Dynamic proxy to delegate to a {@link TestScenarioRunner} which allows to swap the object under
- * the hood.
+ * Dynamic proxy to delegate to a {@link TestCaseRunner} which allows to swap the object under the
+ * hood.
  */
 public class TestScenarioRunnerProxy extends AbstractInvocationHandler {
 
-  private TestScenarioRunner delegate;
+  private TestCaseRunner delegate;
 
-  public void setRunner(final TestScenarioRunner testScenarioRunner) {
-    delegate = testScenarioRunner;
+  public void setRunner(final TestCaseRunner testCaseRunner) {
+    delegate = testCaseRunner;
   }
 
   public void removeRunner() {

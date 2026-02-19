@@ -18,7 +18,7 @@ package io.camunda.process.test.impl;
 import static org.mockito.Mockito.doThrow;
 
 import io.camunda.process.test.api.testCases.TestCase;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -30,23 +30,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class TestScenarioRunnerProxyTest {
 
   @Mock private TestCase testCase;
-  @Mock private TestScenarioRunner testScenarioRunner;
+  @Mock private TestCaseRunner testCaseRunner;
 
   @Test
   void shouldThrowAssertionError() {
     // given
     final TestScenarioRunnerProxy proxy = new TestScenarioRunnerProxy();
-    proxy.setRunner(testScenarioRunner);
+    proxy.setRunner(testCaseRunner);
 
     final AssertionError assertionError = new AssertionError("expected");
-    doThrow(assertionError).when(testScenarioRunner).run(testCase);
+    doThrow(assertionError).when(testCaseRunner).run(testCase);
 
     // when/then
     Assertions.assertThatThrownBy(
             () ->
                 proxy.invoke(
                     proxy,
-                    TestScenarioRunner.class.getMethod("run", TestCase.class),
+                    TestCaseRunner.class.getMethod("run", TestCase.class),
                     new Object[] {testCase}))
         .isEqualTo(assertionError);
   }

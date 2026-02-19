@@ -17,7 +17,7 @@ package io.camunda.process.test.impl.configuration;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTestContext;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.proxy.CamundaClientProxy;
 import io.camunda.process.test.impl.proxy.CamundaProcessTestContextProxy;
 import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
@@ -76,12 +76,12 @@ public class CamundaProcessTestProxyConfiguration {
   }
 
   @Bean
-  public TestScenarioRunner proxiedTestScenarioRunner(
+  public TestCaseRunner proxiedTestScenarioRunner(
       final TestScenarioRunnerProxy testScenarioRunnerProxy) {
-    return (TestScenarioRunner)
+    return (TestCaseRunner)
         Proxy.newProxyInstance(
             getClass().getClassLoader(),
-            new Class[] {TestScenarioRunner.class},
+            new Class[] {TestCaseRunner.class},
             testScenarioRunnerProxy);
   }
 }

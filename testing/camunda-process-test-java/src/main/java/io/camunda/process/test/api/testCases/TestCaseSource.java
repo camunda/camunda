@@ -14,34 +14,34 @@ import java.lang.annotation.Target;
 import org.junit.jupiter.params.provider.ArgumentsSource;
 
 /**
- * Defines the source for scenario test cases to be used in a parameterized JUnit test. The argument
- * provider reads the scenarios from the given directory or from the given files.
+ * Defines the source for test cases to be used in a parameterized JUnit test. The argument provider
+ * reads the test cases from the given directory or from the given files.
  *
  * <p>Example usage:
  *
  * <pre>
  *   &#064;ParameterizedTest
- *   &#064;TestScenarioSource
- *   void shouldPass(final TestCase testCase, final String scenarioFile) {
+ *   &#064;TestCaseSource
+ *   void shouldPass(final TestCase testCase, final String filename) {
  *     // given - when - then
- *     testScenarioRunner.run(testCase);
+ *     testCaseRunner.run(testCase);
  *   }
  * </pre>
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-@ArgumentsSource(TestScenarioArgumentProvider.class)
-public @interface TestScenarioSource {
+@ArgumentsSource(TestCaseArgumentProvider.class)
+public @interface TestCaseSource {
 
   /**
-   * The classpath directory to read the scenario files from. Defaults to "/scenarios".
+   * The classpath directory to read the test cases files from. Defaults to "/scenarios".
    *
    * @return the directory path
    */
   String directory() default "/scenarios";
 
   /**
-   * The names of the scenario files in the directory to read. If no files are given, all files in
+   * The names of the test cases files in the directory to read. If no files are given, all files in
    * the directory are read.
    *
    * @return the file names
@@ -49,7 +49,7 @@ public @interface TestScenarioSource {
   String[] fileNames() default {};
 
   /**
-   * The file extension of the scenario files to read. Only used if no specific files are given.
+   * The file extension of the test cases files to read. Only used if no specific files are given.
    * Defaults to ".json".
    *
    * @return the file extension

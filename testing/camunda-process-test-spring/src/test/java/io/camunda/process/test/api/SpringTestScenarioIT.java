@@ -19,8 +19,8 @@ import static io.camunda.process.test.api.assertions.ProcessInstanceSelectors.by
 
 import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.testCases.TestCase;
-import io.camunda.process.test.api.testCases.TestScenarioRunner;
-import io.camunda.process.test.api.testCases.TestScenarioSource;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
+import io.camunda.process.test.api.testCases.TestCaseSource;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -32,10 +32,10 @@ import org.springframework.boot.test.context.SpringBootTest;
 public class SpringTestScenarioIT {
 
   @Autowired private CamundaClient client;
-  @Autowired private TestScenarioRunner testScenarioRunner;
+  @Autowired private TestCaseRunner testCaseRunner;
 
   @ParameterizedTest
-  @TestScenarioSource
+  @TestCaseSource
   void shouldPass(final TestCase testCase, final String scenarioFile) {
     // given
     final BpmnModelInstance process =
@@ -49,7 +49,7 @@ public class SpringTestScenarioIT {
     client.newDeployResourceCommand().addProcessModel(process, "process.bpmn").send().join();
 
     // when
-    testScenarioRunner.run(testCase);
+    testCaseRunner.run(testCase);
 
     // then
     CamundaAssert.assertThatProcessInstance(byProcessId("process")).isCreated();
