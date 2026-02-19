@@ -337,7 +337,7 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can access Identity', async () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
-      await expect(page).toHaveURL(new RegExp('identity'), {timeout: 10000});
+      await expect(page).toHaveURL(new RegExp('admin'), {timeout: 10000});
       await sleep(2000);
       await verifyAccess(page, true);
     });
