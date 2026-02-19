@@ -405,6 +405,42 @@
     AND ENTITY_TYPE = #{entityType}
   </update>
 
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE
+    <choose>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+        PROCESS_INSTANCE_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+        PROCESS_DEFINITION_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+        DECISION_EVALUATION_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+        DECISION_REQUIREMENTS_KEY IN
+        <foreach collection="keys" item="key" open="(" separator="," close=")">
+          #{key}
+        </foreach>
+      </when>
+      <otherwise>
+        1 = 0
+      </otherwise>
+    </choose>
+    AND HISTORY_CLEANUP_DATE IS NULL
+  </update>
+
   <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
