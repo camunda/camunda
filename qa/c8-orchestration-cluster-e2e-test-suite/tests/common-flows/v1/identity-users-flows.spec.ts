@@ -28,7 +28,7 @@ test.describe('Identity User Flows', () => {
   const createdUsernames: string[] = [];
 
   test.beforeEach(async ({loginPage, page}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login('demo', 'demo');
   });
 
@@ -362,7 +362,7 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step('Login with demo user and create authorization for the group', async () => {
-      await navigateToApp(page, 'identity');
+      await navigateToApp(page, 'admin');
       await loginPage.login('demo', 'demo');
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({
