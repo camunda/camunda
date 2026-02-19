@@ -36,6 +36,7 @@ import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -53,12 +54,14 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   private static final String USER_MULTI_ERROR = "user-multi-error";
   private static final String USER_ACTIVE_ONLY = "user-active-only";
   private static final String USER_ERROR_HASH_COLLISION = "user-error-hash-collision";
+  private static final String USER_PAGINATION = "user-pagination";
   private static final String USER_NO_READ_PROCESS_INSTANCE = "user-no-read-process-instance";
 
   private static final String TENANT_SINGLE_ERROR = "tenant-single-error";
   private static final String TENANT_MULTI_ERROR = "tenant-multi-error";
   private static final String TENANT_ACTIVE_ONLY = "tenant-active-only";
   private static final String TENANT_ERROR_HASH_COLLISION = "tenant-error-hash-collision";
+  private static final String TENANT_PAGINATION = "tenant-pagination";
   private static final String TENANT_NO_READ_PROCESS_INSTANCE = "tenant-no-read-process-instance";
 
   private static final String ERROR_FAIL_1 = "error-fail-1";
@@ -80,6 +83,7 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
   @UserDefinition private static final TestUser U_SINGLE_ERROR = testUser(USER_SINGLE_ERROR);
   @UserDefinition private static final TestUser U_MULTI_ERROR = testUser(USER_MULTI_ERROR);
   @UserDefinition private static final TestUser U_ACTIVE_ONLY = testUser(USER_ACTIVE_ONLY);
+  @UserDefinition private static final TestUser U_PAGINATION = testUser(USER_PAGINATION);
 
   @UserDefinition
   private static final TestUser U_ERROR_HASH_COLLISION = testUser(USER_ERROR_HASH_COLLISION);
@@ -218,6 +222,95 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
         .containsExactlyInAnyOrder(
             tuple(ERROR_FAIL_1, (long) numberOfInstancesPerError),
             tuple(ERROR_FAIL_2, (long) numberOfInstancesPerError));
+  }
+
+  @Test
+  void shouldPaginateIncidentStatisticsByErrorWithoutOverlapAndWithStableOrdering(
+      @Authenticated(USER_PAGINATION) final CamundaClient userClient) {
+    // given
+    ensureTenantExistsForUser(adminClient, TENANT_PAGINATION, USER_PAGINATION);
+
+    final String processId = SIMPLE_PROCESS_1;
+    final BpmnModelInstance model = singleServiceTaskProcess(processId, JOB_TYPE_1);
+    final long processDefinitionKey =
+        deployAndWait(userClient, model, resourceName(processId), TENANT_PAGINATION);
+
+    final List<String> distinctErrorMessages =
+        IntStream.range(0, 61).mapToObj("error-group-%03d"::formatted).toList();
+
+    final List<String> errorMessagesForIncidents = new ArrayList<>(distinctErrorMessages);
+    errorMessagesForIncidents.addAll(distinctErrorMessages.subList(50, 61));
+
+    final List<String> expectedOrderedMessages =
+        Stream.concat(
+                distinctErrorMessages.subList(50, 61).stream(),
+                distinctErrorMessages.subList(0, 50).stream())
+            .toList();
+    final List<Long> expectedOrderedCounts =
+        Stream.concat(
+                IntStream.range(0, 11).mapToObj(i -> 2L),
+                IntStream.range(0, 50).mapToObj(i -> 1L))
+            .toList();
+
+    final List<Long> processInstanceKeys =
+        createInstances(
+            userClient,
+            processDefinitionKey,
+            TENANT_PAGINATION,
+            errorMessagesForIncidents.size());
+
+    waitForProcessInstancesToStart(userClient, errorMessagesForIncidents.size());
+    waitForJobs(userClient, processInstanceKeys);
+
+    final List<Long> jobKeys = findJobKeysForInstances(userClient, processInstanceKeys, JOB_TYPE_1);
+    for (int i = 0; i < jobKeys.size(); i++) {
+      userClient
+          .newFailCommand(jobKeys.get(i))
+          .retries(0)
+          .errorMessage(errorMessagesForIncidents.get(i))
+          .send()
+          .join();
+    }
+    waitUntilIncidentsAreActive(userClient, errorMessagesForIncidents.size());
+
+    // when
+    final var page1 =
+        userClient
+            .newIncidentProcessInstanceStatisticsByErrorRequest()
+            .sort(s -> s.activeInstancesWithErrorCount().desc().errorMessage().asc())
+            .page(p -> p.from(0).limit(50))
+            .send()
+            .join();
+
+    final var page2 =
+        userClient
+            .newIncidentProcessInstanceStatisticsByErrorRequest()
+            .sort(s -> s.activeInstancesWithErrorCount().desc().errorMessage().asc())
+            .page(p -> p.from(50).limit(50))
+            .send()
+            .join();
+
+    // then
+    assertThat(page1.page().totalItems()).isEqualTo(61);
+    assertThat(page2.page().totalItems()).isEqualTo(61);
+    assertThat(page1.items()).hasSize(50);
+    assertThat(page2.items()).hasSize(11);
+
+    final List<String> page1Messages =
+        page1.items().stream().map(IncidentProcessInstanceStatisticsByError::getErrorMessage).toList();
+    final List<String> page2Messages =
+        page2.items().stream().map(IncidentProcessInstanceStatisticsByError::getErrorMessage).toList();
+    assertThat(page2Messages).doesNotContainAnyElementsOf(page1Messages);
+
+    final List<IncidentProcessInstanceStatisticsByError> combinedItems =
+        Stream.concat(page1.items().stream(), page2.items().stream()).toList();
+
+    assertThat(combinedItems)
+        .extracting(IncidentProcessInstanceStatisticsByError::getErrorMessage)
+        .containsExactlyElementsOf(expectedOrderedMessages);
+    assertThat(combinedItems)
+        .extracting(IncidentProcessInstanceStatisticsByError::getActiveInstancesWithErrorCount)
+        .containsExactlyElementsOf(expectedOrderedCounts);
   }
 
   @Test

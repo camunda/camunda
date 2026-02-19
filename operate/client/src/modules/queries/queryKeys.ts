@@ -210,6 +210,9 @@ const queryKeys = {
       'incidentProcessInstanceStatisticsByError',
       payload,
     ],
+    getPaginated: (
+      payload?: GetIncidentProcessInstanceStatisticsByErrorRequestBody,
+    ) => ['incidentProcessInstanceStatisticsByError', 'paginated', payload],
   },
   incidentProcessInstanceStatisticsByDefinition: {
     get: (

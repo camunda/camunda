@@ -24,6 +24,7 @@ const SMOOTH_SCROLL_STEP_SIZE = PAGES_LIMIT * ROW_HEIGHT;
 
 const Dashboard: React.FC = () => {
   const scrollableContentRef = useRef<HTMLDivElement>(null);
+  const incidentScrollableContentRef = useRef<HTMLDivElement>(null);
   const processStats = useProcessDefinitionStatisticsPaginated({
     enablePeriodicRefetch: true,
     select: (data) => ({
@@ -82,8 +83,10 @@ const Dashboard: React.FC = () => {
       {!hasNoInstances && (
         <Tile>
           <TileTitle>Process Incidents by Error Message</TileTitle>
-          <ScrollableContent>
-            <IncidentsByError />
+          <ScrollableContent ref={incidentScrollableContentRef}>
+            <IncidentsByError
+              scrollableContainerRef={incidentScrollableContentRef}
+            />
           </ScrollableContent>
         </Tile>
       )}
