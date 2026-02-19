@@ -19,6 +19,7 @@ import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.TimerIntent;
+import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.BrokerClassRuleHelper;
@@ -945,7 +946,7 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
-  public void shouldActivateProcessInstanceWithStartInstructionInAdHocSubProcess() {
+  public void shouldActivateWithStartInstructionInAdHocSubProcess() {
     // given
     final String subProcessTaskId = "subprocessTask";
     final String adhocProcessId = "adhoc";
@@ -983,7 +984,62 @@ public class CreateProcessInstanceAnywhereTest {
   }
 
   @Test
-  public void shouldActivateProcessInstanceWithStartInstructionInJobBasedAdHocSubProcess() {
+  public void shouldActivateWithMultipleStartInstructionsInAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String subProcessTaskId2 = "subprocessTask2";
+    final String adhocProcessId = "adhoc";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                adhocProcessId,
+                adHocSubProcess -> {
+                  adHocSubProcess.task(subProcessTaskId);
+                  adHocSubProcess.serviceTask(subProcessTaskId2).zeebeJobType("task");
+                })
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(subProcessTaskId)
+            .withStartInstruction(subProcessTaskId2)
+            .create();
+
+    // complete service task to complete the process instance
+    final long jobKey =
+        RecordingExporter.jobRecords()
+            .withElementId(subProcessTaskId2)
+            .withType("task")
+            .getFirst()
+            .getKey();
+    ENGINE.job().withKey(jobKey).complete();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId2, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(subProcessTaskId2, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldActivateWithStartInstructionInJobBasedAdHocSubProcess() {
     // given
     final String subProcessTaskId = "subprocessTask";
     final String adhocProcessId = "adhoc";
@@ -1019,6 +1075,61 @@ public class CreateProcessInstanceAnywhereTest {
             tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldActivateWithMultipleStartInstructionsInJobBasedAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String subProcessTaskId2 = "subprocessTask2";
+    final String adhocProcessId = "adhoc";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                adhocProcessId,
+                adHocSubProcess -> {
+                  adHocSubProcess.task(subProcessTaskId);
+                  adHocSubProcess.userTask(subProcessTaskId2).zeebeUserTask();
+                })
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(subProcessTaskId)
+            .withStartInstruction(subProcessTaskId2)
+            .create();
+    // complete user task to complete the process instance
+    final var userTaskKey =
+        RecordingExporter.userTaskRecords(UserTaskIntent.CREATED)
+            .withElementId(subProcessTaskId2)
+            .getFirst()
+            .getKey();
+    ENGINE.userTask().withKey(userTaskKey).complete();
+
+    // then
+    final String adhocInnerElementId =
+        adhocProcessId + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId2, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(subProcessTaskId2, ProcessInstanceIntent.ELEMENT_COMPLETED),
             tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }
