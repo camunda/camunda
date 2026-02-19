@@ -19,12 +19,12 @@
   },
   "dependencies": {
     "@camunda/camunda-api-zod-schemas": "0.0.39",
-    "@camunda/camunda-composite-components": "0.21.4",
+    "@camunda/camunda-composite-components": "0.21.5",
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
     "fuse.js": "7.1.0",
-    "i18next": "25.8.10",
+    "i18next": "25.8.11",
     "mobx-react-lite": "4.1.1",
     "react": "18.3.1",
     "react-debounced": "1.1.3",
@@ -33,7 +33,7 @@
     "react-i18next": "16.5.4",
     "react-router-dom": "7.13.0",
     "react-transition-group": "4.4.5",
-    "styled-components": "6.3.9",
+    "styled-components": "6.3.10",
     "zod": "4.3.6"
   },
   "devDependencies": {
@@ -59,7 +59,7 @@
     "prettier": "3.8.1",
     "rollup": "4.57.1",
     "rollup-plugin-license": "^3.5.3",
-    "rollup-plugin-sbom": "3.0.3",
+    "rollup-plugin-sbom": "3.0.4",
     "sass": "1.97.3",
     "typescript": "5.9.3",
     "vite": "7.3.1",
