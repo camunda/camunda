@@ -73,7 +73,6 @@ const BatchStateIndicatorContainer = styled.div`
 
 export {
   PageContainer,
-  PageHeader,
   PageWrapper,
   PanelHeader,
   TableContainer,
