@@ -30,6 +30,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
    *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
+   *
    * @param tenantId the identifier of the tenant to specify for this command, e.g. {@code "ACME"}
    * @return the builder for this command with the tenant specified
    * @since 8.3
@@ -46,6 +50,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
    *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
+   *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
    * @return the builder for this command with the tenants specified
@@ -56,6 +64,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
 
   /**
    * Shorthand method for {@link #tenantIds(List)}.
+   *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
    *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
