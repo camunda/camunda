@@ -23,7 +23,7 @@ import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.impl.testCases.TestCasesReader;
 import org.junit.jupiter.api.Test;
 
-public class TestScenarioReaderTest {
+public class TestCasesReaderTest {
 
   private static final String EXAMPLE_TEST_TEST_CASES = "/example-test-cases.json";
   private static final String INVALID_TEST_CASES = "/invalid-test-cases.json";
