@@ -8,10 +8,10 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>camunda-process-test-dsl</artifactId>
+  <artifactId>camunda-process-test-json-test-cases</artifactId>
 
-  <name>Camunda Process Test DSL</name>
-  <description>DSL to describe test scenarios for Camunda's testing library</description>
+  <name>Camunda Process Test JSON Test Cases</name>
+  <description>A JSON format to describe test cases for Camunda's testing library</description>
 
   <properties>
     <version.java>8</version.java>
