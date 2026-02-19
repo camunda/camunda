@@ -7,8 +7,7 @@
     environment:
       - CAMUNDA_CLIENT_RESTADDRESS=http://host.docker.internal:8080/v2
       - CAMUNDA_CLIENT_GRPCADDRESS=http://host.docker.internal:26500
-      - CAMUNDA_CLIENT_AUTH_USERNAME=demo
-      - CAMUNDA_CLIENT_AUTH_PASSWORD=demo
+{{CONNECTORS_AUTH_ENV}}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:

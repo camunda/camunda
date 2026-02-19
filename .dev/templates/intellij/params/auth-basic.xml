@@ -4,6 +4,10 @@
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[0].password" /><option name="value" value="demo" /></param>
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[0].name" /><option name="value" value="Demo" /></param>
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[0].email" /><option name="value" value="demo@example.com" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[1].username" /><option name="value" value="connectors" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[1].password" /><option name="value" value="connectors" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.users[1].name" /><option name="value" value="Connectors" /></param>
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.defaultRoles.admin.users[0]" /><option name="value" value="demo" /></param>
+      <param><option name="enabled" value="true" /><option name="name" value="camunda.security.initialization.defaultRoles.admin.users[1]" /><option name="value" value="connectors" /></param>
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authorizations.enabled" /><option name="value" value="true" /></param>
       <param><option name="enabled" value="true" /><option name="name" value="camunda.security.authentication.unprotected-api" /><option name="value" value="false" /></param>

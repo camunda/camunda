@@ -58,6 +58,35 @@
           }
         }
       ]
+    },
+    {
+      "clientId": "connectors",
+      "name": "Connectors Runtime",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "connectors-secret",
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": true,
+      "protocol": "openid-connect",
+      "defaultClientScopes": [
+        "openid",
+        "profile",
+        "email",
+        "roles"
+      ],
+      "protocolMappers": [
+        {
+          "name": "subject",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-sub-mapper",
+          "consentRequired": false,
+          "config": {
+            "introspection.token.claim": "true",
+            "access.token.claim": "true"
+          }
+        }
+      ]
     }
   ],
   "users": [
@@ -75,6 +104,15 @@
           "temporary": false
         }
       ],
+      "realmRoles": [
+        "admin",
+        "user"
+      ]
+    },
+    {
+      "username": "service-account-connectors",
+      "enabled": true,
+      "serviceAccountClientId": "connectors",
       "realmRoles": [
         "admin",
         "user"

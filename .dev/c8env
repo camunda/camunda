@@ -221,6 +221,32 @@ generate_compose() {
       conn_template="${conn_template//host.docker.internal:26500/${env_name}-camunda:26500}"
     fi
 
+    # Connector auth env vars per auth mode
+    local conn_auth_env=""
+    case "$auth" in
+      basic)
+        conn_auth_env="      - CAMUNDA_CLIENT_AUTH_METHOD=basic"
+        conn_auth_env+=$'\n'"      - CAMUNDA_CLIENT_AUTH_USERNAME=connectors"
+        conn_auth_env+=$'\n'"      - CAMUNDA_CLIENT_AUTH_PASSWORD=connectors"
+        ;;
+      oidc)
+        local kc_host
+        if [[ "$standalone" == "yes" ]]; then
+          kc_host="${env_name}-keycloak:8080"
+        else
+          kc_host="host.docker.internal:18080"
+        fi
+        conn_auth_env="      - CAMUNDA_CLIENT_AUTH_METHOD=oidc"
+        conn_auth_env+=$'\n'"      - CAMUNDA_CLIENT_AUTH_CLIENTID=connectors"
+        conn_auth_env+=$'\n'"      - CAMUNDA_CLIENT_AUTH_CLIENTSECRET=connectors-secret"
+        conn_auth_env+=$'\n'"      - CAMUNDA_CLIENT_AUTH_TOKENURL=http://${kc_host}/realms/camunda-platform/protocol/openid-connect/token"
+        ;;
+      *)
+        conn_auth_env="      - CAMUNDA_CLIENT_AUTH_METHOD=none"
+        ;;
+    esac
+    conn_template="${conn_template//\{\{CONNECTORS_AUTH_ENV\}\}/$conn_auth_env}"
+
     output+="$conn_template"
   fi
 
