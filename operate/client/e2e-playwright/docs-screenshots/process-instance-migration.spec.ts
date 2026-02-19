@@ -455,8 +455,10 @@ test.describe('process instance migration', () => {
       processesPage.processInstancesTable.getByRole('row'),
     ).not.toHaveCount(0);
 
-    // Navigate to batch operations page
-    await page.getByRole('button', {name: /view batch operations/i}).click();
+    // Navigate to batch operations page via Operations submenu
+    const nav = page.getByRole('navigation', {name: /camunda operate/i});
+    await nav.getByText('Operations', {exact: true}).click();
+    await page.getByRole('link', {name: /^Batch operations$/i}).click();
     await page.waitForURL('**/batch-operations');
 
     // Verify migration operation appears in the table
