@@ -8,6 +8,7 @@
 package io.camunda.it.rdbms.db.auditlog;
 
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAuditLog;
+import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
@@ -21,6 +22,7 @@ import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.read.service.AuditLogDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
 import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -34,6 +36,8 @@ import io.camunda.security.auth.condition.AuthorizationConditions;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
@@ -796,5 +800,225 @@ public class AuditLogIT {
         .isNotEmpty()
         .extracting(AuditLogEntity::processInstanceKey)
         .containsOnly(processInstanceKey1);
+  }
+
+  @TestTemplate
+  public void shouldSetCleanupDateForProcessInstances(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.processInstanceKeys(processInstanceKey1, processInstanceKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1, processInstanceKey2);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNull());
+
+    // when
+    auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+        List.of(processInstanceKey1, processInstanceKey2),
+        HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+
+    // then
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
+  }
+
+  @TestTemplate
+  public void shouldSetCleanupDateForProcessDefinitions(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var processDefinitionKey1 = nextKey();
+    final var processDefinitionKey2 = nextKey();
+
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processDefinitionKey(processDefinitionKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.processDefinitionKeys(processDefinitionKey1, processDefinitionKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processDefinitionKey)
+        .containsOnly(processDefinitionKey1, processDefinitionKey2);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNull());
+
+    // when
+    auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+        List.of(processDefinitionKey1, processDefinitionKey2),
+        HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
+
+    // then
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
+  }
+
+  @TestTemplate
+  public void shouldSetCleanupDateForDecisionInstances(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var decisionInstanceKey1 = nextKey();
+    final var decisionInstanceKey2 = nextKey();
+
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionEvaluationKey(decisionInstanceKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionEvaluationKey(decisionInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.decisionEvaluationKeys(decisionInstanceKey1, decisionInstanceKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::decisionEvaluationKey)
+        .containsOnly(decisionInstanceKey1, decisionInstanceKey2);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNull());
+
+    // when
+    auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+        List.of(decisionInstanceKey1, decisionInstanceKey2),
+        HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+
+    // then
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
+  }
+
+  @TestTemplate
+  public void shouldSetCleanupDateForDecisionDefinitions(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final var decisionReqKey1 = nextKey();
+    final var decisionReqKey2 = nextKey();
+
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionRequirementsKey(decisionReqKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.decisionRequirementsKey(decisionReqKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.decisionRequirementsKeys(decisionReqKey1, decisionReqKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::decisionRequirementsKey)
+        .containsOnly(decisionReqKey1, decisionReqKey2);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNull());
+
+    // when
+    auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+        List.of(decisionReqKey1, decisionReqKey2),
+        HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
+
+    // then
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult.items())
+        .allSatisfy(item -> assertThat(item.historyCleanupDate()).isNotNull());
+  }
+
+  @TestTemplate
+  public void shouldNotOverwriteNonNullCleanupDates(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey = nextKey();
+    final OffsetDateTime alreadySetDate =
+        OffsetDateTime.now().plusDays(1).truncatedTo(ChronoUnit.SECONDS);
+    final AuditLogDbModel shouldNotBeOverwritten =
+        AuditLogFixtures.createRandomized(
+            b ->
+                b.entityKey("123")
+                    .processInstanceKey(processInstanceKey)
+                    .historyCleanupDate(alreadySetDate));
+    final AuditLogDbModel shouldBeOverwritten =
+        AuditLogFixtures.createRandomized(
+            b -> b.entityKey("456").processInstanceKey(processInstanceKey));
+    createAndSaveAuditLogs(rdbmsWriters, List.of(shouldNotBeOverwritten, shouldBeOverwritten));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.processInstanceKeys(processInstanceKey))
+                    .page(p -> p.from(0).size(10)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .anySatisfy(
+            e -> {
+              assertThat(e.entityKey()).isEqualTo("123");
+              assertThat(e.historyCleanupDate().truncatedTo(ChronoUnit.SECONDS))
+                  .isEqualTo(alreadySetDate.truncatedTo(ChronoUnit.SECONDS));
+            })
+        .anySatisfy(
+            e -> {
+              assertThat(e.entityKey()).isEqualTo("456");
+              assertThat(e.historyCleanupDate()).isNull();
+            });
+
+    // when
+    auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+        List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+
+    // then
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .anySatisfy(
+            e -> {
+              assertThat(e.entityKey()).isEqualTo("123");
+              assertThat(e.historyCleanupDate().truncatedTo(ChronoUnit.SECONDS))
+                  .isEqualTo(alreadySetDate.truncatedTo(ChronoUnit.SECONDS));
+            })
+        .anySatisfy(
+            e -> {
+              assertThat(e.entityKey()).isEqualTo("456");
+              assertThat(e.historyCleanupDate()).isNotNull();
+            });
   }
 }

@@ -70,6 +70,30 @@ public class HistoryDeletionService {
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
     final List<Long> deletedDecisionInstances = deleteDecisionInstances(batch);
     final List<Long> deletedDecisionRequirements = deleteDecisionRequirements(batch);
+    if (!deletedProcessInstances.isEmpty()) {
+      rdbmsWriters
+          .getAuditLogWriter()
+          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+              deletedProcessInstances, HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+    }
+    if (!deletedProcessDefinitions.isEmpty()) {
+      rdbmsWriters
+          .getAuditLogWriter()
+          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+              deletedProcessDefinitions, HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
+    }
+    if (!deletedDecisionInstances.isEmpty()) {
+      rdbmsWriters
+          .getAuditLogWriter()
+          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+              deletedDecisionInstances, HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+    }
+    if (!deletedDecisionRequirements.isEmpty()) {
+      rdbmsWriters
+          .getAuditLogWriter()
+          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+              deletedDecisionRequirements, HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
+    }
 
     final List<Long> deletedResources =
         Stream.of(
