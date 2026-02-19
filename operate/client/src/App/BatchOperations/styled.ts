@@ -17,12 +17,6 @@ const PageContainer = styled(Stack)`
   background-color: var(--cds-layer);
 `;
 
-const PageHeader = styled.div`
-  width: 100%;
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-`;
-
 const PageWrapper = styled.div`
   display: flex;
   flex-direction: column;
@@ -31,7 +25,9 @@ const PageWrapper = styled.div`
 `;
 
 const PanelHeader = styled.div`
-  padding: var(--cds-spacing-05);
+  padding-top: var(--cds-spacing-05);
+  padding-left: var(--cds-spacing-07);
+  padding-right: var(--cds-spacing-07);
   padding-bottom: 0;
 
   h3 {

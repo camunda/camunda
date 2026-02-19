@@ -26,12 +26,6 @@ const ContentContainer = styled(Stack)`
   padding: 0 var(--cds-spacing-05);
 `;
 
-const BreadcrumbBar = styled.div`
-  width: 100%;
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  padding: var(--cds-spacing-04) var(--cds-spacing-05);
-`;
-
 const TilesContainer = styled(Stack)`
   align-self: flex-start;
 `;
@@ -45,8 +39,19 @@ const Tile = styled(CarbonTile)`
 const TileLabel = styled.span`
   display: block;
   font-size: var(--cds-label-01-font-size);
-  margin-bottom: var(--cds-spacing-02);
+  margin-bottom: var(--cds-spacing-03);
   color: var(--cds-text-weak);
+`;
+
+const SubtileLabel = styled.span`
+  display: block;
+  font-size: var(--cds-heading-02-font-size);
+  font-weight: var(--cds-heading-02-font-weight);
+  padding-left: var(--cds-spacing-05);
+  padding-right: var(--cds-spacing-05);
+  margin-top: var(--cds-spacing-04);
+  margin-bottom: var(--cds-spacing-04);
+  color: var(--cds-text-primary);
 `;
 
 const ActionsContainer = styled(Stack)`
@@ -57,6 +62,7 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-top: var(--cds-spacing-05);
 `;
 
 export {
@@ -66,6 +72,7 @@ export {
   TilesContainer,
   Tile,
   TileLabel,
+  SubtileLabel,
   ActionsContainer,
   Header,
 };

@@ -7,16 +7,16 @@
  */
 
 import React, {useEffect} from 'react';
-import {Link, useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useParams} from 'react-router-dom';
 import {
-  Breadcrumb,
-  BreadcrumbItem,
+  IconButton,
   InlineNotification,
   SkeletonText,
 } from '@carbon/react';
+import {ArrowLeft} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {PAGE_TITLE} from 'modules/constants';
-import {Locations, Paths} from 'modules/Routes';
+import {Paths} from 'modules/Routes';
 import {Forbidden} from 'modules/components/Forbidden';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
@@ -28,7 +28,6 @@ import {tracking} from 'modules/tracking';
 import {
   PageContainer,
   ContentContainer,
-  BreadcrumbBar,
   TilesContainer,
   Tile,
   TileLabel,
@@ -97,11 +96,11 @@ const BatchOperation: React.FC = () => {
 
   const tileData = [
     {
-      label: 'State',
+      label: 'Batch state',
       content: state ? <BatchStateIndicator status={state} /> : null,
     },
     {
-      label: 'Summary of Items',
+      label: 'Summary of items',
       content: (
         <BatchItemsCount
           operationsCompletedCount={operationsCompletedCount ?? 0}
@@ -111,11 +110,11 @@ const BatchOperation: React.FC = () => {
       ),
     },
     {
-      label: 'Start time',
+      label: 'Start date',
       content: formatDate(startDate ?? ''),
     },
     {
-      label: 'End time',
+      label: 'End date',
       content: formatDate(endDate ?? ''),
     },
     {
@@ -127,36 +126,22 @@ const BatchOperation: React.FC = () => {
   return (
     <PageContainer gap={5}>
       <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
-      <BreadcrumbBar>
-        <Breadcrumb noTrailingSlash>
-          <BreadcrumbItem>
-            <Link
-              to={Locations.processes()}
-              title="View processes"
-              aria-label="View processes"
-            >
-              Processes
-            </Link>
-          </BreadcrumbItem>
-          <BreadcrumbItem>
-            <Link
-              to={Paths.batchOperations()}
-              title="View batch operations"
-              aria-label="View batch operations"
-            >
-              Batch Operations
-            </Link>
-          </BreadcrumbItem>
-          <BreadcrumbItem isCurrentPage>
-            <div>{renderWithLoading(isLoading, operationType)}</div>
-          </BreadcrumbItem>
-        </Breadcrumb>
-      </BreadcrumbBar>
       <ContentContainer gap={5}>
         {renderWithLoading(
           isLoading,
           <Header>
-            <h3>{operationType}</h3>
+            <div style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
+              <IconButton
+                kind="ghost"
+                size="md"
+                label="Back to batch operations"
+                align="bottom-start"
+                onClick={() => navigate(Paths.batchOperations())}
+              >
+                <ArrowLeft />
+              </IconButton>
+              <h3>{operationType}</h3>
+            </div>
             {batchOperationData && (
               <OperationsActions
                 batchOperationKey={batchOperationKey}
