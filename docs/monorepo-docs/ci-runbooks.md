@@ -272,6 +272,7 @@ start, or the CI job timed out before readiness.
    - Look for hard errors (e.g. validation failures, timeouts).
    - Warnings like the following one should not be considered blocking unless they directly relate
      to a failed service startup. Example:
+
      ```
      warning: destination for camunda-platform.connectors.security.authentication.oidc.existingSecret is a table. Ignoring non-table value ()
      ```
