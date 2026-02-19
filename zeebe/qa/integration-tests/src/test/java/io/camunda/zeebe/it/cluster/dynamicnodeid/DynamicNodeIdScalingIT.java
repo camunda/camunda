@@ -99,8 +99,6 @@ public class DynamicNodeIdScalingIT {
   }
 
   private static void configureS3NodeIdProvider(final Camunda cfg) {
-    // cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
-
     cfg.getCluster().getNodeIdProvider().setType(Type.S3);
     final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
     s3.setTaskId(UUID.randomUUID().toString());
