@@ -22,7 +22,7 @@ services:
       test:
         [
           "CMD-SHELL",
-          "wget -q -O - http://localhost:9200/_cat/health | grep -qE 'green|yellow'",
+          "curl -f http://localhost:9200/_cat/health | grep -qE 'green|yellow'",
         ]
       interval: 30s
       timeout: 5s
@@ -61,9 +61,12 @@ services:
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - OPTIMIZE_LOG_LEVEL=DEBUG
     depends_on:
-      - zeebe
-      - identity
-      - elasticsearch
+      zeebe:
+        condition: service_healthy
+      identity:
+        condition: service_healthy
+      elasticsearch:
+        condition: service_healthy
     ports:
       - 8090:8090
     healthcheck:
@@ -97,14 +100,15 @@ services:
     volumes:
       - ../../../optimize/zeebe-application.yml:/usr/local/zeebe/config/application.yaml
     depends_on:
-      - elasticsearch
+      elasticsearch:
+        condition: service_healthy
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:25.0.6@sha256:f9c6583ae2b5079824b35f13ecef3ad96e90af185b8df7ae0b686e83c33e257b
+    image: bitnami/keycloak:26.3.3@sha256:da3df0976a9f9a664bdbde6cb5308b78f03ac94d0abf33b2df355bbb06cbc5b9
     ports:
       - "18080:8080"
     healthcheck:
-      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:8080/auth"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/auth"]
       interval: 30s
       timeout: 15s
       retries: 5
@@ -116,7 +120,8 @@ services:
       KEYCLOAK_HTTP_RELATIVE_PATH: /auth
   identity:
     depends_on:
-      - keycloak
+      keycloak:
+        condition: service_healthy
     restart: on-failure
     container_name: identity
     image: camunda/identity:${IDENTITY_VERSION:-latest}
@@ -178,6 +183,8 @@ services:
       retries: 5
       start_period: 30s
     depends_on:
-      - elasticsearch
-      - zeebe
+      elasticsearch:
+        condition: service_healthy
+      zeebe:
+        condition: service_healthy
     restart: always
