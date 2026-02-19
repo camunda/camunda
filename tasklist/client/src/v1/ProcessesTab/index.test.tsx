@@ -27,26 +27,13 @@ import {LocationLog} from 'common/testing/LocationLog';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {pages} from 'common/routing';
-import {getClientConfig} from 'common/config/getClientConfig';
+import * as clientConfig from 'common/config/getClientConfig';
 
 vi.mock('common/notifications/notifications.store', () => ({
   notificationsStore: {
     displayNotification: vi.fn(() => () => {}),
   },
 }));
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('common/config/getClientConfig')
->('common/config/getClientConfig');
-const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const mockedNotificationsStore = notificationsStore as Mocked<
   typeof notificationsStore
@@ -80,7 +67,6 @@ describe('Processes', () => {
   });
 
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     nodeMockServer.use(
       http.get(
         '/v2/authentication/me',
@@ -237,8 +223,8 @@ describe('Processes', () => {
 
   it('should render a tenant dropdown', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(
@@ -275,8 +261,8 @@ describe('Processes', () => {
   it('should render a tenant dropdown with the current tenant selected', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
     window.localStorage.setItem('tenantId', '"tenantA"');
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(
@@ -312,8 +298,8 @@ describe('Processes', () => {
 
   it('should not render dropdown with single tenant', async () => {
     window.localStorage.setItem('hasConsentedToStartProcess', 'true');
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isMultiTenancyEnabled: true,
     });
     nodeMockServer.use(

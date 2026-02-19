@@ -15,21 +15,7 @@ import {Wrapper as BaseWrapper} from './mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {authenticationStore} from 'modules/stores/authentication';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -51,10 +37,6 @@ const mockSsoUser = createUser({
 });
 
 describe('User info', () => {
-  beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
-  });
-
   it('should render user display name', async () => {
     mockMe().withSuccess(mockUser);
 
@@ -72,8 +54,8 @@ describe('User info', () => {
   });
 
   it('should handle a SSO user', async () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: false,
     });
     mockMe().withSuccess(mockSsoUser);

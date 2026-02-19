@@ -12,27 +12,12 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
 import {mockLogin} from 'modules/mocks/api/login';
 import {mockLogout} from 'modules/mocks/api/logout';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const mockUserResponse = createUser();
 
 describe('authentication store', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     authenticationStore.reset();
   });
 
@@ -107,8 +92,8 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: false,
     });
@@ -150,8 +135,8 @@ describe('authentication store', () => {
         href: mockHref,
       });
 
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -193,8 +178,8 @@ describe('authentication store', () => {
         reload: mockReload,
       });
 
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -237,8 +222,8 @@ describe('authentication store', () => {
       href: mockHref,
     });
 
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: true,
     });

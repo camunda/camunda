@@ -21,21 +21,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {open} from 'modules/mocks/diagrams';
 import {createUser, searchResult} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 vi.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -92,7 +78,6 @@ function createWrapper(options?: {initialPath?: string; contextPath?: string}) {
 
 describe('MigrationView', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     processInstanceMigrationStore.enable();
     mockMe().withSuccess(createUser({authorizedComponents: ['operate']}));
     mockMe({contextPath: '/custom'}).withSuccess(
@@ -103,8 +88,8 @@ describe('MigrationView', () => {
   it.each(['/custom', ''])(
     'should block navigation to dashboard page when migration mode is enabled - context path: %p',
     async (contextPath) => {
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         contextPath,
       });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
@@ -172,8 +157,8 @@ describe('MigrationView', () => {
     'should block navigation to processes page when migration mode is enabled - context path: %p',
 
     async (contextPath) => {
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         contextPath,
       });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(

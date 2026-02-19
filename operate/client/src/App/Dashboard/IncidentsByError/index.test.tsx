@@ -32,21 +32,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {useEffect} from 'react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -70,7 +56,6 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 
 describe('IncidentsByError', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockMe().withSuccess(createUser());
   });
 
@@ -194,8 +179,8 @@ describe('IncidentsByError', () => {
   });
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 

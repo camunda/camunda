@@ -33,21 +33,7 @@ import {mockSearchUserTasks} from 'modules/mocks/api/v2/userTasks/searchUserTask
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const mockSingleIncident: Incident = {
   incidentKey: '2251799813696584',
@@ -67,7 +53,6 @@ const mockSingleIncident: Incident = {
 
 describe('MetadataPopover <Details />', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockSearchUserTasks().withSuccess({items: [], page: {totalItems: 0}});
@@ -241,8 +226,8 @@ describe('MetadataPopover <Details />', () => {
 
   it('should render Tasklist link for user tasks when configured', () => {
     const tasklistUrl = 'https://tasklist.example.com';
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       tasklistUrl,
     });
 
@@ -270,8 +255,8 @@ describe('MetadataPopover <Details />', () => {
 
   it('should not render Tasklist link for non-user tasks', () => {
     const tasklistUrl = 'https://tasklist.example.com';
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       tasklistUrl,
     });
 

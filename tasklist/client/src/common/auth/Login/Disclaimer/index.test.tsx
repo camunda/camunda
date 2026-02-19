@@ -8,29 +8,13 @@
 
 import {render, screen} from 'common/testing/testing-library';
 import {Disclaimer} from './index';
-import {vi} from 'vitest';
-import {getClientConfig} from 'common/config/getClientConfig';
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('common/config/getClientConfig')
->('common/config/getClientConfig');
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'common/config/getClientConfig';
 
 const DISCLAIMER_TEXT =
   'Non-Production License. If you would like information on production usage, please refer to our terms & conditions page or contact sales.';
 
 describe('<Disclaimer />', () => {
   it('should show the disclaimer', () => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
-
     const {rerender} = render(<Disclaimer />);
 
     // we need this custom selector because the text contains a link
@@ -70,8 +54,8 @@ describe('<Disclaimer />', () => {
   });
 
   it('should not render the disclaimer', () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isEnterprise: true,
     });
 

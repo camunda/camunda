@@ -13,21 +13,7 @@ import {createUser} from 'modules/testUtils';
 import {Wrapper as BaseWrapper} from './mocks';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -39,8 +25,8 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('App switcher', () => {
   it('should not render links for CCSM', async () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
       organizationId: null,
     });

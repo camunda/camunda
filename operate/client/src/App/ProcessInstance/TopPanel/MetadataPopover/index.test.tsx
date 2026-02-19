@@ -37,21 +37,7 @@ import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscr
 import {mockFetchDecisionDefinition} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinition';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
 import {searchResult} from 'modules/testUtils';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -106,7 +92,6 @@ const mockSingleIncident: Incident = {
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchElementInstance('2251799813699889').withSuccess(
@@ -409,8 +394,8 @@ describe('MetadataPopover', () => {
   it('should render link to tasklist', async () => {
     const tasklistUrl = 'https://tasklist:8080';
 
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       tasklistUrl,
     });
 

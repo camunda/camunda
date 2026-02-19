@@ -28,21 +28,7 @@ import {
   assignApproverGroup,
   invoiceClassification,
 } from 'modules/mocks/mockDecisionInstance';
-import {getClientConfig} from 'modules/utils/getClientConfig';
-
-vi.mock('modules/utils/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('modules/utils/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('modules/utils/getClientConfig')
->('modules/utils/getClientConfig');
-
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const createWrapper = (
   initialPath: string = `${Paths.decisions()}?evaluated=true`,
@@ -67,7 +53,6 @@ const createWrapper = (
 
 describe('<InstancesTable />', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     mockSearchDecisionInstances().withSuccess(
       mockDecisionInstancesSearchResult,
     );
@@ -291,8 +276,8 @@ describe('<InstancesTable />', () => {
   it.each(['all', undefined])(
     'should show tenant column when multi tenancy is enabled and tenant filter is %p',
     async (tenant) => {
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         multiTenancyEnabled: true,
       });
 
@@ -313,8 +298,8 @@ describe('<InstancesTable />', () => {
   );
 
   it('should hide tenant column when multi tenancy is enabled and tenant filter is a specific tenant', async () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 
