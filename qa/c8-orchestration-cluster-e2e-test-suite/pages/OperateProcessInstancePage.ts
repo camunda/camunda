@@ -811,7 +811,9 @@ class OperateProcessInstancePage {
 
   async enterModificationMode(): Promise<void> {
     await this.clickModifyInstanceButton();
-    await this.clickModifyDialogContinueButton();
+    if (await this.modifyDialogContinueButton.isVisible()) {
+      await this.clickModifyDialogContinueButton();
+    }
   }
 
   async getHistoryElementsDataByName(itemName: string) {
