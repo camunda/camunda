@@ -31,25 +31,25 @@ This generates:
 
 Names follow the pattern `c8-<auth>-<datastore>[-connector|-ai]`:
 
-| Configuration | Name |
-|---------------|------|
-| ES + insecure | `c8-insecure-es` |
+|      Configuration      |          Name           |
+|-------------------------|-------------------------|
+| ES + insecure           | `c8-insecure-es`        |
 | PG + basic + connectors | `c8-basic-pg-connector` |
-| ES + agentic | `c8-insecure-es-ai` |
-| OS + basic | `c8-basic-os` |
+| ES + agentic            | `c8-insecure-es-ai`     |
+| OS + basic              | `c8-basic-os`           |
 
 ### Options
 
-| Option | Values | Default |
-|--------|--------|---------|
-| `--name` | any short name | auto from components |
-| `--auth` | `insecure`, `basic`, `oidc` | `insecure` |
-| `--db` | `elasticsearch`, `opensearch`, `postgres`, `mysql`, `mariadb`, `oracle`, `mssql` | `elasticsearch` |
-| `--connectors` | `none`, `runtime`, `agentic` | `none` |
-| `--model` | Ollama model name | `qwen3:0.6b` |
-| `--resource` | Comma-separated BPMN/resource paths or built-in names | — |
-| `--standalone` | Run Camunda in Docker | off (IntelliJ) |
-| `--no-install` | Skip copying configs to `.idea/` | off (auto-install) |
+|     Option     |                                      Values                                      |       Default        |
+|----------------|----------------------------------------------------------------------------------|----------------------|
+| `--name`       | any short name                                                                   | auto from components |
+| `--auth`       | `insecure`, `basic`, `oidc`                                                      | `insecure`           |
+| `--db`         | `elasticsearch`, `opensearch`, `postgres`, `mysql`, `mariadb`, `oracle`, `mssql` | `elasticsearch`      |
+| `--connectors` | `none`, `runtime`, `agentic`                                                     | `none`               |
+| `--model`      | Ollama model name                                                                | `qwen3:0.6b`         |
+| `--resource`   | Comma-separated BPMN/resource paths or built-in names                            | —                    |
+| `--standalone` | Run Camunda in Docker                                                            | off (IntelliJ)       |
+| `--no-install` | Skip copying configs to `.idea/`                                                 | off (auto-install)   |
 
 ### Commands
 
@@ -130,7 +130,7 @@ the new one (via a Before Launch task). You can also manage this manually:
 
 ### Dashboard & BPMN Editor
 
-Every generated environment includes a browser-based dashboard at **http://\<name\>.localhost:8090/**
+Every generated environment includes a browser-based dashboard at **\<name\>.localhost:8090/http://**
 served by an nginx container (e.g. `http://c8-insecure-es.localhost:8090/`). The `*.localhost`
 subdomain resolves to `127.0.0.1` automatically — no DNS or `/etc/hosts` setup needed.
 
@@ -148,11 +148,11 @@ The dashboard opens automatically when launching the Spring Boot run config from
 
 ### Model Presets (for `--connectors agentic`)
 
-| Model | Size | Notes |
-|-------|------|-------|
-| `qwen3:0.6b` | ~270MB | Fastest, CPU-friendly, supports tool calling |
-| `qwen3:1.7b` | ~1GB | Better quality, still fast on CPU |
-| `llama3.2:1b` | ~1.3GB | General purpose |
+|     Model     |  Size  |                    Notes                     |
+|---------------|--------|----------------------------------------------|
+| `qwen3:0.6b`  | ~270MB | Fastest, CPU-friendly, supports tool calling |
+| `qwen3:1.7b`  | ~1GB   | Better quality, still fast on CPU            |
+| `llama3.2:1b` | ~1.3GB | General purpose                              |
 
 You can also specify any Ollama model name (e.g. `mistral:7b`).
 
@@ -184,3 +184,4 @@ The `resources/bpmn/` directory contains sample processes you can deploy:
 .dev/c8env deploy agentic-daily-briefing
 .dev/c8env start agentic-daily-briefing
 ```
+
