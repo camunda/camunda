@@ -8,8 +8,7 @@
 
 import {useMemo, useEffect} from 'react';
 import {useSearchParams, Link} from 'react-router-dom';
-import {Breadcrumb, BreadcrumbItem, Pagination} from '@carbon/react';
-import {Locations} from 'modules/Routes';
+import {Pagination} from '@carbon/react';
 import {PAGE_TITLE} from 'modules/constants';
 import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date';
@@ -20,7 +19,6 @@ import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {usePaginatedBatchOperations} from 'modules/queries/batch-operations/usePaginatedBatchOperations';
 import {
   PageContainer,
-  PageHeader,
   PageWrapper,
   PanelHeader,
   TableContainer,
@@ -125,20 +123,6 @@ const BatchOperations: React.FC = () => {
     <>
       <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
       <PageContainer>
-        <PageHeader>
-          <Breadcrumb noTrailingSlash>
-            <BreadcrumbItem>
-              <Link
-                to={Locations.processes()}
-                title="View processes"
-                aria-label="View processes"
-              >
-                Processes
-              </Link>
-            </BreadcrumbItem>
-            <BreadcrumbItem isCurrentPage>Batch Operations</BreadcrumbItem>
-          </Breadcrumb>
-        </PageHeader>
         <PageWrapper>
           <PanelHeader>
             <h3>Batch Operations</h3>

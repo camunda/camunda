@@ -16,6 +16,7 @@ const useCurrentPage = () => {
     | 'dashboard'
     | 'processes'
     | 'decisions'
+    | 'batch-operations'
     | 'operations-log'
     | 'process-details'
     | 'decision-details'
@@ -31,6 +32,13 @@ const useCurrentPage = () => {
 
     if (matchPath(Paths.decisions(), location.pathname) !== null) {
       return 'decisions';
+    }
+
+    if (
+      matchPath(Paths.batchOperations(), location.pathname) !== null ||
+      matchPath(Paths.batchOperation(), location.pathname) !== null
+    ) {
+      return 'batch-operations';
     }
 
     if (matchPath(Paths.operationsLog(), location.pathname) !== null) {
