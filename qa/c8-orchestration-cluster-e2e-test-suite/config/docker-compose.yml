@@ -6,11 +6,11 @@ services:
     container_name: postgres
     image: postgres:18.2-alpine
     ports:
-      - '5432:5432'
+      - "5432:5432"
     environment:
       POSTGRES_DB: identity
       POSTGRES_USER: identity
-      POSTGRES_PASSWORD: 't2L@!AqSMg8%I%NmHM'
+      POSTGRES_PASSWORD: "t2L@!AqSMg8%I%NmHM"
     networks:
       - zeebe_network
 
@@ -95,11 +95,63 @@ services:
     networks:
       - zeebe_network
 
+  mcp-test-server:
+    container_name: mcp-test-server
+    image: registry.camunda.cloud/mcp/mcp-test-server:latest
+    ports:
+      - 12001:12001
+    networks:
+      - zeebe_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:12001/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  connectors:
+    container_name: connectors
+    image: camunda/connectors-bundle:SNAPSHOT
+    environment:
+      - CAMUNDA_CLIENT_ZEEBE_GRPC_ADDRESS=grpc://camunda:26500
+      - CAMUNDA_CLIENT_ZEEBE_REST_ADDRESS=http://camunda:8080
+      - CAMUNDA_CLIENT_AUTH_METHOD=BASIC
+      - CAMUNDA_CLIENT_AUTH_USERNAME=demo
+      - CAMUNDA_CLIENT_AUTH_PASSWORD=demo
+      - management.endpoints.web.exposure.include=health
+      - management.endpoint.health.probes.enabled=true
+      - CAMUNDA_CONNECTOR_LOG_APPENDER=stdout
+      - LOGGING_LEVEL_IO_CAMUNDA_CONNECTOR=DEBUG
+      - CAMUNDA_CLIENT_WORKER_DEFAULTNAME=connectors-bundle
+      - CAMUNDA_CLIENT_WORKER_THREADS=10
+    ports:
+      - 8081:8080
+    depends_on:
+      camunda:
+        condition: service_started
+      mcp-test-server:
+        condition: service_healthy
+    networks:
+      - zeebe_network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "wget",
+          "-q",
+          "--spider",
+          "http://localhost:8080/actuator/health/readiness",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
   camunda:
     container_name: camunda
     image: camunda/camunda:SNAPSHOT
     environment:
-      - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
+      - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g"
       - ZEEBE_BROKER_NETWORK_HOST=camunda
       - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,admin
       - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
