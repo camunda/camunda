@@ -118,7 +118,7 @@
     <version.concurrentunit>0.4.6</version.concurrentunit>
     <version.kryo>5.6.2</version.kryo>
     <version.failsafe>2.4.4</version.failsafe>
-    <version.jetbrains-annotations>26.0.2-1</version.jetbrains-annotations>
+    <version.jetbrains-annotations>26.1.0</version.jetbrains-annotations>
     <version.jqwik>1.9.3</version.jqwik>
     <version.jmock>2.13.1</version.jmock>
     <version.jmh>1.37</version.jmh>
