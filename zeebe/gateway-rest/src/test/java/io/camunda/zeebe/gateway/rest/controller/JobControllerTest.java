@@ -853,7 +853,7 @@ public class JobControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Activate Jobs with tenant identifiers [], but no tenant identifier was provided.",
+              "detail": "Expected to handle request Activate Jobs with multi-tenancy enabled, but no tenant identifier was provided.",
               "instance": "%s"
             }"""
                 .formatted(JOBS_BASE_URL + "/activation"),
