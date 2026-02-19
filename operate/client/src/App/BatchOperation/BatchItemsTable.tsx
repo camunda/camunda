@@ -104,7 +104,11 @@ export const BatchItemsTable: React.FC<Props> = ({
   return (
     <div>
       <SubtileLabel>
-        {totalItems > 0 && <>{totalItems} {totalItems === 1 ? 'item' : 'items'}</>}
+        {totalItems > 0 && (
+          <>
+            {totalItems} {totalItems === 1 ? 'item' : 'items'}
+          </>
+        )}
       </SubtileLabel>
       <PaginatedSortableTable
         size="md"
