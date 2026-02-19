@@ -11,18 +11,18 @@ import {
   PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS,
   type ProcessInstanceOperationsLogFilterField,
   type ProcessInstanceOperationsLogFilters,
-} from '../operationsLogFilters.ts';
+} from '../operationsLogFilters';
 import {updateFiltersSearchString} from 'modules/utils/filter';
 import {useLocation, useNavigate} from 'react-router-dom';
-import {AutoSubmit} from 'modules/components/AutoSubmit.tsx';
+import {AutoSubmit} from 'modules/components/AutoSubmit';
 import {Stack} from '@carbon/react';
 import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
 import {
   auditLogEntityTypeSchema,
   auditLogOperationTypeSchema,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters.ts';
-import {FiltersForm} from './styled.tsx';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {FiltersForm} from './styled';
 
 const Filters: React.FC = () => {
   const navigate = useNavigate();
