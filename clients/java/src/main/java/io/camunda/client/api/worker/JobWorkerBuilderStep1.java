@@ -271,6 +271,7 @@ public interface JobWorkerBuilderStep1 {
      *
      * @param tenantFilter the default filter to use for all workers
      */
+    @Override
     JobWorkerBuilderStep3 tenantFilter(TenantFilter tenantFilter);
 
     /**
