@@ -12,6 +12,8 @@ import static org.assertj.core.groups.Tuple.tuple;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -940,5 +942,83 @@ public class CreateProcessInstanceAnywhereTest {
         .doesNotContain(
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_ACTIVATED),
             tuple(BpmnElementType.START_EVENT, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldActivateProcessInstanceWithStartInstructionInAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String adhocProcessId = "adhoc";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                adhocProcessId, adHocSubProcess -> adHocSubProcess.task(subProcessTaskId))
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(subProcessTaskId)
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(PROCESS_ID, ProcessInstanceIntent.ELEMENT_COMPLETED));
+  }
+
+  @Test
+  public void shouldActivateProcessInstanceWithStartInstructionInJobBasedAdHocSubProcess() {
+    // given
+    final String subProcessTaskId = "subprocessTask";
+    final String adhocProcessId = "adhoc";
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .adHocSubProcess(
+                adhocProcessId, adHocSubProcess -> adHocSubProcess.task(subProcessTaskId))
+            .zeebeJobType("task")
+            .endEvent()
+            .done();
+
+    ENGINE.deployment().withXmlResource(process).deploy();
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction(subProcessTaskId)
+            .create();
+
+    // then
+    final String adhocInnerElementId =
+        adhocProcessId + ZeebeConstants.AD_HOC_SUB_PROCESS_INNER_INSTANCE_ID_POSTFIX;
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .extracting(r -> r.getValue().getElementId(), Record::getIntent)
+        .containsSubsequence(
+            tuple(adhocProcessId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(subProcessTaskId, ProcessInstanceIntent.ELEMENT_COMPLETED),
+            tuple(adhocInnerElementId, ProcessInstanceIntent.ELEMENT_COMPLETED));
   }
 }
