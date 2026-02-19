@@ -1,6 +1,6 @@
 {
 	"name": "@camunda/camunda-optimize-composite-components",
-	"version": "0.0.17-rc1",
+	"version": "0.0.17",
 	"description": "Camunda Optimize Composite Components",
 	"main": "./lib/esm/index.js",
 	"types": "./lib/esm/index.d.ts",
