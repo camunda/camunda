@@ -106,6 +106,8 @@ public class DocumentControllerTest extends RestControllerTest {
                         "fileName": "file.txt",
                         "expiresAt": "%s",
                         "size": 0,
+                        "processDefinitionId": null,
+                        "processInstanceKey": null,
                         "customProperties": {}
                       }
                     }
@@ -186,6 +188,8 @@ public class DocumentControllerTest extends RestControllerTest {
                         "fileName": "file.txt",
                         "expiresAt": "%s",
                         "size": 0,
+                        "processDefinitionId": null,
+                        "processInstanceKey": null,
                         "customProperties": {}
                       }
                     }
@@ -281,6 +285,7 @@ public class DocumentControllerTest extends RestControllerTest {
                             "fileName": "file.txt",
                             "expiresAt": "%s",
                             "size": 0,
+                            "processDefinitionId": null,
                             "customProperties": {}
                           },
                           "camunda.document.type": "camunda",
@@ -295,6 +300,7 @@ public class DocumentControllerTest extends RestControllerTest {
                             "fileName": "file.txt",
                             "expiresAt": "%s",
                             "size": 0,
+                            "processDefinitionId": null,
                             "customProperties": {}
                           },
                           "camunda.document.type": "camunda",

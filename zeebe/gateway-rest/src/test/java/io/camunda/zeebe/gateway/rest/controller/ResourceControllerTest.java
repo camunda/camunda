@@ -125,7 +125,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -189,7 +193,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -257,7 +265,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"tenantId"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -350,7 +362,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        },
                        {
                           "processDefinition":{
@@ -359,7 +375,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"7890123",
                              "resourceName":"second.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        },
                        {
                           "form":{
@@ -368,7 +388,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "formKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "processDefinition": null,
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -703,7 +727,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);
@@ -737,7 +762,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);
@@ -776,7 +802,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);

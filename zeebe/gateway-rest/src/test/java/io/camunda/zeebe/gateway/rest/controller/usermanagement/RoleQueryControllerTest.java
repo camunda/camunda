@@ -316,6 +316,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -381,6 +383,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -437,6 +441,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -488,6 +494,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                 "totalItems": 2,
+                "startCursor": null,
+                "endCursor": null,
                 "hasMoreTotalItems": false
               }
             }""",

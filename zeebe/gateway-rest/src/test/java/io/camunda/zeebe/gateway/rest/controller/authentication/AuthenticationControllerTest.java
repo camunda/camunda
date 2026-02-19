@@ -68,6 +68,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
+                  "salesPlanType": null,
                   "c8Links": {},
                   "canLogout": true
                 }""",

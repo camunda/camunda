@@ -137,6 +137,8 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                     ],
                     "page":{
                       "totalItems":1,
+                      "startCursor": null,
+                      "endCursor": null,
                       "hasMoreTotalItems": false
                     }
                 }""",

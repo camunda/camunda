@@ -77,6 +77,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
+                   "incidentKey": null,
                    "tenantId":"<default>"
                  }
               ],
@@ -191,6 +192,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
+          "startCursor": null,
+          "endCursor": null,
           "hasMoreTotalItems": false
         }
       }

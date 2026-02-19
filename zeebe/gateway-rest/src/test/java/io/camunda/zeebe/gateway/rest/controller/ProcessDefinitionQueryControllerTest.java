@@ -604,6 +604,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "items": [],
           "page": {
             "totalItems": 0,
+            "startCursor": null,
+            "endCursor": null,
             "hasMoreTotalItems": false
           }
         }
@@ -653,6 +655,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
           "items": [],
           "page": {
             "totalItems": 0,
+            "startCursor": null,
+            "endCursor": null,
             "hasMoreTotalItems": false
           }
         }
@@ -726,6 +730,8 @@ public class ProcessDefinitionQueryControllerTest extends RestControllerTest {
             ],
             "page": {
               "totalItems": 1,
+              "startCursor": null,
+              "endCursor": null,
               "hasMoreTotalItems": false
               }
             }""";
