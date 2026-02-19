@@ -38,7 +38,7 @@ import {
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {DateRangeField} from 'modules/components/DateRangeField';
 import {useState} from 'react';
-import {FilterMultiselect} from './FilterMultiselect';
+import {FilterMultiselect} from 'modules/components/FilterMultiSelect';
 
 const initialValues: OperationsLogFilters = {};
 
