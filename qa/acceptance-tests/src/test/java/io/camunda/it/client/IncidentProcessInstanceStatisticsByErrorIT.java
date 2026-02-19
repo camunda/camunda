@@ -248,16 +248,12 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
             .toList();
     final List<Long> expectedOrderedCounts =
         Stream.concat(
-                IntStream.range(0, 11).mapToObj(i -> 2L),
-                IntStream.range(0, 50).mapToObj(i -> 1L))
+                IntStream.range(0, 11).mapToObj(i -> 2L), IntStream.range(0, 50).mapToObj(i -> 1L))
             .toList();
 
     final List<Long> processInstanceKeys =
         createInstances(
-            userClient,
-            processDefinitionKey,
-            TENANT_PAGINATION,
-            errorMessagesForIncidents.size());
+            userClient, processDefinitionKey, TENANT_PAGINATION, errorMessagesForIncidents.size());
 
     waitForProcessInstancesToStart(userClient, errorMessagesForIncidents.size());
     waitForJobs(userClient, processInstanceKeys);
@@ -297,9 +293,13 @@ public class IncidentProcessInstanceStatisticsByErrorIT {
     assertThat(page2.items()).hasSize(11);
 
     final List<String> page1Messages =
-        page1.items().stream().map(IncidentProcessInstanceStatisticsByError::getErrorMessage).toList();
+        page1.items().stream()
+            .map(IncidentProcessInstanceStatisticsByError::getErrorMessage)
+            .toList();
     final List<String> page2Messages =
-        page2.items().stream().map(IncidentProcessInstanceStatisticsByError::getErrorMessage).toList();
+        page2.items().stream()
+            .map(IncidentProcessInstanceStatisticsByError::getErrorMessage)
+            .toList();
     assertThat(page2Messages).doesNotContainAnyElementsOf(page1Messages);
 
     final List<IncidentProcessInstanceStatisticsByError> combinedItems =
