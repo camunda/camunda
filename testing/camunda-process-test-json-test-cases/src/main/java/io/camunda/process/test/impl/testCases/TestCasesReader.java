@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.camunda.process.test.api.testCases.TestScenario;
+import io.camunda.process.test.api.testCases.TestCases;
 import java.io.InputStream;
 import java.util.Objects;
 import java.util.function.Supplier;
 
-/** A reader for test scenarios defined in JSON format. */
-public class TestScenarioReader {
+/** A reader for CPT test cases defined in JSON format. */
+public class TestCasesReader {
 
   private static final Supplier<ObjectMapper> DEFAULT_OBJECT_MAPPER_SUPPLIER =
       () ->
@@ -35,28 +35,28 @@ public class TestScenarioReader {
 
   private final ObjectMapper objectMapper;
 
-  public TestScenarioReader() {
+  public TestCasesReader() {
     objectMapper = DEFAULT_OBJECT_MAPPER_SUPPLIER.get();
   }
 
-  public TestScenarioReader(final ObjectMapper objectMapper) {
+  public TestCasesReader(final ObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
   /**
-   * Reads a test scenario from the given input stream.
+   * Reads test cases from the given input stream.
    *
    * @param stream the input stream to read from
-   * @return the test scenario
-   * @throws RuntimeException if reading the test scenario fails
+   * @return the test cases
+   * @throws RuntimeException if reading the test cases fails
    */
-  public TestScenario read(final InputStream stream) {
+  public TestCases read(final InputStream stream) {
     Objects.requireNonNull(stream, "stream");
 
     try {
-      return objectMapper.readValue(stream, TestScenario.class);
+      return objectMapper.readValue(stream, TestCases.class);
     } catch (final Exception e) {
-      throw new RuntimeException("Failed to read test scenario from stream", e);
+      throw new RuntimeException("Failed to read test cases from stream", e);
     }
   }
 }

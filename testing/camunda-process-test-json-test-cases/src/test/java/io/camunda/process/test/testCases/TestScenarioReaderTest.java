@@ -19,41 +19,41 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.process.test.api.testCases.TestCase;
-import io.camunda.process.test.api.testCases.TestScenario;
-import io.camunda.process.test.impl.testCases.TestScenarioReader;
+import io.camunda.process.test.api.testCases.TestCases;
+import io.camunda.process.test.impl.testCases.TestCasesReader;
 import org.junit.jupiter.api.Test;
 
 public class TestScenarioReaderTest {
 
-  private static final String EXAMPLE_TEST_SCENARIO = "/example-test-scenario.json";
-  private static final String INVALID_TEST_SCENARIO = "/invalid-test-scenario.json";
+  private static final String EXAMPLE_TEST_TEST_CASES = "/example-test-cases.json";
+  private static final String INVALID_TEST_CASES = "/invalid-test-cases.json";
 
   @Test
-  void shouldReadTestScenario() {
+  void shouldReadTestCases() {
     // given
-    final TestScenarioReader reader = new TestScenarioReader();
+    final TestCasesReader reader = new TestCasesReader();
 
     // when
-    final TestScenario testScenario =
-        reader.read(getClass().getResourceAsStream(EXAMPLE_TEST_SCENARIO));
+    final TestCases testCases =
+        reader.read(getClass().getResourceAsStream(EXAMPLE_TEST_TEST_CASES));
 
     // then
-    assertThat(testScenario).isNotNull();
-    assertThat(testScenario.getTestCases()).hasSize(1);
+    assertThat(testCases).isNotNull();
+    assertThat(testCases.getTestCases()).hasSize(1);
 
-    final TestCase testCase = testScenario.getTestCases().get(0);
+    final TestCase testCase = testCases.getTestCases().get(0);
     assertThat(testCase.getName()).isEqualTo("Happy path order processing");
   }
 
   @Test
-  void shouldThrowExceptionForInvalidTestScenario() {
+  void shouldThrowExceptionForInvalidTestCases() {
     // given
-    final TestScenarioReader reader = new TestScenarioReader();
+    final TestCasesReader reader = new TestCasesReader();
 
     // when / then
-    assertThatThrownBy(() -> reader.read(getClass().getResourceAsStream(INVALID_TEST_SCENARIO)))
+    assertThatThrownBy(() -> reader.read(getClass().getResourceAsStream(INVALID_TEST_CASES)))
         .isInstanceOf(RuntimeException.class)
-        .hasMessage("Failed to read test scenario from stream")
+        .hasMessage("Failed to read test cases from stream")
         .rootCause()
         .hasMessageStartingWith("Could not resolve type id 'unknown type'");
   }

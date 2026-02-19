@@ -19,13 +19,13 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import java.util.List;
 import org.immutables.value.Value;
 
-/** A test scenario with test cases to validate the business process. */
+/** A collection of test cases to validate the business process. */
 @Value.Immutable
-@JsonDeserialize(builder = ImmutableTestScenario.Builder.class)
-public interface TestScenario {
+@JsonDeserialize(builder = ImmutableTestCases.Builder.class)
+public interface TestCases {
 
   /**
-   * The test cases of the scenario.
+   * The test cases to validate the business process.
    *
    * @return the test cases
    */

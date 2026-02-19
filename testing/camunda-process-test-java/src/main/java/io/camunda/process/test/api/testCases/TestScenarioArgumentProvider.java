@@ -8,7 +8,7 @@
 package io.camunda.process.test.api.testCases;
 
 import io.camunda.process.test.impl.extension.SourceTestCase;
-import io.camunda.process.test.impl.testCases.TestScenarioReader;
+import io.camunda.process.test.impl.testCases.TestCasesReader;
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.InputStream;
@@ -41,7 +41,7 @@ public class TestScenarioArgumentProvider
 
   private static final FilenameFilter ACCEPT_ALL_FILES_FILTER = (dir, name) -> true;
 
-  private final TestScenarioReader testScenarioReader = new TestScenarioReader();
+  private final TestCasesReader testCasesReader = new TestCasesReader();
 
   private String sourceDirectory;
   private List<String> sourceFileNames;
@@ -71,7 +71,7 @@ public class TestScenarioArgumentProvider
     return files.stream()
         .flatMap(
             file ->
-                parseTestScenario(file).getTestCases().stream()
+                parseTestCases(file).getTestCases().stream()
                     .map(testCase -> asArguments(testCase, file)));
   }
 
@@ -139,14 +139,13 @@ public class TestScenarioArgumentProvider
     return existingSourceFiles;
   }
 
-  private TestScenario parseTestScenario(final File testScenarioFile) {
-    try (final InputStream inputStream = Files.newInputStream(testScenarioFile.toPath())) {
-      return testScenarioReader.read(inputStream);
+  private TestCases parseTestCases(final File testCasesFile) {
+    try (final InputStream inputStream = Files.newInputStream(testCasesFile.toPath())) {
+      return testCasesReader.read(inputStream);
 
     } catch (final Exception e) {
       throw new TestScenarioReadException(
-          String.format("The file '%s' is not a valid test scenario.", testScenarioFile.getName()),
-          e);
+          String.format("The file '%s' contains invalid test cases.", testCasesFile.getName()), e);
     }
   }
 

@@ -35,10 +35,10 @@ import io.camunda.process.test.api.testCases.ImmutableMessageSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessDefinitionSelector;
 import io.camunda.process.test.api.testCases.ImmutableProcessInstanceSelector;
 import io.camunda.process.test.api.testCases.ImmutableTestCase;
-import io.camunda.process.test.api.testCases.ImmutableTestScenario;
+import io.camunda.process.test.api.testCases.ImmutableTestCases;
 import io.camunda.process.test.api.testCases.ImmutableUserTaskSelector;
 import io.camunda.process.test.api.testCases.TestCaseInstruction;
-import io.camunda.process.test.api.testCases.TestScenario;
+import io.camunda.process.test.api.testCases.TestCases;
 import io.camunda.process.test.api.testCases.instructions.ImmutableActivateElement;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertDecisionInstruction;
 import io.camunda.process.test.api.testCases.instructions.ImmutableAssertElementInstanceInstruction;
@@ -87,7 +87,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 public class PojoCompatibilityTest {
 
-  private static final String DSL_SCHEMA = "/schema/cpt-test-cases.schema.json";
+  private static final String JSON_SCHEMA_PATH = "/schema/cpt-test-cases.schema.json";
 
   private static JsonSchema jsonSchema;
 
@@ -99,51 +99,51 @@ public class PojoCompatibilityTest {
   @BeforeAll
   static void setup() {
     final JsonSchemaFactory factory = JsonSchemaFactory.getInstance(SpecVersion.VersionFlag.V4);
-    jsonSchema = factory.getSchema(PojoCompatibilityTest.class.getResourceAsStream(DSL_SCHEMA));
+    jsonSchema =
+        factory.getSchema(PojoCompatibilityTest.class.getResourceAsStream(JSON_SCHEMA_PATH));
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("testScenarios")
-  void shouldBeValidScenario(final String name, final TestScenario testScenario) {
+  @MethodSource("testCases")
+  void shouldBeValidTestCases(final String name, final TestCases testCases) {
     // given
-    final JsonNode json = objectMapper.valueToTree(testScenario);
+    final JsonNode json = objectMapper.valueToTree(testCases);
 
     // when
     final Set<ValidationMessage> errors = jsonSchema.validate(json);
 
     // then
     assertThat(errors)
-        .describedAs("Scenario '%s' should have no validation errors", name)
+        .describedAs("Test cases '%s' should have no validation errors", name)
         .isEmpty();
   }
 
   @ParameterizedTest(name = "{0}")
-  @MethodSource("testScenarios")
-  void shouldDeserializeScenario(final String name, final TestScenario testScenario)
-      throws IOException {
+  @MethodSource("testCases")
+  void shouldDeserializeTestCases(final String name, final TestCases testCases) throws IOException {
     // given
-    final String json = objectMapper.writeValueAsString(testScenario);
+    final String json = objectMapper.writeValueAsString(testCases);
 
     // when
-    final TestScenario deserializedObject = objectMapper.readValue(json, TestScenario.class);
+    final TestCases deserializedObject = objectMapper.readValue(json, TestCases.class);
 
     // then
     assertThat(deserializedObject)
-        .describedAs("Scenario '%s' should deserialize correctly", name)
-        .isEqualTo(testScenario);
+        .describedAs("Test cases '%s' should deserialize correctly", name)
+        .isEqualTo(testCases);
   }
 
-  static Stream<Arguments> testScenarios() {
+  static Stream<Arguments> testCases() {
     return Stream.of(
-        Arguments.of("no test cases", ImmutableTestScenario.builder().build()),
+        Arguments.of("no test cases", ImmutableTestCases.builder().build()),
         Arguments.of(
             "test case: minimal",
-            ImmutableTestScenario.builder()
+            ImmutableTestCases.builder()
                 .addTestCases(ImmutableTestCase.builder().name("test case 1").build())
                 .build()),
         Arguments.of(
             "test case: full",
-            ImmutableTestScenario.builder()
+            ImmutableTestCases.builder()
                 .addTestCases(
                     ImmutableTestCase.builder()
                         .name("test case 1")
@@ -719,8 +719,8 @@ public class PojoCompatibilityTest {
         );
   }
 
-  private static TestScenario singleTestCase(final TestCaseInstruction instruction) {
-    return ImmutableTestScenario.builder()
+  private static TestCases singleTestCase(final TestCaseInstruction instruction) {
+    return ImmutableTestCases.builder()
         .addTestCases(ImmutableTestCase.builder().name("test").addInstructions(instruction).build())
         .build();
   }
