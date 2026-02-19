@@ -137,7 +137,7 @@
     <profile>
       <id>add-license-key</id>
       <properties>
-        <exclude.from.config />
+        <exclude.from.config></exclude.from.config>
       </properties>
     </profile>
     <profile>
