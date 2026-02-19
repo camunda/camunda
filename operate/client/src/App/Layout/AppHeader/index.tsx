@@ -19,6 +19,7 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
+import {notificationsStore} from 'modules/stores/notifications';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -81,6 +82,8 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
 }
 
+const LOGOUT_DELAY = 1000;
+
 const AppHeader: React.FC = observer(() => {
   const {data: currentUser} = useCurrentUser();
   const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
@@ -103,6 +106,16 @@ const AppHeader: React.FC = observer(() => {
 
     return licenseTagStore.reset;
   }, []);
+
+  const logoutWithNotification = async () => {
+    notificationsStore.displayNotification({
+      kind: 'info',
+      title: 'Log Out',
+      subtitle: 'You are being logged out...',
+      isDismissable: true,
+    });
+    return setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
+  };
 
   return (
     <C3Navigation
@@ -300,7 +313,7 @@ const AppHeader: React.FC = observer(() => {
                 label: 'Log out',
                 renderIcon: ArrowRight,
                 kind: 'ghost',
-                onClick: authenticationStore.handleLogout,
+                onClick: logoutWithNotification,
               },
             ]
           : undefined,

@@ -20,6 +20,8 @@
     "headerPrivacyPolicyLabel": "Privacy policy",
     "headerImprintLabel": "Imprint",
     "headerLogOutLabel": "Log out",
+    "notificationLogOutTitle": "Log Out",
+    "notificationLogOutSubtitle": "You are being logged out...",
     "loginErrorUsernamePasswordMismatch": "Username and password do not match",
     "loginErrorCredentialsNotVerified": "Credentials could not be verified",
     "loginErrorUsernameRequired": "Username is required",

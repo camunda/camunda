@@ -16,12 +16,27 @@ import { ArrowRight } from "@carbon/react/icons";
 import { logout } from "src/utility/auth";
 import { useState } from "react";
 import { isSaaS } from "src/configuration";
+import { useNotifications } from "src/components/notifications";
+import useTranslate from "src/utility/localization";
+
+const LOGOUT_DELAY = 1000;
 
 const AppHeader = ({ hideNavLinks = false }) => {
   const routes = useGlobalRoutes();
   const { data: license } = useApi(checkLicense);
   const { data: camundaUser } = useApi(getAuthentication);
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
+  const { enqueueNotification } = useNotifications();
+  const { t } = useTranslate("authentication");
+
+  const logoutWithNotification = async () => {
+    enqueueNotification({
+      kind: "info",
+      title: t("logOut"),
+      subtitle: t("beingLoggedOut"),
+    });
+    return setTimeout(logout, LOGOUT_DELAY);
+  };
 
   return (
     <C3Navigation
@@ -96,7 +111,7 @@ const AppHeader = ({ hideNavLinks = false }) => {
                 label: "Log out",
                 renderIcon: ArrowRight,
                 kind: "ghost",
-                onClick: logout,
+                onClick: logoutWithNotification,
               },
             ]
           : undefined,
