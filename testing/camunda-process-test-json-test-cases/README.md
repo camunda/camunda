@@ -1,11 +1,11 @@
-# Camunda-Process-Test - DSL
+# Camunda-Process-Test - JSON Test Cases
 
-A DSL to describe test scenarios for Camunda Process Test in a JSON format.
+A JSON format to describe test cases for Camunda Process Test.
 
-The structure of the DSL is defined in the JSON
+The structure of the test cases is defined in the JSON
 Schema: [cpt-test-cases.schema.json](src/main/resources/schema/cpt-test-cases.schema.json).
 
-A test scenario JSON file can be deserialized with [Jackson](https://github.com/FasterXML/jackson)
+A test cases JSON file can be deserialized with [Jackson](https://github.com/FasterXML/jackson)
 into a Java object of the
-type [TestScenario.java](src/main/java/io/camunda/process/test/api/testCases/TestScenario.java).
+type [TestCases.java](src/main/java/io/camunda/process/test/api/testCases/TestCases.java).
 
