@@ -27,16 +27,16 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest(classes = {SpringTestScenarioIT.class})
+@SpringBootTest(classes = {SpringTestCasesIT.class})
 @CamundaSpringProcessTest
-public class SpringTestScenarioIT {
+public class SpringTestCasesIT {
 
   @Autowired private CamundaClient client;
   @Autowired private TestCaseRunner testCaseRunner;
 
   @ParameterizedTest
   @TestCaseSource
-  void shouldPass(final TestCase testCase, final String scenarioFile) {
+  void shouldPass(final TestCase testCase, final String filename) {
     // given
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")

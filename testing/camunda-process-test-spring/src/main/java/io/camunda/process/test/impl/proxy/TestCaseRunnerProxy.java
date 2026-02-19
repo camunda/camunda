@@ -24,7 +24,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * Dynamic proxy to delegate to a {@link TestCaseRunner} which allows to swap the object under the
  * hood.
  */
-public class TestScenarioRunnerProxy extends AbstractInvocationHandler {
+public class TestCaseRunnerProxy extends AbstractInvocationHandler {
 
   private TestCaseRunner delegate;
 
@@ -43,7 +43,7 @@ public class TestScenarioRunnerProxy extends AbstractInvocationHandler {
       throw new RuntimeException(
           "Cannot invoke "
               + method
-              + " on TestScenarioRunner, as TestScenarioRunner is currently not initialized. Maybe you run outside of a testcase?");
+              + " on TestCaseRunner, as TestCaseRunner is currently not initialized. Maybe you run outside of a testcase?");
     }
     try {
       return method.invoke(delegate, args);
