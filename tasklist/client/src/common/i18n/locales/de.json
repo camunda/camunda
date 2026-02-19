@@ -20,6 +20,8 @@
     "headerPrivacyPolicyLabel": "Datenschutzrichtlinie",
     "headerImprintLabel": "Impressum",
     "headerLogOutLabel": "Abmelden",
+    "notificationLogOutTitle": "Abmelden",
+    "notificationLogOutSubtitle": "Sie werden abgemeldet...",
     "loginErrorUsernamePasswordMismatch": "Benutzername und Passwort stimmen nicht überein",
     "loginErrorCredentialsNotVerified": "Anmeldedaten konnten nicht verifiziert werden",
     "loginErrorUsernameRequired": "Benutzername ist erforderlich",

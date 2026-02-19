@@ -30,6 +30,7 @@ import {languageItems, type SelectionOption} from 'common/i18n';
 import {isForbidden} from 'common/utils/isForbidden';
 import styles from './styles.module.scss';
 import {getClientConfig} from 'common/config/getClientConfig';
+import {notificationsStore} from 'common/notifications/notifications.store';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
   const BASE_INFO_SIDEBAR_ITEMS = [
@@ -92,6 +93,8 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
 }
 
+const LOGOUT_DELAY = 1000;
+
 const Header: React.FC = observer(() => {
   const IS_SAAS = getClientConfig().organizationId !== null;
   const location = useLocation();
@@ -113,6 +116,16 @@ const Header: React.FC = observer(() => {
       tracking.identifyUser(currentUser);
     }
   }, [currentUser]);
+
+  const logoutWithNotification = async () => {
+    notificationsStore.displayNotification({
+      kind: 'info',
+      title: t('notificationLogOutTitle'),
+      subtitle: t('notificationLogOutSubtitle'),
+      isDismissable: true,
+    });
+    return setTimeout(authenticationStore.handleLogout, LOGOUT_DELAY);
+  };
 
   return (
     <C3Navigation
@@ -278,7 +291,7 @@ const Header: React.FC = observer(() => {
                 label: t('headerLogOutLabel'),
                 renderIcon: ArrowRight,
                 kind: 'ghost',
-                onClick: authenticationStore.handleLogout,
+                onClick: logoutWithNotification,
               },
             ]
           : undefined,

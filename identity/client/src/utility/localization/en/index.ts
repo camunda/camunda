@@ -16,6 +16,7 @@ import roles from "./roles.json";
 import mappingRules from "./mappingRules.json";
 import clusterVariables from "./clusterVariables.json";
 import operationsLog from "./operationsLog.json";
+import authentication from "./authentication.json";
 
 export default {
   components,
@@ -28,4 +29,5 @@ export default {
   mappingRules,
   clusterVariables,
   operationsLog,
+  authentication,
 };
