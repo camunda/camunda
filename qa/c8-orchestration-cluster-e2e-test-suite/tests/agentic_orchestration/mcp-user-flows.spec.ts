@@ -40,14 +40,15 @@ test.describe('MCP Server Integration', () => {
   test('Verify MCP server returns list of tools', async ({
     operateHomePage,
     operateProcessesPage,
+    operateFiltersPanelPage,
     operateProcessInstancePage,
   }) => {
     test.slow();
 
     await test.step('Navigate to completed process instance', async () => {
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-      await operateProcessesPage.filterByProcessName('mcp_remote_client');
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.selectProcess('mcp_remote_client');
       await sleep(100);
       await operateProcessesPage.clickProcessInstanceLink();
       await expect(operateProcessInstancePage.completedIcon).toBeVisible({
