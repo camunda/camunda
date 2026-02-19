@@ -36,6 +36,8 @@ import java.util.stream.Stream;
 abstract class AbstractEntityReader<T> {
 
   private static final SearchColumn<?>[] EMPTY_SEARCHABLE_COLUMNS = new SearchColumn[0];
+  protected static final int COUNT_LIMIT = 10_000;
+  private static final int COUNT_QUERY_LIMIT = COUNT_LIMIT + 1;
   private final Map<String, SearchColumn<T>> columns;
 
   public AbstractEntityReader(final SearchColumn<T>[] searchableColumns) {
@@ -138,7 +140,16 @@ abstract class AbstractEntityReader<T> {
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
-    final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
+    return buildSearchQueryResult(totalHits, false, hits, dbSort);
+  }
+
+  protected final SearchQueryResult<T> buildSearchQueryResult(
+      final long totalHits,
+      final boolean hasMoreTotalItems,
+      final List<T> hits,
+      final DbQuerySorting<T> dbSort) {
+    final var result =
+        new SearchQueryResult.Builder<T>().total(totalHits, hasMoreTotalItems).items(hits);
 
     if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();
@@ -149,6 +160,22 @@ abstract class AbstractEntityReader<T> {
 
     return result.build();
   }
+
+  /**
+   * Processes a limited count result (with LIMIT 10001) to determine the actual total and whether
+   * there are more items beyond the limit.
+   *
+   * @param limitedCount the count result from a query with LIMIT 10001
+   * @return a record containing the processed total (capped at 10000) and hasMoreTotalItems flag
+   */
+  protected final CountResult processLimitedCount(final long limitedCount) {
+    if (limitedCount > COUNT_LIMIT) {
+      return new CountResult(COUNT_LIMIT, true);
+    }
+    return new CountResult(limitedCount, false);
+  }
+
+  protected record CountResult(long total, boolean hasMoreTotalItems) {}
 
   /**
    * Checks if the search result should be empty based on resource and tenant authorization.
@@ -201,5 +228,31 @@ abstract class AbstractEntityReader<T> {
     }
     final List<T> results = resultsSupplier.get();
     return buildSearchQueryResult(totalHits, results, dbSort);
+  }
+
+  /**
+   * Executes a paged query using a limited count (max 10,000) to improve performance. The count
+   * query should use LIMIT 10001 to detect if there are more than 10,000 items.
+   *
+   * @param limitedCountSupplier supplies the limited count of hits (with LIMIT 10001)
+   * @param resultsSupplier supplies the result list
+   * @param page the database query page
+   * @param dbSort the database query sorting
+   * @return a SearchQueryResult containing the results, capped total count, and hasMoreTotalItems
+   *     flag
+   */
+  protected SearchQueryResult<T> executePagedQueryWithLimitedCount(
+      final Supplier<Long> limitedCountSupplier,
+      final Supplier<List<T>> resultsSupplier,
+      final DbQueryPage page,
+      final DbQuerySorting<T> dbSort) {
+    final long limitedCount = limitedCountSupplier.get();
+    final CountResult countResult = processLimitedCount(limitedCount);
+
+    if (shouldReturnEmptyPage(page, countResult.total())) {
+      return buildSearchQueryResult(countResult.total(), countResult.hasMoreTotalItems(), List.of(), dbSort);
+    }
+    final List<T> results = resultsSupplier.get();
+    return buildSearchQueryResult(countResult.total(), countResult.hasMoreTotalItems(), results, dbSort);
   }
 }

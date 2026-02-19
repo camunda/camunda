@@ -245,8 +245,10 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}BATCH_OPERATION
-    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    FROM (SELECT 1
+          FROM ${prefix}BATCH_OPERATION
+          <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+          LIMIT 10001) t
   </select>
 
   <select id="search"

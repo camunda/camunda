@@ -14,8 +14,10 @@
 
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*)
-    FROM ${prefix}JOB
-    <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+    FROM (SELECT 1
+          FROM ${prefix}JOB
+          <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+          LIMIT 10001) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

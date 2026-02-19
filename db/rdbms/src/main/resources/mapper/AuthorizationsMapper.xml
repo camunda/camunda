@@ -15,6 +15,7 @@
     SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME
     FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
+    LIMIT 10001
     ) t
   </select>
 
