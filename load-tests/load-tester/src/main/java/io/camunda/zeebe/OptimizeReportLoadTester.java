@@ -325,7 +325,8 @@ public class OptimizeReportLoadTester {
       final String reportId, final String requestBody) throws Exception {
     ensureValidToken();
 
-    // Transform the request body: remove result object, remove entity field from data.view, rename properties to rawData
+    // Transform the request body: remove result object, remove entity field from data.view, rename
+    // properties to rawData
     final String transformedBody = transformRequestBodyForDetailedEvaluate(requestBody);
 
     final String url = String.format("%s/api/report/evaluate?=null", optimizeBaseUrl);
@@ -351,16 +352,15 @@ public class OptimizeReportLoadTester {
   }
 
   /**
-   * Transforms the request body for detailed evaluate API by:
-   * 1. Removing the result object
-   * 2. Removing the entity field from data.view
-   * 3. Renaming properties to rawData in data.view
+   * Transforms the request body for detailed evaluate API by: 1. Removing the result object 2.
+   * Removing the entity field from data.view 3. Renaming properties to rawData in data.view
    *
    * @param responseBody the original response body from evaluate API
    * @return the transformed request body
    * @throws Exception if JSON parsing fails
    */
-  private String transformRequestBodyForDetailedEvaluate(final String responseBody) throws Exception {
+  private String transformRequestBodyForDetailedEvaluate(final String responseBody)
+      throws Exception {
     final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
 
     if (!(rootNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
@@ -384,7 +384,8 @@ public class OptimizeReportLoadTester {
    *
    * @param objectNode the root object node containing the data section
    */
-  private void transformDataSection(final com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+  private void transformDataSection(
+      final com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
     if (!objectNode.has("data")) {
       return;
     }
@@ -406,7 +407,8 @@ public class OptimizeReportLoadTester {
    *
    * @param dataObjectNode the data object node containing the view section
    */
-  private void transformViewSection(final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+  private void transformViewSection(
+      final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("view")) {
       return;
     }
@@ -437,7 +439,8 @@ public class OptimizeReportLoadTester {
    *
    * @param dataObjectNode the data object node containing the groupBy section
    */
-  private void transformGroupBySection(final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+  private void transformGroupBySection(
+      final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("groupBy")) {
       return;
     }
@@ -696,8 +699,12 @@ public class OptimizeReportLoadTester {
       System.out.println("Total time: " + result.getTotalResponseTimeMs() + "ms");
 
       final InstantBenchmarkResult instantBenchmarkResult = tester.evaluateInstantBenchmark();
-      System.out.println("Instant benchmark dashboard load time: " + instantBenchmarkResult.getDashboardResult().getResponseTimeMs() + "ms");
-      for (final ReportEvaluationResult report : instantBenchmarkResult.getReportEvaluationResults()) {
+      System.out.println(
+          "Instant benchmark dashboard load time: "
+              + instantBenchmarkResult.getDashboardResult().getResponseTimeMs()
+              + "ms");
+      for (final ReportEvaluationResult report :
+          instantBenchmarkResult.getReportEvaluationResults()) {
         System.out.println(
             "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
       }

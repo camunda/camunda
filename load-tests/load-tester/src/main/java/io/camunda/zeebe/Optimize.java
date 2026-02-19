@@ -37,27 +37,18 @@ public class Optimize extends App {
 
   // Metrics
   private Timer dashboardResponseTimer;
-  private Timer reportResponseTimer;
   private Timer maxReportResponseTimer;
   private Timer homepageLoadTimer;
   private Counter dashboardSuccessCounter;
   private Counter dashboardErrorCounter;
-  private Counter reportSuccessCounter;
-  private Counter reportErrorCounter;
 
   // Instant Benchmark Metrics
   private Timer benchmarkDashboardResponseTimer;
-  private Timer benchmarkReportEvaluationTimer;
-  private Timer benchmarkDetailedEvaluationTimer;
   private Timer benchmarkMaxReportEvaluationTimer;
   private Timer benchmarkMaxDetailedEvaluationTimer;
   private Timer benchmarkTotalLoadTimer;
   private Counter benchmarkDashboardSuccessCounter;
   private Counter benchmarkDashboardErrorCounter;
-  private Counter benchmarkReportEvaluationSuccessCounter;
-  private Counter benchmarkReportEvaluationErrorCounter;
-  private Counter benchmarkDetailedEvaluationSuccessCounter;
-  private Counter benchmarkDetailedEvaluationErrorCounter;
 
   Optimize(final AppCfg config) {
     super(config);
@@ -130,11 +121,6 @@ public class Optimize extends App {
             .description("Response time for dashboard evaluation")
             .register(registry);
 
-    reportResponseTimer =
-        Timer.builder("optimize.report.response.time")
-            .description("Response time for report evaluation")
-            .register(registry);
-
     maxReportResponseTimer =
         Timer.builder("optimize.report.max.response.time")
             .description("Maximum (slowest) report response time per evaluation cycle")
@@ -155,30 +141,10 @@ public class Optimize extends App {
             .description("Failed dashboard evaluations")
             .register(registry);
 
-    reportSuccessCounter =
-        Counter.builder("optimize.report.success")
-            .description("Successful report evaluations")
-            .register(registry);
-
-    reportErrorCounter =
-        Counter.builder("optimize.report.error")
-            .description("Failed report evaluations")
-            .register(registry);
-
     // Instant Benchmark Metrics
     benchmarkDashboardResponseTimer =
         Timer.builder("optimize.benchmark.dashboard.response.time")
             .description("Response time for instant benchmark dashboard evaluation")
-            .register(registry);
-
-    benchmarkReportEvaluationTimer =
-        Timer.builder("optimize.benchmark.report.evaluation.time")
-            .description("Response time for benchmark report evaluation")
-            .register(registry);
-
-    benchmarkDetailedEvaluationTimer =
-        Timer.builder("optimize.benchmark.detailed.evaluation.time")
-            .description("Response time for benchmark detailed evaluation")
             .register(registry);
 
     benchmarkMaxReportEvaluationTimer =
@@ -204,26 +170,6 @@ public class Optimize extends App {
     benchmarkDashboardErrorCounter =
         Counter.builder("optimize.benchmark.dashboard.error")
             .description("Failed benchmark dashboard evaluations")
-            .register(registry);
-
-    benchmarkReportEvaluationSuccessCounter =
-        Counter.builder("optimize.benchmark.report.evaluation.success")
-            .description("Successful benchmark report evaluations")
-            .register(registry);
-
-    benchmarkReportEvaluationErrorCounter =
-        Counter.builder("optimize.benchmark.report.evaluation.error")
-            .description("Failed benchmark report evaluations")
-            .register(registry);
-
-    benchmarkDetailedEvaluationSuccessCounter =
-        Counter.builder("optimize.benchmark.detailed.evaluation.success")
-            .description("Successful benchmark detailed evaluations")
-            .register(registry);
-
-    benchmarkDetailedEvaluationErrorCounter =
-        Counter.builder("optimize.benchmark.detailed.evaluation.error")
-            .description("Failed benchmark detailed evaluations")
             .register(registry);
   }
 
@@ -283,17 +229,39 @@ public class Optimize extends App {
       final List<OptimizeReportLoadTester.ReportEvaluationResult> reportResults =
           result.getReportResults();
       for (final OptimizeReportLoadTester.ReportEvaluationResult reportResult : reportResults) {
-        reportResponseTimer.record(reportResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+        // Record response time with report ID and name as tags
+        Timer.builder("optimize.report.response.time")
+            .description("Response time for report evaluation")
+            .tag("reportId", reportResult.getReportId())
+            .tag(
+                "reportName",
+                reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+            .register(registry)
+            .record(reportResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
 
         if (reportResult.isSuccess()) {
-          reportSuccessCounter.increment();
+          Counter.builder("optimize.report.success")
+              .description("Successful report evaluations")
+              .tag("reportId", reportResult.getReportId())
+              .tag(
+                  "reportName",
+                  reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+              .register(registry)
+              .increment();
           LOG.info(
               "Report {} [{}] evaluated successfully in {}ms",
               reportResult.getReportId(),
               reportResult.getReportName(),
               reportResult.getResponseTimeMs());
         } else {
-          reportErrorCounter.increment();
+          Counter.builder("optimize.report.error")
+              .description("Failed report evaluations")
+              .tag("reportId", reportResult.getReportId())
+              .tag(
+                  "reportName",
+                  reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+              .register(registry)
+              .increment();
           LOG.error(
               "Report {} [{}] evaluation failed with status {}",
               reportResult.getReportId(),
@@ -353,18 +321,39 @@ public class Optimize extends App {
       final List<OptimizeReportLoadTester.ReportEvaluationResult> reportEvalResults =
           result.getReportEvaluationResults();
       for (final OptimizeReportLoadTester.ReportEvaluationResult reportResult : reportEvalResults) {
-        benchmarkReportEvaluationTimer.record(
-            reportResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+        // Record report evaluation time with report ID and name as tags
+        Timer.builder("optimize.benchmark.report.evaluation.time")
+            .description("Response time for benchmark report evaluation")
+            .tag("reportId", reportResult.getReportId())
+            .tag(
+                "reportName",
+                reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+            .register(registry)
+            .record(reportResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
 
         if (reportResult.isSuccess()) {
-          benchmarkReportEvaluationSuccessCounter.increment();
+          Counter.builder("optimize.benchmark.report.evaluation.success")
+              .description("Successful benchmark report evaluations")
+              .tag("reportId", reportResult.getReportId())
+              .tag(
+                  "reportName",
+                  reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+              .register(registry)
+              .increment();
           LOG.info(
               "Benchmark report {} [{}] evaluated successfully in {}ms",
               reportResult.getReportId(),
               reportResult.getReportName(),
               reportResult.getResponseTimeMs());
         } else {
-          benchmarkReportEvaluationErrorCounter.increment();
+          Counter.builder("optimize.benchmark.report.evaluation.error")
+              .description("Failed benchmark report evaluations")
+              .tag("reportId", reportResult.getReportId())
+              .tag(
+                  "reportName",
+                  reportResult.getReportName() != null ? reportResult.getReportName() : "unknown")
+              .register(registry)
+              .increment();
           LOG.error(
               "Benchmark report {} [{}] evaluation failed with status {}",
               reportResult.getReportId(),
@@ -377,18 +366,43 @@ public class Optimize extends App {
       final List<OptimizeReportLoadTester.ReportEvaluationResult> detailedResults =
           result.getDetailedEvaluationResults();
       for (final OptimizeReportLoadTester.ReportEvaluationResult detailedResult : detailedResults) {
-        benchmarkDetailedEvaluationTimer.record(
-            detailedResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
+        // Record detailed evaluation time with report ID and name as tags
+        Timer.builder("optimize.benchmark.detailed.evaluation.time")
+            .description("Response time for benchmark detailed evaluation")
+            .tag("reportId", detailedResult.getReportId())
+            .tag(
+                "reportName",
+                detailedResult.getReportName() != null ? detailedResult.getReportName() : "unknown")
+            .register(registry)
+            .record(detailedResult.getResponseTimeMs(), TimeUnit.MILLISECONDS);
 
         if (detailedResult.isSuccess()) {
-          benchmarkDetailedEvaluationSuccessCounter.increment();
+          Counter.builder("optimize.benchmark.detailed.evaluation.success")
+              .description("Successful benchmark detailed evaluations")
+              .tag("reportId", detailedResult.getReportId())
+              .tag(
+                  "reportName",
+                  detailedResult.getReportName() != null
+                      ? detailedResult.getReportName()
+                      : "unknown")
+              .register(registry)
+              .increment();
           LOG.info(
               "Benchmark detailed evaluation for report {} [{}] completed in {}ms",
               detailedResult.getReportId(),
               detailedResult.getReportName(),
               detailedResult.getResponseTimeMs());
         } else {
-          benchmarkDetailedEvaluationErrorCounter.increment();
+          Counter.builder("optimize.benchmark.detailed.evaluation.error")
+              .description("Failed benchmark detailed evaluations")
+              .tag("reportId", detailedResult.getReportId())
+              .tag(
+                  "reportName",
+                  detailedResult.getReportName() != null
+                      ? detailedResult.getReportName()
+                      : "unknown")
+              .register(registry)
+              .increment();
           LOG.error(
               "Benchmark detailed evaluation for report {} [{}] failed with status {}",
               detailedResult.getReportId(),
