@@ -65,4 +65,32 @@ describe('Header', () => {
       /^\?evaluated=true&failed=true$/,
     );
   });
+
+  it('should navigate to correct pages when clicking on Operations submenu items', async () => {
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    const nav = screen.getByRole('navigation', {
+      name: /camunda operate/i,
+    });
+
+    await user.click(within(nav).getByText(/^Operations$/));
+
+    await user.click(
+      screen.getByRole('link', {name: /^Batch operations$/i}),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/batch-operations$/,
+    );
+
+    await user.click(within(nav).getByText(/^Operations$/));
+
+    await user.click(
+      screen.getByRole('link', {name: /^Operations log$/i}),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/operations-log$/,
+    );
+  });
 });
