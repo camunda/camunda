@@ -42,7 +42,9 @@ public class TaskSearchResponse {
   @Schema(description = "The username/id of who is assigned to the task.")
   private String assignee;
 
-  @Schema(description = "The state of the task.")
+  @Schema(
+      description =
+          "The state of the task. Note: FAILED state is only for legacy job-worker-based tasks.")
   private TaskState taskState;
 
   @ArraySchema(
