@@ -11,6 +11,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
 import co.elastic.clients.elasticsearch._types.Refresh;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.BulkRequest.Builder;
 import co.elastic.clients.elasticsearch.core.BulkResponse;
 import co.elastic.clients.elasticsearch.core.bulk.BulkResponseItem;
 import co.elastic.clients.elasticsearch.core.bulk.OperationType;
@@ -20,9 +21,13 @@ import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.utils.ElasticsearchScriptBuilder;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -34,7 +39,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
-  private final BulkRequest.Builder bulkRequestBuilder;
+  private final Map<String, BulkRequest.Builder> bulkRequestBuilders = new HashMap<>();
+  private final Set<String> indexes = new HashSet<>();
   private final ElasticsearchScriptBuilder scriptBuilder;
   private CamundaExporterMetrics metrics;
 
@@ -43,8 +49,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final BulkRequest.Builder bulkRequestBuilder,
       final ElasticsearchScriptBuilder scriptBuilder) {
     this.esClient = esClient;
-    this.bulkRequestBuilder = bulkRequestBuilder;
+    // this.bulkRequestBuilder = bulkRequestBuilder;
     this.scriptBuilder = scriptBuilder;
+  }
+
+  private BulkRequest.Builder builderForIndex(final String index) {
+
+    indexes.add(index);
+    return bulkRequestBuilders.computeIfAbsent(index, idx -> new BulkRequest.Builder());
+    // return bulkRequestBuilders.computeIfAbsent("singleIndex", idx -> new BulkRequest.Builder());
   }
 
   @Override
@@ -61,7 +74,8 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest addWithId(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add index request for index {} id {} and entity {} ", index, id, entity);
-    bulkRequestBuilder.operations(op -> op.index(idx -> idx.index(index).id(id).document(entity)));
+    builderForIndex(index)
+        .operations(op -> op.index(idx -> idx.index(index).id(id).document(entity)));
     return this;
   }
 
@@ -70,9 +84,11 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final ExporterEntity entity, final String routing) {
     LOGGER.debug(
         "Add index request with routing {} for index {} and entity {} ", routing, index, entity);
-    bulkRequestBuilder.operations(
-        op ->
-            op.index(idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.index(
+                    idx -> idx.index(index).id(entity.getId()).document(entity).routing(routing)));
 
     return this;
   }
@@ -101,15 +117,16 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         entity,
         updateFields);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(a -> a.doc(updateFields).upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.update(
+                    upd ->
+                        upd.index(index)
+                            .id(id)
+                            .routing(routing)
+                            .action(a -> a.doc(updateFields).upsert(entity))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -141,18 +158,21 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         script,
         parameters);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                upd ->
-                    upd.index(index)
-                        .id(id)
-                        .routing(routing)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters))
-                                    .upsert(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.update(
+                    upd ->
+                        upd.index(index)
+                            .id(id)
+                            .routing(routing)
+                            .action(
+                                a ->
+                                    a.script(
+                                            scriptBuilder.getScriptWithParameters(
+                                                script, parameters))
+                                        .upsert(entity))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -163,14 +183,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
     LOGGER.debug(
         "Add update request for index {} id {} and update fields {}", index, id, updateFields);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(updateFields))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.update(
+                    up ->
+                        up.index(index)
+                            .id(id)
+                            .action(a -> a.doc(updateFields))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -179,14 +200,15 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest update(final String index, final String id, final ExporterEntity entity) {
     LOGGER.debug("Add update request for index {} id {} and entity {}", index, id, entity);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(a -> a.doc(entity))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.update(
+                    up ->
+                        up.index(index)
+                            .id(id)
+                            .action(a -> a.doc(entity))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -204,16 +226,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
         script,
         parameters);
 
-    bulkRequestBuilder.operations(
-        op ->
-            op.update(
-                up ->
-                    up.index(index)
-                        .id(id)
-                        .action(
-                            a ->
-                                a.script(scriptBuilder.getScriptWithParameters(script, parameters)))
-                        .retryOnConflict(UPDATE_RETRY_COUNT)));
+    builderForIndex(index)
+        .operations(
+            op ->
+                op.update(
+                    up ->
+                        up.index(index)
+                            .id(id)
+                            .action(
+                                a ->
+                                    a.script(
+                                        scriptBuilder.getScriptWithParameters(script, parameters)))
+                            .retryOnConflict(UPDATE_RETRY_COUNT)));
 
     return this;
   }
@@ -221,7 +245,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   @Override
   public BatchRequest delete(final String index, final String id) {
     LOGGER.debug("Add delete request for index {} and id {}", index, id);
-    bulkRequestBuilder.operations(op -> op.delete(del -> del.index(index).id(id)));
+    builderForIndex(index).operations(op -> op.delete(del -> del.index(index).id(id)));
     return this;
   }
 
@@ -229,14 +253,18 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   public BatchRequest deleteWithRouting(final String index, final String id, final String routing) {
     LOGGER.debug(
         "Add delete index request with routing {} for index {} and entity {} ", routing, index, id);
-    bulkRequestBuilder.operations(op -> op.delete(idx -> idx.index(index).id(id).routing(routing)));
+    builderForIndex(index)
+        .operations(op -> op.delete(idx -> idx.index(index).id(id).routing(routing)));
     return this;
   }
 
   @Override
   public void execute(final BiConsumer<String, Error> customErrorHandlers)
       throws PersistenceException {
+    // final long start = System.currentTimeMillis();
     execute(customErrorHandlers, false);
+    // final long end = System.currentTimeMillis();
+    // System.out.println("Bulk request executed in " + (end - start) + " ms");
   }
 
   @Override
@@ -247,6 +275,47 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   private void execute(
       final BiConsumer<String, Error> customErrorHandlers, final boolean shouldRefresh)
       throws PersistenceException {
+    // System.out.println("Writing to Elasticsearch indexes: " + indexes);
+    if (bulkRequestBuilders.size() == 1) {
+      // System.out.println("Single writing");
+      doBulkRequest(
+          customErrorHandlers, shouldRefresh, bulkRequestBuilders.values().iterator().next());
+      return;
+    }
+    // System.out.println("Multi writing");
+    final var threads = new ArrayList<Thread>(bulkRequestBuilders.size());
+    for (final var entry : bulkRequestBuilders.entrySet()) {
+      final var bulkRequestBuilder = entry.getValue();
+      final var t =
+          Thread.ofVirtual()
+              .start(
+                  () -> {
+                    // final long start = System.currentTimeMillis();
+                    doBulkRequest(customErrorHandlers, shouldRefresh, bulkRequestBuilder);
+                    // final long end = System.currentTimeMillis();
+                    /*System.out.println(
+                    "Bulk request for index "
+                        + entry.getKey()
+                        + " executed in "
+                        + (end - start)
+                        + " ms");*/
+                  });
+      threads.add(t);
+    }
+    for (final var t : threads) {
+      try {
+        t.join();
+      } catch (final InterruptedException e) {
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  private void doBulkRequest(
+      final BiConsumer<String, Error> customErrorHandlers,
+      final boolean shouldRefresh,
+      final Builder bulkRequestBuilder) {
     if (shouldRefresh) {
       bulkRequestBuilder.refresh(Refresh.True);
     }
