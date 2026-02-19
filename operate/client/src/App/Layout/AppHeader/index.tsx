@@ -201,19 +201,43 @@ const AppHeader: React.FC = observer(() => {
                 },
               },
               {
-                key: 'operations-log',
-                label: 'Operations Log',
-                isCurrentPage: currentPage === 'operations-log',
-                routeProps: {
-                  to: Paths.operationsLog(),
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-operations-log',
-                      currentPage,
-                    });
+                key: 'operations',
+                label: 'Operations',
+                isCurrentPage:
+                  currentPage === 'batch-operations' ||
+                  currentPage === 'operations-log',
+                subElements: [
+                  {
+                    key: 'batch-operations',
+                    label: 'Batch operations',
+                    isCurrentPage: currentPage === 'batch-operations',
+                    routeProps: {
+                      to: Paths.batchOperations(),
+                      onClick: () => {
+                        tracking.track({
+                          eventName: 'navigation',
+                          link: 'header-batch-operations',
+                          currentPage,
+                        });
+                      },
+                    },
                   },
-                },
+                  {
+                    key: 'operations-log',
+                    label: 'Operations log',
+                    isCurrentPage: currentPage === 'operations-log',
+                    routeProps: {
+                      to: Paths.operationsLog(),
+                      onClick: () => {
+                        tracking.track({
+                          eventName: 'navigation',
+                          link: 'header-operations-log',
+                          currentPage,
+                        });
+                      },
+                    },
+                  },
+                ],
               },
             ],
         licenseTag: {
