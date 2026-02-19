@@ -18,7 +18,6 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {Incidents} from './Incidents';
-import {useElementInstancesCount} from 'modules/hooks/useElementInstancesCount';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
 type Props = {
@@ -29,9 +28,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const {
     selectedElementId,
     selectedElementInstanceKey,
+    selectedInstancesCount,
     resolvedElementInstance,
     isFetchingElement,
-    isSelectedInstanceMultiInstanceBody,
   } = useProcessInstanceElementSelection();
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data} = useProcessInstanceXml({
@@ -43,13 +42,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
     ? data?.businessObjects[selectedElementId]
     : null;
   const {data: statistics} = useFlownodeInstancesStatistics();
-  let elementInstancesCount = useElementInstancesCount(
-    selectedElementId ?? undefined,
-  );
 
-  if (isSelectedInstanceMultiInstanceBody && resolvedElementInstance !== null) {
-    elementInstancesCount = 1;
-  }
   const incidentCount =
     statistics?.items.find((stat) => stat.elementId === selectedElementId)
       ?.incidents ?? 0;
@@ -73,20 +66,18 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
       variant="arrow"
     >
       <Stack gap={3}>
-        {elementInstancesCount !== null &&
-          elementInstancesCount > 1 &&
-          !selectedElementInstanceKey && (
-            <section aria-labelledby={labelId}>
-              <Header
-                title={`This element instance triggered ${elementInstancesCount} times`}
-                titleId={labelId}
-              />
-              <Content>
-                To view details for any of these, select one Instance in the
-                Instance History.
-              </Content>
-            </section>
-          )}
+        {(selectedInstancesCount ?? 0) > 1 && (
+          <section aria-labelledby={labelId}>
+            <Header
+              title={`This element instance triggered ${selectedInstancesCount} times`}
+              titleId={labelId}
+            />
+            <Content>
+              To view details for any of these, select one Instance in the
+              Instance History.
+            </Content>
+          </section>
+        )}
 
         {resolvedElementInstance && (
           <>

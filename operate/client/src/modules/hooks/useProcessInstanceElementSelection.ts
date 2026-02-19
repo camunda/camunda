@@ -164,6 +164,9 @@ const useProcessInstanceElementSelection = () => {
   const resolvedElementInstance =
     elementInstanceByKey ??
     (searchResult?.page.totalItems === 1 ? searchResult?.items[0] : null);
+  const selectedInstancesCount = elementInstanceByKey
+    ? 1
+    : (searchResult?.page.totalItems ?? null);
 
   const isSelected = useCallback(
     (element: {
@@ -201,6 +204,8 @@ const useProcessInstanceElementSelection = () => {
      * The currently selected element instance key from the URL search params
      */
     selectedElementInstanceKey: elementInstanceKey,
+    /** The amount of instances that exist for the current selection. */
+    selectedInstancesCount,
     /** Is true when the user currently has an element selected. */
     hasSelection: !!elementId || !!elementInstanceKey,
     isSelectedInstanceMultiInstanceBody: isMultiInstanceBody,
