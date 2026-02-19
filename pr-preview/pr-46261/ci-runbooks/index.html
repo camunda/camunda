@@ -4,8 +4,8 @@
 <meta charset="UTF-8">
 <meta name="generator" content="Docusaurus v3.9.2">
 <title data-rh="true">CI Runbooks | Camunda Platform</title><meta data-rh="true" name="viewport" content="width=device-width,initial-scale=1"><meta data-rh="true" name="twitter:card" content="summary_large_image"><meta data-rh="true" property="og:url" content="https://camunda.github.io/camunda/pr-preview/pr-46261/ci-runbooks/"><meta data-rh="true" property="og:locale" content="en"><meta data-rh="true" name="docusaurus_locale" content="en"><meta data-rh="true" name="docsearch:language" content="en"><meta data-rh="true" name="docusaurus_version" content="current"><meta data-rh="true" name="docusaurus_tag" content="docs-default-current"><meta data-rh="true" name="docsearch:version" content="current"><meta data-rh="true" name="docsearch:docusaurus_tag" content="docs-default-current"><meta data-rh="true" property="og:title" content="CI Runbooks | Camunda Platform"><meta data-rh="true" name="description" content="This page collects information on CI incident runbooks and alerts that affect"><meta data-rh="true" property="og:description" content="This page collects information on CI incident runbooks and alerts that affect"><link data-rh="true" rel="icon" href="/camunda/pr-preview/pr-46261/img/black-C.png"><link data-rh="true" rel="canonical" href="https://camunda.github.io/camunda/pr-preview/pr-46261/ci-runbooks/"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-46261/ci-runbooks/" hreflang="en"><link data-rh="true" rel="alternate" href="https://camunda.github.io/camunda/pr-preview/pr-46261/ci-runbooks/" hreflang="x-default"><script data-rh="true" type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"CI Runbooks","item":"https://camunda.github.io/camunda/pr-preview/pr-46261/ci-runbooks"}]}</script><link rel="stylesheet" href="/camunda/pr-preview/pr-46261/assets/css/styles.9181a4df.css">
-<script src="/camunda/pr-preview/pr-46261/assets/js/runtime~main.486264f7.js" defer="defer"></script>
-<script src="/camunda/pr-preview/pr-46261/assets/js/main.2939ecfd.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-46261/assets/js/runtime~main.5f05609f.js" defer="defer"></script>
+<script src="/camunda/pr-preview/pr-46261/assets/js/main.9f3a6f88.js" defer="defer"></script>
 </head>
 <body class="navigation-with-keyboard">
 <svg style="display: none;"><defs>
@@ -214,9 +214,12 @@ start, or the CI job timed out before readiness.</p>
 <li class="">Retry the workflow (fast feedback) to confirm if the issue is transient.</li>
 <li class="">Inspect the <code>Helm - Install - Install Camunda chart</code> step logs:<!-- -->
 <ul>
-<li class="">Look for hard errors (e.g. validation failures, timeouts).</li>
-<li class="">Warnings like the following one should not be considered blocking unless they directly relate
-to a failed service startup. Example:<!-- -->
+<li class="">
+<p>Look for hard errors (e.g. validation failures, timeouts).</p>
+</li>
+<li class="">
+<p>Warnings like the following one should not be considered blocking unless they directly relate
+to a failed service startup. Example:</p>
 <div class="language-text codeBlockContainer_Ckt0 theme-code-block" style="--prism-color:#393A34;--prism-background-color:#f6f8fa"><div class="codeBlockContent_QJqH"><pre tabindex="0" class="prism-code language-text codeBlock_bY9V thin-scrollbar" style="color:#393A34;background-color:#f6f8fa"><code class="codeBlockLines_e6Vv"><span class="token-line" style="color:#393A34"><span class="token plain">warning: destination for camunda-platform.connectors.security.authentication.oidc.existingSecret is a table. Ignoring non-table value ()</span><br></span></code></pre></div></div>
 </li>
 </ul>
