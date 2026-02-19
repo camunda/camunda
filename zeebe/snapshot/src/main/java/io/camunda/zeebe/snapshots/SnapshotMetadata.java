@@ -15,18 +15,20 @@ public interface SnapshotMetadata {
   int version();
 
   /**
-   * @return processed position in the snapshot (same as in SnapshotId)
+   * @return upper bound processed position in the snapshot, as determined after taking the
+   *     snapshot. Same as in SnapshotId.
    */
   long processedPosition();
 
   /**
    * Smallest exported position in the snapshot, as determined before taking the snapshot. Same as
-   * in SnapshotId.
+   * in SnapshotId. The true exported position is somewhere between the min and max.
    */
   long minExportedPosition();
 
   /**
    * Returns the maximum exported position in the snapshot, as determined after taking the snapshot.
+   * The true exported position is somewhere between the min and max.
    */
   long maxExportedPosition();
 
