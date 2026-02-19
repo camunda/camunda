@@ -8,11 +8,7 @@
 
 import React, {useEffect} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {
-  IconButton,
-  InlineNotification,
-  SkeletonText,
-} from '@carbon/react';
+import {IconButton, InlineNotification, SkeletonText} from '@carbon/react';
 import {ArrowLeft} from '@carbon/react/icons';
 import {formatDate} from 'modules/utils/date';
 import {PAGE_TITLE} from 'modules/constants';
@@ -130,7 +126,9 @@ const BatchOperation: React.FC = () => {
         {renderWithLoading(
           isLoading,
           <Header>
-            <div style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
+            <div
+              style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}
+            >
               <IconButton
                 kind="ghost"
                 size="md"

@@ -68,7 +68,6 @@ const Header = styled.div`
 export {
   PageContainer,
   ContentContainer,
-  BreadcrumbBar,
   TilesContainer,
   Tile,
   TileLabel,
