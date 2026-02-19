@@ -104,7 +104,7 @@
     <version.postgressql-testcontainer>2.0.2</version.postgressql-testcontainer>
     <version.netflix.concurrency>0.5.4</version.netflix.concurrency>
     <version.zeebe-test-container>3.6.9</version.zeebe-test-container>
-    <version.feel-scala>1.20.0</version.feel-scala>
+    <version.feel-scala>1.20.1</version.feel-scala>
     <version.dmn-scala>1.11.0</version.dmn-scala>
     <version.rest-assured>6.0.0</version.rest-assured>
     <version.spring>7.0.5</version.spring>
