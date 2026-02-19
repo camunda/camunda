@@ -34,6 +34,7 @@ import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
@@ -47,6 +48,7 @@ import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
+import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -899,6 +901,73 @@ public final class TestHelper {
               if (jobType != null) {
                 request = request.jobType(jobType);
               }
+
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  /**
+   * Waits for job type statistics to be exported and match the given requirements.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTypeStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final Consumer<JobTypeStatistics> fnRequirements) {
+    waitForJobTypeStatistics(camundaClient, startTime, endTime, f -> {}, p -> {}, fnRequirements);
+  }
+
+  /**
+   * Waits for job type statistics to be exported and match the given requirements, with filter.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param filterFn the filter consumer to apply
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTypeStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final Consumer<JobTypeStatisticsFilter> filterFn,
+      final Consumer<JobTypeStatistics> fnRequirements) {
+    waitForJobTypeStatistics(camundaClient, startTime, endTime, filterFn, p -> {}, fnRequirements);
+  }
+
+  /**
+   * Waits for job type statistics to be exported and match the given requirements, with filter and
+   * pagination.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param filterFn the filter consumer to apply
+   * @param pageFn the page consumer to apply
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobTypeStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final Consumer<JobTypeStatisticsFilter> filterFn,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobTypeStatistics> fnRequirements) {
+    Awaitility.await("should export job type metrics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var request =
+                  camundaClient
+                      .newJobTypeStatisticsRequest(startTime, endTime)
+                      .filter(filterFn)
+                      .page(pageFn);
 
               assertThat(request.send().join()).satisfies(fnRequirements);
             });

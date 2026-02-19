@@ -46,7 +46,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldGetJobTypeStatisticsWithEmptyQuery() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client.newJobTypeStatisticsRequest(FROM, TO).send().join();
@@ -61,14 +61,14 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldGetJobTypeStatisticsWithFilter() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client.newJobTypeStatisticsRequest(FROM, TO).filter(f -> f.jobType("myJobType")).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/jobs/statistics/by-types");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getJobTypeStatisticsUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
   }
 
@@ -76,7 +76,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldGetJobTypeStatisticsWithPagination() {
     // given
     final JobTypeStatisticsQueryResult response = createPaginatedResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -97,14 +97,14 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldGetJobTypeStatistics() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     final JobTypeStatistics result = client.newJobTypeStatisticsRequest(FROM, TO).send().join();
 
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
-    assertThat(request.getUrl()).isEqualTo("/v2/jobs/statistics/by-types");
+    assertThat(request.getUrl()).isEqualTo(RestGatewayPaths.getJobTypeStatisticsUrl());
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
 
     assertThat(result).isNotNull();
@@ -129,7 +129,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldSendCorrectRequestBodyWithTimeRange() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client.newJobTypeStatisticsRequest(FROM, TO).send().join();
@@ -149,7 +149,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeExactMatch() {
     // given
     final JobTypeStatisticsQueryResult response = createSingleJobTypeResponse("myJobType");
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client.newJobTypeStatisticsRequest(FROM, TO).filter(f -> f.jobType("myJobType")).send().join();
@@ -165,7 +165,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeLikePattern() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -185,7 +185,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeInList() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -206,7 +206,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeWithAdvancedOperations() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -227,7 +227,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeNotEquals() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -248,7 +248,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldFilterByJobTypeExists() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -269,7 +269,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldIncludeFilterAndPageInRequestBody() {
     // given
     final JobTypeStatisticsQueryResult response = createPaginatedResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     client
@@ -293,7 +293,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldHandleEmptyResults() {
     // given
     final JobTypeStatisticsQueryResult response = createEmptyResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     final JobTypeStatistics result = client.newJobTypeStatisticsRequest(FROM, TO).send().join();
@@ -306,7 +306,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldHandleNullMetrics() {
     // given
     final JobTypeStatisticsQueryResult response = createResponseWithNullMetrics();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     final JobTypeStatistics result = client.newJobTypeStatisticsRequest(FROM, TO).send().join();
@@ -323,7 +323,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldHandleJobTypeWithZeroWorkers() {
     // given
     final JobTypeStatisticsQueryResult response = createResponseWithZeroWorkers();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     final JobTypeStatistics result = client.newJobTypeStatisticsRequest(FROM, TO).send().join();
@@ -337,7 +337,7 @@ public class JobTypeStatisticsTest extends ClientRestTest {
   void shouldVerifyResultsAreSortedByJobType() {
     // given
     final JobTypeStatisticsQueryResult response = createTestResponse();
-    gatewayService.onJobStatisticsRequest(response);
+    gatewayService.onJobTypeStatisticsRequest(response);
 
     // when
     final JobTypeStatistics result = client.newJobTypeStatisticsRequest(FROM, TO).send().join();
