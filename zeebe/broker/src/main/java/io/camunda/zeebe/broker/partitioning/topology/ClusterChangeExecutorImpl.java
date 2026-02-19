@@ -18,7 +18,6 @@ import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.exporter.api.Exporter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
-import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.Objects;
@@ -93,8 +92,27 @@ public final class ClusterChangeExecutorImpl implements ClusterChangeExecutor {
 
   @Override
   public ActorFuture<Void> postScaling(final Set<MemberId> clusterMembers) {
-    // TODO: implement actual logic here
-    return CompletableActorFuture.completed();
+    final ActorFuture<Void> result = concurrencyControl.createFuture();
+    // Here it is ok to execute even if the cluster size did not change.
+    // For scale up this will be a no-op as the leases are already created, and for scale down
+    // additional leases will be removed.
+    concurrencyControl.run(
+        () -> {
+          try {
+            nodeIdProvider
+                .scale(clusterMembers.size())
+                .thenAccept(ignore -> result.complete(null))
+                .exceptionally(
+                    e -> {
+                      result.completeExceptionally(e);
+                      return null;
+                    });
+          } catch (final Exception e) {
+            result.completeExceptionally(e);
+          }
+        });
+
+    return result;
   }
 
   private void purgeExporter(final String id, final ExporterDescriptor descriptor) {
