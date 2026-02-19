@@ -10,7 +10,6 @@ package io.camunda.zeebe.engine.processing.clustervariable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
@@ -166,15 +165,13 @@ public final class CreateClusterVariableTest {
   public void checkClusterVariableRecordValidator(
       final String clusterVariableName, final String rejectionReason) {
 
-    final var engineConfiguration = new EngineConfiguration();
-    engineConfiguration.setMaxNameFieldLength(10);
-
     // given
     final ClusterVariableRecord clusterVariableRecord =
         new ClusterVariableRecord().setName(clusterVariableName);
     final ClusterVariableState clusterVariableState = mock(ClusterVariableState.class);
     final ClusterVariableRecordValidator clusterVariableRecordValidator =
-        new ClusterVariableRecordValidator(clusterVariableState, engineConfiguration);
+        new ClusterVariableRecordValidator(
+            clusterVariableState, new ClusterVariableValidationConfiguration(10));
     // when
     final var result = clusterVariableRecordValidator.validateName(clusterVariableRecord);
     // then

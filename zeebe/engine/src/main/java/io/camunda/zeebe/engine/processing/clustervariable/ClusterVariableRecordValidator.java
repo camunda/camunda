@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
@@ -18,13 +17,13 @@ import org.apache.commons.lang3.StringUtils;
 public class ClusterVariableRecordValidator {
 
   private final ClusterVariableState clusterVariableState;
-  private final EngineConfiguration engineConfiguration;
+  private final ClusterVariableValidationConfiguration validationConfig;
 
   public ClusterVariableRecordValidator(
       final ClusterVariableState clusterVariableState,
-      final EngineConfiguration engineConfiguration) {
+      final ClusterVariableValidationConfiguration validationConfig) {
     this.clusterVariableState = clusterVariableState;
-    this.engineConfiguration = engineConfiguration;
+    this.validationConfig = validationConfig;
   }
 
   public Either<Rejection, ClusterVariableRecord> validateName(final ClusterVariableRecord record) {
@@ -43,15 +42,13 @@ public class ClusterVariableRecordValidator {
               "Invalid cluster variable name: '%s'. The name must not contains any whitespace."
                   .formatted(name)));
     }
-
-    if (name.length() > engineConfiguration.getMaxNameFieldLength()) {
+    if (name.length() > validationConfig.maxNameFieldLength()) {
       return Either.left(
           new Rejection(
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable name: '%s'. The name must not be longer than %s characters."
-                  .formatted(name, engineConfiguration.getMaxNameFieldLength())));
+                  .formatted(name, validationConfig.maxNameFieldLength())));
     }
-
     return Either.right(record);
   }
 

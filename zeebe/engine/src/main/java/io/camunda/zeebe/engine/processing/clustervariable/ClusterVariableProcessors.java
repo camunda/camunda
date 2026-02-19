@@ -26,6 +26,8 @@ public class ClusterVariableProcessors {
       final CommandDistributionBehavior distributionBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
       final EngineConfiguration engineConfiguration) {
+    final var validationConfig =
+        new ClusterVariableValidationConfiguration(engineConfiguration.getMaxNameFieldLength());
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.CREATE,
@@ -35,7 +37,7 @@ public class ClusterVariableProcessors {
             authCheckBehavior,
             distributionBehavior,
             clusterVariableState,
-            engineConfiguration));
+            validationConfig));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.UPDATE,
@@ -45,7 +47,7 @@ public class ClusterVariableProcessors {
             authCheckBehavior,
             distributionBehavior,
             clusterVariableState,
-            engineConfiguration));
+            validationConfig));
     typedRecordProcessors.onCommand(
         ValueType.CLUSTER_VARIABLE,
         ClusterVariableIntent.DELETE,
@@ -55,6 +57,6 @@ public class ClusterVariableProcessors {
             authCheckBehavior,
             distributionBehavior,
             clusterVariableState,
-            engineConfiguration));
+            validationConfig));
   }
 }

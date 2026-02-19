@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.engine.processing.clustervariable;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.distribution.CommandDistributionBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
@@ -44,13 +43,13 @@ public class ClusterVariableCreateProcessor
       final AuthorizationCheckBehavior authCheckBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
       final ClusterVariableState clusterVariableState,
-      final EngineConfiguration engineConfiguration) {
+      final ClusterVariableValidationConfiguration validationConfig) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
     clusterVariableRecordValidator =
-        new ClusterVariableRecordValidator(clusterVariableState, engineConfiguration);
+        new ClusterVariableRecordValidator(clusterVariableState, validationConfig);
   }
 
   @Override
