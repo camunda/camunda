@@ -74,13 +74,12 @@ class AuditLogPropertyMatcherTest {
   static Stream<Arguments> provideCategorySuccessfulCases() {
     return Stream.of(
         Arguments.of(AuditLogOperationCategory.ADMIN),
+        Arguments.of(AuditLogOperationCategory.DEPLOYED_RESOURCES),
         Arguments.of(AuditLogOperationCategory.USER_TASKS));
   }
 
   static Stream<Arguments> provideCategoryNegativeCases() {
-    return Stream.of(
-        Arguments.of(AuditLogOperationCategory.DEPLOYED_RESOURCES),
-        Arguments.of(AuditLogOperationCategory.UNKNOWN));
+    return Stream.of(Arguments.of(AuditLogOperationCategory.UNKNOWN));
   }
 
   private AuditLogEntity createAuditLog(final AuditLogOperationCategory category) {

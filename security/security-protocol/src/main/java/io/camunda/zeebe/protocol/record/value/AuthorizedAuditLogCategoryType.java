@@ -13,6 +13,7 @@ import java.util.stream.Collectors;
 
 public enum AuthorizedAuditLogCategoryType {
   ADMIN,
+  DEPLOYED_RESOURCES,
   USER_TASKS;
 
   public static List<String> getAuthorizedCategories() {

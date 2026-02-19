@@ -217,7 +217,7 @@ public class AuditLogIT {
 
     final Long processInstanceKey = nextKey(); // Unique key for test isolation
 
-    // Create audit logs with different categories
+    // Create audit logs with different authenticated categories
     final var adminLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
@@ -229,11 +229,11 @@ public class AuditLogIT {
             b ->
                 b.category(AuditLogOperationCategory.USER_TASKS)
                     .processInstanceKey(processInstanceKey));
-    final var deployedResourcesLog =
+    final var unknownResourceLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
-                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                b.category(AuditLogOperationCategory.UNKNOWN)
                     .processInstanceKey(processInstanceKey));
 
     // Create ResourceAccessChecks with AUDIT_LOG resource type
@@ -257,7 +257,7 @@ public class AuditLogIT {
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
         .contains(adminLog.auditLogKey(), userTaskLog.auditLogKey())
-        .doesNotContain(deployedResourcesLog.auditLogKey());
+        .doesNotContain(unknownResourceLog.auditLogKey());
   }
 
   @TestTemplate
@@ -871,13 +871,11 @@ public class AuditLogIT {
             b ->
                 b.category(AuditLogOperationCategory.USER_TASKS)
                     .processInstanceKey(processInstanceKey));
-
-    // Create audit log with non-authorized category
-    final var deployedResourcesLog =
+    final var unknownResourcesLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
-                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                b.category(AuditLogOperationCategory.UNKNOWN)
                     .processInstanceKey(processInstanceKey));
 
     // when - use property-based authorization for category
@@ -896,7 +894,7 @@ public class AuditLogIT {
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
         .contains(adminLog.auditLogKey(), userTaskLog.auditLogKey())
-        .doesNotContain(deployedResourcesLog.auditLogKey());
+        .doesNotContain(unknownResourcesLog.auditLogKey());
   }
 
   @TestTemplate
@@ -952,7 +950,7 @@ public class AuditLogIT {
     AuditLogFixtures.createAndSaveAuditLog(
         rdbmsWriters,
         b ->
-            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+            b.category(AuditLogOperationCategory.UNKNOWN)
                 .tenantId(tenant1)
                 .tenantScope(AuditLogTenantScope.TENANT)
                 .processInstanceKey(processInstanceKey));
@@ -1017,11 +1015,11 @@ public class AuditLogIT {
 
     // Create audit log with non-authorized category but with processDefId3 (authorized by resource
     // ID)
-    final var deployedResourcesLog =
+    final var unknownResourcesLog =
         AuditLogFixtures.createAndSaveAuditLog(
             rdbmsWriters,
             b ->
-                b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+                b.category(AuditLogOperationCategory.UNKNOWN)
                     .processDefinitionId(processDefId3)
                     .processInstanceKey(processInstanceKey));
 
@@ -1029,7 +1027,7 @@ public class AuditLogIT {
     AuditLogFixtures.createAndSaveAuditLog(
         rdbmsWriters,
         b ->
-            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
+            b.category(AuditLogOperationCategory.UNKNOWN)
                 .processDefinitionId(null)
                 .processInstanceKey(processInstanceKey));
 
@@ -1061,11 +1059,10 @@ public class AuditLogIT {
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
         .containsExactlyInAnyOrder(
-            adminLog1.auditLogKey(), adminLog2.auditLogKey(), deployedResourcesLog.auditLogKey());
+            adminLog1.auditLogKey(), adminLog2.auditLogKey(), unknownResourcesLog.auditLogKey());
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::category)
-        .containsOnly(
-            AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.DEPLOYED_RESOURCES);
+        .containsOnly(AuditLogOperationCategory.ADMIN, AuditLogOperationCategory.UNKNOWN);
   }
 
   @TestTemplate
@@ -1098,9 +1095,7 @@ public class AuditLogIT {
     // Create audit log with non-authorized category but matching process definition
     AuditLogFixtures.createAndSaveAuditLog(
         rdbmsWriters,
-        b ->
-            b.category(AuditLogOperationCategory.DEPLOYED_RESOURCES)
-                .processDefinitionId(processDefId1));
+        b -> b.category(AuditLogOperationCategory.UNKNOWN).processDefinitionId(processDefId1));
 
     // when - use property-based authorization AND query filter
     final var resourceAccessChecks =

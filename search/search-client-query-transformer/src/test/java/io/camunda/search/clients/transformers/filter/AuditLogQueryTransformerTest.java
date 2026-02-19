@@ -44,6 +44,7 @@ public class AuditLogQueryTransformerTest extends AbstractTransformerTest {
         searchQuery.queryOption(),
         "category",
         AuditLogOperationCategory.ADMIN.name(),
+        AuditLogOperationCategory.DEPLOYED_RESOURCES.name(),
         AuditLogOperationCategory.USER_TASKS.name());
   }
 
@@ -66,6 +67,7 @@ public class AuditLogQueryTransformerTest extends AbstractTransformerTest {
         searchQuery.queryOption(),
         "category",
         AuditLogOperationCategory.ADMIN.name(),
+        AuditLogOperationCategory.DEPLOYED_RESOURCES.name(),
         AuditLogOperationCategory.USER_TASKS.name());
   }
 
@@ -98,6 +100,7 @@ public class AuditLogQueryTransformerTest extends AbstractTransformerTest {
                               query.queryOption(),
                               "category",
                               AuditLogOperationCategory.ADMIN.name(),
+                              AuditLogOperationCategory.DEPLOYED_RESOURCES.name(),
                               AuditLogOperationCategory.USER_TASKS.name()))
                   .anySatisfy(
                       query ->
@@ -140,6 +143,7 @@ public class AuditLogQueryTransformerTest extends AbstractTransformerTest {
                               query.queryOption(),
                               "category",
                               AuditLogOperationCategory.ADMIN.name(),
+                              AuditLogOperationCategory.DEPLOYED_RESOURCES.name(),
                               AuditLogOperationCategory.USER_TASKS.name()))
                   .anySatisfy(
                       query ->
