@@ -101,10 +101,10 @@ const List: FC = () => {
             key: "eventTypesDisplay",
             isSortable: false,
           },
-          { header: t("retries"), key: "retries", isSortable: true },
+          { header: t("retries"), key: "retries", isSortable: false },
           {
             header: t("executionOrder"),
-            key: "executionOrderDisplay",
+            key: "afterNonGlobal",
             isSortable: true,
           },
           { header: t("priority"), key: "priority", isSortable: true },
