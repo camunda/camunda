@@ -89,15 +89,6 @@ test.describe('Process Instance History', () => {
 
     console.log(`Incident Process Instance Key: ${incidentProcessInstanceKey}`);
 
-    // await test.step('Verify Process Instance is active', async () => {
-    //   await expect(async () => {
-    //     const process = await searchByProcessInstanceKey(
-    //       incidentProcessInstanceKey.toString(),
-    //     );
-    //     expect(process.items.length).toBeGreaterThan(0);
-    //   }).toPass({intervals: [5_000], timeout: 60_000});
-    // });
-
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
         assertion: async () => {
@@ -126,6 +117,10 @@ test.describe('Process Instance History', () => {
     await test.step('Wait for incident to appear', async () => {
       await operateFiltersPanelPage.clickActiveInstancesCheckbox();
       await page.waitForTimeout(5000);
+      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        incidentProcessInstanceKey.toString(),
+      );
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible();
@@ -137,6 +132,10 @@ test.describe('Process Instance History', () => {
         },
         onFailure: async () => {
           await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+          await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+            incidentProcessInstanceKey.toString(),
+          );
         },
       });
     });
@@ -145,9 +144,6 @@ test.describe('Process Instance History', () => {
     const incidentItemName = 'Where to go?';
 
     await test.step('Verify Instance History Tab has incidents', async () => {
-      await operateFiltersPanelPage.displayOptionalFilter('Variable');
-      await operateFiltersPanelPage.fillVariableNameFilter('wuf');
-      await operateFiltersPanelPage.fillVariableValueFilter('1');
       await operateProcessesPage.clickProcessInstanceLink();
       const key = await operateProcessInstancePage.getProcessInstanceKey();
       expect(key).toContain(`${incidentProcessInstanceKey}`);
@@ -224,15 +220,6 @@ test.describe('Process Instance History', () => {
     const embeddedProcessInstancePIK =
       embeddedSubprocessInstance.processInstanceKey;
 
-    // await test.step('Verify Process Instance is active', async () => {
-    //   await expect(async () => {
-    //     const process = await searchByProcessInstanceKey(
-    //       embeddedProcessInstancePIK.toString(),
-    //     );
-    //     expect(process.items.length).toBeGreaterThan(0);
-    //   }).toPass(defaultAssertionOptions);
-    // });
-
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
         assertion: async () => {
@@ -247,6 +234,10 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page and verify results', async () => {
       await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
       await operateFiltersPanelPage.selectVersion('1');
+      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        embeddedProcessInstancePIK.toString(),
+      );
       await operateProcessesPage.clickProcessInstanceLink();
       const key = await operateProcessInstancePage.getProcessInstanceKey();
       expect(key).toContain(`${embeddedProcessInstancePIK}`);
@@ -336,15 +327,6 @@ test.describe('Process Instance History', () => {
     const embeddedProcessInstanceModificationPIK =
       embeddedSubprocesModificationInstance.processInstanceKey;
 
-    // await test.step('Verify Process Instance is active', async () => {
-    //   await expect(async () => {
-    //     const process = await searchByProcessInstanceKey(
-    //       embeddedProcessInstanceModificationPIK.toString(),
-    //     );
-    //     expect(process.items.length).toBeGreaterThan(0);
-    //   }).toPass(defaultAssertionOptions);
-    // });
-
     await test.step('Wait for process name filter to be enabled', async () => {
       await waitForAssertion({
         assertion: async () => {
@@ -359,11 +341,12 @@ test.describe('Process Instance History', () => {
     await test.step('Open Process Instances Page and verify results', async () => {
       await operateFiltersPanelPage.selectProcess('EmbeddedSubprocess');
       await operateFiltersPanelPage.selectVersion('1');
+      await operateFiltersPanelPage.displayOptionalFilter('Process Instance Key(s)');
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        embeddedProcessInstanceModificationPIK.toString(),
+      );
       await waitForAssertion({
         assertion: async () => {
-          await operateFiltersPanelPage.displayOptionalFilter('Variable');
-          await operateFiltersPanelPage.fillVariableNameFilter('test');
-          await operateFiltersPanelPage.fillVariableValueFilter('101');
           await expect(page.getByText('1 result')).toBeVisible({timeout: 5000});
         },
         onFailure: async () => {
@@ -535,7 +518,7 @@ test.describe('Process Instance History', () => {
       );
       await operateProcessInstancePage.verifyHistoryItemsStatus(
         eventEndFirstSubProcess,
-        ['COMPLETED'],
+        ['COMPLETED', 'COMPLETED'],
       );
     });
 

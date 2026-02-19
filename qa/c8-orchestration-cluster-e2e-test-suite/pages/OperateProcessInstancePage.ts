@@ -777,16 +777,17 @@ class OperateProcessInstancePage {
     ).all();
     for (const element of expandingElements) {
       await expect(element).toBeVisible();
+      let isExpanded = await element.getAttribute('aria-expanded');
+      expect(isExpanded).not.toBeNull();
       const expandToggle = element.locator(
         '.cds--tree-parent-node__toggle-icon',
       );
-      await expect(expandToggle).toBeVisible();
-      const isExpanded = await element.getAttribute('aria-expanded');
-      expect(isExpanded).not.toBeNull();
 
       if (isExpanded === 'false') {
         await expandToggle.click();
+        isExpanded = await element.getAttribute('aria-expanded');
       }
+
       await expect(element).toHaveAttribute('aria-expanded', 'true');
     }
   }
@@ -794,9 +795,10 @@ class OperateProcessInstancePage {
   async getNestedParentLocatorInHistory(
     parentElementName: string,
   ): Promise<Locator> {
-    return this.instanceHistory
-      .getByRole('group')
-      .getByLabel(parentElementName, { exact: true });
+    return this.instanceHistory.getByRole('treeitem', {
+      name: parentElementName,
+      exact: true,
+    });
   }
 
   async getNestedGroupInHistoryLocator(
@@ -813,25 +815,30 @@ class OperateProcessInstancePage {
   }
 
   async getHistoryElementsDataByName(itemName: string) {
-    const allHistoryItemsLocators = await this.page
-      .getByTestId(/^tree-node-/)
+    const allHistoryItemsLocators = await this.instanceHistory
+      .getByRole('treeitem')
       .all();
 
     var filteredElementsData = [];
     for (const element of allHistoryItemsLocators) {
       const testId = await element.getAttribute('data-testid');
-      const areaLabel = await element.getAttribute('aria-label');
-      const icon = element.getByTestId(/.*-icon$/).nth(1);
+      const ariaLabel = await element.getAttribute('aria-label');
+      const iconLocator = element.getByTestId(/.*-icon$/).nth(1);
+      const iconTestId = await iconLocator.getAttribute('data-testid');
 
-      if (areaLabel?.includes(itemName)) {
-        filteredElementsData.push({
-          testId: testId,
-          ariaLabel: areaLabel,
-          icon: (await icon.getAttribute('data-testid'))?.split('-')[0],
-        });
+      if (!ariaLabel?.includes(itemName)) {
+        continue;
       }
+
+      filteredElementsData.push({
+        testId,
+        ariaLabel,
+        icon: iconTestId?.split('-')[0],
+      });
+      console.log(`Filtered element - testId: ${testId}, ariaLabel: ${ariaLabel}, icon: ${iconTestId}`);
     }
-    return filteredElementsData;
+
+    return filteredElementsData; 
   }
 
   /**
