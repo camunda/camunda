@@ -147,7 +147,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldInjectTestScenarioRunner() throws Exception {
+  void shouldInjectTestCaseRunner() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);

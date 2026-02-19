@@ -36,9 +36,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TestScenarioArgumentProviderTest {
+public class TestCaseArgumentProviderTest {
 
-  private static final String SCENARIO_DIRECTORY = "/testScenarioArgumentProviderTest";
+  private static final String TEST_CASES_DIRECTORY = "/testCaseArgumentProviderTest";
   private static final String DEFAULT_FILE_EXTENSION = ".json";
 
   @Mock private ExtensionContext extensionContext;
@@ -53,11 +53,11 @@ public class TestScenarioArgumentProviderTest {
   }
 
   @Test
-  void shouldProvideScenarioArguments() {
+  void shouldProvideTestCaseArguments() {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
     when(testCaseSource.fileNames()).thenReturn(new String[] {});
     when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
@@ -74,9 +74,9 @@ public class TestScenarioArgumentProviderTest {
         .allSatisfy(args -> assertThat(args).hasSize(2))
         .extracting(args -> ((TestCase) args[0]).getName(), args -> args[1])
         .contains(
-            tuple("Scenario 1: Test Case 1", "scenario1.json"),
-            tuple("Scenario 1: Test Case 2", "scenario1.json"),
-            tuple("Scenario 2: Test Case 1", "scenario2.json"));
+            tuple("Scenario 1: Test Case 1", "testCases1.json"),
+            tuple("Scenario 1: Test Case 2", "testCases1.json"),
+            tuple("Scenario 2: Test Case 1", "testCases2.json"));
   }
 
   @Test
@@ -84,8 +84,8 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"testCases1.json"});
     when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
     argumentProvider.accept(testCaseSource);
@@ -101,8 +101,8 @@ public class TestScenarioArgumentProviderTest {
         .allSatisfy(args -> assertThat(args).hasSize(2))
         .extracting(args -> ((TestCase) args[0]).getName(), args -> args[1])
         .contains(
-            tuple("Scenario 1: Test Case 1", "scenario1.json"),
-            tuple("Scenario 1: Test Case 2", "scenario1.json"));
+            tuple("Scenario 1: Test Case 1", "testCases1.json"),
+            tuple("Scenario 1: Test Case 2", "testCases1.json"));
   }
 
   @Test
@@ -110,9 +110,9 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
     when(testCaseSource.fileNames()).thenReturn(new String[] {});
-    when(testCaseSource.fileExtension()).thenReturn(".scenario");
+    when(testCaseSource.fileExtension()).thenReturn(".test");
 
     argumentProvider.accept(testCaseSource);
 
@@ -126,7 +126,7 @@ public class TestScenarioArgumentProviderTest {
         .extracting(Arguments::get)
         .allSatisfy(args -> assertThat(args).hasSize(2))
         .extracting(args -> ((TestCase) args[0]).getName(), args -> args[1])
-        .contains(tuple("Scenario 3: Test Case 1", "scenario3.scenario"));
+        .contains(tuple("Scenario 3: Test Case 1", "testCases.test"));
   }
 
   @Test
@@ -134,8 +134,8 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario1.json"});
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"testCases1.json"});
     when(testCaseSource.fileExtension()).thenReturn(".fun");
 
     argumentProvider.accept(testCaseSource);
@@ -151,8 +151,8 @@ public class TestScenarioArgumentProviderTest {
         .allSatisfy(args -> assertThat(args).hasSize(2))
         .extracting(args -> ((TestCase) args[0]).getName(), args -> args[1])
         .contains(
-            tuple("Scenario 1: Test Case 1", "scenario1.json"),
-            tuple("Scenario 1: Test Case 2", "scenario1.json"));
+            tuple("Scenario 1: Test Case 1", "testCases1.json"),
+            tuple("Scenario 1: Test Case 2", "testCases1.json"));
   }
 
   @Test
@@ -160,7 +160,7 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    final String directory = SCENARIO_DIRECTORY + "/non-existing";
+    final String directory = TEST_CASES_DIRECTORY + "/non-existing";
 
     when(testCaseSource.directory()).thenReturn(directory);
     when(testCaseSource.fileNames()).thenReturn(new String[] {});
@@ -182,7 +182,7 @@ public class TestScenarioArgumentProviderTest {
 
     final String fileExtension = ".fun";
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
     when(testCaseSource.fileNames()).thenReturn(new String[] {});
     when(testCaseSource.fileExtension()).thenReturn(fileExtension);
 
@@ -194,7 +194,7 @@ public class TestScenarioArgumentProviderTest {
         .isInstanceOf(TestCaseReadException.class)
         .hasMessageContaining(
             "No files found with extension '%s' in directory '%s'.",
-            fileExtension, SCENARIO_DIRECTORY);
+            fileExtension, TEST_CASES_DIRECTORY);
   }
 
   @Test
@@ -202,9 +202,9 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
     when(testCaseSource.fileNames())
-        .thenReturn(new String[] {"scenario1.json", "non-existing.json"});
+        .thenReturn(new String[] {"testCases1.json", "non-existing.json"});
     when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
     argumentProvider.accept(testCaseSource);
@@ -214,7 +214,7 @@ public class TestScenarioArgumentProviderTest {
             () -> argumentProvider.provideArguments(parameterDeclarations, extensionContext))
         .hasMessageContaining(
             "The directory '%s' doesn't contain the files: %s",
-            SCENARIO_DIRECTORY, "[non-existing.json]");
+            TEST_CASES_DIRECTORY, "[non-existing.json]");
   }
 
   @Test
@@ -222,8 +222,8 @@ public class TestScenarioArgumentProviderTest {
     // given
     final TestCaseArgumentProvider argumentProvider = new TestCaseArgumentProvider();
 
-    when(testCaseSource.directory()).thenReturn(SCENARIO_DIRECTORY);
-    when(testCaseSource.fileNames()).thenReturn(new String[] {"scenario4.invalid"});
+    when(testCaseSource.directory()).thenReturn(TEST_CASES_DIRECTORY);
+    when(testCaseSource.fileNames()).thenReturn(new String[] {"testCases4.invalid"});
     when(testCaseSource.fileExtension()).thenReturn(DEFAULT_FILE_EXTENSION);
 
     argumentProvider.accept(testCaseSource);
@@ -234,7 +234,7 @@ public class TestScenarioArgumentProviderTest {
                 argumentProvider
                     .provideArguments(parameterDeclarations, extensionContext)
                     .collect(Collectors.toList()))
-        .hasMessageContaining("The file '%s' is not a valid test scenario.", "scenario4.invalid");
+        .hasMessageContaining("The file '%s' contains invalid test cases.", "testCases4.invalid");
   }
 
   private static final class ProcessTest {}

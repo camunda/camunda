@@ -34,11 +34,11 @@ import org.junit.jupiter.params.provider.ArgumentsSource;
 public @interface TestCaseSource {
 
   /**
-   * The classpath directory to read the test cases files from. Defaults to "/scenarios".
+   * The classpath directory to read the test cases files from. Defaults to "/test-cases".
    *
    * @return the directory path
    */
-  String directory() default "/scenarios";
+  String directory() default "/test-cases";
 
   /**
    * The names of the test cases files in the directory to read. If no files are given, all files in
