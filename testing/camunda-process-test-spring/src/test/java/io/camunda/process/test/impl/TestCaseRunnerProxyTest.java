@@ -19,7 +19,7 @@ import static org.mockito.Mockito.doThrow;
 
 import io.camunda.process.test.api.testCases.TestCase;
 import io.camunda.process.test.api.testCases.TestCaseRunner;
-import io.camunda.process.test.impl.proxy.TestScenarioRunnerProxy;
+import io.camunda.process.test.impl.proxy.TestCaseRunnerProxy;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,7 +27,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-public class TestScenarioRunnerProxyTest {
+public class TestCaseRunnerProxyTest {
 
   @Mock private TestCase testCase;
   @Mock private TestCaseRunner testCaseRunner;
@@ -35,7 +35,7 @@ public class TestScenarioRunnerProxyTest {
   @Test
   void shouldThrowAssertionError() {
     // given
-    final TestScenarioRunnerProxy proxy = new TestScenarioRunnerProxy();
+    final TestCaseRunnerProxy proxy = new TestCaseRunnerProxy();
     proxy.setRunner(testCaseRunner);
 
     final AssertionError assertionError = new AssertionError("expected");
