@@ -558,6 +558,25 @@ jobs:
       test-type-label: "History"
       runs-on: "gcp-perf-core-8-default"
 
+  identity-tests:
+    name: "Identity Integration Tests / ${{ matrix.name }}"
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    strategy:
+      fail-fast: false
+      matrix: *database-matrix
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: "${{ matrix.database-type }}"
+      database-container: "${{ matrix.database-container }}"
+      database-image-version: "${{ matrix.database-image-version }}"
+      database-name: "${{ matrix.database-name }}"
+      it-database-type: "${{ matrix.it-database-type }}"
+      maven-profiles: "identity-tests"
+      test-type: "identity-tests"
+      test-type-label: "Identity"
+
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
