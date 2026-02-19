@@ -289,7 +289,10 @@ export class OperateFiltersPanelPage {
   }
 
   async fillOperationIdFilter(operationId: string) {
+    await expect(this.operationIdFilter).toBeVisible();
+    await expect(this.operationIdFilter).toBeEnabled();
     await this.operationIdFilter.fill(operationId);
+    await expect(this.operationIdFilter).toHaveValue(operationId);
   }
 
   async clickJsonEditorModal() {
