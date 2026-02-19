@@ -19,8 +19,8 @@ import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
 import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ServiceException;
@@ -56,7 +56,7 @@ public class ProcessDefinitionTools {
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<ProcessDefinitionSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page) {
+          final SearchQueryPageRequest page) {
     try {
       final var query = SearchQueryRequestMapper.toProcessDefinitionQuery(filter, page, sort);
       if (query.isLeft()) {

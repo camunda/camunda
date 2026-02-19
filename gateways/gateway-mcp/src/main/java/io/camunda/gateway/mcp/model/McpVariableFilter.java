@@ -12,7 +12,6 @@ import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMA
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.swagger.v3.oas.annotations.media.Schema;
-import org.springframework.lang.Nullable;
 
 /**
  * MCP-specific variable filter extending the {@link VariableFilter} to hide fields from MCP clients
@@ -20,18 +19,18 @@ import org.springframework.lang.Nullable;
  */
 public class McpVariableFilter extends VariableFilter {
 
-  @JsonIgnore
-  @Override
-  public String getTenantId() {
-    return super.getTenantId();
-  }
-
   @Schema(
       name = "value",
       description = VARIABLE_FILTER_FORMAT_NOTE,
       requiredMode = Schema.RequiredMode.NOT_REQUIRED)
   @Override
-  public @Nullable String getValue() {
+  public String getValue() {
     return super.getValue();
+  }
+
+  @JsonIgnore
+  @Override
+  public String getTenantId() {
+    return super.getTenantId();
   }
 }
