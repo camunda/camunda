@@ -837,7 +837,6 @@ class OperateProcessInstancePage {
         ariaLabel,
         icon: iconTestId?.split('-')[0],
       });
-      console.log(`Filtered element - testId: ${testId}, ariaLabel: ${ariaLabel}, icon: ${iconTestId}`);
     }
 
     return filteredElementsData; 
