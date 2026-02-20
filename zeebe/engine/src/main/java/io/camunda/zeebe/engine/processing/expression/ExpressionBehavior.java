@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.util.Map;
 
 public class ExpressionBehavior {
 
@@ -34,7 +35,12 @@ public class ExpressionBehavior {
 
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
-    return evaluate(expression, expressionRecord.getTenantId())
+    final var contextAsMap = expressionRecord.getContext();
+    final var contextAsEvaluationContext =
+        contextAsMap == null
+            ? new InMemoryVariableEvaluationContext(Map.of())
+            : new InMemoryVariableEvaluationContext(contextAsMap);
+    return evaluate(expression, contextAsEvaluationContext, expressionRecord.getTenantId())
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
 
@@ -51,8 +57,9 @@ public class ExpressionBehavior {
   }
 
   private Either<Rejection, EvaluationResult> evaluate(
-      final Expression expression, final String tenantId) {
+      final Expression expression, final ScopedEvaluationContext context, final String tenantId) {
     return clusterExpressionProcessor
+        .prependContext(context)
         .evaluateAnyExpression(expression, -1, tenantId)
         .mapLeft(this::mapEvaluationFailure)
         .flatMap(this::rejectIfEvaluationFailed);

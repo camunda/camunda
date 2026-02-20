@@ -650,6 +650,8 @@ final class JsonSerializableToJsonTest {
               final ExpressionRecord record = new ExpressionRecord();
               record
                   .setExpression("=10 + 5")
+                  .setContext(
+                      new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of("foo", "bar"))))
                   .setResultValue(wrapString("15"))
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"));
@@ -659,6 +661,7 @@ final class JsonSerializableToJsonTest {
                 {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
+                  "context":{"foo":"bar"},
                   "resultValue":49,
                   "warnings":["warning1","warning2"]
                 }

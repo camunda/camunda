@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -607,5 +608,25 @@ public class ResolveFeelExpressionTest {
             """
             Expected to evaluate expression but timed out after 300 ms: \
             'for x in 0..1000000 return for y in 0..x return x + y'""");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithContext() {
+    // given
+    ENGINE_RULE.clusterVariables().withName("input").setGlobalScope().withValue("5").create();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=camunda.vars.cluster.input * 2 + myVar")
+            .withContext(Map.of("myVar", 5))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(15);
   }
 }

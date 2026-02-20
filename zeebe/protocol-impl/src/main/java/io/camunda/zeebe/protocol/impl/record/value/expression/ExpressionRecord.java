@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -24,11 +25,16 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRecordValue {
 
   private static final StringValue EXPRESSION_KEY = new StringValue("expression");
+  private static final StringValue CONTEXT_KEY = new StringValue("context");
   private static final StringValue RESULT_VALUE_KEY = new StringValue("resultValue");
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
+
+  private final BinaryProperty contextProp =
+      new BinaryProperty(
+          CONTEXT_KEY, new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of())));
 
   private final BinaryProperty resultValueProp =
       new BinaryProperty(RESULT_VALUE_KEY, new UnsafeBuffer(new byte[] {0}));
@@ -38,8 +44,9 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
   public ExpressionRecord() {
-    super(4);
+    super(5);
     declareProperty(expressionProp)
+        .declareProperty(contextProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp);
@@ -50,8 +57,13 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
     return BufferUtil.bufferAsString(expressionProp.getValue());
   }
 
-  public ExpressionRecord setExpression(final String expression) {
-    expressionProp.setValue(expression);
+  @Override
+  public Map<String, Object> getContext() {
+    return MsgPackConverter.convertToMap(contextProp.getValue());
+  }
+
+  public ExpressionRecord setContext(final DirectBuffer context) {
+    contextProp.setValue(context);
     return this;
   }
 
@@ -78,6 +90,11 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setResultValue(final DirectBuffer value) {
     resultValueProp.setValue(value);
+    return this;
+  }
+
+  public ExpressionRecord setExpression(final String expression) {
+    expressionProp.setValue(expression);
     return this;
   }
 

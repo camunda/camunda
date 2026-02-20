@@ -1047,6 +1047,7 @@ public class CompactRecordLogger {
         + StringUtils.abbreviate(value.getExpression(), "..", 50)
         + "\" = "
         + formatVariableValue(value.getResultValue())
+        + formatContext(value.getContext())
         + formatTenant(value);
   }
 
@@ -1988,6 +1989,18 @@ public class CompactRecordLogger {
     }
 
     return value.toString();
+  }
+
+  private String formatContext(final Map<String, Object> context) {
+    if (context == null || context.isEmpty()) {
+      return " (no context)";
+    }
+
+    return " context: "
+        + context.entrySet().stream()
+            .sorted(Entry.comparingByKey())
+            .map(entry -> entry.getKey() + "=" + formatVariableValue(entry.getValue()))
+            .collect(Collectors.joining(", ", "{", "}"));
   }
 
   /**

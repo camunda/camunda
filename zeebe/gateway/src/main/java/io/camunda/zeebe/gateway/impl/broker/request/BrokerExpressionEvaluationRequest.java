@@ -8,11 +8,13 @@
 package io.camunda.zeebe.gateway.impl.broker.request;
 
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class BrokerExpressionEvaluationRequest extends BrokerExecuteCommand<ExpressionRecord> {
 
@@ -24,6 +26,12 @@ public class BrokerExpressionEvaluationRequest extends BrokerExecuteCommand<Expr
 
   public BrokerExpressionEvaluationRequest setExpression(final String expression) {
     requestDto.setExpression(expression);
+    return this;
+  }
+
+  public BrokerExpressionEvaluationRequest setContext(final Object context) {
+    final var bytes = MsgPackConverter.convertToMsgPack(context);
+    requestDto.setContext(new UnsafeBuffer(bytes));
     return this;
   }
 

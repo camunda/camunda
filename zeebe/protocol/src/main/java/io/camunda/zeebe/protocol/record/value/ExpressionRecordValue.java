@@ -18,6 +18,7 @@ package io.camunda.zeebe.protocol.record.value;
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -47,6 +48,13 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned {
    * @return the FEEL expression as a String (never {@code null})
    */
   String getExpression();
+
+  /**
+   * Returns the optional FEEL context in which the expression is evaluated.
+   *
+   * @return the FEEL context as an Object (can be {@code null})
+   */
+  Map<String, Object> getContext();
 
   /**
    * Returns the result value of the expression evaluation.

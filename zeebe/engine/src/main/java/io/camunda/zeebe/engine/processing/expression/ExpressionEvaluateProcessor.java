@@ -52,6 +52,7 @@ public final class ExpressionEvaluateProcessor implements TypedRecordProcessor<E
   @Override
   public void processRecord(final TypedRecord<ExpressionRecord> command) {
     final var record = command.getValue();
+    // TODO: validate that context is an object and not an array or primitive value
     validator
         .ensureNotBlank(command)
         .flatMap(validator::isValid)
