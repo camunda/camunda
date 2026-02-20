@@ -60,6 +60,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -569,6 +570,116 @@ public class PassiveRole extends InactiveRole {
       onSnapshotReceiveCompletedOrAborted();
     }
   }
+
+  /**
+   * Handles a batch of append requests with a single flush. Each request is validated and entries
+   * are appended (cheap mmap writes) without flushing. A single flush is performed at the end. If
+   * any request fails validation, it and all subsequent requests in the batch are failed.
+   */
+  protected void handleBatchAppend(final List<BatchedAppend> batch) {
+    // Phase 1: Validate and append entries without flushing
+    final var pending = new ArrayList<PendingAppendResult>(batch.size());
+    boolean cascadeFailed = false;
+
+    for (final var item : batch) {
+      if (cascadeFailed) {
+        failAppend(raft.getLog().getLastIndex(), item.future());
+        continue;
+      }
+
+      final var result = appendEntriesNoFlush(item.request(), item.future());
+      if (result != null) {
+        pending.add(result);
+      } else {
+        // Validation or append failed -- future already completed with error.
+        // Cascade-fail all remaining requests.
+        cascadeFailed = true;
+      }
+    }
+
+    if (pending.isEmpty()) {
+      return;
+    }
+
+    // Phase 2: Single flush for all appended entries
+    final long maxLastLogIndex = pending.get(pending.size() - 1).lastLogIndex;
+    final long minPrevLogIndex = pending.get(0).prevLogIndex;
+    try {
+      flush(maxLastLogIndex, minPrevLogIndex);
+    } catch (final Exception e) {
+      log.warn(
+          "Failed to flush batched appended entries, cannot guarantee durability; leader will retry",
+          e);
+      // Flush failed -- fail ALL pending requests
+      for (final var result : pending) {
+        failAppend(result.request.prevLogIndex(), result.future);
+      }
+      return;
+    }
+
+    // Phase 3: Complete futures -- update commit index and succeed
+    for (final var result : pending) {
+      raft.setFirstCommitIndex(result.request.commitIndex(), result.lastLogIndex);
+      final long previousCommitIndex = raft.setCommitIndex(result.commitIndex);
+      if (previousCommitIndex < result.commitIndex) {
+        log.trace("Committed entries up to index {}", result.commitIndex);
+      }
+      succeedAppend(result.lastLogIndex, result.future);
+    }
+
+    // Abort pending snapshots once for the batch
+    abortPendingSnapshots();
+  }
+
+  /**
+   * Appends entries from the request without flushing. Returns a PendingAppendResult on success, or
+   * null if validation/append failed (the future is already completed with an error in that case).
+   */
+  private PendingAppendResult appendEntriesNoFlush(
+      final InternalAppendRequest request, final CompletableFuture<AppendResponse> future) {
+
+    if (!checkConfiguration(request, future)) {
+      return null;
+    }
+    if (!checkTerm(request, future)) {
+      return null;
+    }
+    if (!checkPreviousEntry(request, future)) {
+      return null;
+    }
+
+    final long lastEntryIndex = request.prevLogIndex() + request.entries().size();
+    final long commitIndex = Math.min(request.commitIndex(), lastEntryIndex);
+    long lastLogIndex = request.prevLogIndex();
+
+    if (!request.entries().isEmpty()) {
+      if (request.prevLogTerm() == 0) {
+        log.debug("Reset first index to {}", request.prevLogIndex() + 1);
+        raft.getLog().reset(request.prevLogIndex() + 1);
+      }
+
+      for (final ReplicatableRaftRecord entry : request.entries()) {
+        final long index = ++lastLogIndex;
+        final IndexedRaftLogEntry lastEntry = raft.getLog().getLastEntry();
+        final boolean failedToAppend = tryToAppend(future, entry, index, lastEntry);
+        if (failedToAppend) {
+          return null;
+        }
+        if (!role().active() && index == commitIndex) {
+          break;
+        }
+      }
+    }
+
+    return new PendingAppendResult(request, future, lastLogIndex, commitIndex, request.prevLogIndex());
+  }
+
+  private record PendingAppendResult(
+      InternalAppendRequest request,
+      CompletableFuture<AppendResponse> future,
+      long lastLogIndex,
+      long commitIndex,
+      long prevLogIndex) {}
 
   /** Handles an AppendRequest. */
   protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {

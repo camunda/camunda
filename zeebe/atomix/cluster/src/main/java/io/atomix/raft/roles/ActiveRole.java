@@ -27,6 +27,7 @@ import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.VoteRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.storage.log.IndexedRaftLogEntry;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 /** Abstract active state. */
@@ -59,6 +60,23 @@ public abstract class ActiveRole extends PassiveRole {
       raft.transition(RaftServer.Role.FOLLOWER);
     }
     return future;
+  }
+
+  @Override
+  public void onBatchAppend(final List<BatchedAppend> batch) {
+    raft.checkThread();
+
+    boolean transition = false;
+    for (final var item : batch) {
+      logRequest(item.request());
+      transition |= updateTermAndLeader(item.request().term(), item.request().leader());
+    }
+
+    handleBatchAppend(batch);
+
+    if (transition) {
+      raft.transition(RaftServer.Role.FOLLOWER);
+    }
   }
 
   @Override
