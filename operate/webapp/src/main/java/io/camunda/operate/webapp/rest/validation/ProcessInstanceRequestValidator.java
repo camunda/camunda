@@ -7,42 +7,23 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.listener.ListenerType;
 import jakarta.validation.constraints.NotNull;
-import java.util.List;
 import org.springframework.stereotype.Component;
 
 @Component
 @ConditionalOnRdbmsDisabled
 public class ProcessInstanceRequestValidator {
-  private final CreateBatchOperationRequestValidator createBatchOperationRequestValidator;
-
   private final CreateRequestOperationValidator createRequestOperationValidator;
 
   public ProcessInstanceRequestValidator(
-      @NotNull final CreateRequestOperationValidator createRequestOperationValidator,
-      @NotNull final CreateBatchOperationRequestValidator createBatchOperationRequestValidator) {
+      @NotNull final CreateRequestOperationValidator createRequestOperationValidator) {
     this.createRequestOperationValidator = createRequestOperationValidator;
-    this.createBatchOperationRequestValidator = createBatchOperationRequestValidator;
-  }
-
-  public void validateFlowNodeStatisticsRequest(final ListViewQueryDto request) {
-    final List<Long> processDefinitionKeys =
-        CollectionUtil.toSafeListOfLongs(request.getProcessIds());
-    if ((processDefinitionKeys != null && processDefinitionKeys.size() == 1)
-        == (request.getBpmnProcessId() != null && request.getProcessVersion() != null)) {
-      throw new InvalidRequestException(
-          "Exactly one process must be specified in the request (via processIds or bpmnProcessId/version).");
-    }
   }
 
   public void validateFlowNodeMetadataRequest(final FlowNodeMetadataRequestDto request) {
@@ -55,12 +36,6 @@ public class ProcessInstanceRequestValidator {
     if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
       throw new InvalidRequestException(
           "Only one of flowNodeId or flowNodeInstanceId must be specified in the request.");
-    }
-  }
-
-  public void validateVariableRequest(final VariableRequestDto request) {
-    if (request.getScopeId() == null) {
-      throw new InvalidRequestException("ScopeId must be specified in the request.");
     }
   }
 
@@ -86,11 +61,6 @@ public class ProcessInstanceRequestValidator {
               + ListenerType.TASK_LISTENER
               + "]");
     }
-  }
-
-  public void validateCreateBatchOperationRequest(
-      final CreateBatchOperationRequestDto batchOperationRequest) {
-    createBatchOperationRequestValidator.validate(batchOperationRequest);
   }
 
   public void validateCreateOperationRequest(

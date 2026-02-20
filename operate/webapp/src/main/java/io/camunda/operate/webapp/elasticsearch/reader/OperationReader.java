@@ -263,33 +263,6 @@ public class OperationReader extends AbstractReader
   }
 
   @Override
-  public List<OperationDto> getOperationsByBatchOperationId(final String batchOperationId) {
-    final var query =
-        ElasticsearchUtil.joinWithAnd(
-            ElasticsearchUtil.termsQuery(BATCH_OPERATION_ID, batchOperationId),
-            allowedOperationsQuery());
-
-    final var searchRequestBuilder =
-        new SearchRequest.Builder().index(whereToSearch(operationTemplate, ALL)).query(query);
-
-    try {
-      final var operationEntities =
-          scrollAllStream(esClient, searchRequestBuilder, OperationEntity.class)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(Hit::source)
-              .toList();
-      return DtoCreator.create(operationEntities, OperationDto.class);
-    } catch (final ScrollException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while searching for operation with batchOperationId: %s",
-              e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  @Override
   public List<OperationDto> getOperations(
       final OperationType operationType,
       final String processInstanceId,

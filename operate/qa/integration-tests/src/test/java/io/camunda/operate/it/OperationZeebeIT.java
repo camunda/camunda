@@ -22,8 +22,6 @@ import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -51,7 +49,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,8 +74,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Autowired private IncidentReader incidentReader;
-
-  @Autowired private VariableReader variableReader;
 
   @Autowired private OperationReader operationReader;
 
@@ -323,198 +318,15 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidents).isEmpty();
   }
 
-  @Test
-  public void testUpdateVariableOnProcessInstance() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
 
-    // when
-    // we call UPDATE_VARIABLE operation on instance
-    final String varName = "a";
-    final String newVarValue = "\"newValue\"";
-    postUpdateVariableOperation(processInstanceKey, varName, newVarValue);
-    searchTestRule.refreshOperateSearchIndices();
-
-    // then variable with new value is returned
-    List<VariableDto> variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, varName, newVarValue, true);
-
-    // when execute the operation
-    executeOneBatch();
-
-    // then
-    // before we process messages from Zeebe, the state of the operation must be SENT
-    ListViewProcessInstanceDto processInstance =
-        processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
-
-    assertThat(processInstance.isHasActiveOperation()).isEqualTo(true);
-    assertThat(processInstance.getOperations()).hasSize(1);
-    OperationDto operation = processInstance.getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
-    assertThat(operation.getState()).isEqualTo(OperationState.SENT);
-    assertThat(operation.getId()).isNotNull();
-
-    // after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    // elasticsearchTestRule.processAllEvents(2);
-    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
-    processInstance =
-        processInstanceReader.getProcessInstanceWithOperationsByKey(processInstanceKey);
-    assertThat(processInstance.isHasActiveOperation()).isEqualTo(false);
-    assertThat(processInstance.getOperations()).hasSize(1);
-    operation = processInstance.getOperations().get(0);
-    assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
-    assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
-
-    // check variables
-    variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, varName, newVarValue, false);
-
-    // check batch operation progress
-    final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
-    assertThat(batchOperations).hasSize(1);
-
-    final BatchOperationDto batchOperationDto = batchOperations[0];
-    assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.UPDATE_VARIABLE);
-    assertThat(batchOperationDto.getOperationsFinishedCount()).isEqualTo(1);
-    assertThat(batchOperationDto.getEndDate()).isNotNull();
-  }
-
-  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
-    return variableReader.getVariables(
-        String.valueOf(processInstanceKey),
-        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
-  }
-
-  @Test
-  public void testAddVariableOnProcessInstance() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-
-    // TC1 when we call UPDATE_VARIABLE operation on instance
-    final String newVar1Name = "newVar1";
-    final String newVar1Value = "\"newValue1\"";
-    final String batchOperationId1 =
-        postAddVariableOperation(processInstanceKey, newVar1Name, newVar1Value);
-    final String newVar2Name = "newVar2";
-    final String newVar2Value = "\"newValue2\"";
-    final String batchOperationId2 =
-        postAddVariableOperation(processInstanceKey, newVar2Name, newVar2Value);
-    searchTestRule.refreshOperateSearchIndices();
-
-    // then
-    // new variables are not yet returned (OPE-1284)
-    List<VariableDto> variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, "a", "\"b\"", false);
-    // operations are in SCHEDULED state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SCHEDULED);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SCHEDULED);
-
-    // TC2 execute the operations
-    executeOneBatch();
-
-    // then - before we process messages from Zeebe
-    // variables are still not returned
-    variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, "a", "\"b\"", false);
-    // operations are in SENT state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SENT);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
-
-    // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
-
-    // then
-    // all three variables are returned
-    variables = getVariables(processInstanceKey, processInstanceKey);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, false);
-    assertVariable(variables, newVar2Name, newVar2Value, false);
-    // operations are in COMPLETED state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.COMPLETED);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.COMPLETED);
-  }
-
-  @Test
-  public void testAddVariableOnTask() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-    tester.waitUntil().variableExists("foo");
-    final Long taskAId = getFlowNodeInstanceId(processInstanceKey, "taskA");
-
-    // TC1 we call UPDATE_VARIABLE operation on instance
-    final String newVar1Name = "newVar1";
-    final String newVar1Value = "\"newValue1\"";
-    final String batchOperationId1 =
-        postAddVariableOperation(processInstanceKey, taskAId, newVar1Name, newVar1Value);
-    final String newVar2Name = "newVar2";
-    final String newVar2Value = "\"newValue2\"";
-    final String batchOperationId2 =
-        postAddVariableOperation(processInstanceKey, taskAId, newVar2Name, newVar2Value);
-    searchTestRule.refreshOperateSearchIndices();
-
-    // then
-    // new variables are not yet returned (OPE-1284)
-    List<VariableDto> variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, "foo", "\"b\"", false);
-    // operations are in SCHEDULED state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SCHEDULED);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SCHEDULED);
-
-    // TC2 execute the operations
-    executeOneBatch();
-
-    // then - before we process messages from Zeebe
-    // new variables are not yet returned (OPE-1284)
-    variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(1);
-    assertVariable(variables, "foo", "\"b\"", false);
-    // operations are in SENT state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.SENT);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.SENT);
-
-    // TC3 after we process messages from Zeebe, variables must have hasActiveOperation = false
-    // elasticsearchTestRule.processAllEvents(2, ImportValueType.VARIABLE);
-    // elasticsearchTestRule.waitFor(variableExistsCheck, processInstanceKey,
-    // processInstanceKey, newVar2Name);
-    searchTestRule.waitFor(operationsByProcessInstanceAreCompleted, processInstanceKey);
-
-    // then
-    // all three variables are returned
-    variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(3);
-    assertVariable(variables, newVar1Name, newVar1Value, false);
-    assertVariable(variables, newVar2Name, newVar2Value, false);
-    // operations are in COMPLETED state
-    assertThat(getOperation(batchOperationId1).getState()).isEqualTo(OperationState.COMPLETED);
-    assertThat(getOperation(batchOperationId2).getState()).isEqualTo(OperationState.COMPLETED);
-  }
-
-  private OperationDto getOperation(final String batchOperationId) throws Exception {
-    final List<OperationDto> operations =
-        operationReader.getOperationsByBatchOperationId(batchOperationId);
-    assertThat(operations).hasSize(1);
-    return operations.getFirst();
-  }
-
-  private void assertVariable(
-      final List<VariableDto> variables,
-      final String name,
-      final String value,
-      final Boolean hasActiveOperation) {
-    final List<VariableDto> collect =
-        variables.stream().filter(v -> v.getName().equals(name)).collect(Collectors.toList());
-    assertThat(collect).hasSize(1);
-    final VariableDto variable = collect.get(0);
-    assertThat(variable.getValue()).isEqualTo(value);
-    if (hasActiveOperation != null) {
-      assertThat(variable.isHasActiveOperation()).isEqualTo(hasActiveOperation);
-    }
+  private OperationEntity getOperation(final String batchOperationId) {
+    final List<OperationEntity> operations = operationReader.getOperationsByProcessInstanceKey(null);
+    final List<OperationEntity> matchingOperations =
+        operations.stream()
+            .filter(operation -> batchOperationId.equals(operation.getBatchOperationId()))
+            .toList();
+    assertThat(matchingOperations).hasSize(1);
+    return matchingOperations.getFirst();
   }
 
   @Test
@@ -555,11 +367,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
 
-    // check variables
-    final List<VariableDto> variables = getVariables(processInstanceKey, taskAId);
-    assertThat(variables).hasSize(1);
-    assertThat(variables.get(0).getName()).isEqualTo(varName);
-    assertThat(variables.get(0).getValue()).isEqualTo(varValue);
   }
 
   protected Long getFlowNodeInstanceId(final Long processInstanceKey, final String activityId) {
@@ -852,7 +659,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // the state of operation is COMPLETED, and the instances are deleted
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).isEmpty();
-    final OperationDto operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation = getOperation(batchOperationEntity.getId());
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getErrorMessage()).isNull();
@@ -903,7 +710,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // the state of operation is FAILED, and the instances are not deleted
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).size().isEqualTo(2);
-    final OperationDto operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation = getOperation(batchOperationEntity.getId());
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
     assertThat(operation.getErrorMessage()).contains("Process instances still running.");
@@ -942,7 +749,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     decisionInstanceEntities =
         searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
     assertThat(decisionInstanceEntities).isEmpty();
-    final OperationDto operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation = getOperation(batchOperationEntity.getId());
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_DECISION_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getErrorMessage()).isNull();
