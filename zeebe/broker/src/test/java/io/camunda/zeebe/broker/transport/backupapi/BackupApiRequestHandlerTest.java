@@ -547,13 +547,13 @@ final class BackupApiRequestHandlerTest {
     final long checkpointId2 = 20;
     final long checkpointId3 = 30;
 
-    final var status1 = createBackupStatus(checkpointId1);
-    final var status2 = createBackupStatus(checkpointId2);
-    final var status3 = createBackupStatus(checkpointId2);
-    final var status4 = createBackupStatus(checkpointId3);
+    final var info1 = createCheckpointInfo(checkpointId1);
+    final var info2 = createCheckpointInfo(checkpointId2);
+    final var info3 = createCheckpointInfo(checkpointId2);
+    final var info4 = createCheckpointInfo(checkpointId3);
 
-    final var range1 = new BackupRangeStatus.Complete(status1, status2);
-    final var range2 = new BackupRangeStatus.Incomplete(status3, status4, Set.of(25L));
+    final var range1 = new BackupRangeStatus.Complete(info1, info2);
+    final var range2 = new BackupRangeStatus.Incomplete(info3, info4, Set.of(25L));
 
     when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
@@ -571,30 +571,24 @@ final class BackupApiRequestHandlerTest {
     assertThat(rangesResponse.getRanges())
         .containsExactlyInAnyOrder(
             new BackupRangesResponse.PartitionBackupRange(
-                1, toCheckpointInfo(status1), toCheckpointInfo(status2), Set.of()),
+                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2), Set.of()),
             new BackupRangesResponse.PartitionBackupRange(
-                1, toCheckpointInfo(status3), toCheckpointInfo(status4), Set.of(25L)));
+                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4), Set.of(25L)));
   }
 
-  private static BackupStatus createBackupStatus(final long checkpointId) {
-    return new BackupStatusImpl(
-        new BackupIdentifierImpl(1, 1, checkpointId),
-        Optional.of(
-            new BackupDescriptorImpl("s-id", 100, 3, "test", NOW, CheckpointType.MANUAL_BACKUP)),
-        io.camunda.zeebe.backup.api.BackupStatusCode.COMPLETED,
-        Optional.empty(),
-        Optional.of(NOW),
-        Optional.of(NOW));
+  private static BackupRangeStatus.CheckpointInfo createCheckpointInfo(final long checkpointId) {
+    return new BackupRangeStatus.CheckpointInfo(
+        checkpointId, 100L, NOW.toEpochMilli(), CheckpointType.MANUAL_BACKUP, -1L);
   }
 
-  private static CheckpointInfo toCheckpointInfo(final BackupStatus status) {
-    final var descriptor = status.descriptor().orElseThrow();
+  private static CheckpointInfo toResponseCheckpointInfo(
+      final BackupRangeStatus.CheckpointInfo info) {
     return new CheckpointInfo(
-        status.id().checkpointId(),
-        descriptor.firstLogPosition().orElse(-1L),
-        descriptor.checkpointPosition(),
-        descriptor.checkpointType(),
-        descriptor.checkpointTimestamp());
+        info.checkpointId(),
+        info.firstLogPosition(),
+        info.checkpointPosition(),
+        info.checkpointType(),
+        Instant.ofEpochMilli(info.checkpointTimestamp()));
   }
 
   private void handleRequest(final BackupRequest request) {
