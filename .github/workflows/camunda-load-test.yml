@@ -384,12 +384,12 @@ jobs:
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set zeebeGateway.image.repository=gcr.io/zeebe-io/zeebe
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebe.retention.minimumAge=1d
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
           ${{ inputs.operate-included && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/camunda-platform-operate-values.yaml', github.ref) || '' }}
           ${{ inputs.operate-included && format('--set operate.image.tag={0}', needs.calculate-image-tag.outputs.image-tag) || '' }}
+          ${{ inputs.operate-included && '--set zeebe.retention.minimumAge=1d' || '' }}
           ${{ inputs.platform-helm-values }}
 
       - name: Summarize deployment
