@@ -9,11 +9,9 @@ package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.assertArg;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -25,8 +23,6 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -504,88 +500,7 @@ class BackupServiceImplTest {
     // then — deleteBackup only writes to the log; the stream processor does the rest
     verify(logStreamWriter).tryWrite(eq(WriteContext.internal()), any(LogAppendEntry.class));
     verify(backupStore, never()).delete(any());
-    verify(backupStore, never()).storeRangeMarker(anyInt(), any());
     verify(backupStore, never()).markFailed(any(), anyString());
-  }
-
-  @Test
-  void shouldExtendRangeByStoringNewEndMarkerAndDeletingPreviousOne() {
-    // given
-    final int partitionId = 1;
-    final long previousCheckpointId = 5L;
-    final long newCheckpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.deleteRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
-
-    // then - verify storeRangeMarker is called before deleteRangeMarker
-    final var inOrder = inOrder(backupStore);
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .storeRangeMarker(partitionId, new End(newCheckpointId));
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .deleteRangeMarker(partitionId, new End(previousCheckpointId));
-  }
-
-  @Test
-  void shouldNotDeletePreviousEndMarkerIfStoringNewEndMarkerFails() {
-    // given
-    final int partitionId = 1;
-    final long previousCheckpointId = 5L;
-    final long newCheckpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
-
-    // when
-    backupService.extendRange(partitionId, previousCheckpointId, newCheckpointId);
-
-    // then
-    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(newCheckpointId));
-    verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
-  }
-
-  @Test
-  void shouldStartNewRangeByStoringStartAndEndMarkers() {
-    // given
-    final int partitionId = 1;
-    final long checkpointId = 10L;
-
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    backupService.startNewRange(partitionId, checkpointId);
-
-    // then - verify Start marker is stored before End marker
-    final var inOrder = inOrder(backupStore);
-    inOrder
-        .verify(backupStore, timeout(1000))
-        .storeRangeMarker(partitionId, new Start(checkpointId));
-    inOrder.verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new End(checkpointId));
-  }
-
-  @Test
-  void shouldNotStoreEndMarkerIfStoringStartMarkerFails() {
-    // given
-    final int partitionId = 1;
-    final long checkpointId = 10L;
-
-    when(backupStore.storeRangeMarker(eq(partitionId), eq(new Start(checkpointId))))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Expected")));
-
-    // when
-    backupService.startNewRange(partitionId, checkpointId);
-
-    // then
-    verify(backupStore, timeout(1000)).storeRangeMarker(partitionId, new Start(checkpointId));
-    verify(backupStore, never()).storeRangeMarker(partitionId, new End(checkpointId));
   }
 
   private <T> ActorFuture<T> failedFuture() {

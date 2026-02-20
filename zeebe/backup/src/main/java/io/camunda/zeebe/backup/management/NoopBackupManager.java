@@ -83,14 +83,4 @@ public class NoopBackupManager implements BackupManager {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
-
-  @Override
-  public void extendRange(final long previousCheckpointId, final long newCheckpointId) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void startNewRange(final long checkpointId) {
-    throw new UnsupportedOperationException();
-  }
 }

@@ -214,18 +214,6 @@ public final class BackupService extends Actor implements BackupManager {
     return internalBackupManager.getBackupRangeStatus(partitionId, actor);
   }
 
-  @Override
-  public void extendRange(final long previousCheckpointId, final long newCheckpointId) {
-    actor.run(
-        () ->
-            internalBackupManager.extendRange(partitionId, previousCheckpointId, newCheckpointId));
-  }
-
-  @Override
-  public void startNewRange(final long checkpointId) {
-    actor.run(() -> internalBackupManager.startNewRange(partitionId, checkpointId));
-  }
-
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
     return new BackupIdentifierImpl(nodeId, partitionId, checkpointId);
   }

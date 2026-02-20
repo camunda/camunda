@@ -10,7 +10,6 @@ package io.camunda.zeebe.broker.backup;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -20,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -77,20 +77,15 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
+  public CompletableFuture<Void> storeBackupMetadata(
+      final int partitionId, final String slot, final byte[] content) {
+    throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
   @Override
-  public CompletableFuture<Void> storeRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    throw new UnsupportedOperationException("Range markers are not yet supported");
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
+      final int partitionId, final String slot) {
+    throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
   @Override

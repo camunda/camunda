@@ -9,8 +9,6 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -38,7 +36,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -364,28 +361,6 @@ final class BackupServiceImpl {
     return deleteCompleted;
   }
 
-  private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
-    LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
-    final CompletableFuture<Void> preparationStep;
-    if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
-      // In progress backups cannot be deleted. So first mark it as failed
-      preparationStep =
-          backupStore
-              .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-              .thenApply(ignored -> null);
-    } else {
-      preparationStep = CompletableFuture.completedFuture(null);
-    }
-
-    return preparationStep
-        .thenCompose(
-            ignored ->
-                backupStore.storeRangeMarker(
-                    backupStatus.id().partitionId(),
-                    new Deletion(backupStatus.id().checkpointId())))
-        .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
-  }
-
   ActorFuture<Collection<BackupStatus>> listBackups(
       final int partitionId, final String pattern, final ConcurrencyControl executor) {
     final ActorFuture<Collection<BackupStatus>> availableBackupsFuture = executor.createFuture();
@@ -476,55 +451,5 @@ final class BackupServiceImpl {
                     return null;
                   });
         });
-  }
-
-  public void extendRange(
-      final int partitionId, final long previousCheckpointId, final long newCheckpointId) {
-    backupStore
-        .storeRangeMarker(partitionId, new BackupRangeMarker.End(newCheckpointId))
-        .thenCompose(
-            ignored ->
-                backupStore.deleteRangeMarker(
-                    partitionId, new BackupRangeMarker.End(previousCheckpointId)))
-        .thenAccept(
-            ignored ->
-                LOG.atDebug()
-                    .addKeyValue("previousCheckpointId", previousCheckpointId)
-                    .addKeyValue("newCheckpointId", newCheckpointId)
-                    .setMessage("Extended backup range")
-                    .log())
-        .exceptionally(
-            error -> {
-              LOG.atWarn()
-                  .addKeyValue("previousCheckpointId", previousCheckpointId)
-                  .addKeyValue("newCheckpointId", newCheckpointId)
-                  .setCause(error)
-                  .setMessage("Failed to extend backup range")
-                  .log();
-              return null;
-            });
-  }
-
-  public void startNewRange(final int partitionId, final long checkpointId) {
-    backupStore
-        .storeRangeMarker(partitionId, new BackupRangeMarker.Start(checkpointId))
-        .thenCompose(
-            ignored ->
-                backupStore.storeRangeMarker(partitionId, new BackupRangeMarker.End(checkpointId)))
-        .thenAccept(
-            ignored ->
-                LOG.atDebug()
-                    .addKeyValue("checkpointId", checkpointId)
-                    .setMessage("Started new backup range")
-                    .log())
-        .exceptionally(
-            error -> {
-              LOG.atWarn()
-                  .addKeyValue("checkpointId", checkpointId)
-                  .setCause(error)
-                  .setMessage("Failed to start new backup range")
-                  .log();
-              return null;
-            });
   }
 }

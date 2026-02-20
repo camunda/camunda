@@ -12,12 +12,10 @@ import com.azure.identity.DefaultAzureCredentialBuilder;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
-import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.common.StorageSharedKeyCredential;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -218,49 +216,6 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          assureContainerCreated();
-          final var prefix = rangeMarkersPrefix(partitionId);
-          return blobContainerClient
-              .listBlobs(new ListBlobsOptions().setPrefix(prefix), null)
-              .stream()
-              .map(blob -> blob.getName().substring(prefix.length()))
-              .map(BackupRangeMarker::fromName)
-              .filter(Objects::nonNull)
-              .toList();
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    return CompletableFuture.runAsync(
-        () -> {
-          assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
-          final var blobClient = blobContainerClient.getBlobClient(blobName);
-          blobClient.upload(BinaryData.fromBytes(new byte[0]), true);
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    return CompletableFuture.runAsync(
-        () -> {
-          assureContainerCreated();
-          final var blobName = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
-          final var blobClient = blobContainerClient.getBlobClient(blobName);
-          blobClient.deleteIfExists();
-        },
-        executor);
-  }
-
-  @Override
   public CompletableFuture<Void> storeBackupMetadata(
       final int partitionId, final String slot, final byte[] content) {
     return CompletableFuture.runAsync(
@@ -305,10 +260,6 @@ public final class AzureBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
-  }
-
-  private String rangeMarkersPrefix(final int partitionId) {
-    return "ranges/" + partitionId + "/";
   }
 
   private String backupMetadataPath(final int partitionId, final String slot) {

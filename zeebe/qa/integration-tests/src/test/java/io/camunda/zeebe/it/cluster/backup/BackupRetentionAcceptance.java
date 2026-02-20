@@ -12,8 +12,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupState;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -25,15 +23,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-import org.assertj.core.api.AssertionsForClassTypes;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
  * Acceptance tests for the BackupRetention mechanism combined with the CheckpointScheduler. These
- * tests verify that backups follow a rolling window pattern and that old backups and range markers
- * are properly deleted.
+ * tests verify that backups follow a rolling window pattern and that old backups are properly
+ * deleted.
  */
 public interface BackupRetentionAcceptance extends ClockSupport {
   int PARTITION_COUNT = 3;
@@ -60,7 +57,7 @@ public interface BackupRetentionAcceptance extends ClockSupport {
   }
 
   @Test
-  default void shouldMaintainRollingWindowAndDeleteOldBackupsWithRangeMarkers() {
+  default void shouldMaintainRollingWindowAndDeleteOldBackups() {
 
     pinClock(getTestCluster());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
@@ -69,7 +66,7 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     final var firstBackup = awaitNewBackup(0);
     final var secondBackup = awaitNewBackup(firstBackup);
     final var thirdBackup = awaitNewBackup(secondBackup);
-    final var fourthBackup = awaitNewBackup(thirdBackup);
+    awaitNewBackup(thirdBackup);
 
     restartClusterWithRetention();
 
@@ -94,7 +91,6 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     assertManifestPresentInStore(thirdBackup);
     assertManifestNotFoundFromStore(firstBackup);
     assertManifestNotFoundFromStore(secondBackup);
-    assertRangeMarkerHasBeenUpdated(thirdBackup, fourthBackup);
   }
 
   default long awaitNewBackup(final long previousBackup) {
@@ -155,31 +151,6 @@ public interface BackupRetentionAcceptance extends ClockSupport {
                     .extracting(BackupStatus::statusCode)
                     .isEqualTo(BackupStatusCode.COMPLETED);
               }
-            });
-  }
-
-  default void assertRangeMarkerHasBeenUpdated(
-      final long newStartBackupId, final long expectedEndBackupId) {
-    IntStream.rangeClosed(1, PARTITION_COUNT)
-        .forEach(
-            partitionId -> {
-              final var markers = getBackupStore().rangeMarkers(partitionId).join();
-              AssertionsForClassTypes.assertThat(markers.size()).isEqualTo(2);
-              final var startMarker = markers.stream().filter(Start.class::isInstance).findFirst();
-              AssertionsForClassTypes.assertThat(startMarker)
-                  .as("Start range marker for partition %d should be present", partitionId)
-                  .isPresent();
-              AssertionsForClassTypes.assertThat(startMarker.get().checkpointId())
-                  .as("Start range marker for partition %d should be updated", partitionId)
-                  .isEqualTo(newStartBackupId);
-
-              final var endMarker = markers.stream().filter(End.class::isInstance).findFirst();
-              AssertionsForClassTypes.assertThat(endMarker)
-                  .as("End range marker for partition %d should be present", partitionId)
-                  .isPresent();
-              AssertionsForClassTypes.assertThat(endMarker.get().checkpointId())
-                  .as("End range marker for partition %d should be updated", partitionId)
-                  .isEqualTo(expectedEndBackupId);
             });
   }
 

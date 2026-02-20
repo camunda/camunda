@@ -40,15 +40,6 @@ public interface BackupStore {
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
-  /** Returns all range markers stored for this partition. */
-  CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(int partitionId);
-
-  /** Stores a given {@link BackupRangeMarker} for the given partition. */
-  CompletableFuture<Void> storeRangeMarker(int partitionId, BackupRangeMarker marker);
-
-  /** Deletes a given {@link BackupRangeMarker} for the given partition. */
-  CompletableFuture<Void> deleteRangeMarker(int partitionId, BackupRangeMarker marker);
-
   /**
    * Stores backup metadata content to a named slot for the given partition. Slots "a" and "b" are
    * used alternately for crash-safe atomic swap. The content is an opaque byte array (JSON).

@@ -15,7 +15,6 @@ import com.google.cloud.storage.StorageOptions;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -26,15 +25,11 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Spliterator;
-import java.util.Spliterators;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -203,49 +198,6 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    return CompletableFuture.supplyAsync(
-        () -> {
-          final var prefix = rangeMarkersPrefix(partitionId);
-          final var spliterator =
-              Spliterators.spliteratorUnknownSize(
-                  client
-                      .list(bucketInfo.getName(), BlobListOption.prefix(prefix))
-                      .iterateAll()
-                      .iterator(),
-                  Spliterator.IMMUTABLE);
-          return StreamSupport.stream(spliterator, false)
-              .map(blob -> blob.getName().substring(prefix.length()))
-              .map(BackupRangeMarker::fromName)
-              .filter(Objects::nonNull)
-              .toList();
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> storeRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    return CompletableFuture.runAsync(
-        () -> {
-          final var blobInfo = rangeMarkerBlobInfo(partitionId, marker);
-          client.create(blobInfo, new byte[0]);
-        },
-        executor);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    return CompletableFuture.runAsync(
-        () -> {
-          final var blobInfo = rangeMarkerBlobInfo(partitionId, marker);
-          client.delete(blobInfo.getBlobId());
-        },
-        executor);
-  }
-
-  @Override
   public CompletableFuture<Void> storeBackupMetadata(
       final int partitionId, final String slot, final byte[] content) {
     return CompletableFuture.runAsync(
@@ -286,16 +238,6 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(e);
           }
         });
-  }
-
-  private String rangeMarkersPrefix(final int partitionId) {
-    return basePath + "ranges/" + partitionId + "/";
-  }
-
-  private BlobInfo rangeMarkerBlobInfo(final int partitionId, final BackupRangeMarker marker) {
-    return BlobInfo.newBuilder(
-            bucketInfo, rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
-        .build();
   }
 
   private BlobInfo backupMetadataBlobInfo(final int partitionId, final String slot) {
