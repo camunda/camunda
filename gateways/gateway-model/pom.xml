@@ -185,6 +185,38 @@
                 <typeMapping>ProcessInstanceStateFilterProperty=io.camunda.gateway.protocol.model.ProcessInstanceStateEnum</typeMapping>
                 <typeMapping>OperationTypeFilterProperty=io.camunda.gateway.protocol.model.AuditLogOperationTypeEnum</typeMapping>
                 <typeMapping>UserTaskStateFilterProperty=io.camunda.gateway.protocol.model.UserTaskStateEnum</typeMapping>
+                <!-- sort requests mapped to advanced counterpart since they are equal -->
+                <typeMapping>AuditLogSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuditLogSearchQuerySortRequest</typeMapping>
+                <typeMapping>AuthorizationSearchQuerySortRequest=io.camunda.gateway.protocol.model.AuthorizationSearchQuerySortRequest</typeMapping>
+                <typeMapping>BatchOperationItemSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationItemSearchQuerySortRequest</typeMapping>
+                <typeMapping>BatchOperationSearchQuerySortRequest=io.camunda.gateway.protocol.model.BatchOperationSearchQuerySortRequest</typeMapping>
+                <typeMapping>ClusterVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.ClusterVariableSearchQuerySortRequest</typeMapping>
+                <typeMapping>CorrelatedMessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.CorrelatedMessageSubscriptionSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionDefinitionSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>DecisionRequirementsSearchQuerySortRequest=io.camunda.gateway.protocol.model.DecisionRequirementsSearchQuerySortRequest</typeMapping>
+                <typeMapping>ElementInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ElementInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>GroupUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.GroupUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>IncidentSearchQuerySortRequest=io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest</typeMapping>
+                <typeMapping>JobSearchQuerySortRequest=io.camunda.gateway.protocol.model.JobSearchQuerySortRequest</typeMapping>
+                <typeMapping>MappingRuleSearchQuerySortRequest=io.camunda.gateway.protocol.model.MappingRuleSearchQuerySortRequest</typeMapping>
+                <typeMapping>MessageSubscriptionSearchQuerySortRequest=io.camunda.gateway.protocol.model.MessageSubscriptionSearchQuerySortRequest</typeMapping>
+                <typeMapping>ProcessDefinitionSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest</typeMapping>
+                <typeMapping>ProcessInstanceSearchQuerySortRequest=io.camunda.gateway.protocol.model.ProcessInstanceSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleGroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleGroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleSearchQuerySortRequest</typeMapping>
+                <typeMapping>RoleUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.RoleUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantClientSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantClientSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantGroupSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantGroupSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantSearchQuerySortRequest</typeMapping>
+                <typeMapping>TenantUserSearchQuerySortRequest=io.camunda.gateway.protocol.model.TenantUserSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserTaskSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest</typeMapping>
+                <typeMapping>UserTaskVariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest</typeMapping>
+                <typeMapping>VariableSearchQuerySortRequest=io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest</typeMapping>
               </typeMappings>
               <generateApis>false</generateApis>
               <generateSupportingFiles>false</generateSupportingFiles>

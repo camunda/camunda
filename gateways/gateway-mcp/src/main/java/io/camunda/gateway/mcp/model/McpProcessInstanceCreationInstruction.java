@@ -7,29 +7,7 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationStartInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationTerminateInstruction;
-import java.util.List;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-public class McpProcessInstanceCreationInstruction extends ProcessInstanceCreationInstruction {
-
-  @JsonIgnore
-  @Override
-  public Long getOperationReference() {
-    return super.getOperationReference();
-  }
-
-  @JsonIgnore
-  @Override
-  public List<ProcessInstanceCreationStartInstruction> getStartInstructions() {
-    return super.getStartInstructions();
-  }
-
-  @JsonIgnore
-  @Override
-  public List<ProcessInstanceCreationTerminateInstruction> getRuntimeInstructions() {
-    return super.getRuntimeInstructions();
-  }
-}
+@JsonIgnoreProperties({"operationReference", "startInstructions", "runtimeInstructions"})
+public interface McpProcessInstanceCreationInstruction {}
