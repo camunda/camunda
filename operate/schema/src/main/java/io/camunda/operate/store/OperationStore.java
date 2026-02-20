@@ -26,6 +26,16 @@ public interface OperationStore {
 
   void update(OperationEntity operation, boolean refreshImmediately) throws PersistenceException;
 
+  /**
+   * Updates the document with the given id in the given index using the provided script and
+   * parameters.
+   *
+   * <p>Warning! If the document with the given id does not exist in the given index, this update
+   * will fail exceptionally, resulting in a blocked exporter until the document is restored. For
+   * some indices this exception will be swallowed. The list of these indices can be found in {@link
+   * io.camunda.exporter.DefaultExporterResourceProvider#init}. See also <a
+   * href="https://github.com/camunda/camunda/issues/44356">https://github.com/camunda/camunda/issues/44356</a>
+   */
   void updateWithScript(
       String index, String batchOperationId, String script, Map<String, Object> parameters);
 
