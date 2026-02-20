@@ -58,7 +58,7 @@ jobs:
       scenario: 'max'
 
   create-benchmark-rdbms:
-    name: Benchmark
+    name: Benchmark RDBMS
     needs: sanitize-branch-name
     if: >
       (github.event.action == 'labeled' && github.event.label.name == 'benchmark-rdbms') ||
