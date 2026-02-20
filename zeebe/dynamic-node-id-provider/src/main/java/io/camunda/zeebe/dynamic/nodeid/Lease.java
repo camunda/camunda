@@ -93,8 +93,9 @@ public record Lease(
     return now <= timestamp;
   }
 
-  public boolean isExpiredBeyondThreshold(final long now, final Duration threshold) {
-    return !isStillValid(now) && (now - timestamp) >= threshold.toMillis();
+  public boolean isExpiredBeyondThreshold(final Instant now, final Duration threshold) {
+    final var nowMillis = now.toEpochMilli();
+    return !isStillValid(nowMillis) && (nowMillis - timestamp) >= threshold.toMillis();
   }
 
   public Lease renew(

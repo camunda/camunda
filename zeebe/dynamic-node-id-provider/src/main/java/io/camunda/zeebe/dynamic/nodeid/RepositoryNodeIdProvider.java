@@ -270,7 +270,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
               case StoredLease.Initialized initialized ->
                   initialized
                       .lease()
-                      .isExpiredBeyondThreshold(clock.millis(), expiredLeaseThreshold);
+                      .isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
             };
         previousNodeGracefullyShutdown.complete(gracefullyShutdown);
       }
