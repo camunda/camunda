@@ -153,6 +153,51 @@ public class DeleteProcessDefinitionHistoryIT {
     waitForProcesses(camundaClient, f -> f.processDefinitionId(processId), 1);
   }
 
+  @Test
+  void shouldDeleteProcessDefinitionHistoryAfterDeletingWithoutHistory() {
+    // given - a deployed process definition with completed process instances
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+    final long piKey1 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    final long piKey2 = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED),
+        2);
+
+    // and - first delete without history, leaving process instances intact
+    final DeleteResourceResponse resultWithoutHistory =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(resultWithoutHistory.getCreateBatchOperationResponse()).isNull();
+    waitForProcessInstances(camundaClient, f -> f.processDefinitionId(processId), 2);
+
+    // when - now delete with history to clean up the remaining historical data
+    final DeleteResourceResponse resultWithHistory =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(true)
+            .send()
+            .join();
+
+    // then - the batch operation should be created and complete successfully
+    final var batchOperationKey =
+        resultWithHistory.getCreateBatchOperationResponse().getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 2);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 2, 0);
+    assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
+    assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey2);
+    assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
+  }
+
   /** Asserts that a process definition has been deleted from secondary storage. */
   private void assertProcessDefinitionDeleted(
       final CamundaClient client, final long processDefinitionKey) {

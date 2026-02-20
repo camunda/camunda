@@ -140,6 +140,46 @@ public class DeleteDecisionRequirementsHistoryIT {
         camundaClient, decision.getDecisionKey(), decision.getDecisionRequirementsKey(), 1, 1);
   }
 
+  @Test
+  void shouldDeleteDecisionRequirementsHistoryAfterDeletingWithoutHistory() {
+    // given - a deployed DRG with evaluated decision instances
+    final var decisionId = Strings.newRandomValidBpmnId();
+    final var dmnModel = getDmnModelInstance(decisionId);
+    final Decision decision = deployDmnModel(camundaClient, dmnModel, decisionId);
+    waitForDecisionsToBeDeployed(
+        camundaClient, decision.getDecisionKey(), decision.getDecisionRequirementsKey(), 1, 1);
+    evaluateDecision(camundaClient, decision.getDecisionKey(), "{}");
+    evaluateDecision(camundaClient, decision.getDecisionKey(), "{}");
+    waitForDecisionInstanceCount(camundaClient, f -> f.decisionDefinitionId(decisionId), 2);
+
+    // and - first delete without history, leaving decision instances and definitions intact
+    final DeleteResourceResponse resultWithoutHistory =
+        camundaClient
+            .newDeleteResourceCommand(decision.getDecisionRequirementsKey())
+            .deleteHistory(false)
+            .send()
+            .join();
+    assertThat(resultWithoutHistory.getCreateBatchOperationResponse()).isNull();
+    waitForDecisionInstanceCount(camundaClient, f -> f.decisionDefinitionId(decisionId), 2);
+
+    // when - now delete with history to clean up the remaining historical data
+    final DeleteResourceResponse resultWithHistory =
+        camundaClient
+            .newDeleteResourceCommand(decision.getDecisionRequirementsKey())
+            .deleteHistory(true)
+            .send()
+            .join();
+
+    // then - the batch operation should be created and complete successfully
+    final var batchOperationKey =
+        resultWithHistory.getCreateBatchOperationResponse().getBatchOperationKey();
+    waitForBatchOperationWithCorrectTotalCount(camundaClient, batchOperationKey, 2);
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 2, 0);
+    assertDecisionInstancesDeleted(camundaClient, decisionId);
+    assertDecisionDefinitionsDeleted(camundaClient, decision.getDecisionRequirementsKey());
+    assertDecisionRequirementsDeleted(camundaClient, decision.getDecisionRequirementsKey());
+  }
+
   /** Asserts that all decision instances for a given decision definition ID have been deleted. */
   private void assertDecisionInstancesDeleted(final CamundaClient client, final String decisionId) {
     Awaitility.await("Decision instances should be deleted")
