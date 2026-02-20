@@ -1213,8 +1213,22 @@
 
   <changeSet id="create_audit_log_user_task_key_index" author="camunda">
     <!-- Index for USER_TASK_KEY - optimizes querying for the Tasklist history view -->
-    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_UT_KEY">
-      <column name="USER_TASK_KEY"/>
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+    </sql>
+    <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+      WHERE USER_TASK_KEY IS NOT NULL
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_audit_log_process_definition_key_index" author="camunda">
+    <!-- Index for PROCESS_DEFINITION_KEY - optimizes querying for the process instances -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
     </createIndex>
   </changeSet>
 
