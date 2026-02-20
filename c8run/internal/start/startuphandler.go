@@ -122,6 +122,8 @@ func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath str
 		return err
 	}
 
+	s.ProcessHandler.TrackProcessTree(pid, cmd.Process.Pid)
+
 	return nil
 }
 
