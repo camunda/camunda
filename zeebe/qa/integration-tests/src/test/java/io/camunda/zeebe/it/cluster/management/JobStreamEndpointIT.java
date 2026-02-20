@@ -295,4 +295,123 @@ final class JobStreamEndpointIT {
 
     CloseHelper.quietCloseAll(providedWorker, assignedWorker);
   }
+
+  @Test
+  void shouldReportDefaultTenantFilterAsProvided() {
+    // given — a stream with no explicit tenant filter (default should be PROVIDED)
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var command =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(ignored -> {})
+            .workerName("default");
+
+    // when
+    command.send();
+
+    // then — the actuator should report the tenant filter as PROVIDED
+    final var gatewayActuator = JobStreamActuator.of(gateway);
+    Awaitility.await("until stream is registered on gateway")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(gatewayActuator)
+                    .clientStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED)));
+    final var brokerActuator = JobStreamActuator.of(cluster.brokers().get(MemberId.from("0")));
+    Awaitility.await("until stream is registered on broker")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(brokerActuator)
+                    .remoteStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED)));
+  }
+
+  @Test
+  void shouldReportProvidedTenantFilterOnActuator() {
+    // given — a stream with an explicit PROVIDED tenant filter
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var command =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(ignored -> {})
+            .workerName("provided")
+            .tenantFilter(TenantFilter.PROVIDED);
+
+    // when
+    command.send();
+
+    // then
+    final var gatewayActuator = JobStreamActuator.of(gateway);
+    Awaitility.await("until stream is registered on gateway")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(gatewayActuator)
+                    .clientStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED)));
+    final var brokerActuator = JobStreamActuator.of(cluster.brokers().get(MemberId.from("0")));
+    Awaitility.await("until stream is registered on broker")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(brokerActuator)
+                    .remoteStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.PROVIDED)));
+  }
+
+  @Test
+  void shouldReportAssignedTenantFilterOnActuator() {
+    // given — a stream with ASSIGNED tenant filter
+    final var jobType = Strings.newRandomValidBpmnId();
+    final var command =
+        client
+            .newStreamJobsCommand()
+            .jobType(jobType)
+            .consumer(ignored -> {})
+            .workerName("assigned")
+            .tenantFilter(TenantFilter.ASSIGNED);
+
+    // when
+    command.send();
+
+    // then
+    final var gatewayActuator = JobStreamActuator.of(gateway);
+    Awaitility.await("until stream is registered on gateway")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(gatewayActuator)
+                    .clientStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.ASSIGNED)));
+    final var brokerActuator = JobStreamActuator.of(cluster.brokers().get(MemberId.from("0")));
+    Awaitility.await("until stream is registered on broker")
+        .untilAsserted(
+            () ->
+                JobStreamActuatorAssert.assertThat(brokerActuator)
+                    .remoteStreams()
+                    .haveExactlyAll(
+                        1,
+                        RemoteJobStreamsAssert.hasJobType(jobType),
+                        RemoteJobStreamsAssert.hasTenantFilter(
+                            io.camunda.zeebe.protocol.record.value.TenantFilter.ASSIGNED)));
+  }
 }
