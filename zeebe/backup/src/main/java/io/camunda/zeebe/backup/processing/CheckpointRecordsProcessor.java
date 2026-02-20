@@ -46,8 +46,10 @@ public final class CheckpointRecordsProcessor
   private final int partitionId;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
+  private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
+  private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
@@ -130,12 +132,17 @@ public final class CheckpointRecordsProcessor
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
             checkpointState, checkpointMetadataState, backupRangeState, syncer, partitionId);
+    checkpointDeleteBackupProcessor =
+        new CheckpointDeleteBackupProcessor(
+            checkpointMetadataState, backupRangeState, backupStore, syncer, partitionId);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
             checkpointState, checkpointMetadataState, checkpointListeners, metrics);
     checkpointBackupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);
+    checkpointBackupDeletedApplier =
+        new CheckpointBackupDeletedApplier(checkpointMetadataState, backupRangeState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -169,6 +176,8 @@ public final class CheckpointRecordsProcessor
               (CheckpointRecord) record.getValue(),
               record.getTimestamp(),
               record.getBrokerVersion());
+      case BACKUP_DELETED ->
+          checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
       default -> {
         // Don't apply intents CREATE and IGNORED
       }
@@ -186,6 +195,11 @@ public final class CheckpointRecordsProcessor
     if (record.getValueType() == ValueType.CHECKPOINT
         && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
       return checkpointConfirmBackupProcessor.process(record, resultBuilder);
+    }
+
+    if (record.getValueType() == ValueType.CHECKPOINT
+        && record.getIntent() == CheckpointIntent.DELETE_BACKUP) {
+      return checkpointDeleteBackupProcessor.process(record, resultBuilder);
     }
 
     // Should never reach here. StreamProcessor must choose the right processor always.

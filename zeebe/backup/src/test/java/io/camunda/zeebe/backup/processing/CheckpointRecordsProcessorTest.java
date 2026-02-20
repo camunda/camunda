@@ -26,6 +26,7 @@ import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingRes
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -71,6 +72,7 @@ final class CheckpointRecordsProcessorTest {
   // Used for verifying state in the tests
   private CheckpointState state;
   private DbBackupRangeState backupRangeState;
+  private DbCheckpointMetadataState checkpointMetadataState;
   private ZeebeDb zeebedb;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
@@ -96,6 +98,7 @@ final class CheckpointRecordsProcessorTest {
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
     backupRangeState = new DbBackupRangeState(zeebedb, zeebedb.createContext());
+    checkpointMetadataState = new DbCheckpointMetadataState(zeebedb, zeebedb.createContext());
   }
 
   private RecordProcessorContextImpl createContext(
@@ -924,5 +927,258 @@ final class CheckpointRecordsProcessorTest {
 
     // then — no exception, backup manager still called for fail in-progress
     verify(backupManager).failInProgressBackup(anyLong());
+  }
+
+  // ===== DELETE_BACKUP tests =====
+
+  @Test
+  void shouldDeleteBackupWhenCheckpointExists() {
+    // given — a confirmed backup with checkpoint 5
+    final var checkpointId = 5L;
+    checkpointMetadataState.addCheckpoint(
+        checkpointId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(checkpointId, 40, 3, "8.9.0");
+    backupRangeState.startNewRange(checkpointId);
+    state.setLatestBackupInfo(
+        checkpointId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP, 40);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — BACKUP_DELETED event is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.BACKUP_DELETED, Event::intent)
+        .returns(RecordType.EVENT, Event::type)
+        .returns(value, Event::value);
+    // checkpoint is removed from metadata state
+    assertThat(checkpointMetadataState.getCheckpoint(checkpointId)).isNull();
+    // range is deleted (was the only checkpoint in range)
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  @Test
+  void shouldRejectDeleteBackupWhenCheckpointNotFound() {
+    // given — no checkpoint exists with ID 42
+    final var value = new CheckpointRecord().setCheckpointId(42);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — command rejection is written
+    assertThat(result.records())
+        .singleElement()
+        .returns(CheckpointIntent.DELETE_BACKUP, Event::intent)
+        .returns(RecordType.COMMAND_REJECTION, Event::type)
+        .returns(value, Event::value);
+  }
+
+  @Test
+  void shouldDeleteBackupFromStartOfRange() {
+    // given — range [5, 10] with checkpoints 5 and 10
+    final var firstId = 5L;
+    final var secondId = 10L;
+    checkpointMetadataState.addCheckpoint(
+        firstId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(firstId, 40, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(
+        secondId, 100, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(secondId, 50, 3, "8.9.0");
+    backupRangeState.startNewRange(firstId);
+    backupRangeState.extendRange(firstId, secondId);
+
+    final var value = new CheckpointRecord().setCheckpointId(firstId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — range is advanced to [10, 10]
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(secondId, secondId));
+    assertThat(checkpointMetadataState.getCheckpoint(firstId)).isNull();
+    assertThat(checkpointMetadataState.getCheckpoint(secondId)).isNotNull();
+  }
+
+  @Test
+  void shouldDeleteBackupFromEndOfRange() {
+    // given — range [5, 10] with checkpoints 5 and 10
+    final var firstId = 5L;
+    final var secondId = 10L;
+    checkpointMetadataState.addCheckpoint(
+        firstId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(firstId, 40, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(
+        secondId, 100, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(secondId, 50, 3, "8.9.0");
+    backupRangeState.startNewRange(firstId);
+    backupRangeState.extendRange(firstId, secondId);
+
+    final var value = new CheckpointRecord().setCheckpointId(secondId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — range is shrunk to [5, 5]
+    assertThat(backupRangeState.getAllRanges()).containsExactly(new BackupRange(firstId, firstId));
+    assertThat(checkpointMetadataState.getCheckpoint(firstId)).isNotNull();
+    assertThat(checkpointMetadataState.getCheckpoint(secondId)).isNull();
+  }
+
+  @Test
+  void shouldDeleteBackupFromMiddleOfRange() {
+    // given — range [5, 15] with checkpoints 5, 10, 15
+    final var firstId = 5L;
+    final var middleId = 10L;
+    final var lastId = 15L;
+    checkpointMetadataState.addCheckpoint(
+        firstId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(firstId, 40, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(
+        middleId, 100, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(middleId, 50, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(
+        lastId, 150, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(lastId, 100, 3, "8.9.0");
+    backupRangeState.startNewRange(firstId);
+    backupRangeState.extendRange(firstId, lastId);
+
+    final var value = new CheckpointRecord().setCheckpointId(middleId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            160, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — range is split into [5, 5] and [15, 15]
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(firstId, firstId), new BackupRange(lastId, lastId));
+    assertThat(checkpointMetadataState.getCheckpoint(firstId)).isNotNull();
+    assertThat(checkpointMetadataState.getCheckpoint(middleId)).isNull();
+    assertThat(checkpointMetadataState.getCheckpoint(lastId)).isNotNull();
+  }
+
+  @Test
+  void shouldReplayBackupDeletedEvent() {
+    // given — checkpoint 5 exists in state
+    final var checkpointId = 5L;
+    checkpointMetadataState.addCheckpoint(
+        checkpointId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(checkpointId, 40, 3, "8.9.0");
+    backupRangeState.startNewRange(checkpointId);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 50, CheckpointIntent.BACKUP_DELETED, RecordType.EVENT, value);
+
+    // when
+    processor.replay(record);
+
+    // then — checkpoint is removed and range is deleted
+    assertThat(checkpointMetadataState.getCheckpoint(checkpointId)).isNull();
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  @Test
+  void shouldScheduleBackupStoreDeletePostCommitTaskOnDeleteBackup() {
+    // given — a processor with a real backup store
+    final var backupStore = mock(BackupStore.class);
+    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(java.util.List.of()));
+
+    final var context = createContext(executor, zeebedb);
+    final var deleteProcessor =
+        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+    deleteProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    deleteProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    deleteProcessor.init(context);
+
+    // Seed checkpoint in metadata state
+    final var metaState = new DbCheckpointMetadataState(zeebedb, zeebedb.createContext());
+    metaState.addCheckpoint(5, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    metaState.enrichWithBackupInfo(5, 40, 3, "8.9.0");
+    final var rangeState = new DbBackupRangeState(zeebedb, zeebedb.createContext());
+    rangeState.startNewRange(5);
+
+    final var value = new CheckpointRecord().setCheckpointId(5);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result =
+        (MockProcessingResult) deleteProcessor.process(record, new MockProcessingResultBuilder());
+
+    // then — post-commit tasks are registered (backup store delete + JSON sync)
+    assertThat(result.postCommitTasks()).hasSize(2);
+
+    // when — the post-commit tasks are executed
+    final var success = result.executePostCommitTasks();
+
+    // then — tasks succeed and store methods are called
+    assertThat(success).isTrue();
+    verify(backupStore).list(any()); // backup store delete lists backups
+    verify(backupStore).storeBackupMetadata(eq(1), any(), any()); // JSON sync
+  }
+
+  @Test
+  void shouldNotSchedulePostCommitTasksOnDeleteBackupWithoutBackupStore() {
+    // given — no backup store (the default processor in setup)
+    final var checkpointId = 5L;
+    checkpointMetadataState.addCheckpoint(
+        checkpointId, 50, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    backupRangeState.startNewRange(checkpointId);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — no post-commit tasks
+    assertThat(result.postCommitTasks()).isEmpty();
+  }
+
+  @Test
+  void shouldNotSchedulePostCommitTasksOnDeleteBackupRejection() {
+    // given — a processor with a backup store and no checkpoint to delete
+    final var backupStore = mock(BackupStore.class);
+    final var context = createContext(executor, zeebedb);
+    final var deleteProcessor =
+        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+    deleteProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    deleteProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    deleteProcessor.init(context);
+
+    final var value = new CheckpointRecord().setCheckpointId(42);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result =
+        (MockProcessingResult) deleteProcessor.process(record, new MockProcessingResultBuilder());
+
+    // then — no post-commit tasks (command was rejected)
+    assertThat(result.postCommitTasks()).isEmpty();
   }
 }

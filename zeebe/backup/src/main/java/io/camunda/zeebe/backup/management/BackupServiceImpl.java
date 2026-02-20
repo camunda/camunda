@@ -323,33 +323,39 @@ final class BackupServiceImpl {
   ActorFuture<Void> deleteBackup(
       final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
     final ActorFuture<Void> deleteCompleted = executor.createFuture();
-    final var searchPattern =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
     LOG.atDebug()
-        .addKeyValue("pattern", searchPattern)
-        .setMessage("Deleting matching backups")
+        .addKeyValue("partitionId", partitionId)
+        .addKeyValue("checkpointId", checkpointId)
+        .setMessage("Writing DELETE_BACKUP command to log")
         .log();
-    executor.run(
-        () ->
-            backupStore
-                .list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(),
-                        Optional.of(partitionId),
-                        CheckpointPattern.of(checkpointId)))
-                .thenCompose(
-                    backups ->
-                        CompletableFuture.allOf(
-                            backups.stream()
-                                .map(this::deleteBackupIfExists)
-                                .toArray(CompletableFuture[]::new)))
-                .thenAccept(ignore -> deleteCompleted.complete(null))
-                .exceptionally(
-                    error -> {
-                      deleteCompleted.completeExceptionally(error);
-                      return null;
-                    }));
+    final var deleteWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.DELETE_BACKUP),
+                new CheckpointRecord().setCheckpointId(checkpointId)));
+    switch (deleteWritten) {
+      case Either.Left(final var error) -> {
+        LOG.atWarn()
+            .addKeyValue("checkpointId", checkpointId)
+            .addKeyValue("error", error)
+            .setMessage("Could not write DELETE_BACKUP command")
+            .log();
+        deleteCompleted.completeExceptionally(
+            new RuntimeException("Failed to write DELETE_BACKUP command: " + error));
+      }
+      case final Either.Right<WriteFailure, Long> position -> {
+        LOG.atDebug()
+            .addKeyValue("checkpointId", checkpointId)
+            .addKeyValue("position", position.value())
+            .setMessage("DELETE_BACKUP command written to log")
+            .log();
+        deleteCompleted.complete(null);
+      }
+    }
     return deleteCompleted;
   }
 
