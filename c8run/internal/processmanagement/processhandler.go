@@ -2,10 +2,12 @@ package processmanagement
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/camunda/camunda/c8run/internal/types"
 	"github.com/gofrs/flock"
@@ -62,29 +64,91 @@ func (p *ProcessHandler) cleanUp(pidPath string) {
 }
 
 func (p *ProcessHandler) ReadPIDFromFile(pidfile string) (int, error) {
+	pids, err := p.ReadPIDsFromFile(pidfile)
+	if err != nil {
+		return 0, err
+	}
+	if len(pids) == 0 {
+		return 0, errors.New("pidfile does not contain any pid entries")
+	}
+	return pids[0], nil
+}
+
+func (p *ProcessHandler) ReadPIDsFromFile(pidfile string) ([]int, error) {
 	lockPath := pidfile + ".lock"
 	fileLock, err := acquireRLock(lockPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to acquire read lock for pid file: %s: %w", pidfile, err)
+		return nil, fmt.Errorf("failed to acquire read lock for pid file: %s: %w", pidfile, err)
 	}
 	defer releaseLock(fileLock, lockPath)
 
 	data, err := os.ReadFile(pidfile)
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 
-	pidStr := strings.TrimSpace(string(data))
-	pid, err := strconv.Atoi(pidStr)
+	rawEntries := strings.FieldsFunc(string(data), func(r rune) bool {
+		return r == '\n' || r == '\r' || r == ',' || r == ';'
+	})
+
+	pids := make([]int, 0, len(rawEntries))
+	seen := make(map[int]struct{})
+	for _, entry := range rawEntries {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+		pid, err := strconv.Atoi(entry)
+		if err != nil {
+			return nil, fmt.Errorf("invalid PID in %s: %w", pidfile, err)
+		}
+		if pid <= 0 {
+			return nil, fmt.Errorf("invalid PID (%d) in %s", pid, pidfile)
+		}
+		if _, ok := seen[pid]; ok {
+			continue
+		}
+		seen[pid] = struct{}{}
+		pids = append(pids, pid)
+	}
+
+	return pids, nil
+}
+
+func (p *ProcessHandler) WritePIDsToFile(pidPath string, pids []int) error {
+	lockPath := pidPath + ".lock"
+	fileLock, err := acquireLock(lockPath)
 	if err != nil {
-		return 0, fmt.Errorf("invalid PID in %s: %w", pidfile, err)
+		return err
+	}
+	defer releaseLock(fileLock, lockPath)
+
+	validInts := dedupeIntSlice(pids)
+	validPIDs := make([]string, 0, len(validInts))
+	for _, pid := range validInts {
+		validPIDs = append(validPIDs, strconv.Itoa(pid))
 	}
 
-	if pid <= 0 {
-		return 0, fmt.Errorf("invalid PID (%d) in %s", pid, pidfile)
+	if len(validPIDs) == 0 {
+		return errors.New("no valid PIDs supplied")
 	}
+	pidFile, err := os.OpenFile(pidPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
+	if err != nil {
+		log.Err(err).Msg("Failed to open Pid file: " + pidPath)
+		return err
+	}
+	defer func() {
+		if err := pidFile.Close(); err != nil {
+			log.Error().Err(err).Msg("failed to close pid file")
+		}
+	}()
 
-	return pid, nil
+	_, err = pidFile.Write([]byte(strings.Join(validPIDs, "\n")))
+	if err != nil {
+		log.Err(err).Msg("Failed to write to Pid file: " + pidPath)
+		return err
+	}
+	return nil
 }
 
 func (p *ProcessHandler) GetProcessFromPid(pid int) []int {
@@ -104,7 +168,7 @@ func (p *ProcessHandler) GetProcessFromPid(pid int) []int {
 // If the process is not running or not healthy, it will be killed (if needed), cleaned up, and restarted.
 // If the process is running and healthy, nothing is done.
 func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName string, startProcess func(), healthCheck func() error, stop context.CancelFunc) {
-	pid, err := p.ReadPIDFromFile(pidPath)
+	pidList, err := p.ReadPIDsFromFile(pidPath)
 	if err != nil {
 		log.Debug().Msg("Failed to read PID from file. This is expected for the first run.")
 		log.Info().Msgf("No pid for %s", processName)
@@ -112,7 +176,7 @@ func (p *ProcessHandler) AttemptToStartProcess(pidPath string, processName strin
 		return
 	}
 
-	processPids := p.GetProcessFromPid(pid)
+	processPids := p.CollectCandidatePIDs(pidList)
 	if len(processPids) == 0 {
 		log.Info().Msgf("%s is not running, starting...", processName)
 		p.cleanUp(pidPath)
@@ -159,29 +223,104 @@ func (p *ProcessHandler) startAndCheck(processName string, startProcess func(), 
 }
 
 func (p *ProcessHandler) WritePIDToFile(pidPath string, pid int) error {
-	lockPath := pidPath + ".lock"
-	fileLock, err := acquireLock(lockPath)
-	if err != nil {
-		return err
-	}
-	defer releaseLock(fileLock, lockPath)
-
 	log.Info().Int("pid", pid).Msg("Started process: " + pidPath)
-	pidFile, err := os.OpenFile(pidPath, os.O_RDWR|os.O_CREATE, 0644)
-	if err != nil {
-		log.Err(err).Msg("Failed to open Pid file: " + pidPath)
-		return err
+	return p.WritePIDsToFile(pidPath, []int{pid})
+}
+
+func dedupeIntSlice(values []int) []int {
+	seen := make(map[int]struct{}, len(values))
+	result := make([]int, 0, len(values))
+	for _, v := range values {
+		if v <= 0 {
+			continue
+		}
+		if _, ok := seen[v]; ok {
+			continue
+		}
+		seen[v] = struct{}{}
+		result = append(result, v)
 	}
-	defer func() {
-		if err := pidFile.Close(); err != nil {
-			log.Error().Err(err).Msg("failed to close pid file")
+	return result
+}
+
+// TrackProcessTree continually attempts to capture the descendant process IDs and persists them.
+// This is mainly required for Windows where startup scripts spawn child processes
+// that may survive even if the wrapper process exits.
+func (p *ProcessHandler) TrackProcessTree(pidPath string, rootPid int) {
+	if rootPid <= 0 {
+		return
+	}
+
+	go func() {
+		ticker := time.NewTicker(500 * time.Millisecond)
+		defer ticker.Stop()
+		timeout := time.After(15 * time.Second)
+		var lastWritten []int
+
+		writeIfChanged := func(tree []int) bool {
+			clean := dedupeIntSlice(tree)
+			if len(clean) <= 1 {
+				return false
+			}
+			if slicesEqual(clean, lastWritten) {
+				return false
+			}
+			if err := p.WritePIDsToFile(pidPath, clean); err != nil {
+				log.Debug().Err(err).Str("pidFile", pidPath).Msg("Failed to update pidfile with process tree")
+				return false
+			}
+			lastWritten = append([]int(nil), clean...)
+			log.Debug().Ints("pids", clean).Str("pidFile", pidPath).Msg("Recorded process tree")
+			return true
+		}
+
+		for {
+			tree := p.GetProcessFromPid(rootPid)
+			if writeIfChanged(tree) {
+				return
+			}
+
+			select {
+			case <-ticker.C:
+				continue
+			case <-timeout:
+				return
+			}
 		}
 	}()
+}
 
-	_, err = pidFile.Write([]byte(strconv.Itoa(pid)))
-	if err != nil {
-		log.Err(err).Msg("Failed to write to Pid file: " + pidPath)
-		return err
+func slicesEqual(a, b []int) bool {
+	if len(a) != len(b) {
+		return false
 	}
-	return nil
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (p *ProcessHandler) CollectCandidatePIDs(pidList []int) []int {
+	candidates := make(map[int]struct{})
+	for _, pid := range pidList {
+		if pid <= 0 {
+			continue
+		}
+		candidates[pid] = struct{}{}
+		tree := p.GetProcessFromPid(pid)
+		for _, descendant := range tree {
+			if descendant <= 0 {
+				continue
+			}
+			candidates[descendant] = struct{}{}
+		}
+	}
+
+	result := make([]int, 0, len(candidates))
+	for pid := range candidates {
+		result = append(result, pid)
+	}
+	return result
 }
