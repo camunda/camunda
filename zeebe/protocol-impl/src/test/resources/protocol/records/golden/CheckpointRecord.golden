@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record.value.management;
 
 import io.camunda.zeebe.msgpack.property.EnumProperty;
+import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
@@ -25,13 +26,16 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
       new EnumProperty<>(CHECKPOINT_TYPE_KEY, CheckpointType.class, CheckpointType.MANUAL_BACKUP);
   private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);
+  private final IntegerProperty numberOfPartitionsProperty =
+      new IntegerProperty("numberOfPartitions", -1);
 
   public CheckpointRecord() {
-    super(4);
+    super(5);
     declareProperty(checkpointIdProperty)
         .declareProperty(checkpointPositionProperty)
         .declareProperty(checkpointTypeProperty)
-        .declareProperty(firstLogPositionProperty);
+        .declareProperty(firstLogPositionProperty)
+        .declareProperty(numberOfPartitionsProperty);
   }
 
   @Override
@@ -54,6 +58,11 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
     return firstLogPositionProperty.getValue();
   }
 
+  @Override
+  public int getNumberOfPartitions() {
+    return numberOfPartitionsProperty.getValue();
+  }
+
   public CheckpointRecord setFirstLogPosition(final long firstLogPosition) {
     firstLogPositionProperty.setValue(firstLogPosition);
     return this;
@@ -71,6 +80,11 @@ public class CheckpointRecord extends UnifiedRecordValue implements CheckpointRe
 
   public CheckpointRecord setCheckpointId(final long checkpointId) {
     checkpointIdProperty.setValue(checkpointId);
+    return this;
+  }
+
+  public CheckpointRecord setNumberOfPartitions(final int numberOfPartitions) {
+    numberOfPartitionsProperty.setValue(numberOfPartitions);
     return this;
   }
 }

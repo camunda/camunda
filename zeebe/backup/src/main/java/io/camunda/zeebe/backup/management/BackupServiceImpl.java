@@ -219,7 +219,9 @@ final class BackupServiceImpl {
                     .setCheckpointId(checkpointId)
                     .setCheckpointPosition(checkpointPosition)
                     .setCheckpointType(checkpointType)
-                    .setFirstLogPosition(inProgressBackup.getFirstLogPosition().orElse(-1L))));
+                    .setFirstLogPosition(inProgressBackup.getFirstLogPosition().orElse(-1L))
+                    .setNumberOfPartitions(
+                        inProgressBackup.backupDescriptor().numberOfPartitions())));
     switch (confirmationWritten) {
       case Either.Left(final var error) ->
           LOG.atWarn()

@@ -40,4 +40,9 @@ public interface CheckpointRecordValue extends RecordValue {
   CheckpointType getCheckpointType();
 
   long getFirstLogPosition();
+
+  /**
+   * @return the number of partitions configured when the backup was taken, or -1 if not set
+   */
+  int getNumberOfPartitions();
 }
