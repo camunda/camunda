@@ -199,11 +199,11 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       final int no = ThreadLocalRandom.current().nextInt(operationsCount);
       final Long processInstanceKey = processInstanceKeys.get(no);
       final OperationType type = getType(i);
-      final Map<String, Object> request =
-          getCreateBatchOperationRequestBody(processInstanceKey, type);
+      final Map<String, Object> request = getCreateOperationRequestBody(type);
       final RequestEntity<Map<String, Object>> requestEntity =
           RequestEntity.method(
-                  HttpMethod.POST, restTemplate.getURL("/api/process-instances/batch-operation"))
+                  HttpMethod.POST,
+                  restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation"))
               .contentType(MediaType.APPLICATION_JSON)
               .body(request);
       final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);
@@ -562,14 +562,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
         true, client, getTenant(TENANT_A), "develop/user-task-annual-leave.bpmn");
   }
 
-  private Map<String, Object> getCreateBatchOperationRequestBody(
-      final Long processInstanceKey, final OperationType type) {
+  private Map<String, Object> getCreateOperationRequestBody(final OperationType type) {
     final Map<String, Object> request = new HashMap<>();
-    final Map<String, Object> listViewRequest = new HashMap<>();
-    listViewRequest.put("running", true);
-    listViewRequest.put("active", true);
-    listViewRequest.put("ids", new Long[] {processInstanceKey});
-    request.put("query", listViewRequest);
     request.put("operationType", type.toString());
     return request;
   }

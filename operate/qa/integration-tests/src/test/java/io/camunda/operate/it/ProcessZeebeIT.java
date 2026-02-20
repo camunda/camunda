@@ -39,7 +39,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class ProcessZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_PROCESSES_GROUPED_URL = "/api/processes/grouped";
-  private static final String QUERY_PROCESS_XML_URL = "/api/processes/%s/xml";
 
   @Autowired private ProcessReader processReader;
 
@@ -66,23 +65,6 @@ public class ProcessZeebeIT extends OperateZeebeAbstractIT {
     assertThat(processEntity.getBpmnXml()).isNotEmpty();
     assertThat(processEntity.getName()).isEqualTo("Demo process");
     assertThat(processEntity.getVersionTag()).isEqualTo("demo-tag_v1");
-  }
-
-  @Test
-  public void testProcessGetDiagram() throws Exception {
-    // given
-    final Long processDefinitionKey = deployProcess("demoProcess_v_1.bpmn");
-
-    final MockHttpServletRequestBuilder request =
-        get(String.format(QUERY_PROCESS_XML_URL, processDefinitionKey));
-
-    final MvcResult mvcResult = mockMvc.perform(request).andExpect(status().isOk()).andReturn();
-
-    final String xml = mvcResult.getResponse().getContentAsString();
-
-    // then
-    assertThat(xml).isNotEmpty();
-    assertThat(xml).contains("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
   }
 
   @Test

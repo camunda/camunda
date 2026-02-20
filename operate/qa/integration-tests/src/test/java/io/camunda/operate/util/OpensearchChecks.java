@@ -25,8 +25,6 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -552,19 +550,13 @@ public class OpensearchChecks {
       final String varName = (String) objects[2];
       final String varValue = (String) objects[3];
       try {
-        final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
-        return variables.stream()
-            .anyMatch(v -> v.getName().equals(varName) && v.getValue().equals(varValue));
+        final var variable =
+            variableReader.getVariableByName(processInstanceKey + "", scopeKey + "", varName);
+        return variable != null && variable.getValue().equals(varValue);
       } catch (final NotFoundException ex) {
         return false;
       }
     };
-  }
-
-  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
-    return variableReader.getVariables(
-        String.valueOf(processInstanceKey),
-        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
   }
 
   /**

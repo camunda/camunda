@@ -27,9 +27,6 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.OperationDto;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
-import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.*;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -39,13 +36,13 @@ import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateBatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
+import io.camunda.webapps.schema.entities.operation.OperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -227,8 +224,8 @@ public class OperateTester {
     return operation;
   }
 
-  public List<OperationDto> getOperations() {
-    return operationReader.getOperationsByBatchOperationId(operation.getId());
+  public List<OperationEntity> getOperations() {
+    return operationReader.getOperationsByProcessInstanceKey(processInstanceKey);
   }
 
   public OperateTester createAndDeploySimpleProcess(
@@ -540,15 +537,7 @@ public class OperateTester {
   }
 
   public OperateTester cancelProcessInstanceOperation() throws Exception {
-    final ListViewQueryDto processInstanceQuery =
-        createGetAllProcessInstancesQuery()
-            .setIds(Collections.singletonList(processInstanceKey.toString()));
-
-    final CreateBatchOperationRequestDto batchOperationDto =
-        new CreateBatchOperationRequestDto(
-            processInstanceQuery, OperationType.CANCEL_PROCESS_INSTANCE);
-
-    postOperation(batchOperationDto);
+    postOperation(new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
     searchTestRule.refreshSerchIndexes();
     return this;
   }
@@ -593,23 +582,6 @@ public class OperateTester {
     executeOneBatch();
     searchTestRule.waitFor(operationsByProcessInstanceAreFailedCheck, processInstanceKey);
     return this;
-  }
-
-  private MvcResult postOperation(final CreateBatchOperationRequestDto operationRequest)
-      throws Exception {
-    final MockHttpServletRequestBuilder postOperationRequest =
-        post(format("/api/process-instances/%s/operation", processInstanceKey))
-            .content(mockMvcTestRule.json(operationRequest))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvcTestRule
-            .getMockMvc()
-            .perform(postOperationRequest)
-            .andExpect(status().is(HttpStatus.SC_OK))
-            .andReturn();
-    operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);
-    return mvcResult;
   }
 
   private int executeOneBatch() throws Exception {
@@ -666,23 +638,13 @@ public class OperateTester {
   }
 
   public String getVariable(final String name, final Long scopeKey) {
-    final List<VariableDto> variables = getVariables(processInstanceKey, scopeKey);
-    final List<VariableDto> variablesWithGivenName =
-        filter(variables, variable -> variable.getName().equals(name));
-    if (variablesWithGivenName.isEmpty()) {
+    final var variable =
+        variableReader.getVariableByName(
+            String.valueOf(processInstanceKey), String.valueOf(scopeKey), name);
+    if (variable == null) {
       return null;
     }
-    return variablesWithGivenName.get(0).getValue();
-  }
-
-  private List<VariableDto> getVariables(final Long processInstanceKey, final Long scopeKey) {
-    return variableReader.getVariables(
-        String.valueOf(processInstanceKey),
-        new VariableRequestDto().setScopeId(String.valueOf(scopeKey)));
-  }
-
-  public List<VariableDto> getVariablesForScope(final Long scopeKey) {
-    return getVariables(processInstanceKey, scopeKey);
+    return variable.getValue();
   }
 
   public boolean hasVariable(final String name, final String value) {
