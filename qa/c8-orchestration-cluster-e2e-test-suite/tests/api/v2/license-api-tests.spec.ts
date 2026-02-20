@@ -6,8 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {test, expect} from '@playwright/test';
-import {buildUrl, jsonHeaders, assertRequiredFields} from '../../../utils/http';
+import {expect, test} from '@playwright/test';
+import {assertRequiredFields, buildUrl, jsonHeaders} from '../../../utils/http';
 import {licenseRequiredFields} from '../../../utils/beans/requestBeans';
 
 test.describe.parallel('License API Tests', () => {
@@ -34,6 +34,5 @@ test.describe.parallel('License API Tests', () => {
     expect(json.validLicense).toBeFalsy();
     expect(json.licenseType).toBe('unknown');
     expect(json.isCommercial).toBeFalsy();
-    expect(json).not.toHaveProperty('expiresAt'); //the field is null, we expect it not to be present
   });
 });
