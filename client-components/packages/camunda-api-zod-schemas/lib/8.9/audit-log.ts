@@ -101,7 +101,7 @@ const auditLogSchema = z.object({
 	decisionDefinitionId: z.string().nullable(),
 	decisionDefinitionKey: z.string(),
 	decisionEvaluationKey: z.string(),
-	deploymentKey: z.string(),
+	deploymentKey: z.string().nullable(),
 	formKey: z.string(),
 	resourceKey: z.string(),
 	relatedEntityKey: z.string(),
