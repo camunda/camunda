@@ -10,19 +10,19 @@ package io.camunda.gateway.mcp.model;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
-import io.swagger.v3.oas.annotations.media.Schema;
 
 /**
  * MCP-specific variable filter modifying the {@link VariableFilter} to hide fields from MCP clients
  * to avoid unnecessary context bloat.
  */
 @JsonIgnoreProperties("tenantId")
-public interface McpVariableFilter {
+public class McpVariableFilter extends VariableFilter {
 
-  @Schema(
-      name = "value",
-      description = VARIABLE_FILTER_FORMAT_NOTE,
-      requiredMode = Schema.RequiredMode.NOT_REQUIRED)
-  String getValue();
+  @JsonPropertyDescription(VARIABLE_FILTER_FORMAT_NOTE)
+  @Override
+  public String getValue() {
+    return super.getValue();
+  }
 }
