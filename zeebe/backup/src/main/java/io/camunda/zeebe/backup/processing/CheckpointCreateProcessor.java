@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -34,6 +35,7 @@ public final class CheckpointCreateProcessor {
   public CheckpointCreateProcessor(
       final CheckpointState checkpointState,
       final BackupManager backupManager,
+      final DbCheckpointMetadataState checkpointMetadataState,
       final Set<CheckpointListener> listeners,
       final ScalingStatusSupplier scalingStatusSupplier,
       final PartitionCountSupplier partitionCountSupplier,
@@ -44,7 +46,8 @@ public final class CheckpointCreateProcessor {
     this.metrics = metrics;
     this.partitionCountSupplier = partitionCountSupplier;
     checkpointCreatedApplier =
-        new CheckpointCreatedEventApplier(checkpointState, listeners, metrics);
+        new CheckpointCreatedEventApplier(
+            checkpointState, checkpointMetadataState, listeners, metrics);
   }
 
   public ProcessingResult process(
