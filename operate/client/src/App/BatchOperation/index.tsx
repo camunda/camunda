@@ -28,6 +28,7 @@ import {
   Tile,
   TileLabel,
   Header,
+  HeaderTitleContainer,
 } from './styled';
 import {notificationsStore} from 'modules/stores/notifications';
 import {BatchItemsTable} from './BatchItemsTable';
@@ -121,14 +122,12 @@ const BatchOperation: React.FC = () => {
 
   return (
     <PageContainer gap={5}>
-      <VisuallyHiddenH1>Batch Operations</VisuallyHiddenH1>
+      <VisuallyHiddenH1>Batch operations</VisuallyHiddenH1>
       <ContentContainer gap={5}>
         {renderWithLoading(
           isLoading,
           <Header>
-            <div
-              style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}
-            >
+            <HeaderTitleContainer>
               <IconButton
                 kind="ghost"
                 size="md"
@@ -139,7 +138,7 @@ const BatchOperation: React.FC = () => {
                 <ArrowLeft />
               </IconButton>
               <h3>{operationType}</h3>
-            </div>
+            </HeaderTitleContainer>
             {batchOperationData && (
               <OperationsActions
                 batchOperationKey={batchOperationKey}
