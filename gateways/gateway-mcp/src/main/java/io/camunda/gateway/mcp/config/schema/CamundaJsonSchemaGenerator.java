@@ -26,6 +26,8 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
+import io.camunda.gateway.mcp.model.McpIncidentFilter;
+import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
@@ -76,8 +78,10 @@ public class CamundaJsonSchemaGenerator {
           subtypeSchemaCustomizer) {
     this.objectMapper = objectMapper;
 
+    registerMixins(objectMapper);
+
     final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
-        typeSchemaCustomizer.apply(createSchemaGeneratorConfig());
+        typeSchemaCustomizer.apply(createSchemaGeneratorConfig(objectMapper));
     typeSchemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
 
     final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
@@ -87,11 +91,17 @@ public class CamundaJsonSchemaGenerator {
     subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
   }
 
-  private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig() {
+  private void registerMixins(final ObjectMapper objectMapper) {
+    objectMapper.addMixIn(IncidentFilter.class, McpIncidentFilter.class);
+  }
+
+  private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig(
+      final ObjectMapper objectMapper) {
     final Module jacksonModule =
         new JacksonModule(
             JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
             JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE);
+
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
         CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT
@@ -99,7 +109,7 @@ public class CamundaJsonSchemaGenerator {
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    return new SchemaGeneratorConfigBuilder(SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
+    return new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
         .with(jacksonModule)
         .with(openApiModule)
         .with(springAiSchemaModule)
