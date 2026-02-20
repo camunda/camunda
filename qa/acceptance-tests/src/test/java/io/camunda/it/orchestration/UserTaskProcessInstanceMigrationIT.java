@@ -9,12 +9,15 @@ package io.camunda.it.orchestration;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForUserTask;
+import static io.camunda.it.util.TestHelper.waitUntilProcessInstanceHasIncidents;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
@@ -32,6 +35,7 @@ import java.util.function.Consumer;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -50,7 +54,6 @@ public class UserTaskProcessInstanceMigrationIT {
 
   private static CamundaClient client;
   @AutoClose private static TestRestTasklistClient tasklistClient;
-
   private static final String FROM_PROCESS_ID = "migration-user-task_v1";
   private static final String TO_PROCESS_ID = "migration-user-task_v2";
   private static final String TASK_ID = "task1";
@@ -60,7 +63,6 @@ public class UserTaskProcessInstanceMigrationIT {
   private static final String EXAMPLE_FOLLOW_UP_DATE = "2017-07-22T19:32:28+02:00";
   private static final String ALTERNATIVE_DUE_DATE = "2017-07-23T19:32:28+02:00";
   private static final String ALTERNATIVE_FOLLOW_UP_DATE = "2017-07-24T19:32:28+02:00";
-
   private static long formKey1;
   private static long formKey2;
 
@@ -182,6 +184,117 @@ public class UserTaskProcessInstanceMigrationIT {
     assertThat(migratedTask.getCustomHeaders()).isEqualTo(expectedTask.headers);
 
     verifyFormOperationsWork(migratedTask.getUserTaskKey());
+  }
+
+  @Test
+  void shouldThrowFormEvaluationError() {
+    final Consumer<UserTaskBuilder> fromEmbeddedForm =
+        t -> t.zeebeUserTaskForm(getForm("testform"));
+    final Consumer<UserTaskBuilder> toInternalForm =
+        t -> t.zeebeUserTask().zeebeFormId("nonexistingform");
+
+    // given
+    final BpmnModelInstance jwProcess =
+        Bpmn.createExecutableProcess(FROM_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, fromEmbeddedForm)
+            .endEvent()
+            .done();
+    final BpmnModelInstance cutProcess =
+        Bpmn.createExecutableProcess(TO_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, toInternalForm)
+            .endEvent()
+            .done();
+
+    final var deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(jwProcess, FROM_PROCESS_ID + ".bpmn")
+            .addProcessModel(cutProcess, TO_PROCESS_ID + ".bpmn")
+            .send()
+            .join();
+    final var pd2 =
+        deploymentEvent.getProcesses().stream()
+            .filter(p -> p.getBpmnProcessId().equals(TO_PROCESS_ID))
+            .findFirst()
+            .get()
+            .getProcessDefinitionKey();
+    final var processInstanceKey =
+        startProcessInstance(
+                client, FROM_PROCESS_ID, Map.of("varAssignee", "demo", "varPriority", 20))
+            .getProcessInstanceKey();
+    // wait for task to be exported - use V1 because V2 does not return job worker user tasks
+    waitForTaskExported(processInstanceKey);
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                migrateProcessInstance(
+                    client,
+                    processInstanceKey,
+                    MigrationPlan.newBuilder()
+                        .withTargetProcessDefinitionKey(pd2)
+                        .addMappingInstruction(TASK_ID, TASK_ID)
+                        .build()))
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to migrate form of user task with id 'task1' to internal form with reference 'nonexistingform' defined in target element 'task1', but reference evaluation failed with message:");
+  }
+
+  @Test
+  void shouldThrowJobNotFoundError() {
+    final Consumer<UserTaskBuilder> fromInternalFormWithIncident =
+        t -> t.zeebeFormId("nonexistingform");
+    final Consumer<UserTaskBuilder> toExternalForm =
+        t -> t.zeebeUserTask().zeebeExternalFormReference("localhost:8080//example.form");
+
+    // given
+    final BpmnModelInstance jwProcess =
+        Bpmn.createExecutableProcess(FROM_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, fromInternalFormWithIncident)
+            .endEvent()
+            .done();
+    final BpmnModelInstance cutProcess =
+        Bpmn.createExecutableProcess(TO_PROCESS_ID)
+            .startEvent()
+            .userTask(TASK_ID, toExternalForm)
+            .endEvent()
+            .done();
+
+    final var deploymentEvent =
+        client
+            .newDeployResourceCommand()
+            .addProcessModel(jwProcess, FROM_PROCESS_ID + ".bpmn")
+            .addProcessModel(cutProcess, TO_PROCESS_ID + ".bpmn")
+            .send()
+            .join();
+    final var pd2 =
+        deploymentEvent.getProcesses().stream()
+            .filter(p -> p.getBpmnProcessId().equals(TO_PROCESS_ID))
+            .findFirst()
+            .get()
+            .getProcessDefinitionKey();
+    final var processInstanceKey =
+        startProcessInstance(client, FROM_PROCESS_ID, Map.of()).getProcessInstanceKey();
+    // wait for incident to occur
+    waitUntilProcessInstanceHasIncidents(client, 1);
+
+    // when - then
+    assertThatThrownBy(
+            () ->
+                migrateProcessInstance(
+                    client,
+                    processInstanceKey,
+                    MigrationPlan.newBuilder()
+                        .withTargetProcessDefinitionKey(pd2)
+                        .addMappingInstruction(TASK_ID, TASK_ID)
+                        .build()))
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining(
+            "Expected to migrate a job for user task 'task1' on process instance with key '%d', but could not find job with key '0'. Please resolve any incidents on the user task before migrating the process instance."
+                .formatted(processInstanceKey));
   }
 
   static Stream<Arguments> migrationTestCases() {
