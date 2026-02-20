@@ -8,12 +8,13 @@
 
 import { FC, useEffect } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Checkbox, CheckboxGroup, Dropdown } from "@carbon/react";
+import { Checkbox, CheckboxGroup, Dropdown, MultiSelect } from "@carbon/react";
 import { useApiCall } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import { isOIDC, isTenantsApiEnabled } from "src/configuration";
 import { FormModal, UseEntityModalProps } from "src/components/modal";
 import {
+  AuditLogResourcePropertyName,
   Authorization,
   createAuthorization,
   NewAuthorization,
@@ -30,10 +31,12 @@ import { Caption, Row, TextFieldContainer } from "../components";
 import OwnerSelection from "../owner-selection";
 import { useDropdownAutoFocus } from "./useDropdownAutoFocus";
 import {
+  getIdPattern,
   isValidId,
   isValidResourceId,
-  getIdPattern,
 } from "src/utility/validate";
+import { spaceAndCapitalize } from "src/utility/format/spaceAndCapitalize.ts";
+import { auditLogCategorySchema } from "@camunda/camunda-api-zod-schemas/8.9";
 
 type ResourcePermissionsType = {
   [key in keyof typeof ResourceType]: Authorization["permissionTypes"];
@@ -165,7 +168,15 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   const ownerTypeItems = Object.values(OwnerType);
   const allResourceTypes = Object.values(ResourceType);
+
   const userTaskResourcePropertyNames = Object.values(ResourcePropertyName);
+
+  const auditLogResourcePropertyNames = Object.values(
+    AuditLogResourcePropertyName,
+  );
+  const auditLogResourceCategories = Object.values(
+    auditLogCategorySchema.options,
+  ).map((category: string) => spaceAndCapitalize(category));
 
   let resourceTypeItems = allResourceTypes;
 
@@ -200,10 +211,18 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 
   useEffect(() => {
     setValue("permissionTypes", []);
-    if (watchedResourceType !== ResourceType.USER_TASK) {
-      setValue("resourceId", "");
-    } else {
-      setValue("resourcePropertyName", ResourcePropertyName.assignee);
+    switch (watchedResourceType) {
+      case ResourceType.USER_TASK:
+        setValue("resourcePropertyName", ResourcePropertyName.assignee);
+        break;
+      case ResourceType.AUDIT_LOG:
+        setValue(
+          "resourcePropertyName",
+          AuditLogResourcePropertyName.categories,
+        );
+        break;
+      default:
+        setValue("resourceId", "");
     }
   }, [watchedResourceType, setValue]);
 
@@ -322,6 +341,49 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 );
               }}
             />
+          ) : watchedResourceType === ResourceType.AUDIT_LOG ? (
+            <Row>
+              <Controller
+                name="resourcePropertyName"
+                control={control}
+                render={({ field, fieldState }) => {
+                  return (
+                    <Dropdown
+                      id="property-name-dropdown"
+                      label={t("selectResourcePropertyName")}
+                      titleText={t("resourcePropertyName")}
+                      items={auditLogResourcePropertyNames}
+                      onChange={(item: { selectedItem: string }) => {
+                        field.onChange(item.selectedItem);
+                      }}
+                      itemToString={(item: string) => item || ""}
+                      selectedItem={field.value}
+                      invalid={!!fieldState.error}
+                      invalidText={fieldState.error?.message}
+                    />
+                  );
+                }}
+              />
+              <Controller
+                // TODO replace with actual field name
+                name="resourcePropertyNameCategories"
+                control={control}
+                render={({ field, fieldState }) => {
+                  return (
+                    <MultiSelect
+                      id="property-name-categories-dropdown"
+                      label={t("selectResourcePropertyNameCategories")}
+                      titleText={t("resourcePropertyNameCategoriesTitle")}
+                      items={auditLogResourceCategories}
+                      onChange={field.onChange}
+                      itemToString={(item: string) => item || ""}
+                      invalid={!!fieldState.error}
+                      invalidText={fieldState.error?.message}
+                    />
+                  );
+                }}
+              />
+            </Row>
           ) : (
             <Controller
               name="resourceId"
@@ -399,21 +461,33 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
 function createEmptyAuthorization(
   resourceType: ResourceType,
 ): NewAuthorization {
-  if (resourceType === ResourceType.USER_TASK) {
-    return {
-      ownerType: OwnerType.USER,
-      ownerId: "",
-      resourceType: ResourceType.USER_TASK,
-      resourcePropertyName: ResourcePropertyName.assignee,
-      permissionTypes: [],
-    };
-  } else {
-    return {
-      ownerType: OwnerType.USER,
-      ownerId: "",
-      resourceType: ResourceType.USER,
-      resourceId: "",
-      permissionTypes: [],
-    };
+  switch (resourceType) {
+    case ResourceType.USER_TASK:
+      return {
+        ownerType: OwnerType.USER,
+        ownerId: "",
+        resourceType: ResourceType.USER_TASK,
+        resourcePropertyName: ResourcePropertyName.assignee,
+        permissionTypes: [],
+      };
+    case ResourceType.AUDIT_LOG:
+      return {
+        ownerType: OwnerType.USER,
+        ownerId: "",
+        // TODO double check if this should be USER or AUDIT_LOG
+        resourceType: ResourceType.AUDIT_LOG,
+        resourcePropertyName: AuditLogResourcePropertyName.categories,
+        // TODO replace with actual field name
+        resourcePropertyNameCategories: [],
+        permissionTypes: [],
+      };
+    default:
+      return {
+        ownerType: OwnerType.USER,
+        ownerId: "",
+        resourceType: ResourceType.USER,
+        resourceId: "",
+        permissionTypes: [],
+      };
   }
 }

@@ -19,6 +19,8 @@
   "enterId": "Enter ID",
   "selectResourceType": "Select Resource type",
   "selectResourcePropertyName": "Select Resource Property Name",
+  "selectResourcePropertyNameCategories": "Select Categories",
+  "resourcePropertyNameCategoriesTitle": "Categories",
   "authorizationDeleted": "Authorization deleted",
   "deleteAuthorization": "Delete authorization",
   "deletingAuthorization": "Deleting authorization",

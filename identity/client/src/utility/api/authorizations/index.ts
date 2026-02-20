@@ -8,6 +8,7 @@
 
 import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
+import { AuditLogCategory } from "@camunda/camunda-api-zod-schemas/8.9/audit-log";
 
 export const AUTHORIZATIONS_ENDPOINT = "/authorizations";
 
@@ -99,9 +100,20 @@ export enum ResourcePropertyName {
   candidateUsers = "candidateUsers",
 }
 
+export enum AuditLogResourcePropertyName {
+  categories = "categories",
+}
+
 export type TaskAuthorization = BaseAuthorization & {
   resourceType: ResourceType.USER_TASK;
   resourcePropertyName: ResourcePropertyName;
+};
+
+export type AuditLogAuthorization = BaseAuthorization & {
+  resourceType: ResourceType.AUDIT_LOG;
+  resourcePropertyName: AuditLogResourcePropertyName;
+  // TODO replace with actual field name
+  resourcePropertyNameCategories: AuditLogCategory[];
 };
 
 export type GeneralAuthorization = BaseAuthorization & {
@@ -109,10 +121,14 @@ export type GeneralAuthorization = BaseAuthorization & {
   resourceId: string;
 };
 
-export type Authorization = TaskAuthorization | GeneralAuthorization;
+export type Authorization =
+  | TaskAuthorization
+  | AuditLogAuthorization
+  | GeneralAuthorization;
 
 export type NewAuthorization =
   | Omit<TaskAuthorization, "authorizationKey">
+  | Omit<AuditLogAuthorization, "authorizationKey">
   | Omit<GeneralAuthorization, "authorizationKey">;
 
 export enum PatchAuthorizationAction {
