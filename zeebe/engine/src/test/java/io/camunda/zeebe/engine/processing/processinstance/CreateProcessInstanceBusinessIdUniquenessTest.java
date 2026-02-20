@@ -337,7 +337,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
         .deploy();
 
     // when
-    final var callActivityInstanceKey =
+    final var parentProcessInstanceKey =
         ENGINE
             .processInstance()
             .ofBpmnProcessId(processWithCallActivityId)
@@ -348,7 +348,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
     assertThat(
             RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withBpmnProcessId(processUnderTestId)
-                .withParentProcessInstanceKey(callActivityInstanceKey)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
                 .getFirst()
                 .getValue())
         .describedAs(
