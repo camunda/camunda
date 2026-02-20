@@ -19,7 +19,6 @@ import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import io.camunda.zeebe.util.VersionUtil;
 import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
@@ -58,7 +57,7 @@ final class ManifestManagerTest {
         new BackupDescriptorImpl(
             backupIdentifier.checkpointId(),
             1,
-            VersionUtil.getVersion(),
+            "8.9.0",
             Instant.now(),
             CheckpointType.MANUAL_BACKUP),
         new NamedFileSetImpl(Map.of()),
