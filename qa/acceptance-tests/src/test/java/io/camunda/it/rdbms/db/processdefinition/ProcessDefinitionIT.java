@@ -212,6 +212,33 @@ public class ProcessDefinitionIT {
   }
 
   @TestTemplate
+  public void shouldFindAllProcessDefinitionPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final ProcessDefinitionDbReader processDefinitionReader =
+        rdbmsService.getProcessDefinitionReader();
+
+    final String processDefinitionId = ProcessDefinitionFixtures.nextStringId();
+    createAndSaveRandomProcessDefinitions(
+        rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        processDefinitionReader.search(
+            new ProcessDefinitionQuery(
+                new ProcessDefinitionFilter.Builder()
+                    .processDefinitionIds(processDefinitionId)
+                    .build(),
+                ProcessDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllProcessInstancePageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

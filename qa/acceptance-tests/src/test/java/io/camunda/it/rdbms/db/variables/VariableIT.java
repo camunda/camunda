@@ -219,6 +219,29 @@ public class VariableIT {
   }
 
   @TestTemplate
+  public void shouldFindAllVariablesPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String varName = "var-name-" + nextStringId();
+    VariableFixtures.createAndSaveRandomVariables(rdbmsService, 120, b -> b.name(varName));
+
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(varName).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllVariablesPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

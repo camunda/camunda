@@ -225,6 +225,30 @@ public class MappingRuleIT {
   }
 
   @TestTemplate
+  public void shouldFindAllMappingRulesPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+
+    final String claimName = "claimName-" + MappingRuleFixtures.nextStringId();
+    createAndSaveRandomMappingRules(rdbmsWriters, 120, b -> b.claimName(claimName));
+
+    final var searchResult =
+        rdbmsService
+            .getMappingRuleReader()
+            .search(
+                new MappingRuleQuery(
+                    new MappingRuleFilter.Builder().claimName(claimName).build(),
+                    MappingRuleSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindMappingRuleWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

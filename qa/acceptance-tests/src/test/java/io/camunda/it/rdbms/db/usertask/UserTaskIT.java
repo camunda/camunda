@@ -179,6 +179,30 @@ public class UserTaskIT {
   }
 
   @TestTemplate
+  public void shouldFindAllUserTasksPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String processDefinitionId = UUID.randomUUID().toString();
+    createAndSaveRandomUserTasks(
+        rdbmsService, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindUserTaskByProcessInstanceKey(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

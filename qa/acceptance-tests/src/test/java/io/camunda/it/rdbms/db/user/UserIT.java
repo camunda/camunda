@@ -168,6 +168,27 @@ public class UserIT {
   }
 
   @TestTemplate
+  public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final UserDbReader userReader = rdbmsService.getUserReader();
+
+    createAndSaveRandomUsers(rdbmsWriters, 120, b -> b.name("Jane More"));
+
+    final var searchResult =
+        userReader.search(
+            new UserQuery(
+                new UserFilter.Builder().names("Jane More").build(),
+                UserSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

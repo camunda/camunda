@@ -135,6 +135,30 @@ public class AuditLogIT {
   }
 
   @TestTemplate
+  public void shouldFindAllAuditLogsPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final Long processInstanceKey = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, 120, b -> b.processInstanceKey(processInstanceKey));
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(
+                b ->
+                    b.filter(f -> f.processInstanceKeys(processInstanceKey))
+                        .sort(s -> s.timestamp().asc().entityType().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAuditLogWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

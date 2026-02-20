@@ -152,6 +152,38 @@ public class DecisionInstanceIT {
   }
 
   @TestTemplate
+  public void shouldFindAllDecisionInstancePagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final var decisionDefinition =
+        DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
+    createAndSaveRandomDecisionInstances(
+        rdbmsWriters,
+        120,
+        b -> b.decisionDefinitionKey(decisionDefinition.decisionDefinitionKey()));
+
+    final var searchResult =
+        decisionInstanceReader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.decisionDefinitionKeys(
+                                    decisionDefinition.decisionDefinitionKey()))
+                        .sort(s -> s.evaluationDate().asc().decisionDefinitionName().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindDecisionInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

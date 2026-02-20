@@ -187,6 +187,33 @@ public class DecisionRequirementsIT {
   }
 
   @TestTemplate
+  public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionRequirementsDbReader decisionRequirementsReader =
+        rdbmsService.getDecisionRequirementsReader();
+
+    final String decisionRequirementsId = DecisionRequirementsFixtures.nextStringId();
+    createAndSaveRandomDecisionRequirements(
+        rdbmsWriters, 120, b -> b.decisionRequirementsId(decisionRequirementsId));
+
+    final var searchResult =
+        decisionRequirementsReader.search(
+            new DecisionRequirementsQuery(
+                new DecisionRequirementsFilter.Builder()
+                    .decisionRequirementsIds(decisionRequirementsId)
+                    .build(),
+                DecisionRequirementsSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5)),
+                null));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
