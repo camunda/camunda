@@ -159,18 +159,25 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 5: Trigger JSON Sync
+#### Phase 5: Trigger JSON Sync — DONE ✅
 
 **Goal:** Keep the JSON file up-to-date after every mutation.
 
-**Tasks:**
+**What was done:**
 
-1. **Sync after backup confirmation** — in `BackupServiceImpl`, after the `CONFIRM_BACKUP` command is written and processed, trigger `syncer.sync(partitionId)` asynchronously
-   - This is the primary sync point — happens on every successful backup
-2. **Sync on leader election** — in `CheckpointRecordsProcessor.onRecovered()`, trigger a sync
-   - Catches up any missed syncs from leader failovers
-3. **Sync after backup deletion** — triggered as an async side-effect by `CheckpointDeleteBackupProcessor` after processing each `DELETE_BACKUP` command (covers both retention and user-initiated deletion; see Phase 6.5)
-4. **Sync on errors/recovery** — if any sync fails, the next sync opportunity (leader election or next mutation) will re-sync from the authoritative CF state
+1. **Sync after backup confirmation** — implemented as a `PostCommitTask` in `CheckpointConfirmBackupProcessor.process()`. After the `CONFIRMED_BACKUP` event is appended and state is mutated, a post-commit task fires `syncer.sync()` (fire-and-forget). This is more correct than triggering from `BackupServiceImpl` because the CFs are guaranteed to be updated at post-commit time.
+   - `CheckpointRecordsProcessor` now takes a `BackupStore` constructor parameter (nullable). If non-null, creates `BackupMetadataSyncer` in `init()`.
+   - `CheckpointConfirmBackupProcessor` receives the syncer, `partitionId`, `checkpointMetadataState`, and `backupRangeState` via its constructor.
+   - Post-commit tasks only execute on leaders (not during replay), so sync naturally only happens on the leader.
+2. **Sync on leader election** — implemented in `CheckpointRecordsProcessor.onRecovered()`. After `failInProgressBackup()`, calls `syncer.sync()` to catch up any missed syncs from leader failovers.
+3. **Sync after backup deletion** — deferred to Phase 6.5 (`CheckpointDeleteBackupProcessor` will schedule a similar post-commit task).
+4. **Sync on errors/recovery** — covered by points 1 and 2. If any sync fails, the syncer rolls back its sequence number and the next mutation or recovery will re-sync.
+5. **Wiring changes:**
+   - `BackupServiceTransitionStep` now passes `context.getBackupStore()` to the processor constructor
+   - `checkpointMetadataState` and `backupRangeState` promoted from local variables to fields in `CheckpointRecordsProcessor` (needed for `onRecovered()` sync)
+   - `partitionId` stored as a field (was previously a constructor param but unused)
+6. **Test infrastructure:** `MockProcessingResultBuilder` now stores post-commit tasks and `MockProcessingResult` exposes them via `postCommitTasks()` and executes them in `executePostCommitTasks()`.
+7. **4 new tests** in `CheckpointRecordsProcessorTest`: sync post-commit task on confirm, no sync without backup store, no sync on rejection, sync on recovery.
 
 ---
 
