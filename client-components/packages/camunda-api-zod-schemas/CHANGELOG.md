@@ -5,7 +5,7 @@
 ### 🚀 Enhancements
 
 - fix 8.9 defs and mark optional fields as nullable ([#46339](https://github.com/camunda/camunda/issues/46339))
-- add missing 8.9 defs ([#463100](https://github.com/camunda/camunda/issues/46310))
+- add missing 8.9 defs ([#463100](https://github.com/camunda/camunda/issues/463100))
 
 ### ❤️ Contributors
 
