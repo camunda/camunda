@@ -106,8 +106,8 @@ import io.camunda.security.auth.SecurityContext;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.ResourceAccessController;
 import io.camunda.security.reader.TenantCheck;
-import io.camunda.zeebe.util.collection.Tuple;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -519,8 +519,8 @@ public class CamundaSearchClients implements SearchClientsProxy {
                 entityByMultipleIdsNotFoundException(
                     "Global Listener",
                     List.of(
-                        Tuple.of("listenerId", listenerId),
-                        Tuple.of("listenerType", listenerType.name()))));
+                        Map.entry("listenerId", listenerId),
+                        Map.entry("listenerType", listenerType.name()))));
   }
 
   @Override
@@ -649,10 +649,10 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   private CamundaSearchException entityByMultipleIdsNotFoundException(
-      final String entityType, final List<Tuple<String, String>> idTypesAndValues) {
+      final String entityType, final List<Map.Entry<String, String>> idTypesAndValues) {
     final String formattedIds =
         idTypesAndValues.stream()
-            .map(e -> "%s '%s'".formatted(e.getLeft(), e.getRight()))
+            .map(e -> "%s '%s'".formatted(e.getKey(), e.getValue()))
             .collect(Collectors.joining(", "));
     return new CamundaSearchException(
         ERROR_ENTITY_BY_MULTIPLE_IDS_NOT_FOUND.formatted(entityType, formattedIds),
