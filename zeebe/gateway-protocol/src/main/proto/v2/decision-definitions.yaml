@@ -373,10 +373,12 @@ components:
           type: string
         failedDecisionDefinitionId:
           description: The ID of the decision which failed during evaluation.
+          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
         failureMessage:
           description: Message describing why the decision which was evaluated failed.
+          nullable: true
           type: string
         tenantId:
           description: The tenant ID of the evaluated decision.
@@ -406,7 +408,7 @@ components:
             $ref: '#/components/schemas/EvaluatedDecisionResult'
 
     EvaluatedDecisionResult:
-      required: 
+      required:
         - evaluatedInputs
         - matchedRules
       x-semantic-provider:
