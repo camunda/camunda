@@ -490,7 +490,8 @@ final class BackupRangeResolverTest {
   }
 
   /**
-   * Fluent test BackupStore that allows easy setup of partitions with backups and manifest metadata.
+   * Fluent test BackupStore that allows easy setup of partitions with backups and manifest
+   * metadata.
    *
    * <p>Usage:
    *
@@ -570,10 +571,8 @@ final class BackupRangeResolverTest {
 
     /** Syncs the manifest for this partition to slot "a". */
     private void syncManifest(final int partitionId) {
-      final var checkpoints =
-          checkpointsByPartition.getOrDefault(partitionId, List.of());
-      final var ranges =
-          rangesByPartition.getOrDefault(partitionId, List.of());
+      final var checkpoints = checkpointsByPartition.getOrDefault(partitionId, List.of());
+      final var ranges = rangesByPartition.getOrDefault(partitionId, List.of());
       final var manifest =
           new BackupMetadataManifest(partitionId, 1L, Instant.now(), checkpoints, ranges);
       try {
@@ -722,9 +721,9 @@ final class BackupRangeResolverTest {
       }
 
       /**
-       * Simulates deletion of a checkpoint by removing it from checkpoints and adjusting ranges.
-       * In the new CF-based model, deletion splits/shrinks ranges rather than creating
-       * Incomplete ranges.
+       * Simulates deletion of a checkpoint by removing it from checkpoints and adjusting ranges. In
+       * the new CF-based model, deletion splits/shrinks ranges rather than creating Incomplete
+       * ranges.
        */
       PartitionBuilder withDeletion(final long deletedCheckpoint) {
         // Remove the checkpoint entry

@@ -25,6 +25,7 @@ import io.camunda.zeebe.broker.system.partitions.TestPartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldCloseService;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldDoNothing;
 import io.camunda.zeebe.broker.system.partitions.impl.steps.PartitionTransitionTestArgumentProviders.TransitionsThatShouldInstallService;
+import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.logstreams.log.LogStream;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
@@ -57,6 +58,9 @@ class BackupServiceTransitionStepTest {
   @Mock(answer = Answers.RETURNS_DEEP_STUBS)
   BrokerCfg brokerCfg;
 
+  @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+  ZeebeDb zeebeDb;
+
   @Mock ClusterCfg clusterCfg;
 
   @Mock RaftPartition raftPartition;
@@ -70,6 +74,7 @@ class BackupServiceTransitionStepTest {
     transitionContext.setBrokerCfg(brokerCfg);
     transitionContext.setRaftPartition(raftPartition);
     transitionContext.setLogStream(logStream);
+    transitionContext.setZeebeDb(zeebeDb);
 
     lenient().when(brokerCfg.getCluster().getPartitionsCount()).thenReturn(3);
     lenient()
