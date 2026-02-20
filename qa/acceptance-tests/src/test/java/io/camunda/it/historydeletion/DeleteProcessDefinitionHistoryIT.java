@@ -32,7 +32,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class DeleteProcessDefinitionIT {
+public class DeleteProcessDefinitionHistoryIT {
 
   @MultiDbTestApplication
   static final TestStandaloneBroker BROKER =
