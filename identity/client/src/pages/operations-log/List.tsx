@@ -359,6 +359,7 @@ const List: FC = () => {
             loading={loading}
             setSort={handleSort}
             page={{ ...page, ...auditLogs?.page }}
+            pageSizes={[50, 100, 200]}
             setPageNumber={setPageNumber}
             setPageSize={setPageSize}
           />

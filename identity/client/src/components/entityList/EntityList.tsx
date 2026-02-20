@@ -111,6 +111,7 @@ type EntityListProps<D extends EntityData> = {
   maxDisplayCellLength?: number;
   setPageNumber?: (page: number) => void;
   setPageSize?: (pageSize: number) => void;
+  pageSizes?: number[];
   page?:
     | ({ pageNumber: number; pageSize: number } & Partial<PageResult>)
     | undefined;
@@ -140,6 +141,7 @@ const EntityList = <D extends EntityData>({
   maxDisplayCellLength = 50,
   setPageNumber = () => {},
   setPageSize = () => {},
+  pageSizes = PAGESIZES,
   page: pageData,
   setSort = () => {},
   setSearch = () => {},
@@ -428,7 +430,7 @@ const EntityList = <D extends EntityData>({
             )}
           </>
           {!!pageData?.totalItems &&
-            pageData.totalItems > Math.min(...PAGESIZES) && (
+            pageData.totalItems > Math.min(...pageSizes) && (
               <Pagination
                 backwardText={t("Previous page")}
                 forwardText={t("Next page")}
@@ -436,7 +438,7 @@ const EntityList = <D extends EntityData>({
                 page={pageData.pageNumber}
                 pageNumberText={t("Page Number")}
                 pageSize={pageData.pageSize}
-                pageSizes={PAGESIZES}
+                pageSizes={pageSizes}
                 totalItems={pageData.totalItems}
                 onChange={({
                   page,
