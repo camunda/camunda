@@ -107,9 +107,8 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
   }
 
   /*
-   * Includes a customized authorization check query for audit logs. Audit logs support composite
-   * authorizations, where a user may be authorized to:
-   *   - View all audit logs of a given audit log category,
+   * Includes a customized authorization check query by resource ids for audit logs.
+   * Audit logs support composite authorizations, where a user may be authorized to:
    *   - View all audit logs of a specified process definition
    *   - View audit logs related to user tasks of a specified process definition.
    *
@@ -122,9 +121,6 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
   protected SearchQuery toAuthorizationCheckSearchQuery(final Authorization<?> authorization) {
 
     final var resourceType = authorization.resourceType();
-    if (AUDIT_LOG.equals(resourceType)) {
-      return stringTerms(CATEGORY, authorization.resourceIds());
-    }
 
     if (PROCESS_DEFINITION.equals(resourceType)
         && READ_PROCESS_INSTANCE.equals(authorization.permissionType())) {
@@ -150,6 +146,15 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
     return matchNone();
   }
 
+  /*
+   * Includes a customized authorization check query by properties for audit logs.
+   * A user may be authorized to:
+   * - View all audit logs of a given audit log category
+   *
+   * @param authorization the authorization details
+   * @param authentication the camunda authentication
+   * @return the constructed search query for authorization checks
+   */
   @Override
   protected SearchQuery toAuthorizationCheckSearchQueryByProperties(
       final Authorization<?> authorization, final CamundaAuthentication authentication) {
