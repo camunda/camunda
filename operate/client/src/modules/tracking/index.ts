@@ -17,7 +17,7 @@ import type {
   BatchOperationState,
   BatchOperationType,
   DecisionInstanceState,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const EVENT_PREFIX = 'operate:';
 

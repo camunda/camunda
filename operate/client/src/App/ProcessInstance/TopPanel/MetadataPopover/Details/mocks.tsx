@@ -13,7 +13,7 @@ import type {
   ElementInstance,
   Job,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {MemoryRouter} from 'react-router-dom';
 

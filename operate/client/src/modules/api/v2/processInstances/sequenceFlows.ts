@@ -9,7 +9,7 @@
 import {
   endpoints,
   type GetProcessInstanceSequenceFlowsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {requestWithThrow} from 'modules/request';
 
 const fetchProcessSequenceFlows = async (processInstanceKey: string) => {

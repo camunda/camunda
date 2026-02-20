@@ -11,7 +11,7 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import type {
   ElementInstance,
   QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {waitFor} from '@testing-library/react';
 
 const mockProcessInstanceKey = '2251799813685625';

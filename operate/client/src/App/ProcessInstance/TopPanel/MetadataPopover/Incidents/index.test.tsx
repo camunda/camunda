@@ -18,7 +18,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import type {
   DecisionInstance,
   Incident,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';

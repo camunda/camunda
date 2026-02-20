@@ -9,7 +9,7 @@
 import {
   endpoints,
   type BatchOperation,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockGetRequest} from '../../mockRequest';
 
 const mockGetBatchOperation = (contextPath = '') =>

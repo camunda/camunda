@@ -16,7 +16,7 @@ import {
   type QueryProcessDefinitionsRequestBody,
   type QueryProcessDefinitionsResponseBody,
   type QueryProcessInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {BatchOperationDto, OperationEntity} from '@/types';
 
 function mockResponses({

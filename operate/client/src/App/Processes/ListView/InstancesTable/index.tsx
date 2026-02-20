@@ -21,7 +21,7 @@ import type {
   BatchOperationItem,
   ProcessInstanceState,
   BatchOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';

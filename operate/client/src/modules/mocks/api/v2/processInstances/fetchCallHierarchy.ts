@@ -7,7 +7,7 @@
  */
 
 import {mockGetRequest} from '../../mockRequest';
-import type {GetProcessInstanceCallHierarchyResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {GetProcessInstanceCallHierarchyResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockFetchCallHierarchy = (contextPath = '') =>
   mockGetRequest<GetProcessInstanceCallHierarchyResponseBody>(

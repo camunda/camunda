@@ -10,7 +10,7 @@ import {mockPostRequest} from '../../mockRequest';
 import {
   endpoints,
   type CreateCancellationBatchOperationResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockCancelProcessInstancesBatchOperation = () =>
   mockPostRequest<CreateCancellationBatchOperationResponseBody>(

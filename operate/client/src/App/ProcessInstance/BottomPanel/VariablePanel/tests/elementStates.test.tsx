@@ -24,7 +24,7 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {act} from 'react';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
