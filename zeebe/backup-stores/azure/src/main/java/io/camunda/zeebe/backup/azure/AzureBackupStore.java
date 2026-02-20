@@ -29,6 +29,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -260,6 +261,35 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(
+      final int partitionId, final String slot, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = backupMetadataPath(partitionId, slot);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          blobClient.upload(BinaryData.fromBytes(content), true);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
+      final int partitionId, final String slot) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = backupMetadataPath(partitionId, slot);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          if (!blobClient.exists()) {
+            return Optional.empty();
+          }
+          return Optional.of(blobClient.downloadContent().toBytes());
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -279,6 +309,10 @@ public final class AzureBackupStore implements BackupStore {
 
   private String rangeMarkersPrefix(final int partitionId) {
     return "ranges/" + partitionId + "/";
+  }
+
+  private String backupMetadataPath(final int partitionId, final String slot) {
+    return "metadata/" + partitionId + "/backups-" + slot + ".json";
   }
 
   private void assureContainerCreated() {

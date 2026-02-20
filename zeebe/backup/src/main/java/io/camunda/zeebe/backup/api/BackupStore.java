@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.api;
 
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /** A store where the backup is stored * */
@@ -47,6 +48,26 @@ public interface BackupStore {
 
   /** Deletes a given {@link BackupRangeMarker} for the given partition. */
   CompletableFuture<Void> deleteRangeMarker(int partitionId, BackupRangeMarker marker);
+
+  /**
+   * Stores backup metadata content to a named slot for the given partition. Slots "a" and "b" are
+   * used alternately for crash-safe atomic swap. The content is an opaque byte array (JSON).
+   *
+   * @param partitionId the partition this metadata belongs to
+   * @param slot the slot name ("a" or "b")
+   * @param content the serialized metadata content
+   */
+  CompletableFuture<Void> storeBackupMetadata(int partitionId, String slot, byte[] content);
+
+  /**
+   * Loads backup metadata content from a named slot for the given partition. Returns empty if the
+   * slot does not exist (fresh deployment or pre-migration).
+   *
+   * @param partitionId the partition this metadata belongs to
+   * @param slot the slot name ("a" or "b")
+   * @return the serialized metadata content, or empty if not found
+   */
+  CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId, String slot);
 
   CompletableFuture<Void> closeAsync();
 }

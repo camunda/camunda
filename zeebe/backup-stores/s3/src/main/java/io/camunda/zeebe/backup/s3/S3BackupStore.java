@@ -336,6 +336,33 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(
+      final int partitionId, final String slot, final byte[] content) {
+    final var key = backupMetadataKey(partitionId, slot);
+    return client
+        .putObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.fromBytes(content))
+        .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
+      final int partitionId, final String slot) {
+    final var key = backupMetadataKey(partitionId, slot);
+    return client
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncResponseTransformer.toBytes())
+        .thenApply(response -> Optional.of(response.asByteArray()))
+        .exceptionally(
+            throwable -> {
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                return Optional.empty();
+              }
+              throw new RuntimeException(throwable);
+            });
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
@@ -343,6 +370,15 @@ public final class S3BackupStore implements BackupStore {
 
   private String rangeMarkersPrefix(final int partitionId) {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
+  }
+
+  private String backupMetadataKey(final int partitionId, final String slot) {
+    return config.basePath().map(base -> base + "/").orElse("")
+        + "metadata/"
+        + partitionId
+        + "/backups-"
+        + slot
+        + ".json";
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
