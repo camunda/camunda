@@ -39,9 +39,11 @@ import io.camunda.zeebe.journal.JournalException;
 import io.camunda.zeebe.journal.JournalException.InvalidChecksum;
 import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.snapshots.ReceivableSnapshotStore;
+import io.camunda.zeebe.snapshots.ReceivedSnapshot;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -242,5 +244,184 @@ public class PassiveRoleTest {
 
     // then
     assertThat(response.succeeded()).isTrue();
+  }
+
+  // --- Tests for SUPPORT-31571: conditional snapshot abort in handleAppend ---
+
+  @Test
+  public void shouldNotAbortPendingSnapshotOnHeartbeat() throws Exception {
+    // given - a pending snapshot is in progress
+    final ReceivedSnapshot pendingSnapshot = mock(ReceivedSnapshot.class);
+    setPendingSnapshot(role, pendingSnapshot);
+
+    // An empty heartbeat AppendRequest (no entries) from the leader
+    final VersionedAppendRequest heartbeat =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of())
+            .withCommitIndex(0)
+            .build();
+
+    // The log doesn't advance (no entries to append), lastIndex stays at 0
+    when(log.getLastIndex()).thenReturn(0L);
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(heartbeat)).join();
+
+    // then - the pending snapshot must NOT be aborted
+    verify(pendingSnapshot, never()).abort();
+    assertThat(response.succeeded()).isTrue();
+    // Verify the snapshot is still set (not nulled out)
+    assertThat(getPendingSnapshot(role)).isSameAs(pendingSnapshot);
+  }
+
+  @Test
+  public void shouldAbortPendingSnapshotWhenEntriesAppended() throws Exception {
+    // given - a pending snapshot is in progress
+    final ReceivedSnapshot pendingSnapshot = mock(ReceivedSnapshot.class);
+    setPendingSnapshot(role, pendingSnapshot);
+
+    // An AppendRequest with real entries
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(1)
+            .build();
+
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenReturn(mock(IndexedRaftLogEntry.class));
+    // Log advances: before append returns 0, after append returns 1
+    when(log.getLastIndex()).thenReturn(0L).thenReturn(1L);
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the pending snapshot MUST be aborted because the log advanced
+    verify(pendingSnapshot, times(1)).abort();
+    assertThat(response.succeeded()).isTrue();
+    // Verify the snapshot was nulled out
+    assertThat(getPendingSnapshot(role)).isNull();
+  }
+
+  @Test
+  public void shouldNotAbortWhenNoPendingSnapshot() {
+    // given - no pending snapshot (default state)
+    // An empty heartbeat
+    final VersionedAppendRequest heartbeat =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(List.of())
+            .withCommitIndex(0)
+            .build();
+
+    when(log.getLastIndex()).thenReturn(0L);
+
+    // when - should not throw or cause any issues
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(heartbeat)).join();
+
+    // then
+    assertThat(response.succeeded()).isTrue();
+  }
+
+  @Test
+  public void shouldNotAbortPendingSnapshotWhenAppendFails() throws Exception {
+    // given - a pending snapshot is in progress
+    final ReceivedSnapshot pendingSnapshot = mock(ReceivedSnapshot.class);
+    setPendingSnapshot(role, pendingSnapshot);
+
+    // An AppendRequest with entries, but prevLogIndex is ahead of local log (will fail
+    // checkPreviousEntry)
+    final var entries = List.of(new ReplicatableJournalRecord(1, 100, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(1)
+            .withPrevLogIndex(99)
+            .withEntries(entries)
+            .withCommitIndex(100)
+            .build();
+
+    // Local log only has index 0 — prevLogIndex=99 is way ahead, so checkPreviousEntry fails
+    final IndexedRaftLogEntry lastEntry = mock(IndexedRaftLogEntry.class);
+    when(lastEntry.index()).thenReturn(0L);
+    when(lastEntry.term()).thenReturn(0L);
+    when(log.getLastEntry()).thenReturn(lastEntry);
+    when(log.getLastIndex()).thenReturn(0L);
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the append failed, so the pending snapshot must NOT be aborted
+    verify(pendingSnapshot, never()).abort();
+    assertThat(response.succeeded()).isFalse();
+    // Verify the snapshot is still set
+    assertThat(getPendingSnapshot(role)).isSameAs(pendingSnapshot);
+  }
+
+  @Test
+  public void shouldNotAbortPendingSnapshotWhenEntryFailsToAppend() throws Exception {
+    // given - a pending snapshot is in progress
+    final ReceivedSnapshot pendingSnapshot = mock(ReceivedSnapshot.class);
+    setPendingSnapshot(role, pendingSnapshot);
+
+    // An AppendRequest with entries that will fail on append (e.g., invalid checksum)
+    final var entries = List.of(new ReplicatableJournalRecord(1, 1, 1, new byte[1]));
+    final VersionedAppendRequest request =
+        VersionedAppendRequest.builder()
+            .withTerm(1)
+            .withLeader(MemberId.anonymous())
+            .withPrevLogTerm(0)
+            .withPrevLogIndex(0)
+            .withEntries(entries)
+            .withCommitIndex(1)
+            .build();
+
+    when(log.append(any(ReplicatableJournalRecord.class)))
+        .thenThrow(new InvalidChecksum("expected"));
+    // Log does NOT advance because the append fails
+    when(log.getLastIndex()).thenReturn(0L);
+
+    // when
+    final AppendResponse response =
+        role.handleAppend(ProtocolVersionHandler.transform(request)).join();
+
+    // then - the entry failed to append so the log didn't advance; snapshot preserved
+    verify(pendingSnapshot, never()).abort();
+    assertThat(response.succeeded()).isFalse();
+    assertThat(getPendingSnapshot(role)).isSameAs(pendingSnapshot);
+  }
+
+  /**
+   * Sets the private pendingSnapshot field via reflection. This is necessary because the field is
+   * private and there's no public setter — snapshots are normally set via the onInstall() path.
+   */
+  private static void setPendingSnapshot(final PassiveRole role, final ReceivedSnapshot snapshot)
+      throws Exception {
+    final Field field = PassiveRole.class.getDeclaredField("pendingSnapshot");
+    field.setAccessible(true);
+    field.set(role, snapshot);
+  }
+
+  /** Reads the private pendingSnapshot field via reflection for assertion purposes. */
+  private static ReceivedSnapshot getPendingSnapshot(final PassiveRole role) throws Exception {
+    final Field field = PassiveRole.class.getDeclaredField("pendingSnapshot");
+    field.setAccessible(true);
+    return (ReceivedSnapshot) field.get(role);
   }
 }

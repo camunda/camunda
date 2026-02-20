@@ -581,12 +581,29 @@ public class PassiveRole extends InactiveRole {
       return future;
     }
 
+    // Capture the log index before appending to detect whether entries were actually appended.
+    final long logIndexBeforeAppend = raft.getLog().getLastIndex();
+
     // Append the entries to the log.
     appendEntries(request, future);
 
-    // If a snapshot replication was ongoing, reset it. Otherwise SnapshotReplicationListeners will
-    // wait for ever for the snapshot to be received.
-    abortPendingSnapshots();
+    // Only abort an ongoing snapshot replication if the leader actually appended entries to our
+    // log. This proves the follower can catch up via log replication, making the snapshot
+    // unnecessary. Empty heartbeats (AppendRequests with no entries) should NOT abort an in-
+    // progress snapshot, because they don't advance the follower's state — aborting on heartbeats
+    // causes wasteful snapshot rollback cycles when network flaps cause SWIM to briefly remove and
+    // re-add the leader. See SUPPORT-31571.
+    //
+    // When entries are appended, we must still abort and notify SnapshotReplicationListeners,
+    // otherwise they would wait indefinitely for the snapshot to complete.
+    if (pendingSnapshot != null && raft.getLog().getLastIndex() > logIndexBeforeAppend) {
+      log.info(
+          "Aborting pending snapshot {} because log entries were successfully appended (log advanced from index {} to {})",
+          pendingSnapshot,
+          logIndexBeforeAppend,
+          raft.getLog().getLastIndex());
+      abortPendingSnapshots();
+    }
     return future;
   }
 
