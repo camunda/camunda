@@ -57,6 +57,10 @@ const buildMutationRequestBody = ({
     requestBody.filter.state = {$eq: 'TERMINATED'};
   }
 
+  if (baseFilter.activityId) {
+    requestBody.filter.elementInstanceState = {$eq: 'ACTIVE'};
+  }
+
   if (
     Array.isArray(baseFilter.processIds) &&
     baseFilter.processIds.length > 0 &&
