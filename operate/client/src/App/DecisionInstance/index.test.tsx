@@ -9,6 +9,7 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
   within,
 } from 'modules/testing-library';
@@ -20,10 +21,18 @@ import {mockFetchDecisionDefinitionXML} from 'modules/mocks/api/v2/decisionDefin
 import {mockFetchDecisionInstance} from 'modules/mocks/api/v2/decisionInstances/fetchDecisionInstance';
 import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstances/searchDecisionInstances';
 import {Paths} from 'modules/Routes';
+import {LocationLog} from 'modules/utils/LocationLog';
+import {notificationsStore} from 'modules/stores/notifications';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {createUser} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
+
+vi.mock('modules/stores/notifications', () => ({
+  notificationsStore: {
+    displayNotification: vi.fn(() => () => {}),
+  },
+}));
 
 const DECISION_INSTANCE_ID = '4294980768';
 
@@ -35,6 +44,15 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
       >
         <Routes>
           <Route path={Paths.decisionInstance()} element={children} />
+          <Route
+            path="*"
+            element={
+              <>
+                decisions page
+                <LocationLog />
+              </>
+            }
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -309,5 +327,23 @@ describe('<DecisionInstance />', () => {
       'href',
       'https://docs.camunda.io/docs/self-managed/operate-deployment/operate-authentication/#resource-based-permissions',
     );
+  });
+
+  it('should redirect to decisions page and display notification if decision instance is not found (404)', async () => {
+    mockFetchDecisionInstance().withServerError(404);
+    mockFetchDecisionDefinitionXML().withServerError();
+    mockSearchDecisionInstances().withServerError();
+
+    render(<DecisionInstance />, {wrapper: Wrapper});
+
+    await waitFor(() => {
+      expect(screen.getByTestId('pathname')).toHaveTextContent(/^\/decisions$/);
+    });
+
+    expect(notificationsStore.displayNotification).toHaveBeenCalledWith({
+      kind: 'error',
+      title: `Decision instance ${DECISION_INSTANCE_ID} could not be found`,
+      isDismissable: true,
+    });
   });
 });
