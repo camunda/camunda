@@ -270,8 +270,8 @@ public final class BackupApiRequestHandler
                           r ->
                               new PartitionBackupRange(
                                   partitionId,
-                                  fromBackupStatus(r.first()),
-                                  fromBackupStatus(r.last()),
+                                  fromCheckpointInfo(r.first()),
+                                  fromCheckpointInfo(r.last()),
                                   r.missingCheckpoints()))
                       .toList());
               result.complete(Either.right(responseWriter.withBackupRanges(response)));
@@ -280,24 +280,17 @@ public final class BackupApiRequestHandler
     return result;
   }
 
-  private CheckpointInfo fromBackupStatus(final BackupStatus backupStatus) {
-    if (backupStatus == null) {
+  private CheckpointInfo fromCheckpointInfo(
+      final io.camunda.zeebe.backup.api.BackupRangeStatus.CheckpointInfo info) {
+    if (info == null) {
       return null;
     }
-
-    final var descriptor =
-        backupStatus
-            .descriptor()
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "Expected a backup with descriptor: " + backupStatus));
     return new CheckpointInfo(
-        backupStatus.id().checkpointId(),
-        descriptor.firstLogPosition().orElse(-1L),
-        descriptor.checkpointPosition(),
-        descriptor.checkpointType(),
-        descriptor.checkpointTimestamp());
+        info.checkpointId(),
+        info.firstLogPosition(),
+        info.checkpointPosition(),
+        info.checkpointType(),
+        Instant.ofEpochMilli(info.checkpointTimestamp()));
   }
 
   private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {

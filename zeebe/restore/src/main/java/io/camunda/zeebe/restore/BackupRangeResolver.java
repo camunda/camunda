@@ -16,7 +16,6 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
@@ -45,9 +44,9 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@code BackupRangeResolver} class provides methods to resolve backup ranges and backup
- * statuses for a given partition, time interval, or exported position. This class reads per-partition
- * JSON manifests from the {@link BackupStore} via a {@link BackupMetadataReader}, reducing the
- * number of API calls to exactly one per partition.
+ * statuses for a given partition, time interval, or exported position. This class reads
+ * per-partition JSON manifests from the {@link BackupStore} via a {@link BackupMetadataReader},
+ * reducing the number of API calls to exactly one per partition.
  */
 @NullMarked
 public final class BackupRangeResolver {
@@ -136,8 +135,7 @@ public final class BackupRangeResolver {
         manifest.checkpoints().stream()
             .collect(
                 Collectors.toMap(
-                    CheckpointEntry::checkpointId,
-                    entry -> toBackupStatus(partition, entry)));
+                    CheckpointEntry::checkpointId, entry -> toBackupStatus(partition, entry)));
 
     // finds the BackupRange that entirely covers the interval `[from, to]`
     final var statusInterval =
@@ -357,8 +355,7 @@ public final class BackupRangeResolver {
    * Converts a manifest checkpoint entry to a {@link BackupStatus} object. Uses node ID 0 as a
    * sentinel since the actual node ID is not relevant for restore logic.
    */
-  private static BackupStatus toBackupStatus(
-      final int partitionId, final CheckpointEntry entry) {
+  private static BackupStatus toBackupStatus(final int partitionId, final CheckpointEntry entry) {
     final var id = new BackupIdentifierImpl(0, partitionId, entry.checkpointId());
     final var descriptor =
         new BackupDescriptorImpl(

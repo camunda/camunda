@@ -12,6 +12,8 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.management.BackupService;
 import io.camunda.zeebe.backup.management.NoopBackupManager;
 import io.camunda.zeebe.backup.processing.CheckpointRecordsProcessor;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -99,6 +101,11 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
     // now because SegmentedJournal requires some information from RaftContext in its builder. Until
     // we can refactor SegmentedJournal and build it outside of raft, we have to do this in this
     // hacky way.
+    final var zeebeDb = context.getZeebeDb();
+    final var backupRangeState = new DbBackupRangeState(zeebeDb, zeebeDb.createContext());
+    final var checkpointMetadataState =
+        new DbCheckpointMetadataState(zeebeDb, zeebeDb.createContext());
+
     final BackupService backupManager =
         new BackupService(
             context.getNodeId(),
@@ -108,7 +115,9 @@ public final class BackupServiceTransitionStep implements PartitionTransitionSte
             context.getRaftPartition().dataDirectory().toPath(),
             index -> context.getRaftPartition().getServer().getTailSegments(index),
             context.getPartitionTransitionMeterRegistry(),
-            context.getLogStream().newLogStreamWriter());
+            context.getLogStream().newLogStreamWriter(),
+            backupRangeState,
+            checkpointMetadataState);
 
     final ActorFuture<Void> installed = context.getConcurrencyControl().createFuture();
     context

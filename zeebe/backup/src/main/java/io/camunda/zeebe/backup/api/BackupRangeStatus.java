@@ -7,17 +7,18 @@
  */
 package io.camunda.zeebe.backup.api;
 
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Collections;
 import java.util.Set;
 
 public sealed interface BackupRangeStatus {
-  BackupStatus first();
+  CheckpointInfo first();
 
-  BackupStatus last();
+  CheckpointInfo last();
 
   Set<Long> missingCheckpoints();
 
-  record Complete(BackupStatus first, BackupStatus last) implements BackupRangeStatus {
+  record Complete(CheckpointInfo first, CheckpointInfo last) implements BackupRangeStatus {
 
     @Override
     public Set<Long> missingCheckpoints() {
@@ -29,10 +30,22 @@ public sealed interface BackupRangeStatus {
    * A backup range with deletions. Verification of all contained backups is required to determine
    * whether the range is effectively complete or not.
    */
-  record Incomplete(BackupStatus first, BackupStatus last, Set<Long> missingCheckpoints)
+  record Incomplete(CheckpointInfo first, CheckpointInfo last, Set<Long> missingCheckpoints)
       implements BackupRangeStatus {
     public Incomplete {
       missingCheckpoints = Set.copyOf(missingCheckpoints);
     }
   }
+
+  /**
+   * Checkpoint metadata for a range boundary. Contains the information needed to describe a
+   * checkpoint within a backup range without requiring a full {@link BackupStatus} lookup from the
+   * backup store.
+   */
+  record CheckpointInfo(
+      long checkpointId,
+      long checkpointPosition,
+      long checkpointTimestamp,
+      CheckpointType checkpointType,
+      long firstLogPosition) {}
 }
