@@ -1,3 +1,8 @@
+{{! Custom override of the upstream pojo.mustache template.
+  Diff: Removes the @Schema annotation from the class level, since it can cause issues with JSON schema generation
+  when method-level schema exists as well.
+  The @Schema annotation is still emitted for properties, which is where it is most useful.
+}}
 /**
  * {{description}}{{^description}}{{classname}}{{/description}}{{#isDeprecated}}
  * @deprecated{{/isDeprecated}}
