@@ -26,10 +26,7 @@ public class CheckpointBackupConfirmedApplier {
     this.backupRangeState = backupRangeState;
   }
 
-  public void apply(
-      final CheckpointRecord checkpointRecord,
-      final long checkpointTimestamp,
-      final String brokerVersion) {
+  public void apply(final CheckpointRecord checkpointRecord, final long checkpointTimestamp) {
     final var checkpointId = checkpointRecord.getCheckpointId();
     final var firstLogPosition = checkpointRecord.getFirstLogPosition();
 
@@ -45,7 +42,7 @@ public class CheckpointBackupConfirmedApplier {
       if (existingRange.isPresent()) {
         backupRangeState.updateRangeEnd(existingRange.get().start(), checkpointId);
       } else {
-        // Range not found (pre-migration state) — start a new one
+        // Range not found — start a new one
         backupRangeState.startNewRange(checkpointId);
       }
     } else {

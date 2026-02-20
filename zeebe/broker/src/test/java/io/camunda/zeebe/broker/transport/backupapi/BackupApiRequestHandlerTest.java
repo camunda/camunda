@@ -391,7 +391,8 @@ final class BackupApiRequestHandlerTest {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.DELETE).setPartitionId(1);
 
-    when(backupManager.deleteBackup(anyLong())).thenReturn(CompletableActorFuture.completed(null));
+    when(backupManager.requestBackupDeletion(anyLong()))
+        .thenReturn(CompletableActorFuture.completed(null));
 
     // when
     final BackupStatusResponse statusResponse = new BackupStatusResponse();
@@ -408,7 +409,7 @@ final class BackupApiRequestHandlerTest {
     // given
     final var request = new BackupRequest().setType(BackupRequestType.DELETE).setPartitionId(1);
 
-    when(backupManager.deleteBackup(anyLong()))
+    when(backupManager.requestBackupDeletion(anyLong()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(
                 new RuntimeException("Expected failure")));

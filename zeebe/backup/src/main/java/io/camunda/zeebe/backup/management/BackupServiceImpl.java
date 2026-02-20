@@ -318,59 +318,70 @@ final class BackupServiceImpl {
             });
   }
 
-  ActorFuture<Void> deleteBackup(
-      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+  ActorFuture<Void> writeBackupDeletionCommand(
+      final long checkpointId, final ConcurrencyControl executor) {
     final ActorFuture<Void> deleteCompleted = executor.createFuture();
-    final var searchPattern =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
-    LOG.atDebug()
-        .addKeyValue("pattern", searchPattern)
-        .setMessage("Deleting matching backups")
-        .log();
-    executor.run(
-        () ->
-            backupStore
-                .list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(),
-                        Optional.of(partitionId),
-                        CheckpointPattern.of(checkpointId)))
-                .thenCompose(
-                    backups ->
-                        CompletableFuture.allOf(
-                            backups.stream()
-                                .map(this::deleteBackupIfExists)
-                                .toArray(CompletableFuture[]::new)))
-                .thenAccept(ignore -> deleteCompleted.complete(null))
-                .exceptionally(
-                    error -> {
-                      deleteCompleted.completeExceptionally(error);
-                      return null;
-                    }));
+    final var deleteWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.DELETE_BACKUP),
+                new CheckpointRecord().setCheckpointId(checkpointId)));
+    switch (deleteWritten) {
+      case Either.Left(final var error) ->
+          deleteCompleted.completeExceptionally(
+              new RuntimeException("Failed to write DELETE_BACKUP command: " + error));
+      case final Either.Right<WriteFailure, Long> ignoredPosition -> deleteCompleted.complete(null);
+    }
     return deleteCompleted;
   }
 
-  private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
-    LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
-    final CompletableFuture<Void> preparationStep;
-    if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
-      // In progress backups cannot be deleted. So first mark it as failed
-      preparationStep =
-          backupStore
-              .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-              .thenApply(ignored -> null);
-    } else {
-      preparationStep = CompletableFuture.completedFuture(null);
-    }
+  ActorFuture<Void> deleteBackupIfExists(
+      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+    final var result = executor.<Void>createFuture();
+    final var pattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
 
-    return preparationStep
+    backupStore
+        .list(pattern)
         .thenCompose(
-            ignored ->
-                backupStore.storeRangeMarker(
-                    backupStatus.id().partitionId(),
-                    new Deletion(backupStatus.id().checkpointId())))
-        .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
+            backups ->
+                CompletableFuture.allOf(
+                    backups.stream()
+                        .map(
+                            backup -> {
+                              final CompletableFuture<Void> preparationStep;
+                              if (backup.statusCode() == BackupStatusCode.IN_PROGRESS) {
+                                preparationStep =
+                                    backupStore
+                                        .markFailed(backup.id(), "The backup is being deleted.")
+                                        .thenApply(ignored -> null);
+                              } else {
+                                preparationStep = CompletableFuture.completedFuture(null);
+                              }
+                              return preparationStep
+                                  .thenCompose(
+                                      ignored ->
+                                          backupStore.storeRangeMarker(
+                                              backup.id().partitionId(),
+                                              new Deletion(checkpointId)))
+                                  .thenCompose(ignored -> backupStore.delete(backup.id()));
+                            })
+                        .toArray(CompletableFuture[]::new)))
+        .exceptionally(
+            error -> {
+              LOG.warn(
+                  "Failed to delete backup for checkpoint {} from backup store",
+                  checkpointId,
+                  error);
+              return null;
+            })
+        .whenComplete(result);
+    return result;
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(

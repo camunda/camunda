@@ -169,11 +169,16 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
+  public ActorFuture<Void> requestBackupDeletion(final long checkpointId) {
+    return internalBackupManager.writeBackupDeletionCommand(checkpointId, actor);
+  }
+
+  @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     final var operationMetrics = metrics.startDeleting();
 
-    final var backupDeleted = internalBackupManager.deleteBackup(partitionId, checkpointId, actor);
-
+    final var backupDeleted =
+        internalBackupManager.deleteBackupIfExists(partitionId, checkpointId, actor);
     backupDeleted.onComplete(operationMetrics::complete);
     backupDeleted.onComplete(
         (ignore, error) -> {
@@ -181,7 +186,6 @@ public final class BackupService extends Actor implements BackupManager {
             LOG.warn("Failed to delete backup {}", checkpointId, error);
           }
         });
-
     return backupDeleted;
   }
 

@@ -199,7 +199,7 @@ public final class BackupApiRequestHandler
         new CompletableActorFuture<>();
     final var backupId = requestReader.backupId();
     backupManager
-        .deleteBackup(backupId)
+        .requestBackupDeletion(backupId)
         .onComplete(
             (ignore, error) -> {
               if (error == null) {

@@ -249,4 +249,57 @@ final class DbCheckpointMetadataStateTest {
     assertThat(entry.checkpointType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
     assertThat(entry.firstLogPosition()).isEqualTo(50L);
   }
+
+  // --- removeCheckpointsUntil ---
+
+  @Test
+  void shouldRemoveCheckpointsWithLogPositionBeforeThreshold() {
+    // given — checkpoints with different firstLogPositions
+    state.addBackupCheckpoint(1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 10L);
+    state.addBackupCheckpoint(2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 20L);
+    state.addBackupCheckpoint(3L, 300L, 3000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+
+    // when — remove all with firstLogPosition < 50
+    state.removeCheckpointsUntil(50L);
+
+    // then — only checkpoint 3 remains
+    final var all = state.getAllCheckpoints();
+    assertThat(all).hasSize(1);
+    assertThat(all.get(0).checkpointId()).isEqualTo(3L);
+  }
+
+  @Test
+  void shouldNotRemoveCheckpointsAtOrAboveThreshold() {
+    // given
+    state.addBackupCheckpoint(1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    state.addBackupCheckpoint(2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 100L);
+
+    // when — threshold equals the first checkpoint's log position
+    state.removeCheckpointsUntil(50L);
+
+    // then — both remain (50 is not < 50)
+    assertThat(state.getAllCheckpoints()).hasSize(2);
+  }
+
+  @Test
+  void shouldHandleEmptyStateForRemoveCheckpointsUntil() {
+    // when/then — should not throw
+    state.removeCheckpointsUntil(100L);
+    assertThat(state.getAllCheckpoints()).isEmpty();
+  }
+
+  @Test
+  void shouldRemoveMarkersWithLogPositionBeforeThreshold() {
+    // given — markers have firstLogPosition of -1
+    state.addMarkerCheckpoint(1L, 100L, 1000L);
+    state.addBackupCheckpoint(2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+
+    // when — remove all with firstLogPosition < 50 (marker has -1)
+    state.removeCheckpointsUntil(50L);
+
+    // then — marker removed, backup remains
+    final var all = state.getAllCheckpoints();
+    assertThat(all).hasSize(1);
+    assertThat(all.get(0).checkpointId()).isEqualTo(2L);
+  }
 }
