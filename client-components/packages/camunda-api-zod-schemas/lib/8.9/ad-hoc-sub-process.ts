@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from '../common';
+import {API_VERSION, getCollectionResponseBodySchema, type Endpoint} from './common';
 
 const activityTypeSchema = z.enum([
 	'UNSPECIFIED',
@@ -63,21 +63,10 @@ type ActivateActivityWithinAdHocSubProcessRequestBody = z.infer<
 	typeof activateActivityWithinAdHocSubProcessRequestBodySchema
 >;
 
-const activateActivityWithinAdHocSubProcessResponseBodySchema = z.object({
-	elements: z.array(
-		z.object({
-			elementId: z.string(),
-		}),
-	),
-});
+const activateActivityWithinAdHocSubProcessResponseBodySchema = z.void();
 type ActivateActivityWithinAdHocSubProcessResponseBody = z.infer<
 	typeof activateActivityWithinAdHocSubProcessResponseBodySchema
 >;
-
-const queryActivatableActivities: Endpoint = {
-	method: 'POST',
-	getUrl: () => `/${API_VERSION}/element-instances/ad-hoc-activities/search`,
-};
 
 const activateAdHocSubProcessActivities: Endpoint<{
 	adHocSubProcessInstanceKey: string;
@@ -93,7 +82,6 @@ export {
 	queryActivatableActivitiesResponseBodySchema,
 	activateActivityWithinAdHocSubProcessRequestBodySchema,
 	activateActivityWithinAdHocSubProcessResponseBodySchema,
-	queryActivatableActivities,
 	activateAdHocSubProcessActivities,
 };
 

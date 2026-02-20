@@ -1,10 +1,21 @@
 # Changelog
 
+## v0.0.40
+
+### 🚀 Enhancements
+
+- fix 8.9 defs and mark optional fields as nullable ([#46339](https://github.com/camunda/camunda/issues/46339))
+- add missing 8.9 defs ([#463100](https://github.com/camunda/camunda/issues/46310))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.39
 
 ### 🚀 Enhancements
 
-update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
+- update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
 
 ### ❤️ Contributors
 

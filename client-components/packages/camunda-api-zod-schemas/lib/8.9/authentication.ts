@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
 const currentUserSchema = z.object({
 	username: z.string(),
@@ -16,23 +16,16 @@ const currentUserSchema = z.object({
 	authorizedComponents: z.array(z.string()),
 	tenants: z.array(
 		z.object({
-			key: z.number(),
 			tenantId: z.string(),
 			name: z.string(),
-			description: z.string().optional(),
+			description: z.string().nullable(),
 		}),
 	),
 	groups: z.array(z.string()),
 	roles: z.array(z.string()),
 	salesPlanType: z.string().nullable(),
-	c8Links: z.array(
-		z.object({
-			name: z.string(),
-			link: z.string(),
-		}),
-	),
+	c8Links: z.record(z.string(), z.string()),
 	canLogout: z.boolean(),
-	apiUser: z.boolean().optional(),
 });
 
 type CurrentUser = z.infer<typeof currentUserSchema>;

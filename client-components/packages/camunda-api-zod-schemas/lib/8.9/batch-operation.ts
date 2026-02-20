@@ -14,7 +14,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from '../common';
+} from './common';
 
 const batchOperationTypeSchema = z.enum([
 	'CANCEL_PROCESS_INSTANCE',
@@ -22,6 +22,7 @@ const batchOperationTypeSchema = z.enum([
 	'MIGRATE_PROCESS_INSTANCE',
 	'MODIFY_PROCESS_INSTANCE',
 	'DELETE_DECISION_DEFINITION',
+	'DELETE_DECISION_INSTANCE',
 	'DELETE_PROCESS_DEFINITION',
 	'DELETE_PROCESS_INSTANCE',
 	'ADD_VARIABLE',
@@ -40,20 +41,31 @@ const batchOperationStateSchema = z.enum([
 ]);
 type BatchOperationState = z.infer<typeof batchOperationStateSchema>;
 
-const batchOperationItemStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'CANCELED', 'FAILED']);
+const batchOperationItemStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'SKIPPED', 'CANCELED', 'FAILED']);
 type BatchOperationItemState = z.infer<typeof batchOperationItemStateSchema>;
+
+const batchOperationErrorTypeSchema = z.enum(['QUERY_FAILED', 'RESULT_BUFFER_SIZE_EXCEEDED']);
+type BatchOperationErrorType = z.infer<typeof batchOperationErrorTypeSchema>;
+
+const batchOperationErrorSchema = z.object({
+	partitionId: z.number().int(),
+	type: batchOperationErrorTypeSchema,
+	message: z.string(),
+});
+type BatchOperationError = z.infer<typeof batchOperationErrorSchema>;
 
 const batchOperationSchema = z.object({
 	batchOperationKey: z.string(),
 	state: batchOperationStateSchema,
 	batchOperationType: batchOperationTypeSchema,
-	startDate: z.string().optional(),
-	endDate: z.string().optional(),
-	actorType: z.string().optional(),
-	actorId: z.string().optional(),
+	startDate: z.string(),
+	endDate: z.string().nullable(),
+	actorType: z.string().nullable(),
+	actorId: z.string().nullable(),
 	operationsTotalCount: z.number().int(),
 	operationsFailedCount: z.number().int(),
 	operationsCompletedCount: z.number().int(),
+	errors: z.array(batchOperationErrorSchema),
 });
 type BatchOperation = z.infer<typeof batchOperationSchema>;
 
@@ -61,9 +73,10 @@ const batchOperationItemSchema = z.object({
 	batchOperationKey: z.string(),
 	itemKey: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 	state: batchOperationItemStateSchema,
-	processedDate: z.string().optional(),
-	errorMessage: z.string().optional(),
+	processedDate: z.string().nullable(),
+	errorMessage: z.string().nullable(),
 	operationType: batchOperationTypeSchema,
 });
 type BatchOperationItem = z.infer<typeof batchOperationItemSchema>;
@@ -134,6 +147,8 @@ export {
 	batchOperationTypeSchema,
 	batchOperationStateSchema,
 	batchOperationItemStateSchema,
+	batchOperationErrorTypeSchema,
+	batchOperationErrorSchema,
 	batchOperationSchema,
 	batchOperationItemSchema,
 	queryBatchOperationsRequestBodySchema,
@@ -152,6 +167,8 @@ export type {
 	BatchOperationType,
 	BatchOperationState,
 	BatchOperationItemState,
+	BatchOperationErrorType,
+	BatchOperationError,
 	BatchOperation,
 	BatchOperationItem,
 	QueryBatchOperationsRequestBody,

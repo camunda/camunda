@@ -14,7 +14,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 	advancedDateTimeFilterSchema,
-} from '../common';
+} from './common';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
 
 const elementInstanceStateSchema = z.enum(['ACTIVE', 'COMPLETED', 'TERMINATED']);
@@ -54,17 +54,18 @@ type ElementInstanceType = z.infer<typeof elementInstanceTypeSchema>;
 const elementInstanceSchema = z.object({
 	processDefinitionId: z.string(),
 	startDate: z.string(),
-	endDate: z.string().optional(),
+	endDate: z.string().nullable(),
 	elementId: z.string(),
-	elementName: z.string(),
+	elementName: z.string().nullable(),
 	type: elementInstanceTypeSchema,
 	state: elementInstanceStateSchema,
 	hasIncident: z.boolean(),
 	tenantId: z.string(),
 	elementInstanceKey: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 	processDefinitionKey: z.string(),
-	incidentKey: z.string().optional(),
+	incidentKey: z.string().nullable(),
 });
 type ElementInstance = z.infer<typeof elementInstanceSchema>;
 

@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
 const documentMetadataSchema = z.object({
 	contentType: z.string(),
@@ -31,6 +31,8 @@ type DocumentReference = z.infer<typeof documentReferenceSchema>;
 
 const documentCreationFailureDetailSchema = z.object({
 	fileName: z.string(),
+	status: z.number().int(),
+	title: z.string(),
 	detail: z.string(),
 });
 type DocumentCreationFailureDetail = z.infer<typeof documentCreationFailureDetailSchema>;
@@ -51,6 +53,9 @@ const documentLinkSchema = z.object({
 	expiresAt: z.string(),
 });
 type DocumentLink = z.infer<typeof documentLinkSchema>;
+
+const getDocumentResponseBodySchema = z.string();
+type GetDocumentResponseBody = z.infer<typeof getDocumentResponseBodySchema>;
 
 const createDocument: Endpoint<{
 	storeId?: string;
@@ -144,6 +149,7 @@ export {
 	createDocumentsResponseBodySchema,
 	documentLinkRequestBodySchema,
 	documentLinkSchema,
+	getDocumentResponseBodySchema,
 	createDocument,
 	createDocuments,
 	getDocument,
@@ -157,4 +163,5 @@ export type {
 	CreateDocumentsResponseBody,
 	DocumentLinkRequestBody,
 	DocumentLink,
+	GetDocumentResponseBody,
 };

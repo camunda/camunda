@@ -13,16 +13,17 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from '../common';
+} from './common';
 
 const variableSchema = z.object({
 	name: z.string(),
 	value: z.string(),
 	tenantId: z.string(),
-	isTruncated: z.boolean(),
+	isTruncated: z.boolean().nullable(),
 	variableKey: z.string(),
 	scopeKey: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 });
 
 type Variable = z.infer<typeof variableSchema>;

@@ -7,12 +7,16 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
-const usageMetricsSchema = z.object({
+const usageMetricsItemSchema = z.object({
 	assignees: z.number().int(),
 	processInstances: z.number().int(),
 	decisionInstances: z.number().int(),
+});
+const usageMetricsSchema = usageMetricsItemSchema.extend({
+	activeTenants: z.number().int(),
+	tenants: z.record(z.string(), usageMetricsItemSchema),
 });
 type UsageMetrics = z.infer<typeof usageMetricsSchema>;
 
@@ -22,15 +26,23 @@ type GetUsageMetricsResponseBody = z.infer<typeof getUsageMetricsResponseBodySch
 type GetUsageMetricsParams = {
 	startTime: string;
 	endTime: string;
+	tenantId?: string;
+	withTenants?: boolean;
 };
 
 const getUsageMetrics: Endpoint<GetUsageMetricsParams> = {
 	method: 'GET',
-	getUrl: ({startTime, endTime}) =>
-		`/${API_VERSION}/usage-metrics?${new URLSearchParams({
-			startTime,
-			endTime,
-		}).toString()}`,
+	getUrl: ({startTime, endTime, tenantId, withTenants}) => {
+		const queryParams = new URLSearchParams({startTime, endTime});
+		if (tenantId !== undefined) {
+			queryParams.set('tenantId', tenantId);
+		}
+		if (withTenants !== undefined) {
+			queryParams.set('withTenants', String(withTenants));
+		}
+
+		return `/${API_VERSION}/system/usage-metrics?${queryParams.toString()}`;
+	},
 };
 
 export {getUsageMetrics, usageMetricsSchema, getUsageMetricsResponseBodySchema};
