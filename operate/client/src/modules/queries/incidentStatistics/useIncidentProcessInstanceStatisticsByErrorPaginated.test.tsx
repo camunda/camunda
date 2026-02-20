@@ -121,4 +121,60 @@ describe('useIncidentProcessInstanceStatisticsByErrorPaginated', () => {
       {from: 50, limit: 50},
     ]);
   });
+
+  it('should derive next page from absolute page params with maxPages and bidirectional fetches', async () => {
+    const allItems = Array.from({length: 360}, (_, index) =>
+      createIncidentItem(index),
+    );
+    const requestOffsets: Array<number | undefined> = [];
+
+    mockServer.use(
+      http.post(
+        endpoints.getIncidentProcessInstanceStatisticsByError.getUrl(),
+        async ({request}) => {
+          const body =
+            (await request.json()) as GetIncidentProcessInstanceStatisticsByErrorRequestBody;
+          const from = body.page?.from;
+          const limit = body.page?.limit;
+
+          requestOffsets.push(from);
+
+          if (from !== undefined && limit === 50) {
+            return HttpResponse.json({
+              items: allItems.slice(from, from + limit),
+              page: {totalItems: 360, hasMoreTotalItems: false},
+            });
+          }
+
+          return HttpResponse.json(
+            {
+              items: [],
+              page: {totalItems: 360, hasMoreTotalItems: false},
+            },
+            {status: 400},
+          );
+        },
+      ),
+    );
+
+    const {result} = renderPaginatedHook();
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    for (let i = 0; i < 6; i++) {
+      await act(async () => {
+        await result.current.fetchNextPage();
+      });
+    }
+
+    await act(async () => {
+      await result.current.fetchPreviousPage();
+    });
+
+    await act(async () => {
+      await result.current.fetchNextPage();
+    });
+
+    expect(requestOffsets).toEqual([0, 50, 100, 150, 200, 250, 300, 50, 300]);
+  });
 });
