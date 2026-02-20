@@ -41,6 +41,7 @@ type StartupSummary struct {
 	Username             string
 	Password             string
 	OrchestrationAPI     string
+	OrchestrationMCP     string
 	InboundConnectorsAPI string
 	ZeebeAPI             string
 	CamundaMetrics       string
@@ -142,6 +143,7 @@ func PrintStatus(settings types.C8RunSettings) error {
 		Username:             username,
 		Password:             password,
 		OrchestrationAPI:     fmt.Sprintf("%s://localhost:%d/v2/", protocol, camundaPort),
+		OrchestrationMCP:     fmt.Sprintf("%s://localhost:%d/mcp/cluster", protocol, camundaPort),
 		InboundConnectorsAPI: fmt.Sprintf("http://localhost:%d/", inboundConnectorsPort),
 		ZeebeAPI:             zeebeAPIURL,
 		CamundaMetrics:       camundaMetricsURL,
