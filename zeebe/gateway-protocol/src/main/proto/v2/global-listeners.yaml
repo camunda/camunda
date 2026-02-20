@@ -1,7 +1,7 @@
 ## Endpoint definitions
 
 paths:
-  /global-listeners/user-task:
+  /global-task-listeners:
     post:
       x-eventually-consistent: false
       tags:
@@ -39,7 +39,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
-  /global-listeners/user-task/{id}:
+  /global-task-listeners/{id}:
     get:
       x-eventually-consistent: true
       tags:
@@ -152,7 +152,7 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
-  /global-listeners/user-task/search:
+  /global-task-listeners/search:
     post:
       x-eventually-consistent: true
       tags:

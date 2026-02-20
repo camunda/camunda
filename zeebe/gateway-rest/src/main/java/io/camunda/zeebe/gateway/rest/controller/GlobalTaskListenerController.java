@@ -36,16 +36,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @CamundaRestController
-@RequestMapping("/v2/global-listeners")
-public class GlobalListenerController {
-
-  public static final String TASK_LISTENER_PATH = "/user-task";
+@RequestMapping("/v2/global-task-listeners")
+public class GlobalTaskListenerController {
 
   private final GlobalListenerServices globalListenerServices;
   private final CamundaAuthenticationProvider authenticationProvider;
   private final GlobalListenerMapper globalListenerMapper;
 
-  public GlobalListenerController(
+  public GlobalTaskListenerController(
       final GlobalListenerServices globalListenerServices,
       final CamundaAuthenticationProvider authenticationProvider,
       final IdentifierValidator identifierValidator) {
@@ -55,7 +53,7 @@ public class GlobalListenerController {
         new GlobalListenerMapper(new GlobalListenerRequestValidator(identifierValidator));
   }
 
-  @CamundaPostMapping(path = TASK_LISTENER_PATH)
+  @CamundaPostMapping()
   public CompletableFuture<ResponseEntity<Object>> createGlobalTaskListener(
       @RequestBody final CreateGlobalTaskListenerRequest request) {
     return globalListenerMapper
@@ -64,14 +62,14 @@ public class GlobalListenerController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaGetMapping(path = TASK_LISTENER_PATH + "/{id}")
+  @CamundaGetMapping(path = "/{id}")
   public ResponseEntity<Object> getGlobalTaskListener(@PathVariable("id") final String id) {
     return globalListenerMapper
         .toGlobalTaskListenerGetRequest(id)
         .fold(RestErrorMapper::mapProblemToResponse, this::getGlobalListener);
   }
 
-  @CamundaPutMapping(path = TASK_LISTENER_PATH + "/{id}")
+  @CamundaPutMapping(path = "/{id}")
   public CompletableFuture<ResponseEntity<Object>> updateGlobalTaskListener(
       @PathVariable("id") final String id,
       @RequestBody final UpdateGlobalTaskListenerRequest request) {
@@ -80,7 +78,7 @@ public class GlobalListenerController {
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::updateGlobalListener);
   }
 
-  @CamundaDeleteMapping(path = TASK_LISTENER_PATH + "/{id}")
+  @CamundaDeleteMapping(path = "/{id}")
   public CompletableFuture<ResponseEntity<Object>> deleteGlobalTaskListener(
       @PathVariable("id") final String id) {
     return globalListenerMapper
@@ -100,7 +98,7 @@ public class GlobalListenerController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = TASK_LISTENER_PATH + "/search")
+  @CamundaPostMapping(path = "/search")
   private ResponseEntity<Object> search(
       @RequestBody(required = false) final GlobalTaskListenerSearchQueryRequest request) {
     return SearchQueryRequestMapper.toGlobalTaskListenerQuery(request)

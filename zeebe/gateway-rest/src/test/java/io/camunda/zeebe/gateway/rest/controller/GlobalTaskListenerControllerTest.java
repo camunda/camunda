@@ -37,11 +37,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
 @ExtendWith(MockitoExtension.class)
-@WebMvcTest(value = GlobalListenerController.class)
-public class GlobalListenerControllerTest extends RestControllerTest {
+@WebMvcTest(value = GlobalTaskListenerController.class)
+public class GlobalTaskListenerControllerTest extends RestControllerTest {
 
   static final Pattern ID_PATTERN = Pattern.compile(SecurityConfiguration.DEFAULT_ID_REGEX);
-  static final String GLOBAL_TASK_LISTENER_URL = "/v2/global-listeners/user-task";
+  static final String GLOBAL_TASK_LISTENER_URL = "/v2/global-task-listeners";
   static final String GLOBAL_TASK_LISTENER_WITH_ID_URL = GLOBAL_TASK_LISTENER_URL + "/%s";
   static final String GLOBAL_TASK_LISTENER_SEARCH_URL = GLOBAL_TASK_LISTENER_URL + "/search";
 
