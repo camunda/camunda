@@ -210,30 +210,21 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 7: Update Retention
+#### Phase 7: Update Retention — DONE ✅
 
-**Goal:** Remove retention's dependency on marker files and route all retention deletions through stream processor commands.
+**Goal:** Remove retention's dependency on marker files and route all retention deletions through stream processor commands via `BrokerClient`.
 
-**Tasks:**
+**What was done:**
 
-1. **Route retention deletions through `DELETE_BACKUP` commands** (depends on Phase 6.5)
-   - Currently, retention deletes backups directly via `BackupStore.delete()` and manipulates markers
-   - New approach: retention identifies backups to delete, then writes a `DELETE_BACKUP` command to the log for each
-   - The stream processor processes each command: removes the checkpoint entry from CF, updates ranges, triggers async backup store deletion and JSON sync
-   - Retention no longer directly calls `backupStore.delete()`, `backupStore.storeRangeMarker()`, or `backupStore.deleteRangeMarker()`
-2. **Simplify `BackupRetention` pipeline** (`zeebe/backup/.../retention/BackupRetention.java`)
-   - Remove `enrichContextWithMarkers` step entirely
-   - Remove `resetRangeStart` step (no more Start markers)
-   - Remove `deleteMarkers` step
-   - Remove `deleteBackups` step (no more direct store deletion)
-   - Pipeline becomes: `retrieveBackups -> processBackups -> writeDeleteCommands`
-   - Each `writeDeleteCommands` step writes one `DELETE_BACKUP` command per backup to be deleted
-3. **Provide `logStreamWriter` to `BackupRetention`**
-   - Retention needs access to the `LogStreamWriter` to write commands
-   - Follow the same pattern as `BackupServiceImpl` which already has a `logStreamWriter` reference
-   - Wire this in `BackupServiceImpl` or the actor that creates `BackupRetention`
-4. **Update `RetentionContext`** — remove marker-related fields (`rangeMarkers`, `deletableMarkers`, etc.)
-5. **Update `RetentionTest` and acceptance tests**
+1. **Replaced direct store deletion with `DELETE_BACKUP` commands via `BrokerClient`** — `BackupRetention` is a cluster-level singleton (runs on the lowest-numbered broker, handles ALL partitions), so it cannot use a per-partition `LogStreamWriter`. Instead, it sends `BackupDeleteRequest` messages through `BrokerClient.sendRequestWithRetry()`, which routes each request to the correct partition leader. The leader's `BackupApiRequestHandler` invokes `backupManager.deleteBackup()`, which writes the `DELETE_BACKUP` command to the partition's log. The stream processor then handles CF updates, async store deletion, and JSON sync.
+2. **Simplified `BackupRetention` pipeline** — removed all marker-related methods: `retrieveRangeMarkers()`, `enrichContextWithMarkers()`, `resetRangeStart()`, `shouldResetMarker()`, `deleteMarkers()`, `deleteBackups()`. Pipeline simplified from 6 steps to 3: `retrieveBackups -> processBackups -> writeDeleteCommands`. The `writeDeleteCommands()` method deduplicates by checkpoint ID (since a single `DELETE_BACKUP` command handles all node copies) and sends one request per unique checkpoint to the correct partition.
+3. **Simplified `RetentionContext` record** — removed `previousStartMarker` (Optional<BackupRangeMarker>) and `deletableRangeMarkers` (List<BackupRangeMarker>) fields; removed `withRangeMarkerContext()` method.
+4. **Cleaned up `RetentionMetrics`** — removed `RANGES_DELETED_ROUND` metric constant, its gauge registration, its cleanup in `close()`, and the `rangesDeleted` field and `setRangesDeleted()` method from `PartitionMetrics`.
+5. **Updated `CheckpointSchedulingService`** — wired `brokerClient` into `BackupRetention` constructor (the service already had a `brokerClient` field).
+6. **Rewrote `RetentionTest`** — removed all marker-related imports, setup, and verification. Added `@Mock BrokerClient brokerClient`, wired into `createBackupRetention()`. Replaced `verifyBackupsDeleted()` (which checked `backupStore.delete()`) with `verifyDeleteCommandsSent()` (which checks `brokerClient.sendRequestWithRetry(BackupDeleteRequest)` with correct partition and checkpoint IDs). Removed `createDefaultRangeMarkers()`, `verifyRangeMarkerStored()`, `verifyRangeMarkerDeleted()`, `verifyNoBackupStoreModifications()` helpers. Removed `actorShouldNotHangOnMarkerListingFailure` test. All 16 retention tests pass.
+7. **`CheckpointSchedulerServiceTest`** — compiled and all 11 tests pass without changes (already mocked `BrokerClient`).
+
+**Key design decision:** Using `BrokerClient` over `LogStreamWriter` is the right approach because `BackupRetention` runs as a cluster singleton and needs to send commands to leaders of arbitrary partitions, not just the local partition.
 
 ---
 
