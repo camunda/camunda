@@ -81,6 +81,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
+              <templateDirectory>${project.basedir}/src/main/templates/JavaSpring</templateDirectory>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model</modelPackage>
               <typeMappings>
@@ -134,6 +135,7 @@
               <!-- https://github.com/OpenAPITools/openapi-generator/tree/master/modules/openapi-generator-maven-plugin -->
               <!-- https://github.com/OpenAPITools/openapi-generator/blob/master/docs/generators/java.md -->
               <generatorName>spring</generatorName>
+              <templateDirectory>${project.basedir}/src/main/templates/JavaSpring</templateDirectory>
               <inputSpec>${openapi.dir}/rest-api.yaml</inputSpec>
               <modelPackage>io.camunda.gateway.protocol.model.simple</modelPackage>
               <typeMappings>
