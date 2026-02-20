@@ -9,7 +9,6 @@
 import { FC } from "react";
 import Lazy from "src/components/router/Lazy";
 import PageRoutes from "src/components/router/PageRoutes";
-import { ListenerEventType } from "src/utility/api/global-task-listeners";
 
 const GlobalTaskListeners: FC = () => (
   <PageRoutes indexElement={<Lazy load={() => import("./List")} />} />
@@ -18,12 +17,3 @@ const GlobalTaskListeners: FC = () => (
 export default GlobalTaskListeners;
 
 export const LISTENER_TYPE_PATTERN = /^[a-zA-Z0-9._-]+$/;
-
-export type FormData = {
-  id: string;
-  type: string;
-  eventTypes: ListenerEventType[];
-  retries: number;
-  afterNonGlobal: boolean;
-  priority: number;
-};

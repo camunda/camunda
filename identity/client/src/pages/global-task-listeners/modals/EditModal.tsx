@@ -18,12 +18,10 @@ import {
   GlobalTaskListener,
   ListenerEventType,
   LISTENER_EVENT_TYPES,
+  CreateGlobalTaskListenerParams,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
-import {
-  FormData,
-  LISTENER_TYPE_PATTERN,
-} from "src/pages/global-task-listeners";
+import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
 
 const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
   open,
@@ -45,17 +43,18 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     return eventTypes as ListenerEventType[];
   };
 
-  const { control, handleSubmit, watch, setValue, reset } = useForm<FormData>({
-    defaultValues: {
-      id: entity.id,
-      type: entity.type,
-      eventTypes: parseEventTypes(entity.eventTypes),
-      retries: entity.retries,
-      afterNonGlobal: entity.afterNonGlobal,
-      priority: entity.priority,
-    },
-    mode: "all",
-  });
+  const { control, handleSubmit, watch, setValue, reset } =
+    useForm<CreateGlobalTaskListenerParams>({
+      defaultValues: {
+        id: entity.id,
+        type: entity.type,
+        eventTypes: parseEventTypes(entity.eventTypes),
+        retries: entity.retries,
+        afterNonGlobal: entity.afterNonGlobal,
+        priority: entity.priority,
+      },
+      mode: "all",
+    });
 
   // Reset form when entity changes
   useEffect(() => {
@@ -133,7 +132,7 @@ const EditModal: FC<UseEntityModalProps<GlobalTaskListener>> = ({
     return labels[eventType];
   };
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: CreateGlobalTaskListenerParams) => {
     const eventTypes = data.eventTypes.includes(ListenerEventType.ALL)
       ? [ListenerEventType.ALL]
       : data.eventTypes.filter((type) => type !== ListenerEventType.ALL);

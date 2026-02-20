@@ -73,7 +73,6 @@ const List: FC = () => {
     );
   }
 
-  // Transform data to include display-friendly execution order and event types
   const transformedData = globalTaskListeners?.items.map((listener) => ({
     ...listener,
     executionOrderDisplay: listener.afterNonGlobal

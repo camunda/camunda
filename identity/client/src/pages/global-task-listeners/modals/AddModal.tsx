@@ -15,14 +15,12 @@ import { useApiCall } from "src/utility/api";
 import TextField from "src/components/form/TextField";
 import {
   createGlobalTaskListener,
+  CreateGlobalTaskListenerParams,
   LISTENER_EVENT_TYPES,
   ListenerEventType,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
-import {
-  FormData,
-  LISTENER_TYPE_PATTERN,
-} from "src/pages/global-task-listeners";
+import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
 
 const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   const { t } = useTranslate("globalTaskListeners");
@@ -34,17 +32,18 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     },
   );
 
-  const { control, handleSubmit, watch, setValue } = useForm<FormData>({
-    defaultValues: {
-      id: "",
-      type: "",
-      eventTypes: [],
-      retries: 3,
-      afterNonGlobal: false,
-      priority: 50,
-    },
-    mode: "all",
-  });
+  const { control, handleSubmit, watch, setValue } =
+    useForm<CreateGlobalTaskListenerParams>({
+      defaultValues: {
+        id: "",
+        type: "",
+        eventTypes: [],
+        retries: 3,
+        afterNonGlobal: false,
+        priority: 50,
+      },
+      mode: "all",
+    });
 
   const eventTypes = watch("eventTypes");
 
@@ -110,7 +109,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     return labels[eventType];
   };
 
-  const onSubmit = async (data: FormData) => {
+  const onSubmit = async (data: CreateGlobalTaskListenerParams) => {
     const eventTypes = data.eventTypes.includes(ListenerEventType.ALL)
       ? [ListenerEventType.ALL]
       : data.eventTypes.filter((type) => type !== ListenerEventType.ALL);
