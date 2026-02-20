@@ -60,8 +60,15 @@ public final class UserTaskFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomUserTasks(
       final RdbmsService rdbmsService, final Function<Builder, Builder> builderFunction) {
+    createAndSaveRandomUserTasks(rdbmsService, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomUserTasks(
+      final RdbmsService rdbmsService,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getUserTaskWriter().create(UserTaskFixtures.createRandomized(builderFunction));
     }
 

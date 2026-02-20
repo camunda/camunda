@@ -59,9 +59,14 @@ public final class ClusterVariableFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
       final RdbmsService rdbmsService, final String tenantId) {
+    createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(rdbmsService, 20, tenantId);
+  }
+
+  public static void createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+      final RdbmsService rdbmsService, final int numberOfInstances, final String tenantId) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < numberOfInstances; i++) {
       final ClusterVariableDbModel randomized =
           createRandomizedTenantClusterVariable(b -> b.tenantId(tenantId));
       rdbmsWriters.getClusterVariableWriter().create(randomized);
