@@ -199,6 +199,8 @@ camunda-platform:
             existingSecret: camunda-credentials
             existingSecretKey: identity-orchestration-client-token
     data:
+      secondaryStorage:
+        type: elasticsearch
       disk:
         ## Adjustement required due to PVC size
         freeSpace:
