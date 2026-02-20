@@ -8,25 +8,25 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.CheckpointListener;
-import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.util.Set;
 
 public final class CheckpointCreatedEventApplier {
 
   private final CheckpointState checkpointState;
+  private final DbCheckpointMetadataState checkpointMetadataState;
   private final Set<CheckpointListener> checkpointListeners;
-
-  private final CheckpointMetrics metrics;
 
   public CheckpointCreatedEventApplier(
       final CheckpointState checkpointState,
-      final Set<CheckpointListener> checkpointListeners,
-      final CheckpointMetrics metrics) {
+      final DbCheckpointMetadataState checkpointMetadataState,
+      final Set<CheckpointListener> checkpointListeners) {
     this.checkpointState = checkpointState;
+    this.checkpointMetadataState = checkpointMetadataState;
     this.checkpointListeners = checkpointListeners;
-    this.metrics = metrics;
   }
 
   public void apply(final CheckpointRecord checkpointRecord, final long checkpointTimestamp) {
@@ -35,6 +35,14 @@ public final class CheckpointCreatedEventApplier {
         checkpointRecord.getCheckpointPosition(),
         checkpointTimestamp,
         checkpointRecord.getCheckpointType());
+
+    if (checkpointRecord.getCheckpointType() == CheckpointType.MARKER) {
+      checkpointMetadataState.addMarkerCheckpoint(
+          checkpointRecord.getCheckpointId(),
+          checkpointRecord.getCheckpointPosition(),
+          checkpointTimestamp);
+    }
+
     checkpointListeners.forEach(
         listener ->
             listener.onNewCheckpointCreated(

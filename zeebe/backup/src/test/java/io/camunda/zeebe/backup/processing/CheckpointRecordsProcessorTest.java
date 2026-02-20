@@ -21,6 +21,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -63,6 +65,7 @@ final class CheckpointRecordsProcessorTest {
   private ProcessingResultBuilder resultBuilder;
   // Used for verifying state in the tests
   private CheckpointState state;
+  private DbBackupRangeState backupRangeState;
   private ZeebeDb zeebedb;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
   private final AtomicInteger dynamicPartitionCount =
@@ -87,6 +90,7 @@ final class CheckpointRecordsProcessorTest {
     processor.init(context);
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
+    backupRangeState = new DbBackupRangeState(zeebedb, zeebedb.createContext());
   }
 
   private RecordProcessorContextImpl createContext(
@@ -535,18 +539,21 @@ final class CheckpointRecordsProcessorTest {
     // when
     processor.process(record, resultBuilder);
 
-    // then
-    verify(backupManager, times(1)).startNewRange(newCheckpointId);
+    // then — a new range [5, 5] is created in the backup ranges CF
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(newCheckpointId, newCheckpointId));
   }
 
   @Test
   void shouldExtendRangeWhenSubsequentBackupConfirmed() {
-    // given
+    // given — first backup creates a range [5, 5]
     final var currentBackupId = 5;
     final var currentBackupPosition = 50;
     final var timestamp = Instant.now().toEpochMilli();
     state.setLatestBackupInfo(
         currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP, -1L);
+    // Seed the range state so the extend can find the existing range
+    backupRangeState.startNewRange(currentBackupId);
 
     final var newCheckpointId = 10;
     final var newCheckpointPosition = 100;
@@ -563,8 +570,9 @@ final class CheckpointRecordsProcessorTest {
     // when
     processor.process(record, resultBuilder);
 
-    // then
-    verify(backupManager, times(1)).extendRange(currentBackupId, newCheckpointId);
+    // then — the range is extended to [5, 10]
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(currentBackupId, newCheckpointId));
   }
 
   @Test
