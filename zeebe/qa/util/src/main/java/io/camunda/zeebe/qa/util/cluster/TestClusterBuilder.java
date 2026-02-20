@@ -372,24 +372,23 @@ public final class TestClusterBuilder {
     for (int i = 0; i < gatewaysCount; i++) {
       final var id = "gateway-" + i;
       final var memberId = MemberId.from(id);
-      final var gateway = createGateway(id);
+      final var gateway = createGateway(id, i);
 
       applyConfigFunctions(memberId, gateway);
       gateways.put(memberId, gateway);
     }
   }
 
-  private TestStandaloneGateway createGateway(final String id) {
-    final TestStandaloneGateway gateway =
-        new TestStandaloneGateway()
-            .withUnifiedConfig(
-                uc -> {
-                  final var cluster = uc.getCluster();
-                  cluster.setName(name);
-                  cluster.setInitialContactPoints(getInitialContactPoints());
-                })
-            .withProperty("zeebe.gateway.cluster.memberId", id);
-    return gateway;
+  private TestStandaloneGateway createGateway(final String id, final int index) {
+    return new TestStandaloneGateway()
+        .withUnifiedConfig(
+            uc -> {
+              final var cluster = uc.getCluster();
+              cluster.setNodeId(index);
+              cluster.setGatewayId(id);
+              cluster.setName(name);
+              cluster.setInitialContactPoints(getInitialContactPoints());
+            });
   }
 
   private List<String> getInitialContactPoints() {

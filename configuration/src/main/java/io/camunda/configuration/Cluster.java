@@ -278,7 +278,7 @@ public class Cluster implements Cloneable {
         gatewayId,
         String.class,
         UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        Set.of(legacyPropertiesMap.get("gatewayId")));
+        Set.of(LEGACY_GATEWAY_PROPERTIES.get("gatewayId")));
   }
 
   public void setGatewayId(final String gatewayId) {
