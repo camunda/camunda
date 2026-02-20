@@ -290,29 +290,4 @@ final class CheckpointBackupDeletedApplierTest {
     assertThat(checkpointState.getLatestBackupId()).isEqualTo(secondId);
     assertThat(checkpointState.getLatestBackupPosition()).isEqualTo(100);
   }
-
-  // --- Validate method ---
-
-  @Test
-  void shouldReturnMetadataWhenCheckpointExists() {
-    // given
-    final var checkpointId = 5L;
-    checkpointMetadataState.addCheckpoint(checkpointId, 50, 1000L, CheckpointType.MANUAL_BACKUP);
-
-    // when
-    final var result = applier.validate(checkpointId);
-
-    // then
-    assertThat(result).isPresent();
-    assertThat(result.get().getCheckpointPosition()).isEqualTo(50);
-  }
-
-  @Test
-  void shouldReturnEmptyWhenCheckpointDoesNotExist() {
-    // when
-    final var result = applier.validate(99L);
-
-    // then
-    assertThat(result).isEmpty();
-  }
 }

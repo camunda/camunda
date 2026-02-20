@@ -12,7 +12,6 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
-import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -166,21 +165,5 @@ public final class CheckpointBackupDeletedApplier {
             range.end());
       }
     }
-  }
-
-  /**
-   * Validates that the checkpoint exists and is a backup-type checkpoint. Returns the range
-   * containing it if found.
-   *
-   * @param checkpointId the checkpoint to validate
-   * @return the checkpoint metadata if valid for deletion, or empty if not found
-   */
-  public Optional<io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue> validate(
-      final long checkpointId) {
-    final var metadata = checkpointMetadataState.getCheckpoint(checkpointId);
-    if (metadata == null) {
-      return Optional.empty();
-    }
-    return Optional.of(metadata);
   }
 }

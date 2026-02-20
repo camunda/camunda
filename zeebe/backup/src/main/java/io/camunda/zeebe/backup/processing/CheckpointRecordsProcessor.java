@@ -142,7 +142,7 @@ public final class CheckpointRecordsProcessor
             partitionId);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
-            checkpointState, checkpointMetadataState, checkpointListeners, metrics);
+            checkpointState, checkpointMetadataState, checkpointListeners);
     checkpointBackupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);

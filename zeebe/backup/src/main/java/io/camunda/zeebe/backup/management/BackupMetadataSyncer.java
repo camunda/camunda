@@ -7,19 +7,14 @@
  */
 package io.camunda.zeebe.backup.management;
 
-import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupMetadataCodec;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -39,12 +34,6 @@ public final class BackupMetadataSyncer {
   private static final Logger LOG = LoggerFactory.getLogger(BackupMetadataSyncer.class);
   private static final String SLOT_A = "a";
   private static final String SLOT_B = "b";
-
-  static final ObjectMapper MAPPER =
-      new ObjectMapper()
-          .registerModule(new Jdk8Module())
-          .registerModule(new JavaTimeModule())
-          .disable(WRITE_DATES_AS_TIMESTAMPS);
 
   private final BackupStore backupStore;
   private long sequenceNumber;
@@ -96,7 +85,7 @@ public final class BackupMetadataSyncer {
         new BackupMetadataManifest(partitionId, sequenceNumber, Instant.now(), checkpoints, ranges);
 
     try {
-      final var content = MAPPER.writeValueAsBytes(manifest);
+      final var content = BackupMetadataCodec.serialize(manifest);
       return backupStore
           .storeBackupMetadata(partitionId, targetSlot, content)
           .whenComplete(
@@ -133,57 +122,11 @@ public final class BackupMetadataSyncer {
    * @return the manifest, or empty if no valid metadata exists
    */
   public CompletableFuture<Optional<BackupMetadataManifest>> load(final int partitionId) {
-    final var futureA = loadSlot(partitionId, SLOT_A);
-    final var futureB = loadSlot(partitionId, SLOT_B);
-
-    return futureA.thenCombine(
-        futureB,
-        (manifestA, manifestB) -> {
-          if (manifestA.isPresent() && manifestB.isPresent()) {
-            final var a = manifestA.get();
-            final var b = manifestB.get();
-            final var chosen = a.sequenceNumber() >= b.sequenceNumber() ? a : b;
-            updateInternalState(chosen);
-            return Optional.of(chosen);
-          } else if (manifestA.isPresent()) {
-            updateInternalState(manifestA.get());
-            return manifestA;
-          } else if (manifestB.isPresent()) {
-            updateInternalState(manifestB.get());
-            return manifestB;
-          } else {
-            return Optional.empty();
-          }
-        });
-  }
-
-  private CompletableFuture<Optional<BackupMetadataManifest>> loadSlot(
-      final int partitionId, final String slot) {
-    return backupStore
-        .loadBackupMetadata(partitionId, slot)
+    return BackupMetadataCodec.load(backupStore, partitionId)
         .thenApply(
-            optBytes ->
-                optBytes.flatMap(
-                    bytes -> {
-                      try {
-                        return Optional.of(MAPPER.readValue(bytes, BackupMetadataManifest.class));
-                      } catch (final IOException e) {
-                        LOG.warn(
-                            "Failed to parse backup metadata from slot {} for partition {}",
-                            slot,
-                            partitionId,
-                            e);
-                        return Optional.empty();
-                      }
-                    }))
-        .exceptionally(
-            error -> {
-              LOG.warn(
-                  "Failed to load backup metadata from slot {} for partition {}",
-                  slot,
-                  partitionId,
-                  error);
-              return Optional.empty();
+            optManifest -> {
+              optManifest.ifPresent(this::updateInternalState);
+              return optManifest;
             });
   }
 

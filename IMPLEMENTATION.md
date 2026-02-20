@@ -499,18 +499,19 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 ---
 
-#### Phase 14: Code Quality Cleanup
+#### Phase 14: Code Quality Cleanup ✅ DONE
 
 **Goal:** Eliminate dead code, fix style inconsistencies.
 
-**What to do:**
+**What was done:**
 
-1. Add `final` to `CheckpointBackupConfirmedApplier` and `CheckpointConfirmBackupProcessor` class declarations.
-2. Remove unused `metrics` field from `CheckpointCreatedEventApplier`.
-3. Remove or wire `validate()` method in `CheckpointBackupDeletedApplier` (either call it from `CheckpointDeleteBackupProcessor` instead of duplicating the existence check, or delete it).
-4. Extract shared `ObjectMapper` setup and `loadSlot()`/`load()` logic from `BackupMetadataSyncer` and `BackupMetadataReader` into a shared utility (e.g., `BackupMetadataCodec`).
-5. Verify and remove `Context.java` in the processing package if unused.
-6. Fix `TestRestorableBackupStore.delete()` which returns `null` instead of a `CompletableFuture` — change to `CompletableFuture.completedFuture(null)`.
+1. Added `final` to `CheckpointBackupConfirmedApplier` and `CheckpointConfirmBackupProcessor` class declarations.
+2. Removed unused `metrics` field and constructor parameter from `CheckpointCreatedEventApplier`; updated both call sites (`CheckpointRecordsProcessor`, `CheckpointCreateProcessor`).
+3. Removed unused `validate()` method from `CheckpointBackupDeletedApplier` (the `CheckpointDeleteBackupProcessor` already performs its own existence check); removed corresponding tests from `CheckpointBackupDeletedApplierTest`.
+4. Extracted shared `ObjectMapper` setup and two-slot load logic into `BackupMetadataCodec` in `zeebe/backup/common/`; refactored `BackupMetadataSyncer` and `BackupMetadataReader` to delegate to it; updated `BackupMetadataSyncerTest` to use `BackupMetadataCodec.MAPPER`.
+5. Deleted unused `Context.java` from the processing package (no imports or references found).
+6. Fixed `TestRestorableBackupStore.delete()` — now returns `CompletableFuture.completedFuture(null)` and removes the backup from the in-memory map.
+7. Updated `TestRestorableBackupStore.storeManifest()` to use `BackupMetadataCodec.serialize()` instead of creating an inline `ObjectMapper`.
 
-**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup,zeebe/restore`
+**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup,zeebe/restore` — 435 tests pass.
 

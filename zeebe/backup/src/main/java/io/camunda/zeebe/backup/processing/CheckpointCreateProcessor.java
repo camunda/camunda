@@ -46,8 +46,7 @@ public final class CheckpointCreateProcessor {
     this.metrics = metrics;
     this.partitionCountSupplier = partitionCountSupplier;
     checkpointCreatedApplier =
-        new CheckpointCreatedEventApplier(
-            checkpointState, checkpointMetadataState, listeners, metrics);
+        new CheckpointCreatedEventApplier(checkpointState, checkpointMetadataState, listeners);
   }
 
   public ProcessingResult process(

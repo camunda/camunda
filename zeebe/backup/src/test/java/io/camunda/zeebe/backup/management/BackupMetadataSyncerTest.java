@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.common.BackupMetadataCodec;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
@@ -117,7 +118,7 @@ final class BackupMetadataSyncerTest {
 
     // then - verify the content is valid JSON that deserializes correctly
     final var manifest =
-        BackupMetadataSyncer.MAPPER.readValue(
+        BackupMetadataCodec.MAPPER.readValue(
             contentCaptor.getValue(), BackupMetadataManifest.class);
     assertThat(manifest.partitionId()).isEqualTo(1);
     assertThat(manifest.sequenceNumber()).isEqualTo(1);
@@ -342,7 +343,7 @@ final class BackupMetadataSyncerTest {
 
   private static byte[] serializeManifest(final BackupMetadataManifest manifest) {
     try {
-      return BackupMetadataSyncer.MAPPER.writeValueAsBytes(manifest);
+      return BackupMetadataCodec.MAPPER.writeValueAsBytes(manifest);
     } catch (final Exception e) {
       throw new RuntimeException(e);
     }

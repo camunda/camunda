@@ -22,7 +22,7 @@ import io.camunda.zeebe.stream.api.records.TypedRecord;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CheckpointConfirmBackupProcessor {
+public final class CheckpointConfirmBackupProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;

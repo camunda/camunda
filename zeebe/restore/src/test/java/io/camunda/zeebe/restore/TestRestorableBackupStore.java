@@ -72,13 +72,7 @@ final class TestRestorableBackupStore implements BackupStore {
    */
   void storeManifest(final io.camunda.zeebe.backup.common.BackupMetadataManifest manifest) {
     try {
-      final var mapper =
-          new com.fasterxml.jackson.databind.ObjectMapper()
-              .registerModule(new com.fasterxml.jackson.datatype.jdk8.Jdk8Module())
-              .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
-              .disable(
-                  com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-      final var content = mapper.writeValueAsBytes(manifest);
+      final var content = io.camunda.zeebe.backup.common.BackupMetadataCodec.serialize(manifest);
       storeBackupMetadata(manifest.partitionId(), "a", content).join();
     } catch (final com.fasterxml.jackson.core.JsonProcessingException e) {
       throw new RuntimeException("Failed to serialize manifest", e);
@@ -139,7 +133,8 @@ final class TestRestorableBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
-    return null;
+    backups.remove(id);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override

@@ -12,7 +12,7 @@ import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 
-public class CheckpointBackupConfirmedApplier {
+public final class CheckpointBackupConfirmedApplier {
   private final CheckpointState checkpointState;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
