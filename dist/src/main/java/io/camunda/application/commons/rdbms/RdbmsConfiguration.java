@@ -384,8 +384,8 @@ public class RdbmsConfiguration {
 
   @Bean
   public GlobalListenerDbReader globalListenerRdbmsReader(
-      final GlobalListenerMapper globalListenerMapper) {
-    return new GlobalListenerDbReader(globalListenerMapper);
+      final GlobalListenerMapper globalListenerMapper, final RdbmsReaderConfig readerConfig) {
+    return new GlobalListenerDbReader(globalListenerMapper, readerConfig);
   }
 
   @Bean

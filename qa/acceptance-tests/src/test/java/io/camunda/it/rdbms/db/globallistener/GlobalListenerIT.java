@@ -83,6 +83,33 @@ public class GlobalListenerIT {
   }
 
   @TestTemplate
+  public void shouldFindAllGlobalListenersPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final String testIdentifier = nextStringId();
+
+    // given more than 100 global listeners with the same type
+    createAndSaveRandomGlobalListeners(testApplication, 120, b -> b.type(testIdentifier));
+
+    // when searching with paging
+    final var searchResult =
+        testApplication
+            .getRdbmsService()
+            .getGlobalListenerDbReader()
+            .search(
+                new GlobalListenerQuery(
+                    new GlobalListenerFilter.Builder().types(testIdentifier).build(),
+                    GlobalListenerSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))),
+                ResourceAccessChecks.disabled());
+
+    // then hasMoreTotalItems is true
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldUpdateGlobalListener(final CamundaRdbmsTestApplication testApplication) {
     // given an existing global listener
     final GlobalListenerDbModel globalListener =

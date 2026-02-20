@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 class GlobalListenerDbReaderTest {
   private final GlobalListenerMapper globalListenerMapper = mock(GlobalListenerMapper.class);
   private final GlobalListenerDbReader globalListenerDbReader =
-      new GlobalListenerDbReader(globalListenerMapper);
+      new GlobalListenerDbReader(globalListenerMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyResultWhenAuthorizedResourceIdsIsNull() {
