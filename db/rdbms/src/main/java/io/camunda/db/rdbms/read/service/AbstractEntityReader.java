@@ -85,10 +85,11 @@ abstract class AbstractEntityReader<T> {
 
     if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
       // assuming Integer.MAX_VALUE is enough
-      return new DbQueryPage(Integer.MAX_VALUE, 0, keySetPagination);
+      return new DbQueryPage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination);
     }
 
-    return new DbQueryPage(page.size(), page.from(), keySetPagination);
+    return new DbQueryPage(
+        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination);
   }
 
   /**
@@ -142,7 +143,12 @@ abstract class AbstractEntityReader<T> {
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
-    final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
+    final var maxTotalHits = readerConfig.maxTotalHits();
+    final var returnedTotalHits = totalHits > maxTotalHits ? maxTotalHits : totalHits;
+    final var hasMoreItems = totalHits > maxTotalHits;
+
+    final var result =
+        new SearchQueryResult.Builder<T>().total(returnedTotalHits, hasMoreItems).items(hits);
 
     if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();

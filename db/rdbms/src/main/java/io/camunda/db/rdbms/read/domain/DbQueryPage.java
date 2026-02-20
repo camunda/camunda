@@ -10,7 +10,8 @@ package io.camunda.db.rdbms.read.domain;
 import io.camunda.search.sort.SortOrder;
 import java.util.List;
 
-public record DbQueryPage(Integer size, Integer from, List<KeySetPagination> keySetPagination) {
+public record DbQueryPage(
+    Integer size, Integer from, Integer maxTotalHits, List<KeySetPagination> keySetPagination) {
 
   public record KeySetPagination(List<KeySetPaginationFieldEntry> entries) {}
 

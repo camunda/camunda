@@ -41,6 +41,7 @@ public class BatchOperationDbReader extends AbstractEntityReader<BatchOperationE
     final var query =
         new BatchOperationDbQuery.Builder()
             .filter(b -> b.batchOperationKeys(batchOperationKey))
+            .page(new DbQueryPage(1, 0, 1, List.of()))
             .build();
 
     return batchOperationMapper.count(query) == 1;
