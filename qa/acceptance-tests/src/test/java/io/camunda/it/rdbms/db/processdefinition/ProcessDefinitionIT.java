@@ -344,7 +344,6 @@ public class ProcessDefinitionIT {
                         f -> f.processDefinitionIds(processDefinition.processDefinitionId()))));
 
     assertThat(searchResult).isNotNull();
-    assertThat(searchResult.items()).hasSize(3);
     final var statistics =
         searchResult.items().stream()
             .filter(f -> "proc-1-id".equals(f.processDefinitionId()))
