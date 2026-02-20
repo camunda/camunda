@@ -6,12 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryUserTaskAuditLogsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  QueryUserTaskAuditLogsResponseBody,
+  AuditLog,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {uniqueId} from './utils';
 
-type AuditLogItem = QueryUserTaskAuditLogsResponseBody['items'][number];
-
-const auditLog = (customFields: Partial<AuditLogItem> = {}): AuditLogItem => ({
+const auditLog = (customFields: Partial<AuditLog> = {}): AuditLog => ({
   auditLogKey: String(uniqueId.next().value),
   entityKey: '456',
   entityType: 'USER_TASK',
@@ -26,34 +27,34 @@ const auditLog = (customFields: Partial<AuditLogItem> = {}): AuditLogItem => ({
   annotation: null,
   category: 'USER_TASKS',
   processDefinitionId: null,
-  processDefinitionKey: '',
-  processInstanceKey: '',
+  processDefinitionKey: null,
+  processInstanceKey: null,
   rootProcessInstanceKey: null,
-  elementInstanceKey: '',
-  jobKey: '',
-  userTaskKey: '',
+  elementInstanceKey: null,
+  jobKey: null,
+  userTaskKey: null,
   decisionRequirementsId: null,
-  decisionRequirementsKey: '',
+  decisionRequirementsKey: null,
   decisionDefinitionId: null,
-  decisionDefinitionKey: '',
-  decisionEvaluationKey: '',
-  deploymentKey: '',
-  formKey: '',
-  resourceKey: '',
-  relatedEntityKey: '',
+  decisionDefinitionKey: null,
+  decisionEvaluationKey: null,
+  deploymentKey: null,
+  formKey: null,
+  resourceKey: null,
+  relatedEntityKey: null,
   relatedEntityType: null,
   entityDescription: null,
   agentElementId: null,
   ...customFields,
 });
 
-const auditLogs: AuditLogItem[] = [
+const auditLogs: AuditLog[] = [
   auditLog({operationType: 'CREATE', timestamp: '2024-01-01T00:00:00.000Z'}),
   auditLog({operationType: 'ASSIGN', timestamp: '2024-01-01T01:00:00.000Z'}),
 ];
 
 function getQueryUserTaskAuditLogsResponseMock(
-  items: AuditLogItem[] = auditLogs,
+  items: AuditLog[] = auditLogs,
   totalItems: number = items.length,
 ): QueryUserTaskAuditLogsResponseBody {
   return {
@@ -68,8 +69,8 @@ function getQueryUserTaskAuditLogsResponseMock(
 }
 
 function getAuditLogResponseMock(
-  customFields: Partial<AuditLogItem> = {},
-): AuditLogItem {
+  customFields: Partial<AuditLog> = {},
+): AuditLog {
   return auditLog(customFields);
 }
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.42
+
+### 🚀 Enhancements
+
+- fix audit log shape ([#46339](https://github.com/camunda/camunda/issues/46339))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.41
 
 ### 🚀 Enhancements
