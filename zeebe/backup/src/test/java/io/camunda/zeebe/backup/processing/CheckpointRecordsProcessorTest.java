@@ -9,14 +9,17 @@ package io.camunda.zeebe.backup.processing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
@@ -36,6 +39,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
+import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
 import io.camunda.zeebe.stream.api.scheduling.ProcessingScheduleService;
 import io.camunda.zeebe.stream.impl.RecordProcessorContextImpl;
@@ -44,6 +48,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -83,7 +88,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, 1, null, context.getMeterRegistry());
 
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
@@ -347,7 +352,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, 1, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, 1, null, context.getMeterRegistry());
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
@@ -792,5 +797,132 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     verify(backupManager, times(1)).takeBackup(eq(backupId), any());
+  }
+
+  @Test
+  void shouldScheduleSyncPostCommitTaskOnConfirmBackup() {
+    // given — a processor with a real backup store
+    final var backupStore = mock(BackupStore.class);
+    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final var context = createContext(executor, zeebedb);
+    final var syncProcessor =
+        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+    syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    syncProcessor.init(context);
+
+    final var checkpointId = 5;
+    final var checkpointPosition = 50;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 10, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result =
+        (MockProcessingResult) syncProcessor.process(record, new MockProcessingResultBuilder());
+
+    // then — a post-commit task is registered
+    assertThat(result.postCommitTasks()).hasSize(1);
+
+    // when — the post-commit task is executed
+    final var success = result.executePostCommitTasks();
+
+    // then — task succeeds (fire-and-forget) and store metadata is called
+    assertThat(success).isTrue();
+    verify(backupStore).storeBackupMetadata(eq(1), any(), any());
+  }
+
+  @Test
+  void shouldNotScheduleSyncPostCommitTaskWhenNoBackupStore() {
+    // given — no backup store (null)
+    final var checkpointId = 5;
+    final var checkpointPosition = 50;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP);
+    final var record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 10, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result = (MockProcessingResult) processor.process(record, resultBuilder);
+
+    // then — no post-commit tasks
+    assertThat(result.postCommitTasks()).isEmpty();
+  }
+
+  @Test
+  void shouldNotScheduleSyncPostCommitTaskOnRejection() {
+    // given — a processor with a backup store and an existing newer backup
+    final var backupStore = mock(BackupStore.class);
+    final var context = createContext(executor, zeebedb);
+    final var syncProcessor =
+        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+    syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    syncProcessor.init(context);
+
+    // Set a newer backup ID so the command will be rejected
+    state.setLatestBackupInfo(
+        10, 100, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP, -1L);
+
+    final var oldCheckpointId = 5;
+    final var value = new CheckpointRecord().setCheckpointId(oldCheckpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            50, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    final var result =
+        (MockProcessingResult) syncProcessor.process(record, new MockProcessingResultBuilder());
+
+    // then — no post-commit task (command was rejected)
+    assertThat(result.postCommitTasks()).isEmpty();
+  }
+
+  @Test
+  void shouldSyncOnRecoveryWhenBackupStoreExists() {
+    // given — a processor with a real backup store
+    final var backupStore = mock(BackupStore.class);
+    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    final var context = createContext(executor, zeebedb);
+    final var syncProcessor =
+        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+    syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
+    syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
+    syncProcessor.init(context);
+
+    final var readonlyContext = mock(ReadonlyStreamProcessorContext.class);
+    when(readonlyContext.getPartitionId()).thenReturn(1);
+
+    // when
+    syncProcessor.onRecovered(readonlyContext);
+
+    // then — sync is triggered (store metadata is called)
+    verify(backupStore).storeBackupMetadata(eq(1), any(), any());
+  }
+
+  @Test
+  void shouldNotSyncOnRecoveryWhenNoBackupStore() {
+    // given — no backup store (the default processor in setup)
+    final var readonlyContext = mock(ReadonlyStreamProcessorContext.class);
+    when(readonlyContext.getPartitionId()).thenReturn(1);
+
+    // when — should not throw
+    processor.onRecovered(readonlyContext);
+
+    // then — no exception, backup manager still called for fail in-progress
+    verify(backupManager).failInProgressBackup(anyLong());
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -26,12 +27,29 @@ public class CheckpointConfirmBackupProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
   private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
+  private final DbCheckpointMetadataState checkpointMetadataState;
+  private final DbBackupRangeState backupRangeState;
+  private final BackupMetadataSyncer syncer;
+  private final int partitionId;
 
+  /**
+   * @param checkpointState the checkpoint state
+   * @param checkpointMetadataState the checkpoint metadata CF state
+   * @param backupRangeState the backup ranges CF state
+   * @param syncer the metadata syncer, or null if no backup store is configured
+   * @param partitionId the partition ID
+   */
   public CheckpointConfirmBackupProcessor(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
-      final DbBackupRangeState backupRangeState) {
+      final DbBackupRangeState backupRangeState,
+      final BackupMetadataSyncer syncer,
+      final int partitionId) {
     this.checkpointState = checkpointState;
+    this.checkpointMetadataState = checkpointMetadataState;
+    this.backupRangeState = backupRangeState;
+    this.syncer = syncer;
+    this.partitionId = partitionId;
     backupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);
@@ -53,6 +71,15 @@ public class CheckpointConfirmBackupProcessor {
               .recordType(RecordType.EVENT)
               .valueType(ValueType.CHECKPOINT)
               .intent(CheckpointIntent.CONFIRMED_BACKUP));
+
+      // Schedule JSON metadata sync as a post-commit task (fire-and-forget)
+      if (syncer != null) {
+        resultBuilder.appendPostCommitTask(
+            () -> {
+              syncer.sync(partitionId, checkpointMetadataState, backupRangeState);
+              return true;
+            });
+      }
     } else {
       LOG.debug(
           "Ignoring backup for checkpoint {} as it is older than the latest backup {}",

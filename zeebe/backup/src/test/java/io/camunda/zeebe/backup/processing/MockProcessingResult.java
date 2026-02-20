@@ -25,7 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-record MockProcessingResult(List<Event> records, Response response) implements ProcessingResult {
+record MockProcessingResult(
+    List<Event> records, Response response, List<PostCommitTask> postCommitTasks)
+    implements ProcessingResult {
 
   @Override
   public ImmutableRecordBatch getRecordBatch() {
@@ -39,7 +41,11 @@ record MockProcessingResult(List<Event> records, Response response) implements P
 
   @Override
   public boolean executePostCommitTasks() {
-    return false;
+    var result = true;
+    for (final var task : postCommitTasks) {
+      result = result && task.flush();
+    }
+    return result;
   }
 
   @Override
@@ -61,6 +67,7 @@ record MockProcessingResult(List<Event> records, Response response) implements P
   static class MockProcessingResultBuilder implements ProcessingResultBuilder {
 
     final List<Event> followupRecords = new ArrayList<>();
+    final List<PostCommitTask> postCommitTasks = new ArrayList<>();
     Response response;
 
     final @Override public Either<RuntimeException, ProcessingResultBuilder>
@@ -97,17 +104,19 @@ record MockProcessingResult(List<Event> records, Response response) implements P
 
     @Override
     public ProcessingResultBuilder appendPostCommitTask(final PostCommitTask task) {
-      return null;
+      postCommitTasks.add(task);
+      return this;
     }
 
     @Override
     public ProcessingResultBuilder resetPostCommitTasks() {
-      return null;
+      postCommitTasks.clear();
+      return this;
     }
 
     @Override
     public ProcessingResult build() {
-      return new MockProcessingResult(followupRecords, response);
+      return new MockProcessingResult(followupRecords, response, List.copyOf(postCommitTasks));
     }
 
     @Override

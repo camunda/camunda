@@ -8,7 +8,9 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -40,6 +42,8 @@ public final class CheckpointRecordsProcessor
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointRecordsProcessor.class);
 
   private final BackupManager backupManager;
+  private final BackupStore backupStore;
+  private final int partitionId;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
@@ -50,13 +54,27 @@ public final class CheckpointRecordsProcessor
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
+  private DbCheckpointMetadataState checkpointMetadataState;
+  private DbBackupRangeState backupRangeState;
+  private BackupMetadataSyncer syncer;
   private ProcessingScheduleService executor;
   private ScalingStatusSupplier scalingInProgressSupplier;
   private PartitionCountSupplier partitionCountSupplier;
 
+  /**
+   * @param backupManager the backup manager for this partition
+   * @param partitionId the partition ID
+   * @param backupStore the backup store, or null if no backup store is configured
+   * @param registry meter registry for metrics
+   */
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
+      final BackupManager backupManager,
+      final int partitionId,
+      final BackupStore backupStore,
+      final MeterRegistry registry) {
     this.backupManager = backupManager;
+    this.partitionId = partitionId;
+    this.backupStore = backupStore;
     metrics = new CheckpointMetrics(registry);
   }
 
@@ -81,12 +99,16 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
-    final var checkpointMetadataState =
+    checkpointMetadataState =
         new DbCheckpointMetadataState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
-    final var backupRangeState =
+    backupRangeState =
         new DbBackupRangeState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
+
+    if (backupStore != null) {
+      syncer = new BackupMetadataSyncer(backupStore);
+    }
 
     if (scalingInProgressSupplier == null) {
       throw new IllegalStateException("Scaling in progress supplier is not initialized.");
@@ -107,7 +129,7 @@ public final class CheckpointRecordsProcessor
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState);
+            checkpointState, checkpointMetadataState, backupRangeState, syncer, partitionId);
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
             checkpointState, checkpointMetadataState, checkpointListeners, metrics);
@@ -211,5 +233,10 @@ public final class CheckpointRecordsProcessor
     // previous leader. So mark them as failed, so that the users do not wait forever for it to be
     // completed.
     backupManager.failInProgressBackup(checkpointState.getLatestCheckpointId());
+
+    // Sync JSON metadata to the backup store to catch up any missed syncs from leader failovers
+    if (syncer != null) {
+      syncer.sync(partitionId, checkpointMetadataState, backupRangeState);
+    }
   }
 }
