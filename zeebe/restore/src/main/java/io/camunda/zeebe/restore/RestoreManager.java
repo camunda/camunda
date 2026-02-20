@@ -11,15 +11,11 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
@@ -75,6 +71,7 @@ public class RestoreManager implements CloseableSilently {
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
   private final BackupRangeResolver rangeResolver;
+  private final BackupMetadataReader metadataReader;
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
@@ -98,6 +95,7 @@ public class RestoreManager implements CloseableSilently {
     this.configuration = configuration;
     this.backupStore = backupStore;
     rangeResolver = new BackupRangeResolver(backupStore);
+    metadataReader = new BackupMetadataReader(backupStore);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
@@ -167,23 +165,32 @@ public class RestoreManager implements CloseableSilently {
     // lower RTO
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    final var wildCard =
-        BackupIdentifierWildcard.ofPattern(
-            CheckpointPattern.ofTimeRange(from, to, checkpointIdGenerator));
-    final var backups =
-        backupStore
-            .list(wildCard)
-            .thenApply(
-                b ->
-                    b.stream().filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED).toList())
-            .join();
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+    final var timeInterval = Interval.closed(from, to);
+
+    // Load manifests for all partitions and collect completed checkpoint IDs within the time range
     final var backupIds =
-        backups.stream()
-            .map(BackupStatus::id)
-            .mapToLong(BackupIdentifier::checkpointId)
+        IntStream.rangeClosed(1, partitionCount)
+            .mapToObj(
+                partition ->
+                    metadataReader
+                        .load(partition)
+                        .join()
+                        .orElseThrow(
+                            () ->
+                                new IllegalStateException(
+                                    "No backup metadata manifest found for partition %d"
+                                        .formatted(partition))))
+            .flatMap(manifest -> manifest.checkpoints().stream())
+            .filter(
+                entry ->
+                    timeInterval.contains(entry.checkpointTimestamp())
+                        && !"MARKER".equals(entry.checkpointType()))
+            .mapToLong(BackupMetadataManifest.CheckpointEntry::checkpointId)
             .distinct()
             .sorted()
             .toArray();
+
     LOG.info("Completed backups in range [{},{}] are {}", from, to, backupIds);
 
     if (backupIds.length == 0) {
@@ -363,7 +370,16 @@ public class RestoreManager implements CloseableSilently {
         final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
         final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
 
-        final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
+        final var manifest = metadataReader.load(partition).join();
+        final var ranges =
+            manifest
+                .map(
+                    m ->
+                        m.ranges().stream()
+                            .map(r -> (BackupRange) new BackupRange.Complete(r.start(), r.end()))
+                            .toList())
+                .orElse(List.of());
+
         final var validRange =
             ranges.stream()
                 .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))

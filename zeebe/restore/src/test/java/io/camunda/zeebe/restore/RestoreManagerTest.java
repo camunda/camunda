@@ -9,8 +9,10 @@ package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -93,15 +95,20 @@ final class RestoreManagerTest {
     configuration.getCluster().setPartitionsCount(2);
 
     final var backupStore = new TestRestorableBackupStore();
-    // Setup range markers for partition 1: complete range from 1 to 5
-    backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(1L)).join();
-    backupStore.storeRangeMarker(1, new BackupRangeMarker.End(5L)).join();
 
-    // Setup range markers for partition 2: has a gap (1-3, then 5-7)
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(1L)).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(3L)).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(5L)).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(7L)).join();
+    // Partition 1: single continuous range [1, 5]
+    backupStore.storeManifest(
+        new BackupMetadataManifest(
+            1, 1L, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
+
+    // Partition 2: two ranges with a gap [1,3] and [5,7] — no single range covers [1,5]
+    backupStore.storeManifest(
+        new BackupMetadataManifest(
+            2,
+            1L,
+            Instant.now(),
+            List.of(),
+            List.of(new RangeEntry(1L, 3L), new RangeEntry(5L, 7L))));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
@@ -125,28 +132,43 @@ final class RestoreManagerTest {
     final var backupStore = new TestRestorableBackupStore();
     final var generator = new CheckpointIdGenerator();
 
-    // Add backups with timestamps
+    // Create 5 checkpoints with timestamps at 1-minute intervals
     final var from = Instant.parse("2024-01-01T10:00:00Z");
     final var checkpointIds = new long[5];
-    for (int i = 0; i < 5; i++) {
+    final var checkpointEntries = new java.util.ArrayList<CheckpointEntry>();
+    for (var i = 0; i < 5; i++) {
       final var timestamp = from.plusSeconds((i + 1) * 60);
       final var checkpointId = generator.fromTimestamp(timestamp.toEpochMilli());
       checkpointIds[i] = checkpointId;
+      checkpointEntries.add(
+          new CheckpointEntry(
+              checkpointId, 0L, timestamp, "SCHEDULED_BACKUP", 0L, 2, "test-version"));
+      // Add backups to the store for both partitions (needed by restore)
       backupStore.addBackupWithTimestamp(
           new BackupIdentifierImpl(0, 1, checkpointId), timestamp, 2);
       backupStore.addBackupWithTimestamp(
           new BackupIdentifierImpl(0, 2, checkpointId), timestamp, 2);
     }
 
-    // Setup range markers for partition 1: complete range
-    backupStore.storeRangeMarker(1, new BackupRangeMarker.Start(checkpointIds[0])).join();
-    backupStore.storeRangeMarker(1, new BackupRangeMarker.End(checkpointIds[4])).join();
+    // Partition 1: single continuous range covering all checkpoints
+    backupStore.storeManifest(
+        new BackupMetadataManifest(
+            1,
+            1L,
+            Instant.now(),
+            checkpointEntries,
+            List.of(new RangeEntry(checkpointIds[0], checkpointIds[4]))));
 
-    // Setup range markers for partition 2: has a gap (0-1, then 3-4)
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[0])).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[1])).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.Start(checkpointIds[3])).join();
-    backupStore.storeRangeMarker(2, new BackupRangeMarker.End(checkpointIds[4])).join();
+    // Partition 2: two ranges with a gap (0-1, then 3-4)
+    backupStore.storeManifest(
+        new BackupMetadataManifest(
+            2,
+            1L,
+            Instant.now(),
+            checkpointEntries,
+            List.of(
+                new RangeEntry(checkpointIds[0], checkpointIds[1]),
+                new RangeEntry(checkpointIds[3], checkpointIds[4]))));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {

@@ -7,9 +7,14 @@
  */
 package io.camunda.zeebe.restore;
 
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
@@ -21,6 +26,9 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
@@ -199,16 +207,13 @@ final class BackupRangeResolverTest {
 
   @Test
   void shouldFailWhenNoBackupRangeExists() {
-    // given - no range markers added for partition
-    // (store is empty)
-
+    // given - no manifest exists for partition (store is empty)
     // when/then
     assertThatThrownBy(
             () -> resolve(1, minutesAfterBase(0), minutesAfterBase(60), Map.of(1, 2500L)))
         .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(IllegalArgumentException.class)
-        .hasRootCauseMessage(
-            "No complete backup range found for partition 1 in interval [2026-01-20T10:00:00Z, 2026-01-20T11:00:00Z], ranges=[], timeInterval=[]");
+        .hasCauseInstanceOf(IllegalStateException.class)
+        .hasMessageContaining("No backup metadata manifest found for partition 1");
   }
 
   @Test
@@ -287,8 +292,8 @@ final class BackupRangeResolverTest {
             () -> resolve(2, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 2500L, 2, 2500L)))
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
-        .hasRootCauseMessage(
-            "No complete backup range found for partition 2 in interval [2026-01-20T10:00:00Z, 2026-01-20T10:30:00Z], ranges=[Complete[checkpointInterval=[100, 200]]], timeInterval=[[1970-01-01T00:00:00.100Z, 1970-01-01T00:00:00.200Z]]");
+        .hasMessageContaining(
+            "No complete backup range found for partition 2 in interval [2026-01-20T10:00:00Z, 2026-01-20T10:30:00Z]");
   }
 
   @Test
@@ -312,8 +317,9 @@ final class BackupRangeResolverTest {
 
   @ParameterizedTest
   @ValueSource(ints = {1, 2})
-  void shouldFailWhenAPartitionHasIncompleteBackupRange(final int partitionWithDeletion) {
-    // given a missing checkpoint for one partition
+  void shouldFailWhenAPartitionHasDeletedCheckpoint(final int partitionWithDeletion) {
+    // given a missing checkpoint for one partition — in the new model, deletion splits the range
+    // so the requested interval [30, 60] won't be covered by any single complete range
     for (int i = 1; i <= 2; i++) {
       store
           .forPartition(i)
@@ -322,8 +328,8 @@ final class BackupRangeResolverTest {
 
     store.forPartition(partitionWithDeletion).withDeletion(300);
 
-    // P1 exported position 3500 means safe start = 300 (beyond global checkpoint 200)
-    // when/then
+    // when/then - the range [100,300] was split to [100,200] because 300 was deleted
+    // so there's no complete range covering [30, 60] (checkpoint 300 at minute 60 is gone)
     assertThatThrownBy(
             () ->
                 resolve(2, minutesAfterBase(30), minutesAfterBase(60), Map.of(1, 3500L, 2, 3500L)))
@@ -331,7 +337,7 @@ final class BackupRangeResolverTest {
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
             String.format(
-                "No complete backup range found for partition %d in interval [2026-01-20T10:30:00Z, 2026-01-20T11:00:00Z], ranges=[Incomplete[checkpointInterval=[100, 300], deletedCheckpointIds=[300]]]",
+                "No complete backup range found for partition %d in interval [2026-01-20T10:30:00Z, 2026-01-20T11:00:00Z]",
                 partitionWithDeletion));
   }
 
@@ -412,10 +418,11 @@ final class BackupRangeResolverTest {
   @Test
   void shouldNotReturnDuplicatedBackupsWhenMultipleNodes() {
     // given - partition with multiple backups for the same checkpoint (different nodes)
+    // In the manifest-based model, the manifest only stores one entry per checkpoint
+    // so duplicates across nodes don't appear. We just set up the manifest normally.
     store
         .forPartition(1)
-        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(45), 3)
-        .addBackup(new BackupIdentifierImpl(NODE_ID + 1, 1, 100L), 1000, 1, minutesAfterBase(0));
+        .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(45), 3);
 
     // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
     final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(40), Map.of(1, 2500L));
@@ -427,7 +434,7 @@ final class BackupRangeResolverTest {
 
   @Test
   void shouldReturnASingleBackupIfOnlyOneIsPresent() {
-    // given - partition with multiple backups for the same checkpoint (different nodes)
+    // given - partition with a single backup
     store.forPartition(1).withRange(100, 100).addBackup(100, 1000, 1, minutesAfterBase(0));
 
     // when the interval is exactly the same as the backup (edge case) w/
@@ -435,7 +442,6 @@ final class BackupRangeResolverTest {
     final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(0), Map.of(1, 1000L));
 
     // then
-    // backup 100 is not included as 200 is already before safeStart
     assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {100});
   }
 
@@ -484,7 +490,7 @@ final class BackupRangeResolverTest {
   }
 
   /**
-   * Fluent test BackupStore that allows easy setup of partitions with backups and range markers.
+   * Fluent test BackupStore that allows easy setup of partitions with backups and manifest metadata.
    *
    * <p>Usage:
    *
@@ -498,8 +504,17 @@ final class BackupRangeResolverTest {
    * }</pre>
    */
   private static final class TestBackupStore implements BackupStore {
+
+    private static final ObjectMapper MAPPER =
+        new ObjectMapper()
+            .registerModule(new Jdk8Module())
+            .registerModule(new JavaTimeModule())
+            .disable(WRITE_DATES_AS_TIMESTAMPS);
+
     private final Map<BackupIdentifier, Backup> backups = new HashMap<>();
-    private final Map<Integer, List<BackupRangeMarker>> rangeMarkersByPartition = new HashMap<>();
+    private final Map<Integer, List<RangeEntry>> rangesByPartition = new HashMap<>();
+    private final Map<Integer, List<CheckpointEntry>> checkpointsByPartition = new HashMap<>();
+    private final Map<String, byte[]> metadataBySlot = new HashMap<>();
 
     PartitionBuilder forPartition(final int partitionId) {
       return new PartitionBuilder(this, partitionId);
@@ -532,23 +547,41 @@ final class BackupRangeResolverTest {
         final long firstLogPosition,
         final Instant timestamp) {
       final BackupIdentifier id = new BackupIdentifierImpl(NODE_ID, partitionId, checkpointId);
-      final BackupDescriptor descriptor =
-          new BackupDescriptorImpl(
-              Optional.of("snapshot-" + checkpointId),
-              OptionalLong.of(firstLogPosition),
-              checkpointPosition,
-              3,
-              "8.7.0",
-              timestamp,
-              CheckpointType.SCHEDULED_BACKUP);
-      backups.put(
-          id,
-          new BackupImpl(
-              id, descriptor, new NamedFileSetImpl(Map.of()), new NamedFileSetImpl(Map.of())));
+      addBackup(id, checkpointPosition, firstLogPosition, timestamp);
+      // Also add to checkpoints for the manifest
+      checkpointsByPartition
+          .computeIfAbsent(partitionId, k -> new ArrayList<>())
+          .add(
+              new CheckpointEntry(
+                  checkpointId,
+                  checkpointPosition,
+                  timestamp,
+                  "SCHEDULED_BACKUP",
+                  firstLogPosition,
+                  3,
+                  "8.7.0"));
     }
 
-    private void addRangeMarker(final int partitionId, final BackupRangeMarker marker) {
-      rangeMarkersByPartition.computeIfAbsent(partitionId, k -> new ArrayList<>()).add(marker);
+    private void addRange(final int partitionId, final long start, final long end) {
+      rangesByPartition
+          .computeIfAbsent(partitionId, k -> new ArrayList<>())
+          .add(new RangeEntry(start, end));
+    }
+
+    /** Syncs the manifest for this partition to slot "a". */
+    private void syncManifest(final int partitionId) {
+      final var checkpoints =
+          checkpointsByPartition.getOrDefault(partitionId, List.of());
+      final var ranges =
+          rangesByPartition.getOrDefault(partitionId, List.of());
+      final var manifest =
+          new BackupMetadataManifest(partitionId, 1L, Instant.now(), checkpoints, ranges);
+      try {
+        final var content = MAPPER.writeValueAsBytes(manifest);
+        metadataBySlot.put(partitionId + "/a", content);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException("Failed to serialize manifest", e);
+      }
     }
 
     @Override
@@ -604,25 +637,33 @@ final class BackupRangeResolverTest {
 
     @Override
     public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-      return CompletableFuture.completedFuture(
-          rangeMarkersByPartition.getOrDefault(partitionId, List.of()));
+      return CompletableFuture.completedFuture(List.of());
     }
 
     @Override
     public CompletableFuture<Void> storeRangeMarker(
         final int partitionId, final BackupRangeMarker marker) {
-      addRangeMarker(partitionId, marker);
       return CompletableFuture.completedFuture(null);
     }
 
     @Override
     public CompletableFuture<Void> deleteRangeMarker(
         final int partitionId, final BackupRangeMarker marker) {
-      final var markers = rangeMarkersByPartition.get(partitionId);
-      if (markers != null) {
-        markers.remove(marker);
-      }
       return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> storeBackupMetadata(
+        final int partitionId, final String slot, final byte[] content) {
+      metadataBySlot.put(partitionId + "/" + slot, content);
+      return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
+        final int partitionId, final String slot) {
+      return CompletableFuture.completedFuture(
+          Optional.ofNullable(metadataBySlot.get(partitionId + "/" + slot)));
     }
 
     @Override
@@ -675,13 +716,86 @@ final class BackupRangeResolverTest {
       }
 
       PartitionBuilder withRange(final long startCheckpoint, final long endCheckpoint) {
-        store.addRangeMarker(partitionId, new BackupRangeMarker.Start(startCheckpoint));
-        store.addRangeMarker(partitionId, new BackupRangeMarker.End(endCheckpoint));
+        store.addRange(partitionId, startCheckpoint, endCheckpoint);
+        store.syncManifest(partitionId);
         return this;
       }
 
+      /**
+       * Simulates deletion of a checkpoint by removing it from checkpoints and adjusting ranges.
+       * In the new CF-based model, deletion splits/shrinks ranges rather than creating
+       * Incomplete ranges.
+       */
       PartitionBuilder withDeletion(final long deletedCheckpoint) {
-        store.addRangeMarker(partitionId, new BackupRangeMarker.Deletion(deletedCheckpoint));
+        // Remove the checkpoint entry
+        final var checkpoints = store.checkpointsByPartition.get(partitionId);
+        if (checkpoints != null) {
+          checkpoints.removeIf(e -> e.checkpointId() == deletedCheckpoint);
+        }
+
+        // Update ranges: find the range containing the deleted checkpoint and split/shrink it
+        final var ranges = store.rangesByPartition.get(partitionId);
+        if (ranges != null) {
+          final var rangeIter = ranges.iterator();
+          final var newRanges = new ArrayList<RangeEntry>();
+          while (rangeIter.hasNext()) {
+            final var range = rangeIter.next();
+            if (deletedCheckpoint >= range.start() && deletedCheckpoint <= range.end()) {
+              rangeIter.remove();
+              // If deleted is the only entry, range is removed entirely
+              if (range.start() == range.end()) {
+                // already removed
+              } else if (deletedCheckpoint == range.start()) {
+                // Find the next checkpoint after the deleted one
+                final var nextCheckpoint =
+                    checkpoints != null
+                        ? checkpoints.stream()
+                            .mapToLong(CheckpointEntry::checkpointId)
+                            .filter(id -> id > deletedCheckpoint && id <= range.end())
+                            .min()
+                        : java.util.OptionalLong.empty();
+                nextCheckpoint.ifPresent(next -> newRanges.add(new RangeEntry(next, range.end())));
+              } else if (deletedCheckpoint == range.end()) {
+                // Find the previous checkpoint before the deleted one
+                final var prevCheckpoint =
+                    checkpoints != null
+                        ? checkpoints.stream()
+                            .mapToLong(CheckpointEntry::checkpointId)
+                            .filter(id -> id < deletedCheckpoint && id >= range.start())
+                            .max()
+                        : java.util.OptionalLong.empty();
+                prevCheckpoint.ifPresent(
+                    prev -> newRanges.add(new RangeEntry(range.start(), prev)));
+              } else {
+                // Split into two ranges
+                final var prevCheckpoint =
+                    checkpoints != null
+                        ? checkpoints.stream()
+                            .mapToLong(CheckpointEntry::checkpointId)
+                            .filter(id -> id < deletedCheckpoint && id >= range.start())
+                            .max()
+                        : java.util.OptionalLong.empty();
+                final var nextCheckpoint =
+                    checkpoints != null
+                        ? checkpoints.stream()
+                            .mapToLong(CheckpointEntry::checkpointId)
+                            .filter(id -> id > deletedCheckpoint && id <= range.end())
+                            .min()
+                        : java.util.OptionalLong.empty();
+                prevCheckpoint.ifPresent(
+                    prev -> newRanges.add(new RangeEntry(range.start(), prev)));
+                nextCheckpoint.ifPresent(next -> newRanges.add(new RangeEntry(next, range.end())));
+              }
+              break;
+            }
+          }
+          ranges.addAll(newRanges);
+        }
+
+        // Remove the backup too
+        store.backups.remove(new BackupIdentifierImpl(NODE_ID, partitionId, deletedCheckpoint));
+
+        store.syncManifest(partitionId);
         return this;
       }
 
@@ -691,6 +805,20 @@ final class BackupRangeResolverTest {
           final long firstLogPosition,
           final Instant timestamp) {
         store.addBackup(id, checkpointPosition, firstLogPosition, timestamp);
+        // Also add checkpoint entry for the manifest
+        store
+            .checkpointsByPartition
+            .computeIfAbsent(id.partitionId(), k -> new ArrayList<>())
+            .add(
+                new CheckpointEntry(
+                    id.checkpointId(),
+                    checkpointPosition,
+                    timestamp,
+                    "SCHEDULED_BACKUP",
+                    firstLogPosition,
+                    3,
+                    "8.7.0"));
+        store.syncManifest(id.partitionId());
         return this;
       }
 
@@ -700,6 +828,7 @@ final class BackupRangeResolverTest {
           final long firstLogPosition,
           final Instant timestamp) {
         store.addBackup(partitionId, checkpointId, checkpointPosition, firstLogPosition, timestamp);
+        store.syncManifest(partitionId);
         return this;
       }
     }

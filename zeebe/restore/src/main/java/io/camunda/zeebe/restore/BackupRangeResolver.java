@@ -8,16 +8,19 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRange.Complete;
-import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
+import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
+import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
+import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.collection.Tuple;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Instant;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -41,18 +45,18 @@ import org.slf4j.LoggerFactory;
 
 /**
  * The {@code BackupRangeResolver} class provides methods to resolve backup ranges and backup
- * statuses for a given partition, time interval, or exported position. This class interacts with a
- * {@link BackupStore} to fetch and manage backup data required for restoring partitions or
- * determining safe starting checkpoints.
+ * statuses for a given partition, time interval, or exported position. This class reads per-partition
+ * JSON manifests from the {@link BackupStore} via a {@link BackupMetadataReader}, reducing the
+ * number of API calls to exactly one per partition.
  */
 @NullMarked
 public final class BackupRangeResolver {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupRangeResolver.class);
-  private final BackupStore store;
+  private final BackupMetadataReader metadataReader;
 
   public BackupRangeResolver(final BackupStore store) {
-    this.store = store;
+    this.metadataReader = new BackupMetadataReader(store);
   }
 
   /**
@@ -81,7 +85,7 @@ public final class BackupRangeResolver {
     if (!errors.isEmpty()) {
       throw new IllegalStateException(String.format("Errors: %s", errors));
     }
-    // Get backup ranges from the store for each partition
+    // Get backup ranges from the manifest for each partition
     return FuturesUtil.parTraverse(
             IntStream.rangeClosed(1, partitionCount).boxed().toList(),
             partition ->
@@ -111,12 +115,33 @@ public final class BackupRangeResolver {
       @Nullable final Instant to,
       final long exporterPosition,
       final CheckpointIdGenerator checkpointIdGenerator) {
-    final var rangeMarkers = store.rangeMarkers(partition).join();
-    final var ranges = BackupRanges.fromMarkers(rangeMarkers);
+    // Load manifest from backup store — 1 API call per partition
+    final var manifest =
+        metadataReader
+            .load(partition)
+            .join()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No backup metadata manifest found for partition %d".formatted(partition)));
+
+    // Convert manifest ranges to BackupRange.Complete objects
+    final var ranges =
+        manifest.ranges().stream()
+            .map(r -> (BackupRange) new BackupRange.Complete(r.start(), r.end()))
+            .collect(Collectors.toCollection(ArrayList::new));
+
+    // Build a checkpoint-to-BackupStatus lookup from manifest checkpoints
+    final var checkpointStatusMap =
+        manifest.checkpoints().stream()
+            .collect(
+                Collectors.toMap(
+                    CheckpointEntry::checkpointId,
+                    entry -> toBackupStatus(partition, entry)));
 
     // finds the BackupRange that entirely covers the interval `[from, to]`
     final var statusInterval =
-        findBackupRangeCoveringInterval(from, to, ranges, partition)
+        findBackupRangeCoveringInterval(from, to, ranges, checkpointStatusMap::get)
             .orElseThrow(
                 () ->
                     new IllegalArgumentException(
@@ -130,7 +155,7 @@ public final class BackupRangeResolver {
                                     .map(r -> r.timeInterval(checkpointIdGenerator))
                                     .toList())));
 
-    // build the interal from the params or the backup range extreme if a param is not set
+    // build the interval from the params or the backup range extreme if a param is not set
     final var interval =
         Interval.closed(
             Optional.ofNullable(from)
@@ -138,10 +163,9 @@ public final class BackupRangeResolver {
             Optional.ofNullable(to)
                 .orElse(statusInterval.getRight().end().descriptor().get().checkpointTimestamp()));
 
-    // Retrieve all BackupStatus in the BackupRange
-    // note that all backups must be retrieved as we only know the extremes, not every backup inside
-    // the range
-    final var backups = getAllBackups(interval, statusInterval.getRight(), partition);
+    // Retrieve all BackupStatus objects in the BackupRange from the local checkpoint map
+    final var backups =
+        getAllBackupsFromManifest(interval, statusInterval.getRight(), checkpointStatusMap);
 
     // Find valid safe points using RDBMS exported positions
     final var safeStart =
@@ -174,7 +198,7 @@ public final class BackupRangeResolver {
    * @param to the target end of time interval that needs to be covered (optional, the end of the
    *     backup range will be used instead)
    * @param ranges a chronologically ordered collection of backup ranges to search
-   * @param partitionId the partition ID used for mapping backup checkpoints to their statuses
+   * @param checkpointLookup a function that maps checkpoint IDs to their BackupStatus
    * @return an {@code Optional} containing a tuple of the matching complete backup range and its
    *     corresponding status interval if found; otherwise, an empty {@code Optional}
    */
@@ -182,13 +206,13 @@ public final class BackupRangeResolver {
       @Nullable final Instant from,
       @Nullable final Instant to,
       final SequencedCollection<BackupRange> ranges,
-      final int partitionId) {
+      final Function<Long, BackupStatus> checkpointLookup) {
     // ranges are ordered chronologically, so we start from the latest one, going backwards in time
     for (final var range : ranges.reversed()) {
       if (range instanceof final BackupRange.Complete completeRange) {
-        // get the BackupStatuses from the store
+        // get the BackupStatuses from the local lookup
         final Interval<BackupStatus> statusInterval =
-            completeRange.checkpointInterval().map(c -> toBackupStatus(partitionId, c));
+            completeRange.checkpointInterval().map(checkpointLookup::apply);
         try {
           final var timeInterval =
               statusInterval.map(bs -> bs.descriptor().get().checkpointTimestamp());
@@ -219,37 +243,39 @@ public final class BackupRangeResolver {
     return Optional.empty();
   }
 
-  public List<BackupStatus> getAllBackups(
+  /**
+   * Gets all completed backup statuses within the given interval from the local checkpoint map,
+   * without making any API calls.
+   */
+  public List<BackupStatus> getAllBackupsFromManifest(
       final Interval<Instant> interval,
       final Interval<BackupStatus> statusInterval,
-      final int partitionId) {
-    final var backups =
-        store
-            .list(
-                BackupIdentifierWildcard.forPartition(
-                    partitionId,
-                    CheckpointPattern.ofInterval(statusInterval.map(s -> s.id().checkpointId()))))
-            .join();
+      final Map<Long, BackupStatus> checkpointStatusMap) {
+    final var checkpointInterval = statusInterval.map(s -> s.id().checkpointId());
 
-    final var completedBackupsMap =
-        backups.stream()
+    final var completedBackups =
+        checkpointStatusMap.values().stream()
             .filter(
                 bs -> bs.statusCode() == BackupStatusCode.COMPLETED && bs.descriptor().isPresent())
-            .collect(
-                Collectors.toMap(bs -> bs.id().checkpointId(), Function.identity(), (a, b) -> a));
-    final var completedBackups = completedBackupsMap.values().stream().sorted().toList();
+            .filter(
+                bs -> {
+                  final var cpId = bs.id().checkpointId();
+                  return checkpointInterval.contains(cpId);
+                })
+            .sorted()
+            .toList();
+
     LOG.debug(
-        "Found {} completed backups for partition {} in range {}: {}",
+        "Found {} completed backups in range {}: {}",
         completedBackups.size(),
-        partitionId,
         statusInterval,
         completedBackups);
+
     final var selectedBackups =
         interval.smallestCover(completedBackups, bs -> bs.descriptor().get().checkpointTimestamp());
     LOG.debug(
-        "Selected {} backups for partition {} in range {}: {}",
+        "Selected {} backups in range {}: {}",
         selectedBackups.size(),
-        partitionId,
         statusInterval,
         selectedBackups);
     return selectedBackups;
@@ -327,17 +353,31 @@ public final class BackupRangeResolver {
             () -> new IllegalStateException("No common checkpoint found across all partitions"));
   }
 
-  private BackupStatus toBackupStatus(final int partitionId, final long checkpoint) {
-    final var wildcard =
-        BackupIdentifierWildcard.forPartition(partitionId, CheckpointPattern.of(checkpoint));
-    // TODO check if there's more than one
-    final var backup =
-        store.list(wildcard).join().stream().filter(BackupStatus::isCompleted).findFirst();
-    if (backup.isPresent()) {
-      return backup.get();
-    } else {
-      throw new BackupNotFoundException(checkpoint, partitionId);
-    }
+  /**
+   * Converts a manifest checkpoint entry to a {@link BackupStatus} object. Uses node ID 0 as a
+   * sentinel since the actual node ID is not relevant for restore logic.
+   */
+  private static BackupStatus toBackupStatus(
+      final int partitionId, final CheckpointEntry entry) {
+    final var id = new BackupIdentifierImpl(0, partitionId, entry.checkpointId());
+    final var descriptor =
+        new BackupDescriptorImpl(
+            Optional.of("snapshot-" + entry.checkpointId()),
+            entry.firstLogPosition() >= 0
+                ? OptionalLong.of(entry.firstLogPosition())
+                : OptionalLong.empty(),
+            entry.checkpointPosition(),
+            entry.numberOfPartitions(),
+            entry.brokerVersion(),
+            entry.checkpointTimestamp(),
+            CheckpointType.valueOf(entry.checkpointType()));
+    return new BackupStatusImpl(
+        id,
+        Optional.of(descriptor),
+        BackupStatusCode.COMPLETED,
+        Optional.empty(),
+        Optional.of(entry.checkpointTimestamp()),
+        Optional.of(entry.checkpointTimestamp()));
   }
 
   /**

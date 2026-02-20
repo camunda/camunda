@@ -40,6 +40,7 @@ final class TestRestorableBackupStore implements BackupStore {
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
   final Map<Integer, Collection<BackupRangeMarker>> rangeMarkersByPartition =
       new ConcurrentHashMap<>();
+  final Map<String, byte[]> metadataBySlot = new ConcurrentHashMap<>();
 
   /**
    * Must be called before a backup is saved or marked as failed.
@@ -66,6 +67,26 @@ final class TestRestorableBackupStore implements BackupStore {
         new BackupImpl(
             id, descriptor, new NamedFileSetImpl(Map.of()), new NamedFileSetImpl(Map.of()));
     backups.put(id, backup);
+  }
+
+  /**
+   * Stores a backup metadata manifest for testing. Uses slot "a" for simplicity.
+   *
+   * @param manifest the manifest to store
+   */
+  void storeManifest(final io.camunda.zeebe.backup.common.BackupMetadataManifest manifest) {
+    try {
+      final var mapper =
+          new com.fasterxml.jackson.databind.ObjectMapper()
+              .registerModule(new com.fasterxml.jackson.datatype.jdk8.Jdk8Module())
+              .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule())
+              .disable(
+                  com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+      final var content = mapper.writeValueAsBytes(manifest);
+      storeBackupMetadata(manifest.partitionId(), "a", content).join();
+    } catch (final com.fasterxml.jackson.core.JsonProcessingException e) {
+      throw new RuntimeException("Failed to serialize manifest", e);
+    }
   }
 
   @Override
@@ -179,6 +200,20 @@ final class TestRestorableBackupStore implements BackupStore {
           return markers;
         });
     return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeBackupMetadata(
+      final int partitionId, final String slot, final byte[] content) {
+    metadataBySlot.put(partitionId + "/" + slot, content);
+    return CompletableFuture.completedFuture(null);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
+      final int partitionId, final String slot) {
+    return CompletableFuture.completedFuture(
+        Optional.ofNullable(metadataBySlot.get(partitionId + "/" + slot)));
   }
 
   @Override
