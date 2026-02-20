@@ -973,12 +973,15 @@ final class CheckpointRecordsProcessorTest {
     // when
     final var result = (MockProcessingResult) processor.process(record, resultBuilder);
 
-    // then — command rejection is written
+    // then — command rejection is written with NOT_FOUND rejection type
     assertThat(result.records())
         .singleElement()
         .returns(CheckpointIntent.DELETE_BACKUP, Event::intent)
         .returns(RecordType.COMMAND_REJECTION, Event::type)
+        .returns(RejectionType.NOT_FOUND, Event::rejectionType)
         .returns(value, Event::value);
+    assertThat(result.records().getFirst().rejectionReason())
+        .isEqualTo("Expected to delete backup for checkpoint 42, but no such checkpoint exists");
   }
 
   @Test

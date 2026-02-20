@@ -18,6 +18,7 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
+import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -86,7 +87,12 @@ public final class CheckpointDeleteBackupProcessor {
           new RecordMetadata()
               .recordType(RecordType.COMMAND_REJECTION)
               .valueType(ValueType.CHECKPOINT)
-              .intent(record.getIntent()));
+              .intent(record.getIntent())
+              .rejectionType(RejectionType.NOT_FOUND)
+              .rejectionReason(
+                  "Expected to delete backup for checkpoint "
+                      + checkpointId
+                      + ", but no such checkpoint exists"));
       return resultBuilder.build();
     }
 
