@@ -18,6 +18,8 @@ import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
+import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,6 +39,8 @@ import org.slf4j.Logger;
  * balanced processing.
  */
 public class HistoryDeletionJob implements BackgroundTask {
+
+  public static final String AUDIT_LOG_CLEANUP_ID = "%s-%s";
   private final List<ProcessInstanceDependant> processInstanceDependants;
   private final Executor executor;
   private final HistoryDeletionRepository deleterRepository;
@@ -137,7 +141,24 @@ public class HistoryDeletionJob implements BackgroundTask {
               final var deletedResources = new ArrayList<String>();
               deletedResources.addAll(deleteProcessInstancesAndDefinitionsFuture.join());
               deletedResources.addAll(deleteDecisionInstancesAndRequirementsFuture.join());
-              return deleteFromHistoryDeletionIndex(deletedResources);
+
+              if (deletedResources.isEmpty()) {
+                return CompletableFuture.completedFuture(0);
+              }
+
+              final var cleanupEntries = buildAuditLogCleanupEntries(batch, deletedResources);
+              return deleterRepository
+                  .createAuditLogCleanupEntries(cleanupEntries)
+                  .thenCompose(v -> deleteFromHistoryDeletionIndex(deletedResources))
+                  .exceptionally(
+                      ex -> {
+                        logger.warn(
+                            "Failed to create audit log cleanup entries for batch: {}. "
+                                + "Skipping deletion from history deletion index to allow retry.",
+                            batch,
+                            ex);
+                        return 0;
+                      });
             });
   }
 
@@ -260,6 +281,43 @@ public class HistoryDeletionJob implements BackgroundTask {
               ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_REQUIREMENTS));
               return ids;
             });
+  }
+
+  /**
+   * Builds the list of {@link AuditLogCleanupEntity} entries for the resources that were
+   * successfully deleted. These entries are written to the audit log cleanup index so that the
+   * audit log archiver can later purge the corresponding audit log records.
+   *
+   * @param batch The batch that was processed
+   * @param deletedHistoryDeletionIds The history-deletion document IDs that were successfully
+   *     processed
+   * @return The list of cleanup entities to index
+   */
+  private List<AuditLogCleanupEntity> buildAuditLogCleanupEntries(
+      final HistoryDeletionBatch batch, final List<String> deletedHistoryDeletionIds) {
+    return batch.historyDeletionEntities().stream()
+        .filter(entity -> deletedHistoryDeletionIds.contains(entity.getId()))
+        .map(this::toAuditLogCleanupEntity)
+        .toList();
+  }
+
+  private AuditLogCleanupEntity toAuditLogCleanupEntity(final HistoryDeletionEntity entity) {
+    final String keyField =
+        switch (entity.getResourceType()) {
+          case PROCESS_INSTANCE -> AuditLogTemplate.PROCESS_INSTANCE_KEY;
+          case PROCESS_DEFINITION -> AuditLogTemplate.PROCESS_DEFINITION_KEY;
+          case DECISION_INSTANCE -> AuditLogTemplate.DECISION_EVALUATION_KEY;
+          case DECISION_REQUIREMENTS -> AuditLogTemplate.DECISION_REQUIREMENTS_KEY;
+        };
+    final var id =
+        AUDIT_LOG_CLEANUP_ID.formatted(entity.getBatchOperationKey(), entity.getResourceKey());
+    // avoid setting entityType so job later deletes only by key
+    return new AuditLogCleanupEntity()
+        .setId(id)
+        .setKey(String.valueOf(entity.getResourceKey()))
+        .setKeyField(keyField)
+        .setEntityType(null)
+        .setPartitionId((int) entity.getPartitionId());
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {

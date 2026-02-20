@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atMostOnce;
 import static org.mockito.Mockito.mock;
@@ -71,6 +72,8 @@ final class HistoryDeletionJobTest {
         resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
     decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
+    when(repository.createAuditLogCleanupEntries(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(null));
   }
 
   @Test
@@ -692,5 +695,267 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .deleteDocumentsById(
             historyDeletionIndex.getFullQualifiedName(), List.of(decisionInstanceEntity.getId()));
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntriesWhenDeletingFromHistoryDeletionIndex() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(42L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then: audit log cleanup entry is created and history deletion index is cleaned up
+    verify(repository).createAuditLogCleanupEntries(anyList());
+    verify(repository)
+        .deleteDocumentsById(historyDeletionIndex.getFullQualifiedName(), List.of(entity.getId()));
+  }
+
+  @Test
+  void shouldNotDeleteFromHistoryDeletionIndexIfAuditLogCleanupEntryCreationFails() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(42L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.createAuditLogCleanupEntries(anyList()))
+        .thenReturn(
+            CompletableFuture.failedFuture(
+                new RuntimeException("Failed to create audit log cleanup entry")));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then: history deletion index is NOT cleaned up so the job retries next cycle
+    verify(repository, never())
+        .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntryWithCorrectKeyFieldForProcessInstance() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(100L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(3);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(
+                entries ->
+                    entries.size() == 1
+                        && entries.getFirst().getKey().equals("100")
+                        && entries
+                            .getFirst()
+                            .getKeyField()
+                            .equals(AuditLogTemplate.PROCESS_INSTANCE_KEY)
+                        && entries.getFirst().getEntityType() == null
+                        && entries.getFirst().getPartitionId() == 3));
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntryWithCorrectKeyFieldForProcessDefinition() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(200L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(
+                entries ->
+                    entries.size() == 1
+                        && entries.getFirst().getKey().equals("200")
+                        && entries
+                            .getFirst()
+                            .getKeyField()
+                            .equals(AuditLogTemplate.PROCESS_DEFINITION_KEY)
+                        && entries.getFirst().getEntityType() == null
+                        && entries.getFirst().getPartitionId() == 1));
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntryWithCorrectKeyFieldForDecisionInstance() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(300L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(2);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(
+                entries ->
+                    entries.size() == 1
+                        && entries.getFirst().getKey().equals("300")
+                        && entries
+                            .getFirst()
+                            .getKeyField()
+                            .equals(AuditLogTemplate.DECISION_EVALUATION_KEY)
+                        && entries.getFirst().getEntityType() == null
+                        && entries.getFirst().getPartitionId() == 2));
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntryWithCorrectKeyFieldForDecisionRequirements() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(400L)
+            .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(
+                entries ->
+                    entries.size() == 1
+                        && entries.getFirst().getKey().equals("400")
+                        && entries
+                            .getFirst()
+                            .getKeyField()
+                            .equals(AuditLogTemplate.DECISION_REQUIREMENTS_KEY)
+                        && entries.getFirst().getEntityType() == null
+                        && entries.getFirst().getPartitionId() == 1));
+  }
+
+  @Test
+  void shouldOnlyCreateCleanupEntriesForSuccessfullyDeletedResources() {
+    // given: one process instance (succeeds) and one process definition (fails to delete)
+    final var processInstanceEntity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var processDefinitionEntity =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(2L)
+            .setResourceType(HistoryDeletionType.PROCESS_DEFINITION)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                new HistoryDeletionBatch(List.of(processInstanceEntity, processDefinitionEntity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.deleteDocumentsById(eq(processIndex.getFullQualifiedName()), anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed deleting")));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then: only the process instance cleanup entry is created (definition failed)
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(
+                entries ->
+                    entries.size() == 1
+                        && entries
+                            .getFirst()
+                            .getKeyField()
+                            .equals(AuditLogTemplate.PROCESS_INSTANCE_KEY)));
+  }
+
+  @Test
+  void shouldUseIdempotentIdForAuditLogCleanupEntry() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(42L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(3);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then: ID is deterministic: {batchOperationKey}-{resourceKey}
+    verify(repository)
+        .createAuditLogCleanupEntries(
+            argThat(entries -> entries.size() == 1 && entries.getFirst().getId().equals("2-42")));
   }
 }
