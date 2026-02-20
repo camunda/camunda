@@ -238,7 +238,9 @@ public class AuditLogIT {
                                     AuditLogOperationCategory.USER_TASKS.name())))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -332,7 +334,9 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
 
     // Should return all logs that have a process definition ID (including USER_TASKS)
     assertThat(searchResult.items())
