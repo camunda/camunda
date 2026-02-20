@@ -5,7 +5,6 @@ import (
     "io"
     "os"
     "path/filepath"
-    "strconv"
     "strings"
     "testing"
 
@@ -36,6 +35,21 @@ func captureOutput(t *testing.T, f func()) string {
     return buf.String()
 }
 
+// assertEndpointForLabel finds the output line containing "label:" and asserts it also contains endpoint.
+func assertEndpointForLabel(t *testing.T, out, label, endpoint string) {
+    t.Helper()
+    prefix := label + ":"
+    for _, line := range strings.Split(out, "\n") {
+        if strings.Contains(line, prefix) {
+            if !strings.Contains(line, endpoint) {
+                t.Fatalf("line for %q does not contain expected endpoint %s: %s", label, endpoint, line)
+            }
+            return
+        }
+    }
+    t.Fatalf("no line found containing label %q; output: %s", label, out)
+}
+
 func TestPrintStatus_NonDockerUsesPortFlag(t *testing.T) {
     // Ensure working directory contains endpoints.txt
     cwd, err := os.Getwd()
@@ -49,11 +63,16 @@ func TestPrintStatus_NonDockerUsesPortFlag(t *testing.T) {
         if err := PrintStatus(settings); err != nil { t.Fatalf("PrintStatus failed: %v", err) }
     })
 
-    // Expect all dynamic component ports to equal 9090
-    for _, component := range []string{"Operate", "Tasklist", "Identity", "Orchestration Cluster API"} {
-        if !strings.Contains(out, "http://localhost:9090") {
-            t.Fatalf("expected %s endpoint to include port 9090; output: %s", component, out)
-        }
+    // Verify specific endpoint paths are rendered with the correct port
+    expectedEndpoints := map[string]string{
+        "Operate":                   "http://localhost:9090/operate",
+        "Tasklist":                  "http://localhost:9090/tasklist",
+        "Identity":                  "http://localhost:9090/identity",
+        "Orchestration Cluster API": "http://localhost:9090/v2/",
+        "Orchestration Cluster":     "http://localhost:9090/mcp/cluster",
+    }
+    for label, endpoint := range expectedEndpoints {
+        assertEndpointForLabel(t, out, label, endpoint)
     }
 }
 
@@ -71,14 +90,18 @@ func TestPrintStatus_DockerModeIgnoresPortFlag(t *testing.T) {
     })
 
     // Verify fixed docker ports are present - all components use port 8080 in Docker mode
-    expectedPorts := map[string]int{"Operate": 8080, "Tasklist": 8080, "Identity": 8080, "Orchestration Cluster API": 8080}
-    for name, port := range expectedPorts {
-        if !strings.Contains(out, "http://localhost:"+strconv.Itoa(port)) {
-            t.Fatalf("expected %s endpoint to include port %d; output: %s", name, port, out)
-        }
+    expectedEndpoints := map[string]string{
+        "Operate":                   "http://localhost:8080/operate",
+        "Tasklist":                  "http://localhost:8080/tasklist",
+        "Identity":                  "http://localhost:8080/identity",
+        "Orchestration Cluster API": "http://localhost:8080/v2/",
+        "Orchestration Cluster":     "http://localhost:8080/mcp/cluster",
+    }
+    for label, endpoint := range expectedEndpoints {
+        assertEndpointForLabel(t, out, label, endpoint)
     }
     // Ensure the provided (ignored) port is not shown for those endpoints
-    if strings.Contains(out, "http://localhost:9090/operate") || strings.Contains(out, "http://localhost:9090/tasklist") || strings.Contains(out, "http://localhost:9090/identity") || strings.Contains(out, "http://localhost:9090/v2/") {
+    if strings.Contains(out, "http://localhost:9090/operate") || strings.Contains(out, "http://localhost:9090/tasklist") || strings.Contains(out, "http://localhost:9090/identity") || strings.Contains(out, "http://localhost:9090/v2/") || strings.Contains(out, "http://localhost:9090/mcp/cluster") {
         t.Fatalf("docker mode should ignore custom port 9090; output: %s", out)
     }
 }

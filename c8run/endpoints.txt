@@ -17,6 +17,9 @@ API endpoints:
 - Zeebe API (gRPC):           {{.ZeebeAPI}}
 - Camunda metrics:            {{.CamundaMetrics}}
 
+MCP servers:
+- Orchestration Cluster:      {{.OrchestrationMCP}}
+
 Note: When using the Desktop Modeler, Authentication may be set to None.
 
 Next steps:
@@ -24,6 +27,7 @@ Next steps:
 2. View your process in Operate
 3. Run a job worker via Java/Node SDK
 4. Build your first AI agent
+5. Connect any AI agent to the Orchestration API MCP Server and chat with your processes
 
 Need guidance?
 - Quickstart:       {{.QuickstartURL}}
