@@ -1,0 +1,89 @@
+openapi: 3.0.0
+info:
+  title: Test API for Spectral Rule
+  version: 1.0.0
+paths:
+  /test:
+    get:
+      operationId: getTest
+      summary: Test endpoint
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TestResponse'
+
+components:
+  schemas:
+    # VALID: All properties are in required array
+    ValidSchemaAllRequired:
+      type: object
+      required:
+        - field1
+        - field2
+        - field3
+      properties:
+        field1:
+          type: string
+          description: Field 1
+        field2:
+          type: number
+          description: Field 2
+        field3:
+          type: boolean
+          description: Field 3
+    
+    # VALID: Optional fields are explicitly nullable
+    ValidSchemaWithNullable:
+      type: object
+      required:
+        - requiredField
+      properties:
+        requiredField:
+          type: string
+          description: This field is required
+        optionalField:
+          type: string
+          nullable: true
+          description: This field is optional and nullable
+    
+    # INVALID: field2 is not in required array and not nullable
+    InvalidSchemaNoRequired:
+      type: object
+      required:
+        - field1
+      properties:
+        field1:
+          type: string
+          description: Field 1
+        field2:
+          type: number
+          description: Field 2 - THIS SHOULD ERROR
+    
+    # INVALID: No fields in required array
+    InvalidSchemaEmptyRequired:
+      type: object
+      required: []
+      properties:
+        field1:
+          type: string
+          description: Field 1 - THIS SHOULD ERROR
+        field2:
+          type: number
+          description: Field 2 - THIS SHOULD ERROR
+    
+    # VALID: Not an object type, should be skipped
+    ValidNonObjectSchema:
+      type: string
+      description: This is a string schema
+    
+    TestResponse:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Response message
