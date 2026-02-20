@@ -78,7 +78,7 @@ const ElementInstanceHistoryTree = createContext<{
   processInstance: ProcessInstance;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
   businessObjects: BusinessObjects;
-  latestMigrationDate: string | undefined;
+  latestMigrationDate: string | null;
 } | null>(null);
 
 const useElementInstanceHistoryTree = () => {
@@ -97,7 +97,7 @@ type NonFoldableElementInstancesNodeProps = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate: string | undefined;
+  endDate: string | null;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode | null;
   scopeKeyHierarchy: string[];
@@ -458,7 +458,7 @@ type FoldableElementInstancesNodeProps = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate: string | undefined;
+  endDate: string | null;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode;
   scopeKeyHierarchy: string[];
@@ -784,7 +784,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
     });
     const migrationItems = data?.pages[0].items ?? [];
     const latestMigrationDate =
-      migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
+      migrationItems.length > 0 ? migrationItems[0].processedDate : null;
     const rootElementInstance = useMemo<ElementInstance>(() => {
       const {
         processInstanceKey,
@@ -800,6 +800,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
         elementInstanceKey: processInstanceKey,
         elementId: processDefinitionId,
         elementName: processDefinitionName ?? processDefinitionId,
+        incidentKey: null,
       };
     }, [processInstance]);
 

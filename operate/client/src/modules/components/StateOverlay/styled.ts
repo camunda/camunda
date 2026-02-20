@@ -40,6 +40,14 @@ const backgroundColors = {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
+    UNSPECIFIED: {
+      color: 'var(--cds-layer-02)',
+      fadedColor: 'var(--cds-layer-02)',
+    },
+    UNKNOWN: {
+      color: 'var(--cds-layer-02)',
+      fadedColor: 'var(--cds-layer-02)',
+    },
     canceled: {
       color: staticColors.canceled,
       fadedColor: staticColors.canceled,
@@ -70,6 +78,14 @@ const backgroundColors = {
       color: staticColors.completed,
       fadedColor: staticColors.completed,
     },
+    UNSPECIFIED: {
+      color: '#161616',
+      fadedColor: '#161616',
+    },
+    UNKNOWN: {
+      color: '#161616',
+      fadedColor: '#161616',
+    },
     canceled: {
       color: staticColors.canceled,
       fadedColor: staticColors.canceled,
@@ -86,7 +102,9 @@ type ContainerProps = {
     | 'canceled'
     | 'completedEndEvents'
     | 'EVALUATED'
-    | 'FAILED';
+    | 'FAILED'
+    | 'UNSPECIFIED'
+    | 'UNKNOWN';
   $isFaded: boolean;
   $showStatistic?: boolean;
 };

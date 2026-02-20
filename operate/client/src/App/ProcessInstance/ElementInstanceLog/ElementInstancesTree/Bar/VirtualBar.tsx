@@ -29,6 +29,7 @@ const VirtualBar = forwardRef<HTMLDivElement, Props>(
           elementId={elementId}
           isPlaceholder
           scopeKeyHierarchy={scopeKeyHierarchy}
+          endDate={null}
         />
       </Container>
     );
