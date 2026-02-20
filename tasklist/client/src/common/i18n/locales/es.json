@@ -20,6 +20,8 @@
     "headerPrivacyPolicyLabel": "Política de Privacidad",
     "headerImprintLabel": "Aviso legal",
     "headerLogOutLabel": "Cerrar sesión",
+    "notificationLogOutTitle": "Cerrar sesión",
+    "notificationLogOutSubtitle": "Se está cerrando la sesión...",
     "loginErrorUsernamePasswordMismatch": "El nombre de usuario y la contraseña no coinciden",
     "loginErrorCredentialsNotVerified": "Las credenciales no pudieron ser verificadas",
     "loginErrorUsernameRequired": "Se requiere nombre de usuario",
