@@ -130,7 +130,9 @@ class AuditLogServicesTest {
   public void searchShouldThrowForbiddenExceptionIfNotAuthorized() {
     // given
     when(auditLogSearchClient.searchAuditLogs(query))
-        .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION));
     when(query.filter()).thenReturn(FilterBuilders.auditLog().build());
 
     // when
@@ -151,7 +153,9 @@ class AuditLogServicesTest {
     final var key = "123";
 
     when(auditLogSearchClient.getAuditLog(key))
-        .thenThrow(new ResourceAccessDeniedException(Authorizations.AUDIT_LOG_READ_AUTHORIZATION));
+        .thenThrow(
+            new ResourceAccessDeniedException(
+                Authorizations.AUDIT_LOG_READ_BY_PROPERTIES_AUTHORIZATION));
 
     // when
     final ThrowingCallable executeGetByKey = () -> auditLogServices.getAuditLog(key);

@@ -115,9 +115,6 @@ public abstract class Authorizations {
   public static final Authorization<VariableEntity> VARIABLE_READ_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance());
 
-  public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_AUTHORIZATION =
-      Authorization.of(a -> a.auditLog().read());
-
   public static final Authorization<AuditLogEntity> AUDIT_LOG_READ_PROCESS_INSTANCE_AUTHORIZATION =
       Authorization.of(a -> a.processDefinition().readProcessInstance().transitive());
 
