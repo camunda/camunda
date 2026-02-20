@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "8db674defc3933efbce34ca508b1fd41e19fc3f1",
-    "generatedAt": "2026-02-19T16:04:15.440Z",
+    "commit": "2733292ac9011cab81d4f2ab9e623eca04c5958b",
+    "generatedAt": "2026-02-20T07:19:24.241Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "5d8f4252d1d1e3d308e1b1b444a8584d2d225ce8e1df0dd279924173681a8584"
+    "specSha256": "012dfd16ca21aa313088d9b8975ef6f5cdcdead9ecb057d9e8ccea7c841ffee6"
   },
   "responses": [
     {
@@ -26,7 +26,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          }
+        ],
         "optional": [
           {
             "name": "actorId",
@@ -188,10 +193,6 @@
             ]
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "schema"
-          },
-          {
             "name": "tenantId",
             "type": "schema"
           },
@@ -212,6 +213,10 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "authorizedComponents",
+            "type": "array<string>"
+          },
           {
             "name": "c8Links",
             "type": "object"
@@ -238,10 +243,6 @@
           }
         ],
         "optional": [
-          {
-            "name": "authorizedComponents",
-            "type": "array<string>"
-          },
           {
             "name": "displayName",
             "type": "string"
@@ -290,7 +291,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "permissionTypes",
+            "type": "array<string>"
+          }
+        ],
         "optional": [
           {
             "name": "authorizationKey",
@@ -311,10 +317,6 @@
               "MAPPING_RULE",
               "UNSPECIFIED"
             ]
-          },
-          {
-            "name": "permissionTypes",
-            "type": "array<string>"
           },
           {
             "name": "resourceId",
@@ -364,7 +366,12 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                }
+              ],
               "optional": [
                 {
                   "name": "batchOperationKey",
@@ -389,10 +396,6 @@
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "schema"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
                   "type": "schema"
                 },
                 {
@@ -431,30 +434,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
-          {
-            "name": "actorId",
-            "type": "string"
-          },
-          {
-            "name": "actorType",
-            "type": "actorType",
-            "rawRefName": "actorType"
-          },
-          {
-            "name": "batchOperationKey",
-            "type": "schema"
-          },
-          {
-            "name": "batchOperationType",
-            "type": "batchOperationType",
-            "rawRefName": "batchOperationType"
-          },
-          {
-            "name": "endDate",
-            "type": "string"
-          },
+        "required": [
           {
             "name": "errors",
             "type": "array<object>",
@@ -479,6 +459,30 @@
                 }
               ]
             }
+          }
+        ],
+        "optional": [
+          {
+            "name": "actorId",
+            "type": "string"
+          },
+          {
+            "name": "actorType",
+            "type": "actorType",
+            "rawRefName": "actorType"
+          },
+          {
+            "name": "batchOperationKey",
+            "type": "schema"
+          },
+          {
+            "name": "batchOperationType",
+            "type": "batchOperationType",
+            "rawRefName": "batchOperationType"
+          },
+          {
+            "name": "endDate",
+            "type": "string"
           },
           {
             "name": "operationsCompletedCount",
@@ -529,15 +533,15 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string"
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -695,6 +699,10 @@
                   "type": "schema"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                },
+                {
                   "name": "subscriptionKey",
                   "type": "0"
                 },
@@ -710,10 +718,6 @@
                 },
                 {
                   "name": "processDefinitionKey",
-                  "type": "schema"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
                   "type": "schema"
                 }
               ]
@@ -760,7 +764,16 @@
             "name": "evaluatedDecisions",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "evaluatedInputs",
+                  "type": "array<items>"
+                },
+                {
+                  "name": "matchedRules",
+                  "type": "array<items>"
+                }
+              ],
               "optional": [
                 {
                   "name": "decisionDefinitionId",
@@ -785,14 +798,6 @@
                 {
                   "name": "decisionEvaluationInstanceKey",
                   "type": "decisionEvaluationInstanceKey"
-                },
-                {
-                  "name": "evaluatedInputs",
-                  "type": "array<items>"
-                },
-                {
-                  "name": "matchedRules",
-                  "type": "array<items>"
                 },
                 {
                   "name": "output",
@@ -909,7 +914,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          }
+        ],
         "optional": [
           {
             "name": "decisionDefinitionId",
@@ -981,8 +991,7 @@
             "name": "matchedRules",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "evaluatedOutputs",
                   "type": "array<object>",
@@ -1011,7 +1020,9 @@
                       }
                     ]
                   }
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "ruleId",
                   "type": "string"
@@ -1037,10 +1048,6 @@
           },
           {
             "name": "rootDecisionDefinitionKey",
-            "type": "schema"
-          },
-          {
-            "name": "rootProcessInstanceKey",
             "type": "schema"
           },
           {
@@ -1451,6 +1458,10 @@
             "type": "schema"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          },
+          {
             "name": "startDate",
             "type": "string"
           },
@@ -1508,10 +1519,6 @@
           },
           {
             "name": "incidentKey",
-            "type": "schema"
-          },
-          {
-            "name": "rootProcessInstanceKey",
             "type": "schema"
           }
         ]
@@ -1771,7 +1778,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          }
+        ],
         "optional": [
           {
             "name": "creationTime",
@@ -1829,10 +1841,6 @@
           },
           {
             "name": "processInstanceKey",
-            "type": "schema"
-          },
-          {
-            "name": "rootProcessInstanceKey",
             "type": "schema"
           },
           {
@@ -1991,6 +1999,15 @@
                   "type": "number"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                },
+                {
+                  "name": "tags",
+                  "type": "tags",
+                  "rawRefName": "tags"
+                },
+                {
                   "name": "tenantId",
                   "type": "schema"
                 },
@@ -2009,28 +2026,10 @@
               ],
               "optional": [
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "schema"
-                },
-                {
-                  "name": "tags",
-                  "type": "tags",
-                  "rawRefName": "tags"
-                },
-                {
                   "name": "userTask",
                   "type": "object",
                   "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "action",
-                        "type": "string"
-                      },
-                      {
-                        "name": "assignee",
-                        "type": "string"
-                      },
+                    "required": [
                       {
                         "name": "candidateGroups",
                         "type": "array<string>"
@@ -2042,6 +2041,16 @@
                       {
                         "name": "changedAttributes",
                         "type": "array<string>"
+                      }
+                    ],
+                    "optional": [
+                      {
+                        "name": "action",
+                        "type": "string"
+                      },
+                      {
+                        "name": "assignee",
+                        "type": "string"
                       },
                       {
                         "name": "dueDate",
@@ -2146,6 +2155,10 @@
                   "type": "number"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -2205,10 +2218,6 @@
                 {
                   "name": "lastUpdateTime",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "schema"
                 }
               ]
             }
@@ -2306,6 +2315,10 @@
       "schema": {
         "required": [
           {
+            "name": "expiresAt",
+            "type": "string"
+          },
+          {
             "name": "isCommercial",
             "type": "boolean"
           },
@@ -2318,12 +2331,7 @@
             "type": "boolean"
           }
         ],
-        "optional": [
-          {
-            "name": "expiresAt",
-            "type": "string"
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -2412,7 +2420,12 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                }
+              ],
               "optional": [
                 {
                   "name": "correlationKey",
@@ -2458,10 +2471,6 @@
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "schema"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
                   "type": "schema"
                 },
                 {
@@ -2748,6 +2757,10 @@
             "type": "schema"
           },
           {
+            "name": "tags",
+            "type": "array<string>"
+          },
+          {
             "name": "tenantId",
             "type": "schema"
           },
@@ -2756,12 +2769,7 @@
             "type": "object"
           }
         ],
-        "optional": [
-          {
-            "name": "tags",
-            "type": "array<string>"
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -2855,6 +2863,14 @@
             "type": "boolean"
           },
           {
+            "name": "parentElementInstanceKey",
+            "type": "schema"
+          },
+          {
+            "name": "parentProcessInstanceKey",
+            "type": "schema"
+          },
+          {
             "name": "processDefinitionId",
             "type": "string"
           },
@@ -2875,6 +2891,10 @@
             "type": "schema"
           },
           {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          },
+          {
             "name": "startDate",
             "type": "string"
           },
@@ -2888,6 +2908,11 @@
             ]
           },
           {
+            "name": "tags",
+            "type": "tags",
+            "rawRefName": "tags"
+          },
+          {
             "name": "tenantId",
             "type": "schema",
             "rawRefName": "schema"
@@ -2899,25 +2924,8 @@
             "type": "string"
           },
           {
-            "name": "parentElementInstanceKey",
-            "type": "schema"
-          },
-          {
-            "name": "parentProcessInstanceKey",
-            "type": "schema"
-          },
-          {
             "name": "processDefinitionVersionTag",
             "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "schema"
-          },
-          {
-            "name": "tags",
-            "type": "tags",
-            "rawRefName": "tags"
           }
         ]
       }
@@ -2960,7 +2968,12 @@
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "schema"
+                }
+              ],
               "optional": [
                 {
                   "name": "elementId",
@@ -2976,10 +2989,6 @@
                 },
                 {
                   "name": "processInstanceKey",
-                  "type": "schema"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
                   "type": "schema"
                 },
                 {
@@ -3280,7 +3289,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "tenants",
+            "type": "object"
+          }
+        ],
         "optional": [
           {
             "name": "activeTenants",
@@ -3297,10 +3311,6 @@
           {
             "name": "processInstances",
             "type": "number"
-          },
-          {
-            "name": "tenants",
-            "type": "object"
           }
         ]
       }
@@ -3669,12 +3679,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
-          {
-            "name": "assignee",
-            "type": "string"
-          },
+        "required": [
           {
             "name": "candidateGroups",
             "type": "array<string>"
@@ -3684,16 +3689,31 @@
             "type": "array<string>"
           },
           {
+            "name": "customHeaders",
+            "type": "object"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          },
+          {
+            "name": "tags",
+            "type": "tags",
+            "rawRefName": "tags"
+          }
+        ],
+        "optional": [
+          {
+            "name": "assignee",
+            "type": "string"
+          },
+          {
             "name": "completionDate",
             "type": "string"
           },
           {
             "name": "creationDate",
             "type": "string"
-          },
-          {
-            "name": "customHeaders",
-            "type": "object"
           },
           {
             "name": "dueDate",
@@ -3748,10 +3768,6 @@
             "type": "string"
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "schema"
-          },
-          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -3765,11 +3781,6 @@
               "CANCELED",
               "FAILED"
             ]
-          },
-          {
-            "name": "tags",
-            "type": "tags",
-            "rawRefName": "tags"
           },
           {
             "name": "tenantId",
@@ -3863,7 +3874,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "schema"
+          }
+        ],
         "optional": [
           {
             "name": "name",
@@ -3871,10 +3887,6 @@
           },
           {
             "name": "processInstanceKey",
-            "type": "schema"
-          },
-          {
-            "name": "rootProcessInstanceKey",
             "type": "schema"
           },
           {
