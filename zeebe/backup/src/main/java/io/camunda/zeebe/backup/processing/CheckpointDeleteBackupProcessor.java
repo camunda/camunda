@@ -12,6 +12,7 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -46,6 +47,7 @@ public final class CheckpointDeleteBackupProcessor {
   /**
    * @param checkpointMetadataState the checkpoint metadata CF state
    * @param backupRangeState the backup ranges CF state
+   * @param checkpointState the legacy 2-entry checkpoint state
    * @param backupStore the backup store for async deletion (nullable)
    * @param syncer the metadata syncer for JSON sync (nullable)
    * @param partitionId the partition ID
@@ -53,6 +55,7 @@ public final class CheckpointDeleteBackupProcessor {
   public CheckpointDeleteBackupProcessor(
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
+      final CheckpointState checkpointState,
       final BackupStore backupStore,
       final BackupMetadataSyncer syncer,
       final int partitionId) {
@@ -62,7 +65,8 @@ public final class CheckpointDeleteBackupProcessor {
     this.syncer = syncer;
     this.partitionId = partitionId;
     backupDeletedApplier =
-        new CheckpointBackupDeletedApplier(checkpointMetadataState, backupRangeState);
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
   }
 
   public ProcessingResult process(

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -25,12 +26,15 @@ public final class CheckpointBackupDeletedApplier {
 
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
+  private final CheckpointState checkpointState;
 
   public CheckpointBackupDeletedApplier(
       final DbCheckpointMetadataState checkpointMetadataState,
-      final DbBackupRangeState backupRangeState) {
+      final DbBackupRangeState backupRangeState,
+      final CheckpointState checkpointState) {
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
+    this.checkpointState = checkpointState;
   }
 
   /**
@@ -50,8 +54,48 @@ public final class CheckpointBackupDeletedApplier {
       LOG.debug("Checkpoint {} is not in any range, skipping range maintenance", checkpointId);
     }
 
+    // Update legacy DbCheckpointState if the deleted checkpoint was the latest backup.
+    // This must happen BEFORE removeCheckpoint() because the predecessor lookup needs the
+    // checkpoint's neighbors to still be in the CF.
+    updateLegacyBackupStateOnDeletion(checkpointId);
+
     // Remove the checkpoint from the CHECKPOINTS CF
     checkpointMetadataState.removeCheckpoint(checkpointId);
+  }
+
+  /**
+   * Updates the legacy 2-entry DbCheckpointState when the deleted checkpoint is the latest backup.
+   * Rolls back to the predecessor backup if one exists, or clears the latest backup info entirely.
+   */
+  private void updateLegacyBackupStateOnDeletion(final long checkpointId) {
+    if (checkpointState.getLatestBackupId() != checkpointId) {
+      return;
+    }
+
+    final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
+    if (predecessor.isPresent()) {
+      final var predecessorMetadata = checkpointMetadataState.getCheckpoint(predecessor.get());
+      if (predecessorMetadata != null) {
+        checkpointState.setLatestBackupInfo(
+            predecessor.get(),
+            predecessorMetadata.getCheckpointPosition(),
+            predecessorMetadata.getCheckpointTimestamp(),
+            predecessorMetadata.getCheckpointType(),
+            predecessorMetadata.getFirstLogPosition());
+        LOG.debug(
+            "Rolled back latest backup from {} to predecessor {}", checkpointId, predecessor.get());
+      } else {
+        LOG.warn(
+            "Predecessor checkpoint {} found but metadata missing, clearing latest backup info",
+            predecessor.get());
+        checkpointState.clearLatestBackupInfo();
+      }
+    } else {
+      LOG.debug(
+          "No predecessor backup found for deleted checkpoint {}, clearing latest backup info",
+          checkpointId);
+      checkpointState.clearLatestBackupInfo();
+    }
   }
 
   private void updateRangeOnDeletion(final long checkpointId, final BackupRange range) {
