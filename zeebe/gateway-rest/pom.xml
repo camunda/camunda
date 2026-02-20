@@ -188,6 +188,11 @@
       <artifactId>jakarta.validation-api</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.hibernate.validator</groupId>
+      <artifactId>hibernate-validator</artifactId>
+    </dependency>
+
     <!-- Swagger dependencies for reading OpenAPI YAML -->
     <dependency>
       <groupId>io.swagger.core.v3</groupId>
@@ -486,6 +491,8 @@
           </ignoredNonTestScopedDependencies>
           <!-- dependencies only packaged but not explicitly used -->
           <usedDependencies>
+            <!-- needed at runtime -->
+            <dependency>org.hibernate.validator:hibernate-validator</dependency>
             <!-- Needed to run tests -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
