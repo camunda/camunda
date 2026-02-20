@@ -47,7 +47,9 @@ jobs:
   create-benchmark:
     name: Benchmark
     needs: sanitize-branch-name
-    if: contains(fromJSON('["labeled", "synchronize"]'), github.event.action) && contains(github.event.pull_request.labels.*.name, 'benchmark')
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -58,7 +60,9 @@ jobs:
   create-benchmark-rdbms:
     name: Benchmark
     needs: sanitize-branch-name
-    if: contains(fromJSON('["labeled", "synchronize"]'), github.event.action) && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')
+    if: >
+      (github.event.action == 'labeled' && github.event.label.name == 'benchmark-rdbms') ||
+      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -69,11 +73,12 @@ jobs:
 
   await-benchmark:
     name: Await Benchmark
-    needs: [sanitize-branch-name, create-benchmark, create-benchmark-rdbms]
+    needs: [sanitize-branch-name,create-benchmark, create-benchmark-rdbms]
     if: >
-      contains(fromJSON('["labeled", "synchronize"]'), github.event.action) &&
-      (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
+      always() &&
+      (needs.create-benchmark.result == 'success' || needs.create-benchmark-rdbms.result == 'success')
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     permissions: {}
     steps:
       - name: Wait for load test to stabilize
@@ -91,9 +96,7 @@ jobs:
   run-profiling:
     name: Run Profiling
     needs: [sanitize-branch-name, await-benchmark]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    if: always() && needs.await-benchmark.result == 'success'
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
@@ -103,9 +106,7 @@ jobs:
   comment-pr:
     name: Comment on PR with profiling results
     needs: [sanitize-branch-name, run-profiling]
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    if: always() && needs.run-profiling.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -177,8 +178,8 @@ jobs:
     name: Benchmark Cleanup
     needs: sanitize-branch-name
     if: >
-      (github.event.action == 'unlabeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'closed' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      (github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) ||
+      (github.event.action == 'closed' && (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')))
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
