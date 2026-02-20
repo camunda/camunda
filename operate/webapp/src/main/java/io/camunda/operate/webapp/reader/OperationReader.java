@@ -26,8 +26,6 @@ public interface OperationReader {
 
   List<OperationEntity> getOperationsByProcessInstanceKey(Long processInstanceKey);
 
-  List<OperationDto> getOperationsByBatchOperationId(String batchOperationId);
-
   List<OperationDto> getOperations(
       OperationType operationType, String processInstanceId, String scopeId, String variableName);
 }

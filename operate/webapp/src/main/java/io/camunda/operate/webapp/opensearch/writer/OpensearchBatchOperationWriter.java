@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.webapp.opensearch.writer;
 
-import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.util.CollectionUtil.getOrDefaultForNullValue;
 import static io.camunda.operate.util.ConversionUtils.toLongOrNull;
 import static io.camunda.webapps.schema.entities.operation.OperationType.ADD_VARIABLE;
@@ -21,16 +20,12 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.BatchRequest;
 import io.camunda.operate.store.ListViewStore;
 import io.camunda.operate.store.OperationStore;
-import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.opensearch.OpenSearchQueryHelper;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.OperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
-import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.ProcessInstanceSource;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
@@ -50,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import org.opensearch.client.opensearch.core.search.HitsMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -70,8 +64,6 @@ public class OpensearchBatchOperationWriter
 
   @Autowired private OperateProperties operateProperties;
 
-  @Autowired private RichOpenSearchClient richOpenSearchClient;
-
   @Autowired
   @Qualifier("operateObjectMapper")
   private ObjectMapper objectMapper;
@@ -86,13 +78,9 @@ public class OpensearchBatchOperationWriter
 
   @Autowired private ProcessInstanceReader processInstanceReader;
 
-  @Autowired private PermissionsService permissionsService;
-
   @Autowired private OperationStore operationStore;
 
   @Autowired private ListViewStore listViewStore;
-
-  @Autowired private OpenSearchQueryHelper openSearchQueryHelper;
 
   @Autowired private CamundaAuthenticationProvider camundaAuthenticationProvider;
 
@@ -373,17 +361,6 @@ public class OpensearchBatchOperationWriter
               "Exception occurred, while scheduling 'delete process definition' operation: %s",
               ex.getMessage()),
           ex);
-    }
-  }
-
-  private void validateTotalHits(final HitsMetadata<?> hitsMeta) {
-    final long totalHits = hitsMeta.total().value();
-    final Long maxSize = operateProperties.getBatchOperationMaxSize();
-    if (maxSize != null && totalHits > operateProperties.getBatchOperationMaxSize()) {
-      throw new InvalidRequestException(
-          String.format(
-              "Too many process instances are selected for batch operation. Maximum possible amount: %s",
-              maxSize));
     }
   }
 
