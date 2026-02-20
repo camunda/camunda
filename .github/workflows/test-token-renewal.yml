@@ -1,0 +1,108 @@
+name: Test Token Renewal Logic
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/test-token-renewal.yml
+
+jobs:
+  test-token-renewal:
+    name: Test GitHub App Token Renewal
+    runs-on: ubuntu-slim
+    steps:
+      - name: Generate initial GitHub App token
+        id: github-token-initial
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Verify initial token
+        run: |
+          if [ -z "${{ steps.github-token-initial.outputs.token }}" ]; then
+            echo "❌ FAIL: Initial token is empty"
+            exit 1
+          else
+            echo "✅ Initial token generated"
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ steps.github-token-initial.outputs.token }}
+
+      - name: Sample git branch lifecycle with initial token (checkout-injected)
+        run: |
+          BRANCH_NAME="token-initial-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+          echo "✅ Initial token: created and pushed branch: $BRANCH_NAME"
+
+          git checkout "${GITHUB_REF_NAME:-master}"
+          git push origin --delete "$BRANCH_NAME"
+          echo "✅ Initial token: deleted remote branch: $BRANCH_NAME"
+
+      - name: Wait a moment
+        run: sleep 5
+
+      - name: Regenerate GitHub App token
+        id: github-token-fresh
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      - name: Verify fresh token
+        run: |
+          if [ -z "${{ steps.github-token-fresh.outputs.token }}" ]; then
+            echo "❌ FAIL: Fresh token is empty"
+            exit 1
+          else
+            echo "✅ Fresh token generated"
+          fi
+
+      - name: Compare tokens
+        run: |
+          if [ "${{ steps.github-token-initial.outputs.token }}" = "${{ steps.github-token-fresh.outputs.token }}" ]; then
+            echo "❌ FAIL: Tokens are identical - renewal did not generate a new token"
+            exit 1
+          else
+            echo "✅ PASS: Tokens are different - renewal generated a new token"
+          fi
+
+      - name: Override git auth with renewed token (extraheader)
+        env:
+          FRESH_TOKEN: ${{ steps.github-token-fresh.outputs.token }}
+        run: |
+          echo "::add-mask::$FRESH_TOKEN"
+          AUTH_HEADER=$(printf "x-access-token:%s" "$FRESH_TOKEN" | base64 | tr -d '\n')
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $AUTH_HEADER"
+
+      - name: Sample git branch lifecycle with renewed token (extraheader)
+        run: |
+
+          BRANCH_NAME="token-fresh-test-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+
+          git checkout -b "$BRANCH_NAME"
+          git push origin "$BRANCH_NAME"
+          echo "✅ Fresh token: created and pushed branch: $BRANCH_NAME"
+
+          git checkout "${GITHUB_REF_NAME:-master}"
+          git push origin --delete "$BRANCH_NAME"
+          echo "✅ Fresh token: deleted remote branch: $BRANCH_NAME"
+
+          git config --local --unset-all http.https://github.com/.extraheader || true
