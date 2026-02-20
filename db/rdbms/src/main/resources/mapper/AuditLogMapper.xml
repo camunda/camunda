@@ -78,12 +78,12 @@
         </foreach>)
       </if>
       <!-- Deny all access when no authorizations are configured -->
-      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() and (authorizationProperties == null or !authorizationProperties.hasAnyProperty())">
+      <if test="authorizationFilter.authorizedCategories.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() and authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
         AND 1 = 0
       </if>
       <!-- composite authorization filter (OR of all authorization checks) -->
       <!-- Only apply this filter if there are any authorizations configured -->
-      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty() or (authorizationProperties != null and authorizationProperties.hasAnyProperty())">
+      <if test="!authorizationFilter.authorizedCategories.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForProcessInstance.isEmpty() or !authorizationFilter.authorizedProcessDefinitionIdsForUserTask.isEmpty()">
         AND (
           <trim prefixOverrides="OR">
              <!-- AUDIT_LOG resource type: wildcard access to all categories -->
@@ -118,13 +118,6 @@
               <foreach collection="authorizationFilter.authorizedProcessDefinitionIdsForUserTask" item="processDefId" open="(" separator="," close=")">
                 #{processDefId}
               </foreach>)
-            </if>
-            <!-- Property-based: categories -->
-            <if test="authorizationProperties != null and authorizationProperties.hasAnyProperty()">
-              OR CATEGORY IN
-              <foreach collection="authorizationProperties.categories" item="category" open="(" separator="," close=")">
-                #{category}
-              </foreach>
             </if>
           </trim>
         )

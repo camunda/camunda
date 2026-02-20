@@ -11,6 +11,7 @@ import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveAudi
 import static io.camunda.it.rdbms.db.fixtures.AuditLogFixtures.createAndSaveRandomAuditLogs;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.nextKey;
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
+import static io.camunda.webapps.schema.descriptors.template.AuditLogTemplate.CATEGORY;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.PermissionType.READ_PROCESS_INSTANCE;
@@ -36,6 +37,7 @@ import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -206,58 +208,6 @@ public class AuditLogIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
-  }
-
-  @TestTemplate
-  public void shouldFilterByAuthorizedCategories(
-      final CamundaRdbmsTestApplication testApplication) {
-    final RdbmsService rdbmsService = testApplication.getRdbmsService();
-    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
-    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
-
-    final Long processInstanceKey = nextKey(); // Unique key for test isolation
-
-    // Create audit logs with different authenticated categories
-    final var adminLog =
-        AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters,
-            b ->
-                b.category(AuditLogOperationCategory.ADMIN).processInstanceKey(processInstanceKey));
-    final var userTaskLog =
-        AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters,
-            b ->
-                b.category(AuditLogOperationCategory.USER_TASKS)
-                    .processInstanceKey(processInstanceKey));
-    final var unknownResourceLog =
-        AuditLogFixtures.createAndSaveAuditLog(
-            rdbmsWriters,
-            b ->
-                b.category(AuditLogOperationCategory.UNKNOWN)
-                    .processInstanceKey(processInstanceKey));
-
-    // Create ResourceAccessChecks with AUDIT_LOG resource type
-    final var resourceAccessChecks =
-        ResourceAccessChecks.of(
-            AuthorizationCheck.enabled(
-                Authorization.of(
-                    a ->
-                        a.resourceType(AUDIT_LOG)
-                            .resourceIds(
-                                List.of(
-                                    AuditLogOperationCategory.ADMIN.name(),
-                                    AuditLogOperationCategory.USER_TASKS.name())))),
-            TenantCheck.disabled());
-
-    final var searchResult =
-        auditLogReader.search(
-            AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))),
-            resourceAccessChecks);
-
-    assertThat(searchResult.items())
-        .extracting(AuditLogEntity::auditLogKey)
-        .contains(adminLog.auditLogKey(), userTaskLog.auditLogKey())
-        .doesNotContain(unknownResourceLog.auditLogKey());
   }
 
   @TestTemplate
@@ -533,7 +483,7 @@ public class AuditLogIT {
             rdbmsWriters,
             b ->
                 b.processDefinitionId("process-def-3")
-                    .category(AuditLogOperationCategory.ADMIN)
+                    .category(AuditLogOperationCategory.UNKNOWN)
                     .processInstanceKey(processInstanceKey));
 
     // Create composite authorization with multiple resource types and permissions
@@ -542,10 +492,7 @@ public class AuditLogIT {
             AuthorizationCheck.enabled(
                 AuthorizationConditions.anyOf(
                     Authorization.of(
-                        a ->
-                            a.resourceType(AUDIT_LOG)
-                                .resourceIds(
-                                    List.of(AuditLogOperationCategory.DEPLOYED_RESOURCES.name()))),
+                        a -> a.resourceType(AUDIT_LOG).resourcePropertyNames(Set.of(CATEGORY))),
                     Authorization.of(
                         a ->
                             a.resourceType(PROCESS_DEFINITION)

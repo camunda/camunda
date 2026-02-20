@@ -7,11 +7,8 @@
  */
 package io.camunda.db.rdbms.read.service;
 
-import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.AUDIT_LOG;
-
 import io.camunda.db.rdbms.read.domain.AuditLogAuthorizationFilter;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
-import io.camunda.db.rdbms.read.domain.AuditLogDbQuery.AuditLogAuthorizationProperties;
 import io.camunda.db.rdbms.read.mapper.AuditLogEntityMapper;
 import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.columns.AuditLogSearchColumn;
@@ -19,12 +16,9 @@ import io.camunda.search.clients.reader.AuditLogReader;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.query.AuditLogQuery;
 import io.camunda.search.query.SearchQueryResult;
-import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.zeebe.protocol.record.value.AuthorizedAuditLogCategoryType;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +55,7 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
       return buildSearchQueryResult(0, List.of(), dbSort);
     }
 
-    final var authorizationFilter =
-        AuditLogAuthorizationFilter.of(resourceAccessChecks.authorizationCheck());
-
-    // Property-based authorization
-    final var authorizationProperties = resolveAuthorizationProperties(resourceAccessChecks);
+    final var authorizationFilter = AuditLogAuthorizationFilter.of(resourceAccessChecks);
 
     final var dbPage = convertPaging(dbSort, query.page());
     final var dbQuery =
@@ -74,7 +64,6 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
                 b.filter(query.filter())
                     .authorizationFilter(authorizationFilter)
                     .authorizedTenantIds(resourceAccessChecks.getAuthorizedTenantIds())
-                    .authorizationProperties(authorizationProperties)
                     .sort(dbSort)
                     .page(dbPage));
 
@@ -92,42 +81,5 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
 
   public SearchQueryResult<AuditLogEntity> search(final AuditLogQuery query) {
     return search(query, ResourceAccessChecks.disabled());
-  }
-
-  /**
-   * Resolves property-based authorization by extracting authorized property names and mapping them
-   * to user identity values from authentication context.
-   */
-  private AuditLogAuthorizationProperties resolveAuthorizationProperties(
-      final ResourceAccessChecks resourceAccessChecks) {
-
-    final var propertyNamesByType = resourceAccessChecks.getAuthorizedResourcePropertyNamesByType();
-    final var auditLogPropertyNames = propertyNamesByType.getOrDefault(AUDIT_LOG.name(), Set.of());
-
-    if (auditLogPropertyNames.isEmpty()) {
-      return AuditLogAuthorizationProperties.EMPTY;
-    }
-
-    return buildAuthorizationProperties(auditLogPropertyNames);
-  }
-
-  /** Builds authorization properties by mapping property names to values from authentication. */
-  private AuditLogAuthorizationProperties buildAuthorizationProperties(
-      final Set<String> propertyNames) {
-
-    final var builder = AuditLogAuthorizationProperties.builder();
-
-    for (final var propertyName : propertyNames) {
-      if (Authorization.PROP_CATEGORY.equals(propertyName)) {
-        builder.categories(AuthorizedAuditLogCategoryType.getAuthorizedCategories());
-      } else {
-        LOG.warn(
-            "Unknown property name '{}' for {} property-based authorization; ignoring.",
-            propertyName,
-            AUDIT_LOG);
-      }
-    }
-
-    return builder.build();
   }
 }
