@@ -11,9 +11,6 @@
 {{#swagger1AnnotationLibrary}}
 @ApiModel(description = "{{{description}}}")
 {{/swagger1AnnotationLibrary}}
-{{#swagger2AnnotationLibrary}}
-@Schema({{#name}}name = "{{name}}", {{/name}}description = "{{{description}}}"{{#deprecated}}, deprecated = true{{/deprecated}})
-{{/swagger2AnnotationLibrary}}
 {{/description}}
 {{#discriminator}}
 {{>typeInfoAnnotation}}
