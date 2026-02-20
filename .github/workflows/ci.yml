@@ -280,7 +280,8 @@ jobs:
           CLIENT="':zeebe-client-java',':camunda-client-java'"
 
           # General UT configuration
-          GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter"
+          ## Temprarly added camunda-process-test-java camunda-process-test-spring to extra skip list as they require a docker image not present yet.
+          GENERAL_UT_EXTRA_SKIP="camunda-exporter rdbms-exporter camunda-process-test-java camunda-process-test-spring"
           GENERAL_UT_DO_NOT_SKIP="zeebe-bom zeebe-build-tools zeebe-parent zeebe-qa zeebe-qa-util zeebe-qa-integration-tests zeebe-qa-update-tests zeebe-root operate-qa operate-qa-util operate-qa-data-generator operate-qa-it-tests operate-qa-backup-restore-tests tasklist-qa tasklist-qa-util tasklist-it-tests tasklist-qa-backup-restore-tests tasklist-test-coverage"
 
           # ============================================================================
