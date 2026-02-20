@@ -9,7 +9,7 @@
 import type {
   QueryVariablesByUserTaskResponseBody,
   Variable,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 
 const variables: Variable[] = [
@@ -21,6 +21,7 @@ const variables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '0001',
     processInstanceKey: '0001',
+    rootProcessInstanceKey: null,
   },
   {
     variableKey: '0002',
@@ -30,6 +31,7 @@ const variables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '0002',
     processInstanceKey: '0002',
+    rootProcessInstanceKey: null,
   },
 ];
 
@@ -42,6 +44,7 @@ const dynamicFormVariables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '0001',
     processInstanceKey: '0001',
+    rootProcessInstanceKey: null,
   },
   {
     variableKey: '0002',
@@ -52,6 +55,7 @@ const dynamicFormVariables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '0002',
     processInstanceKey: '0002',
+    rootProcessInstanceKey: null,
   },
 ];
 
@@ -64,6 +68,7 @@ const truncatedVariables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '0-myVar',
     processInstanceKey: '0001',
+    rootProcessInstanceKey: null,
   },
   {
     variableKey: '1-myVar',
@@ -73,6 +78,7 @@ const truncatedVariables: Variable[] = [
     tenantId: DEFAULT_TENANT_ID,
     scopeKey: '1-myVar',
     processInstanceKey: '0002',
+    rootProcessInstanceKey: null,
   },
 ];
 
@@ -104,6 +110,7 @@ function getQueryVariablesResponseMock(
       totalItems,
       startCursor: 'startCursor',
       endCursor: 'endCursor',
+      hasMoreTotalItems: false,
     },
   };
 }

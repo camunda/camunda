@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-query';
 import {api} from 'v2/api';
 import {type RequestError, request} from 'common/api/request';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function getUseTaskQueryKey(userTaskKey: UserTask['userTaskKey']) {
   return ['task', userTaskKey];
@@ -58,9 +58,9 @@ function useRemoveFormReference(task: UserTask) {
 
         return {
           ...cachedTask,
-          formKey: undefined,
-          formId: undefined,
-          formVersion: undefined,
+          formKey: null,
+          formId: null,
+          formVersion: null,
         };
       },
     );

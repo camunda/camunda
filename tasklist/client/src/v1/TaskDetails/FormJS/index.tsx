@@ -8,7 +8,7 @@
 
 import {useMemo, useRef, useState} from 'react';
 import type {Form, Task} from 'v1/api/types';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useRemoveFormReference} from 'v1/api/useTask.query';
 import {DetailsFooter} from 'common/tasks/details/DetailsFooter';
 import {type InlineLoadingProps, Layer} from '@carbon/react';

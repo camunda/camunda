@@ -11,7 +11,7 @@ import {useTranslation} from 'react-i18next';
 import {Stack} from '@carbon/react';
 import {Search} from '@carbon/react/icons';
 import {useTaskFilters} from 'v2/features/tasks/filters/useTaskFilters';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {AvailableTaskItem} from 'common/tasks/available-tasks/AvailableTaskItem';
 import {AvailableTasksSkeleton} from 'common/tasks/available-tasks/AvailableTasksSkeleton';

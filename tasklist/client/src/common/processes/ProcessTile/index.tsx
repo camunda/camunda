@@ -15,7 +15,7 @@ import {ProcessTag} from './ProcessTag';
 import styles from './styles.module.scss';
 import cn from 'classnames';
 import type {MultiModeProcess} from 'common/processes';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 type InlineLoadingStatus = NonNullable<InlineLoadingProps['status']>;
 
 type LoadingStatus = InlineLoadingStatus | 'active-tasks';

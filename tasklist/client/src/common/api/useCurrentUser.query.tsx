@@ -9,7 +9,7 @@
 import {useQuery, queryOptions} from '@tanstack/react-query';
 import {commonApi} from 'common/api';
 import {request} from 'common/api/request';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const currentUserQueryOptions = queryOptions({
   queryKey: ['currentUser'],

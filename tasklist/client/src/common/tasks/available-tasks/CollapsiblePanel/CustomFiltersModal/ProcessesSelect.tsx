@@ -13,7 +13,7 @@ import {useAllProcessDefinitions} from 'v2/api/useAllProcessDefinitions.query';
 import {useTranslation} from 'react-i18next';
 import {getClientConfig} from 'common/config/getClientConfig';
 import type {Process} from 'v1/api/types';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const useMultiModeProcesses =
   getClientConfig().clientMode === 'v2'

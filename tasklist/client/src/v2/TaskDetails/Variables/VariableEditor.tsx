@@ -17,7 +17,7 @@ import {
   TextInput,
 } from '@carbon/react';
 import {Maximize, Close} from '@carbon/react/icons';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {DelayedErrorField} from 'common/tasks/variables-editor/VariableEditor/DelayedErrorField';

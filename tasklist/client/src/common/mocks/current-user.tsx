@@ -6,19 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const currentUser: CurrentUser = {
   username: 'demo',
   displayName: 'Demo User',
   salesPlanType: null,
   roles: [],
-  c8Links: [],
+  c8Links: {},
   tenants: [],
   groups: [],
   canLogout: true,
   authorizedComponents: ['*'],
-  apiUser: false,
   email: 'demo@camunda.com',
 };
 
@@ -27,33 +26,17 @@ const currentUserWithC8Links: CurrentUser = {
   displayName: 'Demo User',
   salesPlanType: null,
   roles: [],
-  c8Links: [
-    {
-      name: 'operate',
-      link: 'https://link-to-operate',
-    },
-    {
-      name: 'tasklist',
-      link: 'https://link-to-tasklist',
-    },
-    {
-      name: 'modeler',
-      link: 'https://link-to-modeler',
-    },
-    {
-      name: 'optimize',
-      link: 'https://link-to-optimize',
-    },
-    {
-      name: 'console',
-      link: 'https://link-to-console',
-    },
-  ],
+  c8Links: {
+    operate: 'https://link-to-operate',
+    tasklist: 'https://link-to-tasklist',
+    modeler: 'https://link-to-modeler',
+    optimize: 'https://link-to-optimize',
+    console: 'https://link-to-console',
+  },
   tenants: [],
   groups: [],
   canLogout: true,
   authorizedComponents: ['*'],
-  apiUser: false,
   email: 'demo-with-c8links@camunda.com',
 };
 
@@ -62,23 +45,22 @@ const currentUserWithTenants: CurrentUser = {
   displayName: 'Demo User',
   salesPlanType: null,
   roles: [],
-  c8Links: [],
+  c8Links: {},
   tenants: [
     {
       tenantId: 'tenantA',
       name: 'Tenant A',
-      key: 1,
+      description: null,
     },
     {
       tenantId: 'tenantB',
       name: 'Tenant B',
-      key: 2,
+      description: null,
     },
   ],
   groups: [],
   canLogout: true,
   authorizedComponents: ['*'],
-  apiUser: false,
   email: 'demo-with-tenants@camunda.com',
 };
 
@@ -87,12 +69,11 @@ const currentUserWithGroups: CurrentUser = {
   displayName: 'Demo User',
   salesPlanType: null,
   roles: [],
-  c8Links: [],
+  c8Links: {},
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
   authorizedComponents: ['*'],
-  apiUser: false,
   email: 'demo-groups@camunda.com',
 };
 
@@ -101,12 +82,11 @@ const currentUnauthorizedUser: CurrentUser = {
   displayName: 'Demo User',
   salesPlanType: null,
   roles: [],
-  c8Links: [],
+  c8Links: {},
   tenants: [],
   groups: ['admin', 'customer-support', 'guest'],
   canLogout: true,
   authorizedComponents: ['operate'],
-  apiUser: false,
   email: 'demo-unauthorized@camunda.com',
 };
 
