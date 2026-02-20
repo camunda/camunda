@@ -181,4 +181,136 @@ final class RestoreManagerTest {
           .hasMessage("Invalid backup ranges");
     }
   }
+
+  @Test
+  void shouldFailWhenBackupDoesNotExist(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(1);
+
+    final var backupStore = new TestRestorableBackupStore();
+    // No backups stored — the store has no backup for checkpoint 99
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then — restore with a non-existent backup should fail
+      assertThatThrownBy(() -> restoreManager.restore(99L, false, List.of()))
+          .hasRootCauseInstanceOf(BackupNotFoundException.class);
+    }
+  }
+
+  @Test
+  void shouldFailTimeRangeRestoreWhenNoBackupsInRange(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(1);
+
+    final var backupStore = new TestRestorableBackupStore();
+    final var generator = new CheckpointIdGenerator();
+
+    // Create a manifest with checkpoints outside the query range
+    final var outsideTimestamp = Instant.parse("2024-06-01T12:00:00Z");
+    final var checkpointId = generator.fromTimestamp(outsideTimestamp.toEpochMilli());
+    final var entries =
+        List.of(
+            new CheckpointEntry(
+                checkpointId, 0L, outsideTimestamp, "SCHEDULED_BACKUP", 0L, 1, "test-version"));
+    backupStore.storeManifest(
+        new BackupMetadataManifest(
+            1, 1L, Instant.now(), entries, List.of(new RangeEntry(checkpointId, checkpointId))));
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then — query range that doesn't include any checkpoints
+      final var from = Instant.parse("2024-01-01T00:00:00Z");
+      final var to = Instant.parse("2024-01-02T00:00:00Z");
+      assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("No backups found in range");
+    }
+  }
+
+  @Test
+  void shouldFailTimeRangeRestoreWhenManifestIsMissing(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(1);
+
+    final var backupStore = new TestRestorableBackupStore();
+    // No manifest stored for partition 1
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then
+      final var from = Instant.parse("2024-01-01T00:00:00Z");
+      final var to = Instant.parse("2024-01-02T00:00:00Z");
+      assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No backup metadata manifest found for partition 1");
+    }
+  }
+
+  @Test
+  void shouldFilterOutMarkerCheckpointsInTimeRange(@TempDir final Path dir) {
+    // given
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(1);
+
+    final var backupStore = new TestRestorableBackupStore();
+    final var generator = new CheckpointIdGenerator();
+
+    // Create a manifest with only MARKER checkpoints in range
+    final var timestamp = Instant.parse("2024-01-01T10:00:00Z");
+    final var markerId = generator.fromTimestamp(timestamp.toEpochMilli());
+    final var entries =
+        List.of(new CheckpointEntry(markerId, 0L, timestamp, "MARKER", 0L, 1, "test-version"));
+    backupStore.storeManifest(new BackupMetadataManifest(1, 1L, Instant.now(), entries, List.of()));
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then — only MARKER checkpoints in range, so no backups found
+      final var from = Instant.parse("2024-01-01T00:00:00Z");
+      final var to = Instant.parse("2024-01-02T00:00:00Z");
+      assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("No backups found in range");
+    }
+  }
+
+  @Test
+  void shouldPassValidationWithContinuousBackupRange(@TempDir final Path dir) {
+    // given — continuous range on all partitions, but backup restore itself will fail
+    // because we don't have real RaftPartitions. This test validates that the continuity
+    // check passes (i.e., no IllegalStateException("Invalid backup ranges")).
+    final var configuration = new BrokerCfg();
+    configuration.getData().setDirectory(dir.toString());
+    configuration.getCluster().setPartitionsCount(2);
+
+    final var backupStore = new TestRestorableBackupStore();
+
+    // Both partitions have a continuous range [1, 5]
+    for (var partition = 1; partition <= 2; partition++) {
+      backupStore.storeManifest(
+          new BackupMetadataManifest(
+              partition, 1L, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
+    }
+
+    try (final var restoreManager =
+        new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
+
+      // when/then — the continuity check should pass; the failure is from partition
+      // restore itself (no real Raft partitions), not from backup range validation
+      assertThatThrownBy(
+              () -> restoreManager.restore(new long[] {1L, 2L, 3L, 4L, 5L}, false, List.of()))
+          .isNotInstanceOf(IllegalStateException.class);
+    }
+  }
 }

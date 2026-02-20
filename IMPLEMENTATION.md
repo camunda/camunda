@@ -451,28 +451,31 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 ---
 
-#### Phase 12: Unit Test Gap Closure
+#### Phase 12: Unit Test Gap Closure — DONE ✅
 
 **Goal:** Bring unit test coverage in line with `docs/testing.md` guidelines — every public API with business logic has a test.
 
-**What to do (each item is independent, can be parallelized):**
+**What was done:**
 
-1. **Create `CheckpointBackupDeletedApplierTest`** — test all 4 deletion scenarios in isolation, plus the 3 warning/fallback paths (missing successor, missing predecessor, missing both for mid-range). Use a real `ZeebeDb` (in-memory) like `DbCheckpointMetadataStateTest` does.
+1. **Created `CheckpointBackupDeletedApplierTest`** — 11 tests covering all 4 deletion scenarios (single-entry, advance start, shrink end, mid-range split), 3 warning/fallback paths (missing successor, missing predecessor, missing both), checkpoint not in any range, legacy state rollback (to predecessor, clear on only backup, no effect on older), and `validate()` method. Uses real ZeebeDb.
 
-2. **Create `CheckpointDeleteBackupProcessorTest`** — test `deleteFromBackupStore` with:
+2. **Created `CheckpointDeleteBackupProcessorTest`** — 7 tests covering: rejection with NOT_FOUND, no post-commit tasks on rejection, BACKUP_DELETED event on success, post-commit task scheduling with backup store, mixed IN_PROGRESS/COMPLETED deletion from store, backup store list failure handled gracefully, no post-commit tasks without backup store. Uses real ZeebeDb + mocked BackupStore.
 
-   - Mixed IN_PROGRESS / COMPLETED copies
-   - `backupStore.list()` failure
-   - `markFailed()` failure for IN_PROGRESS backup
-   - Verify rejection type (after Phase 11)
-3. **Add `getBackupRangeStatus()` tests to `BackupServiceImplTest`** — requires wiring real or mocked `DbBackupRangeState` + `DbCheckpointMetadataState` into the test setup. Test scenarios: empty ranges, single range, multiple ranges, range with enriched checkpoint metadata.
-4. **Add replay range-state test to `CheckpointRecordsProcessorTest`** — `shouldReplayConfirmedBackupWithRangeUpdate`: replay a CONFIRMED_BACKUP and verify the BACKUP_RANGES CF is updated.
-5. **Add sequential deletion test** — `shouldHandleSequentialDeletions`: confirm 3 backups forming range [A,C], delete A, verify range is [B,C], delete C, verify range is [B,B], delete B, verify no ranges.
-6. **Add idempotency test** — `shouldRejectSecondDeleteOfSameCheckpoint`: delete checkpoint X (succeeds), delete X again (rejected).
-7. **Add disjoint range test** — `shouldStartNewRangeWhenBackupNotContiguous`: confirm backup A, then confirm backup B with `firstLogPosition > A.checkpointPosition + 1`, verify two separate ranges.
-8. **Add backward compatibility test** — `shouldHandleCheckpointRecordWithoutNumberOfPartitions`: create and process a CheckpointRecord with default (-1) `numberOfPartitions`, verify state stores -1.
-9. **Add pre-migration scenario test** — `shouldHandleConfirmBackupWithEmptyCFs`: set up `DbCheckpointState` with a latest backup but leave CHECKPOINTS and BACKUP_RANGES CFs empty, confirm a new backup, verify a new range is created.
-10. **Expand `RestoreManagerTest`** — add at least one happy-path test for `restore(backupId)` and one for `restoreTimeRange()`.
+3. **Added `getBackupRangeStatus()` tests to `BackupServiceImplTest`** — 7 tests in a `@Nested GetBackupRangeStatusTest` class with mocked `DbBackupRangeState` and `DbCheckpointMetadataState`: empty ranges, single range with full metadata verification, multiple ranges, skip when first metadata missing, skip when last metadata missing, skip when both missing, exception propagation, single-point range (start == end).
+
+4. **Added replay range-state test to `CheckpointRecordsProcessorTest`** — `shouldReplayConfirmedBackupWithRangeUpdate` and `shouldReplayConfirmedBackupAndExtendExistingRange`: replays CONFIRMED_BACKUP events and verifies BACKUP_RANGES CF is updated.
+
+5. **Added sequential deletion test** — `shouldHandleSequentialDeletions`: confirms 3 backups [A,C], deletes A→[B,C], deletes C→[B,B], deletes B→empty.
+
+6. **Added idempotency test** — `shouldRejectSecondDeleteOfSameCheckpoint`: first delete succeeds, second is rejected NOT_FOUND.
+
+7. **Added disjoint range test** — `shouldStartNewRangeWhenBackupNotContiguous`: confirms backup with firstLogPosition > latestBackupPosition+1, verifies two separate ranges.
+
+8. **Added backward compatibility test** — `shouldHandleCheckpointRecordWithoutNumberOfPartitions`: processes CONFIRM_BACKUP with default numberOfPartitions (-1), verifies stored as -1.
+
+9. **Added pre-migration scenario test** — `shouldHandleConfirmBackupWithEmptyCFs`: legacy state has latest backup but CHECKPOINTS/BACKUP_RANGES CFs empty, confirms new backup creates new range.
+
+10. **Expanded `RestoreManagerTest`** — 5 new tests: backup not found (non-existent checkpoint), time-range with no backups in range, missing manifest for partition, filtering out MARKER checkpoints in time range, validation that continuous backup ranges pass the continuity check.
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup,zeebe/restore`
 

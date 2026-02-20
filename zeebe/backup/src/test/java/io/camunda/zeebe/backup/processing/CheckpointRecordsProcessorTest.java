@@ -1276,4 +1276,251 @@ final class CheckpointRecordsProcessorTest {
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
     assertThat(state.getLatestBackupFirstLogPosition()).isEqualTo(50);
   }
+
+  // ===== Item 4: Replay CONFIRMED_BACKUP should update range state =====
+
+  @Test
+  void shouldReplayConfirmedBackupWithRangeUpdate() {
+    // given — replaying a CONFIRMED_BACKUP event when no prior backup exists
+    final var backupId = 15;
+    final var backupPosition = 150;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(backupId)
+            .setCheckpointPosition(backupPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(-1);
+    final var record =
+        new MockTypedCheckpointRecord(
+            backupPosition + 1,
+            backupPosition,
+            CheckpointIntent.CONFIRMED_BACKUP,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then — backup ranges CF is updated with a new range [15, 15]
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(backupId, backupId));
+    // Also verify legacy state is updated
+    assertThat(state.getLatestBackupId()).isEqualTo(backupId);
+  }
+
+  @Test
+  void shouldReplayConfirmedBackupAndExtendExistingRange() {
+    // given — a previous backup exists at checkpoint 5 with range [5, 5]
+    final var firstBackupId = 5;
+    final var firstBackupPosition = 50;
+    state.setLatestBackupInfo(
+        firstBackupId, firstBackupPosition, 1000L, CheckpointType.MANUAL_BACKUP, -1L);
+    backupRangeState.startNewRange(firstBackupId);
+
+    final var secondBackupId = 10;
+    final var secondBackupPosition = 100;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(secondBackupId)
+            .setCheckpointPosition(secondBackupPosition)
+            .setCheckpointType(CheckpointType.SCHEDULED_BACKUP)
+            .setFirstLogPosition(firstBackupPosition); // contiguous: 50 <= 50+1
+    final var record =
+        new MockTypedCheckpointRecord(
+            secondBackupPosition + 1,
+            secondBackupPosition,
+            CheckpointIntent.CONFIRMED_BACKUP,
+            RecordType.EVENT,
+            value);
+
+    // when
+    processor.replay(record);
+
+    // then — range is extended to [5, 10]
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(firstBackupId, secondBackupId));
+  }
+
+  // ===== Item 5: Sequential deletion test =====
+
+  @Test
+  void shouldHandleSequentialDeletions() {
+    // given — three backups forming range [5, 15]
+    final var idA = 5L;
+    final var idB = 10L;
+    final var idC = 15L;
+    checkpointMetadataState.addCheckpoint(idA, 50, 1000L, CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(idA, 40, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(idB, 100, 2000L, CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(idB, 50, 3, "8.9.0");
+    checkpointMetadataState.addCheckpoint(idC, 150, 3000L, CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(idC, 100, 3, "8.9.0");
+    backupRangeState.startNewRange(idA);
+    backupRangeState.extendRange(idA, idC);
+    state.setLatestBackupInfo(idC, 150, 3000L, CheckpointType.MANUAL_BACKUP, 100);
+
+    // when — delete A
+    final var deleteA = new CheckpointRecord().setCheckpointId(idA);
+    final var recordA =
+        new MockTypedCheckpointRecord(
+            160, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, deleteA);
+    processor.process(recordA, new MockProcessingResultBuilder());
+
+    // then — range is [B, C]
+    assertThat(backupRangeState.getAllRanges()).containsExactly(new BackupRange(idB, idC));
+
+    // when — delete C
+    final var deleteC = new CheckpointRecord().setCheckpointId(idC);
+    final var recordC =
+        new MockTypedCheckpointRecord(
+            170, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, deleteC);
+    processor.process(recordC, new MockProcessingResultBuilder());
+
+    // then — range is [B, B]
+    assertThat(backupRangeState.getAllRanges()).containsExactly(new BackupRange(idB, idB));
+
+    // when — delete B
+    final var deleteB = new CheckpointRecord().setCheckpointId(idB);
+    final var recordB =
+        new MockTypedCheckpointRecord(
+            180, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, deleteB);
+    processor.process(recordB, new MockProcessingResultBuilder());
+
+    // then — no ranges
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  // ===== Item 6: Idempotency — second delete should be rejected =====
+
+  @Test
+  void shouldRejectSecondDeleteOfSameCheckpoint() {
+    // given — checkpoint 5 exists
+    final var checkpointId = 5L;
+    checkpointMetadataState.addCheckpoint(checkpointId, 50, 1000L, CheckpointType.MANUAL_BACKUP);
+    checkpointMetadataState.enrichWithBackupInfo(checkpointId, 40, 3, "8.9.0");
+    backupRangeState.startNewRange(checkpointId);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+
+    // when — first delete succeeds
+    final var record1 =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+    final var result1 =
+        (MockProcessingResult) processor.process(record1, new MockProcessingResultBuilder());
+    assertThat(result1.records())
+        .singleElement()
+        .returns(CheckpointIntent.BACKUP_DELETED, Event::intent)
+        .returns(RecordType.EVENT, Event::type);
+
+    // when — second delete is rejected (checkpoint no longer exists)
+    final var record2 =
+        new MockTypedCheckpointRecord(
+            70, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+    final var result2 =
+        (MockProcessingResult) processor.process(record2, new MockProcessingResultBuilder());
+
+    // then
+    assertThat(result2.records())
+        .singleElement()
+        .returns(CheckpointIntent.DELETE_BACKUP, Event::intent)
+        .returns(RecordType.COMMAND_REJECTION, Event::type)
+        .returns(RejectionType.NOT_FOUND, Event::rejectionType);
+  }
+
+  // ===== Item 7: Disjoint ranges =====
+
+  @Test
+  void shouldStartNewRangeWhenBackupNotContiguous() {
+    // given — first backup creates range [5, 5]
+    final var firstId = 5L;
+    final var firstPosition = 50L;
+    state.setLatestBackupInfo(firstId, firstPosition, 1000L, CheckpointType.MANUAL_BACKUP, -1L);
+    backupRangeState.startNewRange(firstId);
+
+    // when — second backup has firstLogPosition > firstPosition + 1 (not contiguous)
+    final var secondId = 20L;
+    final var secondPosition = 200L;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(secondId)
+            .setCheckpointPosition(secondPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(firstPosition + 100); // 150 > 50+1, not contiguous
+    final var record =
+        new MockTypedCheckpointRecord(
+            secondPosition + 10, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+    processor.process(record, new MockProcessingResultBuilder());
+
+    // then — two separate ranges exist
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(firstId, firstId), new BackupRange(secondId, secondId));
+  }
+
+  // ===== Item 8: Backward compatibility — default numberOfPartitions =====
+
+  @Test
+  void shouldHandleCheckpointRecordWithoutNumberOfPartitions() {
+    // given — a CheckpointRecord with default (-1) numberOfPartitions (pre-upgrade scenario)
+    final var checkpointId = 5L;
+    final var checkpointPosition = 50L;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(checkpointId)
+            .setCheckpointPosition(checkpointPosition)
+            .setCheckpointType(CheckpointType.SCHEDULED_BACKUP);
+    // numberOfPartitions defaults to -1 (not set by sender)
+    final var record =
+        new MockTypedCheckpointRecord(
+            checkpointPosition + 10, 0, CheckpointIntent.CONFIRM_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, new MockProcessingResultBuilder());
+
+    // then — checkpoint metadata stores -1 for numberOfPartitions
+    final var metadata = checkpointMetadataState.getCheckpoint(checkpointId);
+    assertThat(metadata).isNotNull();
+    assertThat(metadata.getNumberOfPartitions()).isEqualTo(-1);
+  }
+
+  // ===== Item 9: Pre-migration — CONFIRM_BACKUP with empty CFs =====
+
+  @Test
+  void shouldHandleConfirmBackupWithEmptyCFs() {
+    // given — legacy state has a latest backup, but CHECKPOINTS and BACKUP_RANGES CFs are empty
+    // This simulates a pre-migration scenario where the old state exists but the new CFs don't
+    final var latestBackupId = 3L;
+    final var latestBackupPosition = 30L;
+    state.setLatestBackupInfo(
+        latestBackupId, latestBackupPosition, 1000L, CheckpointType.MANUAL_BACKUP, -1L);
+
+    // Verify CFs are empty
+    assertThat(backupRangeState.getAllRanges()).isEmpty();
+    assertThat(checkpointMetadataState.isEmpty()).isTrue();
+
+    // when — confirm a new backup
+    final var newCheckpointId = 5L;
+    final var newCheckpointPosition = 50L;
+    final var value =
+        new CheckpointRecord()
+            .setCheckpointId(newCheckpointId)
+            .setCheckpointPosition(newCheckpointPosition)
+            .setCheckpointType(CheckpointType.MANUAL_BACKUP)
+            .setFirstLogPosition(latestBackupPosition); // contiguous by position
+    final var record =
+        new MockTypedCheckpointRecord(
+            newCheckpointPosition + 10,
+            0,
+            CheckpointIntent.CONFIRM_BACKUP,
+            RecordType.COMMAND,
+            value);
+    processor.process(record, new MockProcessingResultBuilder());
+
+    // then — a new range is created (findRangeContaining returns empty, triggering startNewRange)
+    assertThat(backupRangeState.getAllRanges())
+        .containsExactly(new BackupRange(newCheckpointId, newCheckpointId));
+    // Metadata is enriched
+    final var metadata = checkpointMetadataState.getCheckpoint(newCheckpointId);
+    assertThat(metadata).isNotNull();
+  }
 }
