@@ -14,6 +14,7 @@ import com.netflix.concurrency.limits.Limiter.Listener;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetrics;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.RequestLimiter.CommandRateLimiterBuilder;
 import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
+import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
 import io.camunda.zeebe.logstreams.log.WriteContext.UserCommand;
@@ -22,6 +23,7 @@ import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -38,8 +40,8 @@ import java.util.TreeMap;
  * Access patterns:
  *
  * <ol>
- *   <li>Calls to {@link #tryAcquire(WriteContext, LogAppendEntryMetadata)} from the sequencer,
- *       serialized through the sequencers write lock.
+ *   <li>Calls to {@link #tryAcquire(WriteContext, List)} from the sequencer, serialized through the
+ *       sequencers write lock.
  *   <li>Calls to {@link #onAppend(InFlightEntry, long)} from the sequencer, serialized through the
  *       sequencers write lock.
  *   <li>Calls to {@link #onWrite(long, long)} from the log storage, serialized through the single
@@ -53,9 +55,8 @@ import java.util.TreeMap;
  * The order in which these methods are called is weakly constrained:
  *
  * <ul>
- *   <li>{@link #tryAcquire(WriteContext, LogAppendEntryMetadata)} and {@link
- *       #onAppend(InFlightEntry, long)} are always called in that order and before any other
- *       methods.
+ *   <li>{@link #tryAcquire(WriteContext, List)} and {@link #onAppend(InFlightEntry, long)} are
+ *       always called in that order and before any other methods.
  *   <li>{@link #onWrite(long, long)} and {@link #onCommit(long, long)} and {@link
  *       #onProcessed(long)} can be called in any order.
  * </ul>
@@ -114,20 +115,20 @@ public final class FlowControl implements AppendListener {
   // False positive: https://github.com/checkstyle/checkstyle/issues/14891
   @SuppressWarnings("checkstyle:MissingSwitchDefault")
   public Either<Rejection, InFlightEntry> tryAcquire(
-      final WriteContext context, final LogAppendEntryMetadata batchMetadata) {
+      final WriteContext context, final List<LogAppendEntry> batchMetadata) {
     final var result = tryAcquireInternal(context, batchMetadata);
     switch (result) {
       case Either.Left<Rejection, InFlightEntry>(final var reason) ->
-          metrics.flowControlRejected(context, batchMetadata, reason);
+          metrics.flowControlRejected(context, batchMetadata.size(), reason);
       case Either.Right<Rejection, InFlightEntry>(final var ignored) -> {
-        metrics.flowControlAccepted(context, batchMetadata);
+        metrics.flowControlAccepted(context, batchMetadata.size());
       }
     }
     return result;
   }
 
   private Either<Rejection, InFlightEntry> tryAcquireInternal(
-      final WriteContext context, final LogAppendEntryMetadata batchMetadata) {
+      final WriteContext context, final List<LogAppendEntry> batchMetadata) {
     Listener requestListener = null;
     var alwaysAllowed = false;
     switch (context) {
@@ -153,7 +154,11 @@ public final class FlowControl implements AppendListener {
       return Either.left(Rejection.WriteRateLimitExhausted);
     }
 
-    return Either.right(new InFlightEntry(metrics, batchMetadata, requestListener));
+    // copy of metadata is required as they are wrapping mutable state:
+    // if the entry is written, the callback will be invoked later.
+    // in the meantime the RecordMetadata might have been reused already
+    final var copiedMetadata = LogAppendEntryMetadata.copyMetadata(batchMetadata);
+    return Either.right(new InFlightEntry(metrics, copiedMetadata, requestListener));
   }
 
   public void onAppend(final InFlightEntry entry, final long highestPosition) {
