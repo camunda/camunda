@@ -228,34 +228,38 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 8: Update Backup Status API
+#### Phase 8: Update Backup Status API — DONE ✅
 
 **Goal:** Expose range information from the new CFs instead of marker files.
 
-**Tasks:**
+**What was done:**
 
-1. **Rewrite `BackupServiceImpl.getBackupRangeStatus()`** (`zeebe/backup/.../BackupServiceImpl.java:394`)
-   - Read ranges from `DbBackupRangeState.getAllRanges()`
-   - For each range, look up boundary checkpoints from `DbCheckpointMetadataState`
-   - Build `BackupRangeStatus` objects from the CF data
-   - No more marker-based `BackupRanges.fromMarkers()` computation
-2. **Update `BackupApiRequestHandler.handleQueryRangesRequest()`** if needed
+1. **Rewrote `BackupServiceImpl.getBackupRangeStatus()`** — reads ranges from `DbBackupRangeState.getAllRanges()` and boundary checkpoints from `DbCheckpointMetadataState`, building `BackupRangeStatus` objects entirely from CF data. No more marker-based `BackupRanges.fromMarkers()` computation.
+2. **Updated `BackupApiRequestHandler.handleQueryRangesRequest()`** if needed
+3. **Updated tests** to verify CF-based range status
 
 ---
 
-#### Phase 9: Remove Marker Code
+#### Phase 9: Remove Marker Code — DONE ✅
 
-**Goal:** Clean up all marker-related code.
+**Goal:** Clean up all marker-related code now that RocksDB column families and JSON metadata manifests are the source of truth.
 
-**Tasks:**
+**What was done:**
 
-1. **Remove from `BackupStore` interface**: `rangeMarkers()`, `storeRangeMarker()`, `deleteRangeMarker()`
-2. **Remove from all 4 store implementations** (S3, GCS, Azure, Filesystem)
-3. **Delete `BackupRangeMarker`**, `BackupRanges`
-4. **Remove from `BackupServiceImpl`**: `startNewRange()`, `extendRange()` methods that call the store
-5. **Remove from `BackupManager` interface**: `extendRange()`, `startNewRange()` (range management now happens in the stream processor)
-6. **Remove from `BackupService`**: corresponding actor-delegate methods
-7. **Clean up tests**: delete `BackupRangesTest`, `StoringRangeMarkers` testkit, update `BackupServiceImplTest`, `BackupRangeTrackingIT`
+1. **Removed from `BackupStore` interface**: `rangeMarkers()`, `storeRangeMarker()`, `deleteRangeMarker()`
+2. **Removed from all 4 store implementations** (S3, GCS, Azure, Filesystem) — deleted marker methods and helper methods (`rangeMarkersPrefix()`, `rangeMarkerBlobInfo()`)
+3. **Deleted `BackupRangeMarker.java`** (sealed interface for Start/End markers) and **`BackupRanges.java`** (sealed interface for range query results)
+4. **Removed from `BackupServiceImpl`**: `startNewRange()`, `extendRange()`, `deleteBackupIfExists()` methods that called the store
+5. **Removed from `BackupManager` interface**: `extendRange()`, `startNewRange()` (range management now happens in the stream processor)
+6. **Removed from `BackupService`** and **`NoopBackupManager`**: corresponding actor-delegate methods
+7. **Cleaned up tests:**
+   - Deleted `BackupRangesTest.java` (323 lines) and `StoringRangeMarkers.java` testkit interface (195 lines)
+   - Removed `StoringRangeMarkers` from `BackupStoreTestKit` extends list
+   - Removed 4 marker-based tests from `BackupServiceImplTest`, cleaned up unused imports (`inOrder`, `CheckpointPattern` restored)
+   - Removed `assertRangeMarkerHasBeenUpdated()` method and call from `BackupRetentionAcceptance`, renamed test method, removed unused imports (`AssertionsForClassTypes`, `End`, `Start`)
+   - Removed marker stubs from `BackupRangeResolverTest.TestBackupStore` and `TestRestorableBackupStore`
+   - Added missing `storeBackupMetadata()`/`loadBackupMetadata()` stubs to `InMemoryMockBackupStore`
+8. **Net result:** 19 files changed, ~1,160 lines deleted. Build compiles cleanly, 1,794 unit tests pass.
 
 ---
 
