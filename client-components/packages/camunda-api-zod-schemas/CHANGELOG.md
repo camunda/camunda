@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.0.40
+## v0.0.41
 
 ### 🚀 Enhancements
 
@@ -10,6 +10,12 @@
 ### ❤️ Contributors
 
 - Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.40
+
+### 🚀 Enhancements
+
+Accidental empty release
 
 ## v0.0.39
 
