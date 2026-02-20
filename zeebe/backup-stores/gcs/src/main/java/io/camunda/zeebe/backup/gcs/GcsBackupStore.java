@@ -246,6 +246,30 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var blobInfo = backupMetadataBlobInfo(partitionId);
+          client.create(blobInfo, content);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var blobId = backupMetadataBlobInfo(partitionId).getBlobId();
+          final var blob = client.get(blobId);
+          if (blob == null || !blob.exists()) {
+            return Optional.empty();
+          }
+          return Optional.of(blob.getContent());
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -269,6 +293,11 @@ public final class GcsBackupStore implements BackupStore {
   private BlobInfo rangeMarkerBlobInfo(final int partitionId, final BackupRangeMarker marker) {
     return BlobInfo.newBuilder(
             bucketInfo, rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
+        .build();
+  }
+
+  private BlobInfo backupMetadataBlobInfo(final int partitionId) {
+    return BlobInfo.newBuilder(bucketInfo, basePath + "metadata/" + partitionId + "/metadata.json")
         .build();
   }
 

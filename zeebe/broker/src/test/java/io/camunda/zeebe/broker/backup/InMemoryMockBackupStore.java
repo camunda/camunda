@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -91,6 +92,16 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   public CompletableFuture<Void> deleteRangeMarker(
       final int partitionId, final BackupRangeMarker marker) {
     throw new UnsupportedOperationException("Range markers are not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    throw new UnsupportedOperationException("Backup metadata is not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    throw new UnsupportedOperationException("Backup metadata is not yet supported");
   }
 
   @Override
