@@ -30,7 +30,7 @@ import java.util.List;
  * requests to followers to replicate and commit log entries, and followers sent append requests to
  * passive members to replicate committed log entries.
  */
-public class VersionedAppendRequest extends AbstractRaftRequest {
+public final class VersionedAppendRequest extends AbstractRaftRequest {
 
   private static final int CURRENT_VERSION = 2;
 
