@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
 import io.camunda.zeebe.db.ConsistencyChecksSettings;
@@ -35,6 +36,7 @@ final class CheckpointBackupDeletedApplierTest {
   private DbCheckpointMetadataState checkpointMetadataState;
   private DbBackupRangeState backupRangeState;
   private CheckpointBackupDeletedApplier applier;
+  private DbCheckpointState checkpointState;
 
   @BeforeEach
   void before() {
@@ -48,7 +50,10 @@ final class CheckpointBackupDeletedApplierTest {
     final var context = zeebedb.createContext();
     checkpointMetadataState = new DbCheckpointMetadataState(zeebedb, context);
     backupRangeState = new DbBackupRangeState(zeebedb, context);
-    applier = new CheckpointBackupDeletedApplier(checkpointMetadataState, backupRangeState);
+    checkpointState = new DbCheckpointState(zeebedb, context);
+    applier =
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
   }
 
   @AfterEach
@@ -189,6 +194,59 @@ final class CheckpointBackupDeletedApplierTest {
     // then — both checkpoint and range are cleaned up
     assertThat(checkpointMetadataState.getCheckpoint(1L)).isNull();
     assertThat(backupRangeState.getAllRanges()).isEmpty();
+  }
+
+  @Test
+  void shouldClearLatestBackupInfoWhenDeletingLatestWithNoPredecessor() {
+    // given — single checkpoint that is also the latest backup
+    checkpointMetadataState.addBackupCheckpoint(
+        1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    backupRangeState.startNewRange(1L);
+    checkpointState.setLatestBackupInfo(1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+
+    // when
+    applier.apply(checkpointRecord(1L));
+
+    // then — latest backup info is cleared
+    assertThat(checkpointState.getLatestBackupId()).isEqualTo(-1L);
+  }
+
+  @Test
+  void shouldRollBackLatestBackupInfoToPredecessor() {
+    // given — two checkpoints, latest backup points to checkpoint 2
+    checkpointMetadataState.addBackupCheckpoint(
+        1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    checkpointMetadataState.addBackupCheckpoint(
+        2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 100L);
+    backupRangeState.startNewRange(1L);
+    backupRangeState.updateRangeEnd(1L, 2L);
+    checkpointState.setLatestBackupInfo(2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 100L);
+
+    // when — delete checkpoint 2 (the latest)
+    applier.apply(checkpointRecord(2L));
+
+    // then — latest backup info rolled back to checkpoint 1
+    assertThat(checkpointState.getLatestBackupId()).isEqualTo(1L);
+    assertThat(checkpointState.getLatestBackupPosition()).isEqualTo(100L);
+    assertThat(checkpointState.getLatestBackupFirstLogPosition()).isEqualTo(50L);
+  }
+
+  @Test
+  void shouldNotChangeLatestBackupInfoWhenDeletingNonLatestCheckpoint() {
+    // given — two checkpoints, latest backup points to checkpoint 2
+    checkpointMetadataState.addBackupCheckpoint(
+        1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    checkpointMetadataState.addBackupCheckpoint(
+        2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 100L);
+    backupRangeState.startNewRange(1L);
+    backupRangeState.updateRangeEnd(1L, 2L);
+    checkpointState.setLatestBackupInfo(2L, 200L, 2000L, CheckpointType.SCHEDULED_BACKUP, 100L);
+
+    // when — delete checkpoint 1 (not the latest)
+    applier.apply(checkpointRecord(1L));
+
+    // then — latest backup info unchanged
+    assertThat(checkpointState.getLatestBackupId()).isEqualTo(2L);
   }
 
   private static CheckpointRecord checkpointRecord(final long checkpointId) {

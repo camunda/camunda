@@ -23,6 +23,7 @@ import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingRes
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.db.AccessMetricsConfiguration;
 import io.camunda.zeebe.db.AccessMetricsConfiguration.Kind;
@@ -65,6 +66,7 @@ final class CheckpointRecordsProcessorTest {
   private ProcessingResultBuilder resultBuilder;
   // Used for verifying state in the tests
   private CheckpointState state;
+  private DbCheckpointMetadataState checkpointMetadataState;
   private DbBackupRangeState backupRangeState;
   private ZeebeDb zeebedb;
   private final AtomicBoolean scalingInProgress = new AtomicBoolean(false);
@@ -90,6 +92,7 @@ final class CheckpointRecordsProcessorTest {
     processor.init(context);
 
     state = new DbCheckpointState(zeebedb, zeebedb.createContext());
+    checkpointMetadataState = new DbCheckpointMetadataState(zeebedb, zeebedb.createContext());
     backupRangeState = new DbBackupRangeState(zeebedb, zeebedb.createContext());
   }
 
@@ -792,5 +795,90 @@ final class CheckpointRecordsProcessorTest {
 
     // then
     verify(backupManager, times(1)).takeBackup(eq(backupId), any());
+  }
+
+  @Test
+  void shouldClearLatestBackupOnDeletionOfOnlyBackup() {
+    // given — checkpoint 5 is the only and latest backup
+    final var checkpointId = 5L;
+    final var timestamp = Instant.now().toEpochMilli();
+    checkpointMetadataState.addBackupCheckpoint(
+        checkpointId, 50, timestamp, CheckpointType.MANUAL_BACKUP, 40);
+    backupRangeState.startNewRange(checkpointId);
+    state.setLatestBackupInfo(checkpointId, 50, timestamp, CheckpointType.MANUAL_BACKUP, 40);
+
+    final var value = new CheckpointRecord().setCheckpointId(checkpointId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            60, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — latest backup is cleared (no predecessor exists)
+    assertThat(state.getLatestBackupId()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(CheckpointState.NO_CHECKPOINT);
+  }
+
+  @Test
+  void shouldRollBackToPredecessorOnDeletionOfLatestBackup() {
+    // given — two backups: 5 (older) and 10 (latest)
+    final var firstId = 5L;
+    final var secondId = 10L;
+    final var firstTimestamp = Instant.now().toEpochMilli();
+    final var secondTimestamp = firstTimestamp + 1000;
+    checkpointMetadataState.addBackupCheckpoint(
+        firstId, 50, firstTimestamp, CheckpointType.MANUAL_BACKUP, 40);
+    checkpointMetadataState.addBackupCheckpoint(
+        secondId, 100, secondTimestamp, CheckpointType.SCHEDULED_BACKUP, 50);
+    backupRangeState.startNewRange(firstId);
+    backupRangeState.updateRangeEnd(firstId, secondId);
+    state.setLatestBackupInfo(secondId, 100, secondTimestamp, CheckpointType.SCHEDULED_BACKUP, 50);
+
+    final var value = new CheckpointRecord().setCheckpointId(secondId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — latest backup rolled back to predecessor (checkpoint 5)
+    assertThat(state.getLatestBackupId()).isEqualTo(firstId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(50);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(firstTimestamp);
+    assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
+    assertThat(state.getLatestBackupFirstLogPosition()).isEqualTo(40);
+  }
+
+  @Test
+  void shouldNotAffectLatestBackupOnDeletionOfOlderBackup() {
+    // given — two backups: 5 (older) and 10 (latest), delete 5
+    final var firstId = 5L;
+    final var secondId = 10L;
+    final var firstTimestamp = Instant.now().toEpochMilli();
+    final var secondTimestamp = firstTimestamp + 1000;
+    checkpointMetadataState.addBackupCheckpoint(
+        firstId, 50, firstTimestamp, CheckpointType.MANUAL_BACKUP, 40);
+    checkpointMetadataState.addBackupCheckpoint(
+        secondId, 100, secondTimestamp, CheckpointType.SCHEDULED_BACKUP, 50);
+    backupRangeState.startNewRange(firstId);
+    backupRangeState.updateRangeEnd(firstId, secondId);
+    state.setLatestBackupInfo(secondId, 100, secondTimestamp, CheckpointType.SCHEDULED_BACKUP, 50);
+
+    final var value = new CheckpointRecord().setCheckpointId(firstId);
+    final var record =
+        new MockTypedCheckpointRecord(
+            110, 0, CheckpointIntent.DELETE_BACKUP, RecordType.COMMAND, value);
+
+    // when
+    processor.process(record, resultBuilder);
+
+    // then — latest backup is unchanged (deleted backup was not the latest)
+    assertThat(state.getLatestBackupId()).isEqualTo(secondId);
+    assertThat(state.getLatestBackupPosition()).isEqualTo(100);
+    assertThat(state.getLatestBackupTimestamp()).isEqualTo(secondTimestamp);
+    assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.SCHEDULED_BACKUP);
+    assertThat(state.getLatestBackupFirstLogPosition()).isEqualTo(50);
   }
 }

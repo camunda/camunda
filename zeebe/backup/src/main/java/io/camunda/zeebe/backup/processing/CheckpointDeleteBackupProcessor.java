@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
@@ -43,11 +44,13 @@ public final class CheckpointDeleteBackupProcessor {
   public CheckpointDeleteBackupProcessor(
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
+      final CheckpointState checkpointState,
       final BackupManager backupManager) {
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupManager = backupManager;
     backupDeletedApplier =
-        new CheckpointBackupDeletedApplier(checkpointMetadataState, backupRangeState);
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
   }
 
   public ProcessingResult process(

@@ -108,6 +108,12 @@ public final class DbCheckpointState implements CheckpointState {
     return getFirstLogPosition(LATEST_BACKUP_KEY);
   }
 
+  @Override
+  public void clearLatestBackupInfo() {
+    checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
+    checkpointColumnFamily.deleteIfExists(checkpointInfoKey);
+  }
+
   private long getCheckpointId(final String key) {
     checkpointInfoKey.wrapString(key);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
