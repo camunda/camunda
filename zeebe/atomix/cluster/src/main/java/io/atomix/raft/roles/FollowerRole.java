@@ -196,7 +196,7 @@ public final class FollowerRole extends ActiveRole {
     super.onBatchAppend(batch);
     // Reset heartbeat once at the end for the whole batch
     if (!batch.isEmpty()) {
-      final var lastRequest = batch.get(batch.size() - 1).request();
+      final var lastRequest = batch.getLast().request();
       if (isRequestFromCurrentLeader(lastRequest.term(), lastRequest.leader())) {
         onHeartbeatFromLeader();
       }

@@ -602,8 +602,8 @@ public class PassiveRole extends InactiveRole {
     }
 
     // Phase 2: Single flush for all appended entries
-    final long maxLastLogIndex = pending.get(pending.size() - 1).lastLogIndex;
-    final long minPrevLogIndex = pending.get(0).prevLogIndex;
+    final long maxLastLogIndex = pending.getLast().lastLogIndex;
+    final long minPrevLogIndex = pending.getFirst().prevLogIndex;
     try {
       flush(maxLastLogIndex, minPrevLogIndex);
     } catch (final Exception e) {

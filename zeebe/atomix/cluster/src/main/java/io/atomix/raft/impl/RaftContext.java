@@ -484,7 +484,7 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   private void processQueuedAppends(final List<QueuedRequest> appends) {
     if (appends.size() == 1) {
       // Single append: use the standard path (no batching overhead)
-      processQueuedRequest(appends.get(0));
+      processQueuedRequest(appends.getFirst());
       return;
     }
 
