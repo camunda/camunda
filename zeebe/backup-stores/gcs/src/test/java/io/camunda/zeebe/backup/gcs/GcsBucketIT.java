@@ -88,12 +88,12 @@ public class GcsBucketIT {
     blobList.iterateAll().forEach(blobs::add);
 
     Assertions.assertThat(blobs).isNotEmpty();
+    // Files are batched into tar.gz archives
     Assertions.assertThat(blobs)
         .extracting(Blob::getName)
         .containsExactlyInAnyOrder(
-            "contents/2/3/1/segments/segmentFile1",
-            "contents/2/3/1/snapshot/snapshotFile1",
-            "contents/2/3/1/snapshot/snapshotFile2",
+            "contents/2/3/1/segments/segments-0.tar.gz",
+            "contents/2/3/1/snapshot/snapshot-0.tar.gz",
             "manifests/2/3/1/manifest.json");
   }
 
@@ -135,12 +135,12 @@ public class GcsBucketIT {
     blobList.iterateAll().forEach(blobs::add);
 
     Assertions.assertThat(blobs).isNotEmpty();
+    // Files are batched into tar.gz archives
     Assertions.assertThat(blobs)
         .extracting(Blob::getName)
         .containsExactlyInAnyOrder(
-            "root/contents/2/3/1/segments/segmentFile1",
-            "root/contents/2/3/1/snapshot/snapshotFile1",
-            "root/contents/2/3/1/snapshot/snapshotFile2",
+            "root/contents/2/3/1/segments/segments-0.tar.gz",
+            "root/contents/2/3/1/snapshot/snapshot-0.tar.gz",
             "root/manifests/2/3/1/manifest.json");
   }
 }
