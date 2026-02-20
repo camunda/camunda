@@ -7,14 +7,14 @@
  */
 package io.camunda.optimize;
 
-import static io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder.createConfigurationFromLocations;
-
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
+import io.camunda.optimize.service.util.configuration.ConfigurationServiceBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import org.springframework.core.env.Environment;
 
 @Import(io.camunda.optimize.Main.class)
 @Configuration
@@ -23,8 +23,8 @@ public class SpringC8VariableImportDisabledITConfig {
 
   @Bean
   @Primary
-  public static ConfigurationService configurationService() {
-    return createConfigurationFromLocations(
-        "service-config.yaml", "it/it-config-ccsm-variables-disabled.yaml");
+  public static ConfigurationService configurationService(final Environment environment) {
+    return ConfigurationServiceBuilder.createConfigurationService(
+        environment, "service-config.yaml", "it/it-config-ccsm-variables-disabled.yaml");
   }
 }
