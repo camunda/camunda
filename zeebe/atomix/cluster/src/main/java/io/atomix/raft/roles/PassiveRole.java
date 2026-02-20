@@ -688,14 +688,6 @@ public class PassiveRole extends InactiveRole {
         request, future, lastLogIndex, commitIndex, request.prevLogIndex(), true);
   }
 
-  private record PendingAppendResult(
-      InternalAppendRequest request,
-      CompletableFuture<AppendResponse> future,
-      long lastLogIndex,
-      long commitIndex,
-      long prevLogIndex,
-      boolean succeeded) {}
-
   /** Handles an AppendRequest. */
   protected CompletableFuture<AppendResponse> handleAppend(final InternalAppendRequest request) {
     final CompletableFuture<AppendResponse> future = new CompletableFuture<>();
@@ -1073,4 +1065,12 @@ public class PassiveRole extends InactiveRole {
         snapshotIndex + 1);
     raftLog.reset(snapshotIndex + 1);
   }
+
+  private record PendingAppendResult(
+      InternalAppendRequest request,
+      CompletableFuture<AppendResponse> future,
+      long lastLogIndex,
+      long commitIndex,
+      long prevLogIndex,
+      boolean succeeded) {}
 }

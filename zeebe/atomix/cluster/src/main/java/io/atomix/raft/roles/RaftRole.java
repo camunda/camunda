@@ -129,9 +129,6 @@ public interface RaftRole extends Managed<RaftRole> {
 
   Either<RaftError, Void> shouldAcceptRequest(RaftRequest request);
 
-  /** A batched append request paired with its response future. */
-  record BatchedAppend(InternalAppendRequest request, CompletableFuture<AppendResponse> future) {}
-
   /**
    * Handles a batch of append requests. The default implementation processes each request
    * individually. Subclasses can override this to batch multiple appends with a single flush.
@@ -170,4 +167,7 @@ public interface RaftRole extends Managed<RaftRole> {
       case final VoteRequest voteRequest -> onVote(voteRequest);
     };
   }
+
+  /** A batched append request paired with its response future. */
+  record BatchedAppend(InternalAppendRequest request, CompletableFuture<AppendResponse> future) {}
 }
