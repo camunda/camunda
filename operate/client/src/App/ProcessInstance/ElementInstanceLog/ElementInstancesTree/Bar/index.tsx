@@ -20,10 +20,10 @@ type Props = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate?: string;
+  endDate: string | null;
   isTimestampLabelVisible: boolean;
   isRoot: boolean;
-  latestMigrationDate: string | undefined;
+  latestMigrationDate: string | null;
   scopeKeyHierarchy: string[];
 };
 
@@ -55,7 +55,7 @@ const Bar = forwardRef<HTMLDivElement, Props>(
           {isRoot && latestMigrationDate !== undefined && (
             <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
           )}
-          {isTimestampLabelVisible && endDate && (
+          {isTimestampLabelVisible && endDate !== null && (
             <Layer>
               <TimeStampLabel timeStamp={endDate} />
             </Layer>

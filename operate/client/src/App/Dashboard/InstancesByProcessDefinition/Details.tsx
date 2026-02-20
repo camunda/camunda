@@ -56,6 +56,7 @@ const Details: React.FC<Props> = ({
             ],
             filter: {
               processDefinitionId,
+              tenantId: null,
             },
           },
   });

@@ -52,7 +52,7 @@ function useDecisionDefinitions(tenantId?: string) {
             definition.tenantId,
           ),
         }))
-        .sort((d1, d2) => d1.name.localeCompare(d2.name)),
+        .sort((d1, d2) => (d1.name ?? '').localeCompare(d2.name ?? '')),
   });
 }
 
