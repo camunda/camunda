@@ -7,6 +7,7 @@
  */
 package io.camunda.exporter.tasks.historydeletion;
 
+import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
@@ -47,6 +48,16 @@ public interface HistoryDeletionRepository extends AutoCloseable {
   CompletableFuture<Integer> deleteDocumentsById(
       final String sourceIndexName, final List<String> ids);
 
+  /**
+   * Creates audit log cleanup entries in the audit log cleanup index. These entries are used by the
+   * audit log cleanup job to determine which audit logs to delete after the retention period has
+   * expired for the deleted resources.
+   *
+   * @param entries The list of {@link AuditLogCleanupEntity} entries to create
+   * @return a {@link CompletableFuture} that completes when all entries have been indexed
+   */
+  CompletableFuture<Void> createAuditLogCleanupEntries(final List<AuditLogCleanupEntity> entries);
+
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
     public CompletableFuture<HistoryDeletionBatch> getNextBatch() {
@@ -63,6 +74,12 @@ public interface HistoryDeletionRepository extends AutoCloseable {
     public CompletableFuture<Integer> deleteDocumentsById(
         final String sourceIndexName, final List<String> ids) {
       return CompletableFuture.completedFuture(0);
+    }
+
+    @Override
+    public CompletableFuture<Void> createAuditLogCleanupEntries(
+        final List<AuditLogCleanupEntity> entries) {
+      return CompletableFuture.completedFuture(null);
     }
 
     @Override
