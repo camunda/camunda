@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import io.camunda.optimize.util.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
@@ -112,7 +113,8 @@ public class ConfigurationServiceBuilder {
     return new ConfigurationService(configLocations, configurationValidator);
   }
 
-  private static final class ConfigEnvironment {
+  @VisibleForTesting
+  static final class ConfigEnvironment {
 
     private static final Logger LOG = LoggerFactory.getLogger(ConfigEnvironment.class);
 
