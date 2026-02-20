@@ -15,20 +15,20 @@ import {
 	basicStringFilterSchema,
 	type Endpoint,
 	getEnumFilterSchema,
-} from '../common';
+} from './common';
 import {evaluatedDecisionInputItemSchema, matchedDecisionRuleItemSchema} from './decision-definition';
 
-const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION']);
+const decisionDefinitionTypeSchema = z.enum(['DECISION_TABLE', 'LITERAL_EXPRESSION', 'UNSPECIFIED', 'UNKNOWN']);
 type DecisionDefinitionType = z.infer<typeof decisionDefinitionTypeSchema>;
 
-const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED']);
+const decisionInstanceStateSchema = z.enum(['EVALUATED', 'FAILED', 'UNSPECIFIED', 'UNKNOWN']);
 type DecisionInstanceState = z.infer<typeof decisionInstanceStateSchema>;
 
 const decisionInstanceSchema = z.object({
 	decisionEvaluationInstanceKey: z.string(),
 	state: decisionInstanceStateSchema,
 	evaluationDate: z.string(),
-	evaluationFailure: z.string(),
+	evaluationFailure: z.string().nullable(),
 	decisionDefinitionId: z.string(),
 	decisionDefinitionName: z.string(),
 	decisionDefinitionVersion: z.number(),
@@ -38,6 +38,7 @@ const decisionInstanceSchema = z.object({
 	decisionEvaluationKey: z.string(),
 	processDefinitionKey: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 	decisionDefinitionKey: z.string(),
 	elementInstanceKey: z.string(),
 	rootDecisionDefinitionKey: z.string(),
@@ -90,8 +91,8 @@ const queryDecisionInstancesResponseBodySchema = getQueryResponseBodySchema(deci
 type QueryDecisionInstancesResponseBody = z.infer<typeof queryDecisionInstancesResponseBodySchema>;
 
 const getDecisionInstanceResponseBodySchema = z.object({
-	evaluatedInputs: z.array(evaluatedDecisionInputItemSchema).optional(),
-	matchedRules: z.array(matchedDecisionRuleItemSchema).optional(),
+	evaluatedInputs: z.array(evaluatedDecisionInputItemSchema),
+	matchedRules: z.array(matchedDecisionRuleItemSchema),
 	...decisionInstanceSchema.shape,
 });
 type GetDecisionInstanceResponseBody = z.infer<typeof getDecisionInstanceResponseBodySchema>;

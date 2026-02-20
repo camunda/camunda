@@ -15,7 +15,7 @@ import {
 	getEnumFilterSchema,
 	type Endpoint,
 	basicStringFilterSchema,
-} from '../common';
+} from './common';
 
 const jobStateSchema = z.enum([
 	'CREATED',
@@ -29,7 +29,7 @@ const jobStateSchema = z.enum([
 ]);
 type JobState = z.infer<typeof jobStateSchema>;
 
-const jobKindSchema = z.enum(['BPMN_ELEMENT', 'EXECUTION_LISTENER', 'TASK_LISTENER']);
+const jobKindSchema = z.enum(['BPMN_ELEMENT', 'EXECUTION_LISTENER', 'TASK_LISTENER', 'AD_HOC_SUB_PROCESS']);
 type JobKind = z.infer<typeof jobKindSchema>;
 
 const listenerEventTypeSchema = z.enum([
@@ -56,19 +56,23 @@ const jobSchema = z.object({
 	kind: jobKindSchema,
 	listenerEventType: listenerEventTypeSchema,
 	retries: z.number(),
-	isDenied: z.boolean(),
-	deniedReason: z.string(),
+	isDenied: z.boolean().nullable(),
+	deniedReason: z.string().nullable(),
 	hasFailedWithRetriesLeft: z.boolean(),
-	errorCode: z.string(),
-	errorMessage: z.string(),
-	customHeaders: z.record(z.string(), z.unknown()).optional(),
-	deadline: z.string(),
-	endTime: z.string(),
+	errorCode: z.string().nullable(),
+	errorMessage: z.string().nullable(),
+	customHeaders: z.record(z.string(), z.unknown()).nullable(),
+	deadline: z.string().nullable(),
+	endTime: z.string().nullable(),
 	processDefinitionId: z.string(),
 	processDefinitionKey: z.string(),
 	processInstanceKey: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 	elementId: z.string(),
 	elementInstanceKey: z.string(),
+	creationTime: z.string().nullable(),
+	lastUpdateTime: z.string().nullable(),
+	tags: z.array(z.string()),
 	tenantId: z.string(),
 });
 type Job = z.infer<typeof jobSchema>;
@@ -141,16 +145,21 @@ const activatedJobSchema = z.object({
 	processDefinitionId: z.string(),
 	processDefinitionVersion: z.number(),
 	elementId: z.string(),
-	customHeaders: z.record(z.string(), z.unknown()).optional(),
+	customHeaders: z.record(z.string(), z.unknown()).nullable(),
 	worker: z.string(),
 	retries: z.number(),
 	deadline: z.number(),
-	variables: z.record(z.string(), z.unknown()).optional(),
+	variables: z.record(z.string(), z.unknown()).nullable(),
 	tenantId: z.string(),
 	jobKey: z.string(),
 	processInstanceKey: z.string(),
 	processDefinitionKey: z.string(),
 	elementInstanceKey: z.string(),
+	kind: jobKindSchema,
+	listenerEventType: listenerEventTypeSchema,
+	rootProcessInstanceKey: z.string().nullable(),
+	userTask: z.unknown().nullable(),
+	tags: z.array(z.string()),
 });
 type ActivatedJob = z.infer<typeof activatedJobSchema>;
 
@@ -170,7 +179,7 @@ const failJobRequestBodySchema = z.object({
 	retries: z.number().optional(),
 	errorMessage: z.string().optional(),
 	retryBackOff: z.number().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
+	variables: z.record(z.string(), z.unknown()).nullable(),
 });
 type FailJobRequestBody = z.infer<typeof failJobRequestBodySchema>;
 
@@ -186,7 +195,7 @@ const failJob: Endpoint<Pick<Job, 'jobKey'>> = {
 const throwJobErrorRequestBodySchema = z.object({
 	errorCode: z.string(),
 	errorMessage: z.string().optional(),
-	variables: z.record(z.string(), z.unknown()).optional(),
+	variables: z.record(z.string(), z.unknown()).nullable(),
 });
 type ThrowJobErrorRequestBody = z.infer<typeof throwJobErrorRequestBodySchema>;
 
@@ -203,14 +212,14 @@ const jobResultCorrectionsSchema = z.object({}).passthrough();
 type JobResultCorrections = z.infer<typeof jobResultCorrectionsSchema>;
 
 const jobResultSchema = z.object({
-	denied: z.boolean().optional(),
-	deniedReason: z.string().optional(),
-	corrections: jobResultCorrectionsSchema.optional(),
+	denied: z.boolean().nullable(),
+	deniedReason: z.string().nullable(),
+	corrections: jobResultCorrectionsSchema.nullable(),
 });
 type JobResult = z.infer<typeof jobResultSchema>;
 
 const completeJobRequestBodySchema = z.object({
-	variables: z.record(z.string(), z.unknown()).optional(),
+	variables: z.record(z.string(), z.unknown()).nullable(),
 	result: jobResultSchema.optional(),
 });
 type CompleteJobRequestBody = z.infer<typeof completeJobRequestBodySchema>;

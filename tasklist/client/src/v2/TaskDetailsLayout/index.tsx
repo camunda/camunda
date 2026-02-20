@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser, UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {Section} from '@carbon/react';
 import {TurnOnNotificationPermission} from 'common/tasks/details/TurnOnNotificationPermission';

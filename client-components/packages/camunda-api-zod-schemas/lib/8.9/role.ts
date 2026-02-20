@@ -7,10 +7,20 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
-import {groupSchema, roleSchema, type Group, type Role} from './group-role';
+import {
+	API_VERSION,
+	getQueryRequestBodySchema,
+	getQueryResponseBodySchema,
+	queryResponsePageSchema,
+	type Endpoint,
+} from './common';
+import {roleSchema, type Group, type Role} from './group-role';
 import {mappingRuleSchema, type MappingRule} from './mapping-rule';
 import {userSchema} from './user';
+
+const pageOnlyQueryResponseBodySchema = z.object({
+	page: queryResponsePageSchema,
+});
 
 const createRoleRequestBodySchema = roleSchema;
 type CreateRoleRequestBody = z.infer<typeof createRoleRequestBodySchema>;
@@ -64,17 +74,16 @@ const queryClientsByRoleResponseBodySchema = getQueryResponseBodySchema(
 type QueryClientsByRoleResponseBody = z.infer<typeof queryClientsByRoleResponseBodySchema>;
 
 const queryGroupsByRoleRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: ['name', 'groupId'] as const,
-	filter: groupSchema
-		.pick({
-			groupId: true,
-			name: true,
-		})
-		.partial(),
+	sortFields: ['groupId'] as const,
+	filter: z.never(),
 });
 type QueryGroupsByRoleRequestBody = z.infer<typeof queryGroupsByRoleRequestBodySchema>;
 
-const queryGroupsByRoleResponseBodySchema = getQueryResponseBodySchema(groupSchema);
+const queryGroupsByRoleResponseBodySchema = getQueryResponseBodySchema(
+	z.object({
+		groupId: z.string(),
+	}),
+);
 type QueryGroupsByRoleResponseBody = z.infer<typeof queryGroupsByRoleResponseBodySchema>;
 
 const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
@@ -89,7 +98,7 @@ const queryMappingRulesByRoleRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryMappingRulesByRoleRequestBody = z.infer<typeof queryMappingRulesByRoleRequestBodySchema>;
 
-const queryMappingRulesByRoleResponseBodySchema = getQueryResponseBodySchema(mappingRuleSchema);
+const queryMappingRulesByRoleResponseBodySchema = pageOnlyQueryResponseBodySchema;
 type QueryMappingRulesByRoleResponseBody = z.infer<typeof queryMappingRulesByRoleResponseBodySchema>;
 
 const createRole: Endpoint = {
@@ -219,7 +228,7 @@ const assignMappingToRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule, 'ma
 	getUrl(params) {
 		const {roleId, mappingId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
 	},
 };
 
@@ -228,7 +237,7 @@ const unassignMappingFromRole: Endpoint<Pick<Role, 'roleId'> & Pick<MappingRule,
 	getUrl(params) {
 		const {roleId, mappingId} = params;
 
-		return `/${API_VERSION}/roles/${roleId}/mappings/${mappingId}`;
+		return `/${API_VERSION}/roles/${roleId}/mapping-rules/${mappingId}`;
 	},
 };
 

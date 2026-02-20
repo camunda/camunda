@@ -25,7 +25,7 @@ import {getQueryTasksResponseMock} from 'v2/mocks/tasks';
 import {
   endpoints,
   type QueryUserTasksRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/autoSelectFirstTask', () => ({
   autoSelectNextTaskStore: {

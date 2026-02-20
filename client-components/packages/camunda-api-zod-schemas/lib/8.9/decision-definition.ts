@@ -7,13 +7,15 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from '../common';
+import {API_VERSION, getQueryRequestBodySchema, getQueryResponseBodySchema, type Endpoint} from './common';
 
 const decisionDefinitionSchema = z.object({
 	decisionDefinitionId: z.string(),
-	name: z.string(),
+	name: z.string().nullable(),
 	version: z.number(),
 	decisionRequirementsId: z.string(),
+	decisionRequirementsName: z.string().nullable(),
+	decisionRequirementsVersion: z.number(),
 	tenantId: z.string(),
 	decisionDefinitionKey: z.string(),
 	decisionRequirementsKey: z.string(),
@@ -55,12 +57,14 @@ const evaluatedDecisionOutputItemSchema = z.object({
 	outputId: z.string(),
 	outputName: z.string(),
 	outputValue: z.string(),
+	ruleId: z.string().nullable(),
+	ruleIndex: z.number().int().nullable(),
 });
 type EvaluatedDecisionOutputItem = z.infer<typeof evaluatedDecisionOutputItemSchema>;
 
 const matchedDecisionRuleItemSchema = z.object({
-	ruleId: z.string(),
-	ruleIndex: z.number().int(),
+	ruleId: z.string().nullable(),
+	ruleIndex: z.number().int().nullable(),
 	evaluatedOutputs: z.array(evaluatedDecisionOutputItemSchema),
 });
 type MatchedDecisionRuleItem = z.infer<typeof matchedDecisionRuleItemSchema>;
@@ -75,6 +79,7 @@ const evaluatedDecisionResultSchema = z.object({
 	matchedRules: z.array(matchedDecisionRuleItemSchema),
 	evaluatedInputs: z.array(evaluatedDecisionInputItemSchema),
 	decisionDefinitionKey: z.string(),
+	decisionEvaluationInstanceKey: z.string(),
 });
 type EvaluatedDecisionResult = z.infer<typeof evaluatedDecisionResultSchema>;
 
@@ -88,16 +93,17 @@ type EvaluateDecisionRequestBody = z.infer<typeof evaluateDecisionRequestBodySch
 
 const evaluateDecisionResponseBodySchema = z.object({
 	decisionDefinitionId: z.string(),
-	decisionDefinitionName: z.string(),
+	decisionDefinitionName: z.string().nullable(),
 	decisionDefinitionVersion: z.number().int(),
 	decisionRequirementsId: z.string(),
 	output: z.string(),
-	failedDecisionDefinitionId: z.string().optional(),
-	failureMessage: z.string().optional(),
+	failedDecisionDefinitionId: z.string(),
+	failureMessage: z.string().nullable(),
 	tenantId: z.string(),
 	decisionDefinitionKey: z.string(),
 	decisionRequirementsKey: z.string(),
 	decisionInstanceKey: z.string(),
+	decisionEvaluationKey: z.string(),
 	evaluatedDecisions: z.array(evaluatedDecisionResultSchema),
 });
 type EvaluateDecisionResponseBody = z.infer<typeof evaluateDecisionResponseBodySchema>;

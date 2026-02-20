@@ -18,7 +18,7 @@ import {
 	basicStringFilterSchema,
 	getOrFilterSchema,
 	advancedIntegerFilterSchema,
-} from '../common';
+} from './common';
 import {
 	processDefinitionSchema,
 	processDefinitionStatisticSchema,
@@ -27,6 +27,25 @@ import {
 	type StatisticName,
 	type ProcessDefinitionStatistic,
 } from './processes';
+
+const processDefinitionResponseSchema = processDefinitionSchema.extend({
+	name: z.string().nullable(),
+	resourceName: z.string().nullable(),
+	versionTag: z.string().nullable(),
+	processDefinitionKey: z.string(),
+});
+const getProcessDefinitionResponseBodySchema = processDefinitionResponseSchema;
+type GetProcessDefinitionResponseBody = z.infer<typeof getProcessDefinitionResponseBodySchema>;
+
+const processStartFormSchema = z.object({
+	tenantId: z.string(),
+	formId: z.string(),
+	schema: z.record(z.string(), z.unknown()),
+	version: z.number(),
+	formKey: z.string(),
+});
+const getProcessStartFormResponseBodySchema = processStartFormSchema;
+type GetProcessStartFormResponseBody = z.infer<typeof getProcessStartFormResponseBodySchema>;
 
 const getProcessDefinition: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
 	method: 'GET',
@@ -37,6 +56,9 @@ const getProcessDefinitionXml: Endpoint<Pick<ProcessDefinition, 'processDefiniti
 	method: 'GET',
 	getUrl: ({processDefinitionKey}) => `/${API_VERSION}/process-definitions/${processDefinitionKey}/xml`,
 };
+
+const getProcessDefinitionXmlResponseBodySchema = z.string();
+type GetProcessDefinitionXmlResponseBody = z.infer<typeof getProcessDefinitionXmlResponseBodySchema>;
 
 const getProcessStartForm: Endpoint<Pick<ProcessDefinition, 'processDefinitionKey'>> = {
 	method: 'GET',
@@ -128,7 +150,7 @@ const queryProcessDefinitionsRequestBodySchema = getQueryRequestBodySchema({
 });
 type QueryProcessDefinitionsRequestBody = z.infer<typeof queryProcessDefinitionsRequestBodySchema>;
 
-const queryProcessDefinitionsResponseBodySchema = getQueryResponseBodySchema(processDefinitionSchema);
+const queryProcessDefinitionsResponseBodySchema = getQueryResponseBodySchema(processDefinitionResponseSchema);
 type QueryProcessDefinitionsResponseBody = z.infer<typeof queryProcessDefinitionsResponseBodySchema>;
 
 const queryProcessDefinitions: Endpoint = {
@@ -142,7 +164,7 @@ const processDefinitionInstanceStatisticsSchema = z.object({
 	hasMultipleVersions: z.boolean(),
 	activeInstancesWithoutIncidentCount: z.number(),
 	activeInstancesWithIncidentCount: z.number(),
-	tenantId: z.string().optional(),
+	tenantId: z.string(),
 });
 type ProcessDefinitionInstanceStatistics = z.infer<typeof processDefinitionInstanceStatisticsSchema>;
 
@@ -168,17 +190,17 @@ type GetProcessDefinitionInstanceStatisticsResponseBody = z.infer<
 const processDefinitionInstanceVersionStatisticsSchema = z.object({
 	processDefinitionId: z.string(),
 	processDefinitionKey: z.string(),
-	processDefinitionName: z.string(),
+	processDefinitionName: z.string().nullable(),
 	processDefinitionVersion: z.number(),
 	activeInstancesWithIncidentCount: z.number(),
 	activeInstancesWithoutIncidentCount: z.number(),
-	tenantId: z.string().optional(),
+	tenantId: z.string(),
 });
 type ProcessDefinitionInstanceVersionStatistics = z.infer<typeof processDefinitionInstanceVersionStatisticsSchema>;
 
 const processDefinitionVersionStatisticsFilterFieldsSchema = z.object({
 	processDefinitionId: z.string(),
-	tenantId: z.string().optional(),
+	tenantId: z.string().nullable(),
 });
 
 const getProcessDefinitionInstanceVersionStatisticsRequestBodySchema = getQueryRequestBodySchema({
@@ -213,9 +235,13 @@ export {
 	getProcessDefinition,
 	getProcessDefinitionXml,
 	getProcessStartForm,
+	getProcessDefinitionResponseBodySchema,
+	getProcessDefinitionXmlResponseBodySchema,
+	getProcessStartFormResponseBodySchema,
 	getProcessDefinitionStatistics,
 	queryProcessDefinitions,
 	processDefinitionSchema,
+	processDefinitionResponseSchema,
 	processDefinitionStatisticSchema,
 	getProcessDefinitionStatisticsRequestBodySchema,
 	getProcessDefinitionStatisticsResponseBodySchema,
@@ -232,6 +258,9 @@ export {
 };
 export type {
 	ProcessDefinition,
+	GetProcessDefinitionResponseBody,
+	GetProcessDefinitionXmlResponseBody,
+	GetProcessStartFormResponseBody,
 	ProcessDefinitionStatistic,
 	GetProcessDefinitionStatisticsRequestBody,
 	GetProcessDefinitionStatisticsResponseBody,

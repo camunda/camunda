@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const variables = [
   {
@@ -15,6 +15,7 @@ const variables = [
     isTruncated: false,
     tenantId: 'default',
     processInstanceKey: '123',
+    rootProcessInstanceKey: null,
     variableKey: '2251799813686711-small',
     scopeKey: '123',
   },

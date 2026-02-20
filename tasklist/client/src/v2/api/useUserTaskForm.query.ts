@@ -9,7 +9,7 @@
 import {useQuery} from '@tanstack/react-query';
 import {api} from 'v2/api';
 import {request} from 'common/api/request';
-import {type UserTask, type Form} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type UserTask, type Form} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function useUserTaskForm(
   {userTaskKey}: Pick<UserTask, 'userTaskKey'>,

@@ -7,9 +7,9 @@
  */
 
 import type {
-  ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+  ProcessDefinition,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {uniqueId} from './utils';
 
@@ -24,6 +24,8 @@ function getProcessDefinitionMock(
     tenantId: DEFAULT_TENANT_ID,
     version: 1,
     name: `Process ${id}`,
+    resourceName: `process${id}.bpmn`,
+    versionTag: `v1`,
     hasStartForm: false,
     ...customFields,
   };
@@ -39,6 +41,7 @@ function getQueryProcessDefinitionsResponseMock(
       totalItems,
       startCursor: 'startCursor',
       endCursor: 'endCursor',
+      hasMoreTotalItems: false,
     },
   };
 }

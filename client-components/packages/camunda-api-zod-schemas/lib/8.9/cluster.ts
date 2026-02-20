@@ -7,7 +7,7 @@
  */
 
 import {z} from 'zod';
-import {API_VERSION, type Endpoint} from '../common';
+import {API_VERSION, type Endpoint} from './common';
 
 const partitionRoleSchema = z.enum(['leader', 'follower', 'inactive']);
 type PartitionRole = z.infer<typeof partitionRoleSchema>;
@@ -32,7 +32,8 @@ const brokerInfoSchema = z.object({
 type BrokerInfo = z.infer<typeof brokerInfoSchema>;
 
 const getTopologyResponseBodySchema = z.object({
-	brokers: z.array(brokerInfoSchema).nullable(),
+	brokers: z.array(brokerInfoSchema),
+	clusterId: z.string().nullable(),
 	clusterSize: z.number().int().nullable(),
 	partitionsCount: z.number().int().nullable(),
 	replicationFactor: z.number().int().nullable(),

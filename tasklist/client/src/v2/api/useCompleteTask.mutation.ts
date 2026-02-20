@@ -8,7 +8,7 @@
 
 import {useMutation, useQueryClient} from '@tanstack/react-query';
 import {useTranslation} from 'react-i18next';
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 import {request, requestErrorSchema} from 'common/api/request';
 import {notificationsStore} from 'common/notifications/notifications.store';
 import {isTaskTimeoutError} from 'common/utils/taskErrorHandling';

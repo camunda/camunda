@@ -12,7 +12,7 @@ import {api} from './index';
 import type {
   QueryProcessDefinitionsRequestBody,
   QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const PAGE_SIZE = 12;
 const DEFAULT_PAGE_PARAM = -1 as number | string;

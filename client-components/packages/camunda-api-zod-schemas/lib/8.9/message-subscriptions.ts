@@ -16,7 +16,7 @@ import {
 	getEnumFilterSchema,
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
-} from '../common';
+} from './common';
 
 const messageSubscriptionStateSchema = z.enum(['CORRELATED', 'CREATED', 'DELETED', 'MIGRATED']);
 type MessageSubscriptionState = z.infer<typeof messageSubscriptionStateSchema>;
@@ -33,6 +33,7 @@ const messageSubscriptionSchema = z.object({
 	messageName: z.string(),
 	correlationKey: z.string(),
 	tenantId: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 });
 type MessageSubscription = z.infer<typeof messageSubscriptionSchema>;
 
@@ -84,13 +85,13 @@ const correlatedMessageSubscriptionSchema = z.object({
 	processInstanceKey: z.string(),
 	elementId: z.string(),
 	elementInstanceKey: z.string(),
-	messageSubscriptionState: messageSubscriptionStateSchema,
 	correlationTime: z.string(),
 	messageName: z.string(),
 	correlationKey: z.string(),
 	messageKey: z.string(),
 	partitionId: z.number().int(),
 	tenantId: z.string(),
+	rootProcessInstanceKey: z.string().nullable(),
 });
 type CorrelatedMessageSubscription = z.infer<typeof correlatedMessageSubscriptionSchema>;
 

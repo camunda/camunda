@@ -15,7 +15,7 @@ import {HttpResponse, http} from 'msw';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import * as userMocks from 'common/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   getProcessDefinitionMock,
   getQueryProcessDefinitionsResponseMock,

@@ -57,18 +57,19 @@ const resourceDeploymentSchema = z.object({
 });
 type ResourceDeployment = z.infer<typeof resourceDeploymentSchema>;
 
+const deploymentSchema = z.object({
+	processDefinition: processDeploymentSchema.nullable(),
+	decisionDefinition: decisionDeploymentSchema.nullable(),
+	decisionRequirements: decisionRequirementsDeploymentSchema.nullable(),
+	form: formDeploymentSchema.nullable(),
+	resource: resourceDeploymentSchema.nullable(),
+});
+type Deployment = z.infer<typeof deploymentSchema>;
+
 const createDeploymentResponseBodySchema = z.object({
 	tenantId: z.string(),
 	deploymentKey: z.string(),
-	deployments: z.array(
-		z.union([
-			processDeploymentSchema,
-			decisionDeploymentSchema,
-			decisionRequirementsDeploymentSchema,
-			formDeploymentSchema,
-			resourceDeploymentSchema,
-		]),
-	),
+	deployments: z.array(deploymentSchema),
 });
 type CreateDeploymentResponseBody = z.infer<typeof createDeploymentResponseBodySchema>;
 
@@ -88,7 +89,7 @@ type BatchOperationCreatedResult = z.infer<typeof batchOperationCreatedResultSch
 
 const deleteResourceResponseBodySchema = z.object({
 	resourceKey: z.string(),
-	batchOperation: batchOperationCreatedResultSchema.optional(),
+	batchOperation: batchOperationCreatedResultSchema.nullable(),
 });
 type DeleteResourceResponseBody = z.infer<typeof deleteResourceResponseBodySchema>;
 
@@ -155,6 +156,7 @@ export {
 	decisionRequirementsDeploymentSchema,
 	formDeploymentSchema,
 	resourceDeploymentSchema,
+	deploymentSchema,
 };
 export type {
 	CreateDeploymentResponseBody,
@@ -168,4 +170,5 @@ export type {
 	DecisionRequirementsDeployment,
 	FormDeployment,
 	ResourceDeployment,
+	Deployment,
 };

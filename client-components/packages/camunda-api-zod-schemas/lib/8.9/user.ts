@@ -13,7 +13,7 @@ import {
 	getQueryResponseBodySchema,
 	advancedStringFilterSchema,
 	type Endpoint,
-} from '../common';
+} from './common';
 
 const userSchema = z.object({
 	username: z.string(),
@@ -38,7 +38,6 @@ type CreateUserResponseBody = z.infer<typeof createUserResponseBodySchema>;
 
 const updateUserRequestBodySchema = userSchema
 	.pick({
-		username: true,
 		name: true,
 		email: true,
 	})
@@ -47,6 +46,9 @@ const updateUserRequestBodySchema = userSchema
 	})
 	.partial();
 type UpdateUserRequestBody = z.infer<typeof updateUserRequestBodySchema>;
+
+const updateUserResponseBodySchema = userSchema;
+type UpdateUserResponseBody = z.infer<typeof updateUserResponseBodySchema>;
 
 const queryUsersRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['username', 'name', 'email'] as const,
@@ -84,6 +86,9 @@ const getUser: Endpoint<Pick<User, 'username'>> = {
 	},
 };
 
+const getUserResponseBodySchema = userSchema;
+type GetUserResponseBody = z.infer<typeof getUserResponseBodySchema>;
+
 const deleteUser: Endpoint<Pick<User, 'username'>> = {
 	method: 'DELETE',
 	getUrl(params) {
@@ -94,7 +99,7 @@ const deleteUser: Endpoint<Pick<User, 'username'>> = {
 };
 
 const updateUser: Endpoint<Pick<User, 'username'>> = {
-	method: 'PATCH',
+	method: 'PUT',
 	getUrl(params) {
 		const {username} = params;
 
@@ -112,6 +117,8 @@ export {
 	createUserRequestBodySchema,
 	createUserResponseBodySchema,
 	updateUserRequestBodySchema,
+	updateUserResponseBodySchema,
+	getUserResponseBodySchema,
 	queryUsersRequestBodySchema,
 	queryUsersResponseBodySchema,
 };
@@ -120,6 +127,8 @@ export type {
 	CreateUserRequestBody,
 	CreateUserResponseBody,
 	UpdateUserRequestBody,
+	UpdateUserResponseBody,
+	GetUserResponseBody,
 	QueryUsersRequestBody,
 	QueryUsersResponseBody,
 };
