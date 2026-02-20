@@ -115,7 +115,10 @@ const List: FC = () => {
     setPageNumber,
     setPageSize,
     setSort: setPaginationSort,
-  } = usePagination();
+  } = usePagination({
+    pageNumber: 1,
+    pageSize: 50,
+  });
 
   const transformedSort = useMemo((): AuditLogSort[] => {
     if (!pageParams.sort || pageParams.sort.length === 0) {
