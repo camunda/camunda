@@ -43,9 +43,7 @@ const CellProperty: React.FC<Props> = ({ item }) => {
           {item.relatedEntityType
             ? spaceAndCapitalize(item.relatedEntityType)
             : "-"}{" "}
-          <CodeSnippet type="inline" hideCopyButton>
-            {item.relatedEntityKey}
-          </CodeSnippet>
+          <CodeSnippet type="inline">{item.relatedEntityKey}</CodeSnippet>
         </OwnerInfo>
       </div>
     );

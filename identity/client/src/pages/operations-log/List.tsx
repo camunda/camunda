@@ -25,6 +25,7 @@ import {
 } from "./components/styled";
 import {
   Button,
+  CodeSnippet,
   Column,
   DatePicker,
   DatePickerInput,
@@ -331,7 +332,9 @@ const List: FC = () => {
                   </OperationLogName>
                 ),
                 entityType: spaceAndCapitalize(log.entityType),
-                reference: log.entityKey,
+                reference: (
+                  <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                ),
                 property: <CellProperty item={log} />,
                 actorId: log.actorId ? (
                   <OperationLogName>
