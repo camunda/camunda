@@ -361,14 +361,14 @@ All 10 phases (0–9) are marked DONE. The following is a review of what was bui
 
 ### Code Quality Issues
 
-| Severity | Location | Issue | Action |
-|----------|----------|-------|--------|
-| Low | `CheckpointBackupConfirmedApplier` | Class not `final` (inconsistent with other appliers) | Add `final` |
-| Low | `CheckpointConfirmBackupProcessor` | Class not `final` (inconsistent with other processors) | Add `final` |
-| Low | `CheckpointCreatedEventApplier` | `metrics` field injected but never used in `apply()` | Remove dead field |
-| Low | `CheckpointBackupDeletedApplier` | `validate()` method is never called (dead code) | Remove or wire into `CheckpointDeleteBackupProcessor` |
-| Low | `BackupMetadataSyncer` / `BackupMetadataReader` | Duplicate `load()`/`loadSlot()` logic and duplicate `ObjectMapper` setup | Extract shared utility |
-| Low | `Context.java` (processing package) | Appears to be dead code — not used by any refactored file | Verify and remove if unused |
+| Severity |                    Location                     |                                  Issue                                   |                        Action                         |
+|----------|-------------------------------------------------|--------------------------------------------------------------------------|-------------------------------------------------------|
+| Low      | `CheckpointBackupConfirmedApplier`              | Class not `final` (inconsistent with other appliers)                     | Add `final`                                           |
+| Low      | `CheckpointConfirmBackupProcessor`              | Class not `final` (inconsistent with other processors)                   | Add `final`                                           |
+| Low      | `CheckpointCreatedEventApplier`                 | `metrics` field injected but never used in `apply()`                     | Remove dead field                                     |
+| Low      | `CheckpointBackupDeletedApplier`                | `validate()` method is never called (dead code)                          | Remove or wire into `CheckpointDeleteBackupProcessor` |
+| Low      | `BackupMetadataSyncer` / `BackupMetadataReader` | Duplicate `load()`/`loadSlot()` logic and duplicate `ObjectMapper` setup | Extract shared utility                                |
+| Low      | `Context.java` (processing package)             | Appears to be dead code — not used by any refactored file                | Verify and remove if unused                           |
 
 ### Missing QA Tests
 
@@ -380,27 +380,18 @@ The following test gaps were identified by reviewing test files against the test
    - Each of the 4 deletion scenarios with controlled state
    - The warning paths (missing successor for start-of-range, missing predecessor for end-of-range, missing both for mid-range)
    - Order-of-operations correctness (range update before checkpoint removal)
-
 2. **`CheckpointDeleteBackupProcessor` — no dedicated unit test.** Tested indirectly through `CheckpointRecordsProcessorTest`. A dedicated test would cover:
    - `deleteFromBackupStore` with mixed IN_PROGRESS / COMPLETED backup copies
    - `deleteFromBackupStore` when `backupStore.list()` fails
    - `deleteFromBackupStore` when `markFailed()` fails for an IN_PROGRESS backup
    - Rejection type and reason string verification (once Bug 2 is fixed)
-
 3. **`BackupServiceImpl.getBackupRangeStatus()` — no unit test.** The test setup passes `null` for `DbBackupRangeState` and `DbCheckpointMetadataState`, so any test calling this method would NPE. Need a test with real or mocked state objects.
-
 4. **Replay of CONFIRMED_BACKUP with range state updates — not tested.** `CheckpointRecordsProcessorTest.shouldReplayConfirmedBackupRecord` only verifies the backup state is updated but does NOT verify that `backupRangeState` is updated during replay. This is a gap — replay correctness of range state is critical.
-
 5. **Sequential DELETE_BACKUP operations — not tested.** No test exercises multiple deletions in sequence (e.g., delete first backup, then next, verifying progressive range shrinkage). This would catch state accumulation bugs.
-
 6. **DELETE_BACKUP idempotency — not tested.** No test verifies that deleting the same checkpoint twice results in the first succeeding and the second being rejected.
-
 7. **CONFIRM_BACKUP creating a disjoint range — not tested.** No test for the scenario where a new backup is NOT contiguous with the latest, resulting in a new independent range.
-
 8. **Backward compatibility — not tested.** No test processes a `CheckpointRecord` serialized without `numberOfPartitions` (default -1). While msgpack handles this by design, an explicit test would serve as a regression guard.
-
 9. **Pre-migration state scenario — not tested.** No test verifies that CONFIRMED_BACKUP works correctly when the CHECKPOINTS and BACKUP_RANGES CFs are empty but `DbCheckpointState` has data from before the migration.
-
 10. **`RestoreManagerTest` — limited coverage.** Only tests failure/validation paths. No happy-path test for successful restore via `restore(Map<Integer, long[]>, ...)`, `restoreRdbms(...)`, or topology file restoration.
 
 #### Integration Tests — Missing
@@ -449,18 +440,14 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 ---
 
-#### Phase 11: Fix Rejection Type on DELETE_BACKUP
+#### Phase 11: Fix Rejection Type on DELETE_BACKUP — DONE ✅
 
 **Goal:** Consistent rejection handling across all checkpoint command processors.
 
-**What to do:**
+**What was done:**
 
-1. In `CheckpointDeleteBackupProcessor.process()`, when the checkpoint is not found, set:
-   - `resultBuilder.withRejectionType(RejectionType.NOT_FOUND)`
-   - `resultBuilder.withRejectionReason("Expected to delete backup for checkpoint " + checkpointId + ", but no such checkpoint exists")`
-2. Add a test in `CheckpointRecordsProcessorTest`: `shouldRejectDeleteBackupWithNotFoundRejectionType`
-
-**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup`
+1. **Updated `CheckpointDeleteBackupProcessor.process()`** — added `RejectionType.NOT_FOUND` and descriptive rejection reason `"Expected to delete backup for checkpoint <id>, but no such checkpoint exists"` to the `RecordMetadata` on the rejection path. Previously the rejection record had no rejection type or reason set.
+2. **Updated `shouldRejectDeleteBackupWhenCheckpointNotFound` test** in `CheckpointRecordsProcessorTest` — added assertions for `RejectionType.NOT_FOUND` and the rejection reason string.
 
 ---
 
@@ -473,25 +460,18 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 1. **Create `CheckpointBackupDeletedApplierTest`** — test all 4 deletion scenarios in isolation, plus the 3 warning/fallback paths (missing successor, missing predecessor, missing both for mid-range). Use a real `ZeebeDb` (in-memory) like `DbCheckpointMetadataStateTest` does.
 
 2. **Create `CheckpointDeleteBackupProcessorTest`** — test `deleteFromBackupStore` with:
+
    - Mixed IN_PROGRESS / COMPLETED copies
    - `backupStore.list()` failure
    - `markFailed()` failure for IN_PROGRESS backup
    - Verify rejection type (after Phase 11)
-
 3. **Add `getBackupRangeStatus()` tests to `BackupServiceImplTest`** — requires wiring real or mocked `DbBackupRangeState` + `DbCheckpointMetadataState` into the test setup. Test scenarios: empty ranges, single range, multiple ranges, range with enriched checkpoint metadata.
-
 4. **Add replay range-state test to `CheckpointRecordsProcessorTest`** — `shouldReplayConfirmedBackupWithRangeUpdate`: replay a CONFIRMED_BACKUP and verify the BACKUP_RANGES CF is updated.
-
 5. **Add sequential deletion test** — `shouldHandleSequentialDeletions`: confirm 3 backups forming range [A,C], delete A, verify range is [B,C], delete C, verify range is [B,B], delete B, verify no ranges.
-
 6. **Add idempotency test** — `shouldRejectSecondDeleteOfSameCheckpoint`: delete checkpoint X (succeeds), delete X again (rejected).
-
 7. **Add disjoint range test** — `shouldStartNewRangeWhenBackupNotContiguous`: confirm backup A, then confirm backup B with `firstLogPosition > A.checkpointPosition + 1`, verify two separate ranges.
-
 8. **Add backward compatibility test** — `shouldHandleCheckpointRecordWithoutNumberOfPartitions`: create and process a CheckpointRecord with default (-1) `numberOfPartitions`, verify state stores -1.
-
 9. **Add pre-migration scenario test** — `shouldHandleConfirmBackupWithEmptyCFs`: set up `DbCheckpointState` with a latest backup but leave CHECKPOINTS and BACKUP_RANGES CFs empty, confirm a new backup, verify a new range is created.
-
 10. **Expand `RestoreManagerTest`** — add at least one happy-path test for `restore(backupId)` and one for `restoreTimeRange()`.
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup,zeebe/restore`
@@ -509,9 +489,7 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
    - Delete the oldest backup via the API
    - Verify range start advances
    - Verify the JSON manifest in the backup store reflects the deletion
-
 2. **Add JSON sync round-trip to retention acceptance tests** — after retention deletes backups, verify the per-partition manifest file in the backup store has the correct checkpoint list and range list (currently only checks that backups are absent, not that manifests are correct).
-
 3. **Add a non-RDBMS restore integration test** — exercise `BackupRangeResolver` + `RestoreManager.restoreTimeRange()` with a real backup store (filesystem is simplest). Take 3 backups, restore using a time range, verify the correct backup IDs are selected.
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C -pl zeebe/qa/integration-tests`
