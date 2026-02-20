@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.usertask;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_ASSIGNEE;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_GROUPS;
 import static io.camunda.zeebe.engine.processing.identity.authorization.property.UserTaskAuthorizationProperties.PROP_CANDIDATE_USERS;
+import static org.assertj.core.api.Assertions.as;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.ConfiguredUser;
@@ -18,6 +19,7 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.UserTaskBuilder;
 import io.camunda.zeebe.protocol.record.Assertions;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -32,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Consumer;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -164,6 +167,38 @@ public class UserTaskClaimAuthorizationTest {
                 .valueFilter(task -> task.getAssignee().equals(username))
                 .exists())
         .isTrue();
+  }
+
+  @Test
+  public void shouldBeUnauthorizedToClaimUserTaskWithClaimUserTaskPermissionForDifferentProcess() {
+    // given
+    final var processInstanceKey = createProcessInstance(process());
+    final var username = createUser().getUsername();
+    authorizationHelper.addPermissionsToUser(
+        username,
+        DEFAULT_USER.getUsername(),
+        AuthorizationResourceType.PROCESS_DEFINITION,
+        PermissionType.CLAIM_USER_TASK,
+        AuthorizationScope.id("otherProcess"));
+
+    // when
+    final var rejection =
+        engine
+            .userTask()
+            .ofInstance(processInstanceKey)
+            .withAssignee(username)
+            .expectRejection()
+            .claim(username);
+
+    // then
+    Assertions.assertThat(rejection)
+        .hasRejectionType(RejectionType.FORBIDDEN)
+        .extracting(Record::getRejectionReason, as(InstanceOfAssertFactories.STRING))
+        .contains(
+            """
+                Insufficient permissions to perform operation 'CLAIM_USER_TASK' on resource 'PROCESS_DEFINITION', \
+                required resource identifiers are one of '[*, %s]'"""
+                .formatted(PROCESS_ID));
   }
 
   @Test
