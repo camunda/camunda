@@ -536,17 +536,16 @@ public final class ResponseMapper {
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
             .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId);
+            .tenantId(tenantId)
+            // defaults to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .businessId(emptyToNull(businessId));
     if (variables != null) {
       response.variables(variables);
     }
     if (tags != null) {
       response.setTags(tags);
     }
-    if (businessId != null) {
-      response.businessId(businessId);
-    }
-
     return response;
   }
 
