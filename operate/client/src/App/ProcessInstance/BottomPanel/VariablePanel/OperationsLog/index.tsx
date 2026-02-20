@@ -264,6 +264,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
           fetchPreviousPage,
           fetchNextPage,
         }}
+        stickyHeader
       />
       {detailsModal.auditLog && (
         <DetailsModal

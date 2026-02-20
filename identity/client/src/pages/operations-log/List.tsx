@@ -25,6 +25,7 @@ import {
 } from "./components/styled";
 import {
   Button,
+  CodeSnippet,
   Column,
   DatePicker,
   DatePickerInput,
@@ -115,7 +116,10 @@ const List: FC = () => {
     setPageNumber,
     setPageSize,
     setSort: setPaginationSort,
-  } = usePagination();
+  } = usePagination({
+    pageNumber: 1,
+    pageSize: 50,
+  });
 
   const transformedSort = useMemo((): AuditLogSort[] => {
     if (!pageParams.sort || pageParams.sort.length === 0) {
@@ -328,7 +332,9 @@ const List: FC = () => {
                   </OperationLogName>
                 ),
                 entityType: spaceAndCapitalize(log.entityType),
-                reference: log.entityKey,
+                reference: (
+                  <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                ),
                 property: <CellProperty item={log} />,
                 actorId: log.actorId ? (
                   <OperationLogName>
@@ -356,6 +362,7 @@ const List: FC = () => {
             loading={loading}
             setSort={handleSort}
             page={{ ...page, ...auditLogs?.page }}
+            pageSizes={[50, 100, 200]}
             setPageNumber={setPageNumber}
             setPageSize={setPageSize}
           />
