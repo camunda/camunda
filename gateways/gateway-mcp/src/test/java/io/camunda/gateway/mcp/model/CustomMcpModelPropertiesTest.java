@@ -14,7 +14,13 @@ import static org.assertj.core.api.Fail.fail;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
+import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
+import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
+import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -46,8 +52,8 @@ public class CustomMcpModelPropertiesTest {
                 "processInstanceKey",
                 "state")),
         Arguments.argumentSet(
-            "McpProcessDefinitionFilter",
-            McpProcessDefinitionFilter.class,
+            "ProcessDefinitionFilter",
+            ProcessDefinitionFilter.class,
             Set.of(
                 "hasStartForm",
                 "isLatestVersion",
@@ -58,8 +64,8 @@ public class CustomMcpModelPropertiesTest {
                 "version",
                 "versionTag")),
         Arguments.argumentSet(
-            "McpProcessInstanceFilter",
-            McpProcessInstanceFilter.class,
+            "ProcessInstanceFilter",
+            ProcessInstanceFilter.class,
             Set.of(
                 "endDate",
                 "hasIncident",
@@ -73,8 +79,8 @@ public class CustomMcpModelPropertiesTest {
                 "tags",
                 "variables")),
         Arguments.argumentSet(
-            "McpVariableFilter",
-            McpVariableFilter.class,
+            "VariableFilter",
+            VariableFilter.class,
             Set.of(
                 "isTruncated", "name", "processInstanceKey", "scopeKey", "value", "variableKey")),
         Arguments.argumentSet(
@@ -82,8 +88,8 @@ public class CustomMcpModelPropertiesTest {
             SearchQueryPageRequest.class,
             Set.of("after", "before", "from", "limit")),
         Arguments.argumentSet(
-            "McpUserTaskFilter",
-            McpUserTaskFilter.class,
+            "UserTaskFilter",
+            UserTaskFilter.class,
             Set.of(
                 "assignee",
                 "completionDate",
@@ -103,12 +109,12 @@ public class CustomMcpModelPropertiesTest {
                 "userTaskKey",
                 "tags")),
         Arguments.argumentSet(
-            "McpUserTaskAssignmentRequest",
-            McpUserTaskAssignmentRequest.class,
+            "UserTaskAssignmentRequest",
+            UserTaskAssignmentRequest.class,
             Set.of("action", "allowOverride")),
         Arguments.argumentSet(
-            "McpProcessInstanceCreationInstruction",
-            McpProcessInstanceCreationInstruction.class,
+            "ProcessInstanceCreationInstruction",
+            ProcessInstanceCreationInstruction.class,
             Set.of(
                 "awaitCompletion",
                 "fetchVariables",
