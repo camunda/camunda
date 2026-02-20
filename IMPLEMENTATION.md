@@ -181,31 +181,11 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 6: Update Restore to Use JSON Files
+#### Phase 6: Update Restore to Use JSON Files — DONE ✅
 
 **Goal:** Rewrite restore to read the per-partition JSON file instead of querying markers + individual backups.
 
-**Tasks:**
-
-1. **Create `BackupMetadataReader`** (new class in `zeebe/restore/`)
-   - Reads per-partition JSON files from the backup store via `syncer.load(partitionId)` (uses the two-file swap reader)
-   - Deserializes into `BackupMetadataManifest`
-2. **Rewrite `BackupRangeResolver.getInformationPerPartition()`** (`zeebe/restore/.../BackupRangeResolver.java:108`)
-   - Replace the current flow (list markers -> query boundaries -> list all backups) with:
-     1. Read JSON file (1 API call per partition)
-     2. Look up ranges directly from `manifest.ranges()` — no computation needed
-     3. For each range, look up boundary checkpoint timestamps from `manifest.checkpoints()` (local lookup)
-     4. Find range covering the requested time interval (local computation)
-     5. Extract all checkpoints within that range from `manifest.checkpoints()` (local filter)
-     6. Find safe start checkpoint using `checkpointPosition <= exportedPosition` (local computation)
-     7. Validate log position chain (local computation)
-   - **Reduction: from O(P * R + P * B) API calls to exactly P API calls**
-3. **Rewrite `RestoreManager.verifyBackupIdsAreContinuous()`** (`zeebe/restore/.../RestoreManager.java:355`)
-   - Use ranges from the JSON file instead of querying markers
-   - Remove the redundant `store.rangeMarkers()` call
-4. **Update `RestoreManager.restoreTimeRange()`** (`zeebe/restore/.../RestoreManager.java:156`)
-   - Use JSON file for backup discovery instead of wildcard `store.list()`
-5. **Update tests** — rewrite `BackupRangeResolverTest`, `RestoreManagerTest`
+**Summary:** Created `BackupMetadataReader` in `zeebe/restore` that loads per-partition manifests from the backup store using the two-slot atomic swap protocol. Rewrote `BackupRangeResolver.getInformationPerPartition()` to load the manifest once per partition and do all range/checkpoint lookups locally. Changed `findBackupRangeCoveringInterval()` to accept a `Function<Long, BackupStatus>` instead of a partition ID, eliminating API calls. Replaced `getAllBackups()` with `getAllBackupsFromManifest()` that filters checkpoints from a local map. Rewrote `RestoreManager.verifyBackupIdsAreContinuous()` and `restoreTimeRange()` to use `BackupMetadataReader` instead of range markers and wildcard store queries. Promoted `zeebe-protocol` dependency from test to compile scope. Updated all tests (`BackupRangeResolverTest`, `RestoreManagerTest`) to set up manifests instead of range markers.
 
 ---
 
@@ -288,25 +268,6 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 10: Migration
-
-**Goal:** Handle upgrades from existing deployments.
-
-**Tasks:**
-
-1. **On-startup migration check** — in `CheckpointRecordsProcessor.init()` or `onRecovered()`:
-   - If `DbCheckpointMetadataState.isEmpty()` and other CFs have data (existing deployment):
-     - Query `store.list(wildcardForPartition)` to get all completed backups
-     - For each, write an entry to the checkpoints CF
-     - Query `store.rangeMarkers(partitionId)` to get existing ranges
-     - Convert markers to range CF entries via `BackupRanges.fromMarkers()`
-     - Sync JSON file
-2. **One-time cost is acceptable** — runs once per partition on upgrade
-3. **Marker cleanup** — after migration, optionally delete old marker files from the store (or leave as orphans)
-4. **Integration test** — start with markers, upgrade, verify CFs populated and JSON synced
-
----
-
 ### Dependency Graph
 
 ```
@@ -331,9 +292,8 @@ Phase 5 (Trigger Sync)
   |        |
   |        +----> Phase 7 (Update Retention) -- depends on Phase 6.5
   +----> Phase 8 (Update Status API)       -- can start after Phase 3
-  +----> Phase 10 (Migration)              -- can start after Phase 5
   |
-  v  (all of 6, 6.5, 7, 8, 10 complete)
+  v  (all of 6, 6.5, 7, 8 complete)
 Phase 9 (Remove Markers)
 ```
 
@@ -341,7 +301,7 @@ Phase 9 (Remove Markers)
 - Phase 0 can be done first, independently — it's a pure infrastructure change to `zeebe/zb-db`
 - Phase 1 is independent of Phase 0 but must precede Phase 2
 - Phases 2 and 3 can be done in parallel after Phase 1 (Phase 3 also needs Phase 0 for deletion logic, but the initial creation/extension logic doesn't require reverse iteration)
-- Phases 6, 6.5, 8, and 10 can all start in parallel after Phase 5, except Phase 7 which depends on Phase 6.5
+- Phases 6, 6.5, and 8 can all start in parallel after Phase 5, except Phase 7 which depends on Phase 6.5
 - Phase 9 is the final cleanup phase — only after everything else is complete and validated
 
 ### Key Risks
