@@ -39,6 +39,7 @@ type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   processInstances: ProcessInstance[];
   totalProcessInstancesCount: number;
+  hasMoreTotalItems?: boolean;
   onVerticalScrollStartReach?: (scrollDown: (offset: number) => void) => void;
   onVerticalScrollEndReach?: () => void;
 };
@@ -48,6 +49,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     state,
     processInstances,
     totalProcessInstancesCount,
+    hasMoreTotalItems,
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
   }) => {
@@ -111,6 +113,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         <PanelHeader
           title="Process Instances"
           count={totalProcessInstancesCount}
+          hasMoreTotalItems={hasMoreTotalItems}
         />
         <Toolbar
           selectedInstancesCount={
