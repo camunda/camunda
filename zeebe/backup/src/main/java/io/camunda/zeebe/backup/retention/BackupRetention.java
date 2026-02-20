@@ -10,13 +10,13 @@ package io.camunda.zeebe.backup.retention;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
-import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.client.api.BackupDeleteRequest;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
+import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
@@ -36,8 +36,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Manages the retention of backups by periodically deleting old backups and their associated range
- * markers based on a configurable retention window.
+ * Manages the retention of backups by periodically identifying old backups and routing their
+ * deletion through the stream processor via {@code DELETE_BACKUP} commands.
  *
  * <h2>Retention Process</h2>
  *
@@ -49,16 +49,10 @@ import org.slf4j.LoggerFactory;
  *       store, sorted by creation time and checkpoint ID.
  *   <li><b>Filter Backups:</b> Identifies backups that fall outside the retention window (i.e.,
  *       backups older than {@code currentTime - retentionWindow}) and marks them for deletion.
- *       Determines the earliest backup checkpoint ID that should be retained.
- *   <li><b>Retrieve Range Markers:</b> Fetches all range markers for the partition and enriches the
- *       retention context. Range markers with checkpoint IDs less than the earliest retained backup
- *       are marked for deletion.
- *   <li><b>Reset Range Start:</b> If a previous start marker exists and its associated end marker
- *       has a lower checkpoint ID, the start marker is deleted and a new one is created pointing to
- *       the earliest retained backup.
- *   <li><b>Delete Markers:</b> Removes all range markers that are no longer needed (those
- *       associated with deleted backups).
- *   <li><b>Delete Backups:</b> Removes all backups identified for deletion from the backup store.
+ *   <li><b>Write Delete Commands:</b> For each deletable backup, sends a {@code DELETE_BACKUP}
+ *       request to the partition leader via the {@link BrokerClient}. The leader's stream processor
+ *       handles the actual deletion: updating the CHECKPOINTS and BACKUP_RANGES column families,
+ *       asynchronously deleting from the backup store, and syncing the JSON metadata file.
  * </ol>
  *
  * <h2>Scheduling</h2>
@@ -74,13 +68,12 @@ import org.slf4j.LoggerFactory;
  *   <li>Next scheduled execution time
  *   <li>Last execution time
  *   <li>Earliest retained backup ID
- *   <li>Number of range markers deleted
  *   <li>Number of backups deleted
  * </ul>
  *
  * @see BackupStore
  * @see Schedule
- * @see BackupRangeMarker
+ * @see BrokerClient
  */
 public class BackupRetention extends Actor {
   private static final Logger LOG = LoggerFactory.getLogger(BackupRetention.class);
@@ -105,6 +98,7 @@ public class BackupRetention extends Actor {
           });
 
   private final BackupStore backupStore;
+  private final BrokerClient brokerClient;
   private final Schedule retentionSchedule;
   private final Duration retentionWindow;
   private final BrokerTopologyManager topologyManager;
@@ -112,12 +106,14 @@ public class BackupRetention extends Actor {
 
   public BackupRetention(
       final BackupStore backupStore,
+      final BrokerClient brokerClient,
       final Schedule retentionSchedule,
       final Duration retentionWindow,
       final BrokerTopologyManager topologyManager,
       final MeterRegistry meterRegistry) {
     metrics = new RetentionMetrics(meterRegistry);
     this.backupStore = backupStore;
+    this.brokerClient = brokerClient;
     this.retentionSchedule = retentionSchedule;
     this.retentionWindow = retentionWindow;
     this.topologyManager = topologyManager;
@@ -169,9 +165,7 @@ public class BackupRetention extends Actor {
                 future ->
                     future
                         .thenApply(this::logContext, this)
-                        .andThen(this::resetRangeStart, this)
-                        .andThen(this::deleteMarkers, this)
-                        .thenApply(this::deleteBackups, this))
+                        .thenApply(this::writeDeleteCommands, this))
             .collect(new ActorFutureCollector<>(this));
 
     partitionFutures.onComplete(
@@ -189,8 +183,6 @@ public class BackupRetention extends Actor {
     LOG.atDebug()
         .addKeyValue("deletableBackups", ctx.deletableBackups)
         .addKeyValue("earliestBackupInNewRange", ctx.earliestBackupInNewRange)
-        .addKeyValue("previousStartMarker", ctx.previousStartMarker)
-        .addKeyValue("deletableRangeMarkers", ctx.deletableRangeMarkers)
         .setMessage("Determined retention context for partition " + ctx.partitionId)
         .log();
     return ctx;
@@ -199,12 +191,7 @@ public class BackupRetention extends Actor {
   private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
     return retrieveBackups(partitionId)
         .thenApply(this::excludeBackupsWithoutTimestamps)
-        .thenApply((statuses) -> processBackups(statuses, partitionId), this)
-        .andThen(
-            (context) ->
-                retrieveRangeMarkers(partitionId)
-                    .thenApply((markers) -> enrichContextWithMarkers(context, markers), this),
-            this);
+        .thenApply((statuses) -> processBackups(statuses, partitionId), this);
   }
 
   private ActorFuture<Collection<BackupStatus>> retrieveBackups(final int partitionId) {
@@ -224,35 +211,6 @@ public class BackupRetention extends Actor {
               }
             });
     return requestFuture;
-  }
-
-  private ActorFuture<Collection<BackupRangeMarker>> retrieveRangeMarkers(final int partitionId) {
-    final ActorFuture<Collection<BackupRangeMarker>> requestFuture = createFuture();
-    backupStore
-        .rangeMarkers(partitionId)
-        .thenApply(markers -> markers.stream().sorted(BackupRanges.MARKER_ORDERING).toList())
-        .whenComplete(requestFuture);
-    return requestFuture;
-  }
-
-  private RetentionContext enrichContextWithMarkers(
-      final RetentionContext retentionContext, final Collection<BackupRangeMarker> markers) {
-    BackupRangeMarker rangeStart = null;
-    final var deletableRangeMarkers = new ArrayList<BackupRangeMarker>();
-
-    for (final BackupRangeMarker marker : markers) {
-      if (marker instanceof BackupRangeMarker.Start
-          && marker.checkpointId() <= retentionContext.earliestBackupInNewRange) {
-        rangeStart = marker;
-      }
-
-      if (marker.checkpointId() < retentionContext.earliestBackupInNewRange) {
-        deletableRangeMarkers.add(marker);
-      } else {
-        break;
-      }
-    }
-    return retentionContext.withRangeMarkerContext(rangeStart, deletableRangeMarkers);
   }
 
   private RetentionContext processBackups(
@@ -314,114 +272,61 @@ public class BackupRetention extends Actor {
     return backupTimestamp(latestCompletedBackup).minusSeconds(retentionWindow.toSeconds());
   }
 
-  private CompletableActorFuture<RetentionContext> resetRangeStart(final RetentionContext context) {
-    final CompletableActorFuture<RetentionContext> future = new CompletableActorFuture<>();
-    if (shouldResetMarker(context)) {
-      final var marker = context.previousStartMarker.get();
-      LOG.debug(
-          "Advancing range start marker for partition {} from {} to {}",
-          context.partitionId,
-          context.previousStartMarker.get(),
-          context.earliestBackupInNewRange);
-      backupStore
-          .storeRangeMarker(
-              context.partitionId, new BackupRangeMarker.Start(context.earliestBackupInNewRange))
-          .thenCompose(ignore -> backupStore.deleteRangeMarker(context.partitionId, marker))
-          .thenAccept(
-              ignore ->
-                  metrics
-                      .forPartition(context.partitionId)
-                      .setEarliestBackupId(context.earliestBackupInNewRange))
-          .thenApply(v -> context)
-          .thenAccept(future::complete)
-          .exceptionally(
-              throwable -> {
-                LOG.debug(
-                    "Failed to reset range start marker for partition {}. Marker: {}, new checkpoint id: {}",
-                    context.partitionId,
-                    marker,
-                    context.earliestBackupInNewRange,
-                    throwable);
-                future.completeExceptionally(throwable);
-                return null;
-              });
-    } else {
-      future.complete(context);
-    }
-    return future;
-  }
-
-  private boolean shouldResetMarker(final RetentionContext context) {
-    return context.previousStartMarker.isPresent()
-        && !context.deletableBackups.isEmpty()
-        && context.previousStartMarker.get().checkpointId() != context.earliestBackupInNewRange;
-  }
-
-  private CompletableActorFuture<RetentionContext> deleteMarkers(final RetentionContext context) {
-    final CompletableActorFuture<RetentionContext> future = new CompletableActorFuture<>();
-    if (context.deletableRangeMarkers.isEmpty() || context.deletableBackups.isEmpty()) {
-      future.complete(context);
-      return future;
-    }
-    LOG.debug(
-        "Deleting range markers {} for partition {}",
-        context.deletableRangeMarkers,
-        context.partitionId);
-
-    final var futures =
-        context.deletableRangeMarkers.stream()
-            .map(marker -> backupStore.deleteRangeMarker(context.partitionId, marker))
-            .toList()
-            .toArray(CompletableFuture[]::new);
-
-    CompletableFuture.allOf(futures)
-        .thenAccept(
-            ignore ->
-                metrics
-                    .forPartition(context.partitionId)
-                    .setRangesDeleted(context.deletableRangeMarkers.size()))
-        .thenApply(v -> context)
-        .thenAccept(future::complete)
-        .exceptionally(
-            throwable -> {
-              LOG.debug(
-                  "Failed to delete range markers for partition {}. Markers: {}",
-                  context.partitionId,
-                  context.deletableRangeMarkers,
-                  throwable);
-              future.completeExceptionally(throwable);
-              return null;
-            });
-    return future;
-  }
-
-  private CompletableActorFuture<Void> deleteBackups(final RetentionContext context) {
+  /**
+   * Sends a {@code DELETE_BACKUP} request to the partition leader for each deletable backup. The
+   * leader's stream processor handles the actual deletion: updating the CHECKPOINTS and
+   * BACKUP_RANGES column families, asynchronously deleting from the backup store, and syncing the
+   * JSON metadata file.
+   *
+   * <p>Multiple backup copies (from different broker nodes) for the same checkpoint ID are handled
+   * by a single {@code DELETE_BACKUP} command — the stream processor's post-commit task deletes all
+   * copies via a wildcard query.
+   */
+  private CompletableActorFuture<Void> writeDeleteCommands(final RetentionContext context) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
     if (context.deletableBackups.isEmpty()) {
       future.complete(null);
       return future;
     }
-    LOG.debug(
-        "Deleting {} backups for partition {}", context.deletableBackups, context.partitionId);
-    final var futures =
-        context.deletableBackups.stream()
-            .map(backupStore::delete)
-            .toList()
-            .toArray(CompletableFuture[]::new);
 
-    CompletableFuture.allOf(futures)
+    // Deduplicate by checkpoint ID — a single DELETE_BACKUP command handles all node copies
+    final var uniqueCheckpointIds =
+        context.deletableBackups.stream()
+            .mapToLong(BackupIdentifier::checkpointId)
+            .distinct()
+            .toArray();
+
+    LOG.debug(
+        "Writing {} DELETE_BACKUP commands for partition {}",
+        uniqueCheckpointIds.length,
+        context.partitionId);
+
+    final var futures = new ArrayList<CompletableFuture<?>>(uniqueCheckpointIds.length);
+    for (final var checkpointId : uniqueCheckpointIds) {
+      final var request = new BackupDeleteRequest();
+      request.setPartitionId(context.partitionId);
+      request.setBackupId(checkpointId);
+      futures.add(brokerClient.sendRequestWithRetry(request));
+    }
+
+    CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
         .thenAccept(
-            ignore ->
+            ignore -> {
+              metrics
+                  .forPartition(context.partitionId)
+                  .setBackupsDeleted(uniqueCheckpointIds.length);
+              if (context.earliestBackupInNewRange > 0) {
                 metrics
                     .forPartition(context.partitionId)
-                    .setBackupsDeleted(context.deletableBackups().size()))
+                    .setEarliestBackupId(context.earliestBackupInNewRange);
+              }
+            })
         .thenAccept(future::complete)
         .exceptionally(
             throwable -> {
               LOG.error(
-                  "Failed to delete backups for partition {}. Backups: {}",
+                  "Failed to write DELETE_BACKUP commands for partition {}",
                   context.partitionId,
-                  context.deletableBackups,
                   throwable);
               future.completeExceptionally(throwable);
               return null;
@@ -445,8 +350,6 @@ public class BackupRetention extends Actor {
   record RetentionContext(
       List<BackupIdentifier> deletableBackups,
       long earliestBackupInNewRange,
-      Optional<BackupRangeMarker> previousStartMarker,
-      List<BackupRangeMarker> deletableRangeMarkers,
       int partitionId,
       Instant windowBoundary) {
 
@@ -456,24 +359,7 @@ public class BackupRetention extends Actor {
         final long earliestBackupInNewRange,
         final Instant windowBoundary) {
       return new RetentionContext(
-          deletableBackups,
-          earliestBackupInNewRange,
-          Optional.empty(),
-          null,
-          partitionId,
-          windowBoundary);
-    }
-
-    RetentionContext withRangeMarkerContext(
-        final BackupRangeMarker previousStartMarker,
-        final List<BackupRangeMarker> deletableRangeMarkers) {
-      return new RetentionContext(
-          deletableBackups,
-          earliestBackupInNewRange,
-          Optional.ofNullable(previousStartMarker),
-          deletableRangeMarkers,
-          partitionId,
-          windowBoundary);
+          deletableBackups, earliestBackupInNewRange, partitionId, windowBoundary);
     }
   }
 }
