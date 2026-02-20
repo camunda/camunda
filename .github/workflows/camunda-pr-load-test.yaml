@@ -69,7 +69,7 @@ jobs:
 
   await-benchmark:
     name: Await Benchmark
-    needs: [sanitize-branch-name, create-benchmark]
+    needs: [sanitize-branch-name, create-benchmark, create-benchmark-rdbms]
     if: >
       contains(fromJSON('["labeled", "synchronize"]'), github.event.action) &&
       (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
