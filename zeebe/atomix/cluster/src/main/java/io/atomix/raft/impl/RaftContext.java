@@ -44,21 +44,21 @@ import io.atomix.raft.partition.RaftPartitionConfig;
 import io.atomix.raft.protocol.AbstractRaftRequest;
 import io.atomix.raft.protocol.AppendRequest;
 import io.atomix.raft.protocol.AppendResponse;
-import io.atomix.raft.protocol.InternalAppendRequest;
-import io.atomix.raft.protocol.ProtocolVersionHandler;
-import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.ConfigureResponse;
 import io.atomix.raft.protocol.ForceConfigureResponse;
 import io.atomix.raft.protocol.InstallResponse;
+import io.atomix.raft.protocol.InternalAppendRequest;
 import io.atomix.raft.protocol.JoinResponse;
 import io.atomix.raft.protocol.LeaveResponse;
 import io.atomix.raft.protocol.PollResponse;
+import io.atomix.raft.protocol.ProtocolVersionHandler;
 import io.atomix.raft.protocol.RaftResponse;
 import io.atomix.raft.protocol.RaftResponse.Builder;
 import io.atomix.raft.protocol.RaftResponse.Status;
 import io.atomix.raft.protocol.RaftServerProtocol;
 import io.atomix.raft.protocol.ReconfigureResponse;
 import io.atomix.raft.protocol.TransferResponse;
+import io.atomix.raft.protocol.VersionedAppendRequest;
 import io.atomix.raft.protocol.VoteResponse;
 import io.atomix.raft.roles.ActiveRole;
 import io.atomix.raft.roles.CandidateRole;
@@ -407,43 +407,39 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
    * append requests are batched together and processed with a single flush for better throughput.
    */
   private void processRequestQueue() {
-    try {
-      final QueuedRequest first = requestQueue.poll();
-      if (first == null) {
-        return;
-      }
+    final QueuedRequest first = requestQueue.poll();
+    if (first == null) {
+      return;
+    }
 
-      if (!isAppendRequest(first.request)) {
-        // Non-append request: process immediately
-        processQueuedRequest(first);
-        if (!requestQueue.isEmpty()) {
-          threadContext.execute(this::processRequestQueue);
-        }
-        return;
-      }
-
-      // First request is an append -- drain consecutive appends from the queue
-      final var appends = new ArrayList<QueuedRequest>(6);
-      appends.add(first);
-      QueuedRequest peeked = requestQueue.peek();
-      while (peeked != null && isAppendRequest(peeked.request)) {
-        appends.add(requestQueue.poll());
-        peeked = requestQueue.peek();
-      }
-      processQueuedAppends(appends);
-
-      // Give priority to a non-append request that may be waiting behind the appends
-      final QueuedRequest next = requestQueue.peek();
-      if (next != null && !isAppendRequest(next.request)) {
-        processQueuedRequest(requestQueue.poll());
-      }
-
-      // Schedule another drain if there are more items in the queue
+    if (!isAppendRequest(first.request)) {
+      // Non-append request: process immediately
+      processQueuedRequest(first);
       if (!requestQueue.isEmpty()) {
         threadContext.execute(this::processRequestQueue);
       }
-    } catch (final Exception e) {
-      LOGGER.debug("Request queue processing error", e);
+      return;
+    }
+
+    // First request is an append -- drain consecutive appends from the queue
+    final var appends = new ArrayList<QueuedRequest>(6);
+    appends.add(first);
+    QueuedRequest peeked = requestQueue.peek();
+    while (peeked != null && isAppendRequest(peeked.request)) {
+      appends.add(requestQueue.poll());
+      peeked = requestQueue.peek();
+    }
+    processQueuedAppends(appends);
+
+    // Give priority to a non-append request that may be waiting behind the appends
+    final QueuedRequest next = requestQueue.peek();
+    if (next != null && !isAppendRequest(next.request)) {
+      processQueuedRequest(requestQueue.poll());
+    }
+
+    // Schedule another drain if there are more items in the queue
+    if (!requestQueue.isEmpty()) {
+      threadContext.execute(this::processRequestQueue);
     }
   }
 
