@@ -78,20 +78,9 @@ const useIncidentProcessInstanceStatisticsByErrorPaginated = <
     placeholderData: (previousData) => previousData,
     maxPages: PAGES_LIMIT,
     initialPageParam: 0,
-    getNextPageParam: (lastPage, allPages) => {
-      const loadedItemsCount = allPages.reduce(
-        (count, page) => count + page.items.length,
-        0,
-      );
-
-      if (
-        lastPage.items.length === 0 ||
-        loadedItemsCount >= allPages[0].page.totalItems
-      ) {
-        return null;
-      }
-
-      return loadedItemsCount;
+    getNextPageParam: (lastPage, _, lastPageParam) => {
+      const nextPage = lastPageParam + PAGE_LIMIT;
+      return nextPage >= lastPage.page.totalItems ? null : nextPage;
     },
     getPreviousPageParam: (_, __, firstPageParam) => {
       const previousPage = firstPageParam - PAGE_LIMIT;
