@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.TenantMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}TENANT t
-    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}TENANT t
+      <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.TenantDbQuery"
@@ -33,10 +36,13 @@
   </select>
 
   <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}TENANT_MEMBER tm
-    JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
-    <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}TENANT_MEMBER tm
+      JOIN ${prefix}TENANT t ON t.TENANT_ID = tm.TENANT_ID
+      <include refid="io.camunda.db.rdbms.sql.TenantMapper.searchMemberFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="searchMembers" parameterType="io.camunda.db.rdbms.read.domain.TenantMemberDbQuery"

@@ -12,9 +12,12 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.AuthorizationDbQuery">
     SELECT COUNT(*) FROM (
-    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME
+    SELECT DISTINCT AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME,
+                    <!-- MSSQL needs a sort column -->
+                    NULL as col
     FROM ${prefix}AUTHORIZATIONS a
     <include refid="io.camunda.db.rdbms.sql.AuthorizationMapper.searchFilter"/>
+    ${count.limit}
     ) t
   </select>
 

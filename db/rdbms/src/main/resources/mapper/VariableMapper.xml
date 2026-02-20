@@ -10,9 +10,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.VariableMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}VARIABLE
-    <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}VARIABLE
+      <include refid="io.camunda.db.rdbms.sql.VariableMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
