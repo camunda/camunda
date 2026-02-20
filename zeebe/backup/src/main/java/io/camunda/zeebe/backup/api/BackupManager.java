@@ -50,6 +50,8 @@ public interface BackupManager {
    * @param checkpointId id of the backup to delete
    * @return future which will be completed after the backup is deleted.
    */
+  ActorFuture<Void> requestBackupDeletion(long checkpointId);
+
   ActorFuture<Void> deleteBackup(long checkpointId);
 
   /** Close Backup manager */

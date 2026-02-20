@@ -327,6 +327,42 @@ final class DbBackupRangeStateTest {
             new BackupRange(1L, 4L), new BackupRange(6L, 10L), new BackupRange(20L, 30L));
   }
 
+  // --- getFirstRange ---
+
+  @Test
+  void shouldReturnEmptyWhenNoRangesForGetFirstRange() {
+    // when/then
+    assertThat(state.getFirstRange()).isEmpty();
+  }
+
+  @Test
+  void shouldReturnFirstRangeWhenSingleRangeExists() {
+    // given
+    state.startNewRange(5L);
+    state.updateRangeEnd(5L, 10L);
+
+    // when
+    final var result = state.getFirstRange();
+
+    // then
+    assertThat(result).isPresent().contains(new BackupRange(5L, 10L));
+  }
+
+  @Test
+  void shouldReturnFirstRangeWhenMultipleRangesExist() {
+    // given
+    state.startNewRange(1L);
+    state.updateRangeEnd(1L, 5L);
+    state.startNewRange(10L);
+    state.updateRangeEnd(10L, 15L);
+
+    // when
+    final var result = state.getFirstRange();
+
+    // then — should return the range with the smallest start key
+    assertThat(result).isPresent().contains(new BackupRange(1L, 5L));
+  }
+
   // --- getAllRanges ---
 
   @Test
