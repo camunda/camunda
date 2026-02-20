@@ -30,6 +30,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -155,8 +156,9 @@ public class DynamicNodeIdScalingIT {
 
       // Start in a separate thread as start() is blocking because node-id-provider cannot acquire a
       // lease until scale api is called.
-      final var thread1 = Thread.ofVirtual().start(secondBroker::start);
-      final var thread2 = Thread.ofVirtual().start(thirdBroker::start);
+      final var newBrokersStarted = new AtomicInteger();
+      startBroker(secondBroker, newBrokersStarted);
+      startBroker(thirdBroker, newBrokersStarted);
 
       // send scale request using ClusterActuator
       final var clusterActuator = ClusterActuator.of(firstBroker);
@@ -196,8 +198,22 @@ public class DynamicNodeIdScalingIT {
                 }
               });
 
-      assertThat(thread1.isAlive()).describedAs("Startup of secondBroker completes").isFalse();
-      assertThat(thread2.isAlive()).describedAs("Startup of thirdBroker completes").isFalse();
+      Awaitility.await("Start up of new brokers completes")
+          .untilAsserted(
+              () ->
+                  assertThat(newBrokersStarted.get())
+                      .describedAs("Two brokers have started")
+                      .isEqualTo(2));
+    }
+
+    private static void startBroker(
+        final TestStandaloneBroker secondBroker, final AtomicInteger newBrokersStarted) {
+      Thread.ofVirtual()
+          .start(
+              () -> {
+                secondBroker.start();
+                newBrokersStarted.getAndIncrement();
+              });
     }
 
     private TestStandaloneBroker getAdditionalBroker(final String initialContactPoint) {
