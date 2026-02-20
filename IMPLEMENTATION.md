@@ -209,41 +209,24 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 ---
 
-#### Phase 6.5: Backup Deletion via Commands
+#### Phase 6.5: Backup Deletion via Commands — DONE ✅
 
 **Goal:** Route all backup deletion (user-initiated and retention) through the stream processor via new `DELETE_BACKUP`/`BACKUP_DELETED` command-event intents. This ensures deletions are replicated to followers, replayed after restart, and have deterministic ordering relative to other stream processor operations.
 
-**Context:** Currently, both user-initiated deletion (`BackupServiceImpl.deleteBackup()`, lines 321-352) and retention (`BackupRetention.deleteBackups()`, lines 398-430) call `backupStore.delete()` directly, completely bypassing the Zeebe log. Deletions are not replicated, not replayed, and have no ordering guarantees.
+**What was done:**
 
-**Tasks:**
+1. **Added `DELETE_BACKUP(5)` and `BACKUP_DELETED(6)` intents to `CheckpointIntent.java`** — updated `isEvent()` and `from(short)` accordingly.
+2. **Created `CheckpointBackupDeletedApplier`** — shared by both the processor (during processing) and the replay path. The `apply()` method: finds the range containing the checkpoint via `DbBackupRangeState`, handles all 5 deletion scenarios (only entry → delete range, start → advance start, end → shrink end via predecessor lookup, middle → split range, not in range → skip), then removes the checkpoint from `DbCheckpointMetadataState`. Also provides a `validate()` method for the processor to check existence before processing.
+3. **Created `CheckpointDeleteBackupProcessor`** — processes `DELETE_BACKUP` commands following the pattern of `CheckpointConfirmBackupProcessor`. Validates checkpoint exists, delegates state mutations to the applier, appends `BACKUP_DELETED` follow-up event, and schedules two post-commit tasks: (a) async backup store deletion (lists all copies via wildcard, marks in-progress as failed, then deletes) and (b) JSON metadata sync via `BackupMetadataSyncer`.
+4. **Wired into `CheckpointRecordsProcessor`** — added `DELETE_BACKUP` dispatch to `process()` and `BACKUP_DELETED` dispatch to `replay()`. State classes instantiated in `init()`.
+5. **Updated `BackupServiceImpl.deleteBackup()`** — replaced direct `backupStore.list()` + `deleteBackupIfExists()` calls with writing a `DELETE_BACKUP` command to the log via `logStreamWriter.tryWrite()`, following the exact pattern of `confirmBackup()`. The old `deleteBackupIfExists()` method is now unused (left for Phase 9 cleanup).
+6. **9 new tests in `CheckpointRecordsProcessorTest`** — covering successful deletion, rejection, range scenarios (start/end/middle deletion, range splitting), replay, post-commit task scheduling (with/without backup store, on rejection).
+7. **Updated `BackupServiceImplTest`** — replaced 4 old tests (that verified direct `backupStore.delete()` calls) with 3 new tests: `shouldWriteDeleteBackupCommandToLog` (verifies log write with correct intent and checkpoint ID), `shouldFailDeleteBackupWhenLogWriteFails` (verifies error propagation), and `shouldNotInteractWithBackupStoreOnDeleteBackup` (verifies no direct store calls).
 
-1. **Add new intents to `CheckpointIntent.java`** (`zeebe/protocol/.../intent/management/CheckpointIntent.java`)
-   - `DELETE_BACKUP(5)` — command intent (add to existing enum, value 5)
-   - `BACKUP_DELETED(6)` — event intent (add to existing enum, value 6)
-   - Update `isEvent()` to return `true` for `BACKUP_DELETED`
-2. **Create `CheckpointDeleteBackupProcessor`** (new class in `zeebe/backup/.../processing/`)
-   - Follows the pattern of `CheckpointConfirmBackupProcessor`
-   - Receives `TypedRecord<CheckpointRecord>` with `DELETE_BACKUP` intent
-   - Processing logic:
-     1. Look up the checkpoint in `DbCheckpointMetadataState` — reject if not found
-     2. Determine which range contains this checkpoint via `DbBackupRangeState.findRangeContaining()`
-     3. Update the range using the scenario-based logic from Phase 3 (advance start / shrink end / split / delete range) — this is where Phase 0's reverse iteration is needed for predecessor lookups
-     4. Remove the checkpoint entry from `DbCheckpointMetadataState`
-     5. Append `BACKUP_DELETED` follow-up event to the result
-     6. Schedule async side-effects: `backupStore.delete(backupId)` and `syncer.sync(partitionId)` — these happen after the transaction commits, similar to how `CheckpointConfirmBackupProcessor` schedules async backup operations
-3. **Create `CheckpointBackupDeletedApplier`** (new class in `zeebe/backup/.../processing/`)
-   - Applied during replay of `BACKUP_DELETED` events
-   - Performs the same state mutations as the processor: remove checkpoint from CF, update ranges
-   - Does NOT re-trigger the async side-effects (backup store deletion and JSON sync) — these are idempotent but should be handled by the sync-on-leader-election mechanism
-4. **Wire into `CheckpointRecordsProcessor`** (`zeebe/backup/.../CheckpointRecordsProcessor.java`)
-   - Add `DELETE_BACKUP` to `process()` dispatch (line 140-155) — route to `CheckpointDeleteBackupProcessor`
-   - Add `BACKUP_DELETED` to `replay()` dispatch (line 121-138) — route to `CheckpointBackupDeletedApplier`
-5. **Update `BackupServiceImpl.deleteBackup()`** (`zeebe/backup/.../BackupServiceImpl.java:321`)
-   - Replace the direct `backupStore.delete()` call with writing a `DELETE_BACKUP` command to the log
-   - Follow the same pattern as `confirmBackup()` (lines 203-237): use `logStreamWriter.tryWrite()` with `RecordMetadata(COMMAND, CHECKPOINT, DELETE_BACKUP)` + `CheckpointRecord` carrying the checkpoint ID
-   - The `CheckpointRecord` for deletion only needs `checkpointId` populated — other fields can use defaults
-6. **Handle in-progress backup deletion** — if the backup being deleted is `IN_PROGRESS`, the processor should first mark it as failed via `backupStore.markFailed()` before proceeding with deletion (preserving current behavior from `BackupServiceImpl.deleteBackupIfExists()`)
-7. **Update tests** — create `CheckpointDeleteBackupProcessorTest`, `CheckpointBackupDeletedApplierTest`, update `BackupServiceImplTest`
+**Key design decisions:**
+- The applier handles range maintenance BEFORE removing the checkpoint from the CF, because `findPredecessorBackupCheckpoint`/`findSuccessorBackupCheckpoint` need the checkpoint to still exist to iterate past it.
+- Async backup store deletion uses the same wildcard pattern as the old code (`Optional.empty()` for nodeId) to handle multiple backup copies across broker nodes.
+- Post-commit tasks are fire-and-forget — if they fail, the sync-on-leader-election mechanism in `onRecovered()` will catch up.
 
 ---
 
