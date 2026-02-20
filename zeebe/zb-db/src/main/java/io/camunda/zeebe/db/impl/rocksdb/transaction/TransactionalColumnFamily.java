@@ -248,6 +248,13 @@ class TransactionalColumnFamily<
   }
 
   @Override
+  public void whileTrueReverse(
+      final KeyType startAtKey, final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    ensureInOpenTransaction(
+        transaction -> forEachInPrefixReverse(startAtKey, new DbNullKey(), visitor));
+  }
+
+  @Override
   public void deleteExisting(final KeyType key) {
     try (final var timer = metrics.measureDeleteLatency()) {
       ensureInOpenTransaction(
@@ -428,6 +435,49 @@ class TransactionalColumnFamily<
               for (iterator.seek(columnFamilyContext.keyWithColumnFamily(seekTarget));
                   iterator.isValid() && shouldVisitNext;
                   iterator.next()) {
+                final byte[] keyBytes = iterator.key();
+                if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
+                  break;
+                }
+
+                shouldVisitNext = visit(keyInstance, valueInstance, visitor, iterator);
+              }
+            }
+          });
+    }
+  }
+
+  /**
+   * Reverse counterpart of {@link #forEachInPrefix(DbKey, DbKey, KeyValuePairVisitor)}. Iterates
+   * backward over key-value pairs within the given prefix.
+   *
+   * @param startAt seek to this key before starting reverse iteration.
+   * @param prefix of all keys that are iterated over.
+   * @param visitor called for all kv pairs where the key matches the given prefix. The visitor can
+   *     indicate whether iteration should continue or not, see {@link KeyValuePairVisitor}.
+   */
+  private void forEachInPrefixReverse(
+      final DbKey startAt,
+      final DbKey prefix,
+      final KeyValuePairVisitor<KeyType, ValueType> visitor) {
+    try (final var timer = metrics.measureIterateLatency()) {
+      Objects.requireNonNull(startAt);
+      Objects.requireNonNull(prefix);
+      Objects.requireNonNull(visitor);
+
+      columnFamilyContext.withPrefixKey(
+          prefix,
+          (prefixKey, prefixLength) -> {
+            try (final RocksIterator iterator =
+                newIterator(context, transactionDb.getPrefixReadOptions())) {
+
+              final var seekTarget = columnFamilyContext.keyWithColumnFamily(startAt);
+
+              boolean shouldVisitNext = true;
+
+              for (iterator.seekForPrev(seekTarget);
+                  iterator.isValid() && shouldVisitNext;
+                  iterator.prev()) {
                 final byte[] keyBytes = iterator.key();
                 if (!startsWith(prefixKey, 0, prefixLength, keyBytes, 0, keyBytes.length)) {
                   break;

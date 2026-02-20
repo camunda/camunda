@@ -151,6 +151,20 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue>
       DbKey keyPrefix, KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
 
   /**
+   * Visits the key-value pairs in reverse order, which are stored in the column family. The visitor
+   * can indicate via the return value, whether the iteration should continue or not. This means if
+   * the visitor returns false the iteration will stop.
+   *
+   * <p>The given {@code startAtKey} indicates where the iteration should start. If the key exists,
+   * the first key-value-pair will contain the equal key as {@code startAtKey}. If the key doesn't
+   * exist it will start at the key just before it.
+   *
+   * @param startAtKey indicates on which key the reverse iteration should start
+   * @param visitor the visitor which visits the key-value pairs
+   */
+  void whileTrueReverse(KeyType startAtKey, KeyValuePairVisitor<KeyType, ValueType> visitor);
+
+  /**
    * Deletes the key-value pair with the given key if it exists in the column family
    *
    * @throws IllegalStateException if the key does not exist
