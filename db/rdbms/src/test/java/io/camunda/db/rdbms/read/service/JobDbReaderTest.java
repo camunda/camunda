@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class JobDbReaderTest {
   private final JobMapper jobMapper = mock(JobMapper.class);
-  private final JobDbReader jobDbReader = new JobDbReader(jobMapper);
+  private final JobDbReader jobDbReader =
+      new JobDbReader(jobMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

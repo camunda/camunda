@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Test;
 class GroupDbReaderTest {
 
   private final GroupMapper mapper = mock(GroupMapper.class);
-  private final GroupDbReader reader = new GroupDbReader(mapper);
+  private final GroupDbReader reader =
+      new GroupDbReader(mapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldImmediatelyReturnEmptyResultWhenMemberIdsFilterIsEmpty() {

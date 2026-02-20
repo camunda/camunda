@@ -25,7 +25,7 @@ import org.junit.jupiter.api.Test;
 class ClusterVariableDbReaderTest {
   private final ClusterVariableMapper clusterVariableMapper = mock(ClusterVariableMapper.class);
   private final ClusterVariableDbReader clusterVariableDbReader =
-      new ClusterVariableDbReader(clusterVariableMapper);
+      new ClusterVariableDbReader(clusterVariableMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

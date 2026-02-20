@@ -22,7 +22,8 @@ import org.junit.jupiter.api.Test;
 class ProcessInstanceStatisticsDbReaderTest {
   private final ProcessInstanceMapper processInstanceMapper = mock(ProcessInstanceMapper.class);
   private final ProcessInstanceStatisticsDbReader reader =
-      new ProcessInstanceStatisticsDbReader(processInstanceMapper);
+      new ProcessInstanceStatisticsDbReader(
+          processInstanceMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnStatistics() {

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DecisionInstanceDbQuery;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
 import io.camunda.db.rdbms.sql.columns.DecisionInstanceSearchColumn;
@@ -36,8 +37,9 @@ public class DecisionInstanceDbReader extends AbstractEntityReader<DecisionInsta
 
   private final DecisionInstanceMapper decisionInstanceMapper;
 
-  public DecisionInstanceDbReader(final DecisionInstanceMapper decisionInstanceMapper) {
-    super(DecisionInstanceSearchColumn.values());
+  public DecisionInstanceDbReader(
+      final DecisionInstanceMapper decisionInstanceMapper, final RdbmsReaderConfig readerConfig) {
+    super(DecisionInstanceSearchColumn.values(), readerConfig);
     this.decisionInstanceMapper = decisionInstanceMapper;
   }
 

@@ -22,7 +22,7 @@ import org.junit.jupiter.api.Test;
 class SequenceFlowDbReaderTest {
   private final SequenceFlowMapper sequenceFlowMapper = mock(SequenceFlowMapper.class);
   private final SequenceFlowDbReader sequenceFlowDbReader =
-      new SequenceFlowDbReader(sequenceFlowMapper);
+      new SequenceFlowDbReader(sequenceFlowMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

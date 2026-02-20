@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.JobDbQuery;
 import io.camunda.db.rdbms.read.mapper.JobEntityMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
@@ -28,8 +29,8 @@ public class JobDbReader extends AbstractEntityReader<JobEntity> implements JobR
 
   private final JobMapper jobMapper;
 
-  public JobDbReader(final JobMapper jobMapper) {
-    super(JobSearchColumn.values());
+  public JobDbReader(final JobMapper jobMapper, final RdbmsReaderConfig readerConfig) {
+    super(JobSearchColumn.values(), readerConfig);
     this.jobMapper = jobMapper;
   }
 

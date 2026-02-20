@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery;
 import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.columns.DecisionRequirementsSearchColumn;
@@ -28,8 +29,10 @@ public class DecisionRequirementsDbReader extends AbstractEntityReader<DecisionR
 
   private final DecisionRequirementsMapper decisionRequirementsMapper;
 
-  public DecisionRequirementsDbReader(final DecisionRequirementsMapper decisionRequirementsMapper) {
-    super(DecisionRequirementsSearchColumn.values());
+  public DecisionRequirementsDbReader(
+      final DecisionRequirementsMapper decisionRequirementsMapper,
+      final RdbmsReaderConfig readerConfig) {
+    super(DecisionRequirementsSearchColumn.values(), readerConfig);
     this.decisionRequirementsMapper = decisionRequirementsMapper;
   }
 

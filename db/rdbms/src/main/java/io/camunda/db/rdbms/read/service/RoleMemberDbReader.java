@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.RoleMemberDbQuery;
 import io.camunda.db.rdbms.sql.RoleMapper;
 import io.camunda.db.rdbms.sql.columns.RoleMemberSearchColumn;
@@ -29,8 +30,8 @@ public class RoleMemberDbReader extends AbstractEntityReader<RoleMemberEntity>
 
   private final RoleMapper roleMapper;
 
-  public RoleMemberDbReader(final RoleMapper roleMapper) {
-    super(RoleMemberSearchColumn.values());
+  public RoleMemberDbReader(final RoleMapper roleMapper, final RdbmsReaderConfig readerConfig) {
+    super(RoleMemberSearchColumn.values(), readerConfig);
     this.roleMapper = roleMapper;
   }
 

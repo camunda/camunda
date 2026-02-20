@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Test;
 class TenantDbReaderTest {
 
   private final TenantMapper mapper = mock(TenantMapper.class);
-  private final TenantDbReader reader = new TenantDbReader(mapper);
+  private final TenantDbReader reader =
+      new TenantDbReader(mapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldImmediatelyReturnEmptyResultWhenMemberIdsFilterIsEmpty() {

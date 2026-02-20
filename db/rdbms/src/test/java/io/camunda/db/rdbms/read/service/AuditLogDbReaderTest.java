@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class AuditLogDbReaderTest {
   private final AuditLogMapper auditLogMapper = mock(AuditLogMapper.class);
-  private final AuditLogDbReader auditLogDbReader = new AuditLogDbReader(auditLogMapper);
+  private final AuditLogDbReader auditLogDbReader =
+      new AuditLogDbReader(auditLogMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

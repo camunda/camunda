@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import static io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry.determineOperator;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
@@ -37,14 +38,17 @@ abstract class AbstractEntityReader<T> {
 
   private static final SearchColumn<?>[] EMPTY_SEARCHABLE_COLUMNS = new SearchColumn[0];
   private final Map<String, SearchColumn<T>> columns;
+  private final RdbmsReaderConfig readerConfig;
 
-  public AbstractEntityReader(final SearchColumn<T>[] searchableColumns) {
+  public AbstractEntityReader(
+      final SearchColumn<T>[] searchableColumns, final RdbmsReaderConfig readerConfig) {
     final var searchColumns =
         Objects.requireNonNullElse(searchableColumns, (SearchColumn<T>[]) EMPTY_SEARCHABLE_COLUMNS);
 
     columns =
         Stream.of(searchColumns)
             .collect(Collectors.toMap(SearchColumn::property, Function.identity()));
+    this.readerConfig = readerConfig;
   }
 
   private SearchColumn<T> getSearchColumn(final String property) {
