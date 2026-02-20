@@ -291,8 +291,8 @@ public class RdbmsConfiguration {
 
   @Bean
   public JobMetricsBatchDbReader jobMetricsBatchReader(
-      final JobMetricsBatchMapper jobMetricsBatchMapper) {
-    return new JobMetricsBatchDbReader(jobMetricsBatchMapper);
+      final JobMetricsBatchMapper jobMetricsBatchMapper, final RdbmsReaderConfig readerConfig) {
+    return new JobMetricsBatchDbReader(jobMetricsBatchMapper, readerConfig);
   }
 
   @Bean
