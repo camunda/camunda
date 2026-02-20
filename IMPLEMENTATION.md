@@ -15,8 +15,8 @@ Backups that are contiguous when previousBackup.checkpointPosition <= thisBackup
 
 **Column Family 1: `CHECKPOINTS`** — full history of all checkpoints (PARTITION_LOCAL)
 
-| Key | Value |
-|-----|-------|
+|          Key           |                                                                                           Value                                                                                            |
+|------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | `DbLong(checkpointId)` | `CheckpointMetadataValue`: checkpointPosition, checkpointTimestamp, checkpointType, firstLogPosition (-1 for markers), numberOfPartitions (-1 for markers), brokerVersion ("" for markers) |
 
 - Written on every `CHECKPOINT:CREATED` event (all types including MARKER)
@@ -25,8 +25,8 @@ Backups that are contiguous when previousBackup.checkpointPosition <= thisBackup
 
 **Column Family 2: `BACKUP_RANGES`** — pre-computed contiguous backup ranges (PARTITION_LOCAL)
 
-| Key | Value |
-|-----|-------|
+|             Key             |           Value           |
+|-----------------------------|---------------------------|
 | `DbLong(startCheckpointId)` | `DbLong(endCheckpointId)` |
 
 - Ranges only track backup-type checkpoints (not MARKERs)
@@ -72,38 +72,33 @@ Implemented in `ede1b8f5d0e` (feat: add reverse iteration support to ColumnFamil
    - `whileEqualPrefixReverse(DbKey keyPrefix, KeyValuePairVisitor)` — iterate backward within a prefix from the last entry
    - `whileEqualPrefixReverse(DbKey keyPrefix, KeyType startAtKey, KeyValuePairVisitor)` — iterate backward within a prefix from a given key
    - `whileTrueReverse(KeyType startAtKey, KeyValuePairVisitor)` — iterate backward across the whole CF (the plan listed this as optional; implemented it since it was trivial and useful)
-
 2. **Implemented `forEachInPrefixReverse()` in `TransactionalColumnFamily.java`** — mirrors `forEachInPrefix()` using `seekForPrev()`/`prev()`. Reuses the existing `visit()` helper and `startsWith()` prefix check.
-
 3. **Added `keyWithColumnFamilyEnd(DbKey)` to `ColumnFamilyContext.java`** — computes a seek target past the last key in a prefix by appending 8 `0xFF` bytes. Used when no explicit `startAtKey` is provided.
-
 4. **`PrefixReadOptions` unchanged** — the existing `setPrefixSameAsStart(true)` works correctly with `seekForPrev()`. No separate `ReversePrefixReadOptions` was needed. Validated by 11 passing tests.
-
 5. **11 unit tests added** across two existing test files:
    - `ColumnFamilyTest.java` (4 tests): reverse with early stop, missing key, full reverse, empty CF
    - `DbCompositeKeyColumnFamilyTest.java` (7 tests): reverse within prefix (full, start-at, missing start-at, early stop, missing prefix, single entry, prefix boundary correctness)
 
 ---
 
-#### Phase 1: Extend CheckpointRecord
+#### Phase 1: Extend CheckpointRecord — DONE ✅
 
 **Goal:** Carry `numberOfPartitions` and `brokerVersion` through the log so the stream processor has all metadata at confirmation time.
-TODO: Check if broker version isn't already available in record metadata. If it is, we should use that. 
 
-**Tasks:**
+**Note on broker version:** `RecordMetadata` already carries `brokerVersion` (the version of the broker writing the record). Since the broker that writes the `CONFIRMED_BACKUP` event is the same broker that took the backup, we use `Record.getBrokerVersion()` from record metadata rather than adding a separate field to `CheckpointRecord`. Later phases that need the broker version (e.g., Phase 2's `CheckpointMetadataValue`) should source it from the record's metadata via `TypedRecord.getBrokerVersion()`.
 
-1. **Add fields to `CheckpointRecord`** (`zeebe/protocol-impl/.../CheckpointRecord.java:16`)
-   - Add `IntProperty numberOfPartitionsProperty`
-   - Add `StringProperty brokerVersionProperty`
-   - Update `CheckpointRecordValue` interface accordingly
+**What was done:**
 
-2. **Populate the new fields in `BackupServiceImpl.confirmBackup()`** (`zeebe/backup/.../BackupServiceImpl.java:203`)
-   - The `CONFIRM_BACKUP` command already has access to `InProgressBackup`, which holds the `BackupDescriptor`
-   - Set `numberOfPartitions` and `brokerVersion` from the descriptor when building the `CheckpointRecord`
-
-3. **Handle backward compatibility**
-   - Default values for the new fields (-1 for numberOfPartitions, "" for brokerVersion) ensure old records deserialize safely
-   - The `CHECKPOINT:CREATED` follow-up record (from `CheckpointCreateProcessor`) does not need these fields — they'll remain defaults for that event
+1. **Added `numberOfPartitions` field to `CheckpointRecord`** (`zeebe/protocol-impl/.../CheckpointRecord.java`)
+   - Added `IntegerProperty numberOfPartitionsProperty` (key: `"numberOfPartitions"`, default: -1)
+   - Updated `super(4)` to `super(5)`, added `declareProperty()` call
+   - Added getter/setter: `getNumberOfPartitions()`/`setNumberOfPartitions()`
+2. **Updated `CheckpointRecordValue` interface** (`zeebe/protocol/.../CheckpointRecordValue.java`)
+   - Added `int getNumberOfPartitions()` with Javadoc
+3. **Populated field in `BackupServiceImpl.confirmBackup()`** (`zeebe/backup/.../BackupServiceImpl.java`)
+   - Set `.setNumberOfPartitions(inProgressBackup.backupDescriptor().numberOfPartitions())`
+4. **Backward compatibility** — Default value (-1 for numberOfPartitions) ensures old records deserialize safely. Msgpack ignores unknown fields in older records. The `ImmutableCheckpointRecordValue` (auto-generated by Immutables annotation processor) picks up the new method automatically.
+5. **Updated golden file** (`CheckpointRecord.golden`) and **JSON serialization tests** (`JsonSerializableToJsonTest.java`) — both test cases updated with the new field.
 
 ---
 
@@ -116,9 +111,9 @@ TODO: Check if broker version isn't already available in record metadata. If it 
 1. **Add `CHECKPOINTS(140, PARTITION_LOCAL)` to `ZbColumnFamilies`** (`zeebe/protocol/.../ZbColumnFamilies.java`)
 
 2. **Create `CheckpointMetadataValue`** (new class in `zeebe/backup/.../processing/state/`)
+
    - Extends `UnpackedObject` implements `DbValue`
    - Fields: `checkpointPosition` (long), `checkpointTimestamp` (long, epoch millis), `checkpointType` (enum ordinal as int), `firstLogPosition` (long, -1 if not set), `numberOfPartitions` (int, -1 if not set), `brokerVersion` (String, "" if not set)
-
 3. **Create `DbCheckpointMetadataState`** (new class in `zeebe/backup/.../processing/state/`)
    - Uses `ColumnFamily<DbLong, CheckpointMetadataValue>` on `CHECKPOINTS`
    - Methods:
@@ -129,15 +124,12 @@ TODO: Check if broker version isn't already available in record metadata. If it 
      - `getAllCheckpoints()` — iterate all entries (for JSON sync)
      - `getCheckpointsInRange(startId, endId)` — prefix/range scan
      - `isEmpty()` — for migration detection
-
 4. **Modify `CheckpointCreatedEventApplier`** (`zeebe/backup/.../CheckpointCreatedEventApplier.java:13`)
    - After existing state update, call `checkpointMetadataState.addCheckpoint(...)` with data from the `CheckpointRecord` and `record.getTimestamp()`
    - This runs for ALL checkpoint types (MARKER, SCHEDULED_BACKUP, MANUAL_BACKUP)
-
 5. **Modify `CheckpointBackupConfirmedApplier`** (`zeebe/backup/.../CheckpointBackupConfirmedApplier.java:13`)
    - After existing state update, call `checkpointMetadataState.enrichWithBackupInfo(...)` with data from the `CheckpointRecord`
    - This only runs for confirmed backups
-
 6. **Wire into `CheckpointRecordsProcessor.init()`** (`zeebe/backup/.../CheckpointRecordsProcessor.java:76`)
    - Instantiate `DbCheckpointMetadataState` from `zeebeDb` + `transactionContext`
    - Pass it to both appliers
@@ -153,6 +145,7 @@ TODO: Check if broker version isn't already available in record metadata. If it 
 1. **Add `BACKUP_RANGES(141, PARTITION_LOCAL)` to `ZbColumnFamilies`**
 
 2. **Create `DbBackupRangeState`** (new class in `zeebe/backup/.../processing/state/`)
+
    - Uses `ColumnFamily<DbLong, DbLong>` on `BACKUP_RANGES` (key = startCheckpointId, value = endCheckpointId)
    - Methods:
      - `startNewRange(checkpointId)` — insert `(checkpointId, checkpointId)`
@@ -163,17 +156,16 @@ TODO: Check if broker version isn't already available in record metadata. If it 
      - `advanceRangeStart(oldStart, newStart, endCheckpointId)` — delete old entry, insert (newStart, endCheckpointId) for retention
      - `shrinkRangeEnd(startCheckpointId, newEndCheckpointId)` — update value to newEndCheckpointId when deleting the last backup in a range
      - `splitRange(oldStart, oldEnd, deletedCheckpointId, predecessorId, successorId)` — delete old entry, insert two sub-ranges: (oldStart, predecessorId) and (successorId, oldEnd)
-
 3. **Range maintenance on backup deletion** — requires Phase 0's reverse iteration support
 
    When a backup is deleted, the range containing it must be updated. The behavior depends on where in the range the deleted checkpoint falls:
 
-   | Scenario | Predecessor needed? | Action |
-   |----------|-------------------|--------|
-   | Only checkpoint in range | No | `deleteRange(start)` |
-   | Start of range (start == deletedId, end != deletedId) | No | Forward-iterate CHECKPOINTS CF to find successor → `advanceRangeStart(oldStart, successor, end)` |
-   | End of range (end == deletedId, start != deletedId) | **Yes** | Reverse-iterate CHECKPOINTS CF via `seekForPrev(deletedId - 1)` to find predecessor → `shrinkRangeEnd(start, predecessor)` |
-   | Middle of range | **Yes** | Forward-iterate to find successor, reverse-iterate to find predecessor → `splitRange(start, end, deletedId, predecessor, successor)` |
+   |                       Scenario                        | Predecessor needed? |                                                                Action                                                                |
+   |-------------------------------------------------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------|
+   | Only checkpoint in range                              | No                  | `deleteRange(start)`                                                                                                                 |
+   | Start of range (start == deletedId, end != deletedId) | No                  | Forward-iterate CHECKPOINTS CF to find successor → `advanceRangeStart(oldStart, successor, end)`                                     |
+   | End of range (end == deletedId, start != deletedId)   | **Yes**             | Reverse-iterate CHECKPOINTS CF via `seekForPrev(deletedId - 1)` to find predecessor → `shrinkRangeEnd(start, predecessor)`           |
+   | Middle of range                                       | **Yes**             | Forward-iterate to find successor, reverse-iterate to find predecessor → `splitRange(start, end, deletedId, predecessor, successor)` |
 
    The predecessor lookup uses `DbCheckpointMetadataState.findPredecessorBackupCheckpoint(checkpointId)`:
    - Seeks backward from `checkpointId - 1` in the CHECKPOINTS CF using `whileEqualPrefixReverse`
@@ -186,10 +178,10 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - Returns the first backup-type checkpoint found, or empty if none exists
 
 4. **Move range logic from `CheckpointConfirmBackupProcessor` into the state layer**
+
    - Currently, the processor calls `backupManager.extendRange()` / `backupManager.startNewRange()` which update marker files asynchronously
    - Replace with: call `dbBackupRangeState.extendRange()` / `dbBackupRangeState.startNewRange()` synchronously within the same transaction as the CONFIRMED_BACKUP event application
    - The contiguity condition remains the same: `firstLogPosition <= latestBackupPosition + 1`
-
 5. **Wire into `CheckpointRecordsProcessor.init()`**
    - Instantiate `DbBackupRangeState`
    - Pass to `CheckpointConfirmBackupProcessor`
@@ -208,17 +200,13 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - `List<CheckpointEntry> checkpoints` — sorted by checkpointId
    - `List<RangeEntry> ranges` — sorted by startCheckpointId
    - Inner records: `CheckpointEntry(long checkpointId, long checkpointPosition, Instant checkpointTimestamp, String checkpointType, long firstLogPosition, int numberOfPartitions, String brokerVersion)`, `RangeEntry(long start, long end)`
-
 2. **Jackson serialization** — use ObjectMapper (already used in existing manifest code in backup stores)
-
 3. **Add to `BackupStore` interface** (`zeebe/backup/.../api/BackupStore.java`)
    - `CompletableFuture<Void> storeBackupMetadata(int partitionId, String slot, byte[] content)` — write to a specific slot ("a" or "b")
    - `CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId, String slot)` — read from a specific slot
    - Paths: `{basePath}/metadata/{partitionId}/backups-a.json` and `{basePath}/metadata/{partitionId}/backups-b.json`
-
 4. **Implement in all 4 store backends** (S3, GCS, Azure, Filesystem)
    - Simple put/get operations — a single object/file write and read per slot
-
 5. **Create `BackupMetadataSyncer`** (new class)
    - Takes `DbCheckpointMetadataState`, `DbBackupRangeState`, and `BackupStore`
    - Maintains a monotonic sequence number (persisted in the JSON content)
@@ -243,12 +231,9 @@ TODO: Check if broker version isn't already available in record metadata. If it 
 
 1. **Sync after backup confirmation** — in `BackupServiceImpl`, after the `CONFIRM_BACKUP` command is written and processed, trigger `syncer.sync(partitionId)` asynchronously
    - This is the primary sync point — happens on every successful backup
-
 2. **Sync on leader election** — in `CheckpointRecordsProcessor.onRecovered()`, trigger a sync
    - Catches up any missed syncs from leader failovers
-
 3. **Sync after backup deletion** — triggered as an async side-effect by `CheckpointDeleteBackupProcessor` after processing each `DELETE_BACKUP` command (covers both retention and user-initiated deletion; see Phase 6.5)
-
 4. **Sync on errors/recovery** — if any sync fails, the next sync opportunity (leader election or next mutation) will re-sync from the authoritative CF state
 
 ---
@@ -262,7 +247,6 @@ TODO: Check if broker version isn't already available in record metadata. If it 
 1. **Create `BackupMetadataReader`** (new class in `zeebe/restore/`)
    - Reads per-partition JSON files from the backup store via `syncer.load(partitionId)` (uses the two-file swap reader)
    - Deserializes into `BackupMetadataManifest`
-
 2. **Rewrite `BackupRangeResolver.getInformationPerPartition()`** (`zeebe/restore/.../BackupRangeResolver.java:108`)
    - Replace the current flow (list markers -> query boundaries -> list all backups) with:
      1. Read JSON file (1 API call per partition)
@@ -273,14 +257,11 @@ TODO: Check if broker version isn't already available in record metadata. If it 
      6. Find safe start checkpoint using `checkpointPosition <= exportedPosition` (local computation)
      7. Validate log position chain (local computation)
    - **Reduction: from O(P * R + P * B) API calls to exactly P API calls**
-
 3. **Rewrite `RestoreManager.verifyBackupIdsAreContinuous()`** (`zeebe/restore/.../RestoreManager.java:355`)
    - Use ranges from the JSON file instead of querying markers
    - Remove the redundant `store.rangeMarkers()` call
-
 4. **Update `RestoreManager.restoreTimeRange()`** (`zeebe/restore/.../RestoreManager.java:156`)
-   - Use JSON file for backup discovery instead of wildcard `store.list()` 
-
+   - Use JSON file for backup discovery instead of wildcard `store.list()`
 5. **Update tests** — rewrite `BackupRangeResolverTest`, `RestoreManagerTest`
 
 ---
@@ -297,7 +278,6 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - `DELETE_BACKUP(5)` — command intent (add to existing enum, value 5)
    - `BACKUP_DELETED(6)` — event intent (add to existing enum, value 6)
    - Update `isEvent()` to return `true` for `BACKUP_DELETED`
-
 2. **Create `CheckpointDeleteBackupProcessor`** (new class in `zeebe/backup/.../processing/`)
    - Follows the pattern of `CheckpointConfirmBackupProcessor`
    - Receives `TypedRecord<CheckpointRecord>` with `DELETE_BACKUP` intent
@@ -308,23 +288,18 @@ TODO: Check if broker version isn't already available in record metadata. If it 
      4. Remove the checkpoint entry from `DbCheckpointMetadataState`
      5. Append `BACKUP_DELETED` follow-up event to the result
      6. Schedule async side-effects: `backupStore.delete(backupId)` and `syncer.sync(partitionId)` — these happen after the transaction commits, similar to how `CheckpointConfirmBackupProcessor` schedules async backup operations
-
 3. **Create `CheckpointBackupDeletedApplier`** (new class in `zeebe/backup/.../processing/`)
    - Applied during replay of `BACKUP_DELETED` events
    - Performs the same state mutations as the processor: remove checkpoint from CF, update ranges
    - Does NOT re-trigger the async side-effects (backup store deletion and JSON sync) — these are idempotent but should be handled by the sync-on-leader-election mechanism
-
 4. **Wire into `CheckpointRecordsProcessor`** (`zeebe/backup/.../CheckpointRecordsProcessor.java`)
    - Add `DELETE_BACKUP` to `process()` dispatch (line 140-155) — route to `CheckpointDeleteBackupProcessor`
    - Add `BACKUP_DELETED` to `replay()` dispatch (line 121-138) — route to `CheckpointBackupDeletedApplier`
-
 5. **Update `BackupServiceImpl.deleteBackup()`** (`zeebe/backup/.../BackupServiceImpl.java:321`)
    - Replace the direct `backupStore.delete()` call with writing a `DELETE_BACKUP` command to the log
    - Follow the same pattern as `confirmBackup()` (lines 203-237): use `logStreamWriter.tryWrite()` with `RecordMetadata(COMMAND, CHECKPOINT, DELETE_BACKUP)` + `CheckpointRecord` carrying the checkpoint ID
    - The `CheckpointRecord` for deletion only needs `checkpointId` populated — other fields can use defaults
-
 6. **Handle in-progress backup deletion** — if the backup being deleted is `IN_PROGRESS`, the processor should first mark it as failed via `backupStore.markFailed()` before proceeding with deletion (preserving current behavior from `BackupServiceImpl.deleteBackupIfExists()`)
-
 7. **Update tests** — create `CheckpointDeleteBackupProcessorTest`, `CheckpointBackupDeletedApplierTest`, update `BackupServiceImplTest`
 
 ---
@@ -340,7 +315,6 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - New approach: retention identifies backups to delete, then writes a `DELETE_BACKUP` command to the log for each
    - The stream processor processes each command: removes the checkpoint entry from CF, updates ranges, triggers async backup store deletion and JSON sync
    - Retention no longer directly calls `backupStore.delete()`, `backupStore.storeRangeMarker()`, or `backupStore.deleteRangeMarker()`
-
 2. **Simplify `BackupRetention` pipeline** (`zeebe/backup/.../retention/BackupRetention.java`)
    - Remove `enrichContextWithMarkers` step entirely
    - Remove `resetRangeStart` step (no more Start markers)
@@ -348,14 +322,11 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - Remove `deleteBackups` step (no more direct store deletion)
    - Pipeline becomes: `retrieveBackups -> processBackups -> writeDeleteCommands`
    - Each `writeDeleteCommands` step writes one `DELETE_BACKUP` command per backup to be deleted
-
 3. **Provide `logStreamWriter` to `BackupRetention`**
    - Retention needs access to the `LogStreamWriter` to write commands
    - Follow the same pattern as `BackupServiceImpl` which already has a `logStreamWriter` reference
    - Wire this in `BackupServiceImpl` or the actor that creates `BackupRetention`
-
 4. **Update `RetentionContext`** — remove marker-related fields (`rangeMarkers`, `deletableMarkers`, etc.)
-
 5. **Update `RetentionTest` and acceptance tests**
 
 ---
@@ -371,7 +342,6 @@ TODO: Check if broker version isn't already available in record metadata. If it 
    - For each range, look up boundary checkpoints from `DbCheckpointMetadataState`
    - Build `BackupRangeStatus` objects from the CF data
    - No more marker-based `BackupRanges.fromMarkers()` computation
-
 2. **Update `BackupApiRequestHandler.handleQueryRangesRequest()`** if needed
 
 ---
@@ -405,11 +375,8 @@ TODO: Check if broker version isn't already available in record metadata. If it 
      - Query `store.rangeMarkers(partitionId)` to get existing ranges
      - Convert markers to range CF entries via `BackupRanges.fromMarkers()`
      - Sync JSON file
-
 2. **One-time cost is acceptable** — runs once per partition on upgrade
-
 3. **Marker cleanup** — after migration, optionally delete old marker files from the store (or leave as orphans)
-
 4. **Integration test** — start with markers, upgrade, verify CFs populated and JSON synced
 
 ---
@@ -458,6 +425,7 @@ Phase 9 (Remove Markers)
 2. **JSON sync atomicity** — **Resolved.** Two-file swap approach ensures at least one valid JSON file always exists. The system writes alternately to `backups-a.json` and `backups-b.json`, each carrying a monotonic sequence number. Readers load both files and pick the one with the higher valid sequence number. If a crash occurs mid-write, the other file remains intact with the last valid state. The sync-on-leader-election mechanism (Phase 5) provides additional protection by re-syncing the JSON from the authoritative CF state on failover.
 
 3. **Predecessor lookup during backup deletion** (Phases 0, 3, 6.5) — Deleting a backup from anywhere except the start of a range requires finding the predecessor checkpoint. This applies to three scenarios:
+
    - **Delete from end of range**: Need predecessor to shrink `rangeEnd`. Requires reverse iteration.
    - **Delete from middle of range**: Need predecessor to determine split boundary. Requires reverse iteration.
    - **Delete the only checkpoint in a range**: No predecessor needed — just delete the range entry.
@@ -468,3 +436,4 @@ Phase 9 (Remove Markers)
 4. **CheckpointRecord wire format change** (Phase 1) — Adding fields to `CheckpointRecord` is backward-compatible (msgpack handles unknown fields), but should be validated with mixed-version cluster tests.
 
 5. **Current deletion bypasses the log entirely** — Both user-initiated deletion (`BackupServiceImpl.deleteBackup()`) and retention (`BackupRetention.deleteBackups()`) currently call `backupStore.delete()` directly, bypassing the Zeebe log and stream processor. This means deletions are not replicated to followers, not replayed after restart, and have no ordering guarantees relative to other stream processor operations. Phase 6.5 addresses this by introducing `DELETE_BACKUP`/`BACKUP_DELETED` command-event intents that route all deletion through the log, bringing it into the same consistency model as backup creation and confirmation.
+

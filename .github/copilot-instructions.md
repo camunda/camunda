@@ -57,11 +57,13 @@ With this refactor, we add: `CHECKPOINT:DELETE_BACKUP --> CHECKPOINT:BACKUP_DELE
 ## Key Files
 
 ### Protocol Layer
+
 - `zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/ZbColumnFamilies.java` — add new CF enum entries (140, 141)
 - `zeebe/protocol/src/main/java/io/camunda/zeebe/protocol/record/intent/management/CheckpointIntent.java` — add DELETE_BACKUP/BACKUP_DELETED intents
 - `zeebe/protocol-impl/src/main/java/io/camunda/zeebe/protocol/impl/record/value/management/CheckpointRecord.java` — extend with numberOfPartitions, brokerVersion fields
 
 ### Stream Processor (Backup Module)
+
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/processing/CheckpointRecordsProcessor.java` — main entry point; routes CHECKPOINT records to sub-processors. Wire new state classes in `init()`, add dispatch for new intents in `process()` and `replay()`
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/processing/CheckpointConfirmBackupProcessor.java` — processes CONFIRM_BACKUP; currently calls backupManager for range markers. Replace with CF-based range updates
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/processing/CheckpointCreatedEventApplier.java` — applies CREATED events to state during replay
@@ -69,22 +71,27 @@ With this refactor, we add: `CHECKPOINT:DELETE_BACKUP --> CHECKPOINT:BACKUP_DELE
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/processing/state/DbCheckpointState.java` — existing checkpoint state (2 entries in DEFAULT CF). Reference for how state classes work
 
 ### Backup Management
+
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/management/BackupServiceImpl.java` — backup confirmation (writes CONFIRM_BACKUP commands to log), deletion (currently direct to store — must change to write DELETE_BACKUP commands), range marker management (to be removed)
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/api/BackupStore.java` — store interface. Add metadata JSON methods, eventually remove marker methods
 
 ### Retention
+
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/retention/BackupRetention.java` — runs as an Actor on a schedule. Currently calls backupStore directly. Must change to write DELETE_BACKUP commands to the log
 
 ### Restore
+
 - `zeebe/restore/src/main/java/io/camunda/zeebe/restore/BackupRangeResolver.java` — resolves backup ranges for restore. Currently makes O(P*R + P*B) API calls via markers. Rewrite to read JSON file (1 call per partition)
 - `zeebe/restore/src/main/java/io/camunda/zeebe/restore/RestoreManager.java` — restore orchestration
 
 ### ColumnFamily Abstraction (zb-db) — Phase 0 done
+
 - `zeebe/zb-db/src/main/java/io/camunda/zeebe/db/ColumnFamily.java` — interface with forward and reverse iteration methods. Reverse: `whileEqualPrefixReverse` (2 overloads), `whileTrueReverse`
 - `zeebe/zb-db/src/main/java/io/camunda/zeebe/db/impl/rocksdb/transaction/TransactionalColumnFamily.java` — implementation. `forEachInPrefixReverse()` mirrors `forEachInPrefix()` using `seekForPrev()`/`prev()`
 - `zeebe/zb-db/src/main/java/io/camunda/zeebe/db/impl/rocksdb/PrefixReadOptions.java` — read options with `setPrefixSameAsStart(true)`. Works correctly for both forward and reverse iteration; no separate variant needed
 
 ### Backup Store Implementations (for JSON metadata methods)
+
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/s3/S3BackupStore.java`
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/gcs/GcsBackupStore.java`
 - `zeebe/backup/src/main/java/io/camunda/zeebe/backup/azure/AzureBackupStore.java`
@@ -164,3 +171,4 @@ Rule of thumb: if two things don't depend on each other, do them at the same tim
 - Integration tests use the `*IT.java` naming convention
 - For backup store tests, each implementation has a testkit — check existing test patterns in the store modules
 - The `CheckpointRecordsProcessor` tests in `zeebe/backup/src/test/` show how to test stream processors
+
