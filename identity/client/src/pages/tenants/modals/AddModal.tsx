@@ -113,6 +113,7 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
                 <IconButton
                   label={t(item)}
                   kind="ghost"
+                  align="left"
                   onClick={() => {
                     onClose?.();
                     void navigate(
