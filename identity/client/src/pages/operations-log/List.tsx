@@ -46,6 +46,7 @@ import useDebounce from "react-debounced";
 import { useForm } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
 import { User } from "@carbon/react/icons";
+import { DateRangeField } from "src/components/form/DateRangeField";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
@@ -108,6 +109,9 @@ const List: FC = () => {
 
   const debounce = useDebounce();
   const [debouncedActor, setDebouncedActor] = useState<string>();
+
+  const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
+    useState<boolean>(false);
 
   const {
     pageParams,
@@ -247,40 +251,24 @@ const List: FC = () => {
                 }}
                 size="sm"
               />
-              <FormLabel>{t("date")}</FormLabel>
-              <DatePickerWrapper>
-                <DatePicker
-                  datePickerType="range"
-                  dateFormat="Y-m-d"
-                  value={[timestampRange.from ?? "", timestampRange.to ?? ""]}
-                  onChange={(dates) => {
-                    const [from, to] = dates;
-                    setValue("timestampRange", {
-                      from: from ? from.toISOString() : undefined,
-                      to: to ? to.toISOString() : undefined,
-                    });
-                  }}
-                >
-                  <DatePickerInput
-                    id="date-picker1"
-                    labelText="From"
-                    placeholder="YYYY-MM-DD"
-                    hideLabel
-                    size="sm"
-                    // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
-                    autoComplete="off"
-                  />
-                  <DatePickerInput
-                    id="date-picker2"
-                    labelText="To"
-                    placeholder="YYYY-MM-DD"
-                    hideLabel
-                    size="sm"
-                    // @ts-expect-error - autoComplete is not in type definition but supported by underlying input
-                    autoComplete="off"
-                  />
-                </DatePicker>
-              </DatePickerWrapper>
+              <DateRangeField
+                isModalOpen={isDateRangeModalOpen}
+                onModalClose={() => setIsDateRangeModalOpen(false)}
+                onClick={() => setIsDateRangeModalOpen(true)}
+                value={{
+                  from: timestampRange.from ?? "",
+                  to: timestampRange.to ?? "",
+                }}
+                onChange={(dates) => {
+                  const [from, to] = dates;
+                  setValue("timestampRange", {
+                    from: from ? from.toISOString() : undefined,
+                    to: to ? to.toISOString() : undefined,
+                  });
+                }}
+                popoverTitle="Filter by timestamp date range"
+                label={t("date")}
+              />
               <CenteredRow>
                 <Button
                   kind="ghost"
