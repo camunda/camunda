@@ -6,7 +6,11 @@
   "dependencies": {
     "@axe-core/playwright": "4.11.1",
     "@bpmn-io/element-template-icon-renderer": "1.0.0",
+<<<<<<< HEAD
     "@camunda/camunda-api-zod-schemas": "0.0.45",
+=======
+    "@camunda/camunda-api-zod-schemas": "0.0.42",
+>>>>>>> c2d873e8 (deps: bump API specs and use 8.9 types)
     "@camunda/camunda-composite-components": "0.21.5",
     "@carbon/elements": "11.84.0",
     "@carbon/react": "1.100.0",

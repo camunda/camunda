@@ -6,6 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+<<<<<<< HEAD
+=======
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
+>>>>>>> c2d873e8 (deps: bump API specs and use 8.9 types)
 import {
   endpoints,
   type ProcessInstance,

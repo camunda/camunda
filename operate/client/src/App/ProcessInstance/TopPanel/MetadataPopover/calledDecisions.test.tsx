@@ -34,7 +34,10 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import type {
   ElementInstance,
   ProcessInstance,
+<<<<<<< HEAD
   Incident,
+=======
+>>>>>>> c2d873e8 (deps: bump API specs and use 8.9 types)
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
