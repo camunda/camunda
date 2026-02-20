@@ -227,6 +227,36 @@ jobs:
           export TAG_REVISION
           echo "tagRevision=${TAG_REVISION}" >> "$GITHUB_OUTPUT"
           popd
+
+      # This step is required to be able to push changes in the next steps,
+      # as the GitHub App token generated in the beginning of the job expires after 1 hour, and the maven release steps can take longer than that.
+      # By regenerating a fresh token after the potentially long-running maven release steps,
+      # we ensure that we have a valid token for pushing changes in the next steps.
+      - name: Regenerate GitHub App token
+        if: ${{ !inputs.dryRun }}
+        id: github-token-fresh
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RELEASE_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RELEASE_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          vault-url: ${{ secrets.VAULT_ADDR }}
+
+      # As the checkout step uses the initial token, we need to override the git auth with the renewed token in order to be able to push changes in the next steps.
+      # checkout step is using extraheader for authentication, so we need to override the extraheader with the renewed token as well.
+      - name: Override git auth with renewed token (extraheader)
+        if: ${{ !inputs.dryRun }}
+        env:
+          FRESH_TOKEN: ${{ steps.github-token-fresh.outputs.token }}
+        run: |
+          echo "::add-mask::$FRESH_TOKEN"
+          AUTH_HEADER=$(printf "x-access-token:%s" "$FRESH_TOKEN" | base64 | tr -d '\n')
+          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $AUTH_HEADER"
+
       - name: Update Optimize parent to development version
         run: |
           # After release process completes, update Optimize parent to nextDevelopmentVersion
