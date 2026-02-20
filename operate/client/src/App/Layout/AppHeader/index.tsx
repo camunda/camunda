@@ -233,9 +233,7 @@ const AppHeader: React.FC = observer(() => {
                                 link: 'header-batch-operations',
                                 currentPage,
                               });
-                              (
-                                document.activeElement as HTMLElement
-                              )?.blur();
+                              (document.activeElement as HTMLElement)?.blur();
                             },
                           },
                         },
@@ -251,9 +249,7 @@ const AppHeader: React.FC = observer(() => {
                                 link: 'header-operations-log',
                                 currentPage,
                               });
-                              (
-                                document.activeElement as HTMLElement
-                              )?.blur();
+                              (document.activeElement as HTMLElement)?.blur();
                             },
                           },
                         },
