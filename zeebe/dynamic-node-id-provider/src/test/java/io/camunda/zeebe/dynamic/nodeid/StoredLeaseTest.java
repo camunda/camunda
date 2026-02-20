@@ -31,6 +31,54 @@ public class StoredLeaseTest {
   }
 
   @Nested
+  class FactoryMethod {
+    @Test
+    void shouldReturnUnusableWhenMetadataIsNotAcquirable() {
+      // given
+      final var metadata = new Metadata(Optional.empty(), Version.of(1), false);
+
+      // when
+      final var stored = StoredLease.of(2, null, metadata, "eTag");
+
+      // then
+      assertThat(stored).isInstanceOf(StoredLease.Unusable.class);
+      assertThat(stored.node().id()).isEqualTo(2);
+      assertThat(stored.version()).isEqualTo(Version.of(1));
+      assertThat(stored.isAcquirable()).isFalse();
+    }
+
+    @Test
+    void shouldReturnUninitializedWhenLeaseIsNullAndMetadataIsAcquirable() {
+      // given
+      final var metadata = new Metadata(Optional.empty(), Version.of(1), true);
+
+      // when
+      final var stored = StoredLease.of(2, null, metadata, "eTag");
+
+      // then
+      assertThat(stored).isInstanceOf(StoredLease.Uninitialized.class);
+      assertThat(stored.node().id()).isEqualTo(2);
+      assertThat(stored.version()).isEqualTo(Version.of(1));
+      assertThat(stored.isAcquirable()).isTrue();
+    }
+
+    @Test
+    void shouldReturnInitializedWhenLeaseIsNotNull() {
+      // given
+      final var lease =
+          new Lease(taskId, expiryFromNow(), nodeInstance, VersionMappings.of(nodeInstance));
+      final var metadata = new Metadata(Optional.of(taskId), nodeInstance.version(), true);
+
+      // when
+      final var stored = StoredLease.of(nodeInstance.id(), lease, metadata, "eTag");
+
+      // then
+      assertThat(stored).isInstanceOf(StoredLease.Initialized.class);
+      assertThat(stored.isAcquirable()).isTrue();
+    }
+  }
+
+  @Nested
   class Uninitialized {
     @Test
     void shouldAlwaysContainNodeId() {
@@ -142,6 +190,51 @@ public class StoredLeaseTest {
                           VersionMappings.of(nodeInstance.nextVersion()),
                           Lease::knownVersionMappings)
                       .returns(expiryFromNow(), Lease::timestamp));
+    }
+  }
+
+  @Nested
+  class Unusable {
+    @Test
+    void shouldAlwaysContainNodeId() {
+      assertThatThrownBy(() -> new StoredLease.Unusable(null, "asdasd"))
+          .hasMessageContaining("node cannot be null");
+    }
+
+    @Test
+    void shouldAlwaysContainETag() {
+      assertThatThrownBy(() -> new StoredLease.Unusable(nodeInstance, ""))
+          .hasMessageContaining("eTag cannot be empty");
+      assertThatThrownBy(() -> new StoredLease.Unusable(nodeInstance, null))
+          .hasMessageContaining("eTag cannot be null");
+    }
+
+    @Test
+    void shouldNotBeAcquirable() {
+      // given
+      final var stored = new StoredLease.Unusable(nodeInstance, "eTagExample");
+
+      // when/then
+      assertThat(stored.isAcquirable()).isFalse();
+      assertThat(stored.acquireInitialLease(taskId, clock, expiryDuration)).isEmpty();
+    }
+
+    @Test
+    void shouldNotBeInitialized() {
+      // given
+      final var stored = new StoredLease.Unusable(nodeInstance, "eTagExample");
+
+      // when/then
+      assertThat(stored.isInitialized()).isFalse();
+    }
+
+    @Test
+    void shouldNotBeValid() {
+      // given
+      final var stored = new StoredLease.Unusable(nodeInstance, "eTagExample");
+
+      // when/then
+      assertThat(stored.isStillValid(clock.millis())).isFalse();
     }
   }
 }
