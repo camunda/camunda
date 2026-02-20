@@ -13,7 +13,7 @@ import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchO
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
 import {Paths} from 'modules/Routes';
-import {SubtileLabel} from './styled';
+import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 
 const TABLE_HEADERS = [
   {key: 'processInstanceKey', header: 'Process instance key', isDisabled: true},
@@ -103,13 +103,7 @@ export const BatchItemsTable: React.FC<Props> = ({
 
   return (
     <div>
-      <SubtileLabel>
-        {totalItems > 0 && (
-          <>
-            {totalItems} {totalItems === 1 ? 'item' : 'items'}
-          </>
-        )}
-      </SubtileLabel>
+      <BasePanelHeader count={totalItems} title="Items" />
       <PaginatedSortableTable
         size="md"
         batchOperationId={batchOperationKey}

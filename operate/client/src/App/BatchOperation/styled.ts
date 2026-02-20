@@ -65,6 +65,12 @@ const Header = styled.div`
   padding-top: var(--cds-spacing-05);
 `;
 
+const HeaderTitleContainer = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+`;
+
 export {
   PageContainer,
   ContentContainer,
@@ -74,4 +80,5 @@ export {
   SubtileLabel,
   ActionsContainer,
   Header,
+  HeaderTitleContainer,
 };
