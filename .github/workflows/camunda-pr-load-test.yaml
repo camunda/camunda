@@ -47,9 +47,7 @@ jobs:
   create-benchmark:
     name: Benchmark
     needs: sanitize-branch-name
-    if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+    if: contains(fromJSON('["labeled", "synchronize"]'), github.event.action) && contains(github.event.pull_request.labels.*.name, 'benchmark')
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
     with:
@@ -57,12 +55,24 @@ jobs:
       ref: ${{ github.event.pull_request.head.ref }}
       scenario: 'max'
 
+  create-benchmark-rdbms:
+    name: Benchmark
+    needs: sanitize-branch-name
+    if: contains(fromJSON('["labeled", "synchronize"]'), github.event.action) && contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms')
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    with:
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      ref: ${{ github.event.pull_request.head.ref }}
+      scenario: 'max'
+      secondary-storage-type: 'postgresql'
+
   await-benchmark:
     name: Await Benchmark
     needs: [sanitize-branch-name, create-benchmark]
     if: >
-      (github.event.action == 'labeled' && github.event.label.name == 'benchmark') ||
-      (github.event.action == 'synchronize' && contains(github.event.pull_request.labels.*.name, 'benchmark'))
+      contains(fromJSON('["labeled", "synchronize"]'), github.event.action) &&
+      (contains(github.event.pull_request.labels.*.name, 'benchmark') || contains(github.event.pull_request.labels.*.name, 'benchmark-rdbms'))
     runs-on: ubuntu-latest
     permissions: {}
     steps:
