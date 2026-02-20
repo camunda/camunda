@@ -15,8 +15,10 @@ import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTota
 import static io.camunda.it.util.TestHelper.waitForDecisionInstanceCount;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.configuration.HistoryDeletion;
@@ -178,6 +180,44 @@ public class DeleteDecisionRequirementsHistoryIT {
     assertDecisionInstancesDeleted(camundaClient, decisionId);
     assertDecisionDefinitionsDeleted(camundaClient, decision.getDecisionRequirementsKey());
     assertDecisionRequirementsDeleted(camundaClient, decision.getDecisionRequirementsKey());
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenDeletingDecisionRequirementsWithHistoryTwice() {
+    // given - a deployed DRG with an evaluated decision instance, deleted with history
+    final var decisionId = Strings.newRandomValidBpmnId();
+    final var dmnModel = getDmnModelInstance(decisionId);
+    final Decision decision = deployDmnModel(camundaClient, dmnModel, decisionId);
+    waitForDecisionsToBeDeployed(
+        camundaClient, decision.getDecisionKey(), decision.getDecisionRequirementsKey(), 1, 1);
+    evaluateDecision(camundaClient, decision.getDecisionKey(), "{}");
+    waitForDecisionInstanceCount(camundaClient, f -> f.decisionDefinitionId(decisionId), 1);
+
+    final DeleteResourceResponse firstResult =
+        camundaClient
+            .newDeleteResourceCommand(decision.getDecisionRequirementsKey())
+            .deleteHistory(true)
+            .send()
+            .join();
+    final var batchOperationKey =
+        firstResult.getCreateBatchOperationResponse().getBatchOperationKey();
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    assertDecisionRequirementsDeleted(camundaClient, decision.getDecisionRequirementsKey());
+
+    // when / then - a second delete with history should return not found
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(
+            () ->
+                camundaClient
+                    .newDeleteResourceCommand(decision.getDecisionRequirementsKey())
+                    .deleteHistory(true)
+                    .send()
+                    .join())
+        .satisfies(
+            exception -> {
+              assertThat(exception.code()).isEqualTo(404);
+              assertThat(exception.details().getDetail()).containsIgnoringCase("NOT_FOUND");
+            });
   }
 
   /** Asserts that all decision instances for a given decision definition ID have been deleted. */

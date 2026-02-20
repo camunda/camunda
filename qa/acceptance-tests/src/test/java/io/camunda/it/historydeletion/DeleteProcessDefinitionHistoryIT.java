@@ -15,8 +15,10 @@ import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTota
 import static io.camunda.it.util.TestHelper.waitForProcessInstances;
 import static io.camunda.it.util.TestHelper.waitForProcesses;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOfType;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.DeleteResourceResponse;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.configuration.HistoryDeletion;
@@ -196,6 +198,50 @@ public class DeleteProcessDefinitionHistoryIT {
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey1);
     assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey2);
     assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
+  }
+
+  @Test
+  void shouldReturnNotFoundWhenDeletingProcessDefinitionWithHistoryTwice() {
+    // given - a deployed process with a completed instance, deleted with history
+    final var processId = Strings.newRandomValidBpmnId();
+    final var process =
+        deployProcessAndWaitForIt(
+            camundaClient,
+            Bpmn.createExecutableProcess(processId).startEvent().endEvent().done(),
+            processId + ".bpmn");
+    final var processDefinitionKey = process.getProcessDefinitionKey();
+    final long piKey = startProcessInstance(camundaClient, processId).getProcessInstanceKey();
+    waitForProcessInstances(
+        camundaClient,
+        f -> f.processDefinitionId(processId).state(ProcessInstanceState.COMPLETED),
+        1);
+
+    final DeleteResourceResponse firstResult =
+        camundaClient
+            .newDeleteResourceCommand(processDefinitionKey)
+            .deleteHistory(true)
+            .send()
+            .join();
+    final var batchOperationKey =
+        firstResult.getCreateBatchOperationResponse().getBatchOperationKey();
+    waitForBatchOperationCompleted(camundaClient, batchOperationKey, 1, 0);
+    assertAllProcessInstanceDependantDataDeleted(camundaClient, piKey);
+    assertProcessDefinitionDeleted(camundaClient, processDefinitionKey);
+
+    // when / then - a second delete with history should return not found
+    assertThatExceptionOfType(ProblemException.class)
+        .isThrownBy(
+            () ->
+                camundaClient
+                    .newDeleteResourceCommand(processDefinitionKey)
+                    .deleteHistory(true)
+                    .send()
+                    .join())
+        .satisfies(
+            exception -> {
+              assertThat(exception.code()).isEqualTo(404);
+              assertThat(exception.details().getDetail()).containsIgnoringCase("NOT_FOUND");
+            });
   }
 
   /** Asserts that a process definition has been deleted from secondary storage. */
