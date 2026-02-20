@@ -731,6 +731,7 @@
               <excludedGroups>rdbms, history</excludedGroups>
               <excludes>
                 <exclude>${identity-packages}</exclude>
+                <exclude>**/*$*.java</exclude>
               </excludes>
               <systemPropertyVariables>
                 <camunda.test.preferred.extension>multi-db</camunda.test.preferred.extension>
