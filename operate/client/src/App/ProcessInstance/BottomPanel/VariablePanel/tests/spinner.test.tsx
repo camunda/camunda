@@ -26,7 +26,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {

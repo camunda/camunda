@@ -7,7 +7,7 @@
  */
 
 import {searchProcessDefinitions} from '../v2/processDefinitions/searchProcessDefinitions';
-import {type QueryProcessDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type QueryProcessDefinitionsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT} from 'modules/constants';
 
 type ProcessVersionDto = {
