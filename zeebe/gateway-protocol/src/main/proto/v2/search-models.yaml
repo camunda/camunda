@@ -119,12 +119,11 @@ components:
           type: boolean
         startCursor:
           description: The cursor value for getting the previous page of results. Use this in the `before` field of an ensuing request.
+          nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/StartCursor'
         endCursor:
           description: The cursor value for getting the next page of results. Use this in the `after` field of an ensuing request.
+          nullable: true
           allOf:
             - $ref: 'cursors.yaml#/components/schemas/EndCursor'
-      example:
-        totalItems: 1
-        hasMoreTotalItems: false
