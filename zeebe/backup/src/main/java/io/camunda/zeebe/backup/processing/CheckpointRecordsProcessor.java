@@ -113,7 +113,7 @@ public final class CheckpointRecordsProcessor
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
-            checkpointMetadataState, backupRangeState, backupManager);
+            checkpointMetadataState, backupRangeState, checkpointState, backupManager);
 
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
@@ -122,7 +122,8 @@ public final class CheckpointRecordsProcessor
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);
     checkpointBackupDeletedApplier =
-        new CheckpointBackupDeletedApplier(checkpointMetadataState, backupRangeState);
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();

@@ -76,4 +76,10 @@ public interface CheckpointState {
 
   /** Returns the first log position of the last checkpoint with a successful backup. */
   long getLatestBackupFirstLogPosition();
+
+  /**
+   * Clears the latest backup info, resetting it to the initial state (no backup). Used when the
+   * latest backup is deleted and there is no predecessor backup.
+   */
+  void clearLatestBackupInfo();
 }
