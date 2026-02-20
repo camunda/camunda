@@ -428,9 +428,9 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
 
     UserTaskProperties:
-      required: 
+      required:
         - candidateGroups
-        - candidateUsers 
+        - candidateUsers
         - changedAttributes
       type: object
       description: Contains properties of a user task.
@@ -671,7 +671,8 @@ components:
           type: string
           nullable: true
         elementId:
-          description: The element ID associated with the job.
+          description: The element ID associated with the job. May be missing on job failure.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ElementId"
         elementInstanceKey:
