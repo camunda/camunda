@@ -20,7 +20,6 @@ import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
 import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Set;
@@ -79,8 +78,8 @@ public class CustomMcpModelPropertiesTest {
                 "tags",
                 "variables")),
         Arguments.argumentSet(
-            "VariableFilter",
-            VariableFilter.class,
+            "McpVariableFilter",
+            McpVariableFilter.class,
             Set.of(
                 "isTruncated", "name", "processInstanceKey", "scopeKey", "value", "variableKey")),
         Arguments.argumentSet(
