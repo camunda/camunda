@@ -7,12 +7,16 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
+import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
+import org.springframework.util.StringUtils;
 
 @Configuration
 public class ConfigurationServiceBuilder {
@@ -34,7 +38,10 @@ public class ConfigurationServiceBuilder {
   @Bean
   @Qualifier("configurationService")
   public static ConfigurationService createConfigurationService(final Environment environment) {
-    return createConfiguration().build();
+    final ConfigurationServiceBuilder builder = createConfiguration();
+    ConfigEnvironment.resolveConfigLocations(environment)
+        .forEach(builder::addConfigurationLocations);
+    return builder.build();
   }
 
   /**
@@ -50,7 +57,11 @@ public class ConfigurationServiceBuilder {
    */
   public static ConfigurationService createConfigurationService(
       final Environment environment, final String... configLocations) {
-    return createConfiguration().loadConfigurationFrom(configLocations).build();
+    final ConfigurationServiceBuilder builder =
+        createConfiguration().loadConfigurationFrom(configLocations);
+    ConfigEnvironment.resolveConfigLocations(environment)
+        .forEach(builder::addConfigurationLocations);
+    return builder.build();
   }
 
   /**
@@ -99,5 +110,58 @@ public class ConfigurationServiceBuilder {
 
   public ConfigurationService build() {
     return new ConfigurationService(configLocations, configurationValidator);
+  }
+
+  private static final class ConfigEnvironment {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ConfigEnvironment.class);
+
+    /**
+     * Resolves config locations from the given Spring Environment based on the properties
+     * spring.config.import and spring.config.location.
+     *
+     * <p>For each location specified in spring.config.import, if spring.config.location is not set,
+     * the location from the import will be added as is. If spring.config.location is set, then for
+     * each location specified in spring.config.location, a location from the import relative to it
+     * will be added. This allows to specify additional config files that are located relative to
+     * the locations specified in spring.config.location.
+     *
+     * @param environment the Spring Environment to read properties from
+     * @return a list of resolved config locations based on the given Spring Environment
+     */
+    static List<String> resolveConfigLocations(final Environment environment) {
+      final List<String> locations = new ArrayList<>();
+
+      final String springConfigImport = environment.getProperty("spring.config.import");
+      final String springConfigLocation = environment.getProperty("spring.config.location");
+
+      if (springConfigImport != null) {
+        LOG.debug(
+            "Resolving config locations from spring.config.import and spring.config.location");
+        LOG.debug("spring.config.import is: {}", springConfigImport);
+        for (String file : StringUtils.commaDelimitedListToStringArray(springConfigImport)) {
+          LOG.debug("Considering config import file: {}", file);
+          if (file.startsWith("optional:")) {
+            file = file.substring("optional:".length());
+          }
+          if (springConfigLocation == null) {
+            LOG.debug("Resolving config import file: {}", file);
+            locations.add(file);
+          } else {
+            // if spring.config.location is set, then for each location, we need to add a file from
+            // the import relative to it
+            for (final String path :
+                StringUtils.commaDelimitedListToStringArray(springConfigLocation)) {
+              // remove trailing slashes to avoid double slashes when
+              final var normalizedPath = path.replaceAll("/+$", "");
+              final String resolvedFile = normalizedPath + "/" + file;
+              LOG.debug("Resolving config import file: {}", resolvedFile);
+              locations.add(resolvedFile);
+            }
+          }
+        }
+      }
+      return locations;
+    }
   }
 }

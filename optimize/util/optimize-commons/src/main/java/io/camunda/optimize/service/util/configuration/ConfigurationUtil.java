@@ -60,6 +60,8 @@ public final class ConfigurationUtil {
    * Checks if the given path to file is a relative to the class path or an absolute and then tries
    * to resolve the corresponding file behind the path to a stream.
    *
+   * <p>If the file cannot be found or read, an empty stream is returned.
+   *
    * <p>Note: Make sure to close the stream after it has been used.
    */
   public static InputStream resolvePathToStream(final String pathToFile) {
@@ -75,9 +77,11 @@ public final class ConfigurationUtil {
       return getStreamOfClasspathFile(pathToFile);
     }
 
-    final String errorMessage =
-        String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
-    throw new OptimizeConfigurationException(errorMessage);
+    // return an empty stream
+    LOGGER.debug(
+        "Could not find or do not have permissions to read file [{}], returning empty stream",
+        pathToFile);
+    return InputStream.nullInputStream();
   }
 
   public static void ensureGreaterThanZero(final int value) {
@@ -97,7 +101,7 @@ public final class ConfigurationUtil {
   public static List<InputStream> getLocationsAsInputStream(final String[] locationsToUse) {
     final List<InputStream> sources = new ArrayList<>();
     for (final String location : locationsToUse) {
-      final InputStream inputStream = wrapInputStream(location);
+      final InputStream inputStream = resolvePathToStream(location);
       if (inputStream != null) {
         sources.add(inputStream);
       }
