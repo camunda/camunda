@@ -11,8 +11,13 @@ import {useProcessInstanceElementSelection} from './useProcessInstanceElementSel
 
 const useHasMultipleInstances = () => {
   const newTokenCountForSelectedNode = useNewTokenCountForSelectedNode();
-  let {selectedInstancesCount} = useProcessInstanceElementSelection();
+  let {selectedInstancesCount, selectedElementInstanceKey} =
+    useProcessInstanceElementSelection();
   selectedInstancesCount ??= 0;
+
+  if (selectedElementInstanceKey !== null) {
+    return false;
+  }
 
   if (selectedInstancesCount === 1) {
     return newTokenCountForSelectedNode >= 1;
