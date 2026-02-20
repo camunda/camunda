@@ -140,14 +140,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
-      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<ProcessDefinitionSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery query) {
     return toProcessDefinitionQuery(
-        new ProcessDefinitionSearchQuery()
-            .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new ProcessDefinitionSearchQuery()
+                .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -187,14 +187,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
-      final io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<ProcessInstanceSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery query) {
     return toProcessInstanceQuery(
-        new ProcessInstanceSearchQuery()
-            .filter(SimpleSearchQueryMapper.toProcessInstanceFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new ProcessInstanceSearchQuery()
+                .filter(SimpleSearchQueryMapper.toProcessInstanceFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -473,14 +473,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<UserTaskSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery query) {
     return toUserTaskQuery(
-        new UserTaskSearchQuery()
-            .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new UserTaskSearchQuery()
+                .filter(SimpleSearchQueryMapper.toUserTaskFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -596,7 +596,7 @@ public final class SearchQueryRequestMapper {
             : new IncidentSearchQuery()
                 .filter(SimpleSearchQueryMapper.toIncidentFilter(query.getFilter()))
                 .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
-                .sort(SimpleSearchQueryMapper.toIncidentSortRequest(query.getSort())));
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(

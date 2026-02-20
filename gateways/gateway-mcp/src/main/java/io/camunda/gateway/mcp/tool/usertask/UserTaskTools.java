@@ -21,17 +21,17 @@ import io.camunda.gateway.mapping.http.RequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
-import io.camunda.gateway.mcp.model.McpUserTaskFilter;
 import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.UserTaskSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.UserTaskVariableSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery;
 import io.camunda.gateway.protocol.model.simple.UserTaskVariableFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.UserTaskServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
 import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
@@ -58,14 +58,9 @@ public class UserTaskTools {
           "Search for user tasks. " + VARIABLE_FILTER_FORMAT_NOTE + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchUserTasks(
-      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final McpUserTaskFilter filter,
-      @McpToolParam(description = SORT_DESCRIPTION, required = false)
-          final List<UserTaskSearchQuerySortRequest> sort,
-      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final SearchQueryPageRequest page) {
+      @McpToolParamsUnwrapped @Valid final UserTaskSearchQuery query) {
     try {
-      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(filter, page, sort);
+      final var userTaskSearchQuery = SearchQueryRequestMapper.toUserTaskQuery(query);
 
       if (userTaskSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(userTaskSearchQuery.getLeft());
@@ -112,7 +107,7 @@ public class UserTaskTools {
               required = false)
           final String assignee,
       @McpToolParam(description = "Assignment options.", required = false)
-          final McpUserTaskAssignmentRequest assignmentOptions) {
+          final UserTaskAssignmentRequest assignmentOptions) {
     try {
       if (assignee == null || assignee.isBlank()) {
         return performUnassignment(userTaskKey);
