@@ -79,12 +79,8 @@ const ModificationDropdown: React.FC<Props> = observer(
     const isElementInstanceResolved = resolvedElementInstance !== null;
 
     let selectedElementRunningInstancesCount = totalRunningInstancesCount;
-    if (isElementInstanceResolved) {
-      if (isSelectedInstanceMultiInstanceBody) {
-        selectedElementRunningInstancesCount = totalRunningInstancesVisible;
-      } else {
-        selectedElementRunningInstancesCount = 1;
-      }
+    if (isElementInstanceResolved && !isSelectedInstanceMultiInstanceBody) {
+      selectedElementRunningInstancesCount = 1;
     }
 
     const resolvedElementInstanceKey =
