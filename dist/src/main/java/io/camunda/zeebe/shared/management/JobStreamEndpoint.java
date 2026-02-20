@@ -9,6 +9,7 @@ package io.camunda.zeebe.shared.management;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.transport.stream.api.ClientStream;
 import io.camunda.zeebe.transport.stream.api.RemoteStreamInfo;
 import io.camunda.zeebe.util.buffer.BufferUtil;
@@ -127,7 +128,8 @@ public final class JobStreamEndpoint {
         BufferUtil.bufferAsString(properties.worker()),
         Duration.ofMillis(properties.timeout()),
         properties.fetchVariables().stream().map(BufferUtil::bufferAsString).toList(),
-        properties.tenantIds());
+        properties.tenantIds(),
+        properties.tenantFilter());
   }
 
   /** View model for the combined list of all remote and client job streams. */
@@ -152,7 +154,8 @@ public final class JobStreamEndpoint {
       String worker,
       Duration timeout,
       Collection<String> fetchVariables,
-      Collection<String> tenantIds) {}
+      Collection<String> tenantIds,
+      TenantFilter tenantFilter) {}
 
   /** View model for a remote job stream ID */
   public record RemoteStreamId(UUID id, String receiver) {}
