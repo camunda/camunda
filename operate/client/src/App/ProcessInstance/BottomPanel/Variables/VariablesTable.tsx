@@ -72,7 +72,7 @@ const VariablesTable: React.FC<Props> = ({
                 id={variableKey}
                 variableName={name}
                 variableValue={value}
-                isPreview={isTruncated}
+                isPreview={isTruncated ?? undefined}
               />
             ) : (
               <VariableValue $hasBackdrop={true}>
