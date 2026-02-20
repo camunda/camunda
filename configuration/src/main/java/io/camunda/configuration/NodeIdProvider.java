@@ -104,6 +104,12 @@ public class NodeIdProvider {
     private Duration readinessCheckTimeout = Duration.ofMinutes(2);
 
     /**
+     * If a lease has been expired for longer than this threshold, treat it as if the previous node
+     * gracefully shut down.
+     */
+    private Duration expiredLeaseThreshold = Duration.ofMinutes(2);
+
+    /**
      * Name of the bucket where the leases will be stored. The bucket must be already created. The
      * bucket must not be shared with other zeebe clusters. bucketName must not be empty.
      */
@@ -246,6 +252,15 @@ public class NodeIdProvider {
     public void setReadinessCheckTimeout(final Duration readinessCheckTimeout) {
       this.readinessCheckTimeout =
           Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
+    }
+
+    public Duration getExpiredLeaseThreshold() {
+      return expiredLeaseThreshold;
+    }
+
+    public void setExpiredLeaseThreshold(final Duration expiredLeaseThreshold) {
+      this.expiredLeaseThreshold =
+          Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     }
   }
 
