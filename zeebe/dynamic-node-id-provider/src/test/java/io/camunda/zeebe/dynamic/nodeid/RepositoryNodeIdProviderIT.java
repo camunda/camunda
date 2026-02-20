@@ -371,6 +371,26 @@ class RepositoryNodeIdProviderIT {
   }
 
   @Test
+  void shouldNotThrowNullPointerExceptionWhenClosingDuringRenewal() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // when - close the provider while it's actively renewing
+    // The renewal task runs every leaseDuration/3, so we close immediately and let
+    // the scheduled renewal task potentially race with the close operation
+    assertThatNoException().isThrownBy(nodeIdProvider::close);
+
+    // then - verify no NPE was thrown and the provider is properly closed
+    // Additional verification: try to initialize a new provider to ensure the lease was released
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+    assertThat(nodeIdProvider.getCurrentLease()).isNotNull();
+  }
+
+  @Test
   public void shouldReturnTrueWhenPreviousNodeGracefullyShutdown() {
     // given
     clusterSize = 3;

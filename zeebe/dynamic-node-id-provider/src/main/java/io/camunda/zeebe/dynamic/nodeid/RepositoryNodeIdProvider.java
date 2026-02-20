@@ -181,16 +181,17 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   }
 
   private void renew() {
-    if (currentLease == null) {
+    final var lease = currentLease;
+    if (lease == null) {
       LOG.warn(
           "No current lease found, skipping renew. The process is shutting down already {}",
           shutdownInitiated.get());
+      return;
     }
     try {
-      final var newLease =
-          currentLease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
+      final var newLease = lease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
       LOG.trace("Renewing lease with {}", newLease);
-      currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
+      currentLease = nodeIdRepository.acquire(newLease, lease.eTag());
     } catch (final Exception e) {
       LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
       currentLease = null;
