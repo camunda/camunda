@@ -11,6 +11,8 @@ import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.CheckpointListener;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -79,6 +81,13 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
+    final var checkpointMetadataState =
+        new DbCheckpointMetadataState(
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
+    final var backupRangeState =
+        new DbBackupRangeState(
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
+
     if (scalingInProgressSupplier == null) {
       throw new IllegalStateException("Scaling in progress supplier is not initialized.");
     }
@@ -90,16 +99,21 @@ public final class CheckpointRecordsProcessor
         new CheckpointCreateProcessor(
             checkpointState,
             backupManager,
+            checkpointMetadataState,
             checkpointListeners,
             scalingInProgressSupplier,
             partitionCountSupplier,
             metrics);
 
     checkpointConfirmBackupProcessor =
-        new CheckpointConfirmBackupProcessor(checkpointState, backupManager);
+        new CheckpointConfirmBackupProcessor(
+            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
     checkpointCreatedEventApplier =
-        new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
-    checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
+        new CheckpointCreatedEventApplier(
+            checkpointState, checkpointMetadataState, checkpointListeners);
+    checkpointBackupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -130,7 +144,9 @@ public final class CheckpointRecordsProcessor
               (CheckpointRecord) record.getValue(), record.getTimestamp());
       case CONFIRMED_BACKUP ->
           checkpointBackupConfirmedApplier.apply(
-              (CheckpointRecord) record.getValue(), record.getTimestamp());
+              (CheckpointRecord) record.getValue(),
+              record.getTimestamp(),
+              record.getBrokerVersion());
       default -> {
         // Don't apply intents CREATE and IGNORED
       }
