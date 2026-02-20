@@ -9,20 +9,16 @@ package io.camunda.gateway.mcp.tool.incident;
 
 import static io.camunda.gateway.mcp.mapper.CallToolResultMapper.mapErrorToResult;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.INCIDENT_KEY_POSITIVE_MESSAGE;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpIncidentFilter;
-import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
 import io.camunda.gateway.protocol.model.JobActivationResult;
-import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.IncidentSearchQuery;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -34,8 +30,8 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -62,14 +58,9 @@ public class IncidentTools {
       description = "Search for incidents. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchIncidents(
-      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final McpIncidentFilter filter,
-      @McpToolParam(description = SORT_DESCRIPTION, required = false)
-          final List<IncidentSearchQuerySortRequest> sort,
-      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final SearchQueryPageRequest page) {
+      @McpToolParamsUnwrapped @Valid final IncidentSearchQuery query) {
     try {
-      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(filter, page, sort);
+      final var incidentSearchQuery = SearchQueryRequestMapper.toIncidentQuery(query);
 
       if (incidentSearchQuery.isLeft()) {
         return CallToolResultMapper.mapProblemToResult(incidentSearchQuery.getLeft());

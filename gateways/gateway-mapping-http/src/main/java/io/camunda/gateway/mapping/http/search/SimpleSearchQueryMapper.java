@@ -23,9 +23,12 @@ import io.camunda.gateway.protocol.model.BasicStringFilter;
 import io.camunda.gateway.protocol.model.BasicStringFilterProperty;
 import io.camunda.gateway.protocol.model.CursorBackwardPagination;
 import io.camunda.gateway.protocol.model.CursorForwardPagination;
+import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.IncidentSearchQuerySortRequest.FieldEnum;
 import io.camunda.gateway.protocol.model.LimitPagination;
 import io.camunda.gateway.protocol.model.OffsetPagination;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
+import io.camunda.gateway.protocol.model.SortOrderEnum;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.gateway.protocol.model.simple.IncidentFilter;
@@ -34,6 +37,7 @@ import io.camunda.gateway.protocol.model.simple.SimpleDateTimeFilterProperty;
 import io.camunda.service.exception.ServiceError;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
+import io.camunda.util.EnumUtil;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -142,6 +146,19 @@ public class SimpleSearchQueryMapper {
           .ifPresent(filterModel::jobKey);
     }
     return filterModel;
+  }
+
+  public static List<IncidentSearchQuerySortRequest> toIncidentSortRequest(
+      final List<io.camunda.gateway.protocol.model.simple.IncidentSearchQuerySortRequest> sort) {
+    return sort == null
+        ? List.of()
+        : sort.stream()
+            .map(
+                s ->
+                    new IncidentSearchQuerySortRequest()
+                        .order(EnumUtil.convert(s.getOrder(), SortOrderEnum.class))
+                        .field(EnumUtil.convert(s.getField(), FieldEnum.class)))
+            .toList();
   }
 
   public static io.camunda.gateway.protocol.model.ProcessInstanceFilter toProcessInstanceFilter(

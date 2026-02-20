@@ -12,6 +12,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Fail.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
+import io.camunda.gateway.protocol.model.simple.IncidentFilter;
 import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
 import java.util.Collection;
 import java.util.Map;
@@ -20,7 +22,6 @@ import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
 
 /**
  * Verifies that custom MCP model classes only expose their intended properties in the generated
@@ -34,8 +35,8 @@ public class CustomMcpModelPropertiesTest {
   static Stream<Arguments> modelsWithExpectedFields() {
     return Stream.of(
         Arguments.argumentSet(
-            "McpIncidentFilter",
-            McpIncidentFilter.class,
+            "IncidentFilter",
+            IncidentFilter.class,
             Set.of(
                 "creationTime",
                 "elementId",
@@ -142,7 +143,7 @@ public class CustomMcpModelPropertiesTest {
   @SuppressWarnings("unchecked")
   private Collection<String> getProperties(final Class<?> schemaClass) {
     try {
-      final var schema = JsonSchemaGenerator.generateFromClass(schemaClass);
+      final var schema = new CamundaJsonSchemaGenerator().generateFromType(schemaClass);
       final Map<String, Object> map = MAPPER.readValue(schema, Map.class);
       assertThat(map)
           .withFailMessage("Generated schema doesn't contain properties.")
