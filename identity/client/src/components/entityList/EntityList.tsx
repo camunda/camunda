@@ -210,26 +210,28 @@ const EntityList = <D extends EntityData>({
       {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
         <StyledTableContainer {...tableContainerProps}>
           <>
-            <TableToolbar {...getToolbarProps()}>
-              <TableToolbarContent>
-                {searchKey && (
-                  <SearchBar
-                    searchKey={searchKey}
-                    searchPlaceholder={searchPlaceholder}
-                    onSearch={setSearch}
-                  />
-                )}
-                {addEntityLabel && (
-                  <Button
-                    renderIcon={Add}
-                    onClick={onAddEntity}
-                    disabled={addEntityDisabled}
-                  >
-                    {addEntityLabel}
-                  </Button>
-                )}
-              </TableToolbarContent>
-            </TableToolbar>
+            {(searchKey || addEntityLabel) && (
+              <TableToolbar {...getToolbarProps()}>
+                <TableToolbarContent>
+                  {searchKey && (
+                    <SearchBar
+                      searchKey={searchKey}
+                      searchPlaceholder={searchPlaceholder}
+                      onSearch={setSearch}
+                    />
+                  )}
+                  {addEntityLabel && (
+                    <Button
+                      renderIcon={Add}
+                      onClick={onAddEntity}
+                      disabled={addEntityDisabled}
+                    >
+                      {addEntityLabel}
+                    </Button>
+                  )}
+                </TableToolbarContent>
+              </TableToolbar>
+            )}
             {loading && (
               <DataTableSkeleton
                 columnCount={headers.length}
