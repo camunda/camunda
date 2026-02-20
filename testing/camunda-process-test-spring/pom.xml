@@ -207,7 +207,7 @@
             <dependency>org.awaitility:awaitility</dependency>
             <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
             <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
-            <dependency>io.camunda:camunda-process-test-dsl</dependency>
+            <dependency>io.camunda:camunda-process-test-json-test-cases</dependency>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>
