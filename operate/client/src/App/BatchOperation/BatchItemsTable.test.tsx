@@ -116,7 +116,7 @@ describe('<BatchItemsTable />', () => {
       screen.queryAllByTestId('data-table-skeleton'),
     );
 
-    expect(screen.getByText('3 items')).toBeInTheDocument();
+    expect(screen.getByText('Items - 3 results')).toBeInTheDocument();
     expect(
       screen.getByRole('link', {
         name: /view process instance 2251799813685250/i,
