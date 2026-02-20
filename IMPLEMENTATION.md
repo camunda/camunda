@@ -102,124 +102,60 @@ Implemented in `ede1b8f5d0e` (feat: add reverse iteration support to ColumnFamil
 
 ---
 
-#### Phase 2: Checkpoints Column Family
+#### Phase 2: Checkpoints Column Family — DONE ✅
+
+Implemented together with Phase 3 in `a31efed3898` (feat: add CHECKPOINTS and BACKUP_RANGES column families).
 
 **Goal:** Store every checkpoint event in a dedicated column family with full metadata.
 
-**Tasks:**
+**What was done:**
 
-1. **Add `CHECKPOINTS(140, PARTITION_LOCAL)` to `ZbColumnFamilies`** (`zeebe/protocol/.../ZbColumnFamilies.java`)
-
-2. **Create `CheckpointMetadataValue`** (new class in `zeebe/backup/.../processing/state/`)
-
-   - Extends `UnpackedObject` implements `DbValue`
-   - Fields: `checkpointPosition` (long), `checkpointTimestamp` (long, epoch millis), `checkpointType` (enum ordinal as int), `firstLogPosition` (long, -1 if not set), `numberOfPartitions` (int, -1 if not set), `brokerVersion` (String, "" if not set)
-3. **Create `DbCheckpointMetadataState`** (new class in `zeebe/backup/.../processing/state/`)
-   - Uses `ColumnFamily<DbLong, CheckpointMetadataValue>` on `CHECKPOINTS`
-   - Methods:
-     - `addCheckpoint(checkpointId, position, timestamp, type)` — inserts entry for CREATED events
-     - `enrichWithBackupInfo(checkpointId, firstLogPosition, numberOfPartitions, brokerVersion)` — updates entry on CONFIRMED_BACKUP
-     - `removeCheckpoint(checkpointId)` — deletes entry
-     - `getCheckpoint(checkpointId)` — point lookup
-     - `getAllCheckpoints()` — iterate all entries (for JSON sync)
-     - `getCheckpointsInRange(startId, endId)` — prefix/range scan
-     - `isEmpty()` — for migration detection
-4. **Modify `CheckpointCreatedEventApplier`** (`zeebe/backup/.../CheckpointCreatedEventApplier.java:13`)
-   - After existing state update, call `checkpointMetadataState.addCheckpoint(...)` with data from the `CheckpointRecord` and `record.getTimestamp()`
-   - This runs for ALL checkpoint types (MARKER, SCHEDULED_BACKUP, MANUAL_BACKUP)
-5. **Modify `CheckpointBackupConfirmedApplier`** (`zeebe/backup/.../CheckpointBackupConfirmedApplier.java:13`)
-   - After existing state update, call `checkpointMetadataState.enrichWithBackupInfo(...)` with data from the `CheckpointRecord`
-   - This only runs for confirmed backups
-6. **Wire into `CheckpointRecordsProcessor.init()`** (`zeebe/backup/.../CheckpointRecordsProcessor.java:76`)
-   - Instantiate `DbCheckpointMetadataState` from `zeebeDb` + `transactionContext`
-   - Pass it to both appliers
+1. **Added `CHECKPOINTS(140, PARTITION_LOCAL)` to `ZbColumnFamilies`**
+2. **Created `CheckpointMetadataValue`** — `UnpackedObject implements DbValue` with 6 properties (checkpointPosition, checkpointTimestamp, checkpointType as int, firstLogPosition, numberOfPartitions, brokerVersion as StringProperty)
+3. **Created `DbCheckpointMetadataState`** — CRUD + `findPredecessorBackupCheckpoint` (reverse iteration) + `findSuccessorBackupCheckpoint` (forward iteration) + `getAllCheckpoints()` returning `List<CheckpointEntry>` record snapshots + `isEmpty()`. Note: `getCheckpointsInRange()` was dropped — not needed since `getAllCheckpoints()` suffices for JSON sync and range lookups use the BACKUP_RANGES CF.
+4. **Modified `CheckpointCreatedEventApplier`** — writes to CHECKPOINTS CF on every CREATED event (all checkpoint types)
+5. **Modified `CheckpointBackupConfirmedApplier`** — calls `enrichWithBackupInfo()` on CONFIRMED_BACKUP. Broker version sourced from `record.getBrokerVersion()` (record metadata), not CheckpointRecord.
+6. **Wired in `CheckpointRecordsProcessor.init()`** — instantiates state, passes to appliers
+7. **19 unit tests** in `DbCheckpointMetadataStateTest`
 
 ---
 
-#### Phase 3: Backup Ranges Column Family
+#### Phase 3: Backup Ranges Column Family — DONE ✅
+
+Implemented together with Phase 2 in `a31efed3898`.
 
 **Goal:** Maintain pre-computed contiguous ranges that can be queried without scanning all checkpoints.
 
-**Tasks:**
+**What was done:**
 
-1. **Add `BACKUP_RANGES(141, PARTITION_LOCAL)` to `ZbColumnFamilies`**
-
-2. **Create `DbBackupRangeState`** (new class in `zeebe/backup/.../processing/state/`)
-
-   - Uses `ColumnFamily<DbLong, DbLong>` on `BACKUP_RANGES` (key = startCheckpointId, value = endCheckpointId)
-   - Methods:
-     - `startNewRange(checkpointId)` — insert `(checkpointId, checkpointId)`
-     - `extendRange(startCheckpointId, newEndCheckpointId)` — update value to newEndCheckpointId
-     - `findRangeContaining(checkpointId)` — iterate ranges to find the one where `start <= checkpointId <= end`
-     - `getAllRanges()` — iterate all entries (for JSON sync and API)
-     - `deleteRange(startCheckpointId)` — remove an entry
-     - `advanceRangeStart(oldStart, newStart, endCheckpointId)` — delete old entry, insert (newStart, endCheckpointId) for retention
-     - `shrinkRangeEnd(startCheckpointId, newEndCheckpointId)` — update value to newEndCheckpointId when deleting the last backup in a range
-     - `splitRange(oldStart, oldEnd, deletedCheckpointId, predecessorId, successorId)` — delete old entry, insert two sub-ranges: (oldStart, predecessorId) and (successorId, oldEnd)
-3. **Range maintenance on backup deletion** — requires Phase 0's reverse iteration support
-
-   When a backup is deleted, the range containing it must be updated. The behavior depends on where in the range the deleted checkpoint falls:
-
-   |                       Scenario                        | Predecessor needed? |                                                                Action                                                                |
-   |-------------------------------------------------------|---------------------|--------------------------------------------------------------------------------------------------------------------------------------|
-   | Only checkpoint in range                              | No                  | `deleteRange(start)`                                                                                                                 |
-   | Start of range (start == deletedId, end != deletedId) | No                  | Forward-iterate CHECKPOINTS CF to find successor → `advanceRangeStart(oldStart, successor, end)`                                     |
-   | End of range (end == deletedId, start != deletedId)   | **Yes**             | Reverse-iterate CHECKPOINTS CF via `seekForPrev(deletedId - 1)` to find predecessor → `shrinkRangeEnd(start, predecessor)`           |
-   | Middle of range                                       | **Yes**             | Forward-iterate to find successor, reverse-iterate to find predecessor → `splitRange(start, end, deletedId, predecessor, successor)` |
-
-   The predecessor lookup uses `DbCheckpointMetadataState.findPredecessorBackupCheckpoint(checkpointId)`:
-   - Seeks backward from `checkpointId - 1` in the CHECKPOINTS CF using `whileEqualPrefixReverse`
-   - Skips MARKER-type checkpoints (only backup-type checkpoints form ranges)
-   - Returns the first backup-type checkpoint found, or empty if none exists
-
-   The successor lookup uses the existing forward iteration:
-   - Seeks forward from `checkpointId + 1` in the CHECKPOINTS CF using `whileEqualPrefix`
-   - Skips MARKER-type checkpoints
-   - Returns the first backup-type checkpoint found, or empty if none exists
-
-4. **Move range logic from `CheckpointConfirmBackupProcessor` into the state layer**
-
-   - Currently, the processor calls `backupManager.extendRange()` / `backupManager.startNewRange()` which update marker files asynchronously
-   - Replace with: call `dbBackupRangeState.extendRange()` / `dbBackupRangeState.startNewRange()` synchronously within the same transaction as the CONFIRMED_BACKUP event application
-   - The contiguity condition remains the same: `firstLogPosition <= latestBackupPosition + 1`
-5. **Wire into `CheckpointRecordsProcessor.init()`**
-   - Instantiate `DbBackupRangeState`
-   - Pass to `CheckpointConfirmBackupProcessor`
+1. **Added `BACKUP_RANGES(141, PARTITION_LOCAL)` to `ZbColumnFamilies`**
+2. **Created `DbBackupRangeState`** — all methods as planned. Deviation: `splitRange` takes 4 params `(oldStart, oldEnd, predecessorId, successorId)` instead of 5 — `deletedCheckpointId` is not needed since the caller already determined predecessor and successor.
+3. **Range maintenance on backup deletion** — implemented as described. Uses `whileTrueReverse` for predecessor lookups in `findRangeContaining()` and `findPredecessorBackupCheckpoint()`.
+4. **Moved range logic into the applier** — range creation/extension logic lives in `CheckpointBackupConfirmedApplier`, not the processor. This ensures both processing and replay use the same code path, avoiding duplication. The applier checks contiguity (`firstLogPosition <= latestBackupCheckpointPosition + 1`) and calls `extendRange()` or `startNewRange()` accordingly.
+5. **Wired in `CheckpointRecordsProcessor.init()`**
+6. **22 unit tests** in `DbBackupRangeStateTest`, updated `CheckpointRecordsProcessorTest`
 
 ---
 
-#### Phase 4: JSON Sync Infrastructure
+#### Phase 4: JSON Sync Infrastructure — DONE ✅
+
+Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for backup ranges).
 
 **Goal:** Define serialization format and BackupStore integration for syncing the per-partition JSON file.
 
-**Tasks:**
+**What was done:**
 
-1. **Define `BackupMetadataManifest` model** (new record in `zeebe/backup/.../common/`)
-   - `int partitionId`
-   - `Instant lastUpdated`
-   - `List<CheckpointEntry> checkpoints` — sorted by checkpointId
-   - `List<RangeEntry> ranges` — sorted by startCheckpointId
-   - Inner records: `CheckpointEntry(long checkpointId, long checkpointPosition, Instant checkpointTimestamp, String checkpointType, long firstLogPosition, int numberOfPartitions, String brokerVersion)`, `RangeEntry(long start, long end)`
-2. **Jackson serialization** — use ObjectMapper (already used in existing manifest code in backup stores)
-3. **Add to `BackupStore` interface** (`zeebe/backup/.../api/BackupStore.java`)
-   - `CompletableFuture<Void> storeBackupMetadata(int partitionId, String slot, byte[] content)` — write to a specific slot ("a" or "b")
-   - `CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId, String slot)` — read from a specific slot
-   - Paths: `{basePath}/metadata/{partitionId}/backups-a.json` and `{basePath}/metadata/{partitionId}/backups-b.json`
-4. **Implement in all 4 store backends** (S3, GCS, Azure, Filesystem)
-   - Simple put/get operations — a single object/file write and read per slot
-5. **Create `BackupMetadataSyncer`** (new class)
-   - Takes `DbCheckpointMetadataState`, `DbBackupRangeState`, and `BackupStore`
-   - Maintains a monotonic sequence number (persisted in the JSON content)
-   - `sync(partitionId)`:
-     1. Reads both CFs, serializes to JSON with the next sequence number
-     2. Determines which slot to write to (alternates: if last write was "a", write to "b" and vice versa; tracks via internal state)
-     3. Writes to the target slot
-   - `load(partitionId)`:
-     1. Reads both `backups-a.json` and `backups-b.json`
-     2. Parses both, picks the one with the higher valid sequence number
-     3. If one file is missing or corrupt, uses the other
-     4. If both are missing, returns empty (fresh deployment or pre-migration)
-   - Handles errors with logging + retry on next sync opportunity
+1. **Created `BackupMetadataManifest`** record in `zeebe/backup/.../common/` — with `partitionId`, `sequenceNumber` (monotonic counter for two-file swap), `lastUpdated` (Instant), `checkpoints` (List<CheckpointEntry>), `ranges` (List<RangeEntry>). Uses `@JsonCreator`/`@JsonProperty` annotations. Inner records: `CheckpointEntry` (7 fields) and `RangeEntry` (start, end).
+2. **Added Jackson time dependencies** to `zeebe/backup/pom.xml` — `jackson-datatype-jdk8` and `jackson-datatype-jsr310`
+3. **Added to `BackupStore` interface** — `storeBackupMetadata(int partitionId, String slot, byte[] content)` and `loadBackupMetadata(int partitionId, String slot)` returning `CompletableFuture<Optional<byte[]>>`
+4. **Implemented in all 4 store backends:**
+   - S3: `putObject`/`getObject` at `{basePath}/metadata/{partitionId}/backups-{slot}.json`
+   - GCS: `client.create`/`client.get` at `{basePath}metadata/{partitionId}/backups-{slot}.json`
+   - Azure: `BlobClient.upload`/`downloadContent` at `metadata/{partitionId}/backups-{slot}.json`
+   - Filesystem: `Files.write`/`readAllBytes` with `FileUtil.flushDirectory()` for durability
+5. **Created `BackupMetadataSyncer`** — two-slot atomic swap writer/reader. Alternates between slots "a"/"b", maintains monotonic sequence number, rolls back on failure. `sync()` reads both CFs and writes JSON; `load()` reads both slots and picks higher valid sequence number. Handles missing/corrupt slots gracefully.
+6. **Created `StoringBackupMetadata` testkit interface** — 6 test cases (store/load both slots, empty when missing, overwrite, partition isolation, slot isolation). Added to `BackupStoreTestKit` extends list.
+7. **Created `BackupMetadataSyncerTest`** — 12 unit tests covering slot alternation, sequence numbers, serialization, failure rollback, retry semantics, load from various slot combinations, corrupt data handling, sequence continuation after load.
 
 ---
 
