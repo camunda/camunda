@@ -10,7 +10,7 @@ import {
   endpoints,
   type CreateModificationBatchOperationRequestBody,
   type CreateModificationBatchOperationResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {requestWithThrow} from 'modules/request';
 
 const modifyProcessInstancesBatchOperation = async (

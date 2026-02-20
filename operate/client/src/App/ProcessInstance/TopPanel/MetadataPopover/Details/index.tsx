@@ -17,7 +17,7 @@ import {SummaryDataKey, SummaryDataValue, SummaryText} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';

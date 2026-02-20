@@ -7,7 +7,7 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   GetIncidentProcessInstanceStatisticsByErrorResponseBody,
   GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,

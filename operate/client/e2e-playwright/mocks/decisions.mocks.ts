@@ -12,7 +12,7 @@ import {
   type QueryBatchOperationsResponseBody,
   type QueryDecisionDefinitionsResponseBody,
   type QueryDecisionInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function mockResponses({
   batchOperations,

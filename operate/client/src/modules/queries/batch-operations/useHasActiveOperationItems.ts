@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {skipToken, useQuery} from '@tanstack/react-query';
 import {queryBatchOperationItems} from 'modules/api/v2/batchOperations/queryBatchOperationItems';
 import {queryKeys} from 'modules/queries/queryKeys';

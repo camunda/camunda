@@ -34,7 +34,7 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 

@@ -10,7 +10,7 @@ import {mockPutRequest} from 'modules/mocks/api/mockRequest';
 import {
   endpoints,
   type ElementInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockUpdateElementInstanceVariables = (
   elementInstanceKey: ElementInstance['elementInstanceKey'],

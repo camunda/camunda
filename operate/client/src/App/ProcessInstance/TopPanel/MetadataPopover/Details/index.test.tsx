@@ -25,7 +25,7 @@ import type {
   ElementInstance,
   UserTask,
   MessageSubscription,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';

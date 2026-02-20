@@ -10,7 +10,7 @@ import {Stack} from '@carbon/react';
 import {Link} from 'modules/components/Link';
 import {Paths} from 'modules/Routes';
 import {Header} from '../Header';
-import type {Incident} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Incident} from '@camunda/camunda-api-zod-schemas/8.9';
 import {SummaryDataKey, SummaryDataValue} from '../styled';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';

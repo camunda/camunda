@@ -14,7 +14,7 @@ import type {
   MessageSubscription,
   DecisionDefinition,
   DecisionInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type UserTaskSubset = Pick<
   UserTask,

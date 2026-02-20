@@ -18,7 +18,7 @@ import {
   type Incident,
   type ProcessInstance,
   type QueryIncidentsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {InfiniteData, UseInfiniteQueryResult} from '@tanstack/react-query';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {modificationsStore} from 'modules/stores/modifications';
