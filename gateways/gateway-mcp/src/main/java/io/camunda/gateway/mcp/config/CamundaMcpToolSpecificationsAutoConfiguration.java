@@ -32,7 +32,7 @@ public class CamundaMcpToolSpecificationsAutoConfiguration {
   @Bean
   @ConditionalOnMissingBean
   public CamundaJsonSchemaGenerator mcpGatewayJsonSchemaGenerator() {
-    return new CamundaJsonSchemaGenerator();
+    return new CamundaJsonSchemaGenerator(McpObjectMapperUtilities.getObjectMapper());
   }
 
   @Bean

@@ -26,20 +26,6 @@ import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
 import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
-import io.camunda.gateway.mcp.model.McpIncidentFilter;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
-import io.camunda.gateway.mcp.model.McpProcessInstanceCreationInstruction;
-import io.camunda.gateway.mcp.model.McpProcessInstanceFilter;
-import io.camunda.gateway.mcp.model.McpUserTaskAssignmentRequest;
-import io.camunda.gateway.mcp.model.McpUserTaskFilter;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
-import io.camunda.gateway.protocol.model.simple.IncidentFilter;
-import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceCreationInstruction;
-import io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter;
-import io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest;
-import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
-import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
@@ -90,8 +76,6 @@ public class CamundaJsonSchemaGenerator {
           subtypeSchemaCustomizer) {
     this.objectMapper = objectMapper;
 
-    registerMixins(objectMapper);
-
     final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
         typeSchemaCustomizer.apply(createSchemaGeneratorConfig(objectMapper));
     typeSchemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
@@ -101,17 +85,6 @@ public class CamundaJsonSchemaGenerator {
             .apply(schemaGeneratorConfigBuilder.without(Option.SCHEMA_VERSION_INDICATOR))
             .build();
     subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
-  }
-
-  private void registerMixins(final ObjectMapper objectMapper) {
-    objectMapper.addMixIn(IncidentFilter.class, McpIncidentFilter.class);
-    objectMapper.addMixIn(ProcessDefinitionFilter.class, McpProcessDefinitionFilter.class);
-    objectMapper.addMixIn(
-        ProcessInstanceCreationInstruction.class, McpProcessInstanceCreationInstruction.class);
-    objectMapper.addMixIn(ProcessInstanceFilter.class, McpProcessInstanceFilter.class);
-    objectMapper.addMixIn(UserTaskAssignmentRequest.class, McpUserTaskAssignmentRequest.class);
-    objectMapper.addMixIn(UserTaskFilter.class, McpUserTaskFilter.class);
-    objectMapper.addMixIn(VariableFilter.class, McpVariableFilter.class);
   }
 
   private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig(
