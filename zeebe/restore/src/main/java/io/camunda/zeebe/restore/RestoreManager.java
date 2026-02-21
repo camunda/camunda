@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -72,7 +71,6 @@ public class RestoreManager implements CloseableSilently {
   private final BackupRangeResolver rangeResolver;
   private final BackupMetadataReader metadataReader;
   private final MeterRegistry meterRegistry;
-  private final CheckpointIdGenerator checkpointIdGenerator;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
 
@@ -89,8 +87,6 @@ public class RestoreManager implements CloseableSilently {
       final BackupStore backupStore,
       @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
-    checkpointIdGenerator =
-        new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
     rangeResolver = new BackupRangeResolver(backupStore);
@@ -132,8 +128,7 @@ public class RestoreManager implements CloseableSilently {
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
     final var restoreInfos =
         rangeResolver
-            .getRestoreInfoForAllPartitions(
-                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
+            .getRestoreInfoForAllPartitions(from, to, partitionCount, exportedPositions, executor)
             .join();
 
     LOG.info(

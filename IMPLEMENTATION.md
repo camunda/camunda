@@ -545,3 +545,67 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore` — 54 tests pass.
 
+---
+
+#### Phase 16: Simplify BackupRangeResolver — DONE ✅
+
+**Goal:** Eliminate unnecessary type conversions in `BackupRangeResolver`. The manifest already provides all data as simple records (`CheckpointEntry`, `RangeEntry`), but the current code converts them to heavy domain types (`BackupStatus`, `BackupDescriptor`, `BackupRange`, `Interval`, `Tuple`) only to extract the same scalar values back out. This adds ~300 lines of indirection with no value.
+
+**Problems being fixed:**
+
+1. **Gratuitous `BackupStatus` conversion** — `toBackupStatus()` creates fake `BackupIdentifierImpl` (sentinel node ID 0), `BackupDescriptorImpl` (synthetic snapshot IDs), `BackupStatusImpl`. The consumer only reads `checkpointId`, `checkpointPosition`, `firstLogPosition`, `checkpointTimestamp` — all already on `CheckpointEntry`.
+2. **`BackupRange` / `Interval` / `Tuple` machinery** — `getInformationPerPartition` converts `RangeEntry` → `BackupRange.Complete` → `Interval<BackupStatus>` → `Tuple<Complete, Interval<BackupStatus>>`, then maps to time intervals. ~120 lines for what a 15-line method on `RangeEntry` + a timestamp map can do.
+3. **`Interval.smallestCover()` overkill** — general-purpose interval arithmetic for a simple need: "include checkpoints from `from` onwards, stop after covering `to`".
+4. **`CheckpointIdGenerator` parameter** — passed through `getRestoreInfoForAllPartitions` solely for one error message. Not needed for logic.
+5. **Duplicate validation** — `validateRangeCoverage` checks `firstCheckpointId > safeStart` twice (lines 575 and 581-582).
+6. **11 unnecessary imports** — `BackupDescriptor`, `BackupRange`, `BackupRange.Complete`, `BackupStatus`, `BackupStatusCode`, `BackupDescriptorImpl`, `BackupIdentifierImpl`, `BackupStatusImpl`, `CheckpointIdGenerator`, `Interval`, `Tuple`.
+
+**Changes:**
+
+1. **`BackupRangeResolver.java`** — rewrite (~653 → ~350 lines):
+
+   - **Delete `toBackupStatus()`** — no more conversion from `CheckpointEntry` to `BackupStatus`.
+   - **Delete `findBackupRangeCoveringInterval()`** — replace with private `findCoveringRange(List<RangeEntry>, Map<Long, Instant>, Instant, Instant)` that returns `Optional<RangeEntry>`. Logic: iterate ranges in reverse, look up start/end timestamps from the map, check containment. ~15 lines. Containment rule: `effectiveFrom = from != null ? from : to`, `effectiveTo = to != null ? to : from`, then `!startTime.isAfter(effectiveFrom) && !endTime.isBefore(effectiveTo)`. Both-null case returns first (latest) range.
+   - **Delete `getAllBackupsFromManifest()`** — replace with private `selectCheckpoints(List<CheckpointEntry>, Instant, Instant)`. Logic: filter out entries before `from`, then include entries up to and including the first one whose timestamp >= `to`. A simple loop, ~15 lines. No `Interval.smallestCover()`.
+   - **Rename `getInformationPerPartition()` → private `resolvePartition()`**:
+     1. Load manifest via `loadManifest(partition)` (new helper, throws if missing)
+     2. Build `Map<Long, Instant>` timestamp lookup from manifest checkpoints
+     3. `findCoveringRange()` to get the `RangeEntry`
+     4. Get all backup-type checkpoints in range, sorted by ID
+     5. Apply `selectCheckpoints()` with `from`/`to` bounds
+     6. `findSafeStartCheckpoint()` on the selected checkpoints
+     7. Filter to checkpoints >= safe start
+     8. Return `PartitionRestoreInfo`
+   - **Move `computeGlobalCheckpointId()` into private `computeGlobalResult()`** — called from `getRestoreInfoForAllPartitions().thenApply()`.
+   - **Change `PartitionRestoreInfo` record fields**: `BackupRange backupRange` → `RangeEntry range`, `List<BackupStatus> backupStatuses` → `List<CheckpointEntry> checkpoints`.
+   - **Simplify `PartitionRestoreInfo.validate()`**: no more sealed-type switch on `BackupRange` subtypes (range is always a `RangeEntry`). Chain overlap check uses `curr.firstLogPosition() > prev.checkpointPosition() + 1` directly. Fix duplicate `firstCheckpointId > safeStart` check.
+   - **Change `findSafeStartCheckpoint()` signature**: `Collection<BackupStatus>` → `List<CheckpointEntry>`. Filter by `e.checkpointPosition() <= exportedPosition`, return max checkpoint ID.
+   - **Remove `CheckpointIdGenerator` parameter** from `getRestoreInfoForAllPartitions()`.
+   - **`resolvePointInTime()` stays unchanged** — it's already clean.
+   - **Remove 11 imports**: `BackupDescriptor`, `BackupRange`, `BackupRange.Complete`, `BackupStatus`, `BackupStatusCode`, `BackupDescriptorImpl`, `BackupIdentifierImpl`, `BackupStatusImpl`, `CheckpointIdGenerator`, `Interval`, `Tuple`.
+   - **Also remove**: `CheckpointType` (only used in `toBackupStatus`), `OptionalLong` (same), `SequencedCollection` (use `List.reversed()`).
+
+2. **`BackupRangeResolverTest.java`**:
+
+   - **`FindSafeStartCheckpoint` nested class**: change test helper from `createBackupStatus(partition, checkpointId, position, firstLog)` to `new CheckpointEntry(checkpointId, position, Instant.now(), "SCHEDULED_BACKUP", firstLog, 3, "8.7.0")`. Call `BackupRangeResolver.findSafeStartCheckpoint(pos, List.of(...))` with `List<CheckpointEntry>`.
+   - **Remove `createBackupStatus()` helper methods** — no longer needed.
+   - **Update `resolve()` helper**: remove `checkIdGenerator` from the `getRestoreInfoForAllPartitions` call.
+   - **Update error message assertions** if the error format changes (e.g., the `findBackupRangeCoveringInterval` error message that included `timeInterval=` — the new `findCoveringRange` won't include that).
+   - All other tests (happy paths, error cases, `ResolvePointInTime`) go through the public API and should work without changes beyond the above.
+
+3. **`RestoreManager.java`**:
+
+   - Remove `checkpointIdGenerator` field and its initialization from the constructor.
+   - Remove the `checkpointIdGenerator` argument from the `getRestoreInfoForAllPartitions` call in `restoreRdbms()`.
+   - Remove `CheckpointIdGenerator` import.
+
+**What stays unchanged:**
+
+- `resolvePointInTime()` method body — already works directly with manifests
+- `GlobalRestoreInfo` record shape — same fields, same public API
+- `TestBackupStore` in tests — already builds manifests correctly
+- `BackupMetadataReader` — untouched
+- `RestoreManagerTest` — only uses `GlobalRestoreInfo.globalCheckpointId()` and `.backupsByPartitionId()`, which are unchanged
+
+**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore`
+

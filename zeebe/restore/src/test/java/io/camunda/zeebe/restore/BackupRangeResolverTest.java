@@ -29,7 +29,6 @@ import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.restore.BackupRangeResolver.GlobalRestoreInfo;
@@ -69,7 +68,6 @@ final class BackupRangeResolverTest {
 
   private TestBackupStore store;
   private BackupRangeResolver resolver;
-  private final CheckpointIdGenerator checkIdGenerator = new CheckpointIdGenerator();
 
   @BeforeEach
   void setUp() {
@@ -233,7 +231,7 @@ final class BackupRangeResolverTest {
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalArgumentException.class)
         .hasMessageContaining(
-            "No complete backup range found for partition 1 in interval [2026-01-20T08:00:00Z, 2026-01-20T09:00:00Z], ranges=[Complete[checkpointInterval=[100, 200]]]");
+            "No complete backup range found for partition 1 in interval [2026-01-20T08:00:00Z, 2026-01-20T09:00:00Z], ranges=[RangeEntry[start=100, end=200]]");
   }
 
   @Test
@@ -451,41 +449,12 @@ final class BackupRangeResolverTest {
       final Map<Integer, Long> exportedPositions) {
     return resolver
         .getRestoreInfoForAllPartitions(
-            from, to, partitionCount, exportedPositions, checkIdGenerator, DIRECT_EXECUTOR)
+            from, to, partitionCount, exportedPositions, DIRECT_EXECUTOR)
         .join();
   }
 
   private static Instant minutesAfterBase(final int minutes) {
     return BASE_TIME.plus(Duration.ofMinutes(minutes));
-  }
-
-  private static BackupStatus createBackupStatus(
-      final BackupIdentifier id, final long checkpointPosition, final long firstLogPosition) {
-    final BackupDescriptor descriptor =
-        new BackupDescriptorImpl(
-            Optional.of("snapshot-" + id.checkpointId()),
-            OptionalLong.of(firstLogPosition),
-            checkpointPosition,
-            3,
-            "8.7.0",
-            Instant.now(),
-            CheckpointType.SCHEDULED_BACKUP);
-    return new BackupStatusImpl(
-        id,
-        Optional.of(descriptor),
-        BackupStatusCode.COMPLETED,
-        Optional.empty(),
-        Optional.of(Instant.now()),
-        Optional.of(Instant.now()));
-  }
-
-  private static BackupStatus createBackupStatus(
-      final int partitionId,
-      final long checkpointId,
-      final long checkpointPosition,
-      final long firstLogPosition) {
-    final BackupIdentifier id = new BackupIdentifierImpl(NODE_ID, partitionId, checkpointId);
-    return createBackupStatus(id, checkpointPosition, firstLogPosition);
   }
 
   /**
@@ -836,10 +805,11 @@ final class BackupRangeResolverTest {
     @Test
     void shouldReturnEmptyWhenNoCheckpointBelowExportedPosition() {
       // given
-      final var backups = List.of(createBackupStatus(1, 1, 100, 1));
+      final var checkpoints =
+          List.of(new CheckpointEntry(1, 100, Instant.now(), "SCHEDULED_BACKUP", 1, 3, "8.7.0"));
 
       // when - exported position 50 is below all checkpoints
-      final var result = BackupRangeResolver.findSafeStartCheckpoint(50L, backups);
+      final var result = BackupRangeResolver.findSafeStartCheckpoint(50L, checkpoints);
 
       // then
       assertThat(result).isEmpty();
@@ -848,10 +818,10 @@ final class BackupRangeResolverTest {
     @Test
     void shouldReturnEmptyForEmptyBackupList() {
       // given
-      final List<BackupStatus> backups = List.of();
+      final List<CheckpointEntry> checkpoints = List.of();
 
       // when
-      final var result = BackupRangeResolver.findSafeStartCheckpoint(100L, backups);
+      final var result = BackupRangeResolver.findSafeStartCheckpoint(100L, checkpoints);
 
       // then
       assertThat(result).isEmpty();
@@ -859,15 +829,15 @@ final class BackupRangeResolverTest {
 
     @Test
     void shouldReturnLargestCheckpointBelowExportedPosition() {
-      // given - backups with checkpointPositions [100, 200, 300]
-      final var backups =
+      // given - checkpoints with checkpointPositions [100, 200, 300]
+      final var checkpoints =
           List.of(
-              createBackupStatus(1, 1, 100, 1), // checkpointId=1, checkpointPosition=100
-              createBackupStatus(1, 2, 200, 101), // checkpointId=2, checkpointPosition=200
-              createBackupStatus(1, 3, 300, 201)); // checkpointId=3, checkpointPosition=300
+              new CheckpointEntry(1, 100, Instant.now(), "SCHEDULED_BACKUP", 1, 3, "8.7.0"),
+              new CheckpointEntry(2, 200, Instant.now(), "SCHEDULED_BACKUP", 101, 3, "8.7.0"),
+              new CheckpointEntry(3, 300, Instant.now(), "SCHEDULED_BACKUP", 201, 3, "8.7.0"));
 
       // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
-      final var result = BackupRangeResolver.findSafeStartCheckpoint(250L, backups);
+      final var result = BackupRangeResolver.findSafeStartCheckpoint(250L, checkpoints);
 
       // then
       assertThat(result).contains(2L);
