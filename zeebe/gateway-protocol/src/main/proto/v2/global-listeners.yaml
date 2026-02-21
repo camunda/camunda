@@ -256,6 +256,8 @@ components:
     # CRUD Responses
     GlobalTaskListenerResult:
       type: object
+      required:
+        - eventTypes
       allOf:
         - $ref: '#/components/schemas/GlobalTaskListenerBase'
       properties:
@@ -401,6 +403,8 @@ components:
     GlobalTaskListenerSearchQueryResult:
       description: Global listener search query response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:

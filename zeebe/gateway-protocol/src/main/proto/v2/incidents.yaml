@@ -384,7 +384,7 @@ components:
         - field
 
     IncidentSearchQueryResult:
-      required: 
+      required:
         - items
       type: object
       allOf:

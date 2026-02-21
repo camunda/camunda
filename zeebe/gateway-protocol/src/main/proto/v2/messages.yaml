@@ -228,9 +228,9 @@ components:
           description: The key of the published message.
 
     MessageSubscriptionSearchQueryResult:
-      required: 
-        - items
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
