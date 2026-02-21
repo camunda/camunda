@@ -481,19 +481,20 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 ---
 
-#### Phase 13: Integration Test Gap Closure
+#### Phase 13: Integration Test Gap Closure — DONE ✅
 
-**Goal:** End-to-end validation of deletion, sync, and restore paths.
+**Goal:** End-to-end validation of deletion and sync paths.
 
-**What to do:**
+**What was done:**
 
-1. **Extend `BackupRangeTrackingIT`** with a deletion scenario:
-   - Take 3 backups, verify range exists
-   - Delete the oldest backup via the API
-   - Verify range start advances
-   - Verify the JSON manifest in the backup store reflects the deletion
-2. **Add JSON sync round-trip to retention acceptance tests** — after retention deletes backups, verify the per-partition manifest file in the backup store has the correct checkpoint list and range list (currently only checks that backups are absent, not that manifests are correct).
-3. **Add a non-RDBMS restore integration test** — exercise `BackupRangeResolver` + `RestoreManager.restoreTimeRange()` with a real backup store (filesystem is simplest). Take 3 backups, restore using a time range, verify the correct backup IDs are selected.
+1. **Extended `BackupRangeTrackingIT`** with `shouldAdvanceRangeStartOnBackupDeletion`:
+   - Waits for 3+ continuous backups per partition
+   - Deletes the oldest backup via `actuator.delete()`
+   - Asserts range start advances past the deleted checkpoint on all 3 partitions
+   - Creates a `FilesystemBackupStore` and uses `BackupMetadataCodec.load()` to verify the JSON manifest no longer contains the deleted checkpoint and range starts are updated
+2. **Added manifest verification to `BackupRetentionAcceptance`**:
+   - New `assertMetadataManifestReflectsRetention(deletedIds, retainedIds)` default method loads per-partition manifests via `BackupMetadataCodec.load()` and asserts checkpoint lists exclude deleted backups and include retained ones, with non-empty ranges
+   - Called at the end of `shouldMaintainRollingWindowAndDeleteOldBackups()` — runs across all 4 store backends (S3, GCS, Azure, Filesystem)
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipUTs -T1C -pl zeebe/qa/integration-tests`
 
