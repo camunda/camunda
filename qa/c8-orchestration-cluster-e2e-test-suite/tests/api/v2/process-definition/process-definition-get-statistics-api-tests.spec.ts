@@ -53,8 +53,14 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
         body,
       );
       expect(body.items.length).toBe(2);
-      expect(body.items[0].elementId).toBe('StartEvent');
-      expect(body.items[1].elementId).toBe('EndEvent');
+      // Sort by elementId before asserting — the API does not guarantee
+      // a specific ordering of element instance statistics.
+      const sorted = [...body.items].sort(
+        (a: Record<string, string>, b: Record<string, string>) =>
+          a.elementId.localeCompare(b.elementId),
+      );
+      expect(sorted[0].elementId).toBe('EndEvent');
+      expect(sorted[1].elementId).toBe('StartEvent');
       body.items.forEach((item: Record<string, number>) => {
         expect(item.incidents).toBe(0);
         expect(item.active).toBe(0);
