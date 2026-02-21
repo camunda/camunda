@@ -69,13 +69,14 @@ public class RestoreApp implements ApplicationRunner {
   private long @Nullable [] backupId;
 
   @Value("${from:#{null}}")
-  // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, requires --to)
+  // Parsed from commandline Eg:-`--from=2024-01-01T10:00:00Z` (optional, either --from or --to
+  // suffices; if only --from is given, --to defaults to now)
   @Nullable
   private Instant from;
 
   @Value("${to:#{null}}")
-  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, can be omitted when `--from`
-  // is specified)
+  // Parsed from commandline Eg:-`--to=2024-01-01T12:00:00Z` (optional, either --from or --to
+  // suffices; for non-RDBMS PITR only --to is needed)
   @Nullable
   private Instant to;
 

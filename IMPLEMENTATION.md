@@ -516,3 +516,32 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/backup,zeebe/restore` — 435 tests pass.
 
+---
+
+#### Phase 15: Point-in-Time Restore — DONE ✅
+
+**Goal:** When `--to` is provided, restore all partitions to the latest backup checkpoint at-or-before that timestamp, consistent across all partitions. Replaces the previous `restoreTimeRange` approach (which selected all backups in a `[from, to]` interval) with a single-checkpoint PITR resolution.
+
+**What was done:**
+
+1. **`BackupRangeResolver.java`** — added `resolvePointInTime(Instant target, int partitionCount, Executor executor)` returning `CompletableFuture<Long>`:
+   - Loads manifests in parallel via `BackupMetadataReader`
+   - Per partition: streams checkpoint entries, filters `timestamp <= target`, takes max checkpoint ID → per-partition lower bound
+   - Global lower bound = `min(per-partition lower bounds)` — handles cross-partition timestamp skew
+   - If global lower bound is a MARKER, walks backward to nearest backup-type checkpoint present on all partitions
+   - Throws `IllegalStateException` if no checkpoint at-or-before target, or all such checkpoints are MARKERs
+
+2. **`RestoreManager.java`**:
+   - Replaced non-RDBMS path: `restore(@Nullable Instant from, @Nullable Instant to, ...)` now calls `restorePointInTime(to != null ? to : Instant.now(), ...)` instead of removed `restoreTimeRange()`
+   - `from` parameter is ignored in non-RDBMS path (PITR only needs target timestamp)
+   - Removed dead `restoreTimeRange()` method
+   - RDBMS path (`restoreRdbms`) unchanged
+
+3. **`RestoreApp.java`** — updated `--from`/`--to` comments: `--from` is optional, `--to` alone suffices for non-RDBMS PITR. `hasTimeRange()` already uses `||` so no logic change needed.
+
+4. **`BackupRangeResolverTest.java`** — added `@Nested ResolvePointInTime` class with 9 tests: exact backup match, target between backups, MARKER walk-back, cross-partition timestamp skew, no checkpoint before target, all MARKERs before target, multi-partition MARKER walk-back, latest backup when target after all, missing manifest.
+
+5. **`RestoreManagerTest.java`** — updated 4 tests for PITR semantics: split ranges no longer fail, error message updates for "no checkpoint found", CompletionException unwrapping, all-MARKERs error.
+
+**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore` — 54 tests pass.
+
