@@ -812,6 +812,22 @@ final class BackupRangeResolverTest {
         store.syncManifest(partitionId);
         return this;
       }
+
+      /**
+       * Adds a MARKER checkpoint (no backup data) to the partition manifest. MARKERs represent
+       * checkpoints that don't have associated backup data.
+       */
+      PartitionBuilder addMarker(
+          final long checkpointId, final long checkpointPosition, final Instant timestamp) {
+        store
+            .checkpointsByPartition
+            .computeIfAbsent(partitionId, k -> new ArrayList<>())
+            .add(
+                new CheckpointEntry(
+                    checkpointId, checkpointPosition, timestamp, "MARKER", 0L, 3, "8.7.0"));
+        store.syncManifest(partitionId);
+        return this;
+      }
     }
   }
 
@@ -855,6 +871,175 @@ final class BackupRangeResolverTest {
 
       // then
       assertThat(result).contains(2L);
+    }
+  }
+
+  @Nested
+  class ResolvePointInTime {
+
+    @Test
+    void shouldResolveExactBackupMatch() {
+      // given - single partition with 3 backups at minutes 10, 20, 30
+      store
+          .forPartition(1)
+          .withRange(100, 300)
+          .addBackup(100, 1000, 1, minutesAfterBase(10))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(30));
+
+      // when - target is exactly at checkpoint 200's timestamp
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(20), 1, DIRECT_EXECUTOR).join();
+
+      // then - should return checkpoint 200
+      assertThat(result).isEqualTo(200L);
+    }
+
+    @Test
+    void shouldResolveTargetBetweenTwoBackups() {
+      // given - single partition with 3 backups at minutes 10, 20, 30
+      store
+          .forPartition(1)
+          .withRange(100, 300)
+          .addBackup(100, 1000, 1, minutesAfterBase(10))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(30));
+
+      // when - target is between checkpoint 200 (min 20) and 300 (min 30)
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(25), 1, DIRECT_EXECUTOR).join();
+
+      // then - should return checkpoint 200 (highest with timestamp <= target)
+      assertThat(result).isEqualTo(200L);
+    }
+
+    @Test
+    void shouldWalkBackFromMarkerToNearestBackup() {
+      // given - partition with: backup at 100, MARKER at 200, backup at 300
+      store
+          .forPartition(1)
+          .withRange(100, 300)
+          .addBackup(100, 1000, 1, minutesAfterBase(10))
+          .addMarker(200, 2000, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(30));
+
+      // when - target is exactly at MARKER 200
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(20), 1, DIRECT_EXECUTOR).join();
+
+      // then - MARKER 200 is the lower bound, walk back to backup 100
+      assertThat(result).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldHandleCrossPartitionTimestampSkew() {
+      // given - 2 partitions with same checkpoint IDs but slightly different timestamps
+      // P1: checkpoint 100 at min 10, checkpoint 200 at min 20
+      // P2: checkpoint 100 at min 11, checkpoint 200 at min 21
+      store
+          .forPartition(1)
+          .withRange(100, 200)
+          .addBackup(100, 1000, 1, minutesAfterBase(10))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20));
+
+      store
+          .forPartition(2)
+          .withRange(100, 200)
+          .addBackup(100, 1000, 1, minutesAfterBase(11))
+          .addBackup(200, 2000, 1001, minutesAfterBase(21));
+
+      // when - target is minute 20: P1 sees 200 <= target, P2 sees 200 at min 21 > target so P2=100
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(20), 2, DIRECT_EXECUTOR).join();
+
+      // then - global lower bound = min(200, 100) = 100
+      assertThat(result).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldFailWhenNoCheckpointBeforeTarget() {
+      // given - partition with checkpoints all after target
+      store
+          .forPartition(1)
+          .withRange(100, 200)
+          .addBackup(100, 1000, 1, minutesAfterBase(30))
+          .addBackup(200, 2000, 1001, minutesAfterBase(40));
+
+      // when/then - target at minute 10 is before all checkpoints
+      assertThatThrownBy(
+              () -> resolver.resolvePointInTime(minutesAfterBase(10), 1, DIRECT_EXECUTOR).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No checkpoint found at or before");
+    }
+
+    @Test
+    void shouldFailWhenAllCheckpointsBeforeTargetAreMarkers() {
+      // given - only MARKERs before target, backup only after
+      store
+          .forPartition(1)
+          .withRange(100, 300)
+          .addMarker(100, 1000, minutesAfterBase(10))
+          .addMarker(200, 2000, minutesAfterBase(20))
+          .addBackup(300, 3000, 2001, minutesAfterBase(30));
+
+      // when/then - target at minute 20 finds MARKER 200, walks back but only finds MARKER 100
+      assertThatThrownBy(
+              () -> resolver.resolvePointInTime(minutesAfterBase(20), 1, DIRECT_EXECUTOR).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("all checkpoints at or before target are MARKERs");
+    }
+
+    @Test
+    void shouldResolveWithMultiplePartitionsAndMarkerWalkBack() {
+      // given - 2 partitions, global lower bound lands on a MARKER
+      // Both partitions have: backup at 100 (min 10), MARKER at 200 (min 20), backup at 300 (min
+      // 30)
+      for (var p = 1; p <= 2; p++) {
+        store
+            .forPartition(p)
+            .withRange(100, 300)
+            .addBackup(100, 1000, 1, minutesAfterBase(10))
+            .addMarker(200, 2000, minutesAfterBase(20))
+            .addBackup(300, 3000, 2001, minutesAfterBase(30));
+      }
+
+      // when - target at minute 25: both partitions find MARKER 200
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(25), 2, DIRECT_EXECUTOR).join();
+
+      // then - global lower bound = 200 (MARKER), walk back to 100
+      assertThat(result).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldResolveLatestBackupWhenTargetIsAfterAll() {
+      // given - partition with backups at minutes 10, 20
+      store
+          .forPartition(1)
+          .withRange(100, 200)
+          .addBackup(100, 1000, 1, minutesAfterBase(10))
+          .addBackup(200, 2000, 1001, minutesAfterBase(20));
+
+      // when - target is well after all backups
+      final var result =
+          resolver.resolvePointInTime(minutesAfterBase(120), 1, DIRECT_EXECUTOR).join();
+
+      // then - should return the latest backup
+      assertThat(result).isEqualTo(200L);
+    }
+
+    @Test
+    void shouldFailWhenManifestIsMissing() {
+      // given - no manifest stored
+
+      // when/then
+      assertThatThrownBy(
+              () -> resolver.resolvePointInTime(minutesAfterBase(10), 1, DIRECT_EXECUTOR).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No backup metadata manifest found for partition 1");
     }
   }
 }

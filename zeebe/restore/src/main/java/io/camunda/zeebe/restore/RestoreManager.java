@@ -15,7 +15,6 @@ import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
@@ -115,11 +114,7 @@ public class RestoreManager implements CloseableSilently {
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     if (exporterPositionMapper == null) {
-      if (from == null) {
-        throw new IllegalArgumentException(
-            "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
-      }
-      restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
+      restorePointInTime(to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
     } else {
       restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
     }
@@ -151,53 +146,13 @@ public class RestoreManager implements CloseableSilently {
     restore(restoreInfos.backupsByPartitionId(), validateConfig, ignoreFilesInTarget);
   }
 
-  public void restoreTimeRange(
-      final Instant from,
-      final Instant to,
-      final boolean validateConfig,
-      final List<String> ignoreFilesInTarget)
+  private void restorePointInTime(
+      final Instant target, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
-    final var dataDirectory = Path.of(configuration.getData().getDirectory());
-
-    // Data folder is verified separately, so that we can fail fast rather than downloading
-    // backups and then verifying the data folder is not empty.
-    // Doing it as soon as possible shortens the time to find out about this, helping to achieve
-    // lower RTO
-    verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
-
     final var partitionCount = configuration.getCluster().getPartitionsCount();
-    final var timeInterval = Interval.closed(from, to);
-
-    // Load manifests for all partitions and collect completed checkpoint IDs within the time range
-    final var backupIds =
-        IntStream.rangeClosed(1, partitionCount)
-            .mapToObj(
-                partition ->
-                    metadataReader
-                        .load(partition)
-                        .join()
-                        .orElseThrow(
-                            () ->
-                                new IllegalStateException(
-                                    "No backup metadata manifest found for partition %d"
-                                        .formatted(partition))))
-            .flatMap(manifest -> manifest.checkpoints().stream())
-            .filter(
-                entry ->
-                    timeInterval.contains(entry.checkpointTimestamp())
-                        && !"MARKER".equals(entry.checkpointType()))
-            .mapToLong(BackupMetadataManifest.CheckpointEntry::checkpointId)
-            .distinct()
-            .sorted()
-            .toArray();
-
-    LOG.info("Completed backups in range [{},{}] are {}", from, to, backupIds);
-
-    if (backupIds.length == 0) {
-      throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
-    }
-
-    restore(backupIds, validateConfig, ignoreFilesInTarget);
+    final var backupId = rangeResolver.resolvePointInTime(target, partitionCount, executor).join();
+    LOG.info("Resolved point-in-time restore target {} to backup checkpoint {}", target, backupId);
+    restore(backupId, validateConfig, ignoreFilesInTarget);
   }
 
   public void restore(

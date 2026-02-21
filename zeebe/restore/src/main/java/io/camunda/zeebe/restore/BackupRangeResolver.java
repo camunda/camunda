@@ -16,6 +16,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
@@ -25,6 +26,7 @@ import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -106,6 +108,99 @@ public final class BackupRangeResolver {
                   PartitionRestoreInfo.backupIdsByPartition(restoreInfos);
               return new GlobalRestoreInfo(globalCheckpointId, restoreInfos, backupIdsByPartition);
             });
+  }
+
+  /**
+   * Resolves a point-in-time restore target to a single backup checkpoint ID.
+   *
+   * <p>Algorithm:
+   *
+   * <ol>
+   *   <li>Load per-partition manifests (1 API call each, parallelized)
+   *   <li>Per partition, find the highest checkpoint ID (any type) with timestamp &lt;= target
+   *   <li>Global lower bound = min(per-partition bounds) — handles cross-partition timestamp skew
+   *   <li>If the global lower bound is a MARKER, walk backward to the nearest backup-type
+   *       checkpoint
+   *   <li>Return the resolved checkpoint ID for restore via {@code restore(long backupId, ...)}
+   * </ol>
+   *
+   * @param target the point-in-time to restore to
+   * @param partitionCount number of partitions
+   * @param executor executor for parallel manifest loading
+   * @return future completing with the backup checkpoint ID to restore
+   */
+  public CompletableFuture<Long> resolvePointInTime(
+      final Instant target, final int partitionCount, final Executor executor) {
+    return FuturesUtil.parTraverse(
+            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+            partition ->
+                CompletableFuture.supplyAsync(
+                    () ->
+                        metadataReader
+                            .load(partition)
+                            .join()
+                            .orElseThrow(
+                                () ->
+                                    new IllegalStateException(
+                                        "No backup metadata manifest found for partition %d"
+                                            .formatted(partition))),
+                    executor))
+        .thenApply(manifests -> resolvePointInTimeFromManifests(manifests, target));
+  }
+
+  private long resolvePointInTimeFromManifests(
+      final List<BackupMetadataManifest> manifests, final Instant target) {
+    // Per partition, find the highest checkpoint ID with timestamp <= target
+    final var perPartitionBounds =
+        manifests.stream()
+            .map(
+                m ->
+                    m.checkpoints().stream()
+                        .filter(e -> !e.checkpointTimestamp().isAfter(target))
+                        .max(Comparator.comparingLong(CheckpointEntry::checkpointId))
+                        .orElseThrow(
+                            () ->
+                                new IllegalStateException(
+                                    "No checkpoint found at or before %s for partition %d"
+                                        .formatted(target, m.partitionId()))))
+            .toList();
+
+    // Global lower bound = min of per-partition lower bounds
+    final var globalLowerBoundId =
+        perPartitionBounds.stream()
+            .mapToLong(CheckpointEntry::checkpointId)
+            .min()
+            .orElseThrow(
+                () ->
+                    new IllegalStateException(
+                        "No checkpoint found at or before %s on any partition".formatted(target)));
+
+    // Check if the global lower bound is a MARKER — use first manifest since types are global
+    final var referenceManifest = manifests.getFirst();
+    final var globalCheckpoint =
+        referenceManifest.checkpoints().stream()
+            .filter(e -> e.checkpointId() == globalLowerBoundId)
+            .findFirst()
+            .orElseThrow();
+
+    if (!"MARKER".equals(globalCheckpoint.checkpointType())) {
+      return globalLowerBoundId;
+    }
+
+    // Walk backward from the global lower bound to the nearest backup-type checkpoint
+    LOG.info(
+        "Checkpoint {} is a MARKER, walking backward to nearest backup-type checkpoint",
+        globalLowerBoundId);
+    return referenceManifest.checkpoints().stream()
+        .filter(e -> e.checkpointId() < globalLowerBoundId)
+        .filter(e -> !"MARKER".equals(e.checkpointType()))
+        .max(Comparator.comparingLong(CheckpointEntry::checkpointId))
+        .map(CheckpointEntry::checkpointId)
+        .orElseThrow(
+            () ->
+                new IllegalStateException(
+                    "No backup-type checkpoint found before %s (all checkpoints at or before target are MARKERs)"
+                        .formatted(target)));
   }
 
   public PartitionRestoreInfo getInformationPerPartition(

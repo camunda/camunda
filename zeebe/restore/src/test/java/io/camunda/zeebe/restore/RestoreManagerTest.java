@@ -123,8 +123,8 @@ final class RestoreManagerTest {
   }
 
   @Test
-  void shouldFailWhenBackupsAreNotContinuousUsingTimeRange(@TempDir final Path dir) {
-    // given
+  void shouldNotFailOnSplitRangesWithPointInTimeRestore(@TempDir final Path dir) {
+    // given - PITR picks a single backup checkpoint, so split ranges don't cause failure
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
     configuration.getCluster().setPartitionsCount(2);
@@ -173,12 +173,12 @@ final class RestoreManagerTest {
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-      // when - trying to restore backups from 'from' to 'from' + 5 minutes
-      // then - should fail because partition 2 doesn't have a continuous range
+      // when - PITR picks a single backup, so split ranges don't cause failure.
+      // The actual partition restore may fail (no real Raft partitions), but NOT
+      // with "Invalid backup ranges".
       final var to = from.plusSeconds(5 * 60);
       assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
-          .isInstanceOf(IllegalStateException.class)
-          .hasMessage("Invalid backup ranges");
+          .isNotInstanceOf(IllegalStateException.class);
     }
   }
 
@@ -225,12 +225,13 @@ final class RestoreManagerTest {
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-      // when/then — query range that doesn't include any checkpoints
+      // when/then — PITR target is before all checkpoints, so no checkpoint found
       final var from = Instant.parse("2024-01-01T00:00:00Z");
       final var to = Instant.parse("2024-01-02T00:00:00Z");
       assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("No backups found in range");
+          .cause()
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("No checkpoint found at or before");
     }
   }
 
@@ -251,13 +252,14 @@ final class RestoreManagerTest {
       final var from = Instant.parse("2024-01-01T00:00:00Z");
       final var to = Instant.parse("2024-01-02T00:00:00Z");
       assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
+          .cause()
           .isInstanceOf(IllegalStateException.class)
           .hasMessageContaining("No backup metadata manifest found for partition 1");
     }
   }
 
   @Test
-  void shouldFilterOutMarkerCheckpointsInTimeRange(@TempDir final Path dir) {
+  void shouldFailWhenAllCheckpointsAreMarkersInTimeRange(@TempDir final Path dir) {
     // given
     final var configuration = new BrokerCfg();
     configuration.getData().setDirectory(dir.toString());
@@ -276,12 +278,13 @@ final class RestoreManagerTest {
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
 
-      // when/then — only MARKER checkpoints in range, so no backups found
+      // when/then — PITR finds the MARKER, walks back, no non-MARKER exists
       final var from = Instant.parse("2024-01-01T00:00:00Z");
       final var to = Instant.parse("2024-01-02T00:00:00Z");
       assertThatThrownBy(() -> restoreManager.restore(from, to, false, List.of()))
-          .isInstanceOf(IllegalArgumentException.class)
-          .hasMessageContaining("No backups found in range");
+          .cause()
+          .isInstanceOf(IllegalStateException.class)
+          .hasMessageContaining("all checkpoints at or before target are MARKERs");
     }
   }
 
