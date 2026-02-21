@@ -16,6 +16,8 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
+import io.camunda.zeebe.backup.common.BackupMetadataCodec;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
@@ -91,6 +93,46 @@ public interface BackupRetentionAcceptance extends ClockSupport {
     assertManifestPresentInStore(thirdBackup);
     assertManifestNotFoundFromStore(firstBackup);
     assertManifestNotFoundFromStore(secondBackup);
+
+    // Verify JSON metadata manifests reflect retention deletions
+    assertMetadataManifestReflectsRetention(
+        List.of(firstBackup, secondBackup), List.of(thirdBackup));
+  }
+
+  /**
+   * Verifies that the per-partition JSON metadata manifest in the backup store correctly reflects
+   * retention deletions: deleted backups should not appear in the checkpoint list, and retained
+   * backups should be present with valid ranges.
+   */
+  default void assertMetadataManifestReflectsRetention(
+      final List<Long> deletedBackupIds, final List<Long> retainedBackupIds) {
+    IntStream.rangeClosed(1, PARTITION_COUNT)
+        .forEach(
+            partitionId -> {
+              final var manifest =
+                  BackupMetadataCodec.load(getBackupStore(), partitionId).join().orElseThrow();
+
+              final var checkpointIds =
+                  manifest.checkpoints().stream()
+                      .map(BackupMetadataManifest.CheckpointEntry::checkpointId)
+                      .toList();
+
+              assertThat(checkpointIds)
+                  .as(
+                      "Manifest for partition %d should not contain deleted backups %s",
+                      partitionId, deletedBackupIds)
+                  .doesNotContainAnyElementsOf(deletedBackupIds);
+
+              assertThat(checkpointIds)
+                  .as(
+                      "Manifest for partition %d should contain retained backups %s",
+                      partitionId, retainedBackupIds)
+                  .containsAll(retainedBackupIds);
+
+              assertThat(manifest.ranges())
+                  .as("Manifest for partition %d should have at least one range", partitionId)
+                  .isNotEmpty();
+            });
   }
 
   default long awaitNewBackup(final long previousBackup) {

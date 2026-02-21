@@ -13,6 +13,10 @@ import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.management.backups.PartitionBackupRange;
 import io.camunda.management.backups.PartitionBackupState;
+import io.camunda.zeebe.backup.common.BackupMetadataCodec;
+import io.camunda.zeebe.backup.common.BackupMetadataManifest;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupConfig;
+import io.camunda.zeebe.backup.filesystem.FilesystemBackupStore;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -24,6 +28,7 @@ import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.IntStream;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
@@ -174,6 +179,87 @@ final class BackupRangeTrackingIT {
               assertThat(latestRange.getEnd().getCheckpointId())
                   .describedAs("Range should end with the latest checkpoint")
                   .isEqualTo(lastBackupAfterLeaderChange.getCheckpointId());
+            });
+  }
+
+  @Test
+  void shouldAdvanceRangeStartOnBackupDeletion() {
+    // given — wait for at least 3 backups per partition
+    final var actuator = BackupActuator.of(cluster.availableGateway());
+    executor.scheduleAtFixedRate(this::generateLoad, 0, 100, TimeUnit.MILLISECONDS);
+
+    Awaitility.await("Until each partition has at least 3 backups in its range")
+        .atMost(Duration.ofSeconds(60))
+        .untilAsserted(
+            () -> {
+              final var ranges = actuator.state().getRanges();
+              assertThat(ranges)
+                  .extracting(PartitionBackupRange::getPartitionId)
+                  .containsExactlyInAnyOrder(1, 2, 3);
+              assertThat(ranges)
+                  .allSatisfy(
+                      range -> {
+                        final var start = range.getStart().getCheckpointId();
+                        final var end = range.getEnd().getCheckpointId();
+                        // At least 3 distinct checkpoints in the range
+                        assertThat(end - start).isGreaterThanOrEqualTo(2);
+                      });
+            });
+
+    // Record the first checkpoint ID from the range (should be the same across all partitions)
+    final var firstCheckpointId =
+        actuator.state().getRanges().stream()
+            .mapToLong(range -> range.getStart().getCheckpointId())
+            .min()
+            .orElseThrow();
+
+    // when — delete the oldest backup
+    actuator.delete(firstCheckpointId);
+
+    // then — range start should advance past the deleted checkpoint
+    Awaitility.await("Range start advances after deletion")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var ranges = actuator.state().getRanges();
+              assertThat(ranges)
+                  .extracting(PartitionBackupRange::getPartitionId)
+                  .containsExactlyInAnyOrder(1, 2, 3);
+              assertThat(ranges)
+                  .allSatisfy(
+                      range ->
+                          assertThat(range.getStart().getCheckpointId())
+                              .as(
+                                  "Range start for partition %d should advance past deleted checkpoint %d",
+                                  range.getPartitionId(), firstCheckpointId)
+                              .isGreaterThan(firstCheckpointId));
+            });
+
+    // Verify JSON manifest reflects the deletion
+    final var backupStore =
+        FilesystemBackupStore.of(new FilesystemBackupConfig(tempDir.toAbsolutePath().toString()));
+
+    IntStream.rangeClosed(1, 3)
+        .forEach(
+            partitionId -> {
+              final var manifest =
+                  BackupMetadataCodec.load(backupStore, partitionId).join().orElseThrow();
+
+              assertThat(manifest.checkpoints())
+                  .as(
+                      "Manifest for partition %d should not contain deleted checkpoint %d",
+                      partitionId, firstCheckpointId)
+                  .extracting(BackupMetadataManifest.CheckpointEntry::checkpointId)
+                  .doesNotContain(firstCheckpointId);
+
+              assertThat(manifest.ranges())
+                  .as("Manifest for partition %d should have at least one range", partitionId)
+                  .isNotEmpty()
+                  .allSatisfy(
+                      range ->
+                          assertThat(range.start())
+                              .as("Manifest range start should be greater than deleted checkpoint")
+                              .isGreaterThan(firstCheckpointId));
             });
   }
 
