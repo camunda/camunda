@@ -7,8 +7,6 @@
  */
 
 import { isValid, parse, parseISO } from "date-fns";
-import { FieldValidator } from "final-form";
-import { FieldValues, UseFormGetValues } from "react-hook-form";
 import { FormValues } from "src/components/form/DateRangeField/DateRangeModal/TimeInput";
 
 const VALIDATION_TIMEOUT = 750;
@@ -45,73 +43,29 @@ export const validateTimeComplete = async (
   return true;
 };
 
-export const validateTimeRange =
-  (getValues: UseFormGetValues<FormValues>) => (): true | string => {
-    const { fromDate, toDate, fromTime, toTime } = getValues();
-
-    if (!fromDate || !toDate || !fromTime || !toTime) {
-      return true;
-    }
-
-    const parsedFromDate = parseDate(fromDate).getTime();
-    const parsedToDate = parseDate(toDate).getTime();
-    const parsedFromTime = parseFilterTime(fromTime.trim())?.getTime() ?? 0;
-    const parsedToTime = parseFilterTime(toTime.trim())?.getTime() ?? 0;
-
-    if (parsedFromDate === parsedToDate && parsedFromTime > parsedToTime) {
-      return TIME_RANGE_ERROR;
-    }
-
+export const validateTimeRange = (
+  _: string,
+  { fromDate, fromTime, toDate, toTime }: FormValues,
+): true | string => {
+  if (!fromDate || !toDate || !fromTime || !toTime) {
     return true;
-  };
+  }
+
+  const parsedFromDate = parseDate(fromDate).getTime();
+  const parsedToDate = parseDate(toDate).getTime();
+  const parsedFromTime = parseFilterTime(fromTime.trim())?.getTime() ?? 0;
+  const parsedToTime = parseFilterTime(toTime.trim())?.getTime() ?? 0;
+
+  if (parsedFromDate === parsedToDate && parsedFromTime > parsedToTime) {
+    return TIME_RANGE_ERROR;
+  }
+
+  return true;
+};
 
 export const validateTimeCharacters = (value: string): true | string => {
   if (value !== "" && value.replace(/[0-9]|:/g, "") !== "") {
     return TIME_ERROR;
   }
   return true;
-};
-
-const isPromise = (value: unknown): value is Promise<unknown> => {
-  return Boolean(
-    value &&
-    typeof value === "object" &&
-    "then" in value &&
-    typeof (value as { then: unknown }).then === "function",
-  );
-};
-
-export const mergeValidators = (
-  ...validators: Array<FieldValidator<string | undefined>>
-): FieldValidator<string | undefined> => {
-  return (
-    ...validateParams: Parameters<FieldValidator<string | undefined>>
-  ) => {
-    const executedValidators = validators.map((validator) =>
-      validator(...validateParams),
-    );
-    const syncValidators = executedValidators.filter(
-      (validator) => !isPromise(validator),
-    );
-    const asyncValidators = executedValidators.filter((validator) =>
-      isPromise(validator),
-    );
-
-    const immediateError = syncValidators.reduce(
-      (error, result) => error ?? result,
-      undefined,
-    );
-
-    if (immediateError !== undefined) {
-      return immediateError;
-    }
-
-    if (asyncValidators.length === 0) {
-      return undefined;
-    }
-
-    return new Promise((resolve) => {
-      asyncValidators.forEach((result) => resolve(result));
-    });
-  };
 };

@@ -30,7 +30,7 @@ export type FormValues = {
 };
 
 const TimeInput: React.FC<Props> = ({ type, labelText, onChange }) => {
-  const { control, getValues } = useFormContext<FormValues>();
+  const { control } = useFormContext<FormValues>();
 
   const fieldName: DateFieldName = `${type}Time`;
 
@@ -42,7 +42,7 @@ const TimeInput: React.FC<Props> = ({ type, labelText, onChange }) => {
         validate: {
           complete: validateTimeComplete,
           characters: validateTimeCharacters,
-          range: validateTimeRange(getValues),
+          range: validateTimeRange,
         },
       }}
       render={({ field, fieldState }) => (
