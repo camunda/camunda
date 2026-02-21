@@ -855,7 +855,7 @@ components:
 
     TenantSearchQueryResult:
       description: Tenant search response.
-      required: 
+      required:
         - items
       type: object
       allOf:
