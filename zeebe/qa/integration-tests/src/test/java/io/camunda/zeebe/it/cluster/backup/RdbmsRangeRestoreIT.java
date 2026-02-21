@@ -21,7 +21,6 @@ import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.PartitionBackupInfo;
 import io.camunda.management.backups.StateCode;
-import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.ExportersActuator;
@@ -114,12 +113,15 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // given - deploy a process and create instances, then take continuous backups.
     final long processKey;
 
-    final Interval<Instant> interval;
+    final Instant from;
+    final Instant to;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
 
       // Create some process instances to have data to verify after restore
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      final var range = createProcessInstancesAndTakeBackups(client, processKey);
+      from = range[0];
+      to = range[1];
 
       takeAndAwaitBackup();
       progressClock(broker, 2000);
@@ -133,7 +135,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     FileUtil.ensureDirectoryExists(workingDirectory);
 
     // then
-    try (final var restoreApp = testRestoreApp(interval)) {
+    try (final var restoreApp = testRestoreApp(from, to)) {
       assertThatThrownBy(restoreApp::start)
           .rootCause()
           .isInstanceOf(IllegalStateException.class)
@@ -146,10 +148,13 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // given - some process instances with backups between them
     final long processKey;
 
-    final Interval<Instant> interval;
+    final Instant from;
+    final Instant to;
     try (final var client = broker.newClientBuilder().build()) {
       processKey = deployTestProcess(client);
-      interval = createProcessInstancesAndTakeBackups(client, processKey);
+      final var range = createProcessInstancesAndTakeBackups(client, processKey);
+      from = range[0];
+      to = range[1];
     }
     takeAndAwaitBackup();
 
@@ -175,7 +180,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
 
     FileUtil.deleteFolder(workingDirectory);
     FileUtil.ensureDirectoryExists(workingDirectory);
-    try (final var restore = testRestoreApp(interval)) {
+    try (final var restore = testRestoreApp(from, to)) {
       restore.start();
     }
 
@@ -260,7 +265,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
         .getProcessDefinitionKey();
   }
 
-  private Interval<Instant> createProcessInstancesAndTakeBackups(
+  private Instant[] createProcessInstancesAndTakeBackups(
       final CamundaClient client, final long processKey) {
 
     // Create some process instances to have data to verify after restore
@@ -284,7 +289,7 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // Record "to" after second backup
     final Instant to = currentTime(broker);
     LOG.info("Time range to = {}", to);
-    return Interval.closed(from, to);
+    return new Instant[] {from, to};
   }
 
   private BackupInfo takeAndAwaitBackup() {
@@ -333,12 +338,12 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
   }
 
   @SuppressWarnings("resource")
-  private TestRestoreApp testRestoreApp(final Interval<Instant> interval) {
+  private TestRestoreApp testRestoreApp(final Instant from, final Instant to) {
     return new TestRestoreApp()
         .withUnifiedConfig(this::configureRestoreApp)
         .withAdditionalProperties(H2_PROPERTIES)
         .withWorkingDirectory(workingDirectory)
-        .withTimeRange(interval.start(), interval.end());
+        .withTimeRange(from, to);
   }
 
   @SuppressWarnings("resource")

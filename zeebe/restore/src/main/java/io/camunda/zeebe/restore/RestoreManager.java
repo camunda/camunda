@@ -11,10 +11,8 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.api.Interval;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -321,29 +319,20 @@ public class RestoreManager implements CloseableSilently {
         final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
 
         final var manifest = metadataReader.load(partition).join();
-        final var ranges =
-            manifest
-                .map(
-                    m ->
-                        m.ranges().stream()
-                            .map(r -> (BackupRange) new BackupRange.Complete(r.start(), r.end()))
-                            .toList())
-                .orElse(List.of());
-
-        final var validRange =
-            ranges.stream()
-                .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))
+        final var coveringRange =
+            manifest.stream()
+                .flatMap(m -> m.ranges().stream())
+                .filter(r -> r.start() <= minBackup && r.end() >= maxBackup)
                 .findFirst();
 
-        if (validRange.isEmpty()) {
-          final var completeRanges =
-              ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
+        if (coveringRange.isEmpty()) {
+          final var ranges = manifest.map(m -> m.ranges()).orElse(List.of());
           LOG.error(
-              "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
+              "Expected to find a continuous range of backups between {} and {} for partition {}. Ranges are the following: {}",
               minBackup,
               maxBackup,
               partition,
-              completeRanges);
+              ranges);
           validBackupRange.set(false);
         }
       }

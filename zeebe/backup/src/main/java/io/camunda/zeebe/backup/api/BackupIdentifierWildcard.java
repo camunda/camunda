@@ -170,29 +170,7 @@ public interface BackupIdentifierWildcard {
       }
     }
 
-    static CheckpointPattern.Range ofInterval(final Interval<Long> checkpointIdInterval) {
-      // Find the common prefix between checkpoint IDs
-      final var fromStr = String.valueOf(checkpointIdInterval.start());
-      final var toStr = String.valueOf(checkpointIdInterval.end());
-
-      final var commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
-
-      // Use the common prefix to create a TimeRange pattern
-      return new Range(
-          commonPrefixPattern, checkpointIdInterval.start(), checkpointIdInterval.end());
-    }
-
-    /**
-     * Creates a CheckpointPattern that matches checkpoint IDs within a timestamp range. Uses a
-     * CheckpointIdGenerator to convert raw timestamps to checkpoint IDs (applying the configured
-     * offset), then computes the common prefix to create a Prefix pattern.
-     *
-     * @param from the start of the range (inclusive)
-     * @param to the end of the range (inclusive)
-     * @param generator the CheckpointIdGenerator used to convert timestamps to checkpoint IDs
-     * @return a CheckpointPattern (Prefix or Any) that matches checkpoints in the given range
-     */
-    static Range ofTimeRange(
+    static CheckpointPattern.Range ofTimeRange(
         final Instant from, final Instant to, final CheckpointIdGenerator generator) {
 
       if (from.toEpochMilli() < 0) {
@@ -212,7 +190,12 @@ public interface BackupIdentifierWildcard {
       final long fromCheckpointId = generator.fromTimestamp(from.toEpochMilli());
       final long toCheckpointId = generator.fromTimestamp(to.toEpochMilli());
 
-      return ofInterval(new Interval<>(fromCheckpointId, toCheckpointId));
+      // Find the common prefix between checkpoint IDs
+      final var fromStr = String.valueOf(fromCheckpointId);
+      final var toStr = String.valueOf(toCheckpointId);
+      final var commonPrefixPattern = longestCommonPrefix(fromStr, toStr);
+
+      return new Range(commonPrefixPattern, fromCheckpointId, toCheckpointId);
     }
 
     record Any() implements CheckpointPattern {
