@@ -228,6 +228,8 @@ components:
           description: The key of the published message.
 
     MessageSubscriptionSearchQueryResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -378,6 +380,8 @@ components:
           description: The unique external tenant ID.
 
     CorrelatedMessageSubscriptionSearchQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

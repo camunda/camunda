@@ -855,6 +855,8 @@ components:
 
     TenantSearchQueryResult:
       description: Tenant search response.
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -873,6 +875,8 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
 
     TenantUserSearchResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -916,6 +920,8 @@ components:
           type: string
 
     TenantClientSearchResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -959,6 +965,8 @@ components:
           type: string
 
     TenantGroupSearchResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

@@ -384,6 +384,8 @@ components:
         - field
 
     IncidentSearchQueryResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -481,6 +483,8 @@ components:
             $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuerySortRequest'
 
     IncidentProcessInstanceStatisticsByErrorQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -542,6 +546,8 @@ components:
         - filter
 
     IncidentProcessInstanceStatisticsByDefinitionQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

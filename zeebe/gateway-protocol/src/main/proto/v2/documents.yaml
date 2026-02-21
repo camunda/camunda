@@ -313,6 +313,9 @@ components:
           description: A human-readable explanation specific to this occurrence of the problem.
 
     DocumentCreationBatchResponse:
+      required:
+        - failedDocuments
+        - createdDocuments
       allOf:
         - type: object
           properties:

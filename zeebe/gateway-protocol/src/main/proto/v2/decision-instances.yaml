@@ -272,6 +272,8 @@ components:
 
     DecisionInstanceSearchQueryResult:
       type: object
+      required: 
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -354,6 +356,9 @@ components:
           description: The key of the root decision definition.
 
     DecisionInstanceGetQueryResult:
+      required:
+        - evaluatedInputs
+        - matchedRules
       allOf:
         - $ref: '#/components/schemas/DecisionInstanceResult'
         - type: object

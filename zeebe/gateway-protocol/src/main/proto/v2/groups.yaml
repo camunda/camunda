@@ -716,6 +716,8 @@ components:
 
     GroupSearchQueryResult:
       description: Group search response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -733,6 +735,8 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
 
     GroupUserSearchResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -775,6 +779,8 @@ components:
           type: string
 
     GroupClientSearchResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

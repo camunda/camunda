@@ -370,6 +370,8 @@ components:
           type: boolean
 
     ProcessDefinitionSearchQueryResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -425,6 +427,8 @@ components:
           description: The process definition statistics search filters.
 
     ProcessDefinitionElementStatisticsQueryResult:
+      required:
+        - items
       description: Process definition element statistics query response.
       type: object
       properties:
@@ -520,6 +524,8 @@ components:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQuerySortRequest'
 
     ProcessDefinitionInstanceStatisticsQueryResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -604,6 +610,8 @@ components:
         - processDefinitionId
 
     ProcessDefinitionInstanceVersionStatisticsQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

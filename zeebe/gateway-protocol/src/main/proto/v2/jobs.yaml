@@ -626,6 +626,8 @@ components:
 
     JobSearchQueryResult:
       description: Job search response.
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
