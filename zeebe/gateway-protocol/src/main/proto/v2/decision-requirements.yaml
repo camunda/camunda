@@ -171,6 +171,8 @@ components:
           description: The name of the resource from which the decision requirements were parsed
 
     DecisionRequirementsSearchQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

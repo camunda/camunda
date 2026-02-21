@@ -485,6 +485,8 @@ components:
 
     UserTaskSearchQueryResult:
       description: User task search query response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

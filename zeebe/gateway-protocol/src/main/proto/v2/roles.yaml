@@ -790,6 +790,8 @@ components:
 
     RoleSearchQueryResult:
       description: Role search response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -807,6 +809,8 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
 
     RoleUserSearchResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -849,6 +853,8 @@ components:
           type: string
 
     RoleClientSearchResult:
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -891,6 +897,8 @@ components:
           type: string
 
     RoleGroupSearchResult:
+      required:   
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

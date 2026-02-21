@@ -167,6 +167,8 @@ components:
 
     VariableSearchQueryResult:
       description: Variable search query response.
+      required: 
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
