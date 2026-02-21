@@ -10,6 +10,7 @@ on:
 jobs:
   fetch-release:
     name: Fetch latest release
+    permissions: {}
     runs-on: ubuntu-latest
     outputs:
       release-tag: ${{ steps.fetch_release.outputs.release-tag }}
