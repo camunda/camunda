@@ -42,27 +42,6 @@ const CenteredRow = styled.div`
   width: 100%;
 `;
 
-const DatePickerWrapper = styled.div`
-  .cds--date-picker {
-    width: 100%;
-  }
-
-  .cds--date-picker-container {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .cds--date-picker-input__wrapper {
-    display: contents;
-    width: 100%;
-  }
-
-  input.cds--date-picker__input {
-    width: 100%;
-    max-width: 100%;
-  }
-`;
-
 const PropertyText = styled.div`
   ${styles.caption01}
 `;
@@ -78,7 +57,6 @@ export {
   Grid,
   ColumnRightPadding,
   CenteredRow,
-  DatePickerWrapper,
   PropertyText,
   OwnerInfo,
 };
