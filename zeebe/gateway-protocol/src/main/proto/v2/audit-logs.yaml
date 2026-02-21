@@ -374,6 +374,8 @@ components:
     AuditLogSearchQueryResult:
       description: Audit log search response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:

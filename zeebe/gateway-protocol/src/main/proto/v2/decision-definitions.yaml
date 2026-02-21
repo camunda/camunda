@@ -243,12 +243,15 @@ components:
 
     DecisionDefinitionSearchQueryResult:
       type: object
+      required: 
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The matching decision definitions.
           type: array
+          default: []
           items:
             $ref: '#/components/schemas/DecisionDefinitionResult'
 

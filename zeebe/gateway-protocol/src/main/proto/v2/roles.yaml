@@ -809,9 +809,9 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/Username'
 
     RoleUserSearchResult:
-      required: 
-        - items
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -853,9 +853,9 @@ components:
           type: string
 
     RoleClientSearchResult:
+      type: object
       required: 
         - items
-      type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -897,9 +897,9 @@ components:
           type: string
 
     RoleGroupSearchResult:
-      required:   
-        - items
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:

@@ -313,11 +313,11 @@ components:
           description: A human-readable explanation specific to this occurrence of the problem.
 
     DocumentCreationBatchResponse:
-      required:
-        - failedDocuments
-        - createdDocuments
       allOf:
         - type: object
+          required:
+          - failedDocuments
+          - createdDocuments
           properties:
             failedDocuments:
               type: array

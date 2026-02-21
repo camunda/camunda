@@ -370,9 +370,9 @@ components:
           type: boolean
 
     ProcessDefinitionSearchQueryResult:
-      required: 
-        - items
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -477,6 +477,8 @@ components:
 
     ProcessDefinitionMessageSubscriptionStatisticsQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
       properties:
@@ -524,9 +526,9 @@ components:
             $ref: '#/components/schemas/ProcessDefinitionInstanceStatisticsQuerySortRequest'
 
     ProcessDefinitionInstanceStatisticsQueryResult:
-      required: 
-        - items
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:

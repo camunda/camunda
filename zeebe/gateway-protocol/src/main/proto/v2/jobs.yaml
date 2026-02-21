@@ -626,7 +626,7 @@ components:
 
     JobSearchQueryResult:
       description: Job search response.
-      required: 
+      required:
         - items
       type: object
       allOf:
