@@ -659,3 +659,27 @@ Additional issues:
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore` — 55 tests, 0 failures.
 
+---
+
+## Phase 18: Change `CheckpointEntry.checkpointType` from `String` to `CheckpointType` enum — DONE
+
+**Motivation:** The `BackupMetadataManifest.CheckpointEntry` record stores `checkpointType` as a `String` (e.g., `"MARKER"`, `"SCHEDULED_BACKUP"`), while the RocksDB-side `DbCheckpointMetadataState.CheckpointEntry` already uses the `CheckpointType` enum. The string representation forces callers to use fragile `"MARKER".equals(...)` comparisons and prevents using the enum's `shouldCreateBackup()` method. Changing to the enum makes the code type-safe and more idiomatic.
+
+**JSON backward compatibility:** Jackson deserializes enum names from JSON strings by default, so existing manifests with `"MARKER"`, `"SCHEDULED_BACKUP"`, `"MANUAL_BACKUP"` continue to work without any custom deserializer.
+
+**Changes:**
+
+1. **`BackupMetadataManifest.java`**: Changed `CheckpointEntry` record field from `String checkpointType` to `CheckpointType checkpointType`. Added import for `CheckpointType`.
+
+2. **`BackupMetadataSyncer.java`**: Removed `.name()` call in the mapping from `DbCheckpointMetadataState.CheckpointEntry` to `BackupMetadataManifest.CheckpointEntry` — now passes `entry.checkpointType()` directly since both sides are `CheckpointType`.
+
+3. **`BackupRangeResolver.java`**: Replaced all `!"MARKER".equals(e.checkpointType())` with `e.checkpointType() != CheckpointType.MARKER`. Three locations: `resolvePointInTimeFromManifests()` (2 occurrences) and `loadAndFindRange()` (1 occurrence). Added import for `CheckpointType`.
+
+4. **`BackupRangeResolverTest.java`**: Replaced all `"SCHEDULED_BACKUP"` and `"MARKER"` string literals in `CheckpointEntry` constructors with `CheckpointType.SCHEDULED_BACKUP` and `CheckpointType.MARKER`. Already had the import.
+
+5. **`RestoreManagerTest.java`**: Same string → enum replacement in `CheckpointEntry` constructors. Added import for `CheckpointType`.
+
+6. **`BackupMetadataSyncerTest.java`**: Updated assertion from `.isEqualTo("SCHEDULED_BACKUP")` to `.isEqualTo(CheckpointType.SCHEDULED_BACKUP)`. Updated string literal in test `CheckpointEntry` constructors. Already had the import.
+
+**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore,zeebe/backup`
+

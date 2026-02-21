@@ -11,6 +11,7 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -41,7 +42,7 @@ public final class BackupRangeResolver {
   private final BackupMetadataReader metadataReader;
 
   public BackupRangeResolver(final BackupStore store) {
-    this.metadataReader = new BackupMetadataReader(store);
+    metadataReader = new BackupMetadataReader(store);
   }
 
   /**
@@ -146,7 +147,7 @@ public final class BackupRangeResolver {
             .findFirst()
             .orElseThrow();
 
-    if (!"MARKER".equals(globalCheckpoint.checkpointType())) {
+    if (globalCheckpoint.checkpointType() != CheckpointType.MARKER) {
       return globalLowerBoundId;
     }
 
@@ -155,7 +156,7 @@ public final class BackupRangeResolver {
         globalLowerBoundId);
     return referenceManifest.checkpoints().stream()
         .filter(e -> e.checkpointId() < globalLowerBoundId)
-        .filter(e -> !"MARKER".equals(e.checkpointType()))
+        .filter(e -> e.checkpointType() != CheckpointType.MARKER)
         .max(Comparator.comparingLong(CheckpointEntry::checkpointId))
         .map(CheckpointEntry::checkpointId)
         .orElseThrow(
@@ -190,7 +191,7 @@ public final class BackupRangeResolver {
 
     final var rangeCheckpoints =
         manifest.checkpoints().stream()
-            .filter(e -> !"MARKER".equals(e.checkpointType()))
+            .filter(e -> e.checkpointType() == CheckpointType.MANUAL_BACKUP || e.checkpointType() == CheckpointType.SCHEDULED_BACKUP)
             .filter(e -> e.checkpointId() >= range.start() && e.checkpointId() <= range.end())
             .sorted(Comparator.comparingLong(CheckpointEntry::checkpointId))
             .toList();
@@ -349,17 +350,6 @@ public final class BackupRangeResolver {
   }
 
   /**
-   * Intermediate per-partition result from loading the manifest and finding the covering range. No
-   * timestamp filtering or safe-start logic applied yet.
-   *
-   * @param partition the partition ID
-   * @param range the covering backup range
-   * @param checkpoints all non-MARKER checkpoints within the range, sorted by ID
-   */
-  private record PartitionData(
-      int partition, RangeEntry range, List<CheckpointEntry> checkpoints) {}
-
-  /**
    * @param partition The partition being restored
    * @param safeStart The highest safe checkpoint ID for this partition
    * @param exporterPosition The last exported position for this partition
@@ -469,4 +459,15 @@ public final class BackupRangeResolver {
       long globalCheckpointId,
       Collection<PartitionRestoreInfo> restoreInfos,
       Map<Integer, long[]> backupsByPartitionId) {}
+
+  /**
+   * Intermediate per-partition result from loading the manifest and finding the covering range. No
+   * timestamp filtering or safe-start logic applied yet.
+   *
+   * @param partition the partition ID
+   * @param range the covering backup range
+   * @param checkpoints all non-MARKER checkpoints within the range, sorted by ID
+   */
+  private record PartitionData(
+      int partition, RangeEntry range, List<CheckpointEntry> checkpoints) {}
 }

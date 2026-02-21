@@ -125,7 +125,8 @@ final class BackupMetadataSyncerTest {
     assertThat(manifest.checkpoints()).hasSize(1);
     assertThat(manifest.checkpoints().getFirst().checkpointId()).isEqualTo(10L);
     assertThat(manifest.checkpoints().getFirst().checkpointPosition()).isEqualTo(100L);
-    assertThat(manifest.checkpoints().getFirst().checkpointType()).isEqualTo("SCHEDULED_BACKUP");
+    assertThat(manifest.checkpoints().getFirst().checkpointType())
+        .isEqualTo(CheckpointType.SCHEDULED_BACKUP);
     assertThat(manifest.checkpoints().getFirst().firstLogPosition()).isEqualTo(50L);
     assertThat(manifest.checkpoints().getFirst().numberOfPartitions()).isEqualTo(3);
     assertThat(manifest.checkpoints().getFirst().brokerVersion()).isEqualTo("8.7.0");
@@ -315,9 +316,21 @@ final class BackupMetadataSyncerTest {
     final var checkpoints =
         List.of(
             new CheckpointEntry(
-                1L, 100L, Instant.ofEpochMilli(1000), "SCHEDULED_BACKUP", 50L, 3, "8.7.0"),
+                1L,
+                100L,
+                Instant.ofEpochMilli(1000),
+                CheckpointType.SCHEDULED_BACKUP,
+                50L,
+                3,
+                "8.7.0"),
             new CheckpointEntry(
-                2L, 200L, Instant.ofEpochMilli(2000), "MANUAL_BACKUP", 150L, 3, "8.7.0"));
+                2L,
+                200L,
+                Instant.ofEpochMilli(2000),
+                CheckpointType.MANUAL_BACKUP,
+                150L,
+                3,
+                "8.7.0"));
     final var ranges = List.of(new RangeEntry(1L, 2L));
     final var manifest = new BackupMetadataManifest(1, 1, Instant.now(), checkpoints, ranges);
     final var bytes = serializeManifest(manifest);

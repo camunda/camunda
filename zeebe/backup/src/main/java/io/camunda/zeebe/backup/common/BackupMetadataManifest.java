@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.common;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.time.Instant;
 import java.util.List;
 
@@ -32,7 +33,7 @@ public record BackupMetadataManifest(
       @JsonProperty("checkpointId") long checkpointId,
       @JsonProperty("checkpointPosition") long checkpointPosition,
       @JsonProperty("checkpointTimestamp") Instant checkpointTimestamp,
-      @JsonProperty("checkpointType") String checkpointType,
+      @JsonProperty("checkpointType") CheckpointType checkpointType,
       @JsonProperty("firstLogPosition") long firstLogPosition,
       @JsonProperty("numberOfPartitions") int numberOfPartitions,
       @JsonProperty("brokerVersion") String brokerVersion) {

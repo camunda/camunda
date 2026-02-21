@@ -68,7 +68,7 @@ public final class BackupMetadataSyncer {
                         entry.checkpointId(),
                         entry.checkpointPosition(),
                         Instant.ofEpochMilli(entry.checkpointTimestamp()),
-                        entry.checkpointType().name(),
+                        entry.checkpointType(),
                         entry.firstLogPosition(),
                         entry.numberOfPartitions(),
                         entry.brokerVersion()))

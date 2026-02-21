@@ -15,6 +15,7 @@ import io.camunda.zeebe.backup.common.BackupMetadataManifest.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadataManifest.RangeEntry;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
+import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.nio.file.DirectoryNotEmptyException;
@@ -142,7 +143,7 @@ final class RestoreManagerTest {
       checkpointIds[i] = checkpointId;
       checkpointEntries.add(
           new CheckpointEntry(
-              checkpointId, 0L, timestamp, "SCHEDULED_BACKUP", 0L, 2, "test-version"));
+              checkpointId, 0L, timestamp, CheckpointType.SCHEDULED_BACKUP, 0L, 2, "test-version"));
       // Add backups to the store for both partitions (needed by restore)
       backupStore.addBackupWithTimestamp(
           new BackupIdentifierImpl(0, 1, checkpointId), timestamp, 2);
@@ -217,7 +218,13 @@ final class RestoreManagerTest {
     final var entries =
         List.of(
             new CheckpointEntry(
-                checkpointId, 0L, outsideTimestamp, "SCHEDULED_BACKUP", 0L, 1, "test-version"));
+                checkpointId,
+                0L,
+                outsideTimestamp,
+                CheckpointType.SCHEDULED_BACKUP,
+                0L,
+                1,
+                "test-version"));
     backupStore.storeManifest(
         new BackupMetadataManifest(
             1, 1L, Instant.now(), entries, List.of(new RangeEntry(checkpointId, checkpointId))));
@@ -272,7 +279,9 @@ final class RestoreManagerTest {
     final var timestamp = Instant.parse("2024-01-01T10:00:00Z");
     final var markerId = generator.fromTimestamp(timestamp.toEpochMilli());
     final var entries =
-        List.of(new CheckpointEntry(markerId, 0L, timestamp, "MARKER", 0L, 1, "test-version"));
+        List.of(
+            new CheckpointEntry(
+                markerId, 0L, timestamp, CheckpointType.MARKER, 0L, 1, "test-version"));
     backupStore.storeManifest(new BackupMetadataManifest(1, 1L, Instant.now(), entries, List.of()));
 
     try (final var restoreManager =

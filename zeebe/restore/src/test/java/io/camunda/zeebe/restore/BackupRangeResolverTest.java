@@ -563,7 +563,7 @@ final class BackupRangeResolverTest {
                   checkpointId,
                   checkpointPosition,
                   timestamp,
-                  "SCHEDULED_BACKUP",
+                  CheckpointType.SCHEDULED_BACKUP,
                   firstLogPosition,
                   3,
                   "8.7.0"));
@@ -802,7 +802,7 @@ final class BackupRangeResolverTest {
                     id.checkpointId(),
                     checkpointPosition,
                     timestamp,
-                    "SCHEDULED_BACKUP",
+                    CheckpointType.SCHEDULED_BACKUP,
                     firstLogPosition,
                     3,
                     "8.7.0"));
@@ -831,7 +831,13 @@ final class BackupRangeResolverTest {
             .computeIfAbsent(partitionId, k -> new ArrayList<>())
             .add(
                 new CheckpointEntry(
-                    checkpointId, checkpointPosition, timestamp, "MARKER", 0L, 3, "8.7.0"));
+                    checkpointId,
+                    checkpointPosition,
+                    timestamp,
+                    CheckpointType.MARKER,
+                    0L,
+                    3,
+                    "8.7.0"));
         store.syncManifest(partitionId);
         return this;
       }
@@ -844,7 +850,9 @@ final class BackupRangeResolverTest {
     void shouldReturnEmptyWhenNoCheckpointBelowExportedPosition() {
       // given
       final var checkpoints =
-          List.of(new CheckpointEntry(1, 100, Instant.now(), "SCHEDULED_BACKUP", 1, 3, "8.7.0"));
+          List.of(
+              new CheckpointEntry(
+                  1, 100, Instant.now(), CheckpointType.SCHEDULED_BACKUP, 1, 3, "8.7.0"));
 
       // when - exported position 50 is below all checkpoints
       final var result = BackupRangeResolver.findSafeStartCheckpoint(50L, checkpoints);
@@ -870,9 +878,12 @@ final class BackupRangeResolverTest {
       // given - checkpoints with checkpointPositions [100, 200, 300]
       final var checkpoints =
           List.of(
-              new CheckpointEntry(1, 100, Instant.now(), "SCHEDULED_BACKUP", 1, 3, "8.7.0"),
-              new CheckpointEntry(2, 200, Instant.now(), "SCHEDULED_BACKUP", 101, 3, "8.7.0"),
-              new CheckpointEntry(3, 300, Instant.now(), "SCHEDULED_BACKUP", 201, 3, "8.7.0"));
+              new CheckpointEntry(
+                  1, 100, Instant.now(), CheckpointType.SCHEDULED_BACKUP, 1, 3, "8.7.0"),
+              new CheckpointEntry(
+                  2, 200, Instant.now(), CheckpointType.SCHEDULED_BACKUP, 101, 3, "8.7.0"),
+              new CheckpointEntry(
+                  3, 300, Instant.now(), CheckpointType.SCHEDULED_BACKUP, 201, 3, "8.7.0"));
 
       // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
       final var result = BackupRangeResolver.findSafeStartCheckpoint(250L, checkpoints);
