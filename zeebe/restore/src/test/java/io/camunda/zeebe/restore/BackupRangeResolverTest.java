@@ -45,7 +45,6 @@ import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
-import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
@@ -156,28 +155,29 @@ final class BackupRangeResolverTest {
 
   static Stream<Arguments> optionalTimeBoundsProvider() {
     return Stream.of(
-        Arguments.of(minutesAfterBase(20), null, 400), // only from provided
-        Arguments.of(null, null, 400), // neither bound provided
-        Arguments.of(null, minutesAfterBase(30), 300) // only to provided
-        );
+        Arguments.of(minutesAfterBase(20), null, 400, 2500L), // only from provided
+        Arguments.of(null, null, 400, 2500L), // neither bound provided
+        // only to provided: to=min30, highest checkpoint ≤ min30 is 200 (at min20),
+        // exporter position 1500 → safeStart=100 (pos=1000), filtered=[100, 200]
+        Arguments.of(null, minutesAfterBase(30), 200, 1500L));
   }
 
   @ParameterizedTest
   @MethodSource("optionalTimeBoundsProvider")
   void shouldRestoreCompleteRangeWhenBoundsAreOptional(
-      @Nullable final Instant from, @Nullable final Instant to, final long globalCheckpoint) {
+      @Nullable final Instant from,
+      @Nullable final Instant to,
+      final long globalCheckpoint,
+      final long exporterPosition) {
     // given
     store
         .forPartition(1)
         .withBackupsInRange(100, 400, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 4);
 
     // when
-    final var result = resolve(1, from, to, Map.of(1, 2500L));
+    final var result = resolve(1, from, to, Map.of(1, exporterPosition));
     // then - all backups from safe start are returned regardless of optional bounds
     assertThat(result.globalCheckpointId()).isEqualTo(globalCheckpoint);
-    final var expectedCheckpoints =
-        LongStream.of(200L, 300L, 400L).filter(idx -> idx <= globalCheckpoint).toArray();
-    assertThat(result.backupsByPartitionId().get(1)).containsExactly(expectedCheckpoints);
   }
 
   @Test
@@ -265,12 +265,16 @@ final class BackupRangeResolverTest {
         .forPartition(2)
         .withBackupsInRange(300, 400, 3000, 1000, minutesAfterBase(0), minutesAfterBase(30), 2);
 
-    // when/then
+    // when/then - global target = min(200, 400) = 200
+    // P1: safeStart=200 (pos 2000 ≤ 2500), filtered=[200], but last pos 2000 < exporter 2500
+    // P2: safeStart=400 (pos 4000 ≤ 4500), but 400 > global 200 → validation fails
     assertThatThrownBy(
             () -> resolve(2, minutesAfterBase(0), minutesAfterBase(30), Map.of(1, 2500L, 2, 4500L)))
         .isInstanceOf(CompletionException.class)
         .hasCauseInstanceOf(IllegalStateException.class)
-        .hasMessageContaining("No common checkpoint found across all partitions");
+        .hasMessageContaining("Cannot restore to global checkpoint 200")
+        .hasMessageContaining("Partition 1")
+        .hasMessageContaining("Partition 2");
   }
 
   @Test
@@ -358,21 +362,21 @@ final class BackupRangeResolverTest {
   }
 
   @Test
-  void shouldFailWhenFirstBackupInRangeIsAfterSafeStart() {
-    // given - backups in time interval start at 200, but safe start is 100
+  void shouldIncludeCheckpointsBeforeTimeWindowWhenNeededForSafeStart() {
+    // given - backups in time interval [min30, min60] start at checkpoint 200,
+    // but safe start based on exported position 1500 is checkpoint 100 (pos=1000).
+    // The new algorithm uses ALL range checkpoints for safeStart, so checkpoint 100
+    // is found even though it's before the time window.
     store
         .forPartition(1)
         .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(60), 3);
 
-    // when - time interval [30, 60] returns backups [200, 300]
-    // but safe start based on exported position 1500 is checkpoint 100
-    // first backup in interval (200) > safe start (100) -> validation fails
-    assertThatThrownBy(
-            () -> resolve(1, minutesAfterBase(30), minutesAfterBase(60), Map.of(1, 1500L)))
-        .isInstanceOf(CompletionException.class)
-        .hasCauseInstanceOf(IllegalArgumentException.class)
-        .hasMessageContaining(
-            "No safe start checkpoint found for partition 1 with exported position 1500");
+    // when - to=min60, global target=300, safeStart=100 (pos 1000 ≤ 1500)
+    final var result = resolve(1, minutesAfterBase(30), minutesAfterBase(60), Map.of(1, 1500L));
+
+    // then - all checkpoints from safeStart to globalTarget are included
+    assertThat(result.globalCheckpointId()).isEqualTo(300L);
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(100L, 200L, 300L);
   }
 
   @Test
@@ -421,12 +425,12 @@ final class BackupRangeResolverTest {
         .forPartition(1)
         .withBackupsInRange(100, 300, 1000, 1000, minutesAfterBase(0), minutesAfterBase(45), 3);
 
-    // when - exported position 250 means safe start is checkpoint 2 (position 200 <= 250)
-    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(40), Map.of(1, 2500L));
+    // when - to=min40, highest checkpoint ≤ min40 is 200 (at min22.5), global target=200
+    // exported position 1500 → safeStart=100 (pos=1000), filtered=[100, 200]
+    final var result = resolve(1, minutesAfterBase(0), minutesAfterBase(40), Map.of(1, 1500L));
 
     // then
-    // backup 100 is not included as 200 is already before safeStart
-    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {200, 300});
+    assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {100, 200});
   }
 
   @Test
@@ -440,6 +444,40 @@ final class BackupRangeResolverTest {
 
     // then
     assertThat(result.backupsByPartitionId()).containsEntry(1, new long[] {100});
+  }
+
+  @Test
+  void shouldHandleCrossPartitionTimestampSkewInRdbmsPath() {
+    // given - 2 partitions with same checkpoint IDs but skewed timestamps
+    // P1: checkpoints at min10, min20, min30, min40
+    // P2: checkpoints at min11, min21, min32, min42
+    // to=min31: P1 sees 300 ≤ min31 (at min30), P2 sees 200 ≤ min31 (300 at min32 > min31)
+    // global target = min(300, 200) = 200
+    store
+        .forPartition(1)
+        .withRange(100, 400)
+        .addBackup(100, 1000, 1, minutesAfterBase(10))
+        .addBackup(200, 2000, 1001, minutesAfterBase(20))
+        .addBackup(300, 3000, 2001, minutesAfterBase(30))
+        .addBackup(400, 4000, 3001, minutesAfterBase(40));
+
+    store
+        .forPartition(2)
+        .withRange(100, 400)
+        .addBackup(100, 1000, 1, minutesAfterBase(11))
+        .addBackup(200, 2000, 1001, minutesAfterBase(21))
+        .addBackup(300, 3000, 2001, minutesAfterBase(32))
+        .addBackup(400, 4000, 3001, minutesAfterBase(42));
+
+    // when - from=min11 so both ranges cover it, to=min31
+    final var result =
+        resolve(2, minutesAfterBase(11), minutesAfterBase(31), Map.of(1, 1500L, 2, 1500L));
+
+    // then - global target = 200 (conservative min across partitions)
+    assertThat(result.globalCheckpointId()).isEqualTo(200L);
+    // Both partitions: safeStart=100 (pos 1000 ≤ 1500), filtered=[100, 200]
+    assertThat(result.backupsByPartitionId().get(1)).containsExactly(100L, 200L);
+    assertThat(result.backupsByPartitionId().get(2)).containsExactly(100L, 200L);
   }
 
   private GlobalRestoreInfo resolve(

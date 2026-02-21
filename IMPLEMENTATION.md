@@ -530,17 +530,13 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
    - Global lower bound = `min(per-partition lower bounds)` — handles cross-partition timestamp skew
    - If global lower bound is a MARKER, walks backward to nearest backup-type checkpoint present on all partitions
    - Throws `IllegalStateException` if no checkpoint at-or-before target, or all such checkpoints are MARKERs
-
 2. **`RestoreManager.java`**:
    - Replaced non-RDBMS path: `restore(@Nullable Instant from, @Nullable Instant to, ...)` now calls `restorePointInTime(to != null ? to : Instant.now(), ...)` instead of removed `restoreTimeRange()`
    - `from` parameter is ignored in non-RDBMS path (PITR only needs target timestamp)
    - Removed dead `restoreTimeRange()` method
    - RDBMS path (`restoreRdbms`) unchanged
-
 3. **`RestoreApp.java`** — updated `--from`/`--to` comments: `--from` is optional, `--to` alone suffices for non-RDBMS PITR. `hasTimeRange()` already uses `||` so no logic change needed.
-
 4. **`BackupRangeResolverTest.java`** — added `@Nested ResolvePointInTime` class with 9 tests: exact backup match, target between backups, MARKER walk-back, cross-partition timestamp skew, no checkpoint before target, all MARKERs before target, multi-partition MARKER walk-back, latest backup when target after all, missing manifest.
-
 5. **`RestoreManagerTest.java`** — updated 4 tests for PITR semantics: split ranges no longer fail, error message updates for "no checkpoint found", CompletionException unwrapping, all-MARKERs error.
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore` — 54 tests pass.
@@ -563,7 +559,6 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 **Changes:**
 
 1. **`BackupRangeResolver.java`** — rewrite (~653 → ~350 lines):
-
    - **Delete `toBackupStatus()`** — no more conversion from `CheckpointEntry` to `BackupStatus`.
    - **Delete `findBackupRangeCoveringInterval()`** — replace with private `findCoveringRange(List<RangeEntry>, Map<Long, Instant>, Instant, Instant)` that returns `Optional<RangeEntry>`. Logic: iterate ranges in reverse, look up start/end timestamps from the map, check containment. ~15 lines. Containment rule: `effectiveFrom = from != null ? from : to`, `effectiveTo = to != null ? to : from`, then `!startTime.isAfter(effectiveFrom) && !endTime.isBefore(effectiveTo)`. Both-null case returns first (latest) range.
    - **Delete `getAllBackupsFromManifest()`** — replace with private `selectCheckpoints(List<CheckpointEntry>, Instant, Instant)`. Logic: filter out entries before `from`, then include entries up to and including the first one whose timestamp >= `to`. A simple loop, ~15 lines. No `Interval.smallestCover()`.
@@ -584,17 +579,13 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
    - **`resolvePointInTime()` stays unchanged** — it's already clean.
    - **Remove 11 imports**: `BackupDescriptor`, `BackupRange`, `BackupRange.Complete`, `BackupStatus`, `BackupStatusCode`, `BackupDescriptorImpl`, `BackupIdentifierImpl`, `BackupStatusImpl`, `CheckpointIdGenerator`, `Interval`, `Tuple`.
    - **Also remove**: `CheckpointType` (only used in `toBackupStatus`), `OptionalLong` (same), `SequencedCollection` (use `List.reversed()`).
-
 2. **`BackupRangeResolverTest.java`**:
-
    - **`FindSafeStartCheckpoint` nested class**: change test helper from `createBackupStatus(partition, checkpointId, position, firstLog)` to `new CheckpointEntry(checkpointId, position, Instant.now(), "SCHEDULED_BACKUP", firstLog, 3, "8.7.0")`. Call `BackupRangeResolver.findSafeStartCheckpoint(pos, List.of(...))` with `List<CheckpointEntry>`.
    - **Remove `createBackupStatus()` helper methods** — no longer needed.
    - **Update `resolve()` helper**: remove `checkIdGenerator` from the `getRestoreInfoForAllPartitions` call.
    - **Update error message assertions** if the error format changes (e.g., the `findBackupRangeCoveringInterval` error message that included `timeInterval=` — the new `findCoveringRange` won't include that).
    - All other tests (happy paths, error cases, `ResolvePointInTime`) go through the public API and should work without changes beyond the above.
-
 3. **`RestoreManager.java`**:
-
    - Remove `checkpointIdGenerator` field and its initialization from the constructor.
    - Remove the `checkpointIdGenerator` argument from the `getRestoreInfoForAllPartitions` call in `restoreRdbms()`.
    - Remove `CheckpointIdGenerator` import.
@@ -608,4 +599,63 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 - `RestoreManagerTest` — only uses `GlobalRestoreInfo.globalCheckpointId()` and `.backupsByPartitionId()`, which are unchanged
 
 **Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore`
+
+## Phase 17: Fix unsound checkpoint selection in BackupRangeResolver
+
+**Problem:**
+
+`BackupRangeResolver.getRestoreInfoForAllPartitions()` has an unsound algorithm. `selectCheckpoints()` filters checkpoints per-partition by timestamp *before* the cross-partition intersection in `computeGlobalResult()`. Because `checkpointTimestamp` is partition-local (each partition writes its checkpoint at a slightly different wall-clock time), the same checkpoint ID can be filtered out on one partition but not another due to timestamp skew. This breaks the subsequent set intersection.
+
+Additional issues:
+1. `selectCheckpoints()` includes a checkpoint *after* `to` (the "firstAfter"), which means restore can silently go beyond the user's requested time window.
+2. `findSafeStartCheckpoint` is applied to already-timestamp-filtered checkpoints, so valid safe-start checkpoints outside `[from, to]` but inside the covering range are missed.
+
+**Correct algorithm:**
+
+1. Load manifests for all partitions in parallel (unchanged).
+2. Per partition: find a covering range for `[from, to]` (unchanged).
+3. Per partition: collect all non-MARKER checkpoints in the covering range (unchanged).
+4. **Find global target**: Per partition, find highest non-MARKER checkpoint with timestamp ≤ `to` (or highest if `to` is null). Global target = `min` across partitions. This handles cross-partition timestamp skew by using the conservative lower bound.
+5. Per partition: `findSafeStartCheckpoint` from exporter position against ALL range checkpoints (not pre-filtered ones).
+6. Per partition: collect checkpoints in `[safeStart, globalTarget]`.
+7. Validate: chain continuity, range covers `[safeStart, globalTarget]`, last checkpoint position ≥ exporterPosition.
+
+**Key difference from before:** There is no per-partition timestamp filtering before the cross-partition merge. Instead, timestamp filtering happens once globally (step 4) to find a single target checkpoint ID, then everything works with checkpoint IDs only.
+
+**Changes (done):**
+
+1. **`BackupRangeResolver.java`**:
+   - Added private `record PartitionData(int partition, RangeEntry range, List<CheckpointEntry> checkpoints)` to hold intermediate per-partition results (manifest loaded, range found, all non-MARKER checkpoints in range collected — but no timestamp filtering or safe start yet).
+   - Renamed `resolvePartition()` → `loadAndFindRange()`: only loads manifest, finds covering range, returns `PartitionData`. Removed all `selectCheckpoints` and `findSafeStartCheckpoint` logic from this method.
+   - **Deleted `selectCheckpoints()`** entirely.
+   - Changed `getRestoreInfoForAllPartitions` flow to: `parTraverse(loadAndFindRange) → thenApply(computeGlobalResult(to, exportedPositions))`.
+   - Rewrote `computeGlobalResult()` to accept `@Nullable Instant to` and `Map<Integer, Long> exportedPositions`:
+     - Calls new `findGlobalTarget(partitionDataList, to)` to get the single global checkpoint ID.
+     - Per partition: calls `findSafeStartCheckpoint(exporterPosition, allRangeCheckpoints)` against all range checkpoints.
+     - Per partition: filters checkpoints to `[safeStart, globalTarget]`.
+     - Builds `PartitionRestoreInfo` per partition.
+     - Calls existing `validatePartitions()`.
+   - Added private `findGlobalTarget(List<PartitionData>, @Nullable Instant to)`:
+     - If `to` is null: returns `min` across partitions of the highest checkpoint ID.
+     - If `to` is non-null: per partition, finds highest checkpoint with timestamp ≤ `to`. Global target = `min` across partitions.
+
+2. **`BackupRangeResolverTest.java`**:
+   - `optionalTimeBoundsProvider`: Added `exporterPosition` parameter. Changed `(null, min30, 300)` → `(null, min30, 200, 1500L)` — global target is now 200 (highest ≤ min30), exporter lowered so last checkpoint position (2000) ≥ exporter (1500).
+   - `shouldNotReturnDuplicatedBackupsWhenMultipleNodes`: Lowered exporter to 1500 so global target 200's position (2000) ≥ exporter. Assertion changed to `{100, 200}`.
+   - `shouldFailWhenFirstBackupInRangeIsAfterSafeStart` → renamed to `shouldIncludeCheckpointsBeforeTimeWindowWhenNeededForSafeStart`: now expects success because safeStart uses ALL range checkpoints (not just timestamp-filtered ones), so checkpoint 100 is found.
+   - `shouldFailWhenNoCommonCheckpointExistsAcrossPartitions`: Updated assertion — now both partitions fail (P1: last pos < exporter, P2: safeStart beyond global target).
+   - Added `shouldHandleCrossPartitionTimestampSkewInRdbmsPath` — 2 partitions with 4 checkpoints each, skewed timestamps, verifying global target uses conservative min across partitions.
+
+**What stayed unchanged:**
+
+- `resolvePointInTime()` — already uses its own global min algorithm
+- `GlobalRestoreInfo` record shape
+- `PartitionRestoreInfo` record and its `validate()` method
+- `findCoveringRange()` — unchanged
+- `findSafeStartCheckpoint()` — unchanged (just called with different input)
+- `loadManifest()` — unchanged
+- `RestoreManager.java` — no signature changes needed
+- `BackupMetadataReader` — untouched
+
+**Test:** `./mvnw verify -Dquickly -DskipTests=false -DskipITs -T1C -pl zeebe/restore` — 55 tests, 0 failures.
 

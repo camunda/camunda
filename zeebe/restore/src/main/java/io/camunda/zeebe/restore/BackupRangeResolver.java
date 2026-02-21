@@ -47,6 +47,18 @@ public final class BackupRangeResolver {
   /**
    * Resolves restore information for all partitions in parallel.
    *
+   * <p>Algorithm:
+   *
+   * <ol>
+   *   <li>Load manifests and find covering ranges per partition (parallelized)
+   *   <li>Find global target checkpoint: per partition find the highest non-MARKER checkpoint with
+   *       timestamp &le; {@code to} (or highest if {@code to} is null), then take the min across
+   *       partitions to handle cross-partition timestamp skew
+   *   <li>Per partition: find safe start from exporter position against ALL range checkpoints
+   *   <li>Per partition: collect checkpoints in [safeStart, globalTarget]
+   *   <li>Validate chain continuity and coverage
+   * </ol>
+   *
    * @return the {@link GlobalRestoreInfo} containing the global checkpoint ID and per-partition
    *     restore info
    */
@@ -75,9 +87,9 @@ public final class BackupRangeResolver {
             IntStream.rangeClosed(1, partitionCount).boxed().toList(),
             partition ->
                 CompletableFuture.supplyAsync(
-                    () -> resolvePartition(partition, from, to, exportedPositions.get(partition)),
-                    executor))
-        .thenApply(BackupRangeResolver::computeGlobalResult);
+                    () -> loadAndFindRange(partition, from, to), executor))
+        .thenApply(
+            partitionDataList -> computeGlobalResult(partitionDataList, to, exportedPositions));
   }
 
   /**
@@ -153,11 +165,13 @@ public final class BackupRangeResolver {
                         .formatted(target)));
   }
 
-  private PartitionRestoreInfo resolvePartition(
-      final int partition,
-      @Nullable final Instant from,
-      @Nullable final Instant to,
-      final long exporterPosition) {
+  /**
+   * Loads the manifest for a partition, finds the covering range, and collects all non-MARKER
+   * checkpoints in that range. No timestamp filtering or safe-start logic here — that happens
+   * globally in {@link #computeGlobalResult}.
+   */
+  private PartitionData loadAndFindRange(
+      final int partition, @Nullable final Instant from, @Nullable final Instant to) {
     final var manifest = loadManifest(partition);
 
     final var timestamps =
@@ -181,25 +195,7 @@ public final class BackupRangeResolver {
             .sorted(Comparator.comparingLong(CheckpointEntry::checkpointId))
             .toList();
 
-    final var effectiveFrom = from != null ? from : timestamps.get(range.start());
-    final var effectiveTo = to != null ? to : timestamps.get(range.end());
-
-    final var selected = selectCheckpoints(rangeCheckpoints, effectiveFrom, effectiveTo);
-
-    final var safeStart =
-        findSafeStartCheckpoint(exporterPosition, selected)
-            .orElseThrow(
-                () ->
-                    new IllegalArgumentException(
-                        "No safe start checkpoint found for partition %d with exported position %d"
-                            .formatted(partition, exporterPosition)));
-
-    final var filtered = selected.stream().filter(e -> e.checkpointId() >= safeStart).toList();
-
-    final var restoreInfo =
-        new PartitionRestoreInfo(partition, safeStart, exporterPosition, range, filtered);
-    LOG.info("Resolved restore info for partition {} = {}", partition, restoreInfo);
-    return restoreInfo;
+    return new PartitionData(partition, range, rangeCheckpoints);
   }
 
   /**
@@ -233,54 +229,6 @@ public final class BackupRangeResolver {
   }
 
   /**
-   * Selects the minimal set of checkpoints whose timestamps cover [from, to]. Includes the last
-   * checkpoint before {@code from} if no exact match, and the first checkpoint after {@code to} if
-   * no exact match.
-   */
-  private static List<CheckpointEntry> selectCheckpoints(
-      final List<CheckpointEntry> sorted, final Instant from, final Instant to) {
-    CheckpointEntry lastBefore = null;
-    CheckpointEntry firstAfter = null;
-    final var within = new ArrayList<CheckpointEntry>();
-
-    for (final var entry : sorted) {
-      final var ts = entry.checkpointTimestamp();
-      if (ts.isBefore(from)) {
-        lastBefore = entry;
-      } else if (ts.isAfter(to)) {
-        if (firstAfter == null) {
-          firstAfter = entry;
-        }
-      } else {
-        within.add(entry);
-      }
-    }
-
-    final var hasStart =
-        lastBefore != null
-            || (!within.isEmpty() && !within.getFirst().checkpointTimestamp().isAfter(from));
-    final var hasEnd =
-        firstAfter != null
-            || (!within.isEmpty() && !within.getLast().checkpointTimestamp().isBefore(to));
-
-    if (!hasStart || !hasEnd) {
-      return List.of();
-    }
-
-    final var result = new ArrayList<CheckpointEntry>();
-    if (lastBefore != null
-        && (within.isEmpty() || !within.getFirst().checkpointTimestamp().equals(from))) {
-      result.add(lastBefore);
-    }
-    result.addAll(within);
-    if (firstAfter != null
-        && (within.isEmpty() || !within.getLast().checkpointTimestamp().equals(to))) {
-      result.add(firstAfter);
-    }
-    return result;
-  }
-
-  /**
    * Finds the safe starting checkpoint for a partition based on its exported position.
    *
    * @param exportedPosition the last position exported to RDBMS for this partition
@@ -305,29 +253,111 @@ public final class BackupRangeResolver {
                     "No backup metadata manifest found for partition %d".formatted(partition)));
   }
 
-  private static GlobalRestoreInfo computeGlobalResult(
-      final Collection<PartitionRestoreInfo> restoreInfos) {
-    final var globalCheckpointId =
-        restoreInfos.stream()
-            .map(
-                info ->
-                    info.checkpoints().stream()
-                        .map(CheckpointEntry::checkpointId)
-                        .collect(Collectors.toSet()))
-            .reduce(
-                (set1, set2) -> {
-                  set1.retainAll(set2);
-                  return set1;
-                })
-            .flatMap(common -> common.stream().max(Long::compareTo))
-            .orElseThrow(
-                () ->
-                    new IllegalStateException("No common checkpoint found across all partitions"));
+  /**
+   * Finds the global target checkpoint ID across all partitions.
+   *
+   * <p>If {@code to} is null, the global target is the minimum of the highest checkpoint ID across
+   * partitions (ensures all partitions can reach it). If {@code to} is non-null, per partition we
+   * find the highest non-MARKER checkpoint with timestamp &le; {@code to}, then take the min across
+   * partitions to handle cross-partition timestamp skew.
+   */
+  private static long findGlobalTarget(
+      final List<PartitionData> partitionDataList, @Nullable final Instant to) {
+    if (to == null) {
+      return partitionDataList.stream()
+          .mapToLong(
+              pd ->
+                  pd.checkpoints().stream()
+                      .mapToLong(CheckpointEntry::checkpointId)
+                      .max()
+                      .orElseThrow(
+                          () ->
+                              new IllegalStateException(
+                                  "No non-MARKER checkpoints found for partition %d"
+                                      .formatted(pd.partition()))))
+          .min()
+          .orElseThrow(
+              () -> new IllegalStateException("No partitions found to compute global target"));
+    }
 
-    PartitionRestoreInfo.validatePartitions(restoreInfos, globalCheckpointId);
-    final var backupIdsByPartition = PartitionRestoreInfo.backupIdsByPartition(restoreInfos);
-    return new GlobalRestoreInfo(globalCheckpointId, restoreInfos, backupIdsByPartition);
+    return partitionDataList.stream()
+        .mapToLong(
+            pd ->
+                pd.checkpoints().stream()
+                    .filter(e -> !e.checkpointTimestamp().isAfter(to))
+                    .mapToLong(CheckpointEntry::checkpointId)
+                    .max()
+                    .orElseThrow(
+                        () ->
+                            new IllegalStateException(
+                                "No non-MARKER checkpoint found at or before %s for partition %d"
+                                    .formatted(to, pd.partition()))))
+        .min()
+        .orElseThrow(
+            () -> new IllegalStateException("No partitions found to compute global target"));
   }
+
+  /**
+   * Computes the global restore result from all partition data.
+   *
+   * <p>Steps:
+   *
+   * <ol>
+   *   <li>Find global target checkpoint via {@link #findGlobalTarget}
+   *   <li>Per partition: find safe start from exporter position against ALL range checkpoints
+   *   <li>Per partition: filter checkpoints to [safeStart, globalTarget]
+   *   <li>Validate all partitions
+   * </ol>
+   */
+  private static GlobalRestoreInfo computeGlobalResult(
+      final List<PartitionData> partitionDataList,
+      @Nullable final Instant to,
+      final Map<Integer, Long> exportedPositions) {
+    final var globalTarget = findGlobalTarget(partitionDataList, to);
+
+    final var restoreInfos =
+        partitionDataList.stream()
+            .map(
+                pd -> {
+                  final var exporterPosition = exportedPositions.get(pd.partition());
+                  final var safeStart =
+                      findSafeStartCheckpoint(exporterPosition, pd.checkpoints())
+                          .orElseThrow(
+                              () ->
+                                  new IllegalArgumentException(
+                                      "No safe start checkpoint found for partition %d with exported position %d"
+                                          .formatted(pd.partition(), exporterPosition)));
+
+                  final var filtered =
+                      pd.checkpoints().stream()
+                          .filter(e -> e.checkpointId() >= safeStart)
+                          .filter(e -> e.checkpointId() <= globalTarget)
+                          .toList();
+
+                  final var restoreInfo =
+                      new PartitionRestoreInfo(
+                          pd.partition(), safeStart, exporterPosition, pd.range(), filtered);
+                  LOG.info(
+                      "Resolved restore info for partition {} = {}", pd.partition(), restoreInfo);
+                  return restoreInfo;
+                })
+            .toList();
+
+    PartitionRestoreInfo.validatePartitions(restoreInfos, globalTarget);
+    final var backupIdsByPartition = PartitionRestoreInfo.backupIdsByPartition(restoreInfos);
+    return new GlobalRestoreInfo(globalTarget, restoreInfos, backupIdsByPartition);
+  }
+
+  /**
+   * Intermediate per-partition result from loading the manifest and finding the covering range. No
+   * timestamp filtering or safe-start logic applied yet.
+   *
+   * @param partition the partition ID
+   * @param range the covering backup range
+   * @param checkpoints all non-MARKER checkpoints within the range, sorted by ID
+   */
+  private record PartitionData(
+      int partition, RangeEntry range, List<CheckpointEntry> checkpoints) {}
 
   /**
    * @param partition The partition being restored

@@ -108,13 +108,13 @@ public class RestoreManager implements CloseableSilently {
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     if (exporterPositionMapper == null) {
-      restorePointInTime(to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
+      restoreTimeRange(to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
     } else {
-      restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
+      restoreToMatchRdbms(from, to, validateConfig, ignoreFilesInTarget);
     }
   }
 
-  private void restoreRdbms(
+  private void restoreToMatchRdbms(
       @Nullable final Instant from,
       @Nullable final Instant to,
       final boolean validateConfig,
@@ -139,7 +139,7 @@ public class RestoreManager implements CloseableSilently {
     restore(restoreInfos.backupsByPartitionId(), validateConfig, ignoreFilesInTarget);
   }
 
-  private void restorePointInTime(
+  private void restoreTimeRange(
       final Instant target, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
