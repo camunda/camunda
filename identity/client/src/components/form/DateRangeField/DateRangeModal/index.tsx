@@ -77,6 +77,8 @@ const DateRangeModal: React.FC<Props> = ({
 
   const methods = useForm<FormValues>({
     defaultValues,
+    mode: "onChange",
+    reValidateMode: "onChange",
   });
 
   return (

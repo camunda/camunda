@@ -263,8 +263,7 @@ const List: FC = () => {
                   from: timestampRange.from ?? "",
                   to: timestampRange.to ?? "",
                 }}
-                onChange={(dates) => {
-                  const [from, to] = dates;
+                onChange={([from, to]) => {
                   setValue("timestampRange", {
                     from: from ? from.toISOString() : undefined,
                     to: to ? to.toISOString() : undefined,
