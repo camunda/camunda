@@ -21,6 +21,10 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - Code review and integration expectations
 - How all teams can independently own and maintain their workflows
 
+### CI/CD Improvement Plan
+
+**[CI/CD Improvement Plan](../ci-cd/README.md)** - Comprehensive plan for achieving continuous delivery in the Camunda monorepo, including phase-by-phase improvements from quick wins to full pipeline architecture, success metrics, and priority-ranked action items.
+
 ### CI & Automation
 
 **[CI & Automation](./ci)** - Complete guide to continuous integration and automation processes including:

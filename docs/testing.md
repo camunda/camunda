@@ -109,6 +109,17 @@ successfully before running the tests.
 Acceptance tests (ATs) are mostly slow, testing a complete user journey or a feature end-to-end (E2E), covering multiple or even all components at the same time in an integrated manner.
 Details, general recommendations, and how-tos/examples of how to write them, you can find in the [acceptance test guide](./testing/acceptance.md).
 
+## Testing Strategy
+
+For comprehensive testing practices, patterns, and policies for the Camunda monorepo, see the [Testing Strategy Manifesto](./testing-strategy/README.md). It covers:
+
+- Guiding principles and the testing pyramid
+- Detailed guides for each test layer (unit, integration, contract, E2E, architecture, performance)
+- Prohibited and required patterns
+- Naming conventions and framework choices
+- Flaky test policy and enforcement rules
+- PR checklist
+
 ## Reliability testing
 
 We define reliability testing as a type of software testing and practice that validates system performance and reliability. It can thus be done over time and with injection failure scenarios (injecting chaos).
