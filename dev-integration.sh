@@ -26,9 +26,11 @@ INTEGRATION="integration"
 # Branches to merge, in order. Dependencies before dependents.
 # Format: "branch-name  # optional comment"
 TOPICS=(
+  "dev-scripts                               # chore: dev workflow scripts"
   "46402-deterministic-ordering-in-test      # test: statistics ordering fix"
   "46406-fix-e2e-document-test               # test: document processDefinitionId fix"
   "gateway-response-violation-enhanced-output # refactor: validator shows violating value"
+  "copilot/validate-process-definition-id    # fix: validate processDefinitionId on upload"
   "46391-make-arrays-required                # spec: arrays required"
   "46224-enforce-response-arrays-required-not-nullable # ci: spectral enforcement rule"
 )
