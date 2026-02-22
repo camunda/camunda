@@ -13,7 +13,6 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.streamprocessor.DistributedTypedRecordProcessor;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
-import io.camunda.zeebe.engine.state.immutable.ClusterVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.clustervariable.ClusterVariableRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ClusterVariableIntent;
@@ -42,12 +41,12 @@ public class ClusterVariableUpdateProcessor
       final Writers writers,
       final AuthorizationCheckBehavior authCheckBehavior,
       final CommandDistributionBehavior commandDistributionBehavior,
-      final ClusterVariableState clusterVariableState) {
+      final ClusterVariableRecordValidator clusterVariableRecordValidator) {
     this.keyGenerator = keyGenerator;
     this.writers = writers;
     this.authCheckBehavior = authCheckBehavior;
     this.commandDistributionBehavior = commandDistributionBehavior;
-    clusterVariableRecordValidator = new ClusterVariableRecordValidator(clusterVariableState);
+    this.clusterVariableRecordValidator = clusterVariableRecordValidator;
   }
 
   @Override

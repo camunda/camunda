@@ -17,9 +17,13 @@ import org.apache.commons.lang3.StringUtils;
 public class ClusterVariableRecordValidator {
 
   private final ClusterVariableState clusterVariableState;
+  private final ClusterVariableValidationConfiguration validationConfig;
 
-  public ClusterVariableRecordValidator(final ClusterVariableState clusterVariableState) {
+  public ClusterVariableRecordValidator(
+      final ClusterVariableState clusterVariableState,
+      final ClusterVariableValidationConfiguration validationConfig) {
     this.clusterVariableState = clusterVariableState;
+    this.validationConfig = validationConfig;
   }
 
   public Either<Rejection, ClusterVariableRecord> validateName(final ClusterVariableRecord record) {
@@ -37,6 +41,13 @@ public class ClusterVariableRecordValidator {
               RejectionType.INVALID_ARGUMENT,
               "Invalid cluster variable name: '%s'. The name must not contains any whitespace."
                   .formatted(name)));
+    }
+    if (name.length() > validationConfig.maxNameFieldLength()) {
+      return Either.left(
+          new Rejection(
+              RejectionType.INVALID_ARGUMENT,
+              "Invalid cluster variable name: '%s'. The name must not be longer than %s characters."
+                  .formatted(name, validationConfig.maxNameFieldLength())));
     }
     return Either.right(record);
   }
