@@ -67,7 +67,11 @@ public final class DeploymentTransformer {
             expressionLanguageMetrics);
     final var dmnResourceTransformer =
         new DmnResourceTransformer(
-            keyGenerator, stateWriter, checksumGenerator, processingState.getDecisionState());
+            keyGenerator,
+            stateWriter,
+            checksumGenerator,
+            processingState.getDecisionState(),
+            config);
 
     final var formResourceTransformer =
         new FormResourceTransformer(
