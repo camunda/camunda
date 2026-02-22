@@ -111,6 +111,39 @@ test.describe.parallel('Document API Tests', () => {
     );
   });
 
+  // Regression guard for #46405 / #46407: a processDefinitionId that starts
+  // with a digit violates the BPMN identifier pattern and must be rejected.
+  test('Create Document Invalid processDefinitionId 400', async ({request}) => {
+    const form = new FormData();
+    form.append(
+      'file',
+      new File(['test content'], 'test.txt', {type: 'text/plain'}),
+    );
+    form.append(
+      'metadata',
+      new Blob(
+        [
+          JSON.stringify({
+            fileName: 'test.txt',
+            processDefinitionId: '9invalid',
+          }),
+        ],
+        {type: 'application/json'},
+      ),
+    );
+
+    const res = await request.post(buildUrl('/documents'), {
+      headers: defaultHeaders(),
+      multipart: form,
+    });
+
+    await assertBadRequest(
+      res,
+      'The provided processDefinitionId contains illegal characters',
+      'INVALID_ARGUMENT',
+    );
+  });
+
   test('Create Document', async ({request}) => {
     const payload = CREATE_TXT_DOCUMENT_REQUEST();
     const expectedPostBody = CREATE_TXT_DOC_RESPONSE_BODY('helloworld', 12);
