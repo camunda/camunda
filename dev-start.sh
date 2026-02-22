@@ -23,6 +23,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 DIST_DIR="$SCRIPT_DIR/dev-dist"
 PID_FILE="$DIST_DIR/camunda.pid"
 LOG_FILE="$DIST_DIR/camunda.log"
+META_FILE="$DIST_DIR/camunda.meta"
 DOCKER_COMPOSE_DIR="$SCRIPT_DIR/qa/c8-orchestration-cluster-e2e-test-suite/config"
 LINT_SPEC="$SCRIPT_DIR/dev-lint-spec.sh"
 
@@ -235,6 +236,19 @@ lint_spec() {
   fi
 }
 
+write_meta() {
+  local backend="H2/RDBMS"
+  if [ "$USE_ES" = true ]; then backend="Elasticsearch"; fi
+  local stages="$1"
+  mkdir -p "$DIST_DIR"
+  cat > "$META_FILE" <<EOF
+BACKEND=$backend
+MODE=$MODE
+STAGES=$stages
+STARTED_AT=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
+EOF
+}
+
 # --- Main ---
 cd "$SCRIPT_DIR"
 
@@ -280,6 +294,7 @@ EOF
     if [ "$USE_ES" = true ]; then start_elasticsearch; fi
     build_full
     extract_dist
+    write_meta "lint, clean build, extract, start"
     start_camunda
     ;;
   restart)
@@ -288,6 +303,7 @@ EOF
     if [ "$USE_ES" = true ]; then start_elasticsearch; fi
     build_dist_only
     extract_dist
+    write_meta "lint, dist rebuild, extract, start"
     start_camunda
     ;;
   gateway)
@@ -296,6 +312,7 @@ EOF
     if [ "$USE_ES" = true ]; then start_elasticsearch; fi
     build_gateway_and_dist
     extract_dist
+    write_meta "lint, gateway+dist rebuild, extract, start"
     start_camunda
     ;;
   skip-build)
@@ -305,6 +322,7 @@ EOF
     if [ ! -d "$DIST_DIR/bin" ]; then
       extract_dist
     fi
+    write_meta "lint, start (skip-build)"
     start_camunda
     ;;
   stop)
@@ -317,6 +335,11 @@ EOF
       echo "Camunda is running (PID $pid)"
       health=$(curl -sf http://localhost:9600/actuator/health/status 2>/dev/null) || health="unreachable"
       echo "Health: $health"
+      if [ -f "$META_FILE" ]; then
+        echo "Backend: $(grep '^BACKEND=' "$META_FILE" | cut -d= -f2-)"
+        echo "Lifecycle: $(grep '^STAGES=' "$META_FILE" | cut -d= -f2-)"
+        echo "Started: $(grep '^STARTED_AT=' "$META_FILE" | cut -d= -f2-)"
+      fi
     else
       echo "Camunda is not running."
       exit 1
