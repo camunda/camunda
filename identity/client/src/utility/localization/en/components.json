@@ -16,6 +16,8 @@
   "clusterVariables": "Cluster variables",
   "clusterVariable": "Cluster variable",
   "operationsLog": "Operations Log",
+  "globalTaskListeners": "Global user task listeners",
+  "globalTaskListener": "Global user task listener",
   "unauthorized": "Unauthorized",
   "sessionExpired": "Looks like your session has expired",
   "forbidden": "Forbidden",
