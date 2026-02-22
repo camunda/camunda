@@ -477,6 +477,7 @@ components:
           format: date-time
         errorMessage:
           description: the error message from the engine in case of a failed operation.
+          nullable: true
           type: string
 
     DecisionInstanceDeletionBatchOperationRequest:

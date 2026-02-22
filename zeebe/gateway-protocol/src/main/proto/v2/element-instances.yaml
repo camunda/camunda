@@ -375,7 +375,7 @@ components:
 
     ElementInstanceSearchQueryResult:
       type: object
-      required: 
+      required:
         - items
       allOf:
         - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
@@ -412,6 +412,7 @@ components:
           format: date-time
         endDate:
           description: Date when element instance finished.
+          nullable: true
           type: string
           format: date-time
         elementId:
@@ -487,6 +488,7 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
+          nullable: true
 
     ElementInstanceStateEnum:
       description: Element states

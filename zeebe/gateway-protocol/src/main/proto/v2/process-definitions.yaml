@@ -385,6 +385,7 @@ components:
       properties:
         name:
           description: Name of this process definition.
+          nullable: true
           type: string
         resourceName:
           description: Resource name for this process definition.
@@ -395,6 +396,7 @@ components:
           format: int32
         versionTag:
           description: Version tag of this process definition.
+          nullable: true
           type: string
         processDefinitionId:
           allOf:
