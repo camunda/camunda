@@ -184,6 +184,21 @@ class ResponseValidationAdviceTest {
           .hasMessageContaining("licenseType")
           .hasMessageContaining("must not be null");
     }
+
+    @Test
+    void shouldIncludeInvalidValueInViolationMessage() {
+      // given — licenseType is null
+      final LicenseResponse invalidResponse =
+          new LicenseResponse()
+              .validLicense(true)
+              .isCommercial(true)
+              .expiresAt("2025-12-31T23:59:59Z");
+
+      // when / then
+      assertThatThrownBy(() -> callBeforeBodyWrite(invalidResponse))
+          .isInstanceOf(ResponseValidationException.class)
+          .hasMessageContaining("licenseType: must not be null (was: null)");
+    }
   }
 
   @Nested
@@ -205,8 +220,9 @@ class ResponseValidationAdviceTest {
               ex -> {
                 final ResponseValidationException rve = (ResponseValidationException) ex;
                 assertThat(rve.getViolations()).hasSize(1);
-                assertThat(rve.getViolations().iterator().next().getPropertyPath().toString())
-                    .isEqualTo("licenseType");
+                final var violation = rve.getViolations().iterator().next();
+                assertThat(violation.getPropertyPath().toString()).isEqualTo("licenseType");
+                assertThat(violation.getInvalidValue()).isNull();
               });
     }
   }
