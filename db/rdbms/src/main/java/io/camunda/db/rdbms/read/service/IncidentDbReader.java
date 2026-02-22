@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.IncidentDbQuery;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.columns.IncidentSearchColumn;
@@ -28,8 +29,9 @@ public class IncidentDbReader extends AbstractEntityReader<IncidentEntity>
 
   private final IncidentMapper incidentMapper;
 
-  public IncidentDbReader(final IncidentMapper incidentMapper) {
-    super(IncidentSearchColumn.values());
+  public IncidentDbReader(
+      final IncidentMapper incidentMapper, final RdbmsReaderConfig readerConfig) {
+    super(IncidentSearchColumn.values(), readerConfig);
     this.incidentMapper = incidentMapper;
   }
 

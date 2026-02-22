@@ -11,10 +11,13 @@
 <mapper namespace="io.camunda.db.rdbms.sql.ProcessDefinitionMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}PROCESS_DEFINITION t
-    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.maxVersionFilter"/>
-    <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}PROCESS_DEFINITION t
+      <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.maxVersionFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.ProcessDefinitionMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ProcessDefinitionDbQuery"
@@ -347,10 +350,11 @@
     resultType="long">
     SELECT COUNT(*)
     FROM (
-      SELECT pi.PROCESS_DEFINITION_ID
-      FROM ${prefix}PROCESS_INSTANCE pi
+      SELECT 1 as col
+    FROM ${prefix}PROCESS_INSTANCE pi
     <include refid="processInstanceStatisticsWhere"/>
     <include refid="processInstanceStatisticsGroupBy"/>
+    ${count.limit}
     ) t
   </select>
 
@@ -424,12 +428,13 @@
     SELECT COUNT(*)
     FROM
     (SELECT
-    pi.PROCESS_DEFINITION_KEY
+    1 as col
     FROM ${prefix}PROCESS_INSTANCE pi
     JOIN ${prefix}PROCESS_DEFINITION pd
     ON pd.PROCESS_DEFINITION_KEY = pi.PROCESS_DEFINITION_KEY
     <include refid="processInstanceVersionStatisticsWhere"/>
     <include refid="processInstanceVersionStatisticsGroupBy"/>
+    ${count.limit}
     ) t
   </select>
 

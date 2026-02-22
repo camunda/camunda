@@ -23,9 +23,12 @@
   </resultMap>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}CLUSTER_VARIABLE
-    <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}CLUSTER_VARIABLE
+      <include refid="io.camunda.db.rdbms.sql.ClusterVariableMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.ClusterVariableDbQuery"

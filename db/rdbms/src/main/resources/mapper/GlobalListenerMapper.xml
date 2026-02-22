@@ -127,9 +127,12 @@
   </select>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}GLOBAL_LISTENER gl
-    <include refid="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}GLOBAL_LISTENER gl
+      <include refid="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <sql id="searchFilter">

@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.USER_TASK;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery;
 import io.camunda.db.rdbms.read.domain.UserTaskDbQuery.UserTaskAuthorizationProperties;
 import io.camunda.db.rdbms.read.mapper.UserTaskEntityMapper;
@@ -36,8 +37,9 @@ public class UserTaskDbReader extends AbstractEntityReader<UserTaskEntity>
 
   private final UserTaskMapper userTaskMapper;
 
-  public UserTaskDbReader(final UserTaskMapper userTaskMapper) {
-    super(UserTaskSearchColumn.values());
+  public UserTaskDbReader(
+      final UserTaskMapper userTaskMapper, final RdbmsReaderConfig readerConfig) {
+    super(UserTaskSearchColumn.values(), readerConfig);
     this.userTaskMapper = userTaskMapper;
   }
 

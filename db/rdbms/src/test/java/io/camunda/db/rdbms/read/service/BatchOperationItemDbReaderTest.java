@@ -25,7 +25,7 @@ class BatchOperationItemDbReaderTest {
 
   private final BatchOperationMapper batchOperationMapper = mock(BatchOperationMapper.class);
   private final BatchOperationItemDbReader batchOperationItemDbReader =
-      new BatchOperationItemDbReader(batchOperationMapper);
+      new BatchOperationItemDbReader(batchOperationMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {

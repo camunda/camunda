@@ -27,7 +27,8 @@ class MessageSubscriptionDbReaderTest {
   private final MessageSubscriptionMapper messageSubscriptionMapper =
       mock(MessageSubscriptionMapper.class);
   private final MessageSubscriptionDbReader messageSubscriptionDbReader =
-      new MessageSubscriptionDbReader(messageSubscriptionMapper);
+      new MessageSubscriptionDbReader(
+          messageSubscriptionMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

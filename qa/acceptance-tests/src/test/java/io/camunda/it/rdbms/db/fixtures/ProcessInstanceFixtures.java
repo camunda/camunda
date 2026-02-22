@@ -48,7 +48,15 @@ public final class ProcessInstanceFixtures extends CommonFixtures {
       final RdbmsWriters rdbmsWriters,
       final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
           builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomProcessInstances(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomProcessInstances(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
+          builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getProcessInstanceWriter()
           .create(ProcessInstanceFixtures.createRandomized(builderFunction));

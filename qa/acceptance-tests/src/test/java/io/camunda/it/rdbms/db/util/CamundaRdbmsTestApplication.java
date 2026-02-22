@@ -165,5 +165,6 @@ public final class CamundaRdbmsTestApplication
         .getSecondaryStorage()
         .getRdbms()
         .setPassword(TestSearchContainers.CAMUNDA_PASSWORD);
+    unifiedConfig.getData().getSecondaryStorage().getRdbms().getQuery().setMaxTotalHits(100);
   }
 }

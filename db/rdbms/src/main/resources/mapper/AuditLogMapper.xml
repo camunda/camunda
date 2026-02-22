@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.AuditLogMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}AUDIT_LOG
-    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AUDIT_LOG
+      <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search"

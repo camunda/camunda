@@ -50,7 +50,14 @@ public final class IncidentFixtures extends CommonFixtures {
   public static void createAndSaveRandomIncidents(
       final RdbmsWriters rdbmsWriters,
       final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomIncidents(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomIncidents(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<IncidentDbModel.Builder, IncidentDbModel.Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getIncidentWriter().create(IncidentFixtures.createRandomized(builderFunction));
     }
 

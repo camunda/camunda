@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.MappingRuleDbQuery;
 import io.camunda.db.rdbms.sql.MappingRuleMapper;
 import io.camunda.db.rdbms.sql.columns.MappingRuleSearchColumn;
@@ -29,8 +30,9 @@ public class MappingRuleDbReader extends AbstractEntityReader<MappingRuleEntity>
 
   private final MappingRuleMapper mappingRuleMapper;
 
-  public MappingRuleDbReader(final MappingRuleMapper mappingRuleMapper) {
-    super(MappingRuleSearchColumn.values());
+  public MappingRuleDbReader(
+      final MappingRuleMapper mappingRuleMapper, final RdbmsReaderConfig readerConfig) {
+    super(MappingRuleSearchColumn.values(), readerConfig);
     this.mappingRuleMapper = mappingRuleMapper;
   }
 

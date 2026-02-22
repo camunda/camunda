@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class ProcessInstanceDbReaderTest {
   private final ProcessInstanceMapper processInstanceMapper = mock(ProcessInstanceMapper.class);
   private final ProcessInstanceDbReader processInstanceDbReader =
-      new ProcessInstanceDbReader(processInstanceMapper);
+      new ProcessInstanceDbReader(processInstanceMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

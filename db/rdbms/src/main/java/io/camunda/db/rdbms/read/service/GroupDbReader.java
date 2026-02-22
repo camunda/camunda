@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GroupDbQuery;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.columns.GroupSearchColumn;
@@ -29,8 +30,8 @@ public class GroupDbReader extends AbstractEntityReader<GroupEntity> implements 
 
   private final GroupMapper groupMapper;
 
-  public GroupDbReader(final GroupMapper groupMapper) {
-    super(GroupSearchColumn.values());
+  public GroupDbReader(final GroupMapper groupMapper, final RdbmsReaderConfig readerConfig) {
+    super(GroupSearchColumn.values(), readerConfig);
     this.groupMapper = groupMapper;
   }
 

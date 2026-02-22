@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.IncidentMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}INCIDENT i
-    <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}INCIDENT i
+      <include refid="io.camunda.db.rdbms.sql.IncidentMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

@@ -49,8 +49,15 @@ public final class BatchOperationFixtures {
 
   public static List<BatchOperationDbModel> createAndSaveRandomBatchOperations(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
+    return createAndSaveRandomBatchOperations(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static List<BatchOperationDbModel> createAndSaveRandomBatchOperations(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
     final List<BatchOperationDbModel> models =
-        IntStream.range(0, 20)
+        IntStream.range(0, numberOfInstances)
             .mapToObj(i -> createRandomized(builderFunction))
             .peek(rdbmsWriters.getBatchOperationWriter()::createIfNotAlreadyExists)
             .collect(Collectors.toList());

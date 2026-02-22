@@ -11,11 +11,14 @@
 <mapper namespace="io.camunda.db.rdbms.sql.DecisionInstanceMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}DECISION_INSTANCE di
-    LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
-    dd.DECISION_DEFINITION_KEY)
-    <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_INSTANCE di
+      LEFT JOIN ${prefix}DECISION_DEFINITION dd ON (di.DECISION_DEFINITION_KEY =
+      dd.DECISION_DEFINITION_KEY)
+      <include refid="io.camunda.db.rdbms.sql.DecisionInstanceMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

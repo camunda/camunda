@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class UserTaskDbReaderTest {
   private final UserTaskMapper userTaskMapper = mock(UserTaskMapper.class);
-  private final UserTaskDbReader userTaskDbReader = new UserTaskDbReader(userTaskMapper);
+  private final UserTaskDbReader userTaskDbReader =
+      new UserTaskDbReader(userTaskMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

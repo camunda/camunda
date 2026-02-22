@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class FlowNodeInstanceDbReaderTest {
   private final FlowNodeInstanceMapper flowNodeInstanceMapper = mock(FlowNodeInstanceMapper.class);
   private final FlowNodeInstanceDbReader flowNodeInstanceDbReader =
-      new FlowNodeInstanceDbReader(flowNodeInstanceMapper);
+      new FlowNodeInstanceDbReader(flowNodeInstanceMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyResultWhenAuthorizedResourceIdsIsNull() {

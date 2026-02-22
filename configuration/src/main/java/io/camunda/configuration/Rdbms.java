@@ -63,6 +63,8 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
   @NestedConfigurationProperty
   private RdbmsInsertBatching insertBatching = new RdbmsInsertBatching();
 
+  @NestedConfigurationProperty private RdbmsQuery query = new RdbmsQuery();
+
   public Boolean getAutoDdl() {
     return autoDdl;
   }
@@ -165,5 +167,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setInsertBatching(final RdbmsInsertBatching insertBatching) {
     this.insertBatching = insertBatching;
+  }
+
+  public RdbmsQuery getQuery() {
+    return query;
+  }
+
+  public void setQuery(final RdbmsQuery query) {
+    this.query = query;
   }
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.TenantMemberDbQuery;
 import io.camunda.db.rdbms.sql.TenantMapper;
 import io.camunda.db.rdbms.sql.columns.TenantMemberSearchColumn;
@@ -28,8 +29,9 @@ public class TenantMemberDbReader extends AbstractEntityReader<TenantMemberEntit
 
   private final TenantMapper tenantMapper;
 
-  public TenantMemberDbReader(final TenantMapper tenantMapper) {
-    super(TenantMemberSearchColumn.values());
+  public TenantMemberDbReader(
+      final TenantMapper tenantMapper, final RdbmsReaderConfig readerConfig) {
+    super(TenantMemberSearchColumn.values(), readerConfig);
     this.tenantMapper = tenantMapper;
   }
 

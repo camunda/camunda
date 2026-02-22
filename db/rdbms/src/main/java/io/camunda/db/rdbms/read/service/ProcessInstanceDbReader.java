@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.ProcessInstanceDbQuery;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -31,8 +32,9 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
 
   private final ProcessInstanceMapper processInstanceMapper;
 
-  public ProcessInstanceDbReader(final ProcessInstanceMapper processInstanceMapper) {
-    super(ProcessInstanceSearchColumn.values());
+  public ProcessInstanceDbReader(
+      final ProcessInstanceMapper processInstanceMapper, final RdbmsReaderConfig readerConfig) {
+    super(ProcessInstanceSearchColumn.values(), readerConfig);
     this.processInstanceMapper = processInstanceMapper;
   }
 
@@ -89,6 +91,6 @@ public class ProcessInstanceDbReader extends AbstractEntityReader<ProcessInstanc
       final int partitionId, final OffsetDateTime cleanupDate, final int limit) {
     return processInstanceMapper.selectExpiredRootProcessInstances(
         new SelectExpiredRootProcessInstancesDto(
-            partitionId, cleanupDate, new DbQueryPage(limit, null, null)));
+            partitionId, cleanupDate, new DbQueryPage(limit, null, null, null)));
   }
 }

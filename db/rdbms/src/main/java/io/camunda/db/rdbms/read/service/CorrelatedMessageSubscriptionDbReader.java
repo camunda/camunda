@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.CorrelatedMessageSubscriptionDbQuery;
 import io.camunda.db.rdbms.read.mapper.CorrelatedMessageSubscriptionEntityMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
@@ -31,8 +32,9 @@ public class CorrelatedMessageSubscriptionDbReader
 
   private final CorrelatedMessageSubscriptionMapper mapper;
 
-  public CorrelatedMessageSubscriptionDbReader(final CorrelatedMessageSubscriptionMapper mapper) {
-    super(CorrelatedMessageSubscriptionSearchColumn.values());
+  public CorrelatedMessageSubscriptionDbReader(
+      final CorrelatedMessageSubscriptionMapper mapper, final RdbmsReaderConfig readerConfig) {
+    super(CorrelatedMessageSubscriptionSearchColumn.values(), readerConfig);
     this.mapper = mapper;
   }
 

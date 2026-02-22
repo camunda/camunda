@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import static io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry.determineOperator;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
@@ -37,14 +38,17 @@ abstract class AbstractEntityReader<T> {
 
   private static final SearchColumn<?>[] EMPTY_SEARCHABLE_COLUMNS = new SearchColumn[0];
   private final Map<String, SearchColumn<T>> columns;
+  private final RdbmsReaderConfig readerConfig;
 
-  public AbstractEntityReader(final SearchColumn<T>[] searchableColumns) {
+  public AbstractEntityReader(
+      final SearchColumn<T>[] searchableColumns, final RdbmsReaderConfig readerConfig) {
     final var searchColumns =
         Objects.requireNonNullElse(searchableColumns, (SearchColumn<T>[]) EMPTY_SEARCHABLE_COLUMNS);
 
     columns =
         Stream.of(searchColumns)
             .collect(Collectors.toMap(SearchColumn::property, Function.identity()));
+    this.readerConfig = readerConfig;
   }
 
   private SearchColumn<T> getSearchColumn(final String property) {
@@ -81,10 +85,11 @@ abstract class AbstractEntityReader<T> {
 
     if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
       // assuming Integer.MAX_VALUE is enough
-      return new DbQueryPage(Integer.MAX_VALUE, 0, keySetPagination);
+      return new DbQueryPage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination);
     }
 
-    return new DbQueryPage(page.size(), page.from(), keySetPagination);
+    return new DbQueryPage(
+        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination);
   }
 
   /**
@@ -138,7 +143,12 @@ abstract class AbstractEntityReader<T> {
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
-    final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
+    final var maxTotalHits = readerConfig.maxTotalHits();
+    final var returnedTotalHits = totalHits > maxTotalHits ? maxTotalHits : totalHits;
+    final var hasMoreItems = totalHits > maxTotalHits;
+
+    final var result =
+        new SearchQueryResult.Builder<T>().total(returnedTotalHits, hasMoreItems).items(hits);
 
     if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();

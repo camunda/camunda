@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class RoleDbReaderTest {
   private final RoleMapper roleMapper = mock(RoleMapper.class);
-  private final RoleDbReader roleDbReader = new RoleDbReader(roleMapper);
+  private final RoleDbReader roleDbReader =
+      new RoleDbReader(roleMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

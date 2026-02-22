@@ -123,6 +123,29 @@ public class FormIT {
   }
 
   @TestTemplate
+  public void shouldFindAllFormsPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String id = FormFixtures.nextStringId();
+    createAndSaveRandomForms(rdbmsService, 120, b -> b.formId(id));
+
+    final var searchResult =
+        rdbmsService
+            .getFormReader()
+            .search(
+                new FormQuery(
+                    new FormFilter.Builder().formIds(id).build(),
+                    FormSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindFormWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final FormDbReader formReader = rdbmsService.getFormReader();

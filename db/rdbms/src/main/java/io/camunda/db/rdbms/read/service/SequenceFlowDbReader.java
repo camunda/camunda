@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.SequenceFlowDbQuery;
 import io.camunda.db.rdbms.read.mapper.SequenceFlowEntityMapper;
 import io.camunda.db.rdbms.sql.SequenceFlowMapper;
@@ -27,8 +28,9 @@ public class SequenceFlowDbReader extends AbstractEntityReader<SequenceFlowEntit
 
   private final SequenceFlowMapper sequenceFlowMapper;
 
-  public SequenceFlowDbReader(final SequenceFlowMapper sequenceFlowMapper) {
-    super(null);
+  public SequenceFlowDbReader(
+      final SequenceFlowMapper sequenceFlowMapper, final RdbmsReaderConfig readerConfig) {
+    super(null, readerConfig);
     this.sequenceFlowMapper = sequenceFlowMapper;
   }
 

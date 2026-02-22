@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GlobalListenerDbQuery;
 import io.camunda.db.rdbms.read.mapper.GlobalListenerEntityMapper;
 import io.camunda.db.rdbms.sql.GlobalListenerMapper;
@@ -29,8 +30,9 @@ public class GlobalListenerDbReader extends AbstractEntityReader<GlobalListenerE
 
   private final GlobalListenerMapper globalListenerMapper;
 
-  public GlobalListenerDbReader(final GlobalListenerMapper globalListenerMapper) {
-    super(GlobalListenerSearchColumn.values());
+  public GlobalListenerDbReader(
+      final GlobalListenerMapper globalListenerMapper, final RdbmsReaderConfig rdbmsReaderConfig) {
+    super(GlobalListenerSearchColumn.values(), rdbmsReaderConfig);
     this.globalListenerMapper = globalListenerMapper;
   }
 

@@ -25,7 +25,7 @@ class DecisionInstanceDbReaderTest {
 
   private final DecisionInstanceMapper decisionInstanceMapper = mock(DecisionInstanceMapper.class);
   private final DecisionInstanceDbReader decisionInstanceDbReader =
-      new DecisionInstanceDbReader(decisionInstanceMapper);
+      new DecisionInstanceDbReader(decisionInstanceMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {

@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import static java.util.Optional.ofNullable;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.GlobalJobStatisticsDbQuery;
 import io.camunda.db.rdbms.read.domain.JobTypeStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
@@ -40,8 +41,9 @@ public class JobMetricsBatchDbReader extends AbstractEntityReader<JobTypeStatist
 
   private final JobMetricsBatchMapper jobMetricsBatchMapper;
 
-  public JobMetricsBatchDbReader(final JobMetricsBatchMapper jobMetricsBatchMapper) {
-    super(JobTypeStatisticsColumn.values());
+  public JobMetricsBatchDbReader(
+      final JobMetricsBatchMapper jobMetricsBatchMapper, final RdbmsReaderConfig readerConfig) {
+    super(JobTypeStatisticsColumn.values(), readerConfig);
     this.jobMetricsBatchMapper = jobMetricsBatchMapper;
   }
 

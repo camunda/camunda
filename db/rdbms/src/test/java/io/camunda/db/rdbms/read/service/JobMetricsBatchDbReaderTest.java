@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 class JobMetricsBatchDbReaderTest {
   private final JobMetricsBatchMapper jobMetricsBatchMapper = mock(JobMetricsBatchMapper.class);
   private final JobMetricsBatchDbReader jobMetricsBatchDbReader =
-      new JobMetricsBatchDbReader(jobMetricsBatchMapper);
+      new JobMetricsBatchDbReader(jobMetricsBatchMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyGlobalJobStatisticsWhenTenantCheckEnabledButNoTenants() {

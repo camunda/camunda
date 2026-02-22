@@ -186,6 +186,27 @@ public class AuthorizationIT {
   }
 
   @TestTemplate
+  public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuthorizationDbReader authorizationReader = rdbmsService.getAuthorizationReader();
+
+    createAndSaveRandomAuthorizations(rdbmsWriters, 120, b -> b.ownerType("TEST_MORE"));
+
+    final var searchResult =
+        authorizationReader.search(
+            new AuthorizationQuery(
+                new AuthorizationFilter.Builder().ownerType("TEST_MORE").build(),
+                AuthorizationSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

@@ -11,16 +11,22 @@
 <mapper namespace="io.camunda.db.rdbms.sql.RoleMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}ROLES r
-    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}ROLES r
+      <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="countMembers" parameterType="io.camunda.db.rdbms.read.domain.RoleMemberDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}ROLE_MEMBER rm
-    JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
-    <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}ROLE_MEMBER rm
+      JOIN ${prefix}ROLES r ON r.ROLE_ID = rm.ROLE_ID
+      <include refid="io.camunda.db.rdbms.sql.RoleMapper.searchMemberFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.RoleDbQuery"

@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.BatchOperationItemDbQuery;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.columns.BatchOperationItemSearchColumn;
@@ -26,8 +27,9 @@ public class BatchOperationItemDbReader extends AbstractEntityReader<BatchOperat
 
   private final BatchOperationMapper batchOperationMapper;
 
-  public BatchOperationItemDbReader(final BatchOperationMapper batchOperationMapper) {
-    super(BatchOperationItemSearchColumn.values());
+  public BatchOperationItemDbReader(
+      final BatchOperationMapper batchOperationMapper, final RdbmsReaderConfig readerConfig) {
+    super(BatchOperationItemSearchColumn.values(), readerConfig);
     this.batchOperationMapper = batchOperationMapper;
   }
 

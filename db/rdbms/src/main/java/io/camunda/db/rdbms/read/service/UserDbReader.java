@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.UserDbQuery;
 import io.camunda.db.rdbms.sql.UserMapper;
 import io.camunda.db.rdbms.sql.columns.UserSearchColumn;
@@ -27,8 +28,8 @@ public class UserDbReader extends AbstractEntityReader<UserEntity> implements Us
 
   private final UserMapper userMapper;
 
-  public UserDbReader(final UserMapper userMapper) {
-    super(UserSearchColumn.values());
+  public UserDbReader(final UserMapper userMapper, final RdbmsReaderConfig readerConfig) {
+    super(UserSearchColumn.values(), readerConfig);
     this.userMapper = userMapper;
   }
 

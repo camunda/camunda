@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.MessageSubscriptionDbQuery;
 import io.camunda.db.rdbms.read.mapper.MessageSubscriptionEntityMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
@@ -29,8 +30,9 @@ public class MessageSubscriptionDbReader extends AbstractEntityReader<MessageSub
 
   private final MessageSubscriptionMapper mapper;
 
-  public MessageSubscriptionDbReader(final MessageSubscriptionMapper mapper) {
-    super(MessageSubscriptionColumn.values());
+  public MessageSubscriptionDbReader(
+      final MessageSubscriptionMapper mapper, final RdbmsReaderConfig readerConfig) {
+    super(MessageSubscriptionColumn.values(), readerConfig);
     this.mapper = mapper;
   }
 

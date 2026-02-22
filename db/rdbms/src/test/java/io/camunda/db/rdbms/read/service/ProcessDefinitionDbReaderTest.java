@@ -27,7 +27,7 @@ class ProcessDefinitionDbReaderTest {
   private final ProcessDefinitionMapper processDefinitionMapper =
       mock(ProcessDefinitionMapper.class);
   private final ProcessDefinitionDbReader processDefinitionDbReader =
-      new ProcessDefinitionDbReader(processDefinitionMapper);
+      new ProcessDefinitionDbReader(processDefinitionMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

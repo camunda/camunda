@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.AuditLogAuthorizationFilter;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
 import io.camunda.db.rdbms.read.mapper.AuditLogEntityMapper;
@@ -29,8 +30,9 @@ public class AuditLogDbReader extends AbstractEntityReader<AuditLogEntity>
 
   private final AuditLogMapper auditLogMapper;
 
-  public AuditLogDbReader(final AuditLogMapper auditLogMapper) {
-    super(AuditLogSearchColumn.values());
+  public AuditLogDbReader(
+      final AuditLogMapper auditLogMapper, final RdbmsReaderConfig readerConfig) {
+    super(AuditLogSearchColumn.values(), readerConfig);
     this.auditLogMapper = auditLogMapper;
   }
 

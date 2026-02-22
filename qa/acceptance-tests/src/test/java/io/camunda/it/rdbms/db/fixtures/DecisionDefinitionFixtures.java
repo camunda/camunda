@@ -58,7 +58,15 @@ public final class DecisionDefinitionFixtures extends CommonFixtures {
       final RdbmsWriters rdbmsWriters,
       final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
           builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomDecisionDefinitions(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomDecisionDefinitions(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<DecisionDefinitionDbModelBuilder, DecisionDefinitionDbModelBuilder>
+          builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getDecisionDefinitionWriter()
           .create(DecisionDefinitionFixtures.createRandomized(builderFunction));

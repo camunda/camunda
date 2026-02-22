@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class MappingRuleDbReaderTest {
   private final MappingRuleMapper mappingRuleMapper = mock(MappingRuleMapper.class);
   private final MappingRuleDbReader mappingRuleDbReader =
-      new MappingRuleDbReader(mappingRuleMapper);
+      new MappingRuleDbReader(mappingRuleMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

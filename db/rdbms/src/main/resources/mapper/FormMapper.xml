@@ -38,9 +38,12 @@
   </update>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.FormDbQuery" resultType="long">
-    SELECT COUNT(*)
-    FROM ${prefix}FORM
-    <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}FORM
+      <include refid="io.camunda.db.rdbms.sql.FormMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.FormDbQuery"

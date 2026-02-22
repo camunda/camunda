@@ -157,6 +157,28 @@ public class TenantIT {
   }
 
   @TestTemplate
+  public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final TenantDbReader reader = rdbmsService.getTenantReader();
+
+    final var tenantName = "tenant-more-" + nextStringId();
+    createAndSaveRandomTenants(rdbmsWriters, 120, b -> b.name(tenantName));
+
+    final var searchResult =
+        reader.search(
+            new TenantQuery(
+                new TenantFilter.Builder().name(tenantName).build(),
+                TenantSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

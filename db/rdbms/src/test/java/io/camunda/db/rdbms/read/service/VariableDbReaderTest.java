@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class VariableDbReaderTest {
   private final VariableMapper variableMapper = mock(VariableMapper.class);
-  private final VariableDbReader variableDbReader = new VariableDbReader(variableMapper);
+  private final VariableDbReader variableDbReader =
+      new VariableDbReader(variableMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

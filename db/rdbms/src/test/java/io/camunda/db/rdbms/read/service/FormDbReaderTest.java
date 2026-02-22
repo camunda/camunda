@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 class FormDbReaderTest {
 
   private final FormMapper formMapper = mock(FormMapper.class);
-  private final FormDbReader formDbReader = new FormDbReader(formMapper);
+  private final FormDbReader formDbReader =
+      new FormDbReader(formMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class AuthorizationDbReaderTest {
   private final AuthorizationMapper authorizationMapper = mock(AuthorizationMapper.class);
   private final AuthorizationDbReader authorizationDbReader =
-      new AuthorizationDbReader(authorizationMapper);
+      new AuthorizationDbReader(authorizationMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyResultWhenAuthorizedResourceIdsIsNull() {

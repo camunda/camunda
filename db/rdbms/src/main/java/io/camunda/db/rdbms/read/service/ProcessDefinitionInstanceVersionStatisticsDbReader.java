@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionInstanceVersionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessDefinitionInstanceVersionStatisticsSearchColumn;
@@ -30,8 +31,8 @@ public class ProcessDefinitionInstanceVersionStatisticsDbReader
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   public ProcessDefinitionInstanceVersionStatisticsDbReader(
-      final ProcessDefinitionMapper processDefinitionMapper) {
-    super(ProcessDefinitionInstanceVersionStatisticsSearchColumn.values());
+      final ProcessDefinitionMapper processDefinitionMapper, final RdbmsReaderConfig readerConfig) {
+    super(ProcessDefinitionInstanceVersionStatisticsSearchColumn.values(), readerConfig);
     this.processDefinitionMapper = processDefinitionMapper;
   }
 

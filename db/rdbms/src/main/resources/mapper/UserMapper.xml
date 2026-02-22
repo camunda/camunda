@@ -11,17 +11,20 @@
 <mapper namespace="io.camunda.db.rdbms.sql.UserMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}USER_ t
-    <if test="filter.groupId != null">
-      JOIN ${prefix}GROUP_MEMBER gm ON t.USERNAME = gm.ENTITY_ID
-      AND gm.ENTITY_TYPE = 'USER'
-    </if>
-    <if test="filter.roleId != null">
-      JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
-      AND rm.ENTITY_TYPE = 'USER'
-    </if>
-      <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}USER_ t
+      <if test="filter.groupId != null">
+        JOIN ${prefix}GROUP_MEMBER gm ON t.USERNAME = gm.ENTITY_ID
+        AND gm.ENTITY_TYPE = 'USER'
+      </if>
+      <if test="filter.roleId != null">
+        JOIN ${prefix}ROLE_MEMBER rm ON t.USERNAME = rm.ENTITY_ID
+        AND rm.ENTITY_TYPE = 'USER'
+      </if>
+        <include refid="io.camunda.db.rdbms.sql.UserMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.UserDbQuery"

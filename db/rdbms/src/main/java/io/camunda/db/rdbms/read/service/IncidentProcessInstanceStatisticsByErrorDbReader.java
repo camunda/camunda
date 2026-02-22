@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.IncidentProcessInstanceStatisticsByErrorDbQuery;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.columns.IncidentProcessInstanceStatisticsByErrorSearchColumn;
@@ -29,8 +30,9 @@ public class IncidentProcessInstanceStatisticsByErrorDbReader
 
   private final IncidentMapper incidentMapper;
 
-  public IncidentProcessInstanceStatisticsByErrorDbReader(final IncidentMapper incidentMapper) {
-    super(IncidentProcessInstanceStatisticsByErrorSearchColumn.values());
+  public IncidentProcessInstanceStatisticsByErrorDbReader(
+      final IncidentMapper incidentMapper, final RdbmsReaderConfig readerConfig) {
+    super(IncidentProcessInstanceStatisticsByErrorSearchColumn.values(), readerConfig);
     this.incidentMapper = incidentMapper;
   }
 

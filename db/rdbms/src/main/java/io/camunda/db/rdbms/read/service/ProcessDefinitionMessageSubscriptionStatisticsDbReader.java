@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.ProcessDefinitionMessageSubscriptionStatisticsDbQuery;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.columns.ProcessDefinitionMessageSubscriptionStatisticsColumn;
@@ -35,8 +36,8 @@ public class ProcessDefinitionMessageSubscriptionStatisticsDbReader
   private final MessageSubscriptionMapper mapper;
 
   public ProcessDefinitionMessageSubscriptionStatisticsDbReader(
-      final MessageSubscriptionMapper mapper) {
-    super(ProcessDefinitionMessageSubscriptionStatisticsColumn.values());
+      final MessageSubscriptionMapper mapper, final RdbmsReaderConfig readerConfig) {
+    super(ProcessDefinitionMessageSubscriptionStatisticsColumn.values(), readerConfig);
     this.mapper = mapper;
   }
 

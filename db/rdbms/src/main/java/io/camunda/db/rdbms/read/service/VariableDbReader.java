@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.VariableDbQuery;
 import io.camunda.db.rdbms.sql.VariableMapper;
 import io.camunda.db.rdbms.sql.columns.VariableSearchColumn;
@@ -30,8 +31,9 @@ public class VariableDbReader extends AbstractEntityReader<VariableEntity>
 
   private final VariableMapper variableMapper;
 
-  public VariableDbReader(final VariableMapper variableMapper) {
-    super(VariableSearchColumn.values());
+  public VariableDbReader(
+      final VariableMapper variableMapper, final RdbmsReaderConfig readerConfig) {
+    super(VariableSearchColumn.values(), readerConfig);
     this.variableMapper = variableMapper;
   }
 

@@ -56,7 +56,14 @@ public final class JobFixtures extends CommonFixtures {
   public static void createAndSaveRandomJobs(
       final RdbmsWriters rdbmsWriters,
       final Function<JobDbModel.Builder, JobDbModel.Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomJobs(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomJobs(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<JobDbModel.Builder, JobDbModel.Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getJobWriter().create(JobFixtures.createRandomized(builderFunction));
     }
 

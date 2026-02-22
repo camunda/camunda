@@ -25,7 +25,8 @@ import org.junit.jupiter.api.Test;
 
 class IncidentDbReaderTest {
   private final IncidentMapper incidentMapper = mock(IncidentMapper.class);
-  private final IncidentDbReader incidentDbReader = new IncidentDbReader(incidentMapper);
+  private final IncidentDbReader incidentDbReader =
+      new IncidentDbReader(incidentMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {
