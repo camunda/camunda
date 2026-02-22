@@ -179,10 +179,12 @@ paths:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
 
   # Global listeners endpoints
-  /global-listeners/user-task:
-    $ref: 'global-listeners.yaml#/paths/~1global-listeners~1user-task'
-  /global-listeners/user-task/{id}:
-    $ref: 'global-listeners.yaml#/paths/~1global-listeners~1user-task~1{id}'
+  /global-task-listeners:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners'
+  /global-task-listeners/{id}:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1{id}'
+  /global-task-listeners/search:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1search'
 
   # Group endpoints
   /groups:

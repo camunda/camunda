@@ -1,7 +1,7 @@
 ## Endpoint definitions
 
 paths:
-  /global-listeners/user-task:
+  /global-task-listeners:
     post:
       x-eventually-consistent: false
       tags:
@@ -39,7 +39,41 @@ paths:
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
-  /global-listeners/user-task/{id}:
+  /global-task-listeners/{id}:
+    get:
+      x-eventually-consistent: true
+      tags:
+        - Global listener
+      operationId: getGlobalTaskListener
+      summary: Get global user task listener
+      description: Get a global user task listener by its id.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: The id of the global user task listener.
+          schema:
+            $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
+      responses:
+        "200":
+          description: The global user task listener is successfully returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalTaskListenerResult'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "404":
+          description: The global user task listener with the given id was not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: "problem-detail.yaml#/components/schemas/ProblemDetail"
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
     put:
       x-eventually-consistent: false
       tags:
@@ -117,6 +151,35 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
+
+  /global-task-listeners/search:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Global listener
+      operationId: searchGlobalTaskListeners
+      summary: Search global user task listeners
+      description: Search for global user task listeners based on given criteria.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GlobalTaskListenerSearchQueryRequest'
+      responses:
+        "200":
+          description: The global user task listener search result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GlobalTaskListenerSearchQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
 ## Schema definitions
 
@@ -200,3 +263,149 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/GlobalListenerId'
         source:
           $ref: '#/components/schemas/GlobalListenerSourceEnum'
+
+    # Search Requests
+    GlobalTaskListenerSearchQueryRequest:
+      description: Global listener search query request.
+      additionalProperties: false
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryRequest'
+      properties:
+        sort:
+          description: Sort field criteria.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalTaskListenerSearchQuerySortRequest'
+        filter:
+          description: The global listener search filters.
+          allOf:
+            - $ref: '#/components/schemas/GlobalTaskListenerSearchQueryFilterRequest'
+    GlobalTaskListenerSearchQuerySortRequest:
+      type: object
+      properties:
+        field:
+          description: The field to sort by.
+          type: string
+          enum:
+            - id
+            - type
+            - afterNonGlobal
+            - priority
+            - source
+        order:
+          $ref: 'search-models.yaml#/components/schemas/SortOrderEnum'
+      required:
+        - field
+    GlobalTaskListenerSearchQueryFilterRequest:
+      description: Global listener filter request.
+      type: object
+      properties:
+        id:
+          description: Id of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        type:
+          description: Job type of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
+        retries:
+          description: Number of retries of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        eventTypes:
+          description: Event types of the global listener.
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/GlobalTaskListenerEventTypeFilterProperty'
+        afterNonGlobal:
+          description: Whether the listener runs after model-level listeners.
+          type: boolean
+        priority:
+          description: Priority of the global listener.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/IntegerFilterProperty'
+        source:
+          description: How the global listener was defined.
+          allOf:
+            - $ref: '#/components/schemas/GlobalListenerSourceFilterProperty'
+    GlobalListenerSourceFilterProperty:
+      description: Global listener source property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/GlobalListenerSourceEnum'
+        - $ref: '#/components/schemas/AdvancedGlobalListenerSourceFilter'
+    AdvancedGlobalListenerSourceFilter:
+      title: Advanced filter
+      description: Advanced global listener source filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalListenerSourceEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalListenerSourceEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalListenerSourceEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+    GlobalTaskListenerEventTypeFilterProperty:
+      description: Global listener event type property with full advanced search capabilities.
+      type: object
+      oneOf:
+        - type: string
+          title: Exact match
+          description: Matches the value exactly.
+          allOf:
+            - $ref: '#/components/schemas/GlobalTaskListenerEventTypeEnum'
+        - $ref: '#/components/schemas/AdvancedGlobalTaskListenerEventTypeFilter'
+    AdvancedGlobalTaskListenerEventTypeFilter:
+      title: Advanced filter
+      description: Advanced global listener event type filter.
+      type: object
+      properties:
+        $eq:
+          description: Checks for equality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalTaskListenerEventTypeEnum'
+        $neq:
+          description: Checks for inequality with the provided value.
+          allOf:
+            - $ref: '#/components/schemas/GlobalTaskListenerEventTypeEnum'
+        $exists:
+          description: Checks if the current property exists.
+          type: boolean
+        $in:
+          description: Checks if the property matches any of the provided values.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalTaskListenerEventTypeEnum'
+        $like:
+          $ref: "filters.yaml#/components/schemas/LikeFilter"
+
+    # Search Responses
+    GlobalTaskListenerSearchQueryResult:
+      description: Global listener search query response.
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching global listeners.
+          type: array
+          items:
+            $ref: '#/components/schemas/GlobalTaskListenerResult'
