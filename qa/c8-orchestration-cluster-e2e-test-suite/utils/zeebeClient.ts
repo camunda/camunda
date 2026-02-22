@@ -78,7 +78,15 @@ const createSingleInstance = async (
 };
 
 const cancelProcessInstance = async (processInstanceKey: string) => {
-  return zeebe.cancelProcessInstance({processInstanceKey});
+  return zeebe.cancelProcessInstance({processInstanceKey}).catch((e) => {
+    if (e.status === 404) {
+      // an active process with this key was not found. It probably completed already.
+      // we swallow the error, because this is a common cleanup scenario.
+      return;
+    }
+    // Something else happened. Throw the error to surface the problem.
+    throw e;
+  });
 };
 
 const createWorker = (
