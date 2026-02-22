@@ -30,6 +30,7 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.worker.JobClient;
 import io.camunda.client.api.worker.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
@@ -148,6 +149,7 @@ class JobWorkerBuilderImplTest {
     Mockito.when(jobClient.newStreamJobsCommand().jobType(anyString()).consumer(any()))
         .thenReturn(lastStep);
     Mockito.when(lastStep.tenantIds(anyList())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
     Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
 
     // when
@@ -238,6 +240,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
     Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
 
     // when
@@ -266,6 +269,7 @@ class JobWorkerBuilderImplTest {
     @SuppressWarnings("unchecked")
     final ArgumentCaptor<List<String>> tenantIdCaptor = ArgumentCaptor.forClass(List.class);
     Mockito.when(lastStep.tenantIds(tenantIdCaptor.capture())).thenReturn(lastStep);
+    Mockito.when(lastStep.tenantFilter(any(TenantFilter.class))).thenReturn(lastStep);
     Mockito.when(lastStep.send()).thenReturn(Mockito.mock());
 
     // when

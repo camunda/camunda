@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.qa.util.jobstream;
 
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.ClientJobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.JobStream;
 import io.camunda.zeebe.shared.management.JobStreamEndpoint.RemoteJobStream;
@@ -135,6 +136,15 @@ public abstract class AbstractJobStreamsAssert<
                 && stream.metadata().fetchVariables().size() == expectedVariables.size(),
         "a stream with fetch variables %s".formatted(Arrays.toString(variables)),
         stream -> " but actual variables is %s".formatted(stream.metadata().fetchVariables()));
+  }
+
+  /** Returns a condition which checks that a stream has the given tenant filter. */
+  public static <T extends JobStream> Condition<T> hasTenantFilter(
+      final TenantFilter tenantFilter) {
+    return VerboseCondition.verboseCondition(
+        stream -> stream.metadata().tenantFilter() == tenantFilter,
+        "a stream with tenant filter '%s'".formatted(tenantFilter),
+        stream -> " but actual tenant filter is '%s'".formatted(stream.metadata().tenantFilter()));
   }
 
   /** Returns a condition which checks that a stream has the expected amount of consumers. */
