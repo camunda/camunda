@@ -9,13 +9,18 @@ package io.camunda.exporter.handlers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
@@ -42,6 +47,7 @@ import org.junit.jupiter.api.Test;
 class AuditLogHandlerTest {
 
   private static final String INDEX_NAME = "test-audit-log";
+  private static final String CLEANUP_INDEX_NAME = "test-audit-log-cleanup";
   private static final String ENTITY_ID = "test-id";
   private static final String USERNAME = "test-user";
   private static final String TENANT = "test-tenant";
@@ -68,7 +74,7 @@ class AuditLogHandlerTest {
   void setUp() {
     config = mock(AuditLogConfiguration.class);
     transformer = mock(AuditLogTransformer.class);
-    handler = new AuditLogHandler<>(INDEX_NAME, transformer, config);
+    handler = new AuditLogHandler<>(INDEX_NAME, CLEANUP_INDEX_NAME, transformer, config);
   }
 
   @Test
@@ -121,67 +127,55 @@ class AuditLogHandlerTest {
 
   @Test
   void shouldAddEntityOnFlush() throws PersistenceException {
-    final var entity = new AuditLogEntity().setId(ENTITY_ID);
+    final var batch = new AuditLogBatch(ENTITY_ID);
+    batch.setAuditLogEntity(new AuditLogEntity());
     final var batchRequest = mock(BatchRequest.class);
 
-    handler.flush(entity, batchRequest);
+    handler.flush(batch, batchRequest);
 
-    verify(batchRequest).add(INDEX_NAME, entity);
+    verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
+    verify(batchRequest, never()).add(eq(CLEANUP_INDEX_NAME), any());
+  }
+
+  @Test
+  void shouldAddEntityAndCleanupEntityOnFlush() throws PersistenceException {
+    final var batch = new AuditLogBatch(ENTITY_ID);
+    batch.setAuditLogEntity(new AuditLogEntity());
+    batch.setAuditLogCleanupEntity(new AuditLogCleanupEntity().setId(ENTITY_ID));
+    final var batchRequest = mock(BatchRequest.class);
+
+    handler.flush(batch, batchRequest);
+
+    verify(batchRequest).add(INDEX_NAME, batch.getAuditLogEntity());
+    verify(batchRequest).add(CLEANUP_INDEX_NAME, batch.getAuditLogCleanupEntity());
+  }
+
+  @Test
+  void shouldNotCreateCleanupEntityWhenNotTriggered() {
+    when(transformer.triggersCleanUp(any(Record.class))).thenReturn(false);
+    when(transformer.create(record)).thenReturn(createAuditLogEntry());
+    final var batch = new AuditLogBatch(ENTITY_ID);
+
+    handler.updateEntity(record, batch);
+
+    assertThat(batch.getAuditLogEntity()).isNotNull();
+    assertThat(batch.getAuditLogCleanupEntity()).isNull();
   }
 
   @Test
   void shouldUpdateEntity() {
-    final var entity = new AuditLogEntity().setId(ENTITY_ID);
+    when(transformer.triggersCleanUp(any(Record.class))).thenReturn(true);
+
+    final var batch = new AuditLogBatch(ENTITY_ID);
 
     // Create a properly populated AuditLogEntry that the transformer will return
-    final var entry =
-        new AuditLogEntry()
-            .setEntityKey(String.valueOf(record.getKey()))
-            .setEntityType(
-                io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE)
-            .setOperationType(
-                io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.MODIFY)
-            .setCategory(
-                io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory
-                    .DEPLOYED_RESOURCES)
-            .setActor(
-                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor.of(record))
-            .setTenant(
-                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant.of(record))
-            .setBatchOperationKey(123L)
-            .setBatchOperationType(
-                io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE)
-            .setProcessInstanceKey(value.getProcessInstanceKey())
-            .setEntityVersion(record.getRecordVersion())
-            .setEntityValueType(ValueType.PROCESS_INSTANCE_MODIFICATION.value())
-            .setEntityOperationIntent(ProcessInstanceModificationIntent.MODIFIED.value())
-            .setTimestamp(
-                OffsetDateTime.ofInstant(
-                    Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
-            .setAnnotation("test annotation")
-            .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
-            .setProcessDefinitionId("process-def-id")
-            .setProcessDefinitionKey(456L)
-            .setElementInstanceKey(789L)
-            .setJobKey(101L)
-            .setUserTaskKey(202L)
-            .setDecisionEvaluationKey(303L)
-            .setDecisionRequirementsId("drg-id")
-            .setDecisionRequirementsKey(404L)
-            .setDecisionDefinitionId("decision-id")
-            .setDecisionDefinitionKey(505L)
-            .setDeploymentKey(606L)
-            .setFormKey(707L)
-            .setResourceKey(808L)
-            .setRootProcessInstanceKey(909L)
-            .setRelatedEntityKey("related-entity-key")
-            .setRelatedEntityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.USER)
-            .setEntityDescription("entity-description");
+    final var entry = createAuditLogEntry();
 
     when(transformer.create(record)).thenReturn(entry);
-    handler.updateEntity(record, entity);
+    handler.updateEntity(record, batch);
 
     // Verify all fields are properly mapped
+    final var entity = batch.getAuditLogEntity();
     assertThat(entity.getId()).isEqualTo(ENTITY_ID);
     assertThat(entity.getEntityKey()).isEqualTo(String.valueOf(record.getKey()));
     assertThat(entity.getEntityType()).isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
@@ -224,5 +218,53 @@ class AuditLogHandlerTest {
     assertThat(entity.getRelatedEntityKey()).isEqualTo("related-entity-key");
     assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
     assertThat(entity.getEntityDescription()).isEqualTo("entity-description");
+
+    final var auditLogCleanupEntity = batch.getAuditLogCleanupEntity();
+    assertThat(auditLogCleanupEntity.getId()).isEqualTo(ENTITY_ID);
+    assertThat(auditLogCleanupEntity.getKey()).isEqualTo(String.valueOf(record.getKey()));
+    assertThat(auditLogCleanupEntity.getKeyField()).isEqualTo(AuditLogTemplate.ENTITY_KEY);
+    assertThat(auditLogCleanupEntity.getEntityType())
+        .isEqualTo(AuditLogEntityType.PROCESS_INSTANCE);
+    assertThat(auditLogCleanupEntity.getPartitionId()).isEqualTo(record.getPartitionId());
+  }
+
+  AuditLogEntry createAuditLogEntry() {
+    return new AuditLogEntry()
+        .setEntityKey(String.valueOf(record.getKey()))
+        .setEntityType(
+            io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE)
+        .setOperationType(io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.MODIFY)
+        .setCategory(
+            io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory.DEPLOYED_RESOURCES)
+        .setActor(io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor.of(record))
+        .setTenant(io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant.of(record))
+        .setBatchOperationKey(123L)
+        .setBatchOperationType(
+            io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE)
+        .setProcessInstanceKey(value.getProcessInstanceKey())
+        .setEntityVersion(record.getRecordVersion())
+        .setEntityValueType(ValueType.PROCESS_INSTANCE_MODIFICATION.value())
+        .setEntityOperationIntent(ProcessInstanceModificationIntent.MODIFIED.value())
+        .setTimestamp(
+            OffsetDateTime.ofInstant(Instant.ofEpochMilli(record.getTimestamp()), ZoneOffset.UTC))
+        .setAnnotation("test annotation")
+        .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+        .setProcessDefinitionId("process-def-id")
+        .setProcessDefinitionKey(456L)
+        .setElementInstanceKey(789L)
+        .setJobKey(101L)
+        .setUserTaskKey(202L)
+        .setDecisionEvaluationKey(303L)
+        .setDecisionRequirementsId("drg-id")
+        .setDecisionRequirementsKey(404L)
+        .setDecisionDefinitionId("decision-id")
+        .setDecisionDefinitionKey(505L)
+        .setDeploymentKey(606L)
+        .setFormKey(707L)
+        .setResourceKey(808L)
+        .setRootProcessInstanceKey(909L)
+        .setRelatedEntityKey("related-entity-key")
+        .setRelatedEntityType(io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.USER)
+        .setEntityDescription("entity-description");
   }
 }
