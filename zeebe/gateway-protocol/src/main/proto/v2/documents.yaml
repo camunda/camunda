@@ -315,6 +315,9 @@ components:
     DocumentCreationBatchResponse:
       allOf:
         - type: object
+          required:
+          - failedDocuments
+          - createdDocuments
           properties:
             failedDocuments:
               type: array

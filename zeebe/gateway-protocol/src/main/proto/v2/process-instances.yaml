@@ -1302,6 +1302,8 @@ components:
 
     ProcessInstanceSequenceFlowsQueryResult:
       description: Process instance sequence flows query response.
+      required:
+        - items
       type: object
       properties:
         items:
@@ -1348,6 +1350,8 @@ components:
 
     ProcessInstanceElementStatisticsQueryResult:
       description: Process instance element statistics query response.
+      required:
+        - items
       type: object
       properties:
         items:

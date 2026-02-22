@@ -492,11 +492,14 @@ components:
     ClusterVariableSearchQueryResult:
       description: Cluster variable search query response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The matching cluster variables.
           type: array
+          default: []
           items:
             $ref: '#/components/schemas/ClusterVariableSearchResult'
