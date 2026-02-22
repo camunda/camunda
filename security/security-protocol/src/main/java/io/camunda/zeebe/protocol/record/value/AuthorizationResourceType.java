@@ -50,12 +50,14 @@ public enum AuthorizationResourceType {
   MESSAGE(PermissionType.CREATE, PermissionType.READ),
   PROCESS_DEFINITION(
       PermissionType.CREATE_PROCESS_INSTANCE,
+      PermissionType.CLAIM_USER_TASK,
       PermissionType.READ_PROCESS_DEFINITION,
       PermissionType.READ_PROCESS_INSTANCE,
       PermissionType.READ_USER_TASK,
       PermissionType.UPDATE_PROCESS_INSTANCE,
       PermissionType.UPDATE_USER_TASK,
       PermissionType.MODIFY_PROCESS_INSTANCE,
+      PermissionType.COMPLETE_USER_TASK,
       PermissionType.CANCEL_PROCESS_INSTANCE,
       PermissionType.DELETE_PROCESS_INSTANCE),
   RESOURCE(
