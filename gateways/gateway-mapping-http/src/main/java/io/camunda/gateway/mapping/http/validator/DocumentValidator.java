@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mapping.http.validator;
 
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
@@ -17,6 +18,8 @@ import java.util.Optional;
 import org.springframework.http.ProblemDetail;
 
 public class DocumentValidator {
+
+  static final String PROCESS_DEFINITION_ID_PATTERN = "^[a-zA-Z_][a-zA-Z0-9_\\-.]*$";
 
   public static Optional<ProblemDetail> validateDocumentMetadata(final DocumentMetadata metadata) {
     if (metadata == null) {
@@ -34,6 +37,13 @@ public class DocumentValidator {
 
           if (metadata.getExpiresAt() != null) {
             validateDate(metadata.getExpiresAt(), "expiresAt", violations);
+          }
+
+          if (metadata.getProcessDefinitionId() != null
+              && !metadata.getProcessDefinitionId().matches(PROCESS_DEFINITION_ID_PATTERN)) {
+            violations.add(
+                ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
+                    "processDefinitionId", PROCESS_DEFINITION_ID_PATTERN));
           }
         });
   }
