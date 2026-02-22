@@ -80,6 +80,30 @@ public final class CreateProcessInstanceWithResultTest {
   }
 
   @Test
+  public void shouldSendResultWithBusinessIdAfterCompletion() {
+    // given
+    final String businessId = "order-12345";
+    final long processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId("PROCESS")
+            .withVariables(Map.of("x", "foo"))
+            .withResult()
+            .withRequestId(1L)
+            .withRequestStreamId(1)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    verify(mockCommandResponseWriter, timeout(1000).times(1))
+        .intent(ProcessInstanceResultIntent.COMPLETED);
+    verify(mockCommandResponseWriter, timeout(1000).times(1)).tryWriteResponse(1, 1L);
+    assertThat(response.getProcessInstanceKey()).isEqualTo(processInstanceKey);
+    assertThat(response.getBpmnProcessId()).isEqualTo("PROCESS");
+    assertThat(response.getBusinessId()).isEqualTo(businessId);
+  }
+
+  @Test
   public void shouldSendResultWithNoVariablesAfterCompletion() {
     // given
     final long processInstanceKey =

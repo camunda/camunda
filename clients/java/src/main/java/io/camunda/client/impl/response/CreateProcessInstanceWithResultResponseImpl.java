@@ -37,6 +37,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
 
   private Map<String, Object> variablesAsMap;
   private final Set<String> tags;
+  private final String businessId;
 
   public CreateProcessInstanceWithResultResponseImpl(
       final JsonMapper jsonMapper, final CreateProcessInstanceResult response) {
@@ -48,6 +49,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     tenantId = response.getTenantId();
     variables = jsonMapper.toJson(response.getVariables());
     tags = response.getTags();
+    businessId = response.getBusinessId();
   }
 
   public CreateProcessInstanceWithResultResponseImpl(
@@ -60,6 +62,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     variables = response.getVariables();
     tenantId = response.getTenantId();
     tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
+    businessId = response.getBusinessId();
   }
 
   @Override
@@ -120,6 +123,11 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
   }
 
   @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  @Override
   public String toString() {
     return "CreateProcessInstanceWithResultResponseImpl{"
         + "processDefinitionKey="
@@ -139,6 +147,9 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
         + '\''
         + ", tenantId='"
         + tenantId
+        + '\''
+        + ", businessId='"
+        + businessId
         + '\''
         + '}';
   }

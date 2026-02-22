@@ -222,6 +222,10 @@ public final class ProcessInstanceServices
       brokerRequest.setTags(request.tags());
     }
 
+    if (request.businessId() != null) {
+      brokerRequest.setBusinessId(request.businessId());
+    }
+
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
@@ -240,6 +244,10 @@ public final class ProcessInstanceServices
             .setInstructions(request.startInstructions())
             .setFetchVariables(request.fetchVariables())
             .setTags(request.tags());
+
+    if (request.businessId() != null) {
+      brokerRequest.setBusinessId(request.businessId());
+    }
 
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
@@ -438,7 +446,8 @@ public final class ProcessInstanceServices
       List<ProcessInstanceCreationStartInstruction> startInstructions,
       List<ProcessInstanceCreationRuntimeInstruction> runtimeInstructions,
       List<String> fetchVariables,
-      Set<String> tags) {}
+      Set<String> tags,
+      String businessId) {}
 
   public record ProcessInstanceCancelRequest(Long processInstanceKey, Long operationReference) {}
 

@@ -71,4 +71,11 @@ public interface ProcessInstanceResult {
    * @return a set of tags
    */
   Set<String> getTags();
+
+  /**
+   * The business id of this process instance.
+   *
+   * @return the business id, or an empty string if not set
+   */
+  String getBusinessId();
 }

@@ -79,7 +79,8 @@ public final class CreateProcessInstanceStub
         .setTenantId(piCreationRecord.getTenantId())
         .setProcessDefinitionKey(PROCESS_KEY)
         .setProcessInstanceKey(PROCESS_INSTANCE_KEY)
-        .setTags(TAGS);
+        .setTags(TAGS)
+        .setBusinessId(piCreationRecord.getBusinessId());
 
     return new BrokerResponse<>(record, 0, PROCESS_INSTANCE_KEY);
   }

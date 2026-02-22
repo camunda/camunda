@@ -504,7 +504,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         null,
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
@@ -516,7 +517,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         brokerResponse.getVariables(),
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
@@ -526,7 +528,8 @@ public final class ResponseMapper {
       final Long processInstanceKey,
       final String tenantId,
       final Map<String, Object> variables,
-      final Set<String> tags) {
+      final Set<String> tags,
+      final String businessId) {
     final var response =
         new CreateProcessInstanceResult()
             .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
@@ -539,6 +542,9 @@ public final class ResponseMapper {
     }
     if (tags != null) {
       response.setTags(tags);
+    }
+    if (businessId != null) {
+      response.businessId(businessId);
     }
 
     return response;

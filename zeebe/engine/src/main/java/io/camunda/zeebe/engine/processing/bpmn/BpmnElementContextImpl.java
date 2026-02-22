@@ -103,6 +103,11 @@ public final class BpmnElementContextImpl implements BpmnElementContext {
   }
 
   @Override
+  public String getBusinessId() {
+    return recordValue.getBusinessId();
+  }
+
+  @Override
   public BpmnElementContext copy(
       final long elementInstanceKey,
       final ProcessInstanceRecord recordValue,

@@ -213,7 +213,8 @@ public class CamundaServicesBasedAdapter implements TasklistServicesAdapter {
         List.of(),
         List.of(),
         null,
-        Set.of());
+        Set.of(),
+        null);
   }
 
   private DeployResourcesRequest toDeployResourcesRequest(

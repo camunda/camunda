@@ -608,7 +608,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // startInstructions
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
-            null // tags
+            null, // tags
+            null // businessId
             );
 
     final var mockResponse =
@@ -645,7 +646,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // startInstructions
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
-            null // tags
+            null, // tags
+            null // businessId
             );
 
     final var mockResponse =
@@ -683,7 +685,8 @@ public final class ProcessInstanceServiceTest {
             List.of(), // startInstructions
             List.of(), // runtimeInstructions
             List.of(), // fetchVariables
-            null // tags
+            null, // tags
+            null // businessId
             );
 
     final var mockResponse =

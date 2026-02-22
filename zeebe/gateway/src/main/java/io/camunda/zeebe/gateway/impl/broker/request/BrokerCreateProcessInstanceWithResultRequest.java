@@ -52,6 +52,11 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceWithResultRequest setBusinessId(final String businessId) {
+    requestDto.setBusinessId(businessId);
+    return this;
+  }
+
   public BrokerCreateProcessInstanceWithResultRequest setVariables(final DirectBuffer variables) {
     requestDto.setVariables(variables);
     return this;

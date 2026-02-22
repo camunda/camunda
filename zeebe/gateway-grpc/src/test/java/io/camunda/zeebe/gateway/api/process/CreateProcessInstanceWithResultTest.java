@@ -85,6 +85,37 @@ public final class CreateProcessInstanceWithResultTest extends GatewayTest {
     assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
     assertThat(response.getTenantId()).isEqualTo(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     assertThat(new HashSet(response.getTagsList())).isEqualTo(stub.getTags());
+    assertThat(response.getBusinessId()).isEmpty();
+  }
+
+  @Test
+  public void shouldMapRequestAndResponseWithBusinessId() {
+    // given
+    final CreateProcessInstanceWithResultStub stub = new CreateProcessInstanceWithResultStub();
+    stub.registerWith(brokerClient);
+    final String businessId = "order-12345";
+
+    final CreateProcessInstanceWithResultRequest request =
+        CreateProcessInstanceWithResultRequest.newBuilder()
+            .setRequest(
+                CreateProcessInstanceRequest.newBuilder()
+                    .setProcessDefinitionKey(stub.getProcessDefinitionKey())
+                    .setBusinessId(businessId))
+            .build();
+
+    // when
+    final CreateProcessInstanceWithResultResponse response =
+        client.createProcessInstanceWithResult(request);
+
+    // then
+    assertThat(response.getProcessInstanceKey()).isEqualTo(stub.getProcessInstanceKey());
+    assertThat(response.getBusinessId()).isEqualTo(businessId);
+
+    final ProcessInstanceCreationRecord brokerRequestValue =
+        brokerClient
+            .<BrokerCreateProcessInstanceWithResultRequest>getSingleBrokerRequest()
+            .getRequestWriter();
+    assertThat(brokerRequestValue.getBusinessId()).isEqualTo(businessId);
   }
 
   @Test

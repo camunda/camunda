@@ -169,6 +169,13 @@ public final class CreateProcessInstanceCommandImpl
   }
 
   @Override
+  public CreateProcessInstanceCommandStep3 businessId(final String businessId) {
+    grpcRequestObjectBuilder.setBusinessId(businessId);
+    httpRequestObject.setBusinessId(businessId);
+    return this;
+  }
+
+  @Override
   public CreateProcessInstanceCommandStep2 bpmnProcessId(final String id) {
     grpcRequestObjectBuilder.setBpmnProcessId(id);
     httpRequestObject.setProcessDefinitionId(id);

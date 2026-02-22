@@ -101,6 +101,11 @@ public class BrokerCreateProcessInstanceRequest
     return this;
   }
 
+  public BrokerCreateProcessInstanceRequest setBusinessId(final String businessId) {
+    requestDto.setBusinessId(businessId);
+    return this;
+  }
+
   @Override
   public ProcessInstanceCreationRecord getRequestWriter() {
     return requestDto;

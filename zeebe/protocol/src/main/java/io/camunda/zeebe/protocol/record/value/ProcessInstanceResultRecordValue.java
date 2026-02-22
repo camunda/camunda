@@ -41,18 +41,28 @@ public interface ProcessInstanceResultRecordValue
   int getVersion();
 
   /**
-   * @return the key of the deployed process this instance belongs to.
-   */
-  long getProcessDefinitionKey();
-
-  /**
    * @return the key of the process instance
    */
   @Override
   long getProcessInstanceKey();
 
   /**
+   * @return the key of the deployed process this instance belongs to.
+   */
+  @Override
+  long getProcessDefinitionKey();
+
+  /**
    * @return the set of tags of the process instance
    */
   Set<String> getTags();
+
+  /**
+   * Returns the business id for the process instance. The business id is an immutable, user-defined
+   * string identifier that identifies a process instance within the scope of a process definition.
+   *
+   * @return the business id, or an empty string if not set
+   * @since 8.9
+   */
+  String getBusinessId();
 }
