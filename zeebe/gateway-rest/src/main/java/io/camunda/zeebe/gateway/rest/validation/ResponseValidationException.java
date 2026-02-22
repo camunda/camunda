@@ -33,7 +33,14 @@ public class ResponseValidationException extends RuntimeException {
   private static String buildMessage(final Set<? extends ConstraintViolation<?>> violations) {
     final String details =
         violations.stream()
-            .map(v -> v.getPropertyPath() + ": " + v.getMessage())
+            .map(
+                v ->
+                    v.getPropertyPath()
+                        + ": "
+                        + v.getMessage()
+                        + " (was: "
+                        + v.getInvalidValue()
+                        + ")")
             .sorted()
             .collect(Collectors.joining("; "));
     return "Response validation failed: " + details;
