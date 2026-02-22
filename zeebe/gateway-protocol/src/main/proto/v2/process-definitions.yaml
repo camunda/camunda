@@ -540,6 +540,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         latestProcessDefinitionName:
           description: Name of the latest deployed process definition instance version.
+          nullable: true
           type: string
         hasMultipleVersions:
           description: Indicates whether multiple versions of this process definition instance are deployed.
@@ -627,6 +628,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
         processDefinitionName:
           description: The name of the process definition.
+          nullable: true
           type: string
         tenantId:
           description: The tenant ID associated with the process definition.

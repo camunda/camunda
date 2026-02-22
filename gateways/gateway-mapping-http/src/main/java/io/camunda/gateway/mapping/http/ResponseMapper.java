@@ -536,17 +536,16 @@ public final class ResponseMapper {
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
             .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId);
+            .tenantId(tenantId)
+            // defaults to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .businessId(emptyToNull(businessId));
     if (variables != null) {
       response.variables(variables);
     }
     if (tags != null) {
       response.setTags(tags);
     }
-    if (businessId != null) {
-      response.businessId(businessId);
-    }
-
     return response;
   }
 
@@ -677,8 +676,10 @@ public final class ResponseMapper {
             .decisionRequirementsKey(
                 KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
             .output(decisionEvaluationRecord.getDecisionOutput())
-            .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
-            .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
+            // these optional fields default to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
+            .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
             .tenantId(decisionEvaluationRecord.getTenantId())
             .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
             .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
@@ -808,6 +809,10 @@ public final class ResponseMapper {
           partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
           brokerInfo.addPartitionsItem(partitionDto);
         });
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   static class RestJobActivationResult

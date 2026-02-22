@@ -82,6 +82,7 @@ components:
             type: string
         salesPlanType:
           description: The plan of the user.
+          nullable: true
           type: string
           example: ""
         c8Links:

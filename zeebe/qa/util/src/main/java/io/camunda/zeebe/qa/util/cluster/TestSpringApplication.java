@@ -71,6 +71,8 @@ public abstract class TestSpringApplication<T extends TestSpringApplication<T>>
     overridePropertyIfAbsent("management.server.port", SocketUtil.getNextAddress().getPort());
     overridePropertyIfAbsent("spring.lifecycle.timeout-per-shutdown-phase", "1s");
 
+    overridePropertyIfAbsent("camunda.rest.response-validation.enabled", "true");
+
     // configure each application to use their own resources for the embedded Netty web server,
     // otherwise shutting one down will shut down all embedded servers
     reactorResourceFactory.setUseGlobalResources(false);

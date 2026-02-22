@@ -1210,6 +1210,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
         processDefinitionName:
           type: string
+          nullable: true
           description: The process definition name.
         processDefinitionVersion:
           type: integer
