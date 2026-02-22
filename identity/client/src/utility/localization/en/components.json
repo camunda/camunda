@@ -33,6 +33,7 @@
   "hidePassword": "Hide password",
   "showPassword": "Show password",
   "login": "Login",
+  "admin": "Admin",
   "identity": "Identity",
   "licenseInfo": "Non-Production License. If you would like information on production usage, please refer to our <2>terms & conditions page</2> or <2>contact sales</2>.",
   "loading": "Loading",

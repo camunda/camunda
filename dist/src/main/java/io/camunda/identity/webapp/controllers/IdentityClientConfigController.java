@@ -18,7 +18,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 @Deprecated
 public class IdentityClientConfigController {
 
-  /** Redirects legacy /identity/config.js to /admin/config.js. */
+  /**
+   * Redirects legacy /identity/config.js to /admin/config.js.
+   *
+   * <p>TODO(#46027): This can be removed after sufficient migration period.
+   */
   @GetMapping(path = "/identity/config.js")
   @Hidden
   public String redirectToAdminConfig() {

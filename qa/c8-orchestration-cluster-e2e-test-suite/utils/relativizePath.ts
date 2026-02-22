@@ -8,12 +8,14 @@
 
 export const Paths = {
   login(application: string): string {
+    // TODO(#46027): This can be removed after sufficient migration period.
     if (application === 'identity') {
       return '/admin/login';
     }
     return `/${application}/login`;
   },
   forbidden(application: string): string {
+    // TODO(#46027): This can be removed after sufficient migration period.
     if (application === 'identity') {
       return '/admin/forbidden';
     }
