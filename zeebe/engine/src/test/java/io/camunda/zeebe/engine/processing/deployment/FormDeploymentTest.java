@@ -39,10 +39,16 @@ public class FormDeploymentTest {
   private static final String TEST_FORM_2 = "/form/test-form-2.form";
   private static final String TEST_FORM_WITHOUT_ID = "/form/test-form_without_id.form";
   private static final String TEST_FORM_WITH_BLANK_ID = "/form/test-form_with_blank_id.form";
+  private static final String TEST_FORM_WITH_LONG_ID = "/form/test-form_with_long_id.form";
   private static final String TEST_FORM_1_ID = "Form_0w7r08e";
   private static final String TEST_FORM_2_ID = "Form_6s1b76p";
 
-  @Rule public final EngineRule engine = EngineRule.singlePartition();
+  private static final int MAX_ID_FIELD_LENGTH = 50;
+
+  @Rule
+  public final EngineRule engine =
+      EngineRule.singlePartition()
+          .withEngineConfig(config -> config.setMaxIdFieldLength(MAX_ID_FIELD_LENGTH));
 
   @Test
   public void shouldDeployFormResourceAndReturnFormMetadataWithoutVersionTag() {
@@ -131,6 +137,31 @@ public class FormDeploymentTest {
 
     assertThat(deploymentEvent.getRejectionReason())
         .contains(String.format("Expected the form id to be filled, but it is blank"));
+  }
+
+  @Test
+  public void shouldRejectWhenFormIdIsTooLong() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withJsonClasspathResource(TEST_FORM_WITH_LONG_ID)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a form must not be longer than the configured max-id-length of %d "
+                    + "characters, but was 'this_is_a_form_document_with_an_extreme_and_very_long_id' "
+                    + "in resource '%s'",
+                MAX_ID_FIELD_LENGTH, TEST_FORM_WITH_LONG_ID));
   }
 
   @Test
