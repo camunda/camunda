@@ -38,7 +38,12 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     mockSearchElementInstances().withSuccess({
@@ -57,6 +62,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
         {
           elementInstanceKey: '2251799813686156',
@@ -71,9 +77,16 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
           incidentKey: null,
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
+          endDate: null,
+          rootProcessInstanceKey: null,
         },
       ],
-      page: {totalItems: 2, startCursor: null, endCursor: null, hasMoreTotalItems: false},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

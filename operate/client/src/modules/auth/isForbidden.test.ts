@@ -16,12 +16,11 @@ describe('isForbidden', () => {
     email: 'test@camunda.com',
     salesPlanType: null,
     roles: [],
-    c8Links: [],
+    c8Links: {},
     tenants: [],
     groups: [],
     canLogout: true,
     authorizedComponents: [],
-    apiUser: false,
   };
 
   it('should return true when authorizedComponents does not contain "operate" or "*"', () => {
