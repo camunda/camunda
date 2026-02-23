@@ -591,12 +591,10 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
   void shouldPreferTypeOverrideOverNameOverride() {
     final CamundaClientProperties properties = properties();
 
-    final CamundaClientJobWorkerProperties typeOverride =
-        new CamundaClientJobWorkerProperties();
+    final CamundaClientJobWorkerProperties typeOverride = new CamundaClientJobWorkerProperties();
     typeOverride.setStreamEnabled(true);
 
-    final CamundaClientJobWorkerProperties nameOverride =
-        new CamundaClientJobWorkerProperties();
+    final CamundaClientJobWorkerProperties nameOverride = new CamundaClientJobWorkerProperties();
     nameOverride.setStreamEnabled(false);
 
     properties.getWorker().getOverride().put("MY_TYPE", typeOverride);
@@ -615,6 +613,7 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     // job type override should take precedence over name override
     assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
   }
+
   private record Input<T>(
       String displayName,
       BiConsumer<CamundaClientJobWorkerProperties, T> setter,
