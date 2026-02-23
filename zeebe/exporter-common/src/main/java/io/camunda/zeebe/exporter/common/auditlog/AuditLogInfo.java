@@ -24,6 +24,7 @@ import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
 import io.camunda.zeebe.protocol.record.intent.Intent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -91,6 +92,9 @@ public record AuditLogInfo(
           // Incident
           Map.entry(IncidentIntent.RESOLVED, AuditLogOperationType.RESOLVE),
           Map.entry(IncidentIntent.RESOLVE, AuditLogOperationType.RESOLVE),
+
+          // Job
+          Map.entry(JobIntent.COMPLETED, AuditLogOperationType.COMPLETE),
 
           // MappingRule
           Map.entry(MappingRuleIntent.CREATED, AuditLogOperationType.CREATE),
@@ -162,6 +166,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.DECISION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.FORM, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(ValueType.INCIDENT, AuditLogOperationCategory.DEPLOYED_RESOURCES),
+          Map.entry(ValueType.JOB, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
               ValueType.PROCESS_INSTANCE_CREATION, AuditLogOperationCategory.DEPLOYED_RESOURCES),
           Map.entry(
@@ -193,6 +198,7 @@ public record AuditLogInfo(
           Map.entry(ValueType.DECISION, AuditLogEntityType.DECISION),
           Map.entry(ValueType.DECISION_EVALUATION, AuditLogEntityType.DECISION),
           Map.entry(ValueType.DECISION_REQUIREMENTS, AuditLogEntityType.RESOURCE),
+          Map.entry(ValueType.JOB, AuditLogEntityType.JOB),
           Map.entry(ValueType.BATCH_OPERATION_CREATION, AuditLogEntityType.BATCH),
           Map.entry(ValueType.BATCH_OPERATION_LIFECYCLE_MANAGEMENT, AuditLogEntityType.BATCH),
           Map.entry(ValueType.USER, AuditLogEntityType.USER),

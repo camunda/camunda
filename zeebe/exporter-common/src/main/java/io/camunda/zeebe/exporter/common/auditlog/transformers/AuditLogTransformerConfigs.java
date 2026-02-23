@@ -38,6 +38,7 @@ import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -105,6 +106,9 @@ public class AuditLogTransformerConfigs {
       TransformerConfig.with(ValueType.INCIDENT)
           .withIntents(IncidentIntent.RESOLVED)
           .withRejections(IncidentIntent.RESOLVE, RejectionType.INVALID_STATE);
+
+  public static final TransformerConfig JOB_CONFIG =
+      TransformerConfig.with(ValueType.JOB).withIntents(JobIntent.COMPLETED);
 
   public static final TransformerConfig MAPPING_RULE_CONFIG =
       TransformerConfig.with(MAPPING_RULE)
