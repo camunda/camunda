@@ -34,7 +34,7 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
-import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
+import {CellDetails} from 'App/OperationsLog/InstancesTable/Cell/CellDetails';
 import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
 import {Filters} from './Filters';
 import {
@@ -198,7 +198,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
         result: <CellResult item={item} />,
         operationType: spaceAndCapitalize(item.operationType.toString()),
         entityType: spaceAndCapitalize(item.entityType.toString()),
-        property: <CellProperty item={item} />,
+        property: <CellDetails item={item} />,
         user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: (

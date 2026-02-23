@@ -6,10 +6,14 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
-import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {spaceAndCapitalize} from '../spaceAndCapitalize';
+import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  AuditLog,
+  AuditLogOperationType,
+} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
+import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {Api, User} from '@carbon/react/icons';
+import {Paths} from 'modules/Routes';
 
 const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   switch (batchOperationType) {
@@ -49,4 +53,79 @@ const getActorIcon = (auditLog: AuditLog) => {
   }
 };
 
-export {formatBatchTitle, formatModalHeading, getActorIcon};
+const mapToCellEntityKeyData = (
+  item: AuditLog,
+  processDefinitionName?: string,
+  decisionDefinitionName?: string,
+  tasklistUrl?: string,
+): {name?: string; link?: string; linkLabel?: string} => {
+  switch (item.entityType) {
+    case 'BATCH':
+      return {
+        link: Paths.batchOperation(item.batchOperationKey),
+        linkLabel: `View batch operation ${item.batchOperationKey}`,
+      };
+    case 'PROCESS_INSTANCE':
+      return {
+        name: processDefinitionName,
+        link: Paths.processInstance(item.entityKey),
+        linkLabel: `View process instance ${item.entityKey}`,
+      };
+    case 'DECISION':
+      if (item.operationType === 'EVALUATE') {
+        return {
+          name: decisionDefinitionName,
+          link: Paths.decisionInstance(item.entityKey),
+          linkLabel: `View decision instance ${item.entityKey}`,
+        };
+      } else {
+        return {name: decisionDefinitionName};
+      }
+    case 'USER_TASK':
+      return {
+        link: tasklistUrl ? `${tasklistUrl}/${item.entityKey}` : undefined,
+        linkLabel: `View user task ${item.entityKey}`,
+      };
+    default:
+      return {};
+  }
+};
+
+const userTaskOperations: Set<AuditLogOperationType> = new Set([
+  'ASSIGN',
+  'UNASSIGN',
+]);
+
+const mapToCellDetailsData = (
+  item: AuditLog,
+): {property?: string; value?: string} => {
+  if (item.entityType === 'BATCH' && item.batchOperationType) {
+    return {
+      property: 'Batch operation type',
+      value: spaceAndCapitalize(item.batchOperationType),
+    };
+  } else if (
+    item.entityType === 'USER_TASK' &&
+    userTaskOperations.has(item.operationType)
+  ) {
+    return {
+      property: 'Assignee',
+      value: item.relatedEntityKey,
+    };
+  } else if (item.entityType === 'RESOURCE' && item.resourceKey) {
+    return {
+      property: 'Resource key',
+      value: item.resourceKey,
+    };
+  } else {
+    return {};
+  }
+};
+
+export {
+  formatBatchTitle,
+  formatModalHeading,
+  getActorIcon,
+  mapToCellEntityKeyData,
+  mapToCellDetailsData,
+};
