@@ -7,6 +7,8 @@
  */
 package io.camunda.search.query;
 
+import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.JobTypeStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -33,6 +35,11 @@ public record JobTypeStatisticsQuery(JobTypeStatisticsFilter filter, SearchQuery
   @Override
   public SortOption sort() {
     return NoSort.NO_SORT;
+  }
+
+  @Override
+  public AggregationBase aggregation() {
+    return new JobTypeStatisticsAggregation(page);
   }
 
   public static final class Builder
