@@ -33,6 +33,9 @@ const createMockElementInstance = (
   processInstanceKey: mockProcessInstanceKey,
   hasIncident: false,
   tenantId: '<default>',
+  endDate: null,
+  rootProcessInstanceKey: null,
+  incidentKey: null,
   ...overrides,
 });
 
@@ -43,6 +46,9 @@ const createMockResponse = (
   items,
   page: {
     totalItems,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 });
 

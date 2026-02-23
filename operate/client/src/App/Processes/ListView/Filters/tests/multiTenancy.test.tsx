@@ -32,9 +32,9 @@ describe('Filters', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: '<tenant-A>', name: 'Tenant A'},
-          {key: 3, tenantId: 'tenant-b', name: 'Tenant B'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: '<tenant-A>', name: 'Tenant A', description: null},
+          {tenantId: 'tenant-b', name: 'Tenant B', description: null},
         ],
       }),
     );

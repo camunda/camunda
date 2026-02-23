@@ -43,6 +43,9 @@ describe('CopyVariableButton', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
 
@@ -82,6 +85,9 @@ describe('CopyVariableButton', () => {
       items: variables,
       page: {
         totalItems: 100,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
 
@@ -114,6 +120,9 @@ describe('CopyVariableButton', () => {
       items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
 
@@ -159,6 +168,9 @@ describe('CopyVariableButton', () => {
       ],
       page: {
         totalItems: 3,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
 

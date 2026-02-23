@@ -39,7 +39,15 @@ describe('Edit variable', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess(mockVariables);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should disable edit buttons while a variable update is being submitted', async () => {
@@ -60,6 +68,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
 
@@ -113,7 +124,15 @@ describe('Edit variable', () => {
     mockUpdateElementInstanceVariables('1').withDelay(null);
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(saveButton);
 
@@ -288,6 +307,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
@@ -304,6 +326,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -360,6 +385,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
@@ -371,6 +399,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -420,6 +451,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
@@ -431,6 +465,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -476,6 +513,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
@@ -487,6 +527,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockGetVariable().withSuccess(
@@ -540,6 +583,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
@@ -551,6 +597,9 @@ describe('Edit variable', () => {
       ],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockGetVariable().withSuccess(
@@ -607,12 +656,18 @@ describe('Edit variable', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -653,14 +708,24 @@ describe('Edit variable', () => {
         createVariable({name: 'a.b', value: '"old"', isTruncated: false}),
         createVariable({name: 'a.b.c', value: '"old"', isTruncated: false}),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
         createVariable({name: 'a.b', value: '"old"', isTruncated: false}),
         createVariable({name: 'a.b.c', value: '"old"', isTruncated: false}),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -707,6 +772,9 @@ describe('Edit variable', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 

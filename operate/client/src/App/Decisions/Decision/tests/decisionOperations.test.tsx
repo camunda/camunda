@@ -23,7 +23,12 @@ describe('<Decision /> - operations', () => {
     const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
   });

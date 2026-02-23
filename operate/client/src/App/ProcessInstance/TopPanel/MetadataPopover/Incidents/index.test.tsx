@@ -42,6 +42,7 @@ const mockSingleIncident: Incident = {
   creationTime: '2024-10-28T10:00:00.000Z',
   state: 'ACTIVE',
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
 };
 
 const mockSingleIncidentCalledProcessInstance: Incident = {
@@ -94,6 +95,7 @@ const mockDecisionInstance: DecisionInstance = {
   processInstanceKey: PROCESS_INSTANCE_KEY,
   elementInstanceKey: ELEMENT_INSTANCE_KEY,
   rootDecisionDefinitionKey: '77777777777777777',
+  rootProcessInstanceKey: null,
 };
 
 const Wrapper = ({children}: {children?: React.ReactNode}) => {
@@ -118,17 +120,28 @@ describe('<Incidents />', () => {
       startDate: '2024-10-28T10:00:00.000Z',
       processDefinitionKey: '200',
       processDefinitionVersion: 1,
+      processDefinitionVersionTag: null,
       processDefinitionId: 'testProcess',
       tenantId: '<default>',
       processDefinitionName: 'Test Process',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
+      endDate: null,
     });
   });
 
   it('should render loading state', () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withDelay({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -146,7 +159,12 @@ describe('<Incidents />', () => {
   it('should render single incident - current instance', async () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withSuccess({
       items: [mockSingleIncident],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -174,7 +192,12 @@ describe('<Incidents />', () => {
   it('should render single incident - called process instance', async () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withSuccess({
       items: [mockSingleIncidentCalledProcessInstance],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -206,12 +229,22 @@ describe('<Incidents />', () => {
   it('should render single incident - called decision instance', async () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withSuccess({
       items: [mockSingleIncidentCalledDecisionInstance],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     mockSearchDecisionInstances().withSuccess({
       items: [mockDecisionInstance],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -235,7 +268,12 @@ describe('<Incidents />', () => {
   it('should render multi incidents', async () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withSuccess({
       items: mockMultipleIncidents,
-      page: {totalItems: 3},
+      page: {
+        totalItems: 3,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -257,7 +295,12 @@ describe('<Incidents />', () => {
   it('should render no incident section when no incidents', async () => {
     mockSearchIncidentsByElementInstance(ELEMENT_INSTANCE_KEY).withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(

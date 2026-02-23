@@ -80,12 +80,18 @@ describe('Modification Dropdown - Multi Scopes', () => {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionKey: '2',
       processDefinitionVersion: 1,
+      processDefinitionVersionTag: null,
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       processDefinitionName: 'someProcessName',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     };
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -96,7 +102,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     modificationsStore.enableModificationMode();
   });
@@ -158,9 +169,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
       elementId: 'OuterSubProcess',
       elementName: 'Outer Sub Process',
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
       startDate: '2018-12-12T00:00:02.000+0000',
       endDate: '2018-12-12T00:00:03.000+0000',
+      rootProcessInstanceKey: null,
     });
 
     renderPopover([

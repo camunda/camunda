@@ -58,7 +58,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -86,9 +91,35 @@ describe('OperationsLog', () => {
           actorType: 'USER',
           category: 'USER_TASKS',
           entityDescription: 'variableValue',
+          batchOperationKey: null,
+          batchOperationType: null,
+          relatedEntityType: null,
+          resourceKey: null,
+          jobKey: null,
+          elementInstanceKey: '123',
+          tenantId: '<default>',
+          decisionRequirementsId: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          decisionRequirementsKey: null,
+          processDefinitionId: null,
+          relatedEntityKey: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          userTaskKey: null,
+          formKey: null,
+          agentElementId: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -127,7 +158,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withDelay({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -158,7 +194,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {

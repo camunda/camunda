@@ -43,6 +43,10 @@ const mockProcessInstance = createProcessInstance({
   processInstanceKey: '123456789',
   state: 'ACTIVE',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 });
 
 describe('ProcessInstanceOperations', () => {
@@ -52,7 +56,12 @@ describe('ProcessInstanceOperations', () => {
     mockFetchCallHierarchy().withSuccess([]);
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
@@ -60,6 +69,10 @@ describe('ProcessInstanceOperations', () => {
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     render(
@@ -106,6 +119,10 @@ describe('ProcessInstanceOperations', () => {
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     render(
@@ -146,6 +163,10 @@ describe('ProcessInstanceOperations', () => {
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     const {user} = render(
@@ -169,6 +190,10 @@ describe('ProcessInstanceOperations', () => {
     const instanceWithIncident = createProcessInstance({
       state: 'ACTIVE',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     const {user} = render(
@@ -223,9 +248,17 @@ describe('ProcessInstanceOperations', () => {
           state: 'ACTIVE',
           operationType: 'CANCEL_PROCESS_INSTANCE',
           itemKey: '123456789',
+          rootProcessInstanceKey: null,
+          processedDate: null,
+          errorMessage: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(

@@ -33,13 +33,13 @@ describe('App switcher', () => {
 
     mockMe().withSuccess(
       createUser({
-        c8Links: [
-          {name: 'operate', link: 'https://link-to-operate'},
-          {name: 'tasklist', link: 'https://link-to-tasklist'},
-          {name: 'modeler', link: 'https://link-to-modeler'},
-          {name: 'console', link: 'https://link-to-console'},
-          {name: 'optimize', link: 'https://link-to-optimize'},
-        ],
+        c8Links: {
+          operate: 'https://link-to-operate',
+          tasklist: 'https://link-to-tasklist',
+          modeler: 'https://link-to-modeler',
+          console: 'https://link-to-console',
+          optimize: 'https://link-to-optimize',
+        },
         authorizedComponents: ['operate'],
       }),
     );

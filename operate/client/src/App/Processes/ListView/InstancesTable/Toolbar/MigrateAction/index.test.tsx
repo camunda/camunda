@@ -30,11 +30,16 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
     processDefinitionKey: PROCESS_DEFINITION_KEY,
     processDefinitionName: 'Event Based Gateway Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'ACTIVE',
     startDate: '2023-01-01T00:00:00.000+0000',
+    endDate: null,
     hasIncident: false,
     tenantId: '<default>',
     parentProcessInstanceKey: '999',
+    parentElementInstanceKey: '',
+    rootProcessInstanceKey: null,
+    tags: [],
   },
 ];
 

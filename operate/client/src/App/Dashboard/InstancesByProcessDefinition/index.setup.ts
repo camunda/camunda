@@ -23,7 +23,12 @@ const mockWithSingleVersion: GetProcessDefinitionInstanceStatisticsResponseBody 
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockWithMultipleVersions: GetProcessDefinitionInstanceStatisticsResponseBody =
@@ -38,7 +43,12 @@ const mockWithMultipleVersions: GetProcessDefinitionInstanceStatisticsResponseBo
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockOrderProcessVersions: GetProcessDefinitionInstanceVersionStatisticsResponseBody =
@@ -63,7 +73,12 @@ const mockOrderProcessVersions: GetProcessDefinitionInstanceVersionStatisticsRes
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 export {

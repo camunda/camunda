@@ -59,14 +59,19 @@ describe('InstanceHeader', () => {
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );
@@ -100,14 +105,19 @@ describe('InstanceHeader', () => {
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );

@@ -22,11 +22,6 @@ import type {
   QueryProcessInstancesRequestBody,
   Variable,
 } from '@camunda/camunda-api-zod-schemas/8.9';
-import type {
-  QueryAuditLogsRequestBody,
-  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
-  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {
   variables: {

@@ -47,7 +47,12 @@ describe('<DecisionInstance />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockMe().withSuccess(createUser());
     mockMe().withSuccess(createUser());
@@ -187,7 +192,12 @@ describe('<DecisionInstance />', () => {
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<DecisionInstance />, {wrapper: Wrapper});
@@ -254,7 +264,12 @@ describe('<DecisionInstance />', () => {
     mockFetchDecisionInstance().withSuccess(invoiceClassification);
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<DecisionInstance />, {wrapper: Wrapper});

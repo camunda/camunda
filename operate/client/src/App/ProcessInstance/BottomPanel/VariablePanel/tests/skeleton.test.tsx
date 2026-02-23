@@ -24,6 +24,9 @@ describe('Skeleton', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockFetchProcessDefinitionXml({processDefinitionKey: '123'}).withSuccess(
@@ -41,7 +44,15 @@ describe('Skeleton', () => {
         },
       ],
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),

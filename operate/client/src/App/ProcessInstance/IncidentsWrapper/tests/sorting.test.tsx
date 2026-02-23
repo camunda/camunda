@@ -25,7 +25,12 @@ describe('Sorting', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceV2().withSuccess(mockProcessInstance);
     mockSearchProcessInstances().withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [mockProcessInstance],
     });
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
