@@ -182,11 +182,17 @@ const orderProcessInstance: {
       processDefinitionKey: '2251799813688192',
       processDefinitionName: 'order-process',
       processDefinitionVersion: 2,
+      processDefinitionVersionTag: null,
       startDate: '2023-08-14T05:47:07.376+0000',
+      endDate: null,
       state: 'ACTIVE',
       processDefinitionId: 'order-process',
       tenantId: '<default>',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     },
     callHierarchy: [],
     elementInstances: {
@@ -204,6 +210,8 @@ const orderProcessInstance: {
           startDate: '2023-09-29T07:16:22.701+0000',
           endDate: '2023-09-29T07:16:22.701+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813725334',
@@ -218,6 +226,8 @@ const orderProcessInstance: {
           startDate: '2023-09-29T07:16:22.701+0000',
           endDate: '2023-09-29T07:16:38.328+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813725352',
@@ -232,6 +242,8 @@ const orderProcessInstance: {
           startDate: '2023-09-29T07:16:38.328+0000',
           endDate: '2023-09-29T07:16:57.379+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813725374',
@@ -244,10 +256,18 @@ const orderProcessInstance: {
           state: 'ACTIVE',
           hasIncident: true,
           startDate: '2023-09-29T07:16:57.379+0000',
+          endDate: null,
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
       ],
-      page: {totalItems: 4},
+      page: {
+        totalItems: 4,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     },
     statistics: {
       items: [
@@ -332,6 +352,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
       {
         variableKey: '2251799813725328-orderValue',
@@ -341,6 +362,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
     ],
     incidents: {
@@ -382,7 +404,12 @@ const orderProcessInstance: {
       ],
     },
     incidentsV2: {
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [
         {
           errorMessage:
@@ -397,6 +424,8 @@ const orderProcessInstance: {
           processDefinitionKey: '2251799813688192',
           tenantId: '<default>',
           state: 'ACTIVE',
+          rootProcessInstanceKey: null,
+          jobKey: '0',
         },
       ],
     },
@@ -442,11 +471,17 @@ const orderProcessInstance: {
       processDefinitionKey: '2251799813688192',
       processDefinitionName: 'order-process',
       processDefinitionVersion: 2,
+      processDefinitionVersionTag: null,
       startDate: '2023-08-14T05:47:07.376+0000',
+      endDate: null,
       state: 'ACTIVE',
       processDefinitionId: 'order-process',
       tenantId: '<default>',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     },
     callHierarchy: [],
     elementInstances: {
@@ -464,6 +499,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:05:25.569+0000',
           endDate: '2023-10-02T14:05:25.569+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983791',
@@ -478,6 +515,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:05:25.569+0000',
           endDate: '2023-10-02T14:06:35.639+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983851',
@@ -492,6 +531,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:06:35.639+0000',
           endDate: '2023-10-02T14:06:58.625+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983871',
@@ -506,6 +547,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:06:58.625+0000',
           endDate: '2023-10-02T14:07:59.691+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983945',
@@ -518,10 +561,18 @@ const orderProcessInstance: {
           state: 'ACTIVE',
           hasIncident: false,
           startDate: '2023-10-02T14:07:59.691+0000',
+          endDate: null,
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
       ],
-      page: {totalItems: 5},
+      page: {
+        totalItems: 5,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     },
     statistics: {
       items: [
@@ -625,6 +676,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
       {
         variableKey: '2251799813725328-orderValue',
@@ -634,6 +686,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
     ],
   },
@@ -678,12 +731,17 @@ const orderProcessInstance: {
       processDefinitionKey: '2251799813737336',
       processDefinitionName: 'order-process',
       processDefinitionVersion: 2,
+      processDefinitionVersionTag: null,
       startDate: '2023-09-29T10:59:36.048+0000',
       endDate: '2023-09-29T11:01:50.073+0000',
       state: 'COMPLETED',
       processDefinitionId: 'order-process',
       tenantId: '<default>',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     },
     callHierarchy: [],
     elementInstances: {
@@ -701,6 +759,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:05:25.569+0000',
           endDate: '2023-10-02T14:05:25.569+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983791',
@@ -715,6 +775,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:05:25.569+0000',
           endDate: '2023-10-02T14:06:35.639+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983851',
@@ -729,6 +791,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:06:35.639+0000',
           endDate: '2023-10-02T14:06:58.625+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983871',
@@ -743,6 +807,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:06:58.625+0000',
           endDate: '2023-10-02T14:07:59.691+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813983945',
@@ -757,6 +823,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:07:59.691+0000',
           endDate: '2023-10-02T14:12:36.295+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813984192',
@@ -771,6 +839,8 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:12:36.295+0000',
           endDate: '2023-10-02T14:12:36.295+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
         {
           elementInstanceKey: '2251799813984194',
@@ -785,9 +855,16 @@ const orderProcessInstance: {
           startDate: '2023-10-02T14:12:36.295+0000',
           endDate: '2023-10-02T14:12:36.295+0000',
           tenantId: '<default>',
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
       ],
-      page: {totalItems: 7},
+      page: {
+        totalItems: 7,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     },
     statistics: {
       items: [
@@ -929,6 +1006,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
       {
         variableKey: '2251799813725328-orderValue',
@@ -938,6 +1016,7 @@ const orderProcessInstance: {
         tenantId: '',
         processInstanceKey: '2251799813725328',
         scopeKey: '2251799813725328',
+        rootProcessInstanceKey: null,
       },
     ],
   },

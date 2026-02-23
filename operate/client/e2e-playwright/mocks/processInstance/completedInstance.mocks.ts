@@ -37,6 +37,11 @@ const completedInstance: InstanceMock = {
     processDefinitionId: 'timerProcess',
     tenantId: '<default>',
     hasIncident: false,
+    processDefinitionVersionTag: null,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   callHierarchy: [],
   elementInstances: {
@@ -54,6 +59,8 @@ const completedInstance: InstanceMock = {
         startDate: '2023-10-02T06:10:47.979+0000',
         endDate: '2023-10-02T06:10:47.984+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799815580679',
@@ -68,6 +75,8 @@ const completedInstance: InstanceMock = {
         startDate: '2023-10-02T06:10:47.989+0000',
         endDate: '2023-10-02T06:15:48.031+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799815580946',
@@ -82,9 +91,16 @@ const completedInstance: InstanceMock = {
         startDate: '2023-10-02T06:15:48.037+0000',
         endDate: '2023-10-02T06:15:48.037+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   statistics: {
     items: [

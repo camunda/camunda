@@ -38,10 +38,23 @@ test.describe.skip('delete resource definitions', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         processDefinitions: mockProcessDefinitions,
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         processInstances: {
           items: [],
-          page: {totalItems: 0},
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         statistics: {
           items: [],
@@ -124,7 +137,15 @@ test.describe.skip('delete resource definitions', () => {
       URL_API_PATTERN,
       mockDecisionsResponses({
         decisionDefinitions: mockedDecisionDefinitions,
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         decisionInstances: mockEmptyDecisionInstances,
         decisionXml: mockDecisionXml,
         deleteDecision: mockDeleteDecision,

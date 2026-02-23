@@ -45,7 +45,15 @@ test.describe('decisions page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         decisionDefinitions: mockedDecisionDefinitions,
         decisionXml: '',
         decisionInstances: mockEmptyDecisionInstances,

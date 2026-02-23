@@ -55,6 +55,11 @@ const instanceWithIncident: InstanceMock = {
     processDefinitionId: 'orderProcess',
     tenantId: '',
     hasIncident: true,
+    processDefinitionVersionTag: null,
+    endDate: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   callHierarchy: [
     {
@@ -287,6 +292,8 @@ const instanceWithIncident: InstanceMock = {
         startDate: '2023-08-14T05:47:07.376+0000',
         endDate: '2023-08-14T05:47:07.376+0000',
         tenantId: '',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '6755399441062840',
@@ -299,10 +306,18 @@ const instanceWithIncident: InstanceMock = {
         state: 'ACTIVE',
         hasIncident: true,
         startDate: '2023-08-14T05:47:07.376+0000',
+        endDate: null,
         tenantId: '',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   variables: [
     {
@@ -313,6 +328,7 @@ const instanceWithIncident: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-orderNo',
@@ -322,6 +338,7 @@ const instanceWithIncident: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-orders',
@@ -331,6 +348,7 @@ const instanceWithIncident: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-test',
@@ -340,6 +358,7 @@ const instanceWithIncident: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
   ],
   sequenceFlows: [
@@ -417,7 +436,12 @@ const instanceWithIncident: InstanceMock = {
     ],
   },
   incidentsV2: {
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
     items: [
       {
         errorMessage:
@@ -432,6 +456,8 @@ const instanceWithIncident: InstanceMock = {
         processDefinitionKey: '2251799813687188',
         tenantId: '<default>',
         state: 'ACTIVE',
+        rootProcessInstanceKey: null,
+        jobKey: '0',
       },
     ],
   },

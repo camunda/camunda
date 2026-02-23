@@ -47,16 +47,37 @@ test.describe('processes page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         processDefinitions: mockProcessDefinitions,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: {
           items: [],
         },
         processXml: '',
         processInstances: {
           items: [],
-          page: {totalItems: 0},
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
       }),
     );
@@ -86,7 +107,15 @@ test.describe('processes page', () => {
       URL_API_PATTERN,
       mockResponses({
         processDefinitions: mockProcessDefinitions,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
       }),
     );
 
@@ -114,7 +143,15 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: mockStatistics,
         processXml: mockProcessXml,
       }),
@@ -155,7 +192,15 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: mockStatistics,
         processXml: mockProcessXml,
       }),
@@ -197,7 +242,15 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: mockStatistics,
         processXml: mockProcessXml,
       }),
@@ -240,7 +293,15 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: mockStatistics,
         processXml: mockProcessXml,
       }),
@@ -268,7 +329,15 @@ test.describe('processes page', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
-        batchOperationItems: {items: [], page: {totalItems: 0}},
+        batchOperationItems: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         statistics: mockStatistics,
         processXml: mockProcessXml,
       }),
