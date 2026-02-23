@@ -26,6 +26,7 @@ const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
   evaluationDate: '2023-08-14T05:47:07.123+0000',
   processInstanceKey: '2251799813830813',
   processDefinitionKey: '2251799813830813',
+  rootProcessInstanceKey: null,
   elementInstanceKey: '2347238947239',
   evaluationFailure: '',
   evaluatedInputs: [
@@ -49,6 +50,8 @@ const mockEvaluatedDecisionInstance: GetDecisionInstanceResponseBody = {
           outputId: 'clause3',
           outputName: 'Classification',
           outputValue: '"budget"',
+          ruleId: null,
+          ruleIndex: null,
         },
       ],
     },
@@ -76,7 +79,12 @@ const mockEvaluatedDecisionInstancesSearch: QueryDecisionInstancesResponseBody =
         decisionEvaluationInstanceKey: '2251799813830820-2',
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockEvaluatedXml = openFile(
@@ -97,6 +105,7 @@ const mockEvaluatedDecisionInstanceWithoutPanels: GetDecisionInstanceResponseBod
     evaluationDate: '2023-08-14T05:47:07.123+0000',
     processInstanceKey: '2251799813830813',
     processDefinitionKey: '2251799813830813',
+    rootProcessInstanceKey: null,
     elementInstanceKey: '2347238947239',
     evaluationFailure: '',
     evaluatedInputs: [],
@@ -124,7 +133,12 @@ const mockEvaluatedDecisionInstancesSearchWithoutPanels: QueryDecisionInstancesR
         decisionEvaluationInstanceKey: '2251799813830820-2',
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockEvaluatedXmlWithoutPanels = openFile(
@@ -144,6 +158,7 @@ const mockFailedDecisionInstance: GetDecisionInstanceResponseBody = {
   evaluationDate: '2023-08-14T05:47:06.793+0000',
   processInstanceKey: '6755399441062307',
   processDefinitionKey: '6755399441062307',
+  rootProcessInstanceKey: null,
   elementInstanceKey: '2347238947239',
   evaluationFailure:
     "Expected to evaluate decision 'invoiceAssignApprover', but failed to evaluate expression 'amount': no variable found for name 'amount'",
@@ -155,7 +170,12 @@ const mockFailedDecisionInstance: GetDecisionInstanceResponseBody = {
 
 const mockFailedDecisionInstancesSearch: QueryDecisionInstancesResponseBody = {
   items: [mockFailedDecisionInstance],
-  page: {totalItems: 1},
+  page: {
+    totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
 };
 
 const mockFailedXml = openFile(

@@ -36,6 +36,12 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
     processDefinitionId: 'eventBasedGatewayProcess',
     tenantId: '<default>',
     hasIncident: true,
+    processDefinitionVersionTag: null,
+    endDate: null,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   callHierarchy: [],
   xml: `<?xml version="1.0" encoding="UTF-8"?>
@@ -306,6 +312,8 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         startDate: '2023-09-29T12:36:31.762+0000',
         endDate: '2023-09-29T12:36:31.762+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799813888434',
@@ -320,6 +328,8 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         startDate: '2023-09-29T12:36:31.762+0000',
         endDate: '2023-09-29T12:37:31.772+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799813901249',
@@ -334,6 +344,8 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         startDate: '2023-09-29T12:37:31.772+0000',
         endDate: '2023-09-29T12:37:31.772+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799813901251',
@@ -346,10 +358,18 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         state: 'ACTIVE',
         hasIncident: true,
         startDate: '2023-09-29T12:37:31.772+0000',
+        endDate: null,
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 4},
+    page: {
+      totalItems: 4,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   variables: [
     {
@@ -360,6 +380,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-orderNo',
@@ -369,6 +390,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-orders',
@@ -378,6 +400,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
     {
       variableKey: '6755399441062827-test',
@@ -387,6 +410,7 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
       tenantId: '',
       processInstanceKey: '6755399441062827',
       scopeKey: '6755399441062827',
+      rootProcessInstanceKey: null,
     },
   ],
   sequenceFlows: [
@@ -490,7 +514,12 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
     ],
   },
   incidentsV2: {
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
     items: [
       {
         errorMessage:
@@ -505,6 +534,8 @@ const eventBasedGatewayProcessInstance: InstanceMock = {
         processDefinitionKey: '2251799813687567',
         tenantId: '<default>',
         state: 'ACTIVE',
+        rootProcessInstanceKey: null,
+        jobKey: '0',
       },
     ],
   },

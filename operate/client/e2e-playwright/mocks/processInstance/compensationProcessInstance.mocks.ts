@@ -38,6 +38,11 @@ const compensationProcessInstance: InstanceMock = {
     processDefinitionId: 'CompensationProcess',
     tenantId: '<default>',
     hasIncident: false,
+    processDefinitionVersionTag: null,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   callHierarchy: [],
   elementInstances: {
@@ -55,6 +60,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744345',
@@ -69,6 +76,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744347',
@@ -83,6 +92,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744350',
@@ -97,6 +108,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744351',
@@ -111,6 +124,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744352',
@@ -125,6 +140,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744354',
@@ -139,6 +156,8 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '9007199254744356',
@@ -153,9 +172,16 @@ const compensationProcessInstance: InstanceMock = {
         startDate: '2024-06-27T07:58:44.796+0000',
         endDate: '2024-06-27T07:58:44.796+0000',
         tenantId: '<default>',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 8},
+    page: {
+      totalItems: 8,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   statistics: {
     items: [

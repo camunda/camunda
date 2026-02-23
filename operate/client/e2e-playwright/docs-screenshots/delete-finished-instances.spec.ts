@@ -96,6 +96,9 @@ test.describe('delete finished instances', () => {
     const processInstancesMock = {
       page: {
         totalItems: mockFinishedOrderProcessInstances.page.totalItems - 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
       items: mockFinishedOrderProcessInstances.items.slice(1),
     };

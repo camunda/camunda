@@ -34,7 +34,15 @@ test.describe('batch operations page', () => {
     await page.route(
       URL_API_PATTERN,
       mockResponses({
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
       }),
     );
 
@@ -78,7 +86,12 @@ test.describe('batch operation details page', () => {
       mockResponses({
         batchOperations: {
           items: [mockBatchOperations.items[0]],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         batchOperationItems: mockBatchOperationItems,
       }),
@@ -99,7 +112,12 @@ test.describe('batch operation details page', () => {
       mockResponses({
         batchOperations: {
           items: [mockBatchOperations.items[1]],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         batchOperationItems: mockBatchOperationItemsWithError,
       }),
@@ -119,11 +137,14 @@ test.describe('batch operation details page', () => {
       batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8199',
       batchOperationType: 'MIGRATE_PROCESS_INSTANCE' as const,
       startDate: '2023-10-01T10:00:00.000+0000',
-      endDate: undefined,
+      endDate: null,
       operationsTotalCount: 3,
       operationsFailedCount: 0,
       operationsCompletedCount: 0,
       state: 'ACTIVE' as const,
+      actorType: null,
+      actorId: null,
+      errors: [],
     };
 
     await page.route(
@@ -131,7 +152,12 @@ test.describe('batch operation details page', () => {
       mockResponses({
         batchOperations: {
           items: [activeOperation],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         batchOperationItems: {
           items: [
@@ -139,11 +165,19 @@ test.describe('batch operation details page', () => {
               batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8199',
               itemKey: 'item-1',
               processInstanceKey: '6755399441062827',
+              rootProcessInstanceKey: null,
               state: 'ACTIVE',
+              processedDate: null,
+              errorMessage: null,
               operationType: 'MIGRATE_PROCESS_INSTANCE',
             },
           ],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
       }),
     );
@@ -163,11 +197,21 @@ test.describe('batch operation details page', () => {
       mockResponses({
         batchOperations: {
           items: [mockBatchOperations.items[0]],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         batchOperationItems: {
           items: [],
-          page: {totalItems: 0},
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
       }),
     );
