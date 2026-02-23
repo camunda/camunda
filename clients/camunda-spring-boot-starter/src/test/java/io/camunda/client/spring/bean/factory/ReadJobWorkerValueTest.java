@@ -20,9 +20,9 @@ import static org.assertj.core.api.Assertions.*;
 
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotation;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
+import io.camunda.client.annotation.value.SourceAware.Empty;
+import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
+import io.camunda.client.annotation.value.SourceAware.GeneratedFromMethodInfo;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.bean.MethodInfo;
 import io.camunda.client.spring.bean.SpringBeanInfoTest;
