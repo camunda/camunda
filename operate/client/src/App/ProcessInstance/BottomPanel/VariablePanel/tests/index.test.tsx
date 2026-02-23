@@ -20,7 +20,7 @@ import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
   createInstance,
-  createvariable,
+  createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
@@ -136,7 +136,7 @@ describe('VariablePanel', () => {
     });
 
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
@@ -163,7 +163,7 @@ describe('VariablePanel', () => {
 
   it('should render variables', async () => {
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
@@ -232,8 +232,8 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createvariable(),
-        createvariable({
+        createVariable(),
+        createVariable({
           variableKey: '2251799813725337-foo',
           name: 'foo',
           value: '"bar"',
@@ -243,8 +243,8 @@ describe('VariablePanel', () => {
     });
     mockSearchVariables().withSuccess({
       items: [
-        createvariable(),
-        createvariable({
+        createVariable(),
+        createVariable({
           variableKey: '2251799813725337-foo',
           name: 'foo',
           value: '"bar"',
@@ -395,7 +395,7 @@ describe('VariablePanel', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {totalItems: 1},
     });
 
@@ -467,7 +467,7 @@ describe('VariablePanel', () => {
   it('should select correct tab when navigating between flow nodes', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {totalItems: 1},
     });
 
@@ -481,7 +481,7 @@ describe('VariablePanel', () => {
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
-      items: [createvariable({name: 'test2'})],
+      items: [createVariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
@@ -501,7 +501,7 @@ describe('VariablePanel', () => {
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
     mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchVariables().withSuccess({
-      items: [createvariable({name: 'test2'})],
+      items: [createVariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockFetchProcessDefinitionXml().withSuccess('');
@@ -521,7 +521,7 @@ describe('VariablePanel', () => {
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();
 
     mockSearchVariables().withSuccess({
-      items: [createvariable({name: 'test2'})],
+      items: [createVariable({name: 'test2'})],
       page: {totalItems: 1},
     });
     mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});

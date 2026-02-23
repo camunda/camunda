@@ -18,7 +18,7 @@ import {
   validateValueValid,
 } from './validators';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
-import {createvariable} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 
 const MOCK_FIELD_META_STATE = {
   blur: vi.fn(),
@@ -29,12 +29,12 @@ const MOCK_FIELD_META_STATE = {
 
 describe('validators with allVariables', () => {
   const allVariables: Variable[] = [
-    createvariable({
+    createVariable({
       variableKey: '1',
       name: 'existingName1',
       value: 'value1',
     }),
-    createvariable({
+    createVariable({
       variableKey: '2',
       name: 'existingName2',
       value: 'value2',
