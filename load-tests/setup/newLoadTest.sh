@@ -98,6 +98,9 @@ cp -v ../secondary-storage-values*.yaml $namespace/
 # Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
 
+# Copy secrets creation script to the new folder
+cp -v ./create-camunda-credentials.sh $namespace/
+
 cd $namespace
 
 # Update Makefile to use the namespace and secondary storage
