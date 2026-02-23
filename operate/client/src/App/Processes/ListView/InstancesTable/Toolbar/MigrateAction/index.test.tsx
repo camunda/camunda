@@ -37,7 +37,7 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
     hasIncident: false,
     tenantId: '<default>',
     parentProcessInstanceKey: '999',
-    parentElementInstanceKey: '',
+    parentElementInstanceKey: null,
     rootProcessInstanceKey: null,
     tags: [],
   },
