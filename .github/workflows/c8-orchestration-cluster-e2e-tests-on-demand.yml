@@ -437,7 +437,7 @@ jobs:
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)
-          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
       - name: Observe build status
