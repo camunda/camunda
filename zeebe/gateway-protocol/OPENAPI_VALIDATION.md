@@ -159,8 +159,6 @@ spectral-tests/
 
 Tests invoke `spectral lint` on the fixture spec using the production `.spectral.yaml` ruleset, then assert on the JSON results. This ensures custom functions are tested end-to-end through Spectral's resolution and rule engine — not just in isolation.
 
-> **Note:** These tests should ideally run in CI. The `openapi-lint` job already sets up Node.js and Spectral, so adding a step to run `node --test spectral-tests/*.test.js` would be straightforward and would catch regressions automatically.
-
 ## CI Integration
 
 Spectral runs automatically in the `openapi-lint` CI job when OpenAPI files are modified. See `.github/workflows/ci.yml` for details.
