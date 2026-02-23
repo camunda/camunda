@@ -65,6 +65,7 @@ jobs:
     with:
       database-type: ${{ matrix.database-type }}
       database-image-version: ${{ matrix.database-image-version }}
+      database-name: ${{ matrix.database-name }}
       it-database-type: ${{ matrix.it-database-type }}
       job-name-suffix: ${{ matrix.job-name-suffix || '' }}
       notify-slack-on-failure: ${{ github.event_name == 'schedule' }}

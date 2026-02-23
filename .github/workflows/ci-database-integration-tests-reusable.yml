@@ -20,6 +20,10 @@ on:
         required: false
         type: string
         description: The database docker image version to be used during the tests. Will be set as env variable IMAGE_VERSION. If not set, the default value from the docker-compose file will be used.
+      database-name:
+        required: true
+        type: string
+        description: The display name of the database, used in test artifact names and notifications.
       maven-profiles:
         required: false
         type: string
@@ -111,7 +115,7 @@ jobs:
         uses: ./.github/actions/collect-test-artifacts
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
-          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-type}}"
+          name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -153,12 +157,12 @@ jobs:
           webhook-type: webhook-trigger
           # For posting a rich message using Block Kit
           payload: |
-            text: "Scheduled Database Integration Tests for ${{inputs.database-type}} failed or were cancelled"
+            text: "Scheduled Database Integration Tests for ${{inputs.database-name}} failed or were cancelled"
             blocks:
               - type: "section"
                 text:
                   type: "mrkdwn"
-                  text: "Scheduled Database Integration Tests for **${{inputs.database-type}}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                  text: "Scheduled Database Integration Tests for **${{inputs.database-name}}** FAILED or WERE CANCELLED\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
       # Send metrics about CI health
       - name: Observe build status
         if: always()
