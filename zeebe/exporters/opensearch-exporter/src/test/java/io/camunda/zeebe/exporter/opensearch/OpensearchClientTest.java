@@ -30,7 +30,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.OpenSearchClusterClient;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
@@ -46,7 +45,6 @@ final class OpensearchClientTest {
   private static final int PARTITION_ID = 1;
 
   private final OpenSearchClient openSearchClient = mock(OpenSearchClient.class);
-  private final RestClient restClient = mock(RestClient.class);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
@@ -58,7 +56,6 @@ final class OpensearchClientTest {
           config,
           bulkRequest,
           openSearchClient,
-          restClient,
           indexRouter,
           templateReader,
           new OpensearchMetrics(new SimpleMeterRegistry()));
