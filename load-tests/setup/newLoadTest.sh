@@ -99,7 +99,7 @@ cp -v ../secondary-storage-values*.yaml $namespace/
 cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
 
 # Copy secrets creation script to the new folder
-cp -v ./create-camunda-credentials.sh $namespace/
+cp -v ./createCredsLoadTest.sh $namespace/
 
 cd $namespace
 

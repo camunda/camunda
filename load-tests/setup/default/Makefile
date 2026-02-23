@@ -68,7 +68,7 @@ endif
 create-credentials:
 ifeq ($(enable_optimize),true)
 	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
-	./create-camunda-credentials.sh $(namespace)
+	./createCredsLoadTest.sh $(namespace)
 else
 	@echo "Skipping credentials creation (enable_optimize=$(enable_optimize))"
 endif
