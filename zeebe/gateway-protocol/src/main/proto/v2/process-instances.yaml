@@ -755,9 +755,10 @@ components:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
         awaitCompletion:
           description: |
-            Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. This can lead to a 504
-            response status. Disabled by default.
+            Wait for the process instance to complete. If the process instance does not complete
+            within the request timeout limit, a 504 response status will be returned. The process
+            instance will continue to run in the background regardless of the timeout. Disabled by
+            default.
           type: boolean
           default: false
         fetchVariables:
@@ -802,8 +803,8 @@ components:
           default: -1
         variables:
           description: |
-            JSON object that will instantiate the variables for the root variable scope
-            of the process instance.
+            Set of variables as JSON object to instantiate in the root variable scope of the process
+            instance. Can include nested complex objects.
           type: object
           additionalProperties: true
         startInstructions:
@@ -835,9 +836,10 @@ components:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
         awaitCompletion:
           description: |
-            Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. This can lead to a 504
-            response status. Disabled by default.
+            Wait for the process instance to complete. If the process instance does not complete
+            within the request timeout limit, a 504 response status will be returned. The process
+            instance will continue to run in the background regardless of the timeout. Disabled by
+            default.
           type: boolean
           default: false
         requestTimeout:
