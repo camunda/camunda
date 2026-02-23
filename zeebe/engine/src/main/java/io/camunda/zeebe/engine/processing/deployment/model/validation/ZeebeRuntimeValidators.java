@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.deployment.model.validation;
 
 import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
-import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidatorConfig;
 import io.camunda.zeebe.engine.processing.deployment.model.validation.ZeebeExpressionValidator.ExpressionVerification;
 import io.camunda.zeebe.model.bpmn.instance.AdHocSubProcess;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
@@ -38,9 +37,7 @@ import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 public final class ZeebeRuntimeValidators {
 
   public static Collection<ModelElementValidator<?>> getValidators(
-      final ExpressionLanguage expressionLanguage,
-      final ExpressionProcessor expressionProcessor,
-      final BpmnValidatorConfig config) {
+      final ExpressionLanguage expressionLanguage, final ExpressionProcessor expressionProcessor) {
     return List.of(
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeInput.class)
@@ -56,7 +53,6 @@ public final class ZeebeRuntimeValidators {
         ZeebeExpressionValidator.verifyThat(Message.class)
             .hasValidExpression(Message::getName, ExpressionVerification::isOptional)
             .build(expressionLanguage),
-        new MessageNameLengthValidator(expressionLanguage, config.maxNameFieldLength()),
         // Checks message name expressions of start event messages
         new ProcessMessageStartEventMessageNameValidator(expressionLanguage),
         // ----------------------------------------
@@ -65,7 +61,6 @@ public final class ZeebeRuntimeValidators {
                 ZeebeSubscription::getCorrelationKey,
                 expression -> expression.isNonStatic().isMandatory())
             .build(expressionLanguage),
-        new CorrelationKeyLengthValidator(config.maxNameFieldLength()),
         // ----------------------------------------
         ZeebeExpressionValidator.verifyThat(ZeebeLoopCharacteristics.class)
             .hasValidExpression(

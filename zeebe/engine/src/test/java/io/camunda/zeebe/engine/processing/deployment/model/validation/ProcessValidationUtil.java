@@ -87,12 +87,7 @@ public class ProcessValidationUtil {
     final ValidationVisitor visitor =
         new ValidationVisitor(
             Stream.of(
-                    ZeebeRuntimeValidators.getValidators(
-                        expressionLanguage,
-                        expressionProcessor,
-                        BpmnValidatorConfig.builder()
-                            .withMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
-                            .build()),
+                    ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
                     ZeebeDesignTimeValidators.VALIDATORS,
                     ZeebeConfigurationValidators.getValidators(
                         BpmnValidatorConfig.builder()
