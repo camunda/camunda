@@ -8,22 +8,13 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {checkUpdateOnVersion} from 'utils/zeebeClient';
-
-// Helper function for delays
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
+import {sleep} from '../utils/sleep';
 
 class OperateProcessesPage {
   private page: Page;
   readonly processResultCount: Locator;
-  readonly processActiveCheckbox: Locator;
-  readonly processCompletedCheckbox: Locator;
-  readonly processRunningInstancesCheckbox: Locator;
-  readonly processIncidentsCheckbox: Locator;
   readonly processPageHeading: Locator;
   readonly noMatchingInstancesMessage: Locator;
-  readonly processFinishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processInstanceLink: Locator;
   readonly startDateSortButton: Locator;
@@ -63,27 +54,12 @@ class OperateProcessesPage {
   constructor(page: Page) {
     this.page = page;
     this.processResultCount = page.getByTestId('result-count');
-    this.processActiveCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Active'});
-    this.processCompletedCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Completed'});
-    this.processRunningInstancesCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Running Instances'});
-    this.processIncidentsCheckbox = page
-      .locator('label')
-      .filter({hasText: 'Incidents'});
     this.processPageHeading = page
       .getByTestId('expanded-panel')
       .getByRole('heading', {name: 'Process'});
     this.noMatchingInstancesMessage = page.getByText(
       'There are no Instances matching this filter set',
     );
-    this.processFinishedInstancesCheckbox = page
-      .getByTestId('filter-finished-instances')
-      .getByRole('checkbox');
     this.processNameFilter = page.getByPlaceholder('Search by Process Name');
     this.processInstanceLink = page
       .getByRole('link', {
@@ -119,9 +95,7 @@ class OperateProcessesPage {
     this.migrateBatchOperationButton = page.getByRole('button', {
       name: 'Migrate',
     });
-    this.cancelBatchOperationButton = page.getByTestId(
-      'cancel-batch-operation',
-    );
+    this.cancelBatchOperationButton = page.getByLabel('data table toolbar').getByRole('button', {name: 'Cancel'});
     this.applyCancelBatchOperationDialogButton = page
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
@@ -211,6 +185,22 @@ class OperateProcessesPage {
     throw new Error(
       `Failed to click on process instance link after ${maxRetries} attempts.`,
     );
+  }
+
+  async checkVersion(processInstanceKey: string): Promise<void> {
+    const maxRetries = 10;
+    let retryCount = 0;
+    while (retryCount < maxRetries) {
+      try {
+        await checkUpdateOnVersion('2', processInstanceKey);
+        return;
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+      }
+    }
+    throw new Error(`Failed to check version after ${maxRetries} attempts.`);
   }
 
   async assertProcessInstanceLink(processInstanceKey: string): Promise<void> {
@@ -310,26 +300,6 @@ class OperateProcessesPage {
     }
   }
 
-  async clickProcessActiveCheckbox(): Promise<void> {
-    await this.processActiveCheckbox.click();
-  }
-
-  async clickProcessCompletedCheckbox(): Promise<void> {
-    await this.processCompletedCheckbox.click({timeout: 120000});
-  }
-
-  async clickProcessIncidentsCheckbox(): Promise<void> {
-    await this.processIncidentsCheckbox.click({timeout: 90000});
-  }
-
-  async clickRunningProcessInstancesCheckbox(): Promise<void> {
-    await this.processRunningInstancesCheckbox.click({timeout: 90000});
-  }
-
-  async clickFinishedProcessInstancesCheckbox(): Promise<void> {
-    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
-  }
-
   async clickMigrateButton(): Promise<void> {
     await this.migrateButton.click();
   }
@@ -368,22 +338,6 @@ class OperateProcessesPage {
         'Progress bar did not appear or disappeared too quickly - operation likely completed fast',
       );
     }
-  }
-
-  async checkVersion(processInstanceKey: string): Promise<void> {
-    const maxRetries = 10;
-    let retryCount = 0;
-    while (retryCount < maxRetries) {
-      try {
-        await checkUpdateOnVersion('2', processInstanceKey);
-        return;
-      } catch {
-        retryCount++;
-        console.log(`Attempt ${retryCount} failed. Retrying...`);
-        await this.page.reload();
-      }
-    }
-    throw new Error(`Failed to check version after ${maxRetries} attempts.`);
   }
 }
 
