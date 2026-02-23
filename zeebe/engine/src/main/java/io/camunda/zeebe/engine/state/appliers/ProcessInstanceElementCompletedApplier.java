@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 final class ProcessInstanceElementCompletedApplier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
+  private final MutableHubMetricsState hubMetricsState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
@@ -32,12 +34,14 @@ final class ProcessInstanceElementCompletedApplier
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementCompletedApplier(
+      final MutableHubMetricsState hubMetricsState,
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
       final ProcessState processState,
       final MutableMultiInstanceState multiInstanceState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
+    this.hubMetricsState = hubMetricsState;
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.variableState = variableState;
@@ -63,6 +67,12 @@ final class ProcessInstanceElementCompletedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
+
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      hubMetricsState.updateOnProcessInstanceCompleted(value);
+    } else {
+      hubMetricsState.updateOnElementCompleted(value);
+    }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
