@@ -1,0 +1,80 @@
+name: Camunda Mode E2E Tests
+
+on:
+  pull_request
+    paths
+      - ".github/actions/**
+      - ".github/workflows/camunda-mode-*
+      - "camunda.Dockerfile
+      - "distro/**
+      - "parent/*
+      - "pom.xml
+
+jobs
+  test-camunda-modes
+    runs-on: ubuntu-latest
+    strategy
+      fail-fast: false
+      matrix
+        camunda_mode: [all-in-one]
+
+    services
+      elasticsearch
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
+        env
+          discovery.type: single-node
+          xpack.security.enabled: false
+          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
+        ports
+          - 9200:9200
+
+    steps
+      - uses: actions/checkout@v4
+        name: Checkout code
+
+      - uses: ./.github/actions/setup-build
+        name: Setup build
+        with
+          dockerhub-readonly: true
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      - uses: ./.github/actions/build-zeebe
+        name: Build Orchestration Cluster
+        id: build-camunda
+        with
+          maven-extra-args: -PskipFrontendBuild,-include-optimize
+
+      - uses: ./.github/actions/build-platform-docker
+        name: Build OC Docker Image
+        id: build-camunda-docker
+        with
+          repository: localhost:5000/camunda/camunda
+          distball: ${{ steps.build-camunda.outputs.distball }}
+          platforms: linux/amd64
+          dockerfile: camunda.Dockerfile
+          push: false
+
+      - name: Start Camunda with camunda.mode=${{ matrix.camunda_mode }}
+        run: |
+          CAMUNDA_MODE=${{ matrix.camunda_mode }} DATABASE=elasticsearch \
+          docker compose up -d camunda
+
+      - name: Wait for services to be ready
+        run: |
+          for i in {1..30}; do
+            if curl -s -m 5 http://localhost:8080/health > /dev/null; then  
+              echo "Services are ready!
+              break
+            fi
+            echo "Waiting for services... ($i/30)
+            sleep 10
+          done
+
+      - name: Run E2E tests
+        run: |
+          ./mvnw -f qa/c8-orchestration-cluster-e2e-test-suite \
+            -Dcamunda.mode=${{ matrix.camunda_mode }} \
+            -DskipChecks verify
