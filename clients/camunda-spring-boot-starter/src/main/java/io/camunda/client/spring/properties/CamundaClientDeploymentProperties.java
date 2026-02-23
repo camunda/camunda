@@ -23,6 +23,10 @@ public class CamundaClientDeploymentProperties {
   /**
    * Indicates if the resources selected by the deployment annotation have to reside in the same jar
    * as the annotated class.
+   *
+   * <p>This property acts as the default behavior. If the `@Deployment` annotation explicitly sets
+   * its `ownJarOnly` parameter, that annotation-level value overrides this property for the
+   * annotated deployment.
    */
   private boolean ownJarOnly = false;
 
