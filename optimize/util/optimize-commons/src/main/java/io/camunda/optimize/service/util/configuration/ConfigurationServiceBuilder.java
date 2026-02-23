@@ -7,7 +7,7 @@
  */
 package io.camunda.optimize.service.util.configuration;
 
-import io.camunda.optimize.util.VisibleForTesting;
+import com.google.common.annotations.VisibleForTesting;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.lang3.ArrayUtils;
