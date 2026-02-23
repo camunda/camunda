@@ -11,7 +11,7 @@ import {render, screen, waitFor, type UserEvent} from 'modules/testing-library';
 import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createvariable} from 'modules/testUtils';
+import {createInstance, createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
   type FlowNodeModification,
@@ -184,8 +184,8 @@ describe('Undo variable modifications from different scope', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createvariable({name: 'foo', value: '"bar"', isTruncated: false}),
-        createvariable({name: 'test', value: '123', isTruncated: false}),
+        createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
+        createVariable({name: 'test', value: '123', isTruncated: false}),
       ],
       page: {totalItems: 2},
     });
@@ -236,8 +236,8 @@ describe('Undo variable modifications from different scope', () => {
 
     mockSearchVariables().withSuccess({
       items: [
-        createvariable({name: 'foo', value: '"bar"', isTruncated: false}),
-        createvariable({name: 'test', value: '123', isTruncated: false}),
+        createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
+        createVariable({name: 'test', value: '123', isTruncated: false}),
       ],
       page: {totalItems: 2},
     });
@@ -252,10 +252,8 @@ describe('Undo variable modifications from different scope', () => {
       );
     });
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('123')).toBeInTheDocument();
-    });
+    expect(await screen.findByDisplayValue('1')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('123')).toBeInTheDocument();
   });
 
   it('should preserve earlier added variable modifications after undoing from a different scope', async () => {
@@ -340,10 +338,8 @@ describe('Undo variable modifications from different scope', () => {
       );
     });
 
-    await waitFor(() => {
-      expect(screen.getByDisplayValue('test2')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('1')).toBeInTheDocument();
-    });
+    expect(await screen.findByDisplayValue('test2')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('1')).toBeInTheDocument();
 
     expect(screen.queryByDisplayValue('test3')).not.toBeInTheDocument();
     expect(screen.queryByDisplayValue('2')).not.toBeInTheDocument();

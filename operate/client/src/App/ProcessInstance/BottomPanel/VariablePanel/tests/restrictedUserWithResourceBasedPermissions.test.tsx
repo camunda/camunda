@@ -9,7 +9,7 @@
 import {render, screen, waitFor} from 'modules/testing-library';
 import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
 import {getWrapper, mockProcessInstance} from './mocks';
-import {createInstance, createUser, createvariable} from 'modules/testUtils';
+import {createInstance, createUser, createVariable} from 'modules/testUtils';
 import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
@@ -43,13 +43,13 @@ describe('Restricted user with resource based permissions', () => {
     });
 
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },
@@ -80,13 +80,13 @@ describe('Restricted user with resource based permissions', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
-      items: [createvariable({isTruncated: true})],
+      items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createvariable({isTruncated: true})],
+      items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
       },
@@ -108,13 +108,13 @@ describe('Restricted user with resource based permissions', () => {
     processInstanceDetailsStore.setProcessInstance(instanceMock);
 
     mockSearchVariables().withSuccess({
-      items: [createvariable({isTruncated: true})],
+      items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
       },
     });
     mockSearchVariables().withSuccess({
-      items: [createvariable({isTruncated: true})],
+      items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
       },
