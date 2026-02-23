@@ -105,6 +105,7 @@ public final class AuditLogTransformerRegistry {
         BatchOperationLifecycleManagementAuditLogTransformer::new,
         DecisionEvaluationAuditLogTransformer::new,
         IncidentResolutionAuditLogTransformer::new,
+        JobAuditLogTransformer::new,
         ProcessInstanceCancelAuditLogTransformer::new,
         ProcessInstanceCreationAuditLogTransformer::new,
         ProcessInstanceMigrationAuditLogTransformer::new,
