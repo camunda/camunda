@@ -24,10 +24,25 @@ import java.lang.annotation.*;
 @Documented
 @Inherited // has to be inherited to work on spring aop beans
 public @interface Deployment {
+
+  /**
+   * The resource that should be deployed from this annotation. Supports spring resource pattern
+   * resolver mechanisms.
+   */
   String[] resources() default {};
 
+  /** The tenant id this deployment should use. */
   String tenantId() default "";
 
+  /**
+   * Restricts deployment to resources that are packaged in the same JAR as the annotated class.
+   * This is useful in multi-module or multi-JAR projects to ensure that each module only deploys
+   * its own resources.
+   *
+   * <p>Can only be used as a singleton. Although this is declared as a {@code boolean[]} to support
+   * repeatable annotations, each {@link Deployment} should specify at most a single value; if
+   * multiple values are provided, the processing of the annotation at runtime will fail.
+   */
   boolean[] ownJarOnly() default {};
 
   @Documented
