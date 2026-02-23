@@ -21,7 +21,7 @@ import {
 } from './common';
 import {variableSchema} from './variable';
 import {
-	processInstanceSchema as baseProcessInstanceSchema,
+	processInstanceSchema,
 	processInstanceStateSchema,
 	processDefinitionStatisticSchema,
 	type ProcessInstance,
@@ -30,13 +30,6 @@ import {
 } from './processes';
 import {batchOperationTypeSchema} from './batch-operation';
 import {queryIncidentsRequestBodySchema, queryIncidentsResponseBodySchema} from './incident';
-
-const processInstanceSchema = baseProcessInstanceSchema.extend({
-	processInstanceKey: z.string(),
-	processDefinitionKey: z.string(),
-	parentProcessInstanceKey: z.string(),
-	parentElementInstanceKey: z.string(),
-});
 
 const processInstanceBatchOperationTypeSchema = z.union([
 	batchOperationTypeSchema,
