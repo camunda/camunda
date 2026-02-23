@@ -79,6 +79,7 @@ public final class ZeebeConfigurationValidators {
         new NameLengthValidator<>(ResourceRole.class, config.maxNameFieldLength()),
         new NameLengthValidator<>(Signal.class, config.maxNameFieldLength()),
         new NameLengthValidator<>(ZeebeProperty.class, config.maxNameFieldLength()),
-        new NameLengthValidator<>(FlowElement.class, config.maxNameFieldLength()));
+        new NameLengthValidator<>(FlowElement.class, config.maxNameFieldLength()),
+        new WorkerTypeLengthValidator(config.maxWorkerTypeLength()));
   }
 }

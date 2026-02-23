@@ -51,18 +51,18 @@ final class EngineCfgTest {
         .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_INTERVAL);
     assertThat(configuration.isJobMetricsExportEnabled())
         .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_ENABLED);
-    assertThat(configuration.getMaxWorkerNameLength())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_WORKER_NAME_LENGTH);
-    assertThat(configuration.getMaxJobTypeLength())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH);
+    assertThat(configuration.getJobMetricsMaxWorkerNameLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH);
+    assertThat(configuration.getJobMetricsMaxTypeLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH);
     assertThat(configuration.getMaxIdFieldLength())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_ID_FIELD_LENGTH);
     assertThat(configuration.getMaxNameFieldLength())
         .isEqualTo(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
-    assertThat(configuration.getMaxTenantIdLength())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH);
-    assertThat(configuration.getMaxUniqueJobMetricsKeys())
-        .isEqualTo(EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS);
+    assertThat(configuration.getJobMetricsMaxTenantIdLength())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH);
+    assertThat(configuration.getJobMetricsMaxUniqueKeys())
+        .isEqualTo(EngineConfiguration.DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS);
     assertThat(configuration.getGlobalListeners().userTask()).isEmpty();
     assertThat(configuration.getExpressionEvaluationTimeout()).isEqualTo(Duration.ofSeconds(5));
     assertThat(configuration.isBusinessIdUniquenessEnabled())
@@ -93,10 +93,10 @@ final class EngineCfgTest {
     assertThat(configuration.isJobMetricsExportEnabled()).isFalse();
     assertThat(configuration.getMaxIdFieldLength()).isEqualTo(255);
     assertThat(configuration.getMaxNameFieldLength()).isEqualTo(256);
-    assertThat(configuration.getMaxWorkerNameLength()).isEqualTo(50);
-    assertThat(configuration.getMaxJobTypeLength()).isEqualTo(75);
-    assertThat(configuration.getMaxTenantIdLength()).isEqualTo(20);
-    assertThat(configuration.getMaxUniqueJobMetricsKeys()).isEqualTo(5000);
+    assertThat(configuration.getJobMetricsMaxWorkerNameLength()).isEqualTo(50);
+    assertThat(configuration.getJobMetricsMaxTypeLength()).isEqualTo(75);
+    assertThat(configuration.getJobMetricsMaxTenantIdLength()).isEqualTo(20);
+    assertThat(configuration.getJobMetricsMaxUniqueKeys()).isEqualTo(5000);
     assertThat(configuration.getGlobalListeners().userTask()).hasSize(2);
     final var taskListeners = configuration.getGlobalListeners().userTask();
     assertListenerCfg(

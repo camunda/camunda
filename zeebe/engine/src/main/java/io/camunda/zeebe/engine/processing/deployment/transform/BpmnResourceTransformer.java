@@ -74,6 +74,7 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
             BpmnValidatorConfig.builder()
                 .withMaxIdFieldLength(config.getMaxIdFieldLength())
                 .withMaxNameFieldLength(config.getMaxNameFieldLength())
+                .withMaxWorkerTypeLength(config.getMaxWorkerTypeLength())
                 .withValidatorResultsOutputMaxSize(config.getValidatorsResultsOutputMaxSize())
                 .build(),
             expressionLanguageMetrics);

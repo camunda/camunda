@@ -11,7 +11,10 @@ import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.engine.EngineConfiguration;
 
 public record BpmnValidatorConfig(
-    int maxIdFieldLength, int maxNameFieldLength, int validatorResultsOutputMaxSize) {
+    int maxIdFieldLength,
+    int maxNameFieldLength,
+    int maxWorkerTypeLength,
+    int validatorResultsOutputMaxSize) {
 
   public static Builder builder() {
     return new Builder();
@@ -20,6 +23,7 @@ public record BpmnValidatorConfig(
   public static class Builder implements ObjectBuilder<BpmnValidatorConfig> {
     private int maxIdFieldLength = EngineConfiguration.DEFAULT_MAX_ID_FIELD_LENGTH;
     private int maxNameFieldLength = EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH;
+    private int maxWorkerTypeLength = EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH;
     private int validatorResultsOutputMaxSize =
         EngineConfiguration.DEFAULT_VALIDATORS_RESULTS_OUTPUT_MAX_SIZE;
 
@@ -33,6 +37,11 @@ public record BpmnValidatorConfig(
       return this;
     }
 
+    public Builder withMaxWorkerTypeLength(final int maxWorkerTypeLength) {
+      this.maxWorkerTypeLength = maxWorkerTypeLength;
+      return this;
+    }
+
     public Builder withValidatorResultsOutputMaxSize(final int validatorResultsOutputMaxSize) {
       this.validatorResultsOutputMaxSize = validatorResultsOutputMaxSize;
       return this;
@@ -41,7 +50,7 @@ public record BpmnValidatorConfig(
     @Override
     public BpmnValidatorConfig build() {
       return new BpmnValidatorConfig(
-          maxIdFieldLength, maxNameFieldLength, validatorResultsOutputMaxSize);
+          maxIdFieldLength, maxNameFieldLength, maxWorkerTypeLength, validatorResultsOutputMaxSize);
     }
   }
 }
