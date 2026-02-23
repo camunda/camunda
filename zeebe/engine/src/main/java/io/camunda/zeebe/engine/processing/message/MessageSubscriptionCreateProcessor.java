@@ -69,8 +69,10 @@ public final class MessageSubscriptionCreateProcessor
   @Override
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
-    if (isNameOrCorrelationKeyTooLong(subscriptionRecord)) {
-      rejectInvalidLength(record);
+    final String messageName = subscriptionRecord.getMessageName();
+    final String correlationKey = subscriptionRecord.getCorrelationKey();
+    if (isNameOrCorrelationKeyTooLong(messageName, correlationKey)) {
+      rejectInvalidLength(record, messageName, correlationKey);
       return;
     }
 
@@ -91,18 +93,22 @@ public final class MessageSubscriptionCreateProcessor
     handleNewSubscription(sideEffectWriter);
   }
 
-  private boolean isNameOrCorrelationKeyTooLong(final MessageSubscriptionRecord record) {
-    return record.getMessageName().length() > maxNameFieldLength
-        || record.getCorrelationKey().length() > maxNameFieldLength;
+  private boolean isNameOrCorrelationKeyTooLong(
+      final String messageName, final String correlationKey) {
+    return messageName.length() > maxNameFieldLength
+        || correlationKey.length() > maxNameFieldLength;
   }
 
-  private void rejectInvalidLength(final TypedRecord<MessageSubscriptionRecord> record) {
+  private void rejectInvalidLength(
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final String messageName,
+      final String correlationKey) {
     final var reason =
         "Expected message subscription with message name and correlation key not longer than %d characters, but message name has %d characters and correlation key has %d characters."
             .formatted(
                 maxNameFieldLength,
-                subscriptionRecord.getMessageName().length(),
-                subscriptionRecord.getCorrelationKey().length());
+                messageName.length(),
+                correlationKey.length());
     rejectionWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
   }
 
