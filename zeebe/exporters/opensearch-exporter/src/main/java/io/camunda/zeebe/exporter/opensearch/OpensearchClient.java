@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.protocol.record.Record;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.ErrorCause;
@@ -57,9 +55,7 @@ import org.opensearch.client.transport.endpoints.SimpleEndpoint;
 public class OpensearchClient implements AutoCloseable {
   public static final String ISM_INITIAL_STATE = "initial";
   public static final String ISM_DELETE_STATE = "delete";
-  private static final ObjectMapper MAPPER = new ObjectMapper();
   private final OpenSearchClient openSearchClient;
-  private final RestClient client;
   private final OpensearchExporterConfiguration configuration;
   private final TemplateReader templateReader;
   private final RecordIndexRouter indexRouter;
@@ -73,7 +69,6 @@ public class OpensearchClient implements AutoCloseable {
         configuration,
         new BulkIndexRequest(),
         OpensearchConnector.of(configuration).createClient(),
-        RestClientFactory.of(configuration),
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
         new OpensearchMetrics(meterRegistry));
@@ -82,27 +77,11 @@ public class OpensearchClient implements AutoCloseable {
   OpensearchClient(
       final OpensearchExporterConfiguration configuration,
       final MeterRegistry meterRegistry,
-      final RestClient restClient) {
-    this(
-        configuration,
-        new BulkIndexRequest(),
-        OpensearchConnector.of(configuration).createClient(),
-        restClient,
-        new RecordIndexRouter(configuration.index),
-        new TemplateReader(configuration.index),
-        new OpensearchMetrics(meterRegistry));
-  }
-
-  OpensearchClient(
-      final OpensearchExporterConfiguration configuration,
-      final MeterRegistry meterRegistry,
-      final OpenSearchClient openSearchClient,
-      final RestClient restClient) {
+      final OpenSearchClient openSearchClient) {
     this(
         configuration,
         new BulkIndexRequest(),
         openSearchClient,
-        restClient,
         new RecordIndexRouter(configuration.index),
         new TemplateReader(configuration.index),
         new OpensearchMetrics(meterRegistry));
@@ -112,14 +91,12 @@ public class OpensearchClient implements AutoCloseable {
       final OpensearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
       final OpenSearchClient openSearchClient,
-      final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
       final OpensearchMetrics metrics) {
     this.configuration = configuration;
     this.bulkIndexRequest = bulkIndexRequest;
     this.openSearchClient = openSearchClient;
-    this.client = client;
     this.indexRouter = indexRouter;
     this.templateReader = templateReader;
     this.metrics = metrics;
@@ -127,7 +104,6 @@ public class OpensearchClient implements AutoCloseable {
 
   @Override
   public void close() throws IOException {
-    client.close();
     openSearchClient._transport().close();
   }
 

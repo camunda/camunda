@@ -13,7 +13,6 @@ import static io.camunda.zeebe.exporter.opensearch.OpensearchClient.ISM_INITIAL_
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
@@ -27,23 +26,29 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.agrona.CloseHelper;
-import org.opensearch.client.Request;
-import org.opensearch.client.ResponseException;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ExpandWildcard;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.cluster.DeleteComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
+import org.opensearch.client.opensearch.indices.DeleteIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.GetIndexTemplateRequest;
 import org.opensearch.client.opensearch.indices.GetIndexTemplateResponse;
 import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
+import org.opensearch.client.opensearch.ism.ExplainPolicy;
+import org.opensearch.client.opensearch.ism.ExplainPolicyRequest;
+import org.opensearch.client.opensearch.ism.ExplainPolicyResponse;
 import org.opensearch.client.opensearch.ism.IsmTemplate;
 import org.opensearch.client.opensearch.ism.Policy;
 import org.opensearch.client.opensearch.ism.PutPolicyRequest;
 import org.opensearch.client.opensearch.ism.States;
 import org.opensearch.client.opensearch.ism.Transition;
+import org.opensearch.client.opensearch.security.CreateUserRequest;
 
 /**
  * A thin client to verify properties from Opensearch. Wraps both the low and high level clients
@@ -54,7 +59,6 @@ final class TestClient implements CloseableSilently {
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
   final OpensearchClient opensearchClient;
   private final OpensearchExporterConfiguration config;
-  private final RestClient restClient;
   private final OpenSearchClient osClient;
   private final RecordIndexRouter indexRouter;
 
@@ -62,21 +66,18 @@ final class TestClient implements CloseableSilently {
     this(
         config,
         indexRouter,
-        RestClientFactory.of(config, true),
         OpensearchConnector.of(config.withObjectMapper(MAPPER)).createClient());
   }
 
   TestClient(
       final OpensearchExporterConfiguration config,
       final RecordIndexRouter indexRouter,
-      final RestClient restClient,
       final OpenSearchClient osClient) {
     this.config = config;
     this.indexRouter = indexRouter;
-    this.restClient = restClient;
     this.osClient = osClient;
 
-    opensearchClient = new OpensearchClient(config, Metrics.globalRegistry, osClient, restClient);
+    opensearchClient = new OpensearchClient(config, Metrics.globalRegistry, osClient);
   }
 
   @SuppressWarnings("rawtypes")
@@ -132,10 +133,14 @@ final class TestClient implements CloseableSilently {
 
   void putUser(final String username, final String password, final List<String> roles) {
     try {
-      final var request = new Request("PUT", "/_plugins/_security/api/internalusers/" + username);
-      final var putUserRequest = new PutUserRequest(password, roles);
-      request.setJsonEntity(MAPPER.writeValueAsString(putUserRequest));
-      restClient.performRequest(request);
+      osClient
+          .security()
+          .createUser(
+              CreateUserRequest.builder()
+                  .username(username)
+                  .password(password)
+                  .backendRoles(roles)
+                  .build());
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -152,19 +157,16 @@ final class TestClient implements CloseableSilently {
 
   public Optional<IndexISMPolicyDto> explainIndex(final String index) {
     try {
-      final var request = new Request("GET", "_plugins/_ism/explain/" + index);
-      final var response = restClient.performRequest(request);
-      final TypeReference<Map<String, Object>> mapTypeReference = new TypeReference<>() {};
-      final Map<String, Object> output =
-          MAPPER.readValue(response.getEntity().getContent(), mapTypeReference);
-      final var policy =
-          output.values().stream()
-              .filter(Map.class::isInstance)
-              .map(v -> (Map<String, String>) v)
-              .findFirst();
+      final ExplainPolicyResponse explainPolicyResponse =
+          osClient
+              .ism()
+              .explainPolicy(
+                  ExplainPolicyRequest.builder().index(index).body(JsonData.of(Map.of())).build());
 
-      return policy
-          .map(p -> p.get("index.opendistro.index_state_management.policy_id"))
+      final ExplainPolicy explainPolicy = explainPolicyResponse.metadata().get(index);
+
+      return Optional.ofNullable(explainPolicy)
+          .map(ExplainPolicy::indexOpendistroIndexStateManagementPolicyId)
           .map(IndexISMPolicyDto::new);
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
@@ -173,8 +175,13 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndices() {
     try {
-      final var request = new Request("DELETE", config.index.prefix + "*?expand_wildcards=all");
-      restClient.performRequest(request);
+      osClient
+          .indices()
+          .delete(
+              DeleteIndexRequest.builder()
+                  .index(config.index.prefix + "*")
+                  .expandWildcards(ExpandWildcard.All)
+                  .build());
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -182,9 +189,12 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndexTemplates() {
     try {
-      final var request =
-          new Request("DELETE", "/_index_template/%s*".formatted(config.index.prefix));
-      restClient.performRequest(request);
+      osClient
+          .indices()
+          .deleteIndexTemplate(
+              DeleteIndexTemplateRequest.builder()
+                  .name("%s*".formatted(config.index.prefix))
+                  .build());
     } catch (final IOException e) {
       if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
         // Ignore 404 errors - no templates to delete
@@ -196,9 +206,12 @@ final class TestClient implements CloseableSilently {
 
   void deleteComponentTemplates() {
     try {
-      final var request =
-          new Request("DELETE", "/_component_template/%s*".formatted(config.index.prefix));
-      restClient.performRequest(request);
+      osClient
+          .cluster()
+          .deleteComponentTemplate(
+              DeleteComponentTemplateRequest.builder()
+                  .name("%s*".formatted(config.index.prefix))
+                  .build());
     } catch (final IOException e) {
       if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
         // Ignore 404 errors - no templates to delete
@@ -218,9 +231,8 @@ final class TestClient implements CloseableSilently {
       final GetIndexStateManagementPolicyResponse policy = maybePolicy.get();
       builder.ifSeqNo(policy.seqNo().longValue());
       builder.ifPrimaryTerm(policy.primaryTerm());
-    } catch (final Exception e) {
-      if (!(e.getCause() instanceof final ResponseException responseException
-          && responseException.getResponse().getStatusLine().getStatusCode() == 404)) {
+    } catch (final OpenSearchException e) {
+      if (e.status() != 404) {
         throw e;
       }
     }
