@@ -31,7 +31,15 @@ describe('VariablePanel notifications', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockSearchVariables().withSuccess(mockVariables);
     mockSearchVariables().withSuccess(mockVariables);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should display error notification if add variable operation could not be created', async () => {
@@ -81,7 +89,15 @@ describe('VariablePanel notifications', () => {
 
     mockUpdateElementInstanceVariables(':1').withDelayedServerError();
     mockSearchVariables().withSuccess(mockVariables);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(
       screen.getByRole('button', {
@@ -152,7 +168,15 @@ describe('VariablePanel notifications', () => {
 
     mockUpdateElementInstanceVariables(':1').withDelayedServerError(403);
     mockSearchVariables().withSuccess(mockVariables);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(
       screen.getByRole('button', {

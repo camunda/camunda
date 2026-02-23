@@ -55,10 +55,16 @@ const mockProcessInstance: ProcessInstance = {
   startDate: '2018-06-21',
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+  endDate: null,
 };
 
 const mockElementInstance: ElementInstance = {
@@ -68,10 +74,13 @@ const mockElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'process-def-1',
   processInstanceKey: PROCESS_INSTANCE_ID,
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -88,6 +97,7 @@ const mockSingleIncident: Incident = {
   creationTime: '2024-10-28T10:00:00.000Z',
   state: 'ACTIVE',
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
 };
 
 describe('MetadataPopover', () => {
@@ -146,6 +156,8 @@ describe('MetadataPopover', () => {
       version: 1,
       decisionRequirementsKey: '456789',
       decisionRequirementsId: 'approval-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
     });
   });

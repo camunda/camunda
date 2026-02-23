@@ -143,12 +143,23 @@ describe('VariablePanel', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   afterEach(() => {
@@ -160,6 +171,9 @@ describe('VariablePanel', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -233,7 +247,12 @@ describe('VariablePanel', () => {
           value: '"bar"',
         }),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [
@@ -244,7 +263,12 @@ describe('VariablePanel', () => {
           value: '"bar"',
         }),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(
@@ -328,8 +352,24 @@ describe('VariablePanel', () => {
       '"bar"',
     );
 
-    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockUpdateElementInstanceVariables(
       `:${mockProcessInstance.processInstanceKey}`,
     ).withSuccess(null);
@@ -351,8 +391,24 @@ describe('VariablePanel', () => {
       }),
     ).not.toBeInTheDocument();
 
-    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockFetchElementInstance('2').withSuccess({
       elementInstanceKey: '2',
@@ -361,10 +417,13 @@ describe('VariablePanel', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -389,7 +448,12 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -463,7 +527,12 @@ describe('VariablePanel', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -477,9 +546,22 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
@@ -491,10 +573,13 @@ describe('VariablePanel', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: true,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -504,11 +589,32 @@ describe('VariablePanel', () => {
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
@@ -523,14 +629,22 @@ describe('VariablePanel', () => {
           type: 'END_EVENT',
           state: 'COMPLETED',
           startDate: '2018-06-21',
+          endDate: null,
           processDefinitionId: 'someKey',
           processInstanceKey: mockProcessInstance.processInstanceKey,
           processDefinitionKey: '2',
+          rootProcessInstanceKey: null,
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(screen.getByRole('button', {name: /select end event/i}));
@@ -541,9 +655,22 @@ describe('VariablePanel', () => {
 
     mockSearchVariables().withSuccess({
       items: [createVariable({name: 'test2'})],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(screen.getByRole('button', {name: /clear selection/i}));
 
@@ -560,8 +687,24 @@ describe('VariablePanel', () => {
       screen.queryByRole('tab', {name: 'Output Mappings'}),
     ).not.toBeInTheDocument();
 
-    mockSearchVariables().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockSearchElementInstances().withSuccess({
       items: [
@@ -572,14 +715,22 @@ describe('VariablePanel', () => {
           type: 'START_EVENT',
           state: 'COMPLETED',
           startDate: '2018-06-21',
+          endDate: null,
           processDefinitionId: 'someKey',
           processInstanceKey: mockProcessInstance.processInstanceKey,
           processDefinitionKey: '2',
+          rootProcessInstanceKey: null,
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(screen.getByRole('button', {name: /select start event/i}));

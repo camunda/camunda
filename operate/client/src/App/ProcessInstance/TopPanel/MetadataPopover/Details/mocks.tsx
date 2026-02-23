@@ -30,6 +30,8 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '444555666',
   hasIncident: false,
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 const mockJob: Job = {
@@ -54,6 +56,10 @@ const mockJob: Job = {
   errorCode: '',
   errorMessage: '',
   endTime: '',
+  rootProcessInstanceKey: null,
+  creationTime: null,
+  lastUpdateTime: null,
+  tags: [],
 };
 
 const mockCalledProcessInstance: ProcessInstance = {
@@ -68,6 +74,10 @@ const mockCalledProcessInstance: ProcessInstance = {
   parentProcessInstanceKey: '111222333',
   parentElementInstanceKey: '123456789',
   hasIncident: false,
+  rootProcessInstanceKey: null,
+  tags: [],
+  processDefinitionVersionTag: null,
+  endDate: null,
 };
 
 const mockBusinessObject: BusinessObject = {

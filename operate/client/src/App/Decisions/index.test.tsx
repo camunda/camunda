@@ -46,10 +46,23 @@ function createWrapper(initialPath: string = Paths.decisions()) {
 
 describe('<Decisions />', () => {
   it('should show page title', async () => {
-    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
+    mockQueryBatchOperations().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockSearchDecisionDefinitions().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockMe().withSuccess(createUser());
@@ -60,14 +73,32 @@ describe('<Decisions />', () => {
   });
 
   it('should redirect to initial decisions page if decision name does not exist', async () => {
-    mockQueryBatchOperations().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchDecisionDefinitions().withSuccess({
+    mockQueryBatchOperations().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchDecisionDefinitions().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchDecisionDefinitions().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchDecisionInstances().withSuccess(
       mockEmptyDecisionInstancesSearchResult,

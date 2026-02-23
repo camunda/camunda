@@ -31,6 +31,9 @@ const operation: BatchOperationType = {
   operationsTotalCount: 2,
   operationsCompletedCount: 2,
   operationsFailedCount: 0,
+  actorType: null,
+  actorId: null,
+  errors: [],
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -61,7 +64,12 @@ describe('<BatchOperation />', () => {
     mockGetBatchOperation().withSuccess(operation);
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

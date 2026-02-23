@@ -23,6 +23,10 @@ describe('IncidentsTable', () => {
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,
+        parentProcessInstanceKey: null,
+        parentElementInstanceKey: null,
+        rootProcessInstanceKey: null,
+        tags: [],
       }),
     );
   });

@@ -32,12 +32,11 @@ const createMockBatchOperationItems = (
     batchOperationKey: BATCH_OPERATION_KEY,
     itemKey: `item-${i + 1}`,
     processInstanceKey: `2251799813685${250 + i}`,
+    rootProcessInstanceKey: null,
     state: options?.state ?? 'COMPLETED',
     operationType: options?.operationType ?? 'CANCEL_PROCESS_INSTANCE',
     processedDate: '2023-11-22T09:03:29.564+0100',
-    errorMessage: options?.withErrors
-      ? `Error processing item ${i + 1}`
-      : undefined,
+    errorMessage: options?.withErrors ? `Error processing item ${i + 1}` : null,
   }));
 };
 
@@ -52,7 +51,12 @@ describe('<BatchItemsTable />', () => {
     vi.clearAllMocks();
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
@@ -99,7 +103,12 @@ describe('<BatchItemsTable />', () => {
     const items = createMockBatchOperationItems(3);
     mockQueryBatchOperationItems().withSuccess({
       items,
-      page: {totalItems: 3},
+      page: {
+        totalItems: 3,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -130,7 +139,12 @@ describe('<BatchItemsTable />', () => {
     const items = createMockBatchOperationItems(2, {state: 'FAILED'});
     mockQueryBatchOperationItems().withSuccess({
       items,
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -158,7 +172,12 @@ describe('<BatchItemsTable />', () => {
     });
     mockQueryBatchOperationItems().withSuccess({
       items,
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(

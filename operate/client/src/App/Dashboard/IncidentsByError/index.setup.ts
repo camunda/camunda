@@ -37,7 +37,7 @@ const mockIncidentStatisticsByDefinition =
   searchResult<IncidentProcessInstanceStatisticsByDefinition>([
     {
       processDefinitionId: 'call-level-2-process',
-      processDefinitionKey: 1,
+      processDefinitionKey: '1',
       processDefinitionVersion: 1,
       processDefinitionName: 'Call Level 2 Process – Version 1',
       tenantId: '<default>',
@@ -45,7 +45,7 @@ const mockIncidentStatisticsByDefinition =
     },
     {
       processDefinitionId: 'process-elements-incidents',
-      processDefinitionKey: 2,
+      processDefinitionKey: '2',
       processDefinitionVersion: 1,
       processDefinitionName: 'Process with elements incidents – Version 1',
       tenantId: 'tenant-a',

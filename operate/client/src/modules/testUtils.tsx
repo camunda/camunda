@@ -14,6 +14,7 @@ import type {
   Incident,
   ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
+  QueryProcessInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   ProcessInstanceEntity,
@@ -156,12 +157,12 @@ const createProcessInstance = (
     startDate: '2018-06-21',
     endDate: null,
     hasIncident: false,
-    parentProcessInstanceKey: null,
-    parentElementInstanceKey: null,
+    parentProcessInstanceKey: '',
+    parentElementInstanceKey: '',
     rootProcessInstanceKey: null,
     tags: [],
     ...options,
-  };
+  } as ProcessInstance;
 };
 
 const createProcessDefinition = (
@@ -946,7 +947,7 @@ const adHocSubProcessInnerInstance = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-const mockProcessInstancesV2 = {
+const mockProcessInstancesV2: QueryProcessInstancesResponseBody = {
   items: [
     createProcessInstance({
       processInstanceKey: '2251799813685594',
@@ -971,9 +972,12 @@ const mockProcessInstancesV2 = {
       state: 'TERMINATED',
       endDate: '2018-06-22',
     }),
-  ],
+  ] as QueryProcessInstancesResponseBody['items'],
   page: {
     totalItems: 912,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
