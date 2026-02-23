@@ -123,8 +123,22 @@ const ExistingVariableValue: React.FC<Props> = observer(
 
     const isValid = !validating && valid;
 
-    const getInitialValue = (variable?: Variable) =>
-      variable?.value ?? variableValue;
+    const variableScopeId = getScopeId();
+    const pendingEditModification =
+      isModificationModeEnabled && variableScopeId !== null
+        ? modificationsStore.getLastVariableModification(
+            variableScopeId,
+            variableName,
+            'EDIT_VARIABLE',
+          )
+        : undefined;
+
+    const getInitialValue = (variable?: Variable) => {
+      if (pendingEditModification !== undefined) {
+        return pendingEditModification.newValue;
+      }
+      return variable?.value ?? variableValue;
+    };
 
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
