@@ -163,7 +163,7 @@ const createProcessInstance = (
     rootProcessInstanceKey: null,
     tags: [],
     ...options,
-  } satisfies ProcessInstance;
+  };
 };
 
 const createProcessDefinition = (
@@ -995,7 +995,7 @@ const mockProcessInstancesV2: QueryProcessInstancesResponseBody = {
       state: 'TERMINATED',
       endDate: '2018-06-22',
     }),
-  ] as QueryProcessInstancesResponseBody['items'],
+  ],
   page: {
     totalItems: 912,
     startCursor: null,
