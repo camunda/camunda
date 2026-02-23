@@ -60,7 +60,9 @@ jobs:
           done
 
       - name: Run E2E tests
+        shell: bash
+        env:
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}   # optional
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
         run: |
-          ./mvnw -f qa/c8-orchestration-cluster-e2e-test-suite \
-            -Dcamunda.mode=${{ matrix.camunda_mode }} \
-            -DskipChecks verify
+          ./mvnw -Dcamunda.mode=${CAMUNDA_MODE} -DskipChecks verify
