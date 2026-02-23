@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -33,6 +34,7 @@ import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -740,16 +742,45 @@ final class HistoryDeletionJobTest {
     when(repository.deleteDocumentsById(anyString(), anyList()))
         .thenReturn(CompletableFuture.completedFuture(0));
     when(repository.createAuditLogCleanupEntries(anyList()))
-        .thenReturn(
-            CompletableFuture.failedFuture(
-                new RuntimeException("Failed to create audit log cleanup entry")));
+        .thenThrow(new RuntimeException("Failed to create audit log cleanup entry"));
 
-    // when
-    job.execute().toCompletableFuture().join();
+    // when/then
+    assertThatThrownBy(() -> job.execute().toCompletableFuture().join())
+        .isInstanceOf(CompletionException.class)
+        .hasRootCauseInstanceOf(RuntimeException.class)
+        .hasRootCauseMessage("Failed to create audit log cleanup entry");
 
     // then: history deletion index is NOT cleaned up so the job retries next cycle
     verify(repository, never())
         .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
+  }
+
+  @Test
+  void shouldFailFutureIfHistoryDeletionFails() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(42L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.createAuditLogCleanupEntries(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+    when(repository.deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any()))
+        .thenThrow(new RuntimeException("Failed to delete from history deletion index"));
+
+    // when/then
+    assertThatThrownBy(() -> job.execute().toCompletableFuture().join())
+        .isInstanceOf(CompletionException.class)
+        .hasRootCauseInstanceOf(RuntimeException.class)
+        .hasRootCauseMessage("Failed to delete from history deletion index");
   }
 
   @Test
