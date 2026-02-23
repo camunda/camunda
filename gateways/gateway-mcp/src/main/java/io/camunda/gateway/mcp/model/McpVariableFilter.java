@@ -7,10 +7,7 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.VARIABLE_FILTER_FORMAT_NOTE;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import io.camunda.gateway.protocol.model.simple.VariableFilter;
 
 /**
@@ -18,11 +15,4 @@ import io.camunda.gateway.protocol.model.simple.VariableFilter;
  * to avoid unnecessary context bloat.
  */
 @JsonIgnoreProperties("tenantId")
-public class McpVariableFilter extends VariableFilter {
-
-  @JsonPropertyDescription(VARIABLE_FILTER_FORMAT_NOTE)
-  @Override
-  public String getValue() {
-    return super.getValue();
-  }
-}
+public interface McpVariableFilter {}
