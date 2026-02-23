@@ -41,6 +41,7 @@ public final class DbCheckpointMetadataState {
   public void addMarkerCheckpoint(
       final long checkpointId, final long checkpointPosition, final long timestamp) {
     checkpointIdKey.wrapLong(checkpointId);
+    metadataValue.reset();
     metadataValue
         .setCheckpointPosition(checkpointPosition)
         .setCheckpointTimestamp(timestamp)
@@ -56,6 +57,7 @@ public final class DbCheckpointMetadataState {
       final CheckpointType checkpointType,
       final long firstLogPosition) {
     checkpointIdKey.wrapLong(checkpointId);
+    metadataValue.reset();
     metadataValue
         .setCheckpointPosition(checkpointPosition)
         .setCheckpointTimestamp(checkpointTimestamp)
