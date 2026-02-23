@@ -1442,7 +1442,7 @@ public final class ProcessInstanceModificationModifyProcessor
       // started by a call activity.
       final var currentElementInstanceRecord = currentElementInstance.getValue();
       if (currentElementInstanceRecord.getBpmnElementType() == BpmnElementType.PROCESS
-          && currentElementInstanceRecord.hasParentProcess()) {
+          && currentElementInstanceRecord.hasParentProcessInstance()) {
         throw new TerminatedChildProcessException(
             ERROR_MESSAGE_CHILD_PROCESS_INSTANCE_TERMINATED.formatted(
                 currentElementInstanceRecord.getBpmnProcessId()));
