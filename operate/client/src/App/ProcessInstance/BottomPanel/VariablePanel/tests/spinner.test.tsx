@@ -88,10 +88,13 @@ const selectedElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'someKey',
   processInstanceKey: '1',
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -123,7 +126,15 @@ describe('VariablePanel spinner', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
@@ -131,6 +142,9 @@ describe('VariablePanel spinner', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -148,9 +162,20 @@ describe('VariablePanel spinner', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(
       screen.getByRole('button', {name: /select flow node instance/i}),
@@ -169,14 +194,32 @@ describe('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withDelay({
-      items: [createVariable()],
-      page: {totalItems: 1},
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withDelay({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchVariables().withDelay({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -207,12 +250,18 @@ describe('VariablePanel spinner', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -229,9 +278,20 @@ describe('VariablePanel spinner', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     await user.click(
       screen.getByRole('button', {name: /select placeholder scope/i}),
     );

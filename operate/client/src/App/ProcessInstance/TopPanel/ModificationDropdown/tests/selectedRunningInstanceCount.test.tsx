@@ -21,12 +21,18 @@ const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 describe('selectedRunningInstanceCount', () => {
@@ -119,7 +125,12 @@ describe('selectedRunningInstanceCount', () => {
     );
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

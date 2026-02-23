@@ -27,7 +27,12 @@ const secondIncident = createIncident({
 });
 
 const mockIncidents: QueryProcessInstanceIncidentsResponseBody = {
-  page: {totalItems: 2},
+  page: {
+    totalItems: 2,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
   items: [firstIncident, secondIncident],
 };
 

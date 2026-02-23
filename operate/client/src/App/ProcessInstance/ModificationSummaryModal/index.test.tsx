@@ -36,12 +36,18 @@ const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '1',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const getWrapper = (

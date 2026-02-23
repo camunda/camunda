@@ -20,7 +20,15 @@ describe('Add variable', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should show/hide add variable inputs', async () => {

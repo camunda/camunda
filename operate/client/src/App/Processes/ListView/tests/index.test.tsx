@@ -80,6 +80,9 @@ const mockProcessInstancesV2WithOperation = {
   ],
   page: {
     totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
@@ -89,13 +92,18 @@ const mockBatchOperationItemsWithFailure = {
       batchOperationKey: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
       itemKey: 'item-key-1',
       processInstanceKey: '0000000000000002',
+      rootProcessInstanceKey: null,
       state: 'FAILED' as const,
+      processedDate: null,
       operationType: 'MODIFY_PROCESS_INSTANCE' as const,
       errorMessage: 'Batch Operation Error Message',
     },
   ],
   page: {
     totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
@@ -110,12 +118,18 @@ describe('Instances', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockQueryBatchOperationItems().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockFetchProcessInstancesStatistics().withSuccess({

@@ -102,7 +102,15 @@ describe('Footer', () => {
         },
       ],
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should hide/disable add variable button if add/edit variable button is clicked', async () => {
@@ -147,12 +155,23 @@ describe('Footer', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     };
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockFetchElementInstance('2').withSuccess({
       elementInstanceKey: '2',
@@ -161,10 +180,13 @@ describe('Footer', () => {
       type: 'START_EVENT',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: '1',
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -182,7 +204,15 @@ describe('Footer', () => {
     );
 
     mockSearchVariables().withSuccess(mockSearchVariablesPayload);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockFetchElementInstance('3').withSuccess({
       elementInstanceKey: '3',
@@ -195,7 +225,9 @@ describe('Footer', () => {
       processDefinitionId: 'someKey',
       processInstanceKey: '1',
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 

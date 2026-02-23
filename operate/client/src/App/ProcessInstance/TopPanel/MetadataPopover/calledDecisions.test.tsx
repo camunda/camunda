@@ -49,7 +49,9 @@ const mockElementInstance: ElementInstance = {
   processDefinitionId: 'someKey',
   processInstanceKey: PROCESS_INSTANCE_ID,
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -57,12 +59,18 @@ const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '229843728748927482',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'Called Process',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockIncident = {
@@ -254,6 +262,10 @@ describe('MetadataPopover', () => {
       elementId: BUSINESS_RULE_FLOW_NODE_ID,
       type: 'BUSINESS_RULE_TASK',
       hasIncident: true,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     };
 
     const mockFailedDecisionInstance = {
