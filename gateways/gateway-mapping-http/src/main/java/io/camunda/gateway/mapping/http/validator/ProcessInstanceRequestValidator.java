@@ -14,6 +14,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validate;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateKeyFormat;
 import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateOperationReference;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateProcessDefinitionId;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryFilterMapper;
 import io.camunda.gateway.protocol.model.CancelProcessInstanceRequest;
@@ -79,6 +80,7 @@ public class ProcessInstanceRequestValidator {
                 ERROR_MESSAGE_AT_LEAST_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
           }
+          validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           validateOperationReference(request.getOperationReference(), violations);
           validateTags(request.getTags(), violations);
         });
@@ -101,6 +103,10 @@ public class ProcessInstanceRequestValidator {
             violations.add(
                 ERROR_MESSAGE_ONLY_ONE_FIELD.formatted(
                     List.of("processDefinitionId", "processDefinitionKey")));
+          }
+
+          if (byIdSet) {
+            validateProcessDefinitionId(request.getProcessDefinitionId(), violations);
           }
 
           final var versionSet =
