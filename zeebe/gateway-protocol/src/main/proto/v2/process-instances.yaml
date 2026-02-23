@@ -727,7 +727,10 @@ components:
           type: object
           additionalProperties: true
         tenantId:
-          description: The tenant id of the process definition.
+          description: |
+            The tenant id of the process definition.
+            If multi-tenancy is enabled, provide the tenant id of the process definition to start a
+            process instance of. If multi-tenancy is disabled, don't provide this parameter.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         operationReference:
@@ -822,7 +825,10 @@ components:
           items:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
         tenantId:
-          description: The tenant id of the process definition.
+          description: |
+            The tenant id of the process definition.
+            If multi-tenancy is enabled, provide the tenant id of the process definition to start a
+            process instance of. If multi-tenancy is disabled, don't provide this parameter.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         operationReference:
