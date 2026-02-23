@@ -1,0 +1,81 @@
+@use '@carbon/react' as * with (
+  $font-path: "@ibm/plex"
+);
+
+@use '@carbon/react/scss/fonts/sans';
+@use '@carbon/react/scss/themes';
+@use '@carbon/react/scss/theme';
+@use '@carbon/react/scss/type';
+
+@include sans.medium();
+@include sans.bold();
+
+@import 'shared-styles/shared-styles.scss';
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
+@import 'colors.scss';
+
+:root {
+  --z-notification: 9300;
+  --z-login: 9200;
+  --z-tooltip: 9100;
+  --z-modal: 9000;
+  --z-popup: 500; //popovers, dropdowns, ...
+  --z-header: 400;
+  --z-above: 1;
+  --z-below: -1;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:focus {
+  outline: none;
+}
+
+html {
+  @include theme.theme(themes.$white);
+  color: var(--grey-darken-13);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  height: 100%;
+
+  .dark {
+    color: var(--silver-darken-87);
+    @include theme.theme(themes.$g100);
+  }
+}
+
+.Root-container {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; // for firefox see https://stackoverflow.com/a/28639686
+}
+
+body {
+  height: 100%;
+}
+
+main {
+  flex-grow: 1;
+  width: 100%;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+// By default the notification component has some max width set, but we want it to take the full
+.cds--actionable-notification,
+.cds--inline-notification {
+  max-inline-size: 100%;
+}
+
+b {
+  font-weight: bold;
+}
+
+i {
+  font-style: italic;
+}
