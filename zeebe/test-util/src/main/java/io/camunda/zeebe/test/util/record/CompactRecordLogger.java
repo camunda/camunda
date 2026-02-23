@@ -548,12 +548,23 @@ public class CompactRecordLogger {
 
   private String summarizeProcessInformation(
       final String bpmnProcessId, final long processInstanceKey) {
+    final var businessId = "";
+    return summarizeProcessInformation(bpmnProcessId, processInstanceKey, businessId);
+  }
 
+  private String summarizeProcessInformation(
+      final String bpmnProcessId, final long processInstanceKey, final String businessId) {
     final var formattedProcessId =
         StringUtils.isEmpty(bpmnProcessId) ? "?" : formatId(bpmnProcessId);
     final var formattedInstanceKey = processInstanceKey < 0 ? "?" : shortenKey(processInstanceKey);
 
-    return String.format(" in <process %s[%s]>", formattedProcessId, formattedInstanceKey);
+    if (businessId.isEmpty()) {
+      return String.format(" in <process %s[%s]>", formattedProcessId, formattedInstanceKey);
+    } else {
+      final var formattedBusinessId = formatId(businessId);
+      return " in <process %s[%s]%s>"
+          .formatted(formattedProcessId, formattedInstanceKey, formattedBusinessId);
+    }
   }
 
   private String summarizeProcessInformation(
@@ -783,14 +794,15 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
-  private String summarizeProcessInstance(final Record<?> record) {
+  protected String summarizeProcessInstance(final Record<?> record) {
     final var value = (ProcessInstanceRecordValue) record.getValue();
     return new StringBuilder()
         .append(value.getBpmnElementType())
         .append(" ")
         .append(formatId(value.getElementId()))
         .append(
-            summarizeProcessInformation(value.getBpmnProcessId(), value.getProcessInstanceKey()))
+            summarizeProcessInformation(
+                value.getBpmnProcessId(), value.getProcessInstanceKey(), value.getBusinessId()))
         .append(summarizeTreePath(value))
         .toString();
   }
