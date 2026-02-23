@@ -2970,4 +2970,39 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .expectBody()
         .json(expectedBody, JsonCompareMode.STRICT);
   }
+
+  @Test
+  void shouldRejectCreateProcessInstanceWithInvalidProcessDefinitionId() {
+    // given — processDefinitionId starting with a digit violates BPMN identifier pattern
+    final var request =
+        """
+            {
+                "processDefinitionId": "9invalid"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-.]*$'.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
 }
