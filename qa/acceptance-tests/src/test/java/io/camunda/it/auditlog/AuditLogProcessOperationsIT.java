@@ -12,6 +12,7 @@ import static io.camunda.it.auditlog.AuditLogUtils.TENANT_A;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationCompleted;
 import static io.camunda.it.util.TestHelper.waitForBatchOperationWithCorrectTotalCount;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
+import static io.camunda.it.util.TestHelper.waitForJobs;
 import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.it.util.TestHelper.waitUntilIncidentsAreResolved;
@@ -23,6 +24,7 @@ import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.AuditLogActorTypeEnum;
+import io.camunda.client.api.search.enums.AuditLogCategoryEnum;
 import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
@@ -30,6 +32,7 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Incident;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
@@ -394,6 +397,41 @@ public class AuditLogProcessOperationsIT {
   //                  .isEmpty();
   //            });
   //  }
+
+  // ========================================================================================
+  // Job Tests
+  // ========================================================================================
+
+  @Test
+  void shouldTrackJobCompleted(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start a process that creates a job
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
+
+    // Get the job key
+    final var jobs = waitForJobs(client, List.of(processInstanceKey));
+
+    // when - complete the job
+    jobs.forEach(
+        job -> {
+          client.newCompleteCommand(job.getJobKey()).send().join();
+
+          // then - wait for audit log entry and verify
+          final var auditLogItems =
+              awaitAuditLogEntry(
+                  client,
+                  AuditLogEntityTypeEnum.JOB,
+                  AuditLogOperationTypeEnum.COMPLETE,
+                  String.valueOf(job.getJobKey()));
+          assertThat(auditLogItems)
+              .isNotEmpty()
+              .allMatch(
+                  auditLog -> assertJobAuditLog(auditLog, AuditLogOperationTypeEnum.COMPLETE, job));
+        });
+  }
 
   // ========================================================================================
   // Incident Tests
@@ -779,6 +817,36 @@ public class AuditLogProcessOperationsIT {
     assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processDefinitionId);
+  }
+
+  /**
+   * Asserts common audit log fields for job operations.
+   *
+   * @param auditLog the audit log to verify
+   * @param operationType the expected operation type
+   * @param job the expected job
+   */
+  private boolean assertJobAuditLog(
+      final AuditLogResult auditLog, final AuditLogOperationTypeEnum operationType, final Job job) {
+    final var jobKey = job.getJobKey();
+    assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.JOB, operationType);
+    assertThat(auditLog.getCategory()).isEqualTo(AuditLogCategoryEnum.DEPLOYED_RESOURCES);
+    assertThat(auditLog.getEntityKey()).isEqualTo(String.valueOf(jobKey));
+    assertThat(auditLog.getEntityDescription()).isEqualTo(job.getType());
+    assertThat(auditLog.getJobKey()).isEqualTo(String.valueOf(jobKey));
+    assertThat(auditLog.getElementInstanceKey())
+        .isEqualTo(String.valueOf(job.getElementInstanceKey()));
+    assertThat(auditLog.getProcessInstanceKey())
+        .isEqualTo(String.valueOf(job.getProcessInstanceKey()));
+    assertThat(auditLog.getProcessDefinitionKey())
+        .isEqualTo(String.valueOf(job.getProcessDefinitionKey()));
+    assertThat(auditLog.getProcessDefinitionId())
+        .isEqualTo(String.valueOf(job.getProcessDefinitionId()));
+    assertThat(auditLog.getRootProcessInstanceKey())
+        .isEqualTo(String.valueOf(job.getRootProcessInstanceKey()));
+    assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
+
+    return true;
   }
 
   /**
