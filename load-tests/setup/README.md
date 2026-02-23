@@ -11,7 +11,7 @@ All guides are targeted at a Linux system.
 
 ## Requirements
 
-Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm
+Make sure you have the following installed: docker, tsh (Teleport CLI), kubectl, kubens and helm
 
 ## Load testing Self-Managed Zeebe Cluster
 
@@ -46,9 +46,10 @@ If you want to use your own or a different Camunda snapshot then you could do th
 # builds the dist
 mvn clean install -T1C -DskipTests -pl dist -am
 # builds the a new camunda docker image
-docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app -f camunda.Dockerfile .
-# pushes the image to our docker registry
-docker push gcr.io/zeebe-io/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
+docker build --build-arg DISTBALL=dist/target/camunda-zeebe-*.tar.gz -t registry.camunda.cloud/team-zeebe/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD) --target app -f camunda.Dockerfile .
+# pushes the image to our container registry (requires docker login to registry.camunda.cloud)
+# Zeebe team members have push access by default. If you don't have access, request it in #ask-infra.
+docker push registry.camunda.cloud/team-zeebe/zeebe:SNAPSHOT-$(date +%Y-%m-%d)-$(git rev-parse --short=8 HEAD)
 ```
 
 Update the `camunda-platform-values.yaml` file in your namespace folder and set the newly created image tag.
