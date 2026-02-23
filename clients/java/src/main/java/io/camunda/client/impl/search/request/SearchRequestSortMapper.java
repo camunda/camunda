@@ -630,6 +630,21 @@ public class SearchRequestSortMapper {
         .collect(Collectors.toList());
   }
 
+  public static List<GlobalTaskListenerSearchQuerySortRequest>
+      toGlobalTaskListenerSearchQuerySortRequest(final List<SearchRequestSort> requests) {
+    return requests.stream()
+        .map(
+            r -> {
+              final GlobalTaskListenerSearchQuerySortRequest request =
+                  new GlobalTaskListenerSearchQuerySortRequest();
+              request.setField(
+                  GlobalTaskListenerSearchQuerySortRequest.FieldEnum.fromValue(r.getField()));
+              request.setOrder(r.getOrder());
+              return request;
+            })
+        .collect(Collectors.toList());
+  }
+
   private static SearchRequestSort createFrom(final Object field, final SortOrderEnum order) {
     final SearchRequestSort request = new SearchRequestSort();
     request.setField(field.toString());
