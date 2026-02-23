@@ -23,6 +23,7 @@
     "@carbon/elements": "^11.57.0",
     "@carbon/react": "1.100.0",
     "@monaco-editor/react": "4.7.0",
+    "date-fns": "^4.1.0",
     "fuse.js": "7.1.0",
     "i18next": "25.8.11",
     "mobx-react-lite": "4.1.1",
