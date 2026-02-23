@@ -62,7 +62,7 @@ const mockJob: Job = {
   tags: [],
 };
 
-const mockCalledProcessInstance: ProcessInstance = {
+const mockCalledProcessInstance = {
   processInstanceKey: '987654321',
   processDefinitionId: 'called-process-def',
   processDefinitionKey: '888999000',
@@ -78,7 +78,7 @@ const mockCalledProcessInstance: ProcessInstance = {
   tags: [],
   processDefinitionVersionTag: null,
   endDate: null,
-};
+} satisfies ProcessInstance;
 
 const mockBusinessObject: BusinessObject = {
   id: 'Task_1',

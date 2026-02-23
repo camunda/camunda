@@ -219,6 +219,9 @@ describe('Modification Dropdown - Multi Scopes', () => {
           hasIncident: false,
           tenantId: '<default>',
           startDate: '2018-12-12T00:00:02.000+0000',
+          endDate: null,
+          rootProcessInstanceKey: null,
+          incidentKey: null,
         },
       ]),
     );

@@ -30,6 +30,9 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
+  endDate: null,
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 const getWrapper = (initialSearchParams?: Record<string, string>) => {

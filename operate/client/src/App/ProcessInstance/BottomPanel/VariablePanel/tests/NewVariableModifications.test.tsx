@@ -802,6 +802,8 @@ describe('New Variable Modifications', () => {
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       hasIncident: false,
+      rootProcessInstanceKey: null,
+      incidentKey: null,
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],

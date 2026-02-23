@@ -26,7 +26,7 @@ const selectedProcessDefinition = createProcessDefinition({
   processDefinitionKey: PROCESS_DEFINITION_KEY,
 });
 
-const mockProcessInstancesV2: ProcessInstance[] = [
+const mockProcessInstancesV2 = [
   {
     processInstanceKey: '1',
     processDefinitionKey: PROCESS_DEFINITION_KEY,
@@ -95,7 +95,7 @@ const mockProcessInstancesV2: ProcessInstance[] = [
     rootProcessInstanceKey: null,
     tags: [],
   },
-];
+] satisfies ProcessInstance[];
 
 const setupSelectionStoreWithInstances = (
   instances: ProcessInstance[],
