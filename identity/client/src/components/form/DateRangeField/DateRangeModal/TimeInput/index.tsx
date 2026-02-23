@@ -11,8 +11,9 @@ import {
   validateTimeCharacters,
   validateTimeComplete,
   validateTimeRange,
-} from "src/components/form/DateRangeField/validators.ts";
+} from "src/components/form/DateRangeField/validators";
 import { Controller, useFormContext } from "react-hook-form";
+import { FormValues } from "src/components/form/DateRangeField/DateRangeModal";
 
 type Props = {
   type: "from" | "to";
@@ -21,13 +22,6 @@ type Props = {
 };
 
 type DateFieldName = `${"from" | "to"}Time`;
-
-export type FormValues = {
-  fromDate: string;
-  toDate: string;
-  fromTime: string;
-  toTime: string;
-};
 
 const TimeInput: React.FC<Props> = ({ type, labelText, onChange }) => {
   const { control } = useFormContext<FormValues>();
@@ -48,7 +42,7 @@ const TimeInput: React.FC<Props> = ({ type, labelText, onChange }) => {
       render={({ field, fieldState }) => (
         <TextInput
           {...field}
-          id="time-picker"
+          id={`${type}-time-picker`}
           labelText={labelText}
           size="sm"
           placeholder="hh:mm:ss"

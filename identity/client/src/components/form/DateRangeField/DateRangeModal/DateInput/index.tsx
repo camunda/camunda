@@ -49,3 +49,5 @@ export const DateInput = forwardRef<HTMLDivElement, Props>(
     );
   },
 );
+
+DateInput.displayName = "DateInput";

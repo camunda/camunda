@@ -19,10 +19,10 @@ const defaultTime = {
   to: "23:59:59",
 };
 
-type FormValues = {
+export type FormValues = {
   fromDate: string;
-  fromTime: string;
   toDate: string;
+  fromTime: string;
   toTime: string;
 };
 
@@ -108,15 +108,22 @@ const DateRangeModal: React.FC<Props> = ({
                           methods.setValue(
                             "fromDate",
                             formatDate(fromDateTime),
+                            { shouldValidate: true },
                           );
                           if (methods.getValues("fromTime") === "") {
-                            methods.setValue("fromTime", defaultTime.from);
+                            methods.setValue("fromTime", defaultTime.from, {
+                              shouldValidate: true,
+                            });
                           }
                         }
                         if (toDateTime !== undefined) {
-                          methods.setValue("toDate", formatDate(toDateTime));
+                          methods.setValue("toDate", formatDate(toDateTime), {
+                            shouldValidate: true,
+                          });
                           if (methods.getValues("toTime") === "") {
-                            methods.setValue("toTime", defaultTime.to);
+                            methods.setValue("toTime", defaultTime.to, {
+                              shouldValidate: true,
+                            });
                           }
                         }
                       }}

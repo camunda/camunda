@@ -7,7 +7,7 @@
  */
 
 import { isValid, parse, parseISO } from "date-fns";
-import { FormValues } from "src/components/form/DateRangeField/DateRangeModal/TimeInput";
+import { FormValues } from "src/components/form/DateRangeField/DateRangeModal";
 
 const VALIDATION_TIMEOUT = 750;
 const TIME_ERROR = "Time has to be in the format hh:mm:ss";
