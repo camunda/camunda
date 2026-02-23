@@ -1,5 +1,15 @@
 # Changelog
 
+
+## v0.0.43
+
+- Add `DELETE_DECISION_INSTANCE` to `batchOperationTypeSchema` ([#45988](https://github.com/camunda/camunda/issues/45988))
+
+### ❤️ Contributors
+
+- Omran Abazeed ([@omranAbazeed](https://github.com/omranAbazeed))
+
+
 ## v0.0.42
 
 ### 🚀 Enhancements
