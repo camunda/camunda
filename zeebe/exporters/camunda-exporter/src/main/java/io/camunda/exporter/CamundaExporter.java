@@ -295,7 +295,7 @@ public class CamundaExporter implements Exporter {
   }
 
   private boolean shouldFlush() {
-    return writer.getBatchSize() >= 10_000 // configuration.getBulk().getSize()
+    return writer.getBatchSize() >= configuration.getBulk().getSize()
         || writer.getBatchMemoryEstimateInMb() >= configuration.getBulk().getMemoryLimit();
   }
 
@@ -309,7 +309,7 @@ public class CamundaExporter implements Exporter {
 
   private void scheduleDelayedFlush() {
     controller.scheduleCancellableTask(
-        Duration.ofSeconds(2 /*configuration.getBulk().getDelay()*/), this::flushAndReschedule);
+        Duration.ofSeconds(configuration.getBulk().getDelay()), this::flushAndReschedule);
   }
 
   private void flushAndReschedule() {
