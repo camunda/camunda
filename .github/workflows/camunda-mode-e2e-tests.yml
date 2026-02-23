@@ -2,7 +2,6 @@ name: E2E Tests for Camunda Modes
 
 on:
   pull_request:
-  push:
 
 jobs:
   test-camunda-modes:
@@ -52,9 +51,12 @@ jobs:
           push: false
 
       - name: Start Camunda with camunda.mode=${{ matrix.camunda_mode }}
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+        env:
+          DATABASE: elasticsearch
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}
         run: |
-          CAMUNDA_MODE=${{ matrix.camunda_mode }} DATABASE=elasticsearch \
-          docker compose up -d camunda
+          docker compose -f docker-compose-with-modes.yml up -d camunda
 
       - name: Wait for services to be ready
         run: |
