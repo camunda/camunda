@@ -103,12 +103,23 @@ public final class MessageSubscriptionCreateProcessor
       final TypedRecord<MessageSubscriptionRecord> record,
       final String messageName,
       final String correlationKey) {
-    final var reason =
-        "Expected message subscription with message name and correlation key not longer than %d characters, but message name has %d characters and correlation key has %d characters."
-            .formatted(
-                maxNameFieldLength,
-                messageName.length(),
-                correlationKey.length());
+    final boolean isMessageNameTooLong = messageName.length() > maxNameFieldLength;
+    final boolean isCorrelationKeyTooLong = correlationKey.length() > maxNameFieldLength;
+
+    final String reason;
+    if (isMessageNameTooLong && isCorrelationKeyTooLong) {
+      reason =
+          "Expected message subscription with message name and correlation key not longer than %d characters, but message name has %d characters and correlation key has %d characters."
+              .formatted(maxNameFieldLength, messageName.length(), correlationKey.length());
+    } else if (isMessageNameTooLong) {
+      reason =
+          "Expected message subscription with message name not longer than %d characters, but message name has %d characters."
+              .formatted(maxNameFieldLength, messageName.length());
+    } else {
+      reason =
+          "Expected message subscription with correlation key not longer than %d characters, but correlation key has %d characters."
+              .formatted(maxNameFieldLength, correlationKey.length());
+    }
     rejectionWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
   }
 

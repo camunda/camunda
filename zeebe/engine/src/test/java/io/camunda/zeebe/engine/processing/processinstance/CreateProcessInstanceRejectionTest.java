@@ -274,9 +274,9 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     Assertions.assertThat(rejection.getRejectionReason())
         .contains(
-            "Expected message name to be shorter than the configured max-name-length of "
+            "Expected message name to be at most "
                 + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
-                + " characters");
+                + " characters long (configured max-name-length)");
 
     Assertions.assertThat(
             RecordingExporter.processMessageSubscriptionRecords(
@@ -320,9 +320,9 @@ public class CreateProcessInstanceRejectionTest {
         .hasRejectionType(RejectionType.INVALID_ARGUMENT);
     Assertions.assertThat(rejection.getRejectionReason())
         .contains(
-            "Expected correlation key to be shorter than the configured max-name-length of "
+            "Expected correlation key to be at most "
                 + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
-                + " characters");
+                + " characters long (configured max-name-length)");
 
     Assertions.assertThat(
             RecordingExporter.processMessageSubscriptionRecords(
