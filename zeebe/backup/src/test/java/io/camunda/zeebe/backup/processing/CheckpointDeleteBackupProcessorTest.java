@@ -149,7 +149,7 @@ final class CheckpointDeleteBackupProcessorTest {
 
     final var backupStore = mock(BackupStore.class);
     when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     final var processor = createProcessor(backupStore, backupStore);
@@ -198,7 +198,7 @@ final class CheckpointDeleteBackupProcessorTest {
     when(backupStore.markFailed(any(), any()))
         .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
     when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     final var processor = createProcessor(backupStore, backupStore);
@@ -229,7 +229,7 @@ final class CheckpointDeleteBackupProcessorTest {
     final var backupStore = mock(BackupStore.class);
     when(backupStore.list(any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Store unavailable")));
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     final var processor = createProcessor(backupStore, backupStore);

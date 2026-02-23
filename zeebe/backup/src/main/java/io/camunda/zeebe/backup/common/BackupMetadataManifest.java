@@ -15,12 +15,12 @@ import java.util.List;
 
 /**
  * Per-partition JSON manifest containing checkpoint metadata and pre-computed backup ranges. Synced
- * to the backup store on every mutation (backup confirmation, deletion). Two copies are maintained
- * (slots "a" and "b") with a monotonic sequence number for crash-safe atomic swap.
+ * to the backup store on every mutation (backup confirmation, deletion). A single file is
+ * maintained per partition and overwritten on each sync. If the file is found to be corrupted on
+ * read, it is re-synced from the authoritative RocksDB column families.
  */
 public record BackupMetadataManifest(
     @JsonProperty("partitionId") int partitionId,
-    @JsonProperty("sequenceNumber") long sequenceNumber,
     @JsonProperty("lastUpdated") Instant lastUpdated,
     @JsonProperty("checkpoints") List<CheckpointEntry> checkpoints,
     @JsonProperty("ranges") List<RangeEntry> ranges) {

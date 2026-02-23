@@ -302,9 +302,8 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
-    final var key = backupMetadataKey(partitionId, slot);
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    final var key = backupMetadataKey(partitionId);
     return client
         .putObject(
             req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.fromBytes(content))
@@ -312,9 +311,8 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
-    final var key = backupMetadataKey(partitionId, slot);
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    final var key = backupMetadataKey(partitionId);
     return client
         .getObject(
             req -> req.bucket(config.bucketName()).key(key), AsyncResponseTransformer.toBytes())
@@ -334,13 +332,11 @@ public final class S3BackupStore implements BackupStore {
     return CompletableFuture.completedFuture(null);
   }
 
-  private String backupMetadataKey(final int partitionId, final String slot) {
+  private String backupMetadataKey(final int partitionId) {
     return config.basePath().map(base -> base + "/").orElse("")
         + "metadata/"
         + partitionId
-        + "/backups-"
-        + slot
-        + ".json";
+        + "/backups.json";
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {

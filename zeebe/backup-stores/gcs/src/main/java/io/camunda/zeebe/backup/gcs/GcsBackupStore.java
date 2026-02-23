@@ -198,22 +198,20 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
     return CompletableFuture.runAsync(
         () -> {
-          final var blobInfo = backupMetadataBlobInfo(partitionId, slot);
+          final var blobInfo = backupMetadataBlobInfo(partitionId);
           client.create(blobInfo, content);
         },
         executor);
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     return CompletableFuture.supplyAsync(
         () -> {
-          final var blobId = backupMetadataBlobInfo(partitionId, slot).getBlobId();
+          final var blobId = backupMetadataBlobInfo(partitionId).getBlobId();
           final var blob = client.get(blobId);
           if (blob == null || !blob.exists()) {
             return Optional.empty();
@@ -240,9 +238,8 @@ public final class GcsBackupStore implements BackupStore {
         });
   }
 
-  private BlobInfo backupMetadataBlobInfo(final int partitionId, final String slot) {
-    return BlobInfo.newBuilder(
-            bucketInfo, basePath + "metadata/" + partitionId + "/backups-" + slot + ".json")
+  private BlobInfo backupMetadataBlobInfo(final int partitionId) {
+    return BlobInfo.newBuilder(bucketInfo, basePath + "metadata/" + partitionId + "/backups.json")
         .build();
   }
 

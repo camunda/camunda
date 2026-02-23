@@ -806,7 +806,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldScheduleSyncPostCommitTaskOnConfirmBackup() {
     // given — a processor with a real backup store
     final var backupStore = mock(BackupStore.class);
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     final var context = createContext(executor, zeebedb);
@@ -839,7 +839,7 @@ final class CheckpointRecordsProcessorTest {
 
     // then — task succeeds (fire-and-forget) and store metadata is called
     assertThat(success).isTrue();
-    verify(backupStore).storeBackupMetadata(eq(1), any(), any());
+    verify(backupStore).storeBackupMetadata(eq(1), any());
   }
 
   @Test
@@ -896,7 +896,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldSyncOnRecoveryWhenBackupStoreExists() {
     // given — a processor with a real backup store
     final var backupStore = mock(BackupStore.class);
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     final var context = createContext(executor, zeebedb);
@@ -913,7 +913,7 @@ final class CheckpointRecordsProcessorTest {
     syncProcessor.onRecovered(readonlyContext);
 
     // then — sync is triggered (store metadata is called)
-    verify(backupStore).storeBackupMetadata(eq(1), any(), any());
+    verify(backupStore).storeBackupMetadata(eq(1), any());
   }
 
   @Test
@@ -1101,7 +1101,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldScheduleBackupStoreDeletePostCommitTaskOnDeleteBackup() {
     // given — a processor with a real backup store
     final var backupStore = mock(BackupStore.class);
-    when(backupStore.storeBackupMetadata(any(int.class), any(), any()))
+    when(backupStore.storeBackupMetadata(any(int.class), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(backupStore.list(any()))
         .thenReturn(CompletableFuture.completedFuture(java.util.List.of()));
@@ -1138,7 +1138,7 @@ final class CheckpointRecordsProcessorTest {
     // then — tasks succeed and store methods are called
     assertThat(success).isTrue();
     verify(backupStore).list(any()); // backup store delete lists backups
-    verify(backupStore).storeBackupMetadata(eq(1), any(), any()); // JSON sync
+    verify(backupStore).storeBackupMetadata(eq(1), any()); // JSON sync
   }
 
   @Test

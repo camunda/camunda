@@ -521,7 +521,7 @@ final class BackupRangeResolverTest {
     private final Map<BackupIdentifier, Backup> backups = new HashMap<>();
     private final Map<Integer, List<RangeEntry>> rangesByPartition = new HashMap<>();
     private final Map<Integer, List<CheckpointEntry>> checkpointsByPartition = new HashMap<>();
-    private final Map<String, byte[]> metadataBySlot = new HashMap<>();
+    private final Map<Integer, byte[]> metadataByPartition = new HashMap<>();
 
     PartitionBuilder forPartition(final int partitionId) {
       return new PartitionBuilder(this, partitionId);
@@ -580,10 +580,10 @@ final class BackupRangeResolverTest {
       final var checkpoints = checkpointsByPartition.getOrDefault(partitionId, List.of());
       final var ranges = rangesByPartition.getOrDefault(partitionId, List.of());
       final var manifest =
-          new BackupMetadataManifest(partitionId, 1L, Instant.now(), checkpoints, ranges);
+          new BackupMetadataManifest(partitionId, Instant.now(), checkpoints, ranges);
       try {
         final var content = MAPPER.writeValueAsBytes(manifest);
-        metadataBySlot.put(partitionId + "/a", content);
+        metadataByPartition.put(partitionId, content);
       } catch (final JsonProcessingException e) {
         throw new RuntimeException("Failed to serialize manifest", e);
       }
@@ -642,16 +642,15 @@ final class BackupRangeResolverTest {
 
     @Override
     public CompletableFuture<Void> storeBackupMetadata(
-        final int partitionId, final String slot, final byte[] content) {
-      metadataBySlot.put(partitionId + "/" + slot, content);
+        final int partitionId, final byte[] content) {
+      metadataByPartition.put(partitionId, content);
       return CompletableFuture.completedFuture(null);
     }
 
     @Override
-    public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-        final int partitionId, final String slot) {
+    public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
       return CompletableFuture.completedFuture(
-          Optional.ofNullable(metadataBySlot.get(partitionId + "/" + slot)));
+          Optional.ofNullable(metadataByPartition.get(partitionId)));
     }
 
     @Override

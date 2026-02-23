@@ -36,7 +36,7 @@ final class TestRestorableBackupStore implements BackupStore {
 
   final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
-  final Map<String, byte[]> metadataBySlot = new ConcurrentHashMap<>();
+  final Map<Integer, byte[]> metadataByPartition = new ConcurrentHashMap<>();
 
   /**
    * Must be called before a backup is saved or marked as failed.
@@ -66,14 +66,14 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   /**
-   * Stores a backup metadata manifest for testing. Uses slot "a" for simplicity.
+   * Stores a backup metadata manifest for testing.
    *
    * @param manifest the manifest to store
    */
   void storeManifest(final io.camunda.zeebe.backup.common.BackupMetadataManifest manifest) {
     try {
       final var content = io.camunda.zeebe.backup.common.BackupMetadataCodec.serialize(manifest);
-      storeBackupMetadata(manifest.partitionId(), "a", content).join();
+      storeBackupMetadata(manifest.partitionId(), content).join();
     } catch (final com.fasterxml.jackson.core.JsonProcessingException e) {
       throw new RuntimeException("Failed to serialize manifest", e);
     }
@@ -159,17 +159,15 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
-    metadataBySlot.put(partitionId + "/" + slot, content);
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    metadataByPartition.put(partitionId, content);
     return CompletableFuture.completedFuture(null);
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     return CompletableFuture.completedFuture(
-        Optional.ofNullable(metadataBySlot.get(partitionId + "/" + slot)));
+        Optional.ofNullable(metadataByPartition.get(partitionId)));
   }
 
   @Override

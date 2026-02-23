@@ -128,9 +128,9 @@ Phase 3's deletion logic (range maintenance) depends on Phase 0 for predecessor 
 
 ### Phase 4: JSON Sync
 
-Two-file swap for atomicity: write alternately to `backups-a.json` / `backups-b.json`. Each file contains a monotonic `sequenceNumber`. On read, load both, pick higher valid one.
+A single `backups.json` file per partition is overwritten on each sync. If corrupted, the sync-on-leader-election mechanism re-syncs from the authoritative CFs.
 
-The `BackupStore` interface needs two new methods per slot. Keep it simple — it's just a put/get of a byte array to a known path.
+The `BackupStore` interface needs two new methods (`storeBackupMetadata`/`loadBackupMetadata`). Keep it simple — it's just a put/get of a byte array to a known path.
 
 ### Phase 6.5: Deletion via Commands
 

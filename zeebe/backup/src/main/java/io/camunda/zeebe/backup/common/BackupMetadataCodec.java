@@ -21,15 +21,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Shared serialization and two-slot loading logic for {@link BackupMetadataManifest}. Used by both
- * the syncer (write path) and the reader (restore path) to avoid duplicating ObjectMapper setup and
- * slot-loading logic.
+ * Shared serialization and loading logic for {@link BackupMetadataManifest}. Used by both the
+ * syncer (write path) and the reader (restore path) to avoid duplicating ObjectMapper setup.
  */
 public final class BackupMetadataCodec {
 
   private static final Logger LOG = LoggerFactory.getLogger(BackupMetadataCodec.class);
-  private static final String SLOT_A = "a";
-  private static final String SLOT_B = "b";
 
   public static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -56,56 +53,20 @@ public final class BackupMetadataCodec {
   }
 
   /**
-   * Loads the most recent valid backup metadata manifest for the given partition from the backup
-   * store. Reads both slots ("a" and "b") and returns the one with the higher valid sequence
-   * number.
+   * Loads the backup metadata manifest for the given partition from the backup store.
    *
    * @param backupStore the backup store to read from
    * @param partitionId the partition to load metadata for
-   * @return the manifest, or empty if no valid metadata exists in either slot
+   * @return the manifest, or empty if no valid metadata exists
    */
   public static CompletableFuture<Optional<BackupMetadataManifest>> load(
       final BackupStore backupStore, final int partitionId) {
-    final var futureA = loadSlot(backupStore, partitionId, SLOT_A);
-    final var futureB = loadSlot(backupStore, partitionId, SLOT_B);
-
-    return futureA.thenCombine(
-        futureB,
-        (manifestA, manifestB) -> {
-          if (manifestA.isPresent() && manifestB.isPresent()) {
-            final var a = manifestA.get();
-            final var b = manifestB.get();
-            return Optional.of(a.sequenceNumber() >= b.sequenceNumber() ? a : b);
-          } else if (manifestA.isPresent()) {
-            return manifestA;
-          } else if (manifestB.isPresent()) {
-            return manifestB;
-          } else {
-            return Optional.empty();
-          }
-        });
-  }
-
-  /**
-   * Loads a single slot from the backup store and deserializes it.
-   *
-   * @param backupStore the backup store to read from
-   * @param partitionId the partition to load metadata for
-   * @param slot the slot identifier ("a" or "b")
-   * @return the deserialized manifest, or empty if the slot is missing or corrupt
-   */
-  public static CompletableFuture<Optional<BackupMetadataManifest>> loadSlot(
-      final BackupStore backupStore, final int partitionId, final String slot) {
     return backupStore
-        .loadBackupMetadata(partitionId, slot)
+        .loadBackupMetadata(partitionId)
         .thenApply(optBytes -> optBytes.flatMap(BackupMetadataCodec::deserialize))
         .exceptionally(
             error -> {
-              LOG.warn(
-                  "Failed to load backup metadata from slot {} for partition {}",
-                  slot,
-                  partitionId,
-                  error);
+              LOG.warn("Failed to load backup metadata for partition {}", partitionId, error);
               return Optional.empty();
             });
   }

@@ -191,7 +191,10 @@ public final class BackupRangeResolver {
 
     final var rangeCheckpoints =
         manifest.checkpoints().stream()
-            .filter(e -> e.checkpointType() == CheckpointType.MANUAL_BACKUP || e.checkpointType() == CheckpointType.SCHEDULED_BACKUP)
+            .filter(
+                e ->
+                    e.checkpointType() == CheckpointType.MANUAL_BACKUP
+                        || e.checkpointType() == CheckpointType.SCHEDULED_BACKUP)
             .filter(e -> e.checkpointId() >= range.start() && e.checkpointId() <= range.end())
             .sorted(Comparator.comparingLong(CheckpointEntry::checkpointId))
             .toList();

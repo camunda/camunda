@@ -41,24 +41,22 @@ public interface BackupStore {
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
   /**
-   * Stores backup metadata content to a named slot for the given partition. Slots "a" and "b" are
-   * used alternately for crash-safe atomic swap. The content is an opaque byte array (JSON).
+   * Stores backup metadata content for the given partition. The content is an opaque byte array
+   * (JSON) that is overwritten on each sync.
    *
    * @param partitionId the partition this metadata belongs to
-   * @param slot the slot name ("a" or "b")
    * @param content the serialized metadata content
    */
-  CompletableFuture<Void> storeBackupMetadata(int partitionId, String slot, byte[] content);
+  CompletableFuture<Void> storeBackupMetadata(int partitionId, byte[] content);
 
   /**
-   * Loads backup metadata content from a named slot for the given partition. Returns empty if the
-   * slot does not exist (fresh deployment or pre-migration).
+   * Loads backup metadata content for the given partition. Returns empty if the file does not exist
+   * (fresh deployment or pre-migration).
    *
    * @param partitionId the partition this metadata belongs to
-   * @param slot the slot name ("a" or "b")
    * @return the serialized metadata content, or empty if not found
    */
-  CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId, String slot);
+  CompletableFuture<Optional<byte[]>> loadBackupMetadata(int partitionId);
 
   CompletableFuture<Void> closeAsync();
 }

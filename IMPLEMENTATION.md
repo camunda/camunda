@@ -145,17 +145,17 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 **What was done:**
 
-1. **Created `BackupMetadataManifest`** record in `zeebe/backup/.../common/` — with `partitionId`, `sequenceNumber` (monotonic counter for two-file swap), `lastUpdated` (Instant), `checkpoints` (List<CheckpointEntry>), `ranges` (List<RangeEntry>). Uses `@JsonCreator`/`@JsonProperty` annotations. Inner records: `CheckpointEntry` (7 fields) and `RangeEntry` (start, end).
+1. **Created `BackupMetadataManifest`** record in `zeebe/backup/.../common/` — with `partitionId`, `lastUpdated` (Instant), `checkpoints` (List<CheckpointEntry>), `ranges` (List<RangeEntry>). Uses `@JsonCreator`/`@JsonProperty` annotations. Inner records: `CheckpointEntry` (7 fields) and `RangeEntry` (start, end).
 2. **Added Jackson time dependencies** to `zeebe/backup/pom.xml` — `jackson-datatype-jdk8` and `jackson-datatype-jsr310`
-3. **Added to `BackupStore` interface** — `storeBackupMetadata(int partitionId, String slot, byte[] content)` and `loadBackupMetadata(int partitionId, String slot)` returning `CompletableFuture<Optional<byte[]>>`
+3. **Added to `BackupStore` interface** — `storeBackupMetadata(int partitionId, byte[] content)` and `loadBackupMetadata(int partitionId)` returning `CompletableFuture<Optional<byte[]>>`
 4. **Implemented in all 4 store backends:**
-   - S3: `putObject`/`getObject` at `{basePath}/metadata/{partitionId}/backups-{slot}.json`
-   - GCS: `client.create`/`client.get` at `{basePath}metadata/{partitionId}/backups-{slot}.json`
-   - Azure: `BlobClient.upload`/`downloadContent` at `metadata/{partitionId}/backups-{slot}.json`
+   - S3: `putObject`/`getObject` at `{basePath}/metadata/{partitionId}/backups.json`
+   - GCS: `client.create`/`client.get` at `{basePath}metadata/{partitionId}/backups.json`
+   - Azure: `BlobClient.upload`/`downloadContent` at `metadata/{partitionId}/backups.json`
    - Filesystem: `Files.write`/`readAllBytes` with `FileUtil.flushDirectory()` for durability
-5. **Created `BackupMetadataSyncer`** — two-slot atomic swap writer/reader. Alternates between slots "a"/"b", maintains monotonic sequence number, rolls back on failure. `sync()` reads both CFs and writes JSON; `load()` reads both slots and picks higher valid sequence number. Handles missing/corrupt slots gracefully.
-6. **Created `StoringBackupMetadata` testkit interface** — 6 test cases (store/load both slots, empty when missing, overwrite, partition isolation, slot isolation). Added to `BackupStoreTestKit` extends list.
-7. **Created `BackupMetadataSyncerTest`** — 12 unit tests covering slot alternation, sequence numbers, serialization, failure rollback, retry semantics, load from various slot combinations, corrupt data handling, sequence continuation after load.
+5. **Created `BackupMetadataSyncer`** — writes a single `backups.json` file per partition, overwritten on each sync. `sync()` reads both CFs and writes JSON; `load()` reads the file and deserializes it. Handles missing/corrupt files gracefully (re-syncs from CFs on next mutation or recovery).
+6. **Created `StoringBackupMetadata` testkit interface** — test cases (store/load, empty when missing, overwrite, partition isolation). Added to `BackupStoreTestKit` extends list.
+7. **Created `BackupMetadataSyncerTest`** — unit tests covering serialization, failure handling, load from missing/corrupt files.
 
 ---
 
@@ -185,7 +185,7 @@ Implemented in `921f1c93751` (feat: add JSON metadata sync infrastructure for ba
 
 **Goal:** Rewrite restore to read the per-partition JSON file instead of querying markers + individual backups.
 
-**Summary:** Created `BackupMetadataReader` in `zeebe/restore` that loads per-partition manifests from the backup store using the two-slot atomic swap protocol. Rewrote `BackupRangeResolver.getInformationPerPartition()` to load the manifest once per partition and do all range/checkpoint lookups locally. Changed `findBackupRangeCoveringInterval()` to accept a `Function<Long, BackupStatus>` instead of a partition ID, eliminating API calls. Replaced `getAllBackups()` with `getAllBackupsFromManifest()` that filters checkpoints from a local map. Rewrote `RestoreManager.verifyBackupIdsAreContinuous()` and `restoreTimeRange()` to use `BackupMetadataReader` instead of range markers and wildcard store queries. Promoted `zeebe-protocol` dependency from test to compile scope. Updated all tests (`BackupRangeResolverTest`, `RestoreManagerTest`) to set up manifests instead of range markers.
+**Summary:** Created `BackupMetadataReader` in `zeebe/restore` that loads per-partition manifests from the backup store. Rewrote `BackupRangeResolver.getInformationPerPartition()` to load the manifest once per partition and do all range/checkpoint lookups locally. Changed `findBackupRangeCoveringInterval()` to accept a `Function<Long, BackupStatus>` instead of a partition ID, eliminating API calls. Replaced `getAllBackups()` with `getAllBackupsFromManifest()` that filters checkpoints from a local map. Rewrote `RestoreManager.verifyBackupIdsAreContinuous()` and `restoreTimeRange()` to use `BackupMetadataReader` instead of range markers and wildcard store queries. Promoted `zeebe-protocol` dependency from test to compile scope. Updated all tests (`BackupRangeResolverTest`, `RestoreManagerTest`) to set up manifests instead of range markers.
 
 ---
 
@@ -303,7 +303,7 @@ Phase 9 (Remove Markers)
 
 1. **Retention and the single-writer model** (Phase 7) — **Resolved.** All deletion (including retention) goes through stream processor commands (`DELETE_BACKUP`/`BACKUP_DELETED`). Retention writes `DELETE_BACKUP` commands to the log instead of calling `backupStore.delete()` directly. The stream processor processes each command: removes the checkpoint entry from the CF, updates ranges, triggers async backup store deletion, and syncs the JSON file. This maintains the single-writer guarantee for all RocksDB CF mutations. The trade-off is added latency (command must flow through the log before deletion happens), but this is acceptable for retention which is not latency-sensitive.
 
-2. **JSON sync atomicity** — **Resolved.** Two-file swap approach ensures at least one valid JSON file always exists. The system writes alternately to `backups-a.json` and `backups-b.json`, each carrying a monotonic sequence number. Readers load both files and pick the one with the higher valid sequence number. If a crash occurs mid-write, the other file remains intact with the last valid state. The sync-on-leader-election mechanism (Phase 5) provides additional protection by re-syncing the JSON from the authoritative CF state on failover.
+2. **JSON sync atomicity** — **Resolved.** A single `backups.json` file is maintained per partition and overwritten on each sync. If a crash occurs mid-write and the file is corrupted, the sync-on-leader-election mechanism (Phase 5) re-syncs the JSON from the authoritative RocksDB column families on failover. The CFs are the source of truth; the JSON file is a read-optimized projection that is always recoverable.
 
 3. **Predecessor lookup during backup deletion** (Phases 0, 3, 6.5) — Deleting a backup from anywhere except the start of a range requires finding the predecessor checkpoint. This applies to three scenarios:
 
@@ -330,7 +330,7 @@ All 10 phases (0–9) are marked DONE. The following is a review of what was bui
 
 2. **Column families are correctly implemented.** `DbCheckpointMetadataState` (19 unit tests) and `DbBackupRangeState` (22 unit tests) follow the established `DbCheckpointState` pattern. Predecessor/successor lookups use reverse/forward iteration correctly. Range maintenance covers all 4 deletion scenarios (single-entry, start, end, mid-range split).
 
-3. **JSON sync infrastructure is robust.** The two-slot atomic swap (`BackupMetadataSyncer` / `BackupMetadataReader`) handles crash safety, corrupt files, missing files, and sequence number rollback. 12 unit tests + 6 testkit tests cover the core behaviors. All 4 store backends (S3, GCS, Azure, Filesystem) implement `storeBackupMetadata`/`loadBackupMetadata`.
+3. **JSON sync infrastructure is robust.** `BackupMetadataSyncer` / `BackupMetadataReader` handle corrupt files, missing files, and crash recovery via re-sync. Unit tests + testkit tests cover the core behaviors. All 4 store backends (S3, GCS, Azure, Filesystem) implement `storeBackupMetadata`/`loadBackupMetadata`.
 
 4. **Marker code is fully removed.** Codebase-wide grep confirms zero references to `rangeMarker`, `BackupRangeMarker`, `storeRangeMarker`, `deleteRangeMarker`, or the old `BackupRanges` sealed interface in Java source.
 
@@ -398,7 +398,7 @@ The following test gaps were identified by reviewing test files against the test
 
 11. **End-to-end DELETE_BACKUP integration test.** `BackupRangeTrackingIT` tests range creation and extension during leader changes, but does NOT test backup deletion via `DELETE_BACKUP` commands or retention-driven deletion and its effect on ranges.
 
-12. **Metadata syncer round-trip integration test.** JSON sync to backup store is only unit-tested with mocks. No IT verifies the actual S3/GCS/Azure/filesystem round-trip of the metadata manifest including the two-slot swap behavior.
+12. **Metadata syncer round-trip integration test.** JSON sync to backup store is only unit-tested with mocks. No IT verifies the actual S3/GCS/Azure/filesystem round-trip of the metadata manifest.
 
 13. **Restore from manifest integration test (non-RDBMS).** `RdbmsRangeRestoreIT` exists but there is no standard (non-RDBMS) variant that exercises `BackupRangeResolver` + `RestoreManager` with a real backup store.
 
@@ -509,7 +509,7 @@ Phase 14 (Code Quality Cleanup)                   -- final, low risk
 1. Added `final` to `CheckpointBackupConfirmedApplier` and `CheckpointConfirmBackupProcessor` class declarations.
 2. Removed unused `metrics` field and constructor parameter from `CheckpointCreatedEventApplier`; updated both call sites (`CheckpointRecordsProcessor`, `CheckpointCreateProcessor`).
 3. Removed unused `validate()` method from `CheckpointBackupDeletedApplier` (the `CheckpointDeleteBackupProcessor` already performs its own existence check); removed corresponding tests from `CheckpointBackupDeletedApplierTest`.
-4. Extracted shared `ObjectMapper` setup and two-slot load logic into `BackupMetadataCodec` in `zeebe/backup/common/`; refactored `BackupMetadataSyncer` and `BackupMetadataReader` to delegate to it; updated `BackupMetadataSyncerTest` to use `BackupMetadataCodec.MAPPER`.
+4. Extracted shared `ObjectMapper` setup and load logic into `BackupMetadataCodec` in `zeebe/backup/common/`; refactored `BackupMetadataSyncer` and `BackupMetadataReader` to delegate to it; updated `BackupMetadataSyncerTest` to use `BackupMetadataCodec.MAPPER`.
 5. Deleted unused `Context.java` from the processing package (no imports or references found).
 6. Fixed `TestRestorableBackupStore.delete()` — now returns `CompletableFuture.completedFuture(null)` and removes the backup from the in-memory map.
 7. Updated `TestRestorableBackupStore.storeManifest()` to use `BackupMetadataCodec.serialize()` instead of creating an inline `ObjectMapper`.
@@ -638,7 +638,6 @@ Additional issues:
    - Added private `findGlobalTarget(List<PartitionData>, @Nullable Instant to)`:
      - If `to` is null: returns `min` across partitions of the highest checkpoint ID.
      - If `to` is non-null: per partition, finds highest checkpoint with timestamp ≤ `to`. Global target = `min` across partitions.
-
 2. **`BackupRangeResolverTest.java`**:
    - `optionalTimeBoundsProvider`: Added `exporterPosition` parameter. Changed `(null, min30, 300)` → `(null, min30, 200, 1500L)` — global target is now 200 (highest ≤ min30), exporter lowered so last checkpoint position (2000) ≥ exporter (1500).
    - `shouldNotReturnDuplicatedBackupsWhenMultipleNodes`: Lowered exporter to 1500 so global target 200's position (2000) ≥ exporter. Assertion changed to `{100, 200}`.

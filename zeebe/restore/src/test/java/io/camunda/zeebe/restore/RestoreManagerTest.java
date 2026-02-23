@@ -99,17 +99,12 @@ final class RestoreManagerTest {
 
     // Partition 1: single continuous range [1, 5]
     backupStore.storeManifest(
-        new BackupMetadataManifest(
-            1, 1L, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
+        new BackupMetadataManifest(1, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
 
     // Partition 2: two ranges with a gap [1,3] and [5,7] — no single range covers [1,5]
     backupStore.storeManifest(
         new BackupMetadataManifest(
-            2,
-            1L,
-            Instant.now(),
-            List.of(),
-            List.of(new RangeEntry(1L, 3L), new RangeEntry(5L, 7L))));
+            2, Instant.now(), List.of(), List.of(new RangeEntry(1L, 3L), new RangeEntry(5L, 7L))));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
@@ -155,7 +150,6 @@ final class RestoreManagerTest {
     backupStore.storeManifest(
         new BackupMetadataManifest(
             1,
-            1L,
             Instant.now(),
             checkpointEntries,
             List.of(new RangeEntry(checkpointIds[0], checkpointIds[4]))));
@@ -164,7 +158,6 @@ final class RestoreManagerTest {
     backupStore.storeManifest(
         new BackupMetadataManifest(
             2,
-            1L,
             Instant.now(),
             checkpointEntries,
             List.of(
@@ -227,7 +220,7 @@ final class RestoreManagerTest {
                 "test-version"));
     backupStore.storeManifest(
         new BackupMetadataManifest(
-            1, 1L, Instant.now(), entries, List.of(new RangeEntry(checkpointId, checkpointId))));
+            1, Instant.now(), entries, List.of(new RangeEntry(checkpointId, checkpointId))));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
@@ -282,7 +275,7 @@ final class RestoreManagerTest {
         List.of(
             new CheckpointEntry(
                 markerId, 0L, timestamp, CheckpointType.MARKER, 0L, 1, "test-version"));
-    backupStore.storeManifest(new BackupMetadataManifest(1, 1L, Instant.now(), entries, List.of()));
+    backupStore.storeManifest(new BackupMetadataManifest(1, Instant.now(), entries, List.of()));
 
     try (final var restoreManager =
         new RestoreManager(configuration, backupStore, new SimpleMeterRegistry())) {
@@ -312,7 +305,7 @@ final class RestoreManagerTest {
     for (var partition = 1; partition <= 2; partition++) {
       backupStore.storeManifest(
           new BackupMetadataManifest(
-              partition, 1L, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
+              partition, Instant.now(), List.of(), List.of(new RangeEntry(1L, 5L))));
     }
 
     try (final var restoreManager =

@@ -216,12 +216,11 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
     return CompletableFuture.runAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = backupMetadataPath(partitionId, slot);
+          final var blobName = backupMetadataPath(partitionId);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           blobClient.upload(BinaryData.fromBytes(content), true);
         },
@@ -229,12 +228,11 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     return CompletableFuture.supplyAsync(
         () -> {
           assureContainerCreated();
-          final var blobName = backupMetadataPath(partitionId, slot);
+          final var blobName = backupMetadataPath(partitionId);
           final var blobClient = blobContainerClient.getBlobClient(blobName);
           if (!blobClient.exists()) {
             return Optional.empty();
@@ -262,8 +260,8 @@ public final class AzureBackupStore implements BackupStore {
         });
   }
 
-  private String backupMetadataPath(final int partitionId, final String slot) {
-    return "metadata/" + partitionId + "/backups-" + slot + ".json";
+  private String backupMetadataPath(final int partitionId) {
+    return "metadata/" + partitionId + "/backups.json";
   }
 
   private void assureContainerCreated() {

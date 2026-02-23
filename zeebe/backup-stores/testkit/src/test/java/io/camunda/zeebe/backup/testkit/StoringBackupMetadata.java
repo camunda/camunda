@@ -18,31 +18,16 @@ public interface StoringBackupMetadata {
   BackupStore getStore();
 
   @Test
-  default void shouldStoreAndLoadFromSlotA() {
+  default void shouldStoreAndLoad() {
     // given
     final var store = getStore();
-    final var content = "{\"sequenceNumber\":1}".getBytes(StandardCharsets.UTF_8);
+    final var content = "{\"partitionId\":1}".getBytes(StandardCharsets.UTF_8);
 
     // when
-    assertThat(store.storeBackupMetadata(1, "a", content)).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(store.storeBackupMetadata(1, content)).succeedsWithin(Duration.ofSeconds(10));
 
     // then
-    final var loaded = store.loadBackupMetadata(1, "a").join();
-    assertThat(loaded).isPresent();
-    assertThat(loaded.get()).isEqualTo(content);
-  }
-
-  @Test
-  default void shouldStoreAndLoadFromSlotB() {
-    // given
-    final var store = getStore();
-    final var content = "{\"sequenceNumber\":2}".getBytes(StandardCharsets.UTF_8);
-
-    // when
-    assertThat(store.storeBackupMetadata(1, "b", content)).succeedsWithin(Duration.ofSeconds(10));
-
-    // then
-    final var loaded = store.loadBackupMetadata(1, "b").join();
+    final var loaded = store.loadBackupMetadata(1).join();
     assertThat(loaded).isPresent();
     assertThat(loaded.get()).isEqualTo(content);
   }
@@ -53,7 +38,7 @@ public interface StoringBackupMetadata {
     final var store = getStore();
 
     // when
-    final var loaded = store.loadBackupMetadata(1, "a").join();
+    final var loaded = store.loadBackupMetadata(1).join();
 
     // then
     assertThat(loaded).isEmpty();
@@ -63,15 +48,15 @@ public interface StoringBackupMetadata {
   default void shouldOverwriteExistingMetadata() {
     // given
     final var store = getStore();
-    final var original = "{\"sequenceNumber\":1}".getBytes(StandardCharsets.UTF_8);
-    final var updated = "{\"sequenceNumber\":2}".getBytes(StandardCharsets.UTF_8);
-    store.storeBackupMetadata(1, "a", original).join();
+    final var original = "{\"version\":1}".getBytes(StandardCharsets.UTF_8);
+    final var updated = "{\"version\":2}".getBytes(StandardCharsets.UTF_8);
+    store.storeBackupMetadata(1, original).join();
 
     // when
-    assertThat(store.storeBackupMetadata(1, "a", updated)).succeedsWithin(Duration.ofSeconds(10));
+    assertThat(store.storeBackupMetadata(1, updated)).succeedsWithin(Duration.ofSeconds(10));
 
     // then
-    final var loaded = store.loadBackupMetadata(1, "a").join();
+    final var loaded = store.loadBackupMetadata(1).join();
     assertThat(loaded).isPresent();
     assertThat(loaded.get()).isEqualTo(updated);
   }
@@ -84,35 +69,15 @@ public interface StoringBackupMetadata {
     final var content2 = "{\"partitionId\":2}".getBytes(StandardCharsets.UTF_8);
 
     // when
-    store.storeBackupMetadata(1, "a", content1).join();
-    store.storeBackupMetadata(2, "a", content2).join();
+    store.storeBackupMetadata(1, content1).join();
+    store.storeBackupMetadata(2, content2).join();
 
     // then
-    final var loaded1 = store.loadBackupMetadata(1, "a").join();
-    final var loaded2 = store.loadBackupMetadata(2, "a").join();
+    final var loaded1 = store.loadBackupMetadata(1).join();
+    final var loaded2 = store.loadBackupMetadata(2).join();
     assertThat(loaded1).isPresent();
     assertThat(loaded1.get()).isEqualTo(content1);
     assertThat(loaded2).isPresent();
     assertThat(loaded2.get()).isEqualTo(content2);
-  }
-
-  @Test
-  default void shouldIsolateMetadataBetweenSlots() {
-    // given
-    final var store = getStore();
-    final var contentA = "{\"slot\":\"a\"}".getBytes(StandardCharsets.UTF_8);
-    final var contentB = "{\"slot\":\"b\"}".getBytes(StandardCharsets.UTF_8);
-
-    // when
-    store.storeBackupMetadata(1, "a", contentA).join();
-    store.storeBackupMetadata(1, "b", contentB).join();
-
-    // then
-    final var loadedA = store.loadBackupMetadata(1, "a").join();
-    final var loadedB = store.loadBackupMetadata(1, "b").join();
-    assertThat(loadedA).isPresent();
-    assertThat(loadedA.get()).isEqualTo(contentA);
-    assertThat(loadedB).isPresent();
-    assertThat(loadedB.get()).isEqualTo(contentB);
   }
 }

@@ -169,12 +169,11 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
     return CompletableFuture.runAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve("backups-" + slot + ".json");
+          final var metadataPath = metadataDir.resolve("backups.json");
           try {
             FileUtil.ensureDirectoryExists(metadataDir);
             Files.write(metadataPath, content);
@@ -187,12 +186,11 @@ public final class FilesystemBackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     return CompletableFuture.supplyAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve("backups-" + slot + ".json");
+          final var metadataPath = metadataDir.resolve("backups.json");
           if (!Files.exists(metadataPath)) {
             return Optional.empty();
           }

@@ -16,7 +16,7 @@ import org.jspecify.annotations.NullMarked;
 
 /**
  * Reads per-partition backup metadata manifests from the backup store. Delegates to {@link
- * BackupMetadataCodec} for two-slot loading and deserialization.
+ * BackupMetadataCodec} for loading and deserialization.
  */
 @NullMarked
 public final class BackupMetadataReader {
@@ -28,11 +28,10 @@ public final class BackupMetadataReader {
   }
 
   /**
-   * Loads the most recent valid backup metadata manifest for the given partition. Reads both slots
-   * and returns the one with the higher valid sequence number.
+   * Loads the backup metadata manifest for the given partition.
    *
    * @param partitionId the partition to load metadata for
-   * @return the manifest, or empty if no valid metadata exists in either slot
+   * @return the manifest, or empty if no valid metadata exists
    */
   public CompletableFuture<Optional<BackupMetadataManifest>> load(final int partitionId) {
     return BackupMetadataCodec.load(backupStore, partitionId);

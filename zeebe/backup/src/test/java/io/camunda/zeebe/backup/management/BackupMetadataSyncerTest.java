@@ -48,54 +48,18 @@ final class BackupMetadataSyncerTest {
   }
 
   @Test
-  void shouldSyncToSlotAFirst() {
+  void shouldSyncToStore() {
     // given
     when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
     when(backupRangeState.getAllRanges()).thenReturn(List.of());
-    when(backupStore.storeBackupMetadata(eq(1), eq("a"), any()))
+    when(backupStore.storeBackupMetadata(eq(1), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
     syncer.sync(1, checkpointMetadataState, backupRangeState).join();
 
     // then
-    assertThat(syncer.getLastWrittenSlot()).isEqualTo("a");
-    assertThat(syncer.getSequenceNumber()).isEqualTo(1);
-    verify(backupStore).storeBackupMetadata(eq(1), eq("a"), any());
-  }
-
-  @Test
-  void shouldAlternateBetweenSlots() {
-    // given
-    when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
-    when(backupRangeState.getAllRanges()).thenReturn(List.of());
-    when(backupStore.storeBackupMetadata(eq(1), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-
-    // then
-    assertThat(syncer.getLastWrittenSlot()).isEqualTo("b");
-    assertThat(syncer.getSequenceNumber()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldIncrementSequenceNumberMonotonically() {
-    // given
-    when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
-    when(backupRangeState.getAllRanges()).thenReturn(List.of());
-    when(backupStore.storeBackupMetadata(eq(1), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-
-    // then
-    assertThat(syncer.getSequenceNumber()).isEqualTo(3);
+    verify(backupStore).storeBackupMetadata(eq(1), any());
   }
 
   @Test
@@ -110,7 +74,7 @@ final class BackupMetadataSyncerTest {
     when(backupRangeState.getAllRanges()).thenReturn(List.of(range));
 
     final var contentCaptor = ArgumentCaptor.forClass(byte[].class);
-    when(backupStore.storeBackupMetadata(eq(1), eq("a"), contentCaptor.capture()))
+    when(backupStore.storeBackupMetadata(eq(1), contentCaptor.capture()))
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
@@ -121,7 +85,6 @@ final class BackupMetadataSyncerTest {
         BackupMetadataCodec.MAPPER.readValue(
             contentCaptor.getValue(), BackupMetadataManifest.class);
     assertThat(manifest.partitionId()).isEqualTo(1);
-    assertThat(manifest.sequenceNumber()).isEqualTo(1);
     assertThat(manifest.checkpoints()).hasSize(1);
     assertThat(manifest.checkpoints().getFirst().checkpointId()).isEqualTo(10L);
     assertThat(manifest.checkpoints().getFirst().checkpointPosition()).isEqualTo(100L);
@@ -136,110 +99,41 @@ final class BackupMetadataSyncerTest {
   }
 
   @Test
-  void shouldRollBackSequenceNumberOnStoreFailure() {
+  void shouldHandleStoreFailureGracefully() {
     // given
     when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
     when(backupRangeState.getAllRanges()).thenReturn(List.of());
-    when(backupStore.storeBackupMetadata(eq(1), eq("a"), any()))
+    when(backupStore.storeBackupMetadata(eq(1), any()))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("store unavailable")));
 
-    // when
-    syncer.sync(1, checkpointMetadataState, backupRangeState).whenComplete((r, e) -> {});
+    // when - sync completes without throwing (fire-and-forget style, failure logged)
+    final var future = syncer.sync(1, checkpointMetadataState, backupRangeState);
 
-    // then - sequence number should be rolled back
-    assertThat(syncer.getSequenceNumber()).isEqualTo(0);
+    // then - the future completes exceptionally but the syncer does not throw
+    assertThat(future).isCompletedExceptionally();
   }
 
   @Test
-  void shouldRetryToSameSlotAfterFailure() {
+  void shouldLoadManifestSuccessfully() {
     // given
-    when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
-    when(backupRangeState.getAllRanges()).thenReturn(List.of());
+    final var manifest = new BackupMetadataManifest(1, Instant.now(), List.of(), List.of());
+    final var bytes = serializeManifest(manifest);
 
-    // First call fails
-    when(backupStore.storeBackupMetadata(eq(1), eq("a"), any()))
-        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("fail")));
-    syncer.sync(1, checkpointMetadataState, backupRangeState).whenComplete((r, e) -> {});
-
-    // Second call succeeds — should retry to slot "a" since the first one rolled back
-    when(backupStore.storeBackupMetadata(eq(1), eq("a"), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-
-    // then
-    assertThat(syncer.getLastWrittenSlot()).isEqualTo("a");
-    assertThat(syncer.getSequenceNumber()).isEqualTo(1);
-  }
-
-  @Test
-  void shouldLoadHigherSequenceNumberFromBothSlots() {
-    // given
-    final var manifestA = new BackupMetadataManifest(1, 3, Instant.now(), List.of(), List.of());
-    final var manifestB = new BackupMetadataManifest(1, 5, Instant.now(), List.of(), List.of());
-
-    final var bytesA = serializeManifest(manifestA);
-    final var bytesB = serializeManifest(manifestB);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesA)));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesB)));
-
-    // when
-    final var result = syncer.load(1).join();
-
-    // then - should pick slot b (higher sequence number)
-    assertThat(result).isPresent();
-    assertThat(result.get().sequenceNumber()).isEqualTo(5);
-    assertThat(syncer.getSequenceNumber()).isEqualTo(5);
-  }
-
-  @Test
-  void shouldLoadFromSlotAWhenSlotBMissing() {
-    // given
-    final var manifestA = new BackupMetadataManifest(1, 2, Instant.now(), List.of(), List.of());
-    final var bytesA = serializeManifest(manifestA);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesA)));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
+    when(backupStore.loadBackupMetadata(1))
+        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytes)));
 
     // when
     final var result = syncer.load(1).join();
 
     // then
     assertThat(result).isPresent();
-    assertThat(result.get().sequenceNumber()).isEqualTo(2);
+    assertThat(result.get().partitionId()).isEqualTo(1);
   }
 
   @Test
-  void shouldLoadFromSlotBWhenSlotAMissing() {
+  void shouldReturnEmptyWhenNoFileExists() {
     // given
-    final var manifestB = new BackupMetadataManifest(1, 4, Instant.now(), List.of(), List.of());
-    final var bytesB = serializeManifest(manifestB);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesB)));
-
-    // when
-    final var result = syncer.load(1).join();
-
-    // then
-    assertThat(result).isPresent();
-    assertThat(result.get().sequenceNumber()).isEqualTo(4);
-  }
-
-  @Test
-  void shouldReturnEmptyWhenBothSlotsMissing() {
-    // given
-    when(backupStore.loadBackupMetadata(1, "a"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
-    when(backupStore.loadBackupMetadata(1, "b"))
+    when(backupStore.loadBackupMetadata(1))
         .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
     // when
@@ -250,64 +144,29 @@ final class BackupMetadataSyncerTest {
   }
 
   @Test
-  void shouldHandleCorruptSlotGracefully() {
-    // given - slot A has corrupt data, slot B has valid data
-    final var manifestB = new BackupMetadataManifest(1, 3, Instant.now(), List.of(), List.of());
-    final var bytesB = serializeManifest(manifestB);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
+  void shouldReturnEmptyWhenFileIsCorrupt() {
+    // given
+    when(backupStore.loadBackupMetadata(1))
         .thenReturn(CompletableFuture.completedFuture(Optional.of("not-valid-json".getBytes())));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesB)));
 
     // when
     final var result = syncer.load(1).join();
 
-    // then - should use slot B
-    assertThat(result).isPresent();
-    assertThat(result.get().sequenceNumber()).isEqualTo(3);
+    // then
+    assertThat(result).isEmpty();
   }
 
   @Test
   void shouldHandleStoreErrorOnLoadGracefully() {
-    // given - slot A fails, slot B succeeds
-    final var manifestB = new BackupMetadataManifest(1, 2, Instant.now(), List.of(), List.of());
-    final var bytesB = serializeManifest(manifestB);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
+    // given
+    when(backupStore.loadBackupMetadata(1))
         .thenReturn(CompletableFuture.failedFuture(new RuntimeException("connection error")));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytesB)));
 
     // when
     final var result = syncer.load(1).join();
 
     // then
-    assertThat(result).isPresent();
-    assertThat(result.get().sequenceNumber()).isEqualTo(2);
-  }
-
-  @Test
-  void shouldContinueSequenceNumberAfterLoad() {
-    // given - load a manifest with sequenceNumber=5
-    final var manifest = new BackupMetadataManifest(1, 5, Instant.now(), List.of(), List.of());
-    final var bytes = serializeManifest(manifest);
-
-    when(backupStore.loadBackupMetadata(1, "a"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.of(bytes)));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
-    syncer.load(1).join();
-
-    // when - sync should continue from sequenceNumber 6
-    when(checkpointMetadataState.getAllCheckpoints()).thenReturn(List.of());
-    when(backupRangeState.getAllRanges()).thenReturn(List.of());
-    when(backupStore.storeBackupMetadata(eq(1), any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-    syncer.sync(1, checkpointMetadataState, backupRangeState).join();
-
-    // then
-    assertThat(syncer.getSequenceNumber()).isEqualTo(6);
+    assertThat(result).isEmpty();
   }
 
   @Test
@@ -332,13 +191,11 @@ final class BackupMetadataSyncerTest {
                 3,
                 "8.7.0"));
     final var ranges = List.of(new RangeEntry(1L, 2L));
-    final var manifest = new BackupMetadataManifest(1, 1, Instant.now(), checkpoints, ranges);
+    final var manifest = new BackupMetadataManifest(1, Instant.now(), checkpoints, ranges);
     final var bytes = serializeManifest(manifest);
 
-    when(backupStore.loadBackupMetadata(1, "a"))
+    when(backupStore.loadBackupMetadata(1))
         .thenReturn(CompletableFuture.completedFuture(Optional.of(bytes)));
-    when(backupStore.loadBackupMetadata(1, "b"))
-        .thenReturn(CompletableFuture.completedFuture(Optional.empty()));
 
     // when
     final var result = syncer.load(1).join();

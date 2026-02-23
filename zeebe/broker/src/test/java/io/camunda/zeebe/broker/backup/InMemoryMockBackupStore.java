@@ -77,14 +77,12 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
-  public CompletableFuture<Void> storeBackupMetadata(
-      final int partitionId, final String slot, final byte[] content) {
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
   @Override
-  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(
-      final int partitionId, final String slot) {
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
     throw new UnsupportedOperationException("Not yet implemented; implement it when required");
   }
 
