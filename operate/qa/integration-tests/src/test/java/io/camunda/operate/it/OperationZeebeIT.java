@@ -318,11 +318,11 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(incidents).isEmpty();
   }
 
-
-  private OperationEntity getOperation(final String batchOperationId) {
-    final List<OperationEntity> operations = operationReader.getOperationsByProcessInstanceKey(null);
+  private OperationEntity getOperation(
+      final String batchOperationId, final Long... processInstanceKeys) {
     final List<OperationEntity> matchingOperations =
-        operations.stream()
+        Arrays.stream(processInstanceKeys)
+            .flatMap(key -> operationReader.getOperationsByProcessInstanceKey(key).stream())
             .filter(operation -> batchOperationId.equals(operation.getBatchOperationId()))
             .toList();
     assertThat(matchingOperations).hasSize(1);
@@ -366,7 +366,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     operation = processInstance.getOperations().get(0);
     assertThat(operation.getType()).isEqualTo(OperationType.UPDATE_VARIABLE);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
-
   }
 
   protected Long getFlowNodeInstanceId(final Long processInstanceKey, final String activityId) {
@@ -659,7 +658,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // the state of operation is COMPLETED, and the instances are deleted
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).isEmpty();
-    final OperationEntity operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation =
+        getOperation(batchOperationEntity.getId(), processInstanceKey1, processInstanceKey2);
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getErrorMessage()).isNull();
@@ -710,7 +710,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     // the state of operation is FAILED, and the instances are not deleted
     final ListViewResponseDto processInstances = getProcessInstances(processInstanceQuery);
     assertThat(processInstances.getProcessInstances()).size().isEqualTo(2);
-    final OperationEntity operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation =
+        getOperation(batchOperationEntity.getId(), processInstanceKey1, processInstanceKey2);
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_PROCESS_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.FAILED);
     assertThat(operation.getErrorMessage()).contains("Process instances still running.");
@@ -749,7 +750,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     decisionInstanceEntities =
         searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
     assertThat(decisionInstanceEntities).isEmpty();
-    final OperationEntity operation = getOperation(batchOperationEntity.getId());
+    final OperationEntity operation =
+        getOperation(batchOperationEntity.getId(), processInstanceKey1, processInstanceKey2);
     assertThat(operation.getType()).isEqualTo(OperationType.DELETE_DECISION_DEFINITION);
     assertThat(operation.getState()).isEqualTo(OperationState.COMPLETED);
     assertThat(operation.getErrorMessage()).isNull();
