@@ -30,6 +30,20 @@ public class MetricsTest {
   private static final boolean EXPECTED_ENABLE_EXPORTER_EXECUTION_METRICS = true;
 
   @Nested
+  class WithNoPropertiesSet {
+    final BrokerBasedProperties brokerCfg;
+
+    WithNoPropertiesSet(@Autowired final BrokerBasedProperties brokerCfg) {
+      this.brokerCfg = brokerCfg;
+    }
+
+    @Test
+    void shouldHaveActorMetricsDisabledByDefault() {
+      assertThat(brokerCfg.getExperimental().getFeatures().isEnableActorMetrics()).isFalse();
+    }
+  }
+
+  @Nested
   @TestPropertySource(
       properties = {
         "camunda.monitoring.metrics.actor=" + EXPECTED_ACTOR,
