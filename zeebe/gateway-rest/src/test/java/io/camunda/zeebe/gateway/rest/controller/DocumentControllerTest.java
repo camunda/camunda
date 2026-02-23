@@ -490,7 +490,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'");
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
 
     verify(documentServices, never()).createDocument(any());
   }
@@ -712,7 +712,7 @@ public class DocumentControllerTest extends RestControllerTest {
         .jsonPath("$.detail")
         .isEqualTo(
             "The provided processDefinitionId contains illegal characters. "
-                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'");
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'.");
 
     verify(documentServices, never()).createDocumentBatch(any());
   }
