@@ -21,6 +21,8 @@ import {
   CheckmarkOutline,
   EventSchedule,
   UserAvatar,
+  Password,
+  ParentNode,
 } from '@carbon/react/icons';
 import {
   TitleListCell,
@@ -37,10 +39,13 @@ import {
   formatBatchTitle,
   formatModalHeading,
   getActorIcon,
+  mapToCellDetailsData,
+  mapToCellEntityKeyData,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
 import {useMemo} from 'react';
 import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   isOpen: boolean;
@@ -55,6 +60,14 @@ type DetailsModalState = {
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
   const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
+  const clientConfig = getClientConfig();
+  const entityKeyData = mapToCellEntityKeyData(
+    auditLog,
+    auditLog.processDefinitionId,
+    auditLog.decisionDefinitionId,
+    clientConfig?.tasklistUrl ?? undefined,
+  );
+  const detailsData = mapToCellDetailsData(auditLog);
 
   return (
     <Modal
@@ -123,6 +136,51 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
               <IconText>
+                <Password />
+                Entity key
+              </IconText>
+            </FirstColumn>
+            <StructuredListCell>
+              {entityKeyData.link ? (
+                <Link
+                  to={entityKeyData.link}
+                  title={entityKeyData.linkLabel}
+                  aria-label={entityKeyData.linkLabel}
+                >
+                  {auditLog.entityKey}
+                </Link>
+              ) : (
+                auditLog.entityKey
+              )}
+              &nbsp;
+              {auditLog.entityDescription ?? entityKeyData.name}
+            </StructuredListCell>
+          </VerticallyAlignedRow>
+          {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
+            auditLog.entityType,
+          ) ? (
+            <VerticallyAlignedRow>
+              <FirstColumn noWrap>
+                <IconText>
+                  <ParentNode />
+                  Parent entity
+                </IconText>
+              </FirstColumn>
+              <StructuredListCell>
+                <Link
+                  to={Paths.processInstance(auditLog.processInstanceKey)}
+                  aria-label={`View process instance ${auditLog.processInstanceKey}`}
+                >
+                  {auditLog.processInstanceKey}
+                </Link>
+                &nbsp;
+                <em>{auditLog.processDefinitionId}</em>
+              </StructuredListCell>
+            </VerticallyAlignedRow>
+          ) : undefined}
+          <VerticallyAlignedRow>
+            <FirstColumn noWrap>
+              <IconText>
                 <EventSchedule />
                 Date
               </IconText>
@@ -163,6 +221,17 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               </VerticallyAlignedRow>
             </>
           )}
+          {detailsData.property ? (
+            <>
+              <VerticallyAlignedRow>
+                <TitleListCell>Details:</TitleListCell>
+              </VerticallyAlignedRow>
+              <VerticallyAlignedRow>
+                <FirstColumn noWrap>{detailsData.property}</FirstColumn>
+                <StructuredListCell>{detailsData.value}</StructuredListCell>
+              </VerticallyAlignedRow>
+            </>
+          ) : undefined}
         </StructuredListBody>
       </StructuredListWrapper>
     </Modal>
