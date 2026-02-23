@@ -203,7 +203,8 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
       final RequestEntity<Map<String, Object>> requestEntity =
           RequestEntity.method(
                   HttpMethod.POST,
-                  restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation"))
+                  restTemplate.getURL(
+                      "/api/process-instances/" + processInstanceKey + "/operation"))
               .contentType(MediaType.APPLICATION_JSON)
               .body(request);
       final ResponseEntity<String> response = restTemplate.exchange(requestEntity, String.class);

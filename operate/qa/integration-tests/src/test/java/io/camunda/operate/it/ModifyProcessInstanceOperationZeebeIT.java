@@ -915,5 +915,4 @@ public class ModifyProcessInstanceOperationZeebeIT extends OperateZeebeAbstractI
     assertThat(tester.getFlowNodeStateFor("filterMapSubProcess"))
         .isEqualTo(FlowNodeStateDto.TERMINATED);
   }
-
 }
