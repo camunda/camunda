@@ -21,10 +21,18 @@ import java.util.Objects;
 public final class DeploymentValue {
   private final List<String> resources;
   private final String tenantId;
+  private SourceAware<Boolean> ownJarOnly;
+  private final Class<?> source;
 
-  public DeploymentValue(final List<String> resources, final String tenantId) {
+  public DeploymentValue(
+      final List<String> resources,
+      final String tenantId,
+      final SourceAware<Boolean> ownJarOnly,
+      final Class<?> source) {
     this.resources = resources;
     this.tenantId = tenantId;
+    this.ownJarOnly = ownJarOnly;
+    this.source = source;
   }
 
   public List<String> getResources() {
@@ -35,9 +43,21 @@ public final class DeploymentValue {
     return tenantId;
   }
 
+  public SourceAware<Boolean> getOwnJarOnly() {
+    return ownJarOnly;
+  }
+
+  public void setOwnJarOnly(final SourceAware<Boolean> ownJarOnly) {
+    this.ownJarOnly = ownJarOnly;
+  }
+
+  public Class<?> getSource() {
+    return source;
+  }
+
   @Override
   public int hashCode() {
-    return Objects.hash(resources, tenantId);
+    return Objects.hash(resources, tenantId, ownJarOnly, source);
   }
 
   @Override
@@ -46,11 +66,24 @@ public final class DeploymentValue {
       return false;
     }
     final DeploymentValue that = (DeploymentValue) o;
-    return Objects.equals(resources, that.resources) && Objects.equals(tenantId, that.tenantId);
+    return Objects.equals(resources, that.resources)
+        && Objects.equals(tenantId, that.tenantId)
+        && Objects.equals(ownJarOnly, that.ownJarOnly)
+        && Objects.equals(source, that.source);
   }
 
   @Override
   public String toString() {
-    return "DeploymentValue{" + "resources=" + resources + ", tenantId='" + tenantId + '\'' + '}';
+    return "DeploymentValue{"
+        + "resources="
+        + resources
+        + ", tenantId='"
+        + tenantId
+        + '\''
+        + ", ownJarOnly="
+        + ownJarOnly
+        + ", source="
+        + source
+        + '}';
   }
 }

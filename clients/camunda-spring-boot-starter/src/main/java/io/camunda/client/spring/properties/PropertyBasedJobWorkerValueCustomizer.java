@@ -22,10 +22,10 @@ import static org.apache.commons.lang3.StringUtils.*;
 
 import io.camunda.client.annotation.customizer.JobWorkerValueCustomizer;
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromDefaultProperty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.Empty;
+import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
+import io.camunda.client.annotation.value.SourceAware.FromOverrideProperty;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;

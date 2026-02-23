@@ -15,11 +15,12 @@
  */
 package io.camunda.client.spring.annotation.processor;
 
-import static io.camunda.client.annotation.AnnotationUtil.getDeploymentValues;
 import static io.camunda.client.annotation.AnnotationUtil.isDeployment;
 
 import io.camunda.client.CamundaClient;
+import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.response.Decision;
@@ -29,6 +30,7 @@ import io.camunda.client.api.response.Form;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.event.CamundaPostDeploymentSpringEvent;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
@@ -45,14 +47,31 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DeploymentAnnotationProcessor.class);
 
-  private static final ResourcePatternResolver RESOURCE_RESOLVER =
-      new PathMatchingResourcePatternResolver();
-
   private final List<DeploymentValue> deploymentValues = new ArrayList<>();
   private final ApplicationEventPublisher publisher;
+  private final Function<BeanInfo, List<DeploymentValue>> deploymentValuesExtractor;
+  private final ResourcePatternResolver resourcePatternResolver;
+  private final CamundaClientProperties camundaClientProperties;
 
-  public DeploymentAnnotationProcessor(final ApplicationEventPublisher publisher) {
+  public DeploymentAnnotationProcessor(
+      final ApplicationEventPublisher publisher,
+      final Function<BeanInfo, List<DeploymentValue>> deploymentValuesExtractor,
+      final ResourcePatternResolver resourcePatternResolver,
+      final CamundaClientProperties camundaClientProperties) {
     this.publisher = publisher;
+    this.deploymentValuesExtractor = deploymentValuesExtractor;
+    this.resourcePatternResolver = resourcePatternResolver;
+    this.camundaClientProperties = camundaClientProperties;
+  }
+
+  public DeploymentAnnotationProcessor(
+      final ApplicationEventPublisher publisher,
+      final CamundaClientProperties camundaClientProperties) {
+    this(
+        publisher,
+        AnnotationUtil::getDeploymentValues,
+        new PathMatchingResourcePatternResolver(),
+        camundaClientProperties);
   }
 
   @Override
@@ -62,10 +81,12 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
   @Override
   public void configureFor(final BeanInfo beanInfo) {
-    final List<DeploymentValue> zeebeDeploymentValue = getDeploymentValues(beanInfo);
-    if (!zeebeDeploymentValue.isEmpty()) {
-      LOGGER.debug("Configuring deployments: {}", zeebeDeploymentValue);
-      deploymentValues.addAll(zeebeDeploymentValue);
+    final List<DeploymentValue> extractedDeploymentValues =
+        deploymentValuesExtractor.apply(beanInfo);
+    extractedDeploymentValues.forEach(this::overrideFromProperties);
+    if (!extractedDeploymentValues.isEmpty()) {
+      LOGGER.debug("Configuring deployments: {}", extractedDeploymentValues);
+      deploymentValues.addAll(extractedDeploymentValues);
     }
   }
 
@@ -84,12 +105,22 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     // noop for deployment
   }
 
+  private void overrideFromProperties(final DeploymentValue deploymentValue) {
+    final FromDefaultProperty<Boolean> defaultProperty =
+        new FromDefaultProperty<>(camundaClientProperties.getDeployment().isOwnJarOnly());
+    if (deploymentValue.getOwnJarOnly().priority() < defaultProperty.priority()) {
+      deploymentValue.setOwnJarOnly(defaultProperty);
+    }
+  }
+
   private DeploymentEvent deploy(
       final CamundaClient camundaClient, final DeploymentValue deploymentValue) {
     final String tenantId = deploymentValue.getTenantId();
+    final boolean ownJarOnly = deploymentValue.getOwnJarOnly().value();
     final List<Resource> resources =
         deploymentValue.getResources().stream()
             .flatMap(r -> Arrays.stream(getResources(r)))
+            .filter(r -> !ownJarOnly || comeFromSameJar(deploymentValue.getSource(), r))
             .distinct()
             .toList();
     if (resources.isEmpty()) {
@@ -136,6 +167,21 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
     return deploymentEvent;
   }
 
+  private boolean comeFromSameJar(final Class<?> source, final Resource resource) {
+    try {
+      final String jarFile = source.getProtectionDomain().getCodeSource().getLocation().getFile();
+      final String resourceFile = resource.getURL().getFile();
+      final boolean inSameJar = resourceFile.contains(jarFile);
+      LOGGER.debug(
+          "{} is {}contained in jar file {}", resourceFile, inSameJar ? "" : "not ", jarFile);
+      return inSameJar;
+    } catch (final Exception e) {
+      LOGGER.warn(
+          "Unable to determine whether {} and {} come from the same jar", source, resource, e);
+      return true;
+    }
+  }
+
   private <T> void logDeployment(
       final String resourceName,
       final List<T> deployed,
@@ -152,9 +198,9 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
             .collect(Collectors.joining(",")));
   }
 
-  public Resource[] getResources(final String resources) {
+  private Resource[] getResources(final String resources) {
     try {
-      return RESOURCE_RESOLVER.getResources(resources);
+      return resourcePatternResolver.getResources(resources);
     } catch (final IOException e) {
       return new Resource[0];
     }

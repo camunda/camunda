@@ -18,10 +18,10 @@ package io.camunda.client.jobhandling;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotation;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromRuntimeOverride;
+import io.camunda.client.annotation.value.SourceAware.Empty;
+import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
+import io.camunda.client.annotation.value.SourceAware.FromOverrideProperty;
+import io.camunda.client.annotation.value.SourceAware.FromRuntimeOverride;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
