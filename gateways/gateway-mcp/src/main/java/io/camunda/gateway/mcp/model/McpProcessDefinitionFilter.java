@@ -7,18 +7,12 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter;
 
 /**
- * MCP-specific process definition filter extending the {@link ProcessDefinitionFilter} to hide
+ * MCP-specific process definition filter modifying the {@link ProcessDefinitionFilter} to hide
  * fields from MCP clients to avoid unnecessary context bloat.
  */
-public class McpProcessDefinitionFilter extends ProcessDefinitionFilter {
-
-  @JsonIgnore
-  @Override
-  public String getTenantId() {
-    return super.getTenantId();
-  }
-}
+@JsonIgnoreProperties("tenantId")
+public interface McpProcessDefinitionFilter {}
