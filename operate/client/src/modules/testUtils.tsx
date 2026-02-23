@@ -13,7 +13,6 @@ import type {
   CurrentUser,
   Incident,
   ProcessDefinition,
-  ElementInstance,
   QueryProcessDefinitionsResponseBody,
   QueryProcessInstancesResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
@@ -193,28 +192,6 @@ const createVariable = (options: Partial<Variable> = {}): Variable => {
     processInstanceKey: '2251799813725337',
     scopeKey: '2251799813725337',
     rootProcessInstanceKey: null,
-    ...options,
-  };
-};
-
-const createElementInstance = (
-  options: Partial<ElementInstance> = {},
-): ElementInstance => {
-  return {
-    elementInstanceKey: '2251799813699889',
-    elementId: 'service-task-1',
-    elementName: 'Service Task',
-    type: 'SERVICE_TASK',
-    state: 'ACTIVE',
-    startDate: '2018-06-21',
-    endDate: null,
-    processDefinitionId: 'someKey',
-    processInstanceKey: '2251799813685294',
-    processDefinitionKey: '2223894723423800',
-    rootProcessInstanceKey: null,
-    hasIncident: false,
-    incidentKey: null,
-    tenantId: '<default>',
     ...options,
   };
 };
@@ -1024,7 +1001,6 @@ export {
   createUser,
   createProcessInstance,
   createProcessDefinition,
-  createElementInstance,
   createInstance,
   adHocSubProcessInnerInstance,
 };

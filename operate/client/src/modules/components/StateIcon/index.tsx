@@ -8,8 +8,10 @@
 
 import {WarningFilled, CheckmarkOutline, RadioButtonChecked} from './styled';
 import {type CarbonIconType, Error, UnknownFilled} from '@carbon/react/icons';
-import type {InstanceEntityState} from 'modules/types/operate';
-import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.9';
+import type {
+  DecisionInstanceState,
+  ProcessInstanceState,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const stateIconsMap = {
   FAILED: WarningFilled,
@@ -17,14 +19,13 @@ const stateIconsMap = {
   ACTIVE: RadioButtonChecked,
   COMPLETED: CheckmarkOutline,
   EVALUATED: CheckmarkOutline,
-  CANCELED: Error,
   TERMINATED: Error,
   UNSPECIFIED: UnknownFilled,
   UNKNOWN: UnknownFilled,
 } as const satisfies Record<Props['state'], unknown>;
 
 type Props = {
-  state: InstanceEntityState | DecisionInstanceState;
+  state: ProcessInstanceState | DecisionInstanceState | 'INCIDENT';
   size: React.ComponentProps<CarbonIconType>['size'];
 };
 
