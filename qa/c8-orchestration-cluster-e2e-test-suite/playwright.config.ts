@@ -33,6 +33,7 @@ const useReportersWithoutSlack: any[] = [
   ['list'],
   ['junit', testRailOptions],
   ['html', {outputFolder: 'html-report'}],
+  ['json', { outputFile: `json-report/results.json` }],
 ];
 
 const useReportersWithSlack: any[] = [
@@ -40,7 +41,7 @@ const useReportersWithSlack: any[] = [
     './node_modules/playwright-slack-report/dist/src/SlackReporter.js',
     {
       slackOAuthToken: process.env.SLACK_BOT_USER_OAUTH_TOKEN!,
-      channels: ['c8-orchestration-cluster-e2e-test-results'],
+      channels: ['prj-qa-sandbox'],
       sendResults: 'always',
       showInThread: true,
       meta: [
@@ -248,7 +249,7 @@ export default defineConfig({
   projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
   reporter:
     process.env.INCLUDE_SLACK_REPORTER === 'true'
-      ? useReportersWithSlack
+      ? useReportersWithoutSlack
       : useReportersWithoutSlack,
 });
 
