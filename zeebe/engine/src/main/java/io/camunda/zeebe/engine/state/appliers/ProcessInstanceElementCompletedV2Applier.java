@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableMultiInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableVariableState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 final class ProcessInstanceElementCompletedV2Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
+  private final MutableHubMetricsState hubMetricsState;
   private final MutableElementInstanceState elementInstanceState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
   private final MutableVariableState variableState;
@@ -32,12 +34,14 @@ final class ProcessInstanceElementCompletedV2Applier
   private final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier;
 
   public ProcessInstanceElementCompletedV2Applier(
+      final MutableHubMetricsState hubMetricsState,
       final MutableElementInstanceState elementInstanceState,
       final MutableEventScopeInstanceState eventScopeInstanceState,
       final MutableVariableState variableState,
       final ProcessState processState,
       final MutableMultiInstanceState multiInstanceState,
       final BufferedStartMessageEventStateApplier bufferedStartMessageEventStateApplier) {
+    this.hubMetricsState = hubMetricsState;
     this.elementInstanceState = elementInstanceState;
     this.eventScopeInstanceState = eventScopeInstanceState;
     this.variableState = variableState;
@@ -66,6 +70,9 @@ final class ProcessInstanceElementCompletedV2Applier
 
     if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
       deleteBusinessIdIndex(value);
+      hubMetricsState.updateOnProcessInstanceCompleted(value);
+    } else {
+      hubMetricsState.updateOnElementCompleted(value);
     }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());

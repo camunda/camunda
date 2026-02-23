@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
@@ -17,13 +18,16 @@ public class JobMetricsBatchExportedApplier
     implements TypedEventApplier<JobMetricsBatchIntent, JobMetricsBatchRecord> {
 
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableHubMetricsState hubMetricsState;
 
   JobMetricsBatchExportedApplier(final MutableProcessingState state) {
     jobMetricsState = state.getJobMetricsState();
+    hubMetricsState = state.getHubMetricsState();
   }
 
   @Override
   public void applyState(final long key, final JobMetricsBatchRecord value) {
     jobMetricsState.cleanUp();
+    hubMetricsState.reset();
   }
 }

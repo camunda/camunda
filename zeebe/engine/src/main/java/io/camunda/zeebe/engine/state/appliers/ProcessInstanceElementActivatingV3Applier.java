@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -34,14 +35,17 @@ import java.util.stream.IntStream;
 final class ProcessInstanceElementActivatingV3Applier
     implements TypedEventApplier<ProcessInstanceIntent, ProcessInstanceRecord> {
 
+  private final MutableHubMetricsState hubMetricsState;
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
 
   public ProcessInstanceElementActivatingV3Applier(
+      final MutableHubMetricsState hubMetricsState,
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
+    this.hubMetricsState = hubMetricsState;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.eventScopeInstanceState = eventScopeInstanceState;
@@ -63,6 +67,9 @@ final class ProcessInstanceElementActivatingV3Applier
 
     if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
       insertBusinessIdIndex(value);
+      hubMetricsState.updateOnProcessInstanceCreated(value);
+    } else {
+      hubMetricsState.updateOnElementCreated(value);
     }
 
     if (flowScopeInstance == null) {

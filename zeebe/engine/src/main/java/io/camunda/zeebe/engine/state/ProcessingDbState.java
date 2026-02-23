@@ -32,6 +32,7 @@ import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.globallistener.DbGlobalListenersState;
 import io.camunda.zeebe.engine.state.globallistener.MutableGlobalListenersState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
+import io.camunda.zeebe.engine.state.hubmetrics.DbHubMetricsState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -66,6 +67,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
@@ -146,6 +148,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableConditionalSubscriptionState conditionalSubscriptionState;
   private final MutableGlobalListenersState globalListenersState;
   private final MutableJobMetricsState jobMetricsState;
+  private final MutableHubMetricsState hubMetricsState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -214,6 +217,7 @@ public class ProcessingDbState implements MutableProcessingState {
     } else {
       jobMetricsState = new NoopJobMetricsState();
     }
+    hubMetricsState = new DbHubMetricsState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -417,6 +421,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableJobMetricsState getJobMetricsState() {
     return jobMetricsState;
+  }
+
+  @Override
+  public MutableHubMetricsState getHubMetricsState() {
+    return hubMetricsState;
   }
 
   @Override
