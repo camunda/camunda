@@ -14,6 +14,7 @@ import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByE
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_NAME_SORT_AND_PAGE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_NAME_TOTAL_ESTIMATE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_SCRIPT_LANG;
+import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_TERMS_SIZE;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.AGGREGATION_TOTAL_ESTIMATE_SCRIPT;
 import static io.camunda.search.aggregation.IncidentProcessInstanceStatisticsByErrorAggregation.toBucketSortField;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -65,6 +66,7 @@ class IncidentProcessInstanceStatisticsByErrorAggregationTransformerTest {
               assertThat(byErrorAgg.name()).isEqualTo(AGGREGATION_NAME_BY_ERROR);
               assertThat(byErrorAgg.script()).isEqualTo(AGGREGATION_ERROR_MESSAGE_SCRIPT);
               assertThat(byErrorAgg.lang()).isEqualTo(AGGREGATION_SCRIPT_LANG);
+              assertThat(byErrorAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
 
               final var subAggs = byErrorAgg.aggregations();
               assertThat(subAggs).hasSize(3);
@@ -135,6 +137,7 @@ class IncidentProcessInstanceStatisticsByErrorAggregationTransformerTest {
 
     // then
     final var byErrorAgg = (SearchTermsAggregator) aggregations.getFirst();
+    assertThat(byErrorAgg.size()).isEqualTo(AGGREGATION_TERMS_SIZE);
     final List<SearchAggregator> subAggs = byErrorAgg.aggregations();
 
     final var bucketSortAgg = (SearchBucketSortAggregator) subAggs.get(2);
