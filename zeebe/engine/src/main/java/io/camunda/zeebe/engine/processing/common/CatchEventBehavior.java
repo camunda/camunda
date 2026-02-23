@@ -66,6 +66,7 @@ public final class CatchEventBehavior {
   private final StateWriter stateWriter;
   private final SideEffectWriter sideEffectWriter;
   private final TypedCommandWriter commandWriter;
+  private final int maxNameFieldLength;
 
   private final ProcessMessageSubscriptionState processMessageSubscriptionState;
   private final TimerInstanceState timerInstanceState;
@@ -93,7 +94,8 @@ public final class CatchEventBehavior {
       final DueDateTimerCheckScheduler timerChecker,
       final RoutingInfo routingInfo,
       final InstantSource clock,
-      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState) {
+      final TransientPendingSubscriptionState transientProcessMessageSubscriptionState,
+      final int maxNameFieldLength) {
     this.expressionProcessor = expressionProcessor;
     this.subscriptionCommandSender = subscriptionCommandSender;
     stateWriter = writers.state();
@@ -111,6 +113,7 @@ public final class CatchEventBehavior {
     this.timerChecker = timerChecker;
     this.clock = clock;
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+    this.maxNameFieldLength = maxNameFieldLength;
   }
 
   /**
@@ -274,6 +277,9 @@ public final class CatchEventBehavior {
     return evaluation
         .expressionProcessor()
         .evaluateStringExpression(messageNameExpression, scopeKey, tenantId)
+        .flatMap(
+            messageName ->
+                validateLength("message name", messageName).map(valid -> messageName))
         .map(BufferUtil::wrapString)
         .map(evaluation::recordMessageName);
   }
@@ -295,9 +301,22 @@ public final class CatchEventBehavior {
     return evaluation
         .expressionProcessor()
         .evaluateMessageCorrelationKeyExpression(expression, scopeKey, tenantId)
+        .flatMap(
+            correlationKey ->
+                validateLength("correlation key", correlationKey).map(valid -> correlationKey))
         .map(BufferUtil::wrapString)
         .map(evaluation::recordCorrelationKey)
         .mapLeft(f -> new Failure(f.getMessage(), f.getErrorType(), scopeKey));
+  }
+
+  private Either<Failure, Void> validateLength(final String fieldName, final String value) {
+    if (value.length() > maxNameFieldLength) {
+      return Either.left(
+          new Failure(
+              "Expected %s to be shorter than the configured max-name-length of %d characters, but was %d characters."
+                  .formatted(fieldName, maxNameFieldLength, value.length())));
+    }
+    return Either.right(null);
   }
 
   private Either<Failure, OngoingEvaluation> evaluateTimer(final OngoingEvaluation evaluation) {

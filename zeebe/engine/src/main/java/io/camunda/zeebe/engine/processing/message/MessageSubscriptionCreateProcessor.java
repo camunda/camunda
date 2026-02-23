@@ -42,6 +42,7 @@ public final class MessageSubscriptionCreateProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final SideEffectWriter sideEffectWriter;
   private final int currentPartitionId;
+  private final int maxNameFieldLength;
 
   public MessageSubscriptionCreateProcessor(
       final int partitionId,
@@ -50,7 +51,8 @@ public final class MessageSubscriptionCreateProcessor
       final SubscriptionCommandSender commandSender,
       final Writers writers,
       final KeyGenerator keyGenerator,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final int maxNameFieldLength) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
     stateWriter = writers.state();
@@ -61,11 +63,16 @@ public final class MessageSubscriptionCreateProcessor
         new MessageCorrelator(
             partitionId, messageState, commandSender, stateWriter, sideEffectWriter, clock);
     currentPartitionId = partitionId;
+    this.maxNameFieldLength = maxNameFieldLength;
   }
 
   @Override
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
+    if (isNameOrCorrelationKeyTooLong(subscriptionRecord)) {
+      rejectInvalidLength(record);
+      return;
+    }
 
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
@@ -82,6 +89,21 @@ public final class MessageSubscriptionCreateProcessor
     }
 
     handleNewSubscription(sideEffectWriter);
+  }
+
+  private boolean isNameOrCorrelationKeyTooLong(final MessageSubscriptionRecord record) {
+    return record.getMessageName().length() > maxNameFieldLength
+        || record.getCorrelationKey().length() > maxNameFieldLength;
+  }
+
+  private void rejectInvalidLength(final TypedRecord<MessageSubscriptionRecord> record) {
+    final var reason =
+        "Expected message subscription with message name and correlation key not longer than %d characters, but message name has %d characters and correlation key has %d characters."
+            .formatted(
+                maxNameFieldLength,
+                subscriptionRecord.getMessageName().length(),
+                subscriptionRecord.getCorrelationKey().length());
+    rejectionWriter.appendRejection(record, RejectionType.INVALID_ARGUMENT, reason);
   }
 
   private void handleNewSubscription(final SideEffectWriter sideEffectWriter) {

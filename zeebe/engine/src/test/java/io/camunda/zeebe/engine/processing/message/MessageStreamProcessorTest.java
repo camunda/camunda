@@ -146,6 +146,50 @@ public final class MessageStreamProcessorTest {
   }
 
   @Test
+  public void shouldRejectOpenMessageSubscriptionIfMessageNameIsTooLong() {
+    // given
+    final MessageSubscriptionRecord subscription =
+        messageSubscription()
+            .setMessageName(
+                wrapString("a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1)));
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
+
+    // then
+    final Record<MessageSubscriptionRecord> rejection =
+        awaitAndGet(
+            () -> rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst());
+    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CREATE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected message subscription with message name and correlation key not longer than");
+  }
+
+  @Test
+  public void shouldRejectOpenMessageSubscriptionIfCorrelationKeyIsTooLong() {
+    // given
+    final MessageSubscriptionRecord subscription =
+        messageSubscription()
+            .setCorrelationKey(
+                wrapString("a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1)));
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.CREATE, subscription);
+
+    // then
+    final Record<MessageSubscriptionRecord> rejection =
+        awaitAndGet(
+            () -> rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst());
+    assertThat(rejection.getIntent()).isEqualTo(MessageSubscriptionIntent.CREATE);
+    assertThat(rejection.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected message subscription with message name and correlation key not longer than");
+  }
+
+  @Test
   public void shouldRetryToCorrelateMessageSubscriptionAfterPublishedMessage() {
     // given
     final MessageSubscriptionRecord subscription = messageSubscription();
