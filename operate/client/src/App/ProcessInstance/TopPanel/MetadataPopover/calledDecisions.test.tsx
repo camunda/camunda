@@ -68,8 +68,8 @@ const mockProcessInstance = {
   tenantId: '<default>',
   processDefinitionName: 'Called Process',
   hasIncident: true,
-  parentProcessInstanceKey: '',
-  parentElementInstanceKey: '',
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
 } satisfies ProcessInstance;
