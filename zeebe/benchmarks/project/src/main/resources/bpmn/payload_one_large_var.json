@@ -1,0 +1,264 @@
+{
+  "var0": {
+    "var1": "value1",
+    "var2": true,
+    "var3": 15,
+    "var4": {
+      "var4-1": "value4-1",
+      "var4-2": false,
+      "var4-3": 111
+    },
+    "var5": [
+      "value5-1",
+      "value5-2",
+      "value5-3"
+    ],
+    "var6": "value6",
+    "var7": false,
+    "var8": 42,
+    "var9": {
+      "var9-1": "value9-1",
+      "var9-2": true,
+      "var9-3": 123
+    },
+    "var10": [
+      "value10-1",
+      "value10-2",
+      "value10-3"
+    ],
+    "var11": "value11",
+    "var12": true,
+    "var13": 99,
+    "var14": {
+      "var14-1": "value14-1",
+      "var14-2": false,
+      "var14-3": 456
+    },
+    "var15": [
+      "value15-1",
+      "value15-2",
+      "value15-3"
+    ],
+    "var16": "value16",
+    "var17": false,
+    "var18": 77,
+    "var19": {
+      "var19-1": "value19-1",
+      "var19-2": true,
+      "var19-3": 789
+    },
+    "var20": [
+      "value20-1",
+      "value20-2",
+      "value20-3"
+    ],
+    "var21": "value21",
+    "var22": false,
+    "var23": 3.14,
+    "var24": null,
+    "var25": [
+      1,
+      2,
+      3
+    ],
+    "var26": "value26",
+    "var27": true,
+    "var28": 56,
+    "var29": {
+      "var29-1": "value29-1",
+      "var29-2": false,
+      "var29-3": 321
+    },
+    "var30": [
+      "value30-1",
+      "value30-2",
+      "value30-3"
+    ],
+    "var31": 2.718,
+    "var32": null,
+    "var33": [
+      4,
+      5,
+      6
+    ],
+    "var34": "value34",
+    "var35": false,
+    "var36": 88,
+    "var37": {
+      "var37-1": {
+        "var37-1-1": "nested-value",
+        "var37-1-2": 10
+      },
+      "var37-2": true
+    },
+    "var38": [
+      "value38-1",
+      38,
+      true
+    ],
+    "var39": "value39",
+    "var40": true,
+    "var41": null,
+    "var42": 1.5,
+    "var43": [
+      7,
+      8,
+      9
+    ],
+    "var44": {
+      "var44-1": "value44-1",
+      "var44-2": true,
+      "var44-3": 654
+    },
+    "var45": [
+      "value45-1",
+      "value45-2",
+      "value45-3"
+    ],
+    "var46": "value46",
+    "var47": false,
+    "var48": 33,
+    "var49": [
+      "value49-1",
+      49,
+      false
+    ],
+    "var50": null,
+    "var51": 9.99,
+    "var52": [
+      10,
+      20,
+      30
+    ],
+    "var53": "value53",
+    "var54": true,
+    "var55": {
+      "var55-1": "value55-1",
+      "var55-2": false,
+      "var55-3": 555
+    },
+    "var56": [
+      "value56-1",
+      "value56-2",
+      "value56-3"
+    ],
+    "var57": 100,
+    "var58": null,
+    "var59": 0.5,
+    "var60": [
+      40,
+      50,
+      60
+    ],
+    "var61": "value61",
+    "var62": false,
+    "var63": {
+      "var63-1": {
+        "var63-1-1": "deep-value",
+        "var63-1-2": false
+      },
+      "var63-2": 963
+    },
+    "var64": [
+      "value64-1",
+      64,
+      null
+    ],
+    "var65": true,
+    "var66": 22,
+    "var67": 7.77,
+    "var68": null,
+    "var69": [
+      70,
+      80,
+      90
+    ],
+    "var70": {
+      "var70-1": "value70-1",
+      "var70-2": true,
+      "var70-3": 700
+    },
+    "var71": [
+      "value71-1",
+      "value71-2",
+      "value71-3"
+    ],
+    "var72": "value72",
+    "var73": false,
+    "var74": 11,
+    "var75": null,
+    "var76": 0.25,
+    "var77": [
+      100,
+      200,
+      300
+    ],
+    "var78": {
+      "var78-1": "value78-1",
+      "var78-2": false,
+      "var78-3": 878
+    },
+    "var79": [
+      "value79-1",
+      79,
+      true
+    ],
+    "var80": "value80",
+    "var81": true,
+    "var82": 66,
+    "var83": 1.23,
+    "var84": null,
+    "var85": [
+      400,
+      500,
+      600
+    ],
+    "var86": [
+      "value86-1",
+      "value86-2",
+      "value86-3"
+    ],
+    "var87": {
+      "var87-1": {
+        "var87-1-1": "nested87",
+        "var87-1-2": 87
+      },
+      "var87-2": false
+    },
+    "var88": "value88",
+    "var89": false,
+    "var90": 55,
+    "var91": null,
+    "var92": 4.56,
+    "var93": [
+      700,
+      800,
+      900
+    ],
+    "var94": {
+      "var94-1": "value94-1",
+      "var94-2": true,
+      "var94-3": 941
+    },
+    "var95": [
+      "value95-1",
+      95,
+      false
+    ],
+    "var96": "value96",
+    "var97": true,
+    "var98": 44,
+    "var99": [
+      "value99-1",
+      "value99-2",
+      "value99-3"
+    ],
+    "var100": {
+      "var100-1": {
+        "var100-1-1": "deep100",
+        "var100-1-2": 100
+      },
+      "var100-2": null
+    }
+  }
+}
