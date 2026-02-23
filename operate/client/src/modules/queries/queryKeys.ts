@@ -8,9 +8,12 @@
 
 import type {
   ElementInstance,
+  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
   GetProcessDefinitionInstanceStatisticsRequestBody,
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   ProcessInstance,
+  QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
