@@ -502,6 +502,7 @@ jobs:
     with:
       database-type: "elasticsearch"
       database-image-version: "8.18.4"
+      database-name: "Elasticsearch 8"
       it-database-type: "es"
 
   elasticsearch9-integration-tests:
@@ -513,6 +514,7 @@ jobs:
     with:
       database-type: "elasticsearch"
       database-image-version: "9.2.4"
+      database-name: "Elasticsearch 9"
       it-database-type: "es"
       job-name-suffix: "9"
 
@@ -525,6 +527,7 @@ jobs:
     with:
       database-type: "opensearch"
       database-image-version: "2.17.0"
+      database-name: "OpenSearch 2"
       it-database-type: "os"
 
   rdbms-h2-integration-tests:
@@ -536,6 +539,7 @@ jobs:
     with:
       database-type: "h2"
       it-database-type: "rdbms_h2"
+      database-name: "H2"
 
   elasticsearch-history-tests:
     name: "History Integration Tests / Elasticsearch"
@@ -546,6 +550,7 @@ jobs:
     with:
       database-type: "elasticsearch"
       database-image-version: "8.18.4"
+      database-name: "Elasticsearch 8"
       it-database-type: "es"
       maven-profiles: "history"
       test-type-label: "History"
@@ -560,6 +565,7 @@ jobs:
     with:
       database-type: "opensearch"
       database-image-version: "2.17.0"
+      database-name: "OpenSearch 2"
       it-database-type: "os"
       maven-profiles: "history"
       test-type-label: "History"
@@ -574,6 +580,7 @@ jobs:
     with:
       database-type: "h2"
       it-database-type: "rdbms_h2"
+      database-name: "H2"
       maven-profiles: "history"
       test-type-label: "History"
       job-name-suffix: "-history"
