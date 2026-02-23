@@ -223,7 +223,7 @@ outputs:
         steps.filter-docs.outputs.docs-change == 'true'
       }}
   docker-build-helm-integration:
-    description: Output whether AlwaysGreen Docker Build + Helm integration should run (based on old docker-build-helm-integration.yml paths)
+    description: Output whether AlwaysGreen Docker Build + Helm integration should run
     value: >-
       ${{
         github.event_name == 'push' ||
@@ -407,7 +407,6 @@ runs:
       filters: |
         docker-build-helm-integration:
           - ".github/workflows/docker-build-helm-integration.yml"
-          # If you added AlwaysGreen jobs into ci.yml, changes to ci.yml should also trigger it:
           - ".github/workflows/ci.yml"
           - "camunda.Dockerfile"
           - "dist/**"

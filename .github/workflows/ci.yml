@@ -1712,9 +1712,6 @@ jobs:
         id: set-image-tag
         run: |
           MAVEN_VERSION="${{ steps.maven-version.outputs.version }}"
-
-          # Allow manual override by setting a repository variable in the workflow_dispatch wrapper if you want.
-          # For PR runs in ci.yml, keep the deterministic "<maven>-pr<number>" tag.
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             echo "tag=${MAVEN_VERSION}-pr${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
           else
@@ -1811,7 +1808,7 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
   alwaysgreen-helm-deploy:
     name: "AlwaysGreen / Helm chart Integration Tests"
-    needs: [alwaysgreen-build-and-push, alwaysgreen-format-identifier]
+    needs: [detect-changes, alwaysgreen-build-and-push, alwaysgreen-format-identifier]
     if: >
       needs.alwaysgreen-build-and-push.result != 'skipped' &&
       needs.alwaysgreen-format-identifier.result != 'skipped'
@@ -1844,10 +1841,10 @@ jobs:
         secret/data/products/zeebe/ci/zeebe REGISTRY_HUB_DOCKER_COM_PSW | TEST_DOCKER_PASSWORD;
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
-  trigger-saas-e2e:
+  alwaysgreen-trigger-saas-e2e:
     name: Trigger SaaS E2E tests
     runs-on: ubuntu-latest
-    needs: [alwaysgreen-build-and-push]
+    needs: [detect-changes, alwaysgreen-build-and-push]
     timeout-minutes: 30
     permissions: { }
     steps:
@@ -2024,6 +2021,8 @@ jobs:
       pull-requests: write
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - alwaysgreen-helm-deploy
+      - alwaysgreen-trigger-saas-e2e
       - archunit-tests
       - build-platform-frontend
       - client-components
