@@ -360,7 +360,7 @@ describe('MetadataPopover', () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText(/This element instance triggered 10 times/),
+        screen.getByText(/This element instance triggered 2 times/),
       ).toBeInTheDocument();
     });
     expect(
@@ -369,7 +369,7 @@ describe('MetadataPopover', () => {
       ),
     ).toBeInTheDocument();
 
-    expect(screen.getByText(/3 incidents occurred/)).toBeInTheDocument();
+    expect(await screen.findByText(/3 incidents occurred/)).toBeInTheDocument();
     expect(
       screen.getByRole('button', {name: labels.showIncidents}),
     ).toBeInTheDocument();
@@ -582,6 +582,47 @@ describe('MetadataPopover', () => {
       elementId: FLOW_NODE_ID,
       elementInstanceKey: '2251799813699889',
     });
+
+    expect(
+      screen.queryByRole('heading', {name: labels.details}),
+    ).not.toBeInTheDocument();
+  });
+
+  it('should show triggered multiple times message for multi-instance elements with multiple instances', async () => {
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        mockElementInstance,
+        mockElementInstance,
+        mockElementInstance,
+      ]),
+    );
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: FLOW_NODE_ID,
+          active: 3,
+          completed: 0,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    });
+
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      isMultiInstanceBody: 'true',
+    });
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/This element instance triggered 3 times/),
+      ).toBeInTheDocument();
+    });
+    expect(
+      screen.getByText(
+        /To view details for any of these, select one Instance in the Instance History./,
+      ),
+    ).toBeInTheDocument();
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),
