@@ -31,20 +31,25 @@ import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
+import jakarta.json.spi.JsonProvider;
+import jakarta.json.stream.JsonParser;
 import java.io.IOException;
-import java.io.OutputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.http.entity.ContentProducer;
+import org.opensearch.client.json.JsonData;
+import org.opensearch.client.json.jsonb.JsonbJsonpMapper;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 
 /**
  * Buffers indexing requests of records. Each bulk operation is serialized before being buffered to
  * avoid having to serialize it again on retry.
  */
-final class BulkIndexRequest implements ContentProducer {
+final class BulkIndexRequest {
 
-  private static final ObjectMapper MAPPER =
+  public static final ObjectMapper MAPPER =
       new ObjectMapper()
           .addMixIn(Record.class, RecordSequenceMixin.class)
           .addMixIn(EvaluatedDecisionValue.class, EvaluatedDecisionMixin.class)
@@ -90,7 +95,6 @@ final class BulkIndexRequest implements ContentProducer {
       "processDefinitionKey";
   private static final String PROCESS_INSTANCE_MODIFICATION_MOVE_INSTRUCTIONS_PROPERTY =
       "moveInstructions";
-  private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
 
   private final List<BulkOperation> operations = new ArrayList<>();
@@ -99,8 +103,10 @@ final class BulkIndexRequest implements ContentProducer {
   private int memoryUsageBytes = 0;
 
   /**
-   * Indexes the given record for the given bulk action. See
-   * https://opensearch.org/docs/2.6/api-reference/document-apis/bulk/ for the types of actions.
+   * Queues the given record for indexing as a bulk operation. The records are serialized before
+   * being added to the buffer to avoid having to serialize them again on retry. These will be
+   * flushed to OpenSearch when flush conditions are met, e.g. when the buffer reaches a certain
+   * size or after a certain time has passed.
    *
    * <p>The call is a no-op if the last indexed action is the same as the given one.
    *
@@ -120,16 +126,14 @@ final class BulkIndexRequest implements ContentProducer {
     final byte[] source;
     try {
       source = serializeRecord(record, recordSequence);
-
     } catch (final IOException e) {
       throw new OpensearchExporterException(
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
     }
 
-    final BulkOperation command = new BulkOperation(action, source);
-    memoryUsageBytes += command.source().length;
+    memoryUsageBytes += source.length;
     lastIndexedMetadata = action;
-    operations.add(command);
+    operations.add(createBulkOperation(action, source));
     return true;
   }
 
@@ -145,6 +149,23 @@ final class BulkIndexRequest implements ContentProducer {
         // Read https://github.com/camunda/camunda/issues/10568 for details.
         .withAttribute(RECORD_SEQUENCE_PROPERTY, recordSequence.sequence())
         .writeValueAsBytes(record);
+  }
+
+  private BulkOperation createBulkOperation(final BulkIndexAction action, final byte[] source) {
+    // Use the already serialized JSON bytes to create JsonData, just parsing JSON string and
+    // then create JsonData from it.
+    final String jsonString = new String(source, StandardCharsets.UTF_8);
+    final JsonParser parser = JsonProvider.provider().createParser(new StringReader(jsonString));
+    final JsonData document = JsonData.from(parser, new JsonbJsonpMapper());
+
+    return new BulkOperation.Builder()
+        .index(
+            i ->
+                i.index(action.index())
+                    .routing(action.routing())
+                    .id(action.id())
+                    .document(document))
+        .build();
   }
 
   /** Returns the number of operations indexed so far. */
@@ -179,20 +200,6 @@ final class BulkIndexRequest implements ContentProducer {
     return Collections.unmodifiableList(operations);
   }
 
-  /**
-   * Writes the JSON serialized entries, separated by a line ending for each, effectively writing
-   * nd-json.
-   */
-  @Override
-  public void writeTo(final OutputStream outStream) throws IOException {
-    for (final var operation : operations) {
-      MAPPER.writeValue(outStream, operation.metadata());
-      outStream.write('\n');
-      outStream.write(operation.source());
-      outStream.write('\n');
-    }
-  }
-
   private static boolean isPreviousVersionRecord(final String brokerVersion) {
     final SemanticVersion semanticVersion =
         SemanticVersion.parse(brokerVersion)
@@ -208,8 +215,6 @@ final class BulkIndexRequest implements ContentProducer {
                 () -> new IllegalStateException("Expected to have a valid semantic version"));
     return semanticVersion.minor() < currentMinorVersion;
   }
-
-  record BulkOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})
