@@ -699,8 +699,8 @@ components:
         Instructions for creating a process instance. The process definition can be specified
         either by id or by key.
       oneOf:
-        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
 
     ProcessInstanceCreationInstructionById:
       type: object
