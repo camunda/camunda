@@ -10,14 +10,18 @@ package io.camunda.zeebe.engine.processing.processinstance;
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.MessageSubscriptionIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessMessageSubscriptionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.ByteValue;
@@ -236,6 +240,155 @@ public class CreateProcessInstanceRejectionTest {
                 .getFirst())
         .hasIntent(ProcessInstanceCreationIntent.CREATE)
         .hasRejectionType(RejectionType.EXCEEDED_BATCH_RECORD_SIZE);
+  }
+
+  @Test
+  public void shouldRejectCommandIfMessageNameEvaluatesToTooLongValueWhenSubscribingToEvents() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(createProcessWithMessageBoundaryEvent("=messageName", "=correlationKey"))
+        .deploy();
+    final var tooLongValue = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withStartInstruction("task")
+        .withVariable("messageName", tooLongValue)
+        .withVariable("correlationKey", "key")
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("task")
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(rejection)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected message name to be shorter than the configured max-name-length of "
+                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
+                + " characters");
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATING)
+                .exists())
+        .isFalse();
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATE).exists())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldRejectCommandIfCorrelationKeyEvaluatesToTooLongValueWhenSubscribingToEvents() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(createProcessWithMessageBoundaryEvent("=messageName", "=correlationKey"))
+        .deploy();
+    final var tooLongValue = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    engine
+        .processInstance()
+        .ofBpmnProcessId(PROCESS_ID)
+        .withStartInstruction("task")
+        .withVariable("messageName", "message")
+        .withVariable("correlationKey", tooLongValue)
+        .expectRejection()
+        .create();
+
+    // then
+    final var rejection =
+        RecordingExporter.processInstanceCreationRecords()
+            .withBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("task")
+            .onlyCommandRejections()
+            .getFirst();
+
+    assertThat(rejection)
+        .hasIntent(ProcessInstanceCreationIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    Assertions.assertThat(rejection.getRejectionReason())
+        .contains(
+            "Expected correlation key to be shorter than the configured max-name-length of "
+                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
+                + " characters");
+
+    Assertions.assertThat(
+            RecordingExporter.processMessageSubscriptionRecords(
+                    ProcessMessageSubscriptionIntent.CREATING)
+                .exists())
+        .isFalse();
+    Assertions.assertThat(
+            RecordingExporter.messageSubscriptionRecords(MessageSubscriptionIntent.CREATE).exists())
+        .isFalse();
+  }
+
+  @Test
+  public void shouldSubscribeIfMessageNameAndCorrelationKeyEvaluateToMaxLength() {
+    // given
+    engine
+        .deployment()
+        .withXmlResource(createProcessWithMessageBoundaryEvent("=messageName", "=correlationKey"))
+        .deploy();
+    final var maxLengthValue = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+
+    // when
+    final var processInstanceKey =
+        engine
+            .processInstance()
+            .ofBpmnProcessId(PROCESS_ID)
+            .withStartInstruction("task")
+            .withVariable("messageName", maxLengthValue)
+            .withVariable("correlationKey", maxLengthValue)
+            .create();
+
+    // then
+    final var creatingRecord =
+        RecordingExporter.processMessageSubscriptionRecords(ProcessMessageSubscriptionIntent.CREATING)
+            .withProcessInstanceKey(processInstanceKey)
+            .getFirst();
+
+    Assertions.assertThat(creatingRecord.getValue().getMessageName())
+        .hasSize(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+    Assertions.assertThat(creatingRecord.getValue().getCorrelationKey())
+        .hasSize(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+  }
+
+  private static BpmnModelInstance createProcessWithMessageBoundaryEvent(
+      final String messageNameExpression, final String correlationKeyExpression) {
+    return Bpmn.createExecutableProcess(PROCESS_ID)
+        .startEvent()
+        .subProcess(
+            "subprocess",
+            subprocess -> {
+              subprocess
+                  .embeddedSubProcess()
+                  .startEvent()
+                  .serviceTask("task", t -> t.zeebeJobType("task"))
+                  .endEvent();
+
+              subprocess
+                  .boundaryEvent("message-boundary-event")
+                  .cancelActivity(false)
+                  .message(
+                      m ->
+                          m.name(messageNameExpression)
+                              .zeebeCorrelationKeyExpression(correlationKeyExpression))
+                  .endEvent();
+            })
+        .endEvent()
+        .done();
   }
 
   @Test

@@ -99,7 +99,8 @@ public final class MessageEventProcessors {
                 subscriptionCommandSender,
                 writers,
                 keyGenerator,
-                clock))
+                clock,
+                config.getMaxNameFieldLength()))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
