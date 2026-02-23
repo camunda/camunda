@@ -7,7 +7,7 @@
  */
 
 import React, {useMemo} from 'react';
-import {PartiallyExpandableDataTable} from '../v2/PartiallyExpandableDataTable';
+import {PartiallyExpandableDataTable} from '../PartiallyExpandableDataTable';
 import {Locations} from 'modules/Routes';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {tracking} from 'modules/tracking';
