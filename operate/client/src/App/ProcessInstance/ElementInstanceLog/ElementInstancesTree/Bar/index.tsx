@@ -52,7 +52,7 @@ const Bar = forwardRef<HTMLDivElement, Props>(
             <StateIcon state={elementInstanceState} size={16} />
           )}
           <NodeName>{elementName}</NodeName>
-          {isRoot && latestMigrationDate !== undefined && (
+          {isRoot && latestMigrationDate !== null && (
             <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
           )}
           {isTimestampLabelVisible && endDate !== null && (
