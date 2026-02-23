@@ -7,6 +7,7 @@ functions:
   - verifyKeyTypesSchemas
   - verifyEventuallyConsistent
   - verifyRequiredPropertiesExist
+  - verifyArrayPropertiesRequired
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -111,6 +112,14 @@ rules:
     given: "$.components.schemas[*]"
     then:
       function: verifyRequiredPropertiesExist
+
+  array-properties-must-be-required:
+    description: "Response array properties must be `required` and not `nullable`."
+    severity: error
+    given: "$.paths[*]"
+    message: "{{error}}"
+    then:
+      function: verifyArrayPropertiesRequired
 
   no-eventually-consistent-on-commands:
     description: "Command (mutating) operations must not have x-eventually-consistent: true."
