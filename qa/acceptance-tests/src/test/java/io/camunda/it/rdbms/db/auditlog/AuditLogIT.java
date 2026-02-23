@@ -48,6 +48,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 public class AuditLogIT {
 
   public static final int PARTITION_ID = 0;
+  private static final int LIMIT = 10000;
 
   @TestTemplate
   public void shouldGetAuditLogById(final CamundaRdbmsTestApplication testApplication) {
@@ -678,7 +679,7 @@ public class AuditLogIT {
 
     // when
     auditLogWriter.deleteProcessDefinitionRelatedData(
-        List.of(processDefinitionKey1, processDefinitionKey2), 1000);
+        List.of(processDefinitionKey1, processDefinitionKey2), LIMIT);
 
     // then
     searchResult =
@@ -690,7 +691,7 @@ public class AuditLogIT {
                                 f.processDefinitionKeys(
                                     processDefinitionKey1, processDefinitionKey2))
                         .sort(s -> s)
-                        .page(p -> p.from(0).size(1000))));
+                        .page(p -> p.from(0).size(LIMIT))));
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items()).isEmpty();
   }
@@ -713,7 +714,7 @@ public class AuditLogIT {
         AuditLogQuery.of(
             b ->
                 b.filter(f -> f.processInstanceKeys(processInstanceKey1, processInstanceKey2))
-                    .page(p -> p.from(0).size(1000)));
+                    .page(p -> p.from(0).size(LIMIT)));
     var searchResult = auditLogReader.search(auditLogQuery);
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items())
@@ -723,7 +724,7 @@ public class AuditLogIT {
 
     // when
     final int deleted =
-        auditLogWriter.deleteProcessInstanceRelatedData(List.of(processInstanceKey1), 1000);
+        auditLogWriter.deleteProcessInstanceRelatedData(List.of(processInstanceKey1), LIMIT);
 
     // then
     assertThat(deleted).isEqualTo(20);
@@ -772,7 +773,7 @@ public class AuditLogIT {
                         f ->
                             f.processInstanceKeys(
                                 processInstanceKey1, processInstanceKey2, processInstanceKey3))
-                    .page(p -> p.from(0).size(1000)));
+                    .page(p -> p.from(0).size(LIMIT)));
     var searchResult = auditLogReader.search(auditLogQuery);
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items())
@@ -786,7 +787,8 @@ public class AuditLogIT {
 
     // when
     final int deleted =
-        auditLogWriter.deleteRootProcessInstanceRelatedData(List.of(rootProcessInstanceKey2), 1000);
+        auditLogWriter.deleteRootProcessInstanceRelatedData(
+            List.of(rootProcessInstanceKey2), LIMIT);
 
     // then
     assertThat(deleted).isEqualTo(40);
@@ -833,7 +835,8 @@ public class AuditLogIT {
     // when
     auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
         List.of(processInstanceKey1, processInstanceKey2),
-        HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+        HistoryDeletionTypeDbModel.PROCESS_INSTANCE,
+        LIMIT);
 
     // then
     searchResult = auditLogReader.search(auditLogQuery);
@@ -872,7 +875,8 @@ public class AuditLogIT {
     // when
     auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
         List.of(processDefinitionKey1, processDefinitionKey2),
-        HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
+        HistoryDeletionTypeDbModel.PROCESS_DEFINITION,
+        LIMIT);
 
     // then
     searchResult = auditLogReader.search(auditLogQuery);
@@ -911,7 +915,8 @@ public class AuditLogIT {
     // when
     auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
         List.of(decisionInstanceKey1, decisionInstanceKey2),
-        HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+        HistoryDeletionTypeDbModel.DECISION_INSTANCE,
+        LIMIT);
 
     // then
     searchResult = auditLogReader.search(auditLogQuery);
@@ -920,7 +925,7 @@ public class AuditLogIT {
   }
 
   @TestTemplate
-  public void shouldSetCleanupDateForDecisionDefinitions(
+  public void shouldSetCleanupDateForDecisionRequirements(
       final CamundaRdbmsTestApplication testApplication) {
     // given
     final var decisionReqKey1 = nextKey();
@@ -950,7 +955,8 @@ public class AuditLogIT {
     // when
     auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
         List.of(decisionReqKey1, decisionReqKey2),
-        HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
+        HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS,
+        LIMIT);
 
     // then
     searchResult = auditLogReader.search(auditLogQuery);
@@ -1003,7 +1009,7 @@ public class AuditLogIT {
 
     // when
     auditLogWriter.scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-        List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+        List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE, LIMIT);
 
     // then
     searchResult = auditLogReader.search(auditLogQuery);
