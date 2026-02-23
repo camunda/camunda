@@ -37,7 +37,8 @@ const Decision: React.FC = observer(() => {
       : undefined;
   const selectedDefinitionName =
     definitionSelection.kind !== 'no-match'
-      ? definitionSelection.definition.name
+      ? (definitionSelection.definition.name ??
+        definitionSelection.definition.decisionDefinitionId)
       : 'Decision';
 
   useEffect(() => {
@@ -80,7 +81,7 @@ const Decision: React.FC = observer(() => {
 
   return (
     <Section>
-      <PanelHeader title={selectedDefinitionName ?? undefined}>
+      <PanelHeader title={selectedDefinitionName}>
         {definitionSelection.kind !== 'no-match' && (
           <CopiableContent
             copyButtonDescription="Decision ID / Click to copy"
@@ -92,7 +93,10 @@ const Decision: React.FC = observer(() => {
             decisionRequirementsKey={
               definitionSelection.definition.decisionRequirementsKey
             }
-            decisionName={definitionSelection.definition.name ?? ''}
+            decisionName={
+              definitionSelection.definition.name ??
+              definitionSelection.definition.decisionDefinitionId
+            }
             decisionVersion={definitionSelection.definition.version}
           />
         )}
