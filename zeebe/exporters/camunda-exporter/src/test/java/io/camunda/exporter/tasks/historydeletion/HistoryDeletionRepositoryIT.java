@@ -17,12 +17,14 @@ import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.schema.config.IndexConfiguration;
 import io.camunda.search.test.utils.SearchDBExtension;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 import org.assertj.core.api.InstanceOfAssertFactories;
@@ -39,6 +41,7 @@ abstract class HistoryDeletionRepositoryIT {
   @RegisterExtension protected static SearchDBExtension searchDB = create();
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(5);
   protected final HistoryDeletionIndex historyDeletionIndex;
+  protected final AuditLogCleanupIndex auditLogCleanupIndex;
   @AutoClose protected final ClientAdapter clientAdapter;
   protected final SearchEngineClient engineClient;
   protected final ExporterConfiguration config;
@@ -57,11 +60,13 @@ abstract class HistoryDeletionRepositoryIT {
     engineClient = clientAdapter.getSearchEngineClient();
 
     historyDeletionIndex = new HistoryDeletionIndex(indexPrefix, isElastic);
+    auditLogCleanupIndex = new AuditLogCleanupIndex(indexPrefix, isElastic);
   }
 
   @BeforeEach
   void beforeEach() {
     engineClient.createIndex(historyDeletionIndex, new IndexConfiguration());
+    engineClient.createIndex(auditLogCleanupIndex, new IndexConfiguration());
     repository = createRepository(indexPrefix, PARTITION_ID);
   }
 
@@ -69,6 +74,8 @@ abstract class HistoryDeletionRepositoryIT {
   void afterEach() {
     engineClient.deleteIndex(historyDeletionIndex.getFullQualifiedName());
     engineClient.createIndex(historyDeletionIndex, new IndexConfiguration());
+    engineClient.deleteIndex(auditLogCleanupIndex.getFullQualifiedName());
+    engineClient.createIndex(auditLogCleanupIndex, new IndexConfiguration());
   }
 
   protected abstract HistoryDeletionRepository createRepository(
@@ -90,6 +97,8 @@ abstract class HistoryDeletionRepositoryIT {
   }
 
   protected abstract void index(final HistoryDeletionEntity entity) throws IOException;
+
+  protected abstract long countAuditLogCleanupEntries() throws IOException;
 
   @Test
   void shouldGetEmptyListWhenNoEntitiesToDelete() {
@@ -181,5 +190,27 @@ abstract class HistoryDeletionRepositoryIT {
                     .extracting(HistoryDeletionBatch::historyDeletionEntities)
                     .asInstanceOf(InstanceOfAssertFactories.list(HistoryDeletionEntity.class))
                     .isEmpty());
+  }
+
+  @Test
+  void shouldCreateAuditLogCleanupEntries() throws IOException {
+    // given
+    final var entity1 = createHistoryDeletionEntity();
+    final var entity2 = createHistoryDeletionEntity();
+    final var deletedResourceIds = Set.of(entity1.getId(), entity2.getId());
+
+    // when
+    repository
+        .createAuditLogCleanupEntries(List.of(entity1, entity2), deletedResourceIds)
+        .toCompletableFuture()
+        .join();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              final long auditLogCount = countAuditLogCleanupEntries();
+              assertThat(auditLogCount).isEqualTo(2);
+            });
   }
 }
