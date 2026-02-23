@@ -572,6 +572,21 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
+  @Test
+  void shouldFindJobWorkerByName() {
+    final CamundaClientProperties properties = properties();
+    final CamundaClientJobWorkerProperties overrides = new CamundaClientJobWorkerProperties();
+    overrides.setStreamEnabled(true);
+    properties.getWorker().getOverride().put("NAME", overrides);
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setName(new FromAnnotation<>("NAME"));
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isNull();
+    final PropertyBasedJobWorkerValueCustomizer customizer =
+        new PropertyBasedJobWorkerValueCustomizer(properties);
+    customizer.customize(jobWorkerValue);
+    assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
+  }
+
   private record Input<T>(
       String displayName,
       BiConsumer<CamundaClientJobWorkerProperties, T> setter,
