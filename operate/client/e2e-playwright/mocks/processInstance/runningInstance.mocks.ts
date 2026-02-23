@@ -36,6 +36,12 @@ const runningInstance: InstanceMock = {
     processDefinitionId: 'signalEventProcess',
     tenantId: '',
     hasIncident: false,
+    processDefinitionVersionTag: null,
+    endDate: null,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   callHierarchy: [],
   xml: `<?xml version="1.0" encoding="UTF-8"?>
@@ -95,6 +101,8 @@ const runningInstance: InstanceMock = {
         startDate: '2023-08-14T05:45:17.331+0000',
         endDate: '2023-08-14T05:45:17.331+0000',
         tenantId: '',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799813687150',
@@ -107,10 +115,18 @@ const runningInstance: InstanceMock = {
         state: 'ACTIVE',
         hasIncident: false,
         startDate: '2023-08-14T05:45:17.331+0000',
+        endDate: null,
         tenantId: '',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   variables: [
     {
@@ -121,6 +137,7 @@ const runningInstance: InstanceMock = {
       tenantId: '',
       processInstanceKey: '2251799813687144',
       scopeKey: '2251799813687144',
+      rootProcessInstanceKey: null,
     },
   ],
   sequenceFlows: [

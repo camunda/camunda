@@ -94,7 +94,12 @@ function mockResponses({
         );
         filteredInstancesResponse = {
           items: filteredItems,
-          page: {totalItems: filteredItems.length},
+          page: {
+            totalItems: filteredItems.length,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         };
       }
       return route.fulfill({
