@@ -455,32 +455,39 @@ export function CREATE_TXT_DOC_RESPONSE_BODY(name: string, size: number) {
 }
 
 export function CREATE_TXT_DOC_RESPONSE_WITH_METADATA(
-  name: string,
-  size: number,
+  fileName: string,
+  processDefinitionId: string,
+  contentSize: number,
 ) {
   return {
     'camunda.document.type': 'camunda',
     storeId: 'in-memory',
     metadata: {
       contentType: 'text/plain',
-      fileName: `${name}.txt`,
+      fileName: `${fileName}.txt`,
       expiresAt: null,
-      size: size,
-      processDefinitionId: name,
+      size: contentSize,
+      processDefinitionId: processDefinitionId,
       processInstanceKey: '123456',
       customProperties: {foo: 'bar'},
     },
   };
 }
 
+export function documentFileContent(name: string): string {
+  return `Hello World ${name}!`;
+}
+
 export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
-  name: string,
+  fileName: string,
+  processDefinitionId: string,
 ) {
+  const fileContent = documentFileContent(fileName);
   const form = new FormData();
   form.append(
     'file',
-    new File([`Hello World ${name}!`], `${name}.txt`, {
-      type: 'text/ plain',
+    new File([fileContent], `${fileName}.txt`, {
+      type: 'text/plain',
     }),
   );
   form.append(
@@ -489,8 +496,8 @@ export function CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
       [
         JSON.stringify({
           contentType: 'text/plain',
-          fileName: `${name}.txt`,
-          processDefinitionId: name,
+          fileName: `${fileName}.txt`,
+          processDefinitionId: processDefinitionId,
           processInstanceKey: '123456',
           customProperties: {foo: 'bar'},
         }),
@@ -574,7 +581,7 @@ export function CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
   for (let i = 1; i <= numberOfDocs; i++) {
     form.append(
       'files',
-      new File([`Hello World ${name + i}!`], `${name}${i}.txt`, {
+      new File([documentFileContent(`${name}${i}`)], `${name}${i}.txt`, {
         type: 'text/plain',
       }),
     );

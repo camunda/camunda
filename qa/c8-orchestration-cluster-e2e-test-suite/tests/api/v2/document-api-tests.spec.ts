@@ -27,12 +27,14 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
+  documentFileContent,
   documentRequiredFields,
   multipleDocumentsRequiredFields,
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
   generateUniqueId,
+  generateUniqueProcessDefinitionId,
 } from '../../../utils/constants';
 import {Serializable} from 'playwright-core/types/structs';
 
@@ -47,8 +49,12 @@ test.describe.parallel('Document API Tests', () => {
 
   test.beforeAll(async ({request}) => {
     async function createDocumentAndStoreIds(nth: number) {
-      const name = generateUniqueId();
-      const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(name);
+      const fileName = generateUniqueId();
+      const processDefinitionId = generateUniqueProcessDefinitionId();
+      const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
+        fileName,
+        processDefinitionId,
+      );
       const res = await request.post(buildUrl('/documents'), {
         headers: defaultHeaders(),
         multipart: payload,
@@ -60,7 +66,7 @@ test.describe.parallel('Document API Tests', () => {
       state[`documentId${nth}`] = json.documentId;
       state[`contentHash${nth}`] = json.contentHash;
       state[`storeId${nth}`] = json.storeId;
-      state[`name${nth}`] = name;
+      state[`fileName${nth}`] = fileName;
     }
 
     await createDocumentAndStoreIds(1);
@@ -149,9 +155,18 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Document With Metadata', async ({request}) => {
-    const name = generateUniqueId();
-    const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(name);
-    const expectedPostBody = CREATE_TXT_DOC_RESPONSE_WITH_METADATA(name, 21);
+    const fileName = generateUniqueId();
+    const processDefinitionId = generateUniqueProcessDefinitionId();
+    const fileContent = documentFileContent(fileName);
+    const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
+      fileName,
+      processDefinitionId,
+    );
+    const expectedPostBody = CREATE_TXT_DOC_RESPONSE_WITH_METADATA(
+      fileName,
+      processDefinitionId,
+      fileContent.length,
+    );
 
     const res = await request.post(buildUrl('/documents'), {
       headers: defaultHeaders(),
@@ -178,7 +193,7 @@ test.describe.parallel('Document API Tests', () => {
       );
       expect(res.status()).toBe(200);
       const text = await res.text();
-      expect(text).toBe(`Hello World ${state['name1']}!`);
+      expect(text).toBe(documentFileContent(state['fileName1'] as string));
     }).toPass(defaultAssertionOptions);
   });
 
@@ -269,10 +284,21 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Multiple Documents', async ({request}) => {
-    const name = generateUniqueId();
-    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
-    const expectedFile1 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}1`, 22);
-    const expectedFile2 = CREATE_TXT_DOC_RESPONSE_BODY(`${name}2`, 22);
+    const fileBaseName = generateUniqueId();
+    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
+      fileBaseName,
+      2,
+    );
+    const file1Content = documentFileContent(`${fileBaseName}1`);
+    const file2Content = documentFileContent(`${fileBaseName}2`);
+    const expectedFile1 = CREATE_TXT_DOC_RESPONSE_BODY(
+      `${fileBaseName}1`,
+      file1Content.length,
+    );
+    const expectedFile2 = CREATE_TXT_DOC_RESPONSE_BODY(
+      `${fileBaseName}2`,
+      file2Content.length,
+    );
     let json: Serializable = {};
 
     await test.step('Create Multiple Documents 201', async () => {
@@ -308,8 +334,11 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Multiple Documents Unauthorized 401', async ({request}) => {
-    const name = generateUniqueId();
-    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
+    const fileBaseName = generateUniqueId();
+    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
+      fileBaseName,
+      2,
+    );
 
     const res = await request.post(buildUrl('/documents/batch'), {
       headers: {},
@@ -320,8 +349,11 @@ test.describe.parallel('Document API Tests', () => {
   });
 
   test('Create Multiple Documents Invalid Header 415', async ({request}) => {
-    const name = generateUniqueId();
-    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(name, 2);
+    const fileBaseName = generateUniqueId();
+    const payload = CREATE_ON_FLY_MULTIPLE_DOCUMENTS_REQUEST_BODY(
+      fileBaseName,
+      2,
+    );
 
     const res = await request.post(buildUrl('/documents/batch'), {
       headers: jsonHeaders(),
