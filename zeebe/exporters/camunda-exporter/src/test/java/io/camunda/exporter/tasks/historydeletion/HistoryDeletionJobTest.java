@@ -74,7 +74,7 @@ final class HistoryDeletionJobTest {
         resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
     decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
-    when(repository.createAuditLogCleanupEntries(anyList()))
+    when(repository.createAuditLogCleanupEntries(anyList(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
   }
 
@@ -137,7 +137,13 @@ final class HistoryDeletionJobTest {
             List.of(entity1.getResourceKey(), entity2.getResourceKey()));
     verify(repository)
         .deleteDocumentsById(
-            historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
+            eq(historyDeletionIndex.getFullQualifiedName()),
+            argThat(
+                ids ->
+                    ids != null
+                        && ids.size() == 2
+                        && ids.contains(entity1.getId())
+                        && ids.contains(entity2.getId())));
   }
 
   @Test
@@ -381,7 +387,13 @@ final class HistoryDeletionJobTest {
             List.of(entity1.getResourceKey(), entity2.getResourceKey()));
     verify(repository)
         .deleteDocumentsById(
-            historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
+            eq(historyDeletionIndex.getFullQualifiedName()),
+            argThat(
+                ids ->
+                    ids != null
+                        && ids.size() == 2
+                        && ids.contains(entity1.getId())
+                        && ids.contains(entity2.getId())));
   }
 
   @Test
@@ -542,7 +554,13 @@ final class HistoryDeletionJobTest {
                 String.valueOf(entity2.getResourceKey())));
     verify(repository)
         .deleteDocumentsById(
-            historyDeletionIndex.getFullQualifiedName(), List.of(entity1.getId(), entity2.getId()));
+            eq(historyDeletionIndex.getFullQualifiedName()),
+            argThat(
+                ids ->
+                    ids != null
+                        && ids.size() == 2
+                        && ids.contains(entity1.getId())
+                        && ids.contains(entity2.getId())));
   }
 
   @Test
@@ -720,7 +738,7 @@ final class HistoryDeletionJobTest {
     job.execute().toCompletableFuture().join();
 
     // then: audit log cleanup entry is created and history deletion index is cleaned up
-    verify(repository).createAuditLogCleanupEntries(anyList());
+    verify(repository).createAuditLogCleanupEntries(anyList(), any());
     verify(repository)
         .deleteDocumentsById(historyDeletionIndex.getFullQualifiedName(), List.of(entity.getId()));
   }
@@ -741,7 +759,7 @@ final class HistoryDeletionJobTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(repository.deleteDocumentsById(anyString(), anyList()))
         .thenReturn(CompletableFuture.completedFuture(0));
-    when(repository.createAuditLogCleanupEntries(anyList()))
+    when(repository.createAuditLogCleanupEntries(anyList(), any()))
         .thenThrow(new RuntimeException("Failed to create audit log cleanup entry"));
 
     // when/then
@@ -771,7 +789,7 @@ final class HistoryDeletionJobTest {
         .thenReturn(CompletableFuture.completedFuture(List.of()));
     when(repository.deleteDocumentsById(anyString(), anyList()))
         .thenReturn(CompletableFuture.completedFuture(0));
-    when(repository.createAuditLogCleanupEntries(anyList()))
+    when(repository.createAuditLogCleanupEntries(anyList(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
     when(repository.deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any()))
         .thenThrow(new RuntimeException("Failed to delete from history deletion index"));
@@ -807,15 +825,15 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .createAuditLogCleanupEntries(
             argThat(
-                entries ->
-                    entries.size() == 1
-                        && entries.getFirst().getKey().equals("100")
-                        && entries
-                            .getFirst()
-                            .getKeyField()
-                            .equals(AuditLogTemplate.PROCESS_INSTANCE_KEY)
-                        && entries.getFirst().getEntityType() == null
-                        && entries.getFirst().getPartitionId() == 3));
+                entities ->
+                    entities.size() == 1
+                        && entities.getFirst().getId().equals("id1")
+                        && entities.getFirst().getResourceKey() == 100L
+                        && entities.getFirst().getResourceType()
+                            == HistoryDeletionType.PROCESS_INSTANCE),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 
   @Test
@@ -840,15 +858,15 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .createAuditLogCleanupEntries(
             argThat(
-                entries ->
-                    entries.size() == 1
-                        && entries.getFirst().getKey().equals("200")
-                        && entries
-                            .getFirst()
-                            .getKeyField()
-                            .equals(AuditLogTemplate.PROCESS_DEFINITION_KEY)
-                        && entries.getFirst().getEntityType() == null
-                        && entries.getFirst().getPartitionId() == 1));
+                entities ->
+                    entities.size() == 1
+                        && entities.getFirst().getId().equals("id1")
+                        && entities.getFirst().getResourceKey() == 200L
+                        && entities.getFirst().getResourceType()
+                            == HistoryDeletionType.PROCESS_DEFINITION),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 
   @Test
@@ -875,15 +893,15 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .createAuditLogCleanupEntries(
             argThat(
-                entries ->
-                    entries.size() == 1
-                        && entries.getFirst().getKey().equals("300")
-                        && entries
-                            .getFirst()
-                            .getKeyField()
-                            .equals(AuditLogTemplate.DECISION_EVALUATION_KEY)
-                        && entries.getFirst().getEntityType() == null
-                        && entries.getFirst().getPartitionId() == 2));
+                entities ->
+                    entities.size() == 1
+                        && entities.getFirst().getId().equals("id1")
+                        && entities.getFirst().getResourceKey() == 300L
+                        && entities.getFirst().getResourceType()
+                            == HistoryDeletionType.DECISION_INSTANCE),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 
   @Test
@@ -910,15 +928,15 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .createAuditLogCleanupEntries(
             argThat(
-                entries ->
-                    entries.size() == 1
-                        && entries.getFirst().getKey().equals("400")
-                        && entries
-                            .getFirst()
-                            .getKeyField()
-                            .equals(AuditLogTemplate.DECISION_REQUIREMENTS_KEY)
-                        && entries.getFirst().getEntityType() == null
-                        && entries.getFirst().getPartitionId() == 1));
+                entities ->
+                    entities.size() == 1
+                        && entities.getFirst().getId().equals("id1")
+                        && entities.getFirst().getResourceKey() == 400L
+                        && entities.getFirst().getResourceType()
+                            == HistoryDeletionType.DECISION_REQUIREMENTS),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 
   @Test
@@ -956,12 +974,17 @@ final class HistoryDeletionJobTest {
     verify(repository)
         .createAuditLogCleanupEntries(
             argThat(
-                entries ->
-                    entries.size() == 1
-                        && entries
-                            .getFirst()
-                            .getKeyField()
-                            .equals(AuditLogTemplate.PROCESS_INSTANCE_KEY)));
+                entities ->
+                    entities.size() == 2
+                        && entities.stream()
+                            .anyMatch(
+                                e ->
+                                    e.getId().equals("id1")
+                                        && e.getResourceType()
+                                            == HistoryDeletionType.PROCESS_INSTANCE)),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 
   @Test
@@ -987,6 +1010,14 @@ final class HistoryDeletionJobTest {
     // then: ID is deterministic: {batchOperationKey}-{resourceKey}
     verify(repository)
         .createAuditLogCleanupEntries(
-            argThat(entries -> entries.size() == 1 && entries.getFirst().getId().equals("2-42")));
+            argThat(
+                entities ->
+                    entities.size() == 1
+                        && entities.getFirst().getId().equals("id1")
+                        && entities.getFirst().getBatchOperationKey() == 2L
+                        && entities.getFirst().getResourceKey() == 42L),
+            argThat(
+                deletedResources ->
+                    deletedResources.size() == 1 && deletedResources.contains("id1")));
   }
 }

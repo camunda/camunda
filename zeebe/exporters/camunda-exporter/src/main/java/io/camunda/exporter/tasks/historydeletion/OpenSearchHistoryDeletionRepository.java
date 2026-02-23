@@ -13,12 +13,13 @@ import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
-import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -167,11 +168,15 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
   }
 
   @Override
-  public CompletableFuture<Void> createAuditLogCleanupEntries(
-      final List<AuditLogCleanupEntity> entries) {
-    if (entries.isEmpty()) {
+  public CompletionStage<Void> createAuditLogCleanupEntries(
+      final List<HistoryDeletionEntity> historyDeletionEntities,
+      final Set<String> deletedResources) {
+    if (deletedResources.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
+    final var entries =
+        AuditLogCleanupTransformer.buildAuditLogCleanupEntries(
+            historyDeletionEntities, deletedResources);
     final var targetIndexName = auditLogCleanupIndex.getFullQualifiedName();
     final var bulkRequestBuilder = new BulkRequest.Builder();
 
