@@ -783,7 +783,7 @@ public class CompactRecordLogger {
     return result.toString();
   }
 
-  private String summarizeProcessInstance(final Record<?> record) {
+  protected String summarizeProcessInstance(final Record<?> record) {
     final var value = (ProcessInstanceRecordValue) record.getValue();
     return new StringBuilder()
         .append(value.getBpmnElementType())

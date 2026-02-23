@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.protocol.record.ImmutableRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUsageMetricRecordValue;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -111,6 +112,31 @@ class CompactRecordLoggerTest {
                   assertThat(r)
                       .containsAnyOf("tenant1=[7654321, 1234567]", "tenant1=[1234567, 7654321]")
                       .contains("tenant2=[9876543]"));
+    }
+
+    @Test
+    void shouldSummarizeProcessInfoInProcessInstanceRecords() {
+      // given
+      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var record =
+          ImmutableRecord.builder()
+              .withValueType(ValueType.PROCESS_INSTANCE)
+              .withValue(
+                  ImmutableProcessInstanceRecordValue.builder()
+                      .withBpmnProcessId("procID")
+                      .withBusinessId("bizzID")
+                      .withProcessInstanceKey(123L)
+                      .build())
+              .build();
+
+      // when
+      final String result = logger.summarizeProcessInstance(record);
+
+      // then
+      assertThat(result)
+          .contains(
+              """
+              in <process "procID"[K123]"bizzID">""");
     }
   }
 }
