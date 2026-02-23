@@ -347,6 +347,29 @@ public class OpensearchFinishedImportingIT extends OperateZeebeAbstractIT {
     }
   }
 
+  @Test
+  public void shouldThrowFatalExceptionForNegativeSizedImportBatch() {
+    // given
+    final var reader =
+        beanFactory.getBean(
+            OpensearchRecordsReader.class,
+            1,
+            ImportValueType.PROCESS_INSTANCE,
+            operateProperties.getImporter().getQueueSize());
+
+    // when: sequence (100) > lastSequence (50) which would create a negative-sized batch
+    final var exception =
+        org.junit.Assert.assertThrows(
+            io.camunda.operate.exceptions.OperateFatalException.class,
+            () -> reader.readNextBatchBySequence(100L, 50L));
+
+    // then
+    assertThat(exception.getMessage())
+        .contains("Batch read sequence 100 is greater than last sequence 50")
+        .contains("Import value type PROCESS_INSTANCE")
+        .contains("partition 1");
+  }
+
   private void assertImportPositionMatchesRecord(
       final Record<RecordValue> record, final ImportValueType type, final int partitionId) {
     Awaitility.await()
