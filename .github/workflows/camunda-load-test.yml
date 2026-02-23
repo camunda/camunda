@@ -220,9 +220,103 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
+  build-operate-frontend:
+    name: Build Operate Frontend
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./operate/client
+          package-manager: "npm"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: operate-frontend-build
+          path: operate/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-tasklist-frontend:
+    name: Build Tasklist Frontend
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./tasklist/client
+          package-manager: "npm"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: tasklist-frontend-build
+          path: tasklist/client/build
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  build-identity-frontend:
+    name: Build Identity Frontend
+    if: ${{ inputs.reuse-tag == '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: 'read'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+      - uses: ./.github/actions/build-frontend
+        with:
+          directory: ./identity/client
+          package-manager: "npm"
+      - uses: actions/upload-artifact@v6
+        with:
+          name: identity-frontend-build
+          path: identity/client/dist
+          retention-days: 1
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   build-camunda-image:
     name: Build Camunda
-    needs: calculate-image-tag
+    needs:
+      - calculate-image-tag
+      - build-operate-frontend
+      - build-tasklist-frontend
+      - build-identity-frontend
     if: ${{ inputs.reuse-tag == '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -241,24 +335,21 @@ jobs:
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
           minimus: true
-      - uses: ./.github/actions/build-frontend
-        name: Build Operate Frontend
-        id: build-operate-fe
+      - uses: actions/download-artifact@v7
+        name: Download Operate Frontend
         with:
-          directory: ./operate/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Tasklist Frontend
-        id: build-tasklist-fe
+          name: operate-frontend-build
+          path: operate/client/build
+      - uses: actions/download-artifact@v7
+        name: Download Tasklist Frontend
         with:
-          directory: ./tasklist/client
-          package-manager: "npm"
-      - uses: ./.github/actions/build-frontend
-        name: Build Identity Frontend
-        id: build-identity-fe
+          name: tasklist-frontend-build
+          path: tasklist/client/build
+      - uses: actions/download-artifact@v7
+        name: Download Identity Frontend
         with:
-          directory: ./identity/client
-          package-manager: "npm"
+          name: identity-frontend-build
+          path: identity/client/dist
       - uses: ./.github/actions/build-zeebe
         name: Build Camunda Platform
         id: build-camunda
