@@ -186,6 +186,14 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: json-report-nightly-api-${{ matrix.branch }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -403,7 +411,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: json-report-nightly-${{ matrix.branch }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
+          name: json-report-nightly-e2e-${{ matrix.branch }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
