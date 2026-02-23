@@ -27,6 +27,7 @@ import io.camunda.zeebe.engine.state.deployment.DbProcessState;
 import io.camunda.zeebe.engine.state.deployment.DbResourceState;
 import io.camunda.zeebe.engine.state.distribution.DbDistributionState;
 import io.camunda.zeebe.engine.state.group.DbGroupState;
+import io.camunda.zeebe.engine.state.hubmetrics.DbHubMetricsState;
 import io.camunda.zeebe.engine.state.immutable.PendingMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.immutable.PendingProcessMessageSubscriptionState;
 import io.camunda.zeebe.engine.state.instance.DbElementInstanceState;
@@ -57,6 +58,7 @@ import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableFormState;
 import io.camunda.zeebe.engine.state.mutable.MutableGroupState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableIncidentState;
 import io.camunda.zeebe.engine.state.mutable.MutableJobState;
 import io.camunda.zeebe.engine.state.mutable.MutableMappingRuleState;
@@ -132,6 +134,7 @@ public class ProcessingDbState implements MutableProcessingState {
   private final MutableAsyncRequestState asyncRequestState;
   private final MutableMultiInstanceState multiInstanceState;
   private final TransientPendingSubscriptionState transientProcessMessageSubscriptionState;
+  private final MutableHubMetricsState hubMetricsState;
   private final int partitionId;
 
   public ProcessingDbState(
@@ -190,6 +193,7 @@ public class ProcessingDbState implements MutableProcessingState {
     multiInstanceState = new DbMultiInstanceState(zeebeDb, transactionContext);
     asyncRequestState = new DbAsyncRequestState(zeebeDb, transactionContext);
     this.transientProcessMessageSubscriptionState = transientProcessMessageSubscriptionState;
+    hubMetricsState = new DbHubMetricsState(zeebeDb, transactionContext);
   }
 
   @Override
@@ -373,6 +377,11 @@ public class ProcessingDbState implements MutableProcessingState {
   @Override
   public MutableMultiInstanceState getMultiInstanceState() {
     return multiInstanceState;
+  }
+
+  @Override
+  public MutableHubMetricsState getHubMetricsState() {
+    return hubMetricsState;
   }
 
   @Override

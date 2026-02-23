@@ -92,4 +92,6 @@ public interface ProcessingState extends StreamProcessorLifecycleAware {
   AsyncRequestState getAsyncRequestState();
 
   MultiInstanceState getMultiInstanceState();
+
+  HubMetricsState getHubMetricsState();
 }
