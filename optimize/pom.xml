@@ -5,13 +5,13 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>zeebe-parent</artifactId>
-    <version>8.9.0-SNAPSHOT</version>
+    <version>8.10.0-SNAPSHOT</version>
     <relativePath>../parent/pom.xml</relativePath>
   </parent>
 
   <groupId>io.camunda.optimize</groupId>
   <artifactId>optimize-parent</artifactId>
-  <version>8.9.0-SNAPSHOT</version>
+  <version>8.10.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   <name>Optimize Parent</name>
 
@@ -44,7 +44,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>8.8.0</project.previousVersion>
+    <project.previousVersion>8.9.0</project.previousVersion>
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
@@ -98,7 +98,7 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-build-tools</artifactId>
-      <version>8.9.0-SNAPSHOT</version>
+      <version>8.10.0-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
