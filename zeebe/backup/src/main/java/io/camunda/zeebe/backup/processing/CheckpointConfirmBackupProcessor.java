@@ -9,6 +9,8 @@ package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -24,22 +26,27 @@ public class CheckpointConfirmBackupProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
-  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
   private final BackupManager backupManager;
+  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
 
   public CheckpointConfirmBackupProcessor(
-      final CheckpointState checkpointState, final BackupManager backupManager) {
+      final CheckpointState checkpointState,
+      final DbCheckpointMetadataState checkpointMetadataState,
+      final DbBackupRangeState backupRangeState,
+      final BackupManager backupManager) {
     this.checkpointState = checkpointState;
-    backupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
     this.backupManager = backupManager;
+    backupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
   }
 
   public ProcessingResult process(
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
     final var checkpointRecord = record.getValue();
     final var checkpointId = checkpointRecord.getCheckpointId();
-    final var latestBackupId = checkpointState.getLatestBackupId();
     final var firstLogPosition = checkpointRecord.getFirstLogPosition();
+    final var latestBackupId = checkpointState.getLatestBackupId();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
       if (latestBackupId != CheckpointState.NO_CHECKPOINT
@@ -48,7 +55,8 @@ public class CheckpointConfirmBackupProcessor {
       } else {
         backupManager.startNewRange(checkpointId);
       }
-      backupConfirmedApplier.apply(checkpointRecord, record.getTimestamp());
+      backupConfirmedApplier.apply(
+          checkpointRecord, record.getTimestamp(), record.getBrokerVersion());
       resultBuilder.appendRecord(
           record.getKey(),
           checkpointRecord,
