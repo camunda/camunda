@@ -37,6 +37,7 @@ import io.camunda.process.test.impl.runtime.CamundaProcessTestRemoteRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntime;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
+import io.camunda.process.test.impl.runtime.CamundaProcessTestSharedRuntime;
 import io.camunda.process.test.impl.runtime.CamundaSpringProcessTestRuntimeBuilder;
 import io.camunda.process.test.impl.runtime.ContainerRuntimePorts;
 import java.net.URI;
@@ -45,6 +46,8 @@ import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.springframework.util.unit.DataSize;
 
 public class CamundaSpringProcessTestRuntimeBuilderTest {
@@ -71,7 +74,26 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
 
     // then
     assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestContainerRuntime.class);
+  }
 
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED", "SHARED"})
+  void shouldBuildDefaultRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+    final CamundaClientProperties clientProperties = new CamundaClientProperties();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
+
+    // when
+    CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
+        runtimeBuilder, runtimeConfiguration, clientProperties);
+
+    // then
     assertThat(runtimeBuilder.getCamundaDockerImageName())
         .isEqualTo(CamundaProcessTestRuntimeDefaults.CAMUNDA_DOCKER_IMAGE_NAME);
     assertThat(runtimeBuilder.getCamundaDockerImageVersion())
@@ -82,13 +104,18 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(runtimeBuilder.isConnectorsEnabled()).isFalse();
   }
 
-  @Test
-  void shouldConfigureManagedCamundaRuntime() {
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED", "SHARED"})
+  void shouldConfigureCamundaRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
     final CamundaClientProperties clientProperties = new CamundaClientProperties();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
 
     final Map<String, String> camundaEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
@@ -155,13 +182,18 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
     assertThat(cbf.getDefaultJobWorkerStreamEnabled()).isTrue();
   }
 
-  @Test
-  void shouldConfigureManagedConnectorsRuntime() {
+  @ParameterizedTest
+  @EnumSource(
+      value = CamundaProcessTestRuntimeMode.class,
+      names = {"MANAGED", "SHARED"})
+  void shouldConfigureConnectorsRuntime(final CamundaProcessTestRuntimeMode runtimeMode) {
     // given
     final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
     final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
         new CamundaProcessTestRuntimeConfiguration();
     final CamundaClientProperties clientProperties = new CamundaClientProperties();
+
+    runtimeConfiguration.setRuntimeMode(runtimeMode);
 
     final Map<String, String> connectorsEnvVars =
         Map.ofEntries(entry("env-1", "test-1"), entry("env-2", "test-2"));
@@ -321,6 +353,25 @@ public class CamundaSpringProcessTestRuntimeBuilderTest {
         .isEqualTo(URI.create("https://my-cluster.my-region.zeebe.camunda.io:443"));
 
     assertThat(configuration.getCredentialsProvider()).isInstanceOf(OAuthCredentialsProvider.class);
+  }
+
+  @Test
+  void shouldBuildSharedRuntime() {
+    // given
+    final CamundaProcessTestRuntimeBuilder runtimeBuilder = new CamundaProcessTestRuntimeBuilder();
+    final CamundaProcessTestRuntimeConfiguration runtimeConfiguration =
+        new CamundaProcessTestRuntimeConfiguration();
+    final CamundaClientProperties clientProperties = new CamundaClientProperties();
+
+    runtimeConfiguration.setRuntimeMode(CamundaProcessTestRuntimeMode.SHARED);
+
+    // when
+    final CamundaProcessTestRuntime camundaRuntime =
+        CamundaSpringProcessTestRuntimeBuilder.buildRuntime(
+            runtimeBuilder, runtimeConfiguration, clientProperties);
+
+    // then
+    assertThat(camundaRuntime).isNotNull().isInstanceOf(CamundaProcessTestSharedRuntime.class);
   }
 
   private static CamundaClientConfiguration getCamundaClientConfiguration(

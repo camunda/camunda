@@ -39,7 +39,9 @@ public class CamundaSpringProcessTestRuntimeBuilder {
     final CamundaProcessTestRuntimeMode runtimeMode = runtimeConfiguration.getRuntimeMode();
     runtimeBuilder.withRuntimeMode(runtimeMode);
 
-    if (runtimeMode == CamundaProcessTestRuntimeMode.MANAGED || runtimeMode == null) {
+    if (runtimeMode == null
+        || runtimeMode == CamundaProcessTestRuntimeMode.MANAGED
+        || runtimeMode == CamundaProcessTestRuntimeMode.SHARED) {
       configureManagedRuntime(runtimeBuilder, runtimeConfiguration, clientProperties);
 
     } else if (runtimeMode == CamundaProcessTestRuntimeMode.REMOTE) {

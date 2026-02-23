@@ -279,6 +279,9 @@ public class CamundaProcessTestRuntimeBuilder {
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
       case REMOTE:
         return new CamundaProcessTestRemoteRuntime(this);
+      case SHARED:
+        return new CamundaProcessTestSharedRuntime(
+            () -> new CamundaProcessTestContainerRuntime(this, containerFactory));
       default:
         LOGGER.warn("Unknown runtime mode: {}. Fall back to MANAGED runtime mode.", runtimeMode);
         return new CamundaProcessTestContainerRuntime(this, containerFactory);
