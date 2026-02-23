@@ -27,13 +27,11 @@ INTEGRATION="integration"
 # Format: "branch-name  # optional comment"
 TOPICS=(
   "jwulf/dev-scripts                          # chore: dev workflow scripts"
-  "46402-deterministic-ordering-in-test      # test: statistics ordering fix"
   "46406-fix-e2e-document-test               # test: document processDefinitionId fix"
   "gateway-response-violation-enhanced-output # refactor: validator shows violating value"
   "copilot/validate-process-definition-id    # fix: validate processDefinitionId on upload"
   "copilot/fix-rdbms-null-value-storage     # fix: RDBMS NULL variable value (#46401)"
   "copilot/fix-rdbms-exporter-incident-resolution # fix: RDBMS incident errorMessage (#46396)"
-  "46391-make-arrays-required                # spec: arrays required"
   "46224-enforce-response-arrays-required-not-nullable # ci: spectral enforcement rule"
 )
 # ─────────────────────────────────────────────────────────────────────────────
