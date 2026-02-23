@@ -11,16 +11,6 @@ jobs:
       matrix:
         camunda_mode: [all-in-one]
 
-    services:
-      elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
-        env:
-          discovery.type: single-node
-          xpack.security.enabled: false
-          ES_JAVA_OPTS: -Xms1024m -Xmx1024m
-        ports:
-          - 9200:9200
-
     steps:
       - uses: actions/checkout@v4
         name: Checkout code
@@ -56,7 +46,7 @@ jobs:
           DATABASE: elasticsearch
           CAMUNDA_MODE: ${{ matrix.camunda_mode }}
         run: |
-          docker compose -f docker-compose-with-modes.yml up -d camunda
+          docker compose up -d camunda
 
       - name: Wait for services to be ready
         run: |

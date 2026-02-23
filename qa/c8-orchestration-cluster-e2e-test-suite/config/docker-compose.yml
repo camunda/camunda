@@ -101,7 +101,12 @@ services:
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda
-      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,admin
+
+      # If CAMUNDA_MODE is set, pass these:
+      - CAMUNDA_MODE=${CAMUNDA_MODE:-}
+      # else if CAMUNDA_MODE is empty, pass these instead:
+      - SPRING_PROFILES_ACTIVE=${CAMUNDA_MODE:+e2e-test,consolidated-auth,tasklist,broker,operate,admin}
+
       - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
       - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC
