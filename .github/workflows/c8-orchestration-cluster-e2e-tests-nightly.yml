@@ -216,12 +216,6 @@ jobs:
       matrix:
         branch: [test-report]
         tasklist_mode: [v1, v2]
-        exclude:
-          # V2 mode only supported on main branch - exclude V2 for older branches
-          - branch: stable/8.6
-            tasklist_mode: v2
-          - branch: stable/8.7
-            tasklist_mode: v2
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
