@@ -293,6 +293,7 @@ components:
 
     IncidentErrorTypeEnum:
       description: Incident error type with a defined set of values.
+      type: string
       enum:
         - AD_HOC_SUB_PROCESS_NO_RETRIES
         - CALLED_DECISION_ERROR
@@ -353,6 +354,7 @@ components:
 
     IncidentStateEnum:
       description: Incident states with a defined set of values.
+      type: string
       enum:
         - ACTIVE
         - MIGRATED
