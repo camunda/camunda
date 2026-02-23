@@ -70,30 +70,6 @@ public class HistoryDeletionService {
     final List<Long> deletedProcessDefinitions = deleteProcessDefinitions(batch);
     final List<Long> deletedDecisionInstances = deleteDecisionInstances(batch);
     final List<Long> deletedDecisionRequirements = deleteDecisionRequirements(batch);
-    if (!deletedProcessInstances.isEmpty()) {
-      rdbmsWriters
-          .getAuditLogWriter()
-          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-              deletedProcessInstances, HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
-    }
-    if (!deletedProcessDefinitions.isEmpty()) {
-      rdbmsWriters
-          .getAuditLogWriter()
-          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-              deletedProcessDefinitions, HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
-    }
-    if (!deletedDecisionInstances.isEmpty()) {
-      rdbmsWriters
-          .getAuditLogWriter()
-          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-              deletedDecisionInstances, HistoryDeletionTypeDbModel.DECISION_INSTANCE);
-    }
-    if (!deletedDecisionRequirements.isEmpty()) {
-      rdbmsWriters
-          .getAuditLogWriter()
-          .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-              deletedDecisionRequirements, HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
-    }
 
     final List<Long> deletedResources =
         Stream.of(
@@ -131,6 +107,8 @@ public class HistoryDeletionService {
 
     if (allProcessInstanceDependantDataDeleted) {
       rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
+      scheduleAuditLogDataForDeletion(
+          processInstanceKeys, HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
       return processInstanceKeys;
     }
 
@@ -147,6 +125,8 @@ public class HistoryDeletionService {
     }
 
     rdbmsWriters.getProcessDefinitionWriter().deleteByKeys(processDefinitionKeys);
+    scheduleAuditLogDataForDeletion(
+        processDefinitionKeys, HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
 
     return processDefinitionKeys;
   }
@@ -160,6 +140,9 @@ public class HistoryDeletionService {
     }
 
     rdbmsWriters.getDecisionInstanceWriter().deleteByKeys(decisionInstanceKeys);
+    scheduleAuditLogDataForDeletion(
+        decisionInstanceKeys, HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+
     return decisionInstanceKeys;
   }
 
@@ -184,6 +167,8 @@ public class HistoryDeletionService {
 
     if (allDecisionRequirementsDependantDataDeleted) {
       rdbmsWriters.getDecisionRequirementsWriter().deleteByKeys(decisionRequirementsKeys);
+      scheduleAuditLogDataForDeletion(
+          decisionRequirementsKeys, HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
       return decisionRequirementsKeys;
     }
 
@@ -232,6 +217,21 @@ public class HistoryDeletionService {
           historyDeletionDbModel.resourceKey());
     }
     return !hasDependents;
+  }
+
+  private void scheduleAuditLogDataForDeletion(
+      final List<Long> deletedKeys, final HistoryDeletionTypeDbModel deletionType) {
+    if (deletedKeys.isEmpty()) {
+      return;
+    }
+    final int limit = config.dependentRowLimit();
+    int updated;
+    do {
+      updated =
+          rdbmsWriters
+              .getAuditLogWriter()
+              .scheduleKeyRelatedAuditLogsHistoryCleanupTime(deletedKeys, deletionType, limit);
+    } while (updated >= limit);
   }
 
   private int deleteFromHistoryDeletionTable(final List<Long> deletedResourceKeys) {

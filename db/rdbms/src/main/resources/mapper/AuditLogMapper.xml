@@ -405,10 +405,7 @@
     AND ENTITY_TYPE = #{entityType}
   </update>
 
-  <update id="updateUnsetAuditLogEntityHistoryCleanupDates">
-    UPDATE ${prefix}AUDIT_LOG SET
-    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
-    WHERE
+  <sql id="updateUnsetAuditLogEntityHistoryCleanupDatesFilter">
     <choose>
       <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
         PROCESS_INSTANCE_KEY IN
@@ -439,6 +436,85 @@
       </otherwise>
     </choose>
     AND HISTORY_CLEANUP_DATE IS NULL
+  </sql>
+
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE
+    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.updateUnsetAuditLogEntityHistoryCleanupDatesFilter"/>
+    LIMIT #{limit}
+  </update>
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="mssql">
+    UPDATE TOP (#{limit}) ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE
+    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.updateUnsetAuditLogEntityHistoryCleanupDatesFilter"/>
+  </update>
+  <!--
+    Special handling for Oracle to handle large lists of keys.
+    We use XMLTABLE to pass the list of keys as an XML document, avoiding Oracle's 1000-element IN clause limit.
+    The keys list is joined directly against the AUDIT_LOG table via XMLTABLE — no IN clause on the keys.
+  -->
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="oracle">
+    UPDATE ${prefix}AUDIT_LOG t SET
+    t.HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE t.HISTORY_CLEANUP_DATE IS NULL
+    AND
+    <choose>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+        t.PROCESS_INSTANCE_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+        t.PROCESS_DEFINITION_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+        t.DECISION_EVALUATION_KEY
+      </when>
+      <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+        t.DECISION_REQUIREMENTS_KEY
+      </when>
+      <otherwise>
+        NULL
+      </otherwise>
+    </choose>
+    IN (SELECT COLUMN_VALUE FROM XMLTABLE('/d/r'
+        PASSING XMLTYPE(#{keys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
+        COLUMNS COLUMN_VALUE NUMBER PATH 'text()'))
+    AND ROWNUM &lt;= #{limit}
+  </update>
+  <!--
+    Special handling for PostgreSQL to delete using ctid or a specified primary key column.
+    This avoids issues with large IN clauses by using ANY with an array parameter.
+  -->
+  <update id="updateUnsetAuditLogEntityHistoryCleanupDates" databaseId="postgresql">
+    UPDATE ${prefix}AUDIT_LOG t SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    FROM (
+      SELECT AUDIT_LOG_KEY FROM ${prefix}AUDIT_LOG
+      WHERE HISTORY_CLEANUP_DATE IS NULL
+      AND
+      <choose>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_INSTANCE'">
+          PROCESS_INSTANCE_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'PROCESS_DEFINITION'">
+          PROCESS_DEFINITION_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_INSTANCE'">
+          DECISION_EVALUATION_KEY
+        </when>
+        <when test="historyDeletionType != null and historyDeletionType.name() == 'DECISION_REQUIREMENTS'">
+          DECISION_REQUIREMENTS_KEY
+        </when>
+        <otherwise>
+          NULL
+        </otherwise>
+      </choose>
+      = ANY(#{keys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+      LIMIT #{limit}
+    ) sub
+    WHERE t.AUDIT_LOG_KEY = sub.AUDIT_LOG_KEY
   </update>
 
   <delete id="deleteRootProcessInstanceRelatedData">

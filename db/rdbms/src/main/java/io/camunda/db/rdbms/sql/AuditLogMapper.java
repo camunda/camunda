@@ -33,10 +33,11 @@ public interface AuditLogMapper extends ProcessInstanceDependantMapper, HistoryC
 
   int updateAuditLogEntityHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
 
-  void updateUnsetAuditLogEntityHistoryCleanupDates(
+  int updateUnsetAuditLogEntityHistoryCleanupDates(
       List<Long> keys,
       HistoryDeletionTypeDbModel historyDeletionType,
-      OffsetDateTime historyCleanupDate);
+      OffsetDateTime historyCleanupDate,
+      int limit);
 
   record UpdateHistoryCleanupDateDto(
       List<String> entityKeys, String entityType, OffsetDateTime historyCleanupDate)
