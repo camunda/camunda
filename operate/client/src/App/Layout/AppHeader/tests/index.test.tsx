@@ -65,4 +65,65 @@ describe('Header', () => {
       /^\?evaluated=true&failed=true$/,
     );
   });
+
+  it('should navigate to correct pages when clicking on Operations links (small screen)', async () => {
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    const nav = screen.getByRole('navigation', {
+      name: /camunda operate/i,
+    });
+
+    await user.click(
+      within(nav).getByRole('link', {name: /^Batch operations$/i}),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/batch-operations$/,
+    );
+
+    await user.click(
+      within(nav).getByRole('link', {name: /^Operations log$/i}),
+    );
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/operations-log$/,
+    );
+  });
+
+  it('should navigate to correct pages when clicking on Operations submenu items (large screen)', async () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(
+      () =>
+        ({
+          matches: true,
+          addListener: vi.fn(),
+          removeListener: vi.fn(),
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        }) as unknown as MediaQueryList,
+    );
+
+    const {user} = render(<AppHeader />, {
+      wrapper: Wrapper,
+    });
+
+    const nav = screen.getByRole('navigation', {
+      name: /camunda operate/i,
+    });
+
+    await user.click(within(nav).getByText(/^Operations$/));
+
+    await user.click(screen.getByRole('link', {name: /^Batch operations$/i}));
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/batch-operations$/,
+    );
+
+    await user.click(within(nav).getByText(/^Operations$/));
+
+    await user.click(screen.getByRole('link', {name: /^Operations log$/i}));
+    expect(screen.getByTestId('pathname')).toHaveTextContent(
+      /^\/operations-log$/,
+    );
+
+    vi.restoreAllMocks();
+  });
 });

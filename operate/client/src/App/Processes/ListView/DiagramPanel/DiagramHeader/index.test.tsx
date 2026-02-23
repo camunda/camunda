@@ -64,10 +64,6 @@ describe('DiagramHeader', () => {
     expect(
       await screen.findByRole('button', {name: /delete process definition/i}),
     ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /view batch operations/i}),
-    ).toBeInTheDocument();
   });
 
   it('should render header without version tag', async () => {
@@ -97,10 +93,6 @@ describe('DiagramHeader', () => {
     expect(
       await screen.findByRole('button', {name: /delete process definition/i}),
     ).toBeInTheDocument();
-
-    expect(
-      screen.getByRole('button', {name: /view batch operations/i}),
-    ).toBeInTheDocument();
   });
 
   it('should render header without data', async () => {
@@ -114,11 +106,6 @@ describe('DiagramHeader', () => {
     expect(
       screen.queryByRole('button', {name: /delete process definition/i}),
     ).not.toBeInTheDocument();
-
-    // View batch operations button should always be present
-    expect(
-      screen.getByRole('button', {name: /view batch operations/i}),
-    ).toBeInTheDocument();
   });
 
   it('should disable delete button when running instances count is greater than 0', async () => {
@@ -141,10 +128,6 @@ describe('DiagramHeader', () => {
       'title',
       'Only process definitions without running instances can be deleted.',
     );
-
-    expect(
-      screen.getByRole('button', {name: /view batch operations/i}),
-    ).toBeInTheDocument();
   });
 
   it('should enable delete button when running instances count is 0', async () => {
@@ -162,9 +145,5 @@ describe('DiagramHeader', () => {
       'title',
       'Delete Process Definition "My Process - Version 1"',
     );
-
-    expect(
-      screen.getByRole('button', {name: /view batch operations/i}),
-    ).toBeInTheDocument();
   });
 });

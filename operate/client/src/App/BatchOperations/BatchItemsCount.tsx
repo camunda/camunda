@@ -79,8 +79,8 @@ const BatchItemsCount: React.FC<{
           const description = `${count.toLocaleString()} ${label}`;
           return (
             <Tooltip key={key} description={description} align="bottom">
-              <Item color={color} role="status" aria-label={description}>
-                <Icon aria-hidden="true" focusable="false" />
+              <Item role="status" aria-label={description}>
+                <Icon color={color} aria-hidden="true" focusable="false" />
                 {formatCount(count)}
               </Item>
             </Tooltip>

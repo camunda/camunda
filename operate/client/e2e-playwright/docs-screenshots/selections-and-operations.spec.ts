@@ -104,7 +104,9 @@ test.describe('selections and operations', () => {
     await filtersPanel.selectVersion('1');
     await filtersPanel.processVersionFilter.blur();
 
-    await page.getByRole('button', {name: /view batch operations/i}).click();
+    const nav = page.getByRole('navigation', {name: /camunda operate/i});
+    await nav.getByText('Operations', {exact: true}).click();
+    await page.getByRole('link', {name: /^Batch operations$/i}).click();
     await page.waitForURL('**/batch-operations');
 
     await page.screenshot({

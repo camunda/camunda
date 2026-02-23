@@ -96,10 +96,11 @@ describe('<BatchOperation />', () => {
       screen.queryAllByTestId('text-skeleton'),
     );
 
-    expect(screen.getByText('State')).toBeInTheDocument();
-    expect(screen.getByText('Summary of Items')).toBeInTheDocument();
-    expect(screen.getByText('Start time')).toBeInTheDocument();
-    expect(screen.getByText('End time')).toBeInTheDocument();
+    expect(screen.getByText('Batch state')).toBeInTheDocument();
+    expect(screen.getByText('Summary of items')).toBeInTheDocument();
+    expect(screen.getByText('Start date')).toBeInTheDocument();
+    expect(screen.getByText('End date')).toBeInTheDocument();
+    expect(screen.getByText('Actor')).toBeInTheDocument();
   });
 
   it('should render batch state indicator with correct state', async () => {
