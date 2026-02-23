@@ -272,7 +272,7 @@ In addition to our weekly load tests, we ran daily stress tests based on the sta
 
 #### Ad-Hoc load tests
 
-On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/zeebe/load-tests/setup).
+On top of the previous scenarios, we support running ad-hoc load tests. They can be either set up by labeling an existing a pull-request (PR) at the mono repository with **benchmark** label, using the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml), or deploying the [Camunda Platform](https://github.com/camunda/camunda-platform-helm) and [load test](https://github.com/camunda/camunda-load-tests-helm) Helm Chart [manually](https://github.com/camunda/camunda/tree/main/load-tests/setup).
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
@@ -326,79 +326,25 @@ After submitting the form you can observe the progress of the load test creation
 
 ##### Creating manually
 
-As a last resort, if more customization is needed, it is also possible to manually deploy a benchmark.
+As a last resort, if more customization is needed, it is also possible to manually deploy a load test against a Self-Managed Zeebe Cluster.
 
-###### Requirements (local)
+A detailed guide can be found in [`load-tests/setup/README.md`](https://github.com/camunda/camunda/blob/main/load-tests/setup/README.md#load-testing-self-managed-zeebe-cluster). It covers requirements, configuration, and cleanup.
 
-To set up a load test from your local machine you need to have several tools installed.
-
-Follow these guide's to install each of them:
-
-* gcloud https://cloud.google.com/sdk/install
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* docker https://docs.docker.com/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-* OPTIONAL go https://golang.org/doc/install
-
-Some of the necessary steps you need to do are:
-
-```sh
-## Init gcloud
-gcloud init
-gcloud config set project zeebe-io
-gcloud container clusters get-credentials zeebe-cluster --zone europe-west1-b --project zeebe-io
-
-## to use google cloud docker registry
-gcloud auth configure-docker
-
-## install kubectl via gcloud cli
-gcloud components install kubectl
-
-## install helm
-curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-chmod 700 get_helm.sh
-./get_helm.sh
-
-## add zeebe as helm repo
-helm version
-helm repo add zeebe https://helm.camunda.io
-helm repo add stable https://charts.helm.sh/stable
-helm repo update
-
-## install kubens
-curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
-install kubens /usr/local/bin/
-```
-
-###### Best Practices Windows
-
-Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
-The setup changes slightly compared to the Linux setup.
-
-These are the components to install on Windows:
-* Docker
-
-These are the components to install within the WSL:
-* gcloud https://cloud.google.com/sdk/install?hl=de
-* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
-* Helm 3.*  https://helm.sh/docs/intro/install/
-* kubens/kubectx https://github.com/ahmetb/kubectx
-
-When following the instructions above, execute all commands that deal with Docker in a Windows shell, and exeucte all other commands in the WSL shell.
-
-###### Installing manually
-
-The [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart repository contains a [detailed](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md) guide regarding this.
+In short, after ensuring the [requirements](https://github.com/camunda/camunda/blob/main/load-tests/setup/README.md#requirements) (docker, gcloud, kubectl, kubens, helm) are met, you can set up and start a load test with:
 
 ```shell
-# Add the load test chart to the local repository
-helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
-# Install a new Helm Chart release to the current namespace
-helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
+# Create a new namespace and switch to it, and set up the load test folder
+. ./newLoadTest.sh my-load-test-name
+
+# Install/upgrade both the Camunda Platform and the load test
+make install
 ```
 
-To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
+After you're done, clean up the namespace with:
+
+```shell
+./deleteLoadTest.sh my-load-test-name
+```
 
 ##### SaaS Test
 
