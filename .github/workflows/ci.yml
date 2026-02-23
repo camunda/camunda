@@ -1885,7 +1885,7 @@ jobs:
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
                       "c8Version": "8.9",
-                      "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
+                      "zeebeVersion": "${{ needs.alwaysgreen-build-and-push.outputs.image-tag }}",
                       "operateVersion": "SNAPSHOT",
                       "tasklistVersion": "SNAPSHOT",
                       "connectorsVersion": "SNAPSHOT",
