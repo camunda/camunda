@@ -116,7 +116,7 @@ public class ProcessInstanceTools {
               authenticationProvider.getCamundaAuthentication());
 
       final ProcessInstanceCreateRequest processInstanceCreateRequest = request.get();
-      if (processInstanceCreateRequest.awaitCompletion()) {
+      if (Boolean.TRUE.equals(processInstanceCreateRequest.awaitCompletion())) {
         return CallToolResultMapper.from(
             authenticatedServices.createProcessInstanceWithResult(processInstanceCreateRequest),
             ResponseMapper::toCreateProcessInstanceWithResultResponse);
