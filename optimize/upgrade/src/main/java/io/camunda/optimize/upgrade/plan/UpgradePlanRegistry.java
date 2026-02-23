@@ -7,7 +7,9 @@
  */
 package io.camunda.optimize.upgrade.plan;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.vdurmont.semver4j.Semver;
+import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import io.camunda.optimize.upgrade.plan.factories.CurrentVersionNoOperationUpgradePlanFactory;
 import io.camunda.optimize.upgrade.plan.factories.UpgradePlanFactory;
@@ -63,10 +65,54 @@ public class UpgradePlanRegistry {
                 }
               });
     }
+
+    // Generate patch plans up to the compiled-in version. Plans beyond the actual target
+    // version (if different) are harmlessly filtered by `getSequentialUpgradePlansToTargetVersion`.
+    generateMissingPatchUpgradePlans(Version.VERSION);
   }
 
-  public UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
+  @VisibleForTesting
+  UpgradePlanRegistry(final Map<Semver, UpgradePlan> upgradePlans) {
     this.upgradePlans = upgradePlans;
+  }
+
+  /**
+   * Auto-generates no-op upgrade plans for missing patch-to-patch transitions within the current
+   * minor version. For example, if the current version is {@code 8.9.3}, this method ensures that
+   * plans for {@code 8.9.0 -> 8.9.1}, {@code 8.9.1 -> 8.9.2}, and {@code 8.9.2 -> 8.9.3} exist.
+   * Plans already registered by explicit {@link UpgradePlanFactory} implementations are never
+   * overwritten — only missing gaps are filled with no-op plans.
+   *
+   * <p>This eliminates the need to manually create boilerplate per-patch factory classes that
+   * contain no real migration logic.
+   *
+   * @param currentVersion the current application version string (e.g. {@code "8.9.3"})
+   */
+  @VisibleForTesting
+  void generateMissingPatchUpgradePlans(final String currentVersion) {
+    final var version = new Semver(currentVersion);
+    final int major = version.getMajor();
+    final int minor = version.getMinor();
+    final int currentPatch = version.getPatch();
+
+    if (currentPatch == 0) {
+      return;
+    }
+
+    for (int patch = 1; patch <= currentPatch; patch++) {
+      final var toVersion = new Semver(major + "." + minor + "." + patch);
+      if (!upgradePlans.containsKey(toVersion)) {
+        final var from = major + "." + minor + "." + (patch - 1);
+        final var to = major + "." + minor + "." + patch;
+        final var noOpPlan =
+            UpgradePlanBuilder.createUpgradePlan().fromVersion(from).toVersion(to).build();
+        upgradePlans.put(toVersion, noOpPlan);
+        LOG.debug(
+            "Auto-generated no-op patch upgrade plan from {} to {} (no explicit factory found).",
+            from,
+            to);
+      }
+    }
   }
 
   public List<UpgradePlan> getSequentialUpgradePlansToTargetVersion(final String targetVersion) {
