@@ -11,6 +11,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.JobWorker;
 import io.camunda.client.annotation.value.JobWorkerValue;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
+import io.camunda.client.annotation.value.SourceAware.FromDefaultProperty;
 import io.camunda.client.jobhandling.JobWorkerManager;
 import io.camunda.process.test.api.CamundaSpringProcessTest;
 import java.time.Duration;
@@ -37,52 +40,41 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
   void shouldApplyAnnotationJobWorkerSettings() {
     final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(ANNOTATION_JOB_TYPE);
 
-    assertThat(jobWorkerValue.getType())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getType()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getType().value()).isEqualTo(ANNOTATION_JOB_TYPE);
 
-    assertThat(jobWorkerValue.getTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getTimeout()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getTimeout().value()).isEqualTo(Duration.ofMinutes(2));
 
-    assertThat(jobWorkerValue.getMaxJobsActive())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getMaxJobsActive()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getMaxJobsActive().value()).isEqualTo(3);
 
-    assertThat(jobWorkerValue.getRequestTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getRequestTimeout()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getRequestTimeout().value()).isEqualTo(Duration.ofSeconds(45));
 
-    assertThat(jobWorkerValue.getPollInterval())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getPollInterval()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getPollInterval().value()).isEqualTo(Duration.ofSeconds(3));
 
-    assertThat(jobWorkerValue.getStreamEnabled())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getStreamEnabled()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getStreamEnabled().value()).isTrue();
 
-    assertThat(jobWorkerValue.getStreamTimeout())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getStreamTimeout()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getStreamTimeout().value()).isEqualTo(Duration.ofSeconds(15));
 
-    assertThat(jobWorkerValue.getMaxRetries())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getMaxRetries()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getMaxRetries().value()).isEqualTo(7);
 
-    assertThat(jobWorkerValue.getRetryBackoff())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getRetryBackoff()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getRetryBackoff().value()).isEqualTo(Duration.ofSeconds(2));
 
-    assertThat(jobWorkerValue.getEnabled())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getEnabled()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getEnabled().value()).isTrue();
 
-    assertThat(jobWorkerValue.getAutoComplete())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromAnnotation.class);
+    assertThat(jobWorkerValue.getAutoComplete()).isInstanceOf(FromAnnotation.class);
     assertThat(jobWorkerValue.getAutoComplete().value()).isFalse();
 
     assertThat(jobWorkerValue.getFetchVariables())
-        .extracting(JobWorkerValue.SourceAware::value)
+        .extracting(SourceAware::value)
         .contains("foo", "bar");
   }
 
@@ -90,13 +82,10 @@ class CompatibilityJobWorkerAnnotationSettingsIT {
   void shouldNotForceFetchAllVariablesWhenActivatedJobUsed() {
     final JobWorkerValue jobWorkerValue = jobWorkerManager.getJobWorker(FORCE_FETCH_JOB_TYPE);
 
-    assertThat(jobWorkerValue.getForceFetchAllVariables())
-        .isInstanceOf(JobWorkerValue.SourceAware.FromDefaultProperty.class);
+    assertThat(jobWorkerValue.getForceFetchAllVariables()).isInstanceOf(FromDefaultProperty.class);
     assertThat(jobWorkerValue.getForceFetchAllVariables().value()).isFalse();
 
-    assertThat(jobWorkerValue.getFetchVariables())
-        .extracting(JobWorkerValue.SourceAware::value)
-        .contains("foo");
+    assertThat(jobWorkerValue.getFetchVariables()).extracting(SourceAware::value).contains("foo");
   }
 
   @Component
