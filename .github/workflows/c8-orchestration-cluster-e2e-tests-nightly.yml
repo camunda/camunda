@@ -408,7 +408,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: json-report-${{ matrix.branch }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
-          path: json-report/**
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
           retention-days: 60
 
       - name: Observe build status
