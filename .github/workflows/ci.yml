@@ -2021,6 +2021,9 @@ jobs:
       pull-requests: write
     needs: # BELOW LIST IS IN ALPHABETICAL ORDER
       - actionlint
+      - alwaysgreen-build-and-push
+      - alwaysgreen-format-identifier
+      - alwaysgreen-frontend-artifacts
       - alwaysgreen-helm-deploy
       - alwaysgreen-trigger-saas-e2e
       - archunit-tests
