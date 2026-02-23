@@ -56,7 +56,7 @@ class CompactRecordLoggerTest {
     @Test
     void shouldSummarizeUsageMetricsWithCounterCorrectly() {
       // given
-      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var logger = new CompactRecordLogger(List.of());
       final var usageMetricsRecord =
           ImmutableRecord.builder()
               .withValueType(ValueType.USAGE_METRIC)
@@ -83,7 +83,7 @@ class CompactRecordLoggerTest {
     @Test
     void shouldSummarizeUsageMetricsWithSetCorrectly() {
       // given
-      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var logger = new CompactRecordLogger(List.of());
       final var usageMetricsRecord =
           ImmutableRecord.builder()
               .withValueType(ValueType.USAGE_METRIC)
@@ -117,7 +117,7 @@ class CompactRecordLoggerTest {
     @Test
     void shouldSummarizeProcessInfoInProcessInstanceRecords() {
       // given
-      final var logger = new CompactRecordLogger(java.util.List.of());
+      final var logger = new CompactRecordLogger(List.of());
       final var record =
           ImmutableRecord.builder()
               .withValueType(ValueType.PROCESS_INSTANCE)
