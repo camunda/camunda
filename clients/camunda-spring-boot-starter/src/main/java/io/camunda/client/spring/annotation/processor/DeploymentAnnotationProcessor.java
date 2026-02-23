@@ -173,7 +173,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
       final String resourceFile = resource.getURL().getFile();
       final boolean inSameJar = resourceFile.contains(jarFile);
       LOGGER.debug(
-          "{} is {}contained in jar file {}", resourceFile, inSameJar ? " " : "not ", jarFile);
+          "{} is {}contained in jar file {}", resourceFile, inSameJar ? "" : "not ", jarFile);
       return inSameJar;
     } catch (final Exception e) {
       LOGGER.warn(
