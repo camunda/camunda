@@ -541,16 +541,18 @@ public class HistoryDeletionServiceTest {
     // then
     verify(auditLogWriterMock)
         .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-            List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+            List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE, LIMIT);
     verify(auditLogWriterMock)
         .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-            List.of(processDefinitionKey), HistoryDeletionTypeDbModel.PROCESS_DEFINITION);
+            List.of(processDefinitionKey), HistoryDeletionTypeDbModel.PROCESS_DEFINITION, LIMIT);
     verify(auditLogWriterMock)
         .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-            List.of(decisionInstanceKey), HistoryDeletionTypeDbModel.DECISION_INSTANCE);
+            List.of(decisionInstanceKey), HistoryDeletionTypeDbModel.DECISION_INSTANCE, LIMIT);
     verify(auditLogWriterMock)
         .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-            List.of(decisionRequirementsKey), HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS);
+            List.of(decisionRequirementsKey),
+            HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS,
+            LIMIT);
   }
 
   @Test
@@ -567,7 +569,8 @@ public class HistoryDeletionServiceTest {
     historyDeletionService.deleteHistory(partitionId);
 
     // then
-    verify(auditLogWriterMock, never()).scheduleKeyRelatedAuditLogsHistoryCleanupTime(any(), any());
+    verify(auditLogWriterMock, never())
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(any(), any(), anyInt());
   }
 
   private static HistoryDeletionDbModel createModel(

@@ -94,12 +94,14 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
                 .build()));
   }
 
-  public void scheduleKeyRelatedAuditLogsHistoryCleanupTime(
-      final List<Long> keys, final HistoryDeletionTypeDbModel historyDeletionType) {
+  public int scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+      final List<Long> keys,
+      final HistoryDeletionTypeDbModel historyDeletionType,
+      final int limit) {
     final OffsetDateTime historyCleanupDate =
         OffsetDateTime.now().plus(resolveRetentionTime(historyDeletionType));
-    mapper.updateUnsetAuditLogEntityHistoryCleanupDates(
-        keys, historyDeletionType, historyCleanupDate);
+    return mapper.updateUnsetAuditLogEntityHistoryCleanupDates(
+        keys, historyDeletionType, historyCleanupDate, limit);
   }
 
   public int cleanupHistory(
