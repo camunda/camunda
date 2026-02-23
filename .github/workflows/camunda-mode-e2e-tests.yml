@@ -2,6 +2,7 @@ name: E2E Tests for Camunda Modes
 
 on:
   pull_request:
+  push:
 
 jobs
   test-camunda-modes
