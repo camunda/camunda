@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.0.44
+
+### 🩹 Fixes
+
+- fix process instance query type ([#46537](https://github.com/camunda/camunda/issues/46537))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
 
 ## v0.0.43
 
@@ -8,7 +17,6 @@
 ### ❤️ Contributors
 
 - Omran Abazeed ([@omranAbazeed](https://github.com/omranAbazeed))
-
 
 ## v0.0.42
 
