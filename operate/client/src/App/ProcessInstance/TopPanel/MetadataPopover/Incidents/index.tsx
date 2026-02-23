@@ -16,7 +16,6 @@ import {Divider} from '../styled';
 type Props = {
   elementInstanceKey: string;
   elementName: string;
-  elementId: string;
 };
 
 const Incidents: React.FC<Props> = ({elementInstanceKey, elementName}) => {
