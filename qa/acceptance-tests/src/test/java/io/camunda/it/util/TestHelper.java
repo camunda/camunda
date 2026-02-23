@@ -1726,4 +1726,47 @@ public final class TestHelper {
         "sequence flow",
         () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join());
   }
+
+  /**
+   * Waits for a global user task listener to be indexed in Elasticsearch/OpenSearch after creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param listenerId the id of the global listener to retrieve
+   */
+  public static void waitForGlobalTaskListenerToBeIndexed(
+      final CamundaClient camundaClient, final String listenerId) {
+    Awaitility.await("should index global task listener")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newGlobalTaskListenerGetRequest(listenerId).execute();
+              assertThat(result).isNotNull();
+            });
+  }
+
+  /**
+   * Waits for multiple global user task listeners to be indexed in Elasticsearch/OpenSearch after
+   * creation.
+   *
+   * @param camundaClient CamundaClient
+   * @param listenerIds the ids of the global listeners to retrieve
+   */
+  public static void waitForGlobalTaskListenerToBeIndexed(
+      final CamundaClient camundaClient, final List<String> listenerIds) {
+    Awaitility.await("should index global task listeners")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions() // Ignore exceptions and continue retrying
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient
+                      .newGlobalTaskListenerSearchRequest()
+                      .filter(f -> f.id(id -> id.in(listenerIds)))
+                      .page(p -> p.limit(listenerIds.size()))
+                      .execute();
+              assertThat(result.items()).hasSize(listenerIds.size());
+            });
+  }
 }
