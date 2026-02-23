@@ -96,12 +96,12 @@ public class CamundaAnnotationProcessorAopCompatibilityTest {
     BeanInfo beanInfo;
 
     @Override
-    protected boolean isApplicableFor(final BeanInfo beanInfo) {
+    public boolean isApplicableFor(final BeanInfo beanInfo) {
       return beanInfo.getTargetClass().equals(MyWorker.class);
     }
 
     @Override
-    protected void configureFor(final BeanInfo beanInfo) {
+    public void configureFor(final BeanInfo beanInfo) {
       this.beanInfo = beanInfo;
     }
 

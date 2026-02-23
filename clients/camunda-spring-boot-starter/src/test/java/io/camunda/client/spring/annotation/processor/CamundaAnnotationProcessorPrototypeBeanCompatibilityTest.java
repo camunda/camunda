@@ -64,12 +64,12 @@ public class CamundaAnnotationProcessorPrototypeBeanCompatibilityTest {
     private boolean configured = false;
 
     @Override
-    protected boolean isApplicableFor(final BeanInfo beanInfo) {
+    public boolean isApplicableFor(final BeanInfo beanInfo) {
       return beanInfo.getTargetClass().equals(SomeBean.class);
     }
 
     @Override
-    protected void configureFor(final BeanInfo beanInfo) {
+    public void configureFor(final BeanInfo beanInfo) {
       configured = true;
     }
 

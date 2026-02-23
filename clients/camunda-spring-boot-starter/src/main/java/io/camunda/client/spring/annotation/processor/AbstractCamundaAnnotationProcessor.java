@@ -31,9 +31,9 @@ public abstract class AbstractCamundaAnnotationProcessor
     this.applicationContext = applicationContext;
   }
 
-  protected abstract boolean isApplicableFor(final BeanInfo beanInfo);
+  public abstract boolean isApplicableFor(final BeanInfo beanInfo);
 
-  protected abstract void configureFor(final BeanInfo beanInfo);
+  public abstract void configureFor(final BeanInfo beanInfo);
 
   protected abstract void start(CamundaClient client);
 
