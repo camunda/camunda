@@ -222,7 +222,15 @@ outputs:
       ${{
         steps.filter-docs.outputs.docs-change == 'true'
       }}
-
+  docker-build-helm-integration:
+    description: Output whether AlwaysGreen Docker Build + Helm integration should run (based on old docker-build-helm-integration.yml paths)
+    value: >-
+      ${{
+        github.event_name == 'push' ||
+        github.event_name == 'schedule' ||
+        steps.filter-common.outputs.github-actions-change == 'true' ||
+        steps.filter-alwaysgreen.outputs.docker-build-helm-integration == 'true'
+      }}
 runs:
   using: composite
   steps:
