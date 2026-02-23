@@ -569,6 +569,7 @@ jobs:
       maven-profiles: "history"
       test-type: "history-tests"
       test-type-label: "History"
+      runs-on: "gcp-perf-core-8-default"
 
   rdbms-integration-tests:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'

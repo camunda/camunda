@@ -49,6 +49,10 @@ on:
         type: boolean
         default: false
         description: Whether to send a Slack notification on failure or cancellation.
+      runs-on:
+        required: false
+        type: string
+        default: "gcp-perf-core-16-default"
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -65,7 +69,7 @@ jobs:
     name: "${{ inputs.database-type }}"
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 20
-    runs-on: gcp-perf-core-16-default
+    runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
