@@ -23,6 +23,7 @@ import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.engine.state.instance.EventTrigger;
 import io.camunda.zeebe.engine.state.mutable.MutableElementInstanceState;
 import io.camunda.zeebe.engine.state.mutable.MutableEventScopeInstanceState;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.BpmnElementType;
@@ -37,11 +38,14 @@ final class ProcessInstanceElementActivatingV2Applier
   private final MutableElementInstanceState elementInstanceState;
   private final ProcessState processState;
   private final MutableEventScopeInstanceState eventScopeInstanceState;
+  private final MutableHubMetricsState hubMetricsState;
 
   public ProcessInstanceElementActivatingV2Applier(
+      final MutableHubMetricsState hubMetricsState,
       final MutableElementInstanceState elementInstanceState,
       final ProcessState processState,
       final MutableEventScopeInstanceState eventScopeInstanceState) {
+    this.hubMetricsState = hubMetricsState;
     this.elementInstanceState = elementInstanceState;
     this.processState = processState;
     this.eventScopeInstanceState = eventScopeInstanceState;
@@ -85,6 +89,12 @@ final class ProcessInstanceElementActivatingV2Applier
     }
 
     manageMultiInstance(elementInstanceKey, flowScopeInstance, flowScopeElementType);
+
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      hubMetricsState.updateOnProcessInstanceCreated(value);
+    } else {
+      hubMetricsState.updateOnElementCreated(value);
+    }
   }
 
   private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {

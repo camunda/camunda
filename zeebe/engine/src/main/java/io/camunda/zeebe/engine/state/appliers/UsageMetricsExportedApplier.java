@@ -8,6 +8,7 @@
 package io.camunda.zeebe.engine.state.appliers;
 
 import io.camunda.zeebe.engine.state.TypedEventApplier;
+import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
 import io.camunda.zeebe.engine.state.mutable.MutableUsageMetricState;
 import io.camunda.zeebe.protocol.impl.record.value.metrics.UsageMetricRecord;
@@ -21,9 +22,11 @@ public class UsageMetricsExportedApplier
 
   private static final Logger LOG = LoggerFactory.getLogger(UsageMetricsExportedApplier.class);
 
+  private final MutableHubMetricsState hubMetricsState;
   private final MutableUsageMetricState usageMetricState;
 
   public UsageMetricsExportedApplier(final MutableProcessingState processingState) {
+    hubMetricsState = processingState.getHubMetricsState();
     usageMetricState = processingState.getUsageMetricState();
   }
 
@@ -32,6 +35,7 @@ public class UsageMetricsExportedApplier
     if (record.getEventType() == EventType.NONE) {
       LOG.debug("Reset active bucket {}", record.getResetTime());
       usageMetricState.resetActiveBucket(record.getResetTime());
+      hubMetricsState.reset();
     }
   }
 }
