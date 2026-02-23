@@ -21,6 +21,7 @@ public enum AuditLogEntityTypeEnum {
   DECISION,
   GROUP,
   INCIDENT,
+  JOB,
   MAPPING_RULE,
   PROCESS_INSTANCE,
   ROLE,
