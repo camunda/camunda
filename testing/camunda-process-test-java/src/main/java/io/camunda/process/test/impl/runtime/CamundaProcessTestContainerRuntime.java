@@ -73,7 +73,9 @@ public class CamundaProcessTestContainerRuntime
   private final boolean isMultiTenancyEnabled;
   private final boolean connectorsEnabled;
 
-  CamundaProcessTestContainerRuntime(
+  private boolean isStarted = false;
+
+  public CamundaProcessTestContainerRuntime(
       final CamundaProcessTestRuntimeBuilder builder, final ContainerFactory containerFactory) {
     this.containerFactory = containerFactory;
 
@@ -186,6 +188,8 @@ public class CamundaProcessTestContainerRuntime
     final Instant endTime = Instant.now();
     final Duration startupTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime started in {}", startupTime);
+
+    isStarted = true;
   }
 
   @Override
@@ -244,6 +248,10 @@ public class CamundaProcessTestContainerRuntime
     final Instant endTime = Instant.now();
     final Duration shutdownTime = Duration.between(startTime, endTime);
     LOGGER.info("Camunda container runtime stopped in {}", shutdownTime);
+  }
+
+  public boolean isStarted() {
+    return isStarted;
   }
 
   private static Slf4jLogConsumer createContainerLogger(final String name) {

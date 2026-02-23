@@ -540,7 +540,7 @@ public class CamundaProcessTestExtension
   }
 
   /**
-   * Configure the mode of the runtime (managed/remote).
+   * Configure the mode of the runtime (managed/remote/shared).
    *
    * @param runtimeMode the runtime mode to use
    * @return the extension builder
