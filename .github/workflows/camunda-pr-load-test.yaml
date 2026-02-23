@@ -83,7 +83,7 @@ jobs:
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
+      name: c8-${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       pod: ''
 
   comment-pr:
@@ -181,7 +181,7 @@ jobs:
           location: europe-west1-b
       - name: Delete benchmarks
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
+          kubectl delete ns "c8-${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
