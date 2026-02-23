@@ -21,6 +21,7 @@ import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
  * balanced processing.
  */
 public class HistoryDeletionJob implements BackgroundTask {
+
   private final List<ProcessInstanceDependant> processInstanceDependants;
   private final Executor executor;
   private final HistoryDeletionRepository deleterRepository;
@@ -134,10 +136,14 @@ public class HistoryDeletionJob implements BackgroundTask {
             deleteDecisionInstancesAndRequirementsFuture)
         .thenCompose(
             ignored -> {
-              final var deletedResources = new ArrayList<String>();
+              final var deletedResources = new HashSet<String>();
               deletedResources.addAll(deleteProcessInstancesAndDefinitionsFuture.join());
               deletedResources.addAll(deleteDecisionInstancesAndRequirementsFuture.join());
-              return deleteFromHistoryDeletionIndex(deletedResources);
+
+              return deleterRepository
+                  .createAuditLogCleanupEntries(batch.historyDeletionEntities(), deletedResources)
+                  .thenCompose(
+                      v -> deleteFromHistoryDeletionIndex(new ArrayList<>(deletedResources)));
             });
   }
 

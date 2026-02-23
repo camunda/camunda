@@ -48,4 +48,10 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
         .join();
     client.indices().refresh(r -> r.index(historyDeletionIndex.getFullQualifiedName())).join();
   }
+
+  @Override
+  protected long countAuditLogCleanupEntries() throws IOException {
+    client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
+    return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
+  }
 }

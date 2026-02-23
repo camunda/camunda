@@ -54,4 +54,10 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
         .join();
     client.indices().refresh(r -> r.index(historyDeletionIndex.getFullQualifiedName())).join();
   }
+
+  @Override
+  protected long countAuditLogCleanupEntries() {
+    client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
+    return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
+  }
 }
