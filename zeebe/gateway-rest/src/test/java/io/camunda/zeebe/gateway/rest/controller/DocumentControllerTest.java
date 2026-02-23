@@ -679,4 +679,41 @@ public class DocumentControllerTest extends RestControllerTest {
 
     verify(documentServices, never()).createDocumentBatch(any());
   }
+
+  @Test
+  void shouldRejectBatchDocumentWithInvalidProcessDefinitionId() throws Exception {
+    // given — a processDefinitionId starting with a digit is invalid per the
+    // BPMN identifier pattern ^[a-zA-Z_][a-zA-Z0-9_\-.]*$
+    final var content = new byte[] {1, 2, 3};
+    final var contentType = MediaType.APPLICATION_OCTET_STREAM;
+    final var mapper = new ObjectMapper();
+
+    final var metadata = new DocumentMetadata();
+    metadata.setFileName("file.txt");
+    metadata.setProcessDefinitionId("9invalid");
+
+    final var multipartBodyBuilder = new MultipartBodyBuilder();
+    multipartBodyBuilder.part("files", content).contentType(contentType).filename("file.txt");
+    multipartBodyBuilder
+        .part("metadataList", mapper.writeValueAsString(List.of(metadata)))
+        .contentType(MediaType.APPLICATION_JSON);
+
+    // when/then
+    webClient
+        .post()
+        .uri(DOCUMENTS_BASE_URL + "/batch")
+        .contentType(MediaType.MULTIPART_FORM_DATA)
+        .bodyValue(multipartBodyBuilder.build())
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectBody()
+        .jsonPath("$.detail")
+        .isEqualTo(
+            "The provided processDefinitionId contains illegal characters. "
+                + "It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\-.]*$'");
+
+    verify(documentServices, never()).createDocumentBatch(any());
+  }
 }
