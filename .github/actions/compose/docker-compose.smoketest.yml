@@ -1,7 +1,7 @@
 services:
   elasticsearch:
     container_name: elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.13.0}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${ELASTIC_VERSION:-8.16.0}
     environment:
       - TZ=Europe/Berlin
       - xpack.security.enabled=false
@@ -104,20 +104,27 @@ services:
       - elasticsearch
   keycloak:
     container_name: keycloak
-    image: bitnami/keycloak:26.3.3@sha256:da3df0976a9f9a664bdbde6cb5308b78f03ac94d0abf33b2df355bbb06cbc5b9
+    image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
+    command: [ start ]
     ports:
       - "18080:8080"
-    healthcheck:
-      test: ["CMD", "wget", "-q", "--tries=1", "--spider", "http://localhost:8080/auth"]
-      interval: 30s
-      timeout: 15s
-      retries: 5
-      start_period: 30s
     environment:
-      KEYCLOAK_ADMIN_USER: admin
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
-      KEYCLOAK_DATABASE_VENDOR: dev-file
-      KEYCLOAK_HTTP_RELATIVE_PATH: /auth
+      KC_DB: dev-file
+      KC_CACHE: ispn
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_RELATIVE_PATH: /auth
+      KC_HEALTH_ENABLED: "true"
+      KC_HOSTNAME_STRICT: "false"
+    healthcheck:
+      test: >
+        bash -c "echo -e 'GET /auth HTTP/1.1\r\nHost: localhost\r\n\r\n' >/dev/tcp/127.0.0.1/8080 || exit 1"
+      interval: 30s
+      timeout: 5s
+      retries: 3
   identity:
     depends_on:
       - keycloak

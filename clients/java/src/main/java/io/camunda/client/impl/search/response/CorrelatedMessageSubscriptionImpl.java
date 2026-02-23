@@ -33,6 +33,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
   private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final Long subscriptionKey;
   private final String tenantId;
 
@@ -47,6 +48,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     subscriptionKey = ParseUtil.parseLongOrNull(item.getSubscriptionKey());
     tenantId = item.getTenantId();
   }
@@ -102,6 +104,11 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
   }
 
   @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  @Override
   public Long getSubscriptionKey() {
     return subscriptionKey;
   }
@@ -124,6 +131,7 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
         processDefinitionId,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         subscriptionKey,
         tenantId);
   }
@@ -148,6 +156,8 @@ public class CorrelatedMessageSubscriptionImpl implements CorrelatedMessageSubsc
         && Objects.equals(processDefinitionId, correlatedMessageSubscription.processDefinitionId)
         && Objects.equals(processDefinitionKey, correlatedMessageSubscription.processDefinitionKey)
         && Objects.equals(processInstanceKey, correlatedMessageSubscription.processInstanceKey)
+        && Objects.equals(
+            rootProcessInstanceKey, correlatedMessageSubscription.rootProcessInstanceKey)
         && Objects.equals(subscriptionKey, correlatedMessageSubscription.subscriptionKey)
         && Objects.equals(tenantId, correlatedMessageSubscription.tenantId);
   }

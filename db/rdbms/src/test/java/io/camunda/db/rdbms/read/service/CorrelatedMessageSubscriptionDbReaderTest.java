@@ -27,7 +27,8 @@ class CorrelatedMessageSubscriptionDbReaderTest {
   private final CorrelatedMessageSubscriptionMapper correlatedMessageSubscriptionMapper =
       mock(CorrelatedMessageSubscriptionMapper.class);
   private final CorrelatedMessageSubscriptionDbReader correlatedMessageSubscriptionDbReader =
-      new CorrelatedMessageSubscriptionDbReader(correlatedMessageSubscriptionMapper);
+      new CorrelatedMessageSubscriptionDbReader(
+          correlatedMessageSubscriptionMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

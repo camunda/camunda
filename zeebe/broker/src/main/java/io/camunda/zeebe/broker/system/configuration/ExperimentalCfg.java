@@ -23,6 +23,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   public static final DataSize DEFAULT_MAX_APPEND_BATCH_SIZE = DataSize.ofKilobytes(32);
   public static final boolean DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH = false;
   public static final boolean DEFAULT_VERSION_CHECK_ENABLED = true;
+  private static final boolean DEFAULT_SEND_ON_LEGACY_SUBJECT = true;
+  private static final boolean DEFAULT_RECEIVE_ON_LEGACY_SUBJECT = true;
+  private static final String DEFAULT_ENGINE_NAME = "default";
 
   private boolean continuousBackups = false;
 
@@ -35,6 +38,9 @@ public class ExperimentalCfg implements ConfigurationEntry {
   private int maxAppendsPerFollower = DEFAULT_MAX_APPENDS_PER_FOLLOWER;
   private DataSize maxAppendBatchSize = DEFAULT_MAX_APPEND_BATCH_SIZE;
   private boolean disableExplicitRaftFlush = DEFAULT_DISABLE_EXPLICIT_RAFT_FLUSH;
+  private boolean sendOnLegacySubject = DEFAULT_SEND_ON_LEGACY_SUBJECT;
+  private boolean receiveOnLegacySubject = DEFAULT_RECEIVE_ON_LEGACY_SUBJECT;
+  private String defaultEngineName = DEFAULT_ENGINE_NAME;
   private RocksdbCfg rocksdb = new RocksdbCfg();
   private ExperimentalRaftCfg raft = new ExperimentalRaftCfg();
   private PartitioningCfg partitioning = new PartitioningCfg();
@@ -161,6 +167,30 @@ public class ExperimentalCfg implements ConfigurationEntry {
     this.features = features;
   }
 
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
+  }
+
+  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
+  }
+
+  public boolean isReceiveOnLegacySubject() {
+    return receiveOnLegacySubject;
+  }
+
+  public void setReceiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
+  }
+
+  public String getDefaultEngineName() {
+    return defaultEngineName;
+  }
+
+  public void setDefaultEngineName(final String defaultEngineName) {
+    this.defaultEngineName = defaultEngineName;
+  }
+
   @Override
   public String toString() {
     return "ExperimentalCfg{"
@@ -182,6 +212,12 @@ public class ExperimentalCfg implements ConfigurationEntry {
         + engine
         + ", features="
         + features
+        + ", sendOnLegacySubject="
+        + sendOnLegacySubject
+        + ", receiveOnLegacySubject="
+        + receiveOnLegacySubject
+        + ", defaultEngineName="
+        + defaultEngineName
         + '}';
   }
 }

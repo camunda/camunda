@@ -259,4 +259,21 @@ public final class ExportersStateTest {
     assertThat(state.hasExporters()).isFalse();
     assertThat(state.getLowestPosition()).isEqualTo(-1L);
   }
+
+  @Test
+  public void shouldGetHighestPosition() {
+    // given
+    state.setPosition("e1", 1L);
+    state.setPosition("e2", 100L);
+    state.setPosition("e3", 50L);
+
+    // when/then
+    assertThat(state.getHighestPosition()).isEqualTo(100L);
+  }
+
+  @Test
+  public void shouldReturnMinValueForHighestPositionWhenNoExporters() {
+    // when/then
+    assertThat(state.getHighestPosition()).isEqualTo(Long.MIN_VALUE);
+  }
 }

@@ -176,6 +176,11 @@ const processDefinitionInstanceVersionStatisticsSchema = z.object({
 });
 type ProcessDefinitionInstanceVersionStatistics = z.infer<typeof processDefinitionInstanceVersionStatisticsSchema>;
 
+const processDefinitionVersionStatisticsFilterFieldsSchema = z.object({
+	processDefinitionId: z.string(),
+	tenantId: z.string().optional(),
+});
+
 const getProcessDefinitionInstanceVersionStatisticsRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: [
 		'processDefinitionId',
@@ -185,7 +190,7 @@ const getProcessDefinitionInstanceVersionStatisticsRequestBodySchema = getQueryR
 		'activeInstancesWithIncidentCount',
 		'activeInstancesWithoutIncidentCount',
 	] as const,
-	filter: getOrFilterSchema(processDefinitionStatisticsFilterFieldsSchema.partial()),
+	filter: processDefinitionVersionStatisticsFilterFieldsSchema,
 });
 
 type GetProcessDefinitionInstanceVersionStatisticsRequestBody = z.infer<
@@ -199,10 +204,9 @@ type GetProcessDefinitionInstanceVersionStatisticsResponseBody = z.infer<
 	typeof getProcessDefinitionInstanceVersionStatisticsResponseBodySchema
 >;
 
-const getProcessDefinitionInstanceVersionStatistics: Endpoint<Pick<ProcessDefinition, 'processDefinitionId'>> = {
+const getProcessDefinitionInstanceVersionStatistics: Endpoint = {
 	method: 'POST',
-	getUrl: ({processDefinitionId}) =>
-		`/${API_VERSION}/process-definitions/${processDefinitionId}/statistics/process-instances`,
+	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances-by-version`,
 };
 
 export {

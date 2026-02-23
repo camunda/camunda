@@ -15,7 +15,7 @@ import {ViewFullVariableButton} from './index';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockGetVariable} from 'modules/mocks/api/v2/variables/getVariable';
-import {createvariable} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 
 const createWrapper = () => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -33,7 +33,7 @@ describe('<ViewFullVariableButton />', () => {
     const mockVariableValue = '{"foo": "bar", "test": 123}';
 
     mockGetVariable().withSuccess(
-      createvariable({
+      createVariable({
         variableKey: mockVariableKey,
         name: mockVariableName,
         value: mockVariableValue,

@@ -12,20 +12,24 @@ import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbCompositeKey;
+import io.camunda.zeebe.db.impl.DbEnumValue;
 import io.camunda.zeebe.db.impl.DbForeignKey;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.db.impl.DbNil;
 import io.camunda.zeebe.db.impl.DbString;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
-import java.util.Optional;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.collections.MutableBoolean;
 
 public final class DbGlobalListenersState implements MutableGlobalListenersState {
 
   private final DbString key = new DbString();
-  private final PersistedGlobalListenersConfig currentConfig = new PersistedGlobalListenersConfig();
-  private final ColumnFamily<DbString, PersistedGlobalListenersConfig> currentConfigColumnFamily;
+  private final DbLong currentConfigKey = new DbLong();
+  private final ColumnFamily<DbString, DbLong> currentConfigKeyColumnFamily;
 
   private final DbLong versionKey = new DbLong();
   private final PersistedGlobalListenersConfig versionedConfig =
@@ -37,15 +41,22 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   private final ConfigKeyAndElementKey pinnedConfigKey;
   private final ColumnFamily<ConfigKeyAndElementKey, DbNil> pinnedConfigColumnFamily;
 
+  private final DbEnumValue<GlobalListenerType> listenerType;
+  private final DbString listenerId;
+  private final ListenerTypeAndIdKey listenerTypeAndIdKey;
+  private final PersistedGlobalListener globalListener;
+  private final ColumnFamily<ListenerTypeAndIdKey, PersistedGlobalListener>
+      globalListenersColumnFamily;
+
   public DbGlobalListenersState(
       final ZeebeDb<ZbColumnFamilies> zeebeDb, final TransactionContext transactionContext) {
     key.wrapString("CURRENT");
-    currentConfigColumnFamily =
+    currentConfigKeyColumnFamily =
         zeebeDb.createColumnFamily(
             ZbColumnFamilies.GLOBAL_LISTENER_CURRENT_CONFIG,
             transactionContext,
             key,
-            currentConfig);
+            currentConfigKey);
 
     versionedConfigColumnFamily =
         zeebeDb.createColumnFamily(
@@ -62,21 +73,62 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
             transactionContext,
             pinnedConfigKey,
             DbNil.INSTANCE);
+
+    listenerType = new DbEnumValue<>(GlobalListenerType.class);
+    listenerId = new DbString();
+    listenerTypeAndIdKey = new ListenerTypeAndIdKey(listenerType, listenerId);
+    globalListener = new PersistedGlobalListener();
+    globalListenersColumnFamily =
+        zeebeDb.createColumnFamily(
+            ZbColumnFamilies.GLOBAL_LISTENERS,
+            transactionContext,
+            listenerTypeAndIdKey,
+            globalListener);
   }
 
   @Override
   public GlobalListenerBatchRecord getCurrentConfig() {
-    return Optional.ofNullable(currentConfigColumnFamily.get(key))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners)
-        .orElse(null);
+    // Retrieve configuration key
+    final var configKey = getCurrentConfigKey();
+    if (configKey == null) {
+      return null;
+    }
+    final var currentConfig = new GlobalListenerBatchRecord();
+    currentConfig.setGlobalListenerBatchKey(configKey);
+
+    // Retrieve listeners list
+    final List<GlobalListenerRecord> currentListeners = new ArrayList<>();
+    globalListenersColumnFamily.forEach(
+        listener -> {
+          // Note: the copy is necessary because the same instance is reused by the column family
+          // iterator
+          final GlobalListenerRecord record = new GlobalListenerRecord();
+          record.copyFrom(listener.getGlobalListener());
+          currentListeners.add(record);
+        });
+    currentListeners.sort(GlobalListenerRecord.PRIORITY_COMPARATOR);
+    currentListeners.forEach(currentConfig::addListener);
+
+    return currentConfig;
+  }
+
+  @Override
+  public Long getCurrentConfigKey() {
+    final var configKey = currentConfigKeyColumnFamily.get(key);
+    if (configKey == null) {
+      return null;
+    }
+    return configKey.getValue();
   }
 
   @Override
   public GlobalListenerBatchRecord getVersionedConfig(final long versionKey) {
     this.versionKey.wrapLong(versionKey);
-    return Optional.ofNullable(versionedConfigColumnFamily.get(this.versionKey))
-        .map(PersistedGlobalListenersConfig::getGlobalListeners)
-        .orElse(null);
+    final var versionedConfig = versionedConfigColumnFamily.get(this.versionKey);
+    if (versionedConfig == null) {
+      return null;
+    }
+    return versionedConfig.getGlobalListeners();
   }
 
   @Override
@@ -101,9 +153,44 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
   }
 
   @Override
-  public void updateCurrentConfiguration(final GlobalListenerBatchRecord record) {
-    currentConfig.setGlobalListeners(record);
-    currentConfigColumnFamily.upsert(key, currentConfig);
+  public GlobalListenerRecord getGlobalListener(
+      final GlobalListenerType listenerType, final String id) {
+    this.listenerType.setValue(listenerType);
+    listenerId.wrapString(id);
+    final var persistedListener = globalListenersColumnFamily.get(listenerTypeAndIdKey);
+    if (persistedListener == null) {
+      return null;
+    }
+    return persistedListener.getGlobalListener();
+  }
+
+  @Override
+  public void create(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListener.setGlobalListener(record);
+    globalListenersColumnFamily.insert(listenerTypeAndIdKey, globalListener);
+  }
+
+  @Override
+  public void update(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListener.setGlobalListener(record);
+    globalListenersColumnFamily.update(listenerTypeAndIdKey, globalListener);
+  }
+
+  @Override
+  public void delete(final GlobalListenerRecord record) {
+    listenerType.setValue(record.getListenerType());
+    listenerId.wrapString(record.getId());
+    globalListenersColumnFamily.deleteExisting(listenerTypeAndIdKey);
+  }
+
+  @Override
+  public void updateConfigKey(final long configKey) {
+    currentConfigKey.wrapLong(configKey);
+    currentConfigKeyColumnFamily.upsert(key, currentConfigKey);
   }
 
   @Override
@@ -140,6 +227,14 @@ public final class DbGlobalListenersState implements MutableGlobalListenersState
       super(
           new DbForeignKey<>(configKey, ZbColumnFamilies.GLOBAL_LISTENER_VERSIONED_CONFIG),
           elementKey);
+    }
+  }
+
+  private static class ListenerTypeAndIdKey
+      extends DbCompositeKey<DbEnumValue<GlobalListenerType>, DbString> {
+    public ListenerTypeAndIdKey(
+        final DbEnumValue<GlobalListenerType> listenerType, final DbString id) {
+      super(listenerType, id);
     }
   }
 }

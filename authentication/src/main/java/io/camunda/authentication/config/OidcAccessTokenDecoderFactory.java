@@ -21,9 +21,11 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtTypeValidator;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 
 /**
@@ -139,7 +141,10 @@ public class OidcAccessTokenDecoderFactory {
       final JWTProcessor<SecurityContext> jwtProcessor,
       final OAuth2TokenValidator<Jwt> tokenValidator) {
     final var decoder = new NimbusJwtDecoder(jwtProcessor);
-    decoder.setJwtValidator(tokenValidator);
+    final JwtTypeValidator jwtTypeValidator =
+        new JwtTypeValidator(List.of(JOSEObjectType.JWT.getType(), AT_JWT.getType()));
+    jwtTypeValidator.setAllowEmpty(true);
+    decoder.setJwtValidator(new DelegatingOAuth2TokenValidator<>(jwtTypeValidator, tokenValidator));
     return decoder;
   }
 

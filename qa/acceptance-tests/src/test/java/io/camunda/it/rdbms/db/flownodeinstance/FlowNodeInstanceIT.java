@@ -182,6 +182,32 @@ public class FlowNodeInstanceIT {
   }
 
   @TestTemplate
+  public void shouldFindAllElementInstancePagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var processDefinitionId = nextStringId();
+    createAndSaveRandomFlowNodeInstances(
+        rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        reader.search(
+            new FlowNodeInstanceQuery(
+                new FlowNodeInstanceFilter.Builder()
+                    .processDefinitionIds(processDefinitionId)
+                    .build(),
+                FlowNodeInstanceSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllElementInstancePageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -309,6 +335,48 @@ public class FlowNodeInstanceIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final FlowNodeInstanceDbReader reader = rdbmsService.getFlowNodeInstanceReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getFlowNodeInstanceWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            FlowNodeInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(FlowNodeInstanceEntity::flowNodeInstanceKey))
+        .containsExactlyInAnyOrder(item1.flowNodeInstanceKey(), item3.flowNodeInstanceKey());
   }
 
   @TestTemplate

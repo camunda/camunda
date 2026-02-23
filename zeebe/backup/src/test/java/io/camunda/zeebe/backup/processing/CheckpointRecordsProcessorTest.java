@@ -404,7 +404,7 @@ final class CheckpointRecordsProcessorTest {
     final var currentBackupPosition = 50;
     final var timestamp = Instant.now().toEpochMilli();
     state.setLatestBackupInfo(
-        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP, -1L);
 
     final var newCheckpointId = 10;
     final var newCheckpointPosition = 100;
@@ -445,7 +445,8 @@ final class CheckpointRecordsProcessorTest {
         currentBackupId,
         currentBackupPosition,
         Instant.now().toEpochMilli(),
-        CheckpointType.MARKER);
+        CheckpointType.MARKER,
+        -1L);
 
     final var oldCheckpointId = 5;
     final var oldCheckpointPosition = 50;
@@ -474,7 +475,8 @@ final class CheckpointRecordsProcessorTest {
         currentBackupId,
         currentBackupPosition,
         Instant.now().toEpochMilli(),
-        CheckpointType.MANUAL_BACKUP);
+        CheckpointType.MANUAL_BACKUP,
+        -1L);
 
     final var sameCheckpointId = 10;
     final var sameCheckpointPosition = 100;
@@ -544,7 +546,7 @@ final class CheckpointRecordsProcessorTest {
     final var currentBackupPosition = 50;
     final var timestamp = Instant.now().toEpochMilli();
     state.setLatestBackupInfo(
-        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP);
+        currentBackupId, currentBackupPosition, timestamp, CheckpointType.MANUAL_BACKUP, -1L);
 
     final var newCheckpointId = 10;
     final var newCheckpointPosition = 100;

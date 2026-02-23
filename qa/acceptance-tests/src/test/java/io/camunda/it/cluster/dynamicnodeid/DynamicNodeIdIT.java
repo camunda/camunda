@@ -132,7 +132,8 @@ public class DynamicNodeIdIT {
     // then
     final var objectsInBucket = s3Client.listObjects(b -> b.bucket(BUCKET_NAME)).contents();
 
-    assertThat(objectsInBucket).hasSize(CLUSTER_SIZE);
+    // there should be one object per broker with a valid lease plus a marker file
+    assertThat(objectsInBucket).hasSize(CLUSTER_SIZE + 1);
     final var leases = readLeases(objectsInBucket);
 
     // Verify the mapping nodeId -> taskId is consistent with the nodeId from the cluster

@@ -12,4 +12,10 @@ public class BackupNotFoundException extends RuntimeException {
   public BackupNotFoundException(final long backupId) {
     super("Could not find a completed backup with id %d.".formatted(backupId));
   }
+
+  public BackupNotFoundException(final long backupId, final int partitionId) {
+    super(
+        "Could not find a completed backup with id %d for partition %d."
+            .formatted(backupId, partitionId));
+  }
 }

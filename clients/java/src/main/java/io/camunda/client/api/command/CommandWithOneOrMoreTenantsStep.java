@@ -15,6 +15,7 @@
  */
 package io.camunda.client.api.command;
 
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.util.List;
 
 public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantStep<T> {
@@ -28,6 +29,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    *
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
+   *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
    *
    * @param tenantId the identifier of the tenant to specify for this command, e.g. {@code "ACME"}
    * @return the builder for this command with the tenant specified
@@ -45,6 +50,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * <p>This can be useful when requesting jobs for multiple tenants at once. Each of the activated
    * jobs will be owned by the tenant that owns the corresponding process instance.
    *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
+   *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
    * @return the builder for this command with the tenants specified
@@ -56,6 +65,10 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
   /**
    * Shorthand method for {@link #tenantIds(List)}.
    *
+   * <p>Note: when {@link TenantFilter} is set to {@link TenantFilter#ASSIGNED} the tenant IDs
+   * provided via this method are ignored and the tenants assigned to the authenticated principal
+   * are resolved dynamically.
+   *
    * @param tenantIds the identifiers of the tenants to specify for this command, e.g. {@code
    *     ["ACME", "OTHER"]}
    * @return the builder for this command with the tenants specified
@@ -63,4 +76,19 @@ public interface CommandWithOneOrMoreTenantsStep<T> extends CommandWithTenantSte
    * @since 8.3
    */
   T tenantIds(String... tenantIds);
+
+  /**
+   * Sets the tenant filter strategy for this command. See {@link TenantFilter} for possible values.
+   *
+   * <p>When set to {@link TenantFilter#ASSIGNED}, the tenants assigned to the authenticated
+   * principal are resolved dynamically and any tenant IDs provided via {@link #tenantId(String)} or
+   * {@link #tenantIds(List)} are ignored.
+   *
+   * <p>When set to {@link TenantFilter#PROVIDED}, the tenant IDs supplied with this command are
+   * used.
+   *
+   * @param tenantFilter the tenant filter strategy
+   * @return the builder for this command with the tenant filter specified
+   */
+  T tenantFilter(TenantFilter tenantFilter);
 }

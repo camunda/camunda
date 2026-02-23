@@ -301,6 +301,9 @@ components:
             - $ref: '#/components/schemas/ResourceTypeEnum'
 
     AuthorizationResult:
+      required:
+        - permissionTypes
+        - resourcePropertyName
       type: object
       properties:
         ownerId:
@@ -315,9 +318,11 @@ components:
             - $ref: '#/components/schemas/ResourceTypeEnum'
         resourceId:
           description: ID of the resource the permission relates to (mutually exclusive with `resourcePropertyName`).
+          nullable: true
           type: string
         resourcePropertyName:
           description: The name of the resource property the permission relates to (mutually exclusive with `resourceId`).
+          nullable: true
           type: string
         permissionTypes:
           description: Specifies the types of the permissions.
@@ -331,6 +336,8 @@ components:
 
     AuthorizationSearchResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -357,7 +364,9 @@ components:
         - ACCESS
         - CANCEL_PROCESS_INSTANCE
         - CLAIM
+        - CLAIM_USER_TASK
         - COMPLETE
+        - COMPLETE_USER_TASK
         - CREATE
         - CREATE_BATCH_OPERATION_CANCEL_PROCESS_INSTANCE
         - CREATE_BATCH_OPERATION_DELETE_DECISION_DEFINITION

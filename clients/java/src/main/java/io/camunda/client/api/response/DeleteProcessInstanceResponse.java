@@ -15,16 +15,4 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.search.enums.BatchOperationType;
-
-public interface DeleteProcessInstanceResponse {
-  /**
-   * @return the unique key of the batch operation that was created.
-   */
-  String getBatchOperationKey();
-
-  /**
-   * @return the type of the batch operation that was created.
-   */
-  BatchOperationType getBatchOperationType();
-}
+public interface DeleteProcessInstanceResponse {}

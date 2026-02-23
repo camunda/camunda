@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +30,8 @@ final class JobStreamServiceStepTest {
               .setTimeout(250)
               .setFetchVariables(List.of(new StringValue("foo"), new StringValue("bar")))
               .setWorker(worker, 0, worker.capacity())
-              .setTenantIds(List.of("tenant1", "tenant2"));
+              .setTenantIds(List.of("tenant1", "tenant2"))
+              .setTenantFilter(TenantFilter.ASSIGNED);
       final var buffer = BufferUtil.createCopy(properties);
 
       // when
@@ -41,6 +43,7 @@ final class JobStreamServiceStepTest {
       assertThat(immutable.fetchVariables())
           .containsExactlyInAnyOrder(BufferUtil.wrapString("foo"), BufferUtil.wrapString("bar"));
       assertThat(immutable.tenantIds()).containsExactlyInAnyOrder("tenant1", "tenant2");
+      assertThat(immutable.tenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
     }
   }
 }

@@ -289,9 +289,6 @@ public class ScaleUpTest {
 
   @Test
   public void bootstrappingAPartitionIsIdempotent() {
-
-    // set a lower maximum time as we don't expect to see the SCALED_UP event
-    RecordingExporter.setMaximumWaitTime(200);
     // given
     final var index = 99;
     final var scaleTo3 =
@@ -316,11 +313,14 @@ public class ScaleUpTest {
 
     // then
     // no additional events are added to the log stream
-    final var records =
-        RecordingExporter.scaleRecords()
-            .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
-            .filter(r -> r.getPartitionId() == 1);
-    assertThat(records)
+    final var scaleRecords =
+        RecordingExporter.expectNoMatchingRecords(
+            records ->
+                records
+                    .scaleRecords()
+                    .limit(r -> r.getIntent() == ScaleIntent.SCALED_UP)
+                    .filter(r -> r.getPartitionId() == 1));
+    assertThat(scaleRecords)
         .hasSize(2)
         .map(Record::getIntent)
         .containsSequence(

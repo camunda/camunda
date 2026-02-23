@@ -84,7 +84,7 @@ public class JobEntityMapperTest {
             .hasFailedWithRetriesLeft(false)
             .errorCode(null)
             .errorMessage(null)
-            .customHeaders(Map.of())
+            .customHeaders(null)
             .deadline(null)
             .endTime(null)
             .processDefinitionId(null)

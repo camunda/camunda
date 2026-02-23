@@ -128,7 +128,7 @@ public final class BatchOperationSetupProcessors {
         .onCommand(
             ValueType.BATCH_OPERATION_CHUNK,
             BatchOperationChunkIntent.CREATE,
-            new BatchOperationChunkCreateProcessor(writers))
+            new BatchOperationChunkCreateProcessor(writers, keyGenerator))
         .onCommand(
             ValueType.BATCH_OPERATION_EXECUTION,
             BatchOperationExecutionIntent.EXECUTE,

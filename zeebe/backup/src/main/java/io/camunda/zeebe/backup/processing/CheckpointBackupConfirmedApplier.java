@@ -22,6 +22,7 @@ public class CheckpointBackupConfirmedApplier {
         checkpointRecord.getCheckpointId(),
         checkpointRecord.getCheckpointPosition(),
         checkpointTimestamp,
-        checkpointRecord.getCheckpointType());
+        checkpointRecord.getCheckpointType(),
+        checkpointRecord.getFirstLogPosition());
   }
 }

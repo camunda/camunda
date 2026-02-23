@@ -187,9 +187,7 @@ test.describe.parallel('Tenants API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update Tenant Missing Description success 200', async ({
-    request,
-  }) => {
+  test('Update Tenant Missing Description success 200', async ({request}) => {
     const p = {tenantId: state['tenantId1'] as string};
     const expectedBody = {
       ...p,

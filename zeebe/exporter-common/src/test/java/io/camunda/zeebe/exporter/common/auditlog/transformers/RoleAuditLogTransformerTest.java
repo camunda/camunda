@@ -45,4 +45,14 @@ class RoleAuditLogTransformerTest {
     // then
     assertThat(entity.getEntityKey()).isEqualTo("role-123");
   }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<RoleRecordValue> record =
+        factory.generateRecord(ValueType.ROLE, r -> r.withIntent(RoleIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
+  }
 }

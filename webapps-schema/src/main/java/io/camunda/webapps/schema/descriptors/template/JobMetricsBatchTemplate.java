@@ -18,6 +18,7 @@ public class JobMetricsBatchTemplate extends AbstractTemplateDescriptor implemen
   public static final String INDEX_VERSION = "8.9.0";
 
   public static final String ID = "id";
+  public static final String PARTITION_ID = "partitionId";
   public static final String START_TIME = "startTime";
   public static final String END_TIME = "endTime";
   public static final String INCOMPLETE_BATCH = "incompleteBatch";

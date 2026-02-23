@@ -41,7 +41,14 @@ public final class DecisionRequirementsFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomDecisionRequirements(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomDecisionRequirements(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomDecisionRequirements(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getDecisionRequirementsWriter()
           .create(DecisionRequirementsFixtures.createRandomized(builderFunction));

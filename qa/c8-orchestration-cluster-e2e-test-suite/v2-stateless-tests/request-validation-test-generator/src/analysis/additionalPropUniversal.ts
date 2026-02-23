@@ -1,14 +1,20 @@
-import { OperationModel, ValidationScenario } from '../model/types.js';
-import { buildBaselineBody } from '../schema/baseline.js';
-import { makeId } from './common.js';
+import {OperationModel, ValidationScenario} from '../model/types.js';
+import {buildBaselineBody} from '../schema/baseline.js';
+import {makeId} from './common.js';
 
-interface Opts { onlyOperations?: Set<string>; }
+interface Opts {
+  onlyOperations?: Set<string>;
+}
 
 // Always attempt one additional field injection per body-bearing operation.
-export function generateUniversalAdditionalProp(ops: OperationModel[], opts: Opts): ValidationScenario[] {
+export function generateUniversalAdditionalProp(
+  ops: OperationModel[],
+  opts: Opts,
+): ValidationScenario[] {
   const out: ValidationScenario[] = [];
   for (const op of ops) {
-    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId)) continue;
+    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId))
+      continue;
     const schema: any = op.requestBodySchema;
     if (!schema || schema.type !== 'object') continue;
     const baseline = buildBaselineBody(op);
@@ -35,4 +41,10 @@ export function generateUniversalAdditionalProp(ops: OperationModel[], opts: Opt
   return out;
 }
 
-function buildParams(path: string): Record<string,string> | undefined { const m=path.match(/\{([^}]+)}/g); if(!m) return undefined; const params: Record<string,string>={}; for(const token of m) params[token.slice(1,-1)]='x'; return params; }
+function buildParams(path: string): Record<string, string> | undefined {
+  const m = path.match(/\{([^}]+)}/g);
+  if (!m) return undefined;
+  const params: Record<string, string> = {};
+  for (const token of m) params[token.slice(1, -1)] = 'x';
+  return params;
+}

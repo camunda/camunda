@@ -8,6 +8,7 @@
 package io.camunda.configuration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.configuration.beanoverrides.BrokerBasedPropertiesOverride;
@@ -17,9 +18,11 @@ import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg;
 import java.time.Duration;
+import java.util.Map;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.SpringApplication;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
@@ -35,6 +38,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.schedule=0 0 * * * ?",
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=0 30 * * * ?",
       })
@@ -58,6 +62,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.schedule=PT5H",
         "camunda.data.primary-storage.backup.checkpoint-interval=PT2M",
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=PT12H",
@@ -83,6 +88,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=none",
         "camunda.data.primary-storage.backup.schedule=PT5H",
         "camunda.data.primary-storage.backup.checkpoint-interval=PT2M",
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=PT12H",
@@ -114,6 +120,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.schedule=P5H",
         "camunda.data.primary-storage.backup.retention.cleanup-schedule=* * * t *",
       })
@@ -136,6 +143,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.retention.clean-up-schedule=none",
       })
   class NoneRetentionSchedulerConfiguration {
@@ -155,6 +163,7 @@ public class PrimaryStorageBackupPropertiesTest {
   @Nested
   @TestPropertySource(
       properties = {
+        "camunda.data.secondary-storage.type=rdbms",
         "camunda.data.primary-storage.backup.continuous=true",
         "zeebe.broker.experimental.continuousBackups=true"
       })
@@ -168,6 +177,191 @@ public class PrimaryStorageBackupPropertiesTest {
     @Test
     void shouldParseConfig() {
       assertThat(backupSchedulerCfg.isContinuous()).isTrue();
+    }
+  }
+
+  @Nested
+  class ContinuousBackupsStartupCompatibility {
+
+    @Test
+    void shouldFailToStartWithElasticsearchAndContinuousBackups() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.primary-storage.backup.schedule",
+              "PT1H",
+              "camunda.data.secondary-storage.type",
+              "elasticsearch");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Continuous backups are not compatible with secondary storage: `elasticsearch`. Please disable continuous backups");
+    }
+
+    @Test
+    void shouldFailToStartWithOpensearchAndContinuousBackups() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.primary-storage.backup.schedule",
+              "PT1H",
+              "camunda.data.secondary-storage.type",
+              "opensearch");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should fail
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
+    }
+
+    @Test
+    void shouldNotStartIfScheduleIsProvided() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.schedule",
+              "PT1H",
+              "camunda.data.secondary-storage.type",
+              "opensearch");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
+    }
+
+    @Test
+    void shouldStartOnNoneSchedule() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.schedule",
+              "none",
+              "camunda.data.secondary-storage.type",
+              "opensearch");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatCode(app::run).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldStartIfContinuousBackupsEnabled() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.secondary-storage.type",
+              "opensearch");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatThrownBy(app::run)
+          .hasRootCauseInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining(
+              "Continuous backups are not compatible with secondary storage: `opensearch`. Please disable continuous backups");
+    }
+
+    @Test
+    void shouldStartOnRdbms() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.primary-storage.backup.schedule",
+              "PT1H",
+              "camunda.data.secondary-storage.type",
+              "rdbms");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatCode(app::run).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldStartOnNoDb() {
+
+      // given
+      final Map<String, Object> properties =
+          Map.of(
+              "camunda.data.primary-storage.backup.continuous",
+              "true",
+              "camunda.data.primary-storage.backup.schedule",
+              "PT1H",
+              "camunda.data.secondary-storage.type",
+              "none");
+
+      final var app =
+          new SpringApplication(
+              UnifiedConfiguration.class,
+              BrokerBasedPropertiesOverride.class,
+              UnifiedConfigurationHelper.class);
+      app.setAdditionalProfiles("broker");
+      app.setDefaultProperties(properties);
+
+      // when/then - application startup should succeed
+      assertThatCode(app::run).doesNotThrowAnyException();
     }
   }
 }

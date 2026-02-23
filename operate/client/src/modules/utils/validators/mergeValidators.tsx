@@ -11,9 +11,9 @@ import type {FieldValidator} from 'final-form';
 const isPromise = (value: unknown): value is Promise<unknown> => {
   return Boolean(
     value &&
-      typeof value === 'object' &&
-      'then' in value &&
-      typeof (value as {then: unknown}).then === 'function',
+    typeof value === 'object' &&
+    'then' in value &&
+    typeof (value as {then: unknown}).then === 'function',
   );
 };
 

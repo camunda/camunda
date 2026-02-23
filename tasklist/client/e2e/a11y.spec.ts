@@ -42,7 +42,6 @@ test.describe('a11y', () => {
       form: {
         schema: JSON.stringify(schema),
         formKey: 'bigForm',
-        bpmnId: 'userTaskForm_1',
         version: 1,
         tenantId: MOCK_TENANTS[0].tenantId,
       },

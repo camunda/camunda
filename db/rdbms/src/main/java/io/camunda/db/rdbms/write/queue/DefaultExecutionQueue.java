@@ -9,7 +9,9 @@ package io.camunda.db.rdbms.write.queue;
 
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics.FlushTrigger;
+import io.camunda.db.rdbms.write.util.PerMessageThrottledLogger;
 import io.camunda.zeebe.util.ObjectSizeEstimator;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -30,6 +32,8 @@ import org.slf4j.LoggerFactory;
 public class DefaultExecutionQueue implements ExecutionQueue {
 
   private static final Logger LOG = LoggerFactory.getLogger(DefaultExecutionQueue.class);
+  private static final PerMessageThrottledLogger THROTTLED_LOG =
+      new PerMessageThrottledLogger(LOG, Duration.ofMinutes(5));
   private static final long BYTES_PER_MB = 1024L * 1024L;
   private static final Set<Pattern> IGNORE_EMPTY_UPDATES =
       Set.of(
@@ -233,7 +237,7 @@ public class DefaultExecutionQueue implements ExecutionQueue {
       for (final BatchResult singleBatchResult : batchResult) {
         if (Arrays.stream(singleBatchResult.getUpdateCounts()).anyMatch(i -> i == 0)
             && !shouldIgnoreWhenNoRowsAffected(singleBatchResult.getMappedStatement().getId())) {
-          LOG.warn(
+          THROTTLED_LOG.warn(
               "[RDBMS ExecutionQueue, Partition {}] Some statements with ID {} have not affected any rows. Either add them to the ignore list or check why no rows were affected.",
               partitionId,
               singleBatchResult.getMappedStatement().getId());

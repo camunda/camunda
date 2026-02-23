@@ -31,6 +31,7 @@ components:
     CamundaUserResult:
       type: object
       required:
+        - authorizedComponents
         - tenants
         - groups
         - roles
@@ -81,6 +82,7 @@ components:
             type: string
         salesPlanType:
           description: The plan of the user.
+          nullable: true
           type: string
           example: ""
         c8Links:

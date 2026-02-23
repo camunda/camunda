@@ -42,7 +42,8 @@ public class GetUserTaskTest extends ClientRestTest {
             .creationDate(OffsetDateTime.now().toString())
             .completionDate(OffsetDateTime.now().toString())
             .dueDate(OffsetDateTime.now().toString())
-            .followUpDate(OffsetDateTime.now().toString()));
+            .followUpDate(OffsetDateTime.now().toString())
+            .rootProcessInstanceKey("6"));
 
     // when
     client.newUserTaskGetRequest(userTaskKey).send().join();

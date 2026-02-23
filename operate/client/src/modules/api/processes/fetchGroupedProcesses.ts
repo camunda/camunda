@@ -100,5 +100,5 @@ function mapProcessDefinitionsToProcessesV1(
   return processes;
 }
 
-export {fetchGroupedProcesses, mapProcessDefinitionsToProcessesV1};
+export {fetchGroupedProcesses};
 export type {ProcessDto, ProcessVersionDto};

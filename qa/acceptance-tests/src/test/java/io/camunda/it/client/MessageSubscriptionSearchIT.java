@@ -109,6 +109,8 @@ public class MessageSubscriptionSearchIT {
     // Then
     assertThat(searchResponse.items()).size().isEqualTo(1);
     assertThat(searchResponse.items().getFirst()).isEqualTo(expectedMessageSubscription);
+    assertThat(searchResponse.items().getFirst().getRootProcessInstanceKey())
+        .isEqualTo(expectedMessageSubscription.getProcessInstanceKey());
   }
 
   @Test

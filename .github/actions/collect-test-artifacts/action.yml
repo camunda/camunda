@@ -25,7 +25,7 @@ runs:
   using: composite
   steps:
   - name: Archive Test Results
-    uses: actions/upload-artifact@v4
+    uses: actions/upload-artifact@v6
     with:
       name: Test results for ${{ inputs.name  }}
       path: ${{ inputs.path }}

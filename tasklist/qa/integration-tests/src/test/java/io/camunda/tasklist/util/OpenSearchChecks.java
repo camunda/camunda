@@ -10,8 +10,8 @@ package io.camunda.tasklist.util;
 import static io.camunda.tasklist.util.TestCheck.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
-import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.tasklist.webapp.rest.exception.NotFoundApiException;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity;
 import io.camunda.webapps.schema.entities.usertask.TaskState;
@@ -19,17 +19,12 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(
-    prefix = TasklistProperties.PREFIX,
-    name = "webappEnabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("tasklist")
 @Conditional(OpenSearchCondition.class)
 public class OpenSearchChecks {
 

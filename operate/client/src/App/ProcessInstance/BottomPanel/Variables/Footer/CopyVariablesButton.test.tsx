@@ -8,7 +8,7 @@
 
 import {CopyVariablesButton} from './CopyVariablesButton';
 import {render, screen, waitFor} from 'modules/testing-library';
-import {createvariable, createProcessInstance} from 'modules/testUtils';
+import {createVariable, createProcessInstance} from 'modules/testUtils';
 import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
@@ -72,7 +72,7 @@ describe('CopyVariableButton', () => {
 
   it('should be disabled (too many variables)', () => {
     const variables = [...Array(50)].map((_, i) =>
-      createvariable({
+      createVariable({
         name: i.toString(),
         value: 'value',
       }),
@@ -111,7 +111,7 @@ describe('CopyVariableButton', () => {
 
   it('should be disabled (truncated values)', () => {
     const response: QueryVariablesResponseBody = {
-      items: [createvariable({isTruncated: true})],
+      items: [createVariable({isTruncated: true})],
       page: {
         totalItems: 1,
       },
@@ -144,15 +144,15 @@ describe('CopyVariableButton', () => {
   it('should copy variables to clipboard', async () => {
     const response: QueryVariablesResponseBody = {
       items: [
-        createvariable({
+        createVariable({
           name: 'jsonVariable',
           value: JSON.stringify({a: 123, b: [1, 2, 3], c: 'text'}),
         }),
-        createvariable({
+        createVariable({
           name: 'numberVariable',
           value: '666',
         }),
-        createvariable({
+        createVariable({
           name: 'stringVariable',
           value: '"text"',
         }),

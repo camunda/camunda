@@ -29,6 +29,7 @@ class ResourceAuditLogTransformerTest {
     final Resource recordValue =
         ImmutableResource.builder()
             .from(factory.generateObject(Resource.class))
+            .withResourceName("resourceName")
             .withDeploymentKey(123L)
             .withResourceKey(456L)
             .withTenantId("tenant-1")
@@ -46,5 +47,6 @@ class ResourceAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getResourceKey()).isEqualTo(456L);
+    assertThat(entity.getEntityDescription()).isEqualTo("resourceName");
   }
 }

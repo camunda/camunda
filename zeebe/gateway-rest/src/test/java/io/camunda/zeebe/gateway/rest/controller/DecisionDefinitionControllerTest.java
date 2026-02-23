@@ -26,7 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -47,8 +47,8 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "decisionRequirementsId":"decisionRequirementsId",
              "decisionRequirementsKey":"123456",
              "output":"null",
-             "failedDecisionDefinitionId":"",
-             "failureMessage":"",
+             "failedDecisionDefinitionId":null,
+             "failureMessage":null,
              "tenantId":"tenantId",
              "decisionInstanceKey":"123",
              "decisionEvaluationKey":"123",

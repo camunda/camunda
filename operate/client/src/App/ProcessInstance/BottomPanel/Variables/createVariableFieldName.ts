@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const createVariableFieldName = (name: string) => {
+const createVariableFieldName = (name: string): `#${string}` => {
   return `#${encodeURIComponent(name).replace(/\./g, '%2E')}`;
 };
 

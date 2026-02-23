@@ -9,44 +9,22 @@ package io.camunda.it.rdbms.db.historycleanup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryConfig;
-import io.camunda.db.rdbms.write.RdbmsWriters;
-import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
-import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel.ProcessInstanceDbModelBuilder;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
-import io.camunda.it.rdbms.db.fixtures.AuditLogFixtures;
-import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.FlowNodeInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.IncidentFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
-import io.camunda.it.rdbms.db.fixtures.UserTaskFixtures;
-import io.camunda.it.rdbms.db.fixtures.VariableFixtures;
+import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
-import io.camunda.search.clients.reader.SearchEntityReader;
-import io.camunda.search.query.AuditLogQuery;
-import io.camunda.search.query.DecisionInstanceQuery;
-import io.camunda.search.query.FlowNodeInstanceQuery;
-import io.camunda.search.query.IncidentQuery;
-import io.camunda.search.query.ProcessInstanceQuery;
-import io.camunda.search.query.TypedSearchQuery;
-import io.camunda.search.query.UserTaskQuery;
-import io.camunda.search.query.VariableQuery;
-import io.camunda.security.reader.ResourceAccessChecks;
-import io.camunda.util.FilterUtil;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
-public class HistoryCleanupIT {
+public class HistoryCleanupIT extends ProcessInstanceHistory {
 
   @TestTemplate
   public void shouldExecuteHistoryCleanupSuccessfully(
@@ -59,7 +37,7 @@ public class HistoryCleanupIT {
             RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
-    createRandomProcessWithCleanupRelevantData(
+    createRandomProcessWithRelevantRelatedData(
         rdbmsService,
         writers,
         b ->
@@ -69,7 +47,7 @@ public class HistoryCleanupIT {
                 .historyCleanupDate(OffsetDateTime.now().minusSeconds(1)));
 
     final long otherRootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
-    createRandomProcessWithCleanupRelevantData(
+    createRandomProcessWithRelevantRelatedData(
         rdbmsService,
         writers,
         b ->
@@ -103,7 +81,7 @@ public class HistoryCleanupIT {
             rdbmsService.getProcessInstanceReader());
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
-    createRandomProcessWithCleanupRelevantData(
+    createRandomProcessWithRelevantRelatedData(
         rdbmsService,
         writers,
         b ->
@@ -137,7 +115,7 @@ public class HistoryCleanupIT {
             RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
 
     final long rootProcessInstanceKey = ProcessInstanceFixtures.nextKey();
-    createRandomProcessWithCleanupRelevantData(
+    createRandomProcessWithRelevantRelatedData(
         rdbmsService,
         writers,
         b ->
@@ -147,7 +125,7 @@ public class HistoryCleanupIT {
                 .historyCleanupDate(OffsetDateTime.now().minusSeconds(1)));
 
     final long dependentProcessInstanceKey =
-        createRandomProcessWithCleanupRelevantData(
+        createRandomProcessWithRelevantRelatedData(
             rdbmsService,
             writers,
             b -> b.partitionId(0).rootProcessInstanceKey(rootProcessInstanceKey));
@@ -217,7 +195,7 @@ public class HistoryCleanupIT {
             RdbmsWriterConfig.builder().build(), writers, rdbmsService.getProcessInstanceReader());
 
     final long processInstanceKey =
-        createRandomProcessWithCleanupRelevantData(
+        createRandomProcessWithRelevantRelatedData(
             rdbmsService,
             writers,
             b -> b.partitionId(0).historyCleanupDate(OffsetDateTime.now().minusSeconds(1)));
@@ -227,137 +205,5 @@ public class HistoryCleanupIT {
 
     // then
     processInstanceAndRelatedRecordsExist(rdbmsService, processInstanceKey);
-  }
-
-  private void processInstanceAndRelatedRecordsExist(
-      final RdbmsService rdbmsService, final long processInstanceKey) {
-    assertThat(processInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(1L);
-    assertThat(flowNodeInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-    assertThat(userTaskCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-    assertThat(variableCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-    assertThat(incidentCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-    assertThat(decisionInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(20L);
-  }
-
-  private void processInstanceAndRelatedRecordsHaveBeenDeleted(
-      final RdbmsService rdbmsService, final long processInstanceKey) {
-    assertThat(processInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(flowNodeInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(userTaskCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(variableCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(incidentCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(decisionInstanceCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-    assertThat(auditLogCount(rdbmsService, processInstanceKey)).isEqualTo(0L);
-  }
-
-  private long processInstanceCount(
-      final RdbmsService rdbmsService, final long processInstanceKey) {
-    return processInstanceCount(rdbmsService, List.of(processInstanceKey));
-  }
-
-  private long processInstanceCount(
-      final RdbmsService rdbmsService, final List<Long> processInstanceKeys) {
-    return entityCount(
-        rdbmsService.getProcessInstanceReader(),
-        ProcessInstanceQuery.of(
-            b ->
-                b.filter(
-                    f ->
-                        f.processInstanceKeyOperations(
-                            FilterUtil.mapDefaultToOperation(processInstanceKeys)))));
-  }
-
-  private long flowNodeInstanceCount(
-      final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getFlowNodeInstanceReader(),
-        FlowNodeInstanceQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private long userTaskCount(final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getUserTaskReader(),
-        UserTaskQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private long variableCount(final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getVariableReader(),
-        VariableQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private long incidentCount(final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getIncidentReader(),
-        IncidentQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private long decisionInstanceCount(
-      final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getDecisionInstanceReader(),
-        DecisionInstanceQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private long auditLogCount(final RdbmsService rdbmsService, final long processInstanceKey) {
-    return entityCount(
-        rdbmsService.getAuditLogReader(),
-        AuditLogQuery.of(b -> b.filter(f -> f.processInstanceKeys(processInstanceKey))));
-  }
-
-  private <T, Q extends TypedSearchQuery<?, ?>> long entityCount(
-      final SearchEntityReader<T, Q> entityReader, final Q query) {
-    return entityReader.search(query, ResourceAccessChecks.disabled()).total();
-  }
-
-  private long createRandomProcessWithCleanupRelevantData(
-      final RdbmsService rdbmsService,
-      final RdbmsWriters rdbmsWriters,
-      final Function<ProcessInstanceDbModelBuilder, ProcessInstanceDbModelBuilder>
-          builderFunction) {
-
-    final ProcessInstanceDbModel processInstance =
-        ProcessInstanceFixtures.createAndSaveRandomProcessInstance(rdbmsWriters, builderFunction);
-    final long processInstanceKey = processInstance.processInstanceKey();
-    final long rootProcessInstanceKey = processInstance.rootProcessInstanceKey();
-
-    FlowNodeInstanceFixtures.createAndSaveRandomFlowNodeInstances(
-        rdbmsWriters,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    UserTaskFixtures.createAndSaveRandomUserTasks(
-        rdbmsService,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    VariableFixtures.createAndSaveRandomVariables(
-        rdbmsService,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    IncidentFixtures.createAndSaveRandomIncidents(
-        rdbmsWriters,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    DecisionInstanceFixtures.createAndSaveRandomDecisionInstances(
-        rdbmsWriters,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    AuditLogFixtures.createAndSaveRandomAuditLogs(
-        rdbmsWriters,
-        b ->
-            b.processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey));
-
-    return processInstanceKey;
   }
 }

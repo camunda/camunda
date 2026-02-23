@@ -16,7 +16,7 @@ import {waitForItemInList} from 'utils/waitForItemInList';
 
 test.describe.parallel('login page', () => {
   test.beforeEach(async ({page, loginPage}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,

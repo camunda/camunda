@@ -27,6 +27,7 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1.ProcessIns
 import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.MigrationPlan;
 import io.camunda.client.api.response.CreateBatchOperationResponse;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.request.SearchRequestBuilders;
 import io.camunda.client.api.search.request.TypedFilterableRequest.SearchRequestFilter;
@@ -35,6 +36,7 @@ import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.CreateBatchOperationResponseImpl;
 import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.BatchOperationTypeEnum;
+import io.camunda.client.protocol.rest.DecisionInstanceDeletionBatchOperationRequest;
 import io.camunda.client.protocol.rest.MigrateProcessInstanceMappingInstruction;
 import io.camunda.client.protocol.rest.ProcessInstanceCancellationBatchOperationRequest;
 import io.camunda.client.protocol.rest.ProcessInstanceDeletionBatchOperationRequest;
@@ -134,6 +136,8 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
         return "/process-instances/cancellation";
       case DELETE_PROCESS_INSTANCE:
         return "/process-instances/deletion";
+      case DELETE_DECISION_INSTANCE:
+        return "/decision-instances/deletion";
       case RESOLVE_INCIDENT:
         return "/process-instances/incident-resolution";
       case MIGRATE_PROCESS_INSTANCE:
@@ -160,6 +164,9 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
             .filter(provideSearchRequestProperty(filter));
       case DELETE_PROCESS_INSTANCE:
         return new ProcessInstanceDeletionBatchOperationRequest()
+            .filter(provideSearchRequestProperty(filter));
+      case DELETE_DECISION_INSTANCE:
+        return new DecisionInstanceDeletionBatchOperationRequest()
             .filter(provideSearchRequestProperty(filter));
       case RESOLVE_INCIDENT:
         return new ProcessInstanceIncidentResolutionBatchOperationRequest()
@@ -222,7 +229,7 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
     }
 
     @Override
-    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> processInstanceDelete() {
+    public CreateBatchOperationCommandStep2<ProcessInstanceFilter> deleteProcessInstance() {
       return new CreateBatchOperationCommandImpl<>(
           httpClient,
           jsonMapper,
@@ -255,6 +262,15 @@ public class CreateBatchOperationCommandImpl<E extends SearchRequestFilter>
           jsonMapper,
           BatchOperationTypeEnum.MODIFY_PROCESS_INSTANCE,
           SearchRequestBuilders::processInstanceFilter);
+    }
+
+    @Override
+    public CreateBatchOperationCommandStep2<DecisionInstanceFilter> deleteDecisionInstance() {
+      return new CreateBatchOperationCommandImpl<>(
+          httpClient,
+          jsonMapper,
+          BatchOperationTypeEnum.DELETE_DECISION_INSTANCE,
+          SearchRequestBuilders::decisionInstanceFilter);
     }
   }
 }

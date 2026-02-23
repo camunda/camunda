@@ -25,6 +25,14 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-security</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.springframework.session</groupId>
       <artifactId>spring-session-core</artifactId>
     </dependency>
@@ -43,18 +51,6 @@
     <dependency>
       <groupId>org.springframework.security</groupId>
       <artifactId>spring-security-web</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>io.micrometer</groupId>
-      <artifactId>micrometer-core</artifactId>
     </dependency>
     <dependency>
       <groupId>io.micrometer</groupId>
@@ -99,6 +95,10 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-gateway-model</artifactId>
     </dependency>
     <dependency>
       <groupId>io.camunda</groupId>
@@ -186,12 +186,17 @@
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-actuator-autoconfigure</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-test-autoconfigure</artifactId>
+      <artifactId>spring-boot-webmvc-test</artifactId>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -259,6 +264,7 @@
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
             <dep>org.springframework:spring-webmvc</dep>
+            <dep>org.springframework.boot:spring-boot-actuator-autoconfigure</dep>
             <dep>org.eclipse.parsson:parsson</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>

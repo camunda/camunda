@@ -48,10 +48,7 @@ const TabPanel = styled(BaseTabPanel)<TabPanelProps>`
 `;
 
 const TabList = styled(BaseTabList)`
-  border-bottom: 1px solid var(--cds-border-subtle-01);
-  .cds--tab--list {
-    margin-bottom: -1px;
-  }
+  box-shadow: inset 0 -1px 0 0 var(--cds-border-subtle-01);
 `;
 
 export {Container, Content, Tab, TabPanel, TabList};

@@ -15,7 +15,6 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.response.Process;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessMetadata;
 import java.util.Objects;
@@ -35,30 +34,6 @@ public final class ProcessImpl implements Process {
         process.getVersion(),
         process.getResourceName(),
         process.getTenantId());
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link ProcessImpl#ProcessImpl(long processDefinitionKey, String
-   *     bpmnProcessId, int version, String resourceName, String tenantId)}
-   */
-  @Deprecated
-  public ProcessImpl(
-      final long processDefinitionKey,
-      final String bpmnProcessId,
-      final int version,
-      final String resourceName) {
-    this(
-        processDefinitionKey,
-        bpmnProcessId,
-        version,
-        resourceName,
-        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public ProcessImpl(

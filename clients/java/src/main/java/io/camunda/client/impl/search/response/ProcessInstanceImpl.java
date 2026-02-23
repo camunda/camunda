@@ -32,6 +32,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final String processDefinitionVersionTag;
   private final Long processDefinitionKey;
   private final Long parentProcessInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final Long parentElementInstanceKey;
   private final OffsetDateTime startDate;
   private final OffsetDateTime endDate;
@@ -48,6 +49,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     processDefinitionVersionTag = item.getProcessDefinitionVersionTag();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     parentProcessInstanceKey = ParseUtil.parseLongOrNull(item.getParentProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     parentElementInstanceKey = ParseUtil.parseLongOrNull(item.getParentElementInstanceKey());
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
     endDate = ParseUtil.parseOffsetDateTimeOrNull(item.getEndDate());
@@ -90,6 +92,11 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public Long getParentProcessInstanceKey() {
     return parentProcessInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override

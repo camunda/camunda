@@ -5,6 +5,9 @@
       "id": {
         "type": "keyword"
       },
+      "partitionId": {
+        "type": "integer"
+      },
       "startTime": {
         "format": "date_time || epoch_millis",
         "type": "date"

@@ -289,10 +289,23 @@ Minor releases happen less often than other release types, so not all steps are 
    * This can be done with the following command `./mvnw release:update-versions -DdevelopmentVersion=8.(x+1).0-SNAPSHOT`
 2. Create the `stable/8.x` release branch from latest `release-8.x.0-alphaN`, to enforce code freeze
    * Ensure all expected SNAPSHOT artifacts are produced correctly.
+
+:::note
+For 8.9.0 we evaluate the following approach (to be decided if kept for future minor versions)
+
+- **Branch Strategy**: To allow continuous bug fix integration during the alpha release process, consider creating `stable/<minor>` branch from `main` early (at the latest alpha code freeze day), then creating the alpha release branch from `stable/<minor>` instead of directly from `main`
+  - ⚠️ **Important**: Any bug fixes merged to `main` after the last alpha release branch (`release-<version>-alpha<N>`) has been created must be backported to `stable/<minor>` to be included in the minor release
+    - Critical bug fixes merged after that point should be backported to both `stable/<minor>` and the active alpha release branch and may trigger a new Release Candidate
+  - **Bug Fix Handling After Last Alpha Release (Minor Version Feature Freeze)**:
+    :::
+
 3. [Configure `unified-ci-merges-stable-branches` branch protection ruleset](https://github.com/camunda/infra-core/blob/stage/terraform/github/prod/rulesets-camunda-camunda.tf) to include new `stable/8.x` branch
-   * This may need temporary admin permissions for the initial manual push of the new branch.
+
+* This may need temporary admin permissions for the initial manual push of the new branch.
+
 4. Bump configured versions in upgrade tests of the previous minor version to `8.x`
-   * TODO: add references to known upgrade tests if possible
+
+* TODO: add references to known upgrade tests if possible
 
 Also, we have to do similar steps for the [ZPT repository](https://github.com/camunda/zeebe-process-test) in coordination with stakeholders from Camunda Ex team:
 
@@ -320,6 +333,56 @@ In addition to the standard steps above, recent minor releases have surfaced sev
 - **Change of source branch**
   - For 8.8 minor release the source branch `stable/8.8` based on `release-8.8.0-alpha8`
   - Currently  an automated script decides the source branch for the release type, in case of change in future release process, the code needs to be adjusted [here](https://github.com/camunda/zeebe-engineering-processes/blob/main/src/main/resources/release/decide_dev_version_and_is_latest_for_release.bpmn#L39)
+- **Optimize Previous Version Management (8.9+)**
+  - Starting with 8.9, Optimize is included in the monorepo release process (`includeOptimize=true`).
+
+:::warning
+- **Manual Step Required:** Two manual updates are needed:
+1. Before cutting a new stable branch (performing the first minor release X.Y.0), set `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) to the previous minor version (e.g., for 8.9.0 release, set to `8.8.0`).
+2. After cutting the stable branch, bump `project.previousVersion` in the [Optimize root `pom.xml`](https://github.com/camunda/camunda/blob/main/optimize/pom.xml#L47) on main to prepare for the next minor version line (e.g., after 8.9.0 release, update main to `8.9.0` for future 8.10.x alphas).
+- The release workflow validates `project.previousVersion` for minor releases (X.Y.0) when cutting stable branches, and should also validate that main has been properly updated when releasing new alpha versions for the next minor line.
+- **Action:** Monitor completion of [issue #40258](https://github.com/camunda/camunda/issues/40258) to automate this step and eliminate the manual requirement.
+:::
+
+### Feature Freeze vs Code Freeze (Minor Releases)
+
+For C8 monorepo minor releases, we enforce two distinct stages to ensure quality and predictable delivery:
+
+**🔒 Feature Freeze (Minor Releases)**
+- **Purpose**: Lock in the feature scope for the upcoming minor release
+- **Timing**: Occurs with the **last alpha** before the minor release (e.g., for `8.9.0`, this would be `8.9.0-alpha5`)
+- **What Changes**:
+- ✅ All cross-component features targeted for the minor must be fully implemented, documented, and working end-to-end
+- ❌ No new features, scope extensions, or risky changes after this point
+- ✅ Bug fixes, stabilization work, and E2E testing continue
+- **Notification Process**: Send calendar invite to engineering teams (Core Features, Orchestration, QA, DevOps/Release, and other relevant teams) with:
+- **Subject**: `Camunda repo (Zeebe/Operate/Tasklist/Identity/Optimize) Release Minor <version> - Feature Freeze`
+- **Body**:
+
+```
+Hey all,
+
+        This appointment marks the feature freeze for the camunda/camunda repository: <minor_version> (minor).
+        <last_alpha_version> is the last alpha before the minor and defines the scope of what will ship in <minor_version>. Any new features or scope changes must be merged before this point to make it into the minor.
+
+        After this date, we focus on bug fixing, stabilization, and end-to-end testing for <minor_version>. New features should target future alphas/minors instead.
+
+        Overall release manager is <release_manager_name>
+
+        Have a nice week!
+        ```
+
+**🚫 Code Freeze (Minor Releases)**
+- **Purpose**: Minimize code changes to ensure release stability
+- **Timing**: On the day of the official minor release start date
+- **What Changes**:
+- ✅ Only **critical** changes allowed (release blockers, severe regressions, security issues)
+- ❌ Non-critical changes deferred to future alphas or patch releases
+- **Coordination**: Scheduled via dedicated calendar invite managed by respective teams
+
+**📅 Important References**
+- **Release Dates**: All upcoming alpha, minor, and feature freeze dates are maintained on the [C8 Release Train](https://confluence.camunda.com/spaces/HAN/pages/201853752/C8+Release+Train) page
+- **Detailed Policy**: See [Minor Release Feature Freeze](https://confluence.camunda.com/spaces/HAN/pages/307894801/Minor+Release+Feature+Freeze) for comprehensive guidelines
 
 ## Troubleshooting
 

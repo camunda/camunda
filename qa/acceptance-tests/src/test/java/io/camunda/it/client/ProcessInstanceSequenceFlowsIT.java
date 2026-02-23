@@ -107,6 +107,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .extracting(
             ProcessInstanceSequenceFlow::getSequenceFlowId,
             ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getRootProcessInstanceKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionId,
             ProcessInstanceSequenceFlow::getElementId,
@@ -114,6 +115,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .containsExactlyInAnyOrder(
             tuple(
                 "%s_%s".formatted(processInstanceKey, "sequenceFlow1"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "incident_process_v1",
@@ -138,6 +140,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .extracting(
             ProcessInstanceSequenceFlow::getSequenceFlowId,
             ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getRootProcessInstanceKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionId,
             ProcessInstanceSequenceFlow::getElementId,
@@ -146,12 +149,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_00yb6c4"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "processWithSubProcess",
                 "Flow_00yb6c4",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_14vfmwp"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "processWithSubProcess",
@@ -176,6 +181,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .extracting(
             ProcessInstanceSequenceFlow::getSequenceFlowId,
             ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getRootProcessInstanceKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionId,
             ProcessInstanceSequenceFlow::getElementId,
@@ -184,6 +190,7 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1xuspnu"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
                 "Flow_1xuspnu",
@@ -191,12 +198,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_03xh6j8"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
                 "Flow_03xh6j8",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1ffbwjw"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "bpmProcessVariable",
@@ -221,6 +230,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .extracting(
             ProcessInstanceSequenceFlow::getSequenceFlowId,
             ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getRootProcessInstanceKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionId,
             ProcessInstanceSequenceFlow::getElementId,
@@ -229,12 +239,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_01h019c"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_01h019c",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_08mqnul"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
@@ -243,6 +255,7 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1h48f0w"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1h48f0w",
@@ -250,12 +263,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1gqyehp"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1gqyehp",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1rlbq9a"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
@@ -280,6 +295,7 @@ public class ProcessInstanceSequenceFlowsIT {
         .extracting(
             ProcessInstanceSequenceFlow::getSequenceFlowId,
             ProcessInstanceSequenceFlow::getProcessInstanceKey,
+            ProcessInstanceSequenceFlow::getRootProcessInstanceKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionKey,
             ProcessInstanceSequenceFlow::getProcessDefinitionId,
             ProcessInstanceSequenceFlow::getElementId,
@@ -288,12 +304,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_01h019c"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_01h019c",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_08mqnul"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
@@ -302,6 +320,7 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1h48f0w"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1h48f0w",
@@ -309,12 +328,14 @@ public class ProcessInstanceSequenceFlowsIT {
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1hb4p0z"),
                 String.valueOf(processInstanceKey),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",
                 "Flow_1hb4p0z",
                 "<default>"),
             tuple(
                 "%s_%s".formatted(processInstanceKey, "Flow_1rlbq9a"),
+                String.valueOf(processInstanceKey),
                 String.valueOf(processInstanceKey),
                 String.valueOf(processDefinitionKey),
                 "multi_instance_subprocess",

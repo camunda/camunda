@@ -32,17 +32,15 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointRecordValue;
 import io.camunda.zeebe.util.SemanticVersion;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import org.apache.http.entity.ContentProducer;
 
 /**
  * Buffers indexing requests of records. Each bulk operation is serialized before being buffered to
  * avoid having to serialize it again on retry.
  */
-final class BulkIndexRequest implements ContentProducer {
+final class BulkIndexRequest {
 
   private static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -92,7 +90,7 @@ final class BulkIndexRequest implements ContentProducer {
       "moveInstructions";
   private static final String TERMINATE_INSTRUCTIONS_ELEMENT_ID_PROPERTY = "elementId";
   private static final String ROOT_PROCESS_INSTANCE_KEY_PROPERTY = "rootProcessInstanceKey";
-  private final List<BulkOperation> operations = new ArrayList<>();
+  private final List<IndexOperation> operations = new ArrayList<>();
   private BulkIndexAction lastIndexedMetadata;
   private int memoryUsageBytes = 0;
 
@@ -125,7 +123,7 @@ final class BulkIndexRequest implements ContentProducer {
           String.format("Failed to serialize record to JSON for indexing action %s", action), e);
     }
 
-    final BulkOperation command = new BulkOperation(action, source);
+    final IndexOperation command = new IndexOperation(action, source);
     memoryUsageBytes += command.source().length;
     lastIndexedMetadata = action;
     operations.add(command);
@@ -174,22 +172,8 @@ final class BulkIndexRequest implements ContentProducer {
   }
 
   /** Returns the currently indexed operations as an unmodifiable shallow copy. */
-  List<BulkOperation> bulkOperations() {
+  List<IndexOperation> bulkOperations() {
     return Collections.unmodifiableList(operations);
-  }
-
-  /**
-   * Writes the JSON serialized entries, separated by a line ending for each, effectively writing
-   * nd-json.
-   */
-  @Override
-  public void writeTo(final OutputStream outStream) throws IOException {
-    for (final var operation : operations) {
-      MAPPER.writeValue(outStream, operation.metadata());
-      outStream.write('\n');
-      outStream.write(operation.source());
-      outStream.write('\n');
-    }
   }
 
   private static boolean isPreviousVersionRecord(final String brokerVersion) {
@@ -208,7 +192,7 @@ final class BulkIndexRequest implements ContentProducer {
     return semanticVersion.minor() < currentMinorVersion;
   }
 
-  record BulkOperation(BulkIndexAction metadata, byte[] source) {}
+  record IndexOperation(BulkIndexAction metadata, byte[] source) {}
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
   @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})

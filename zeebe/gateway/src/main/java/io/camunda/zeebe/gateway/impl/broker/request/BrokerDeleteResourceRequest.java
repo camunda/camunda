@@ -11,6 +11,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
 import io.camunda.zeebe.protocol.impl.record.value.resource.ResourceDeletionRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import org.agrona.DirectBuffer;
 
 public final class BrokerDeleteResourceRequest
@@ -30,6 +31,21 @@ public final class BrokerDeleteResourceRequest
 
   public BrokerDeleteResourceRequest setDeleteHistory(final boolean deleteHistory) {
     requestDto.setDeleteHistory(deleteHistory);
+    return this;
+  }
+
+  public BrokerDeleteResourceRequest setResourceType(final ResourceType resourceType) {
+    requestDto.setResourceType(resourceType);
+    return this;
+  }
+
+  public BrokerDeleteResourceRequest setTenantId(final String tenantId) {
+    requestDto.setTenantId(tenantId);
+    return this;
+  }
+
+  public BrokerDeleteResourceRequest setResourceId(final String resourceId) {
+    requestDto.setResourceId(resourceId);
     return this;
   }
 

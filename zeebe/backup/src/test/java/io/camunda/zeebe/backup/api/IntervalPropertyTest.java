@@ -8,9 +8,12 @@
 package io.camunda.zeebe.backup.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.function.Function;
 import net.jqwik.api.Arbitraries;
 import net.jqwik.api.Arbitrary;
 import net.jqwik.api.Combinators;
@@ -51,43 +54,20 @@ final class IntervalPropertyTest {
   }
 
   /**
-   * Generates a list of contiguous intervals that partition a range. Each interval in the list
-   * meets the next one at a boundary point without gaps.
+   * Generates a sorted list of unique integers to use as points for smallestCover tests.
    *
-   * <p>Uses cumulative boundaries approach: generate sorted boundary points, then create intervals
-   * between consecutive points. This ensures contiguity is maintained even during shrinking.
+   * <p>Generates 2-10 unique sorted boundary points, ensuring the list is non-empty and sorted in
+   * ascending order.
    */
   @Provide
-  Arbitrary<List<Interval<Integer>>> contiguousIntervalLists() {
-    // Generate 2-9 unique sorted boundary points, then create intervals between them
+  Arbitrary<List<Integer>> sortedPoints() {
     return Arbitraries.integers()
         .between(-500, 500)
         .list()
         .ofMinSize(2)
-        .ofMaxSize(9)
-        .map(
-            points -> {
-              // Sort and remove duplicates to get boundaries
-              final var boundaries = points.stream().distinct().sorted().toList();
-              if (boundaries.size() < 2) {
-                // Need at least 2 points for 1 interval
-                return List.of(Interval.closed(0, 1));
-              }
-
-              final var intervals = new ArrayList<Interval<Integer>>();
-              for (int i = 0; i < boundaries.size() - 1; i++) {
-                final var start = boundaries.get(i);
-                final var end = boundaries.get(i + 1);
-                // Use [start, end) for all but last, [start, end] for last
-                if (i < boundaries.size() - 2) {
-                  intervals.add(Interval.closedOpen(start, end));
-                } else {
-                  intervals.add(Interval.closed(start, end));
-                }
-              }
-              return intervals;
-            })
-        .filter(list -> !list.isEmpty());
+        .ofMaxSize(10)
+        .map(points -> points.stream().distinct().sorted().toList())
+        .filter(list -> list.size() >= 2);
   }
 
   // ==================== Equals and HashCode ====================
@@ -310,6 +290,60 @@ final class IntervalPropertyTest {
     }
   }
 
+  @Property(tries = 100)
+  void containsWithMapperIsEquivalentToMapThenContains(
+      @ForAll("intervals") final Interval<Integer> a, @ForAll("values") final Integer value) {
+    // contains(value, mapper) should be equivalent to map(mapper).contains(value)
+    final var mapperResult = a.contains(value * 2L, i -> i * 2L);
+    final var mapThenContainsResult = a.map(i -> i * 2L).contains(value * 2L);
+
+    assertThat(mapperResult)
+        .describedAs("contains with mapper should equal map().contains()")
+        .isEqualTo(mapThenContainsResult);
+  }
+
+  @Property(tries = 100)
+  void containsIntervalWithMapperIsEquivalentToMapThenContains(
+      @ForAll("intervals") final Interval<Integer> a,
+      @ForAll("intervals") final Interval<Integer> b) {
+    // contains(interval, mapper) should be equivalent to map(mapper).contains(mapped interval)
+    final var mappedB = b.map(i -> i * 2L);
+    final var mapperResult = a.contains(mappedB, i -> i * 2L);
+    final var mapThenContainsResult = a.map(i -> i * 2L).contains(mappedB);
+
+    assertThat(mapperResult)
+        .describedAs("contains interval with mapper should equal map().contains()")
+        .isEqualTo(mapThenContainsResult);
+  }
+
+  @Property(tries = 100)
+  void smallestCoverWithMapperReturnsEquivalentResults(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // smallestCover with mapper should return the same results as
+    // mapping the query and calling smallestCover on mapped points
+    final var mapper = (Function<Integer, Long>) Integer::longValue;
+    final var mappedQuery = query.map(mapper);
+    final var mappedPoints = points.stream().map(mapper).toList();
+
+    // Get result using mapper version (query on Long interval, points are Integer)
+    final var mapperResult = mappedQuery.smallestCover(points, mapper);
+    // Get result by mapping everything first
+    final var mappedResult = mappedQuery.smallestCover(mappedPoints);
+
+    // Results should have the same size
+    assertThat(mapperResult)
+        .describedAs("Mapper result should have same size as mapped result")
+        .hasSameSizeAs(mappedResult);
+
+    // Original points from mapper result should correspond to mapped points
+    for (int i = 0; i < mapperResult.size(); i++) {
+      assertThat(mapper.apply(mapperResult.get(i)))
+          .describedAs("Mapped value at index %d should match", i)
+          .isEqualTo(mappedResult.get(i));
+    }
+  }
+
   // ==================== SmallestCover ====================
 
   @Property(tries = 100)
@@ -318,105 +352,139 @@ final class IntervalPropertyTest {
   }
 
   @Property(tries = 100)
-  void smallestCoverReturnsOnlyOverlappingIntervals(
+  void smallestCoverResultIsSubsetOfInput(
       @ForAll("intervals") final Interval<Integer> query,
-      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
-    // All returned intervals must overlap with the query interval
-    final var result = query.smallestCover(intervals);
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // All returned points must be from the input
+    final var result = query.smallestCover(points);
 
-    for (final var interval : result) {
-      assertThat(interval.overlapsWith(query))
-          .describedAs("Returned interval %s should overlap with query %s", interval, query)
+    assertThat(points).describedAs("Input should contain all result points").containsAll(result);
+  }
+
+  @Property(tries = 100)
+  void smallestCoverContainsAllPointsWithinIntervalWhenCoverExists(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // When a cover exists, all points within the interval must be in the result
+    final var result = query.smallestCover(points);
+
+    if (!result.isEmpty()) {
+      for (final var point : points) {
+        if (point.compareTo(query.start()) >= 0 && point.compareTo(query.end()) <= 0) {
+          assertThat(result)
+              .describedAs("Point %s within interval %s should be in result", point, query)
+              .contains(point);
+        }
+      }
+    }
+  }
+
+  @Property(tries = 100)
+  void smallestCoverIsEmptyWhenPointsCannotCover(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // A cover exists iff there is at least one point at-or-before start
+    // AND at least one point at-or-after end
+    final var hasStartCoverage = points.stream().anyMatch(p -> p.compareTo(query.start()) <= 0);
+    final var hasEndCoverage = points.stream().anyMatch(p -> p.compareTo(query.end()) >= 0);
+    final var canCover = hasStartCoverage && hasEndCoverage;
+
+    final var result = query.smallestCover(points);
+
+    if (!canCover) {
+      assertThat(result)
+          .describedAs(
+              "Should be empty when points cannot cover interval %s (hasStart=%s, hasEnd=%s)",
+              query, hasStartCoverage, hasEndCoverage)
+          .isEmpty();
+    } else {
+      assertThat(result)
+          .describedAs("Should not be empty when points can cover interval %s", query)
+          .isNotEmpty();
+    }
+  }
+
+  @Property(tries = 100)
+  void smallestCoverResultIsSorted(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = query.smallestCover(points);
+
+    if (result.size() > 1) {
+      for (int i = 0; i < result.size() - 1; i++) {
+        assertThat(result.get(i))
+            .describedAs("Result should be sorted")
+            .isLessThan(result.get(i + 1));
+      }
+    }
+  }
+
+  @Property(tries = 100)
+  void smallestCoverIncludesAtMostOnePointBeforeStart(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = query.smallestCover(points);
+
+    // Count points before interval start in result
+    final var pointsBefore = result.stream().filter(p -> p.compareTo(query.start()) < 0).toList();
+
+    assertThat(pointsBefore)
+        .describedAs("At most one point before interval start")
+        .hasSizeLessThanOrEqualTo(1);
+  }
+
+  @Property(tries = 100)
+  void smallestCoverIncludesAtMostOnePointAfterEnd(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = query.smallestCover(points);
+
+    // Count points after interval end in result
+    final var pointsAfter = result.stream().filter(p -> p.compareTo(query.end()) > 0).toList();
+
+    assertThat(pointsAfter)
+        .describedAs("At most one point after interval end")
+        .hasSizeLessThanOrEqualTo(1);
+  }
+
+  @Property(tries = 100)
+  void smallestCoverNeighborOnlyIncludedWhenNoExactMatch(
+      @ForAll("intervals") final Interval<Integer> query,
+      @ForAll("sortedPoints") final List<Integer> points) {
+    final var result = query.smallestCover(points);
+    final var withinPoints =
+        points.stream()
+            .filter(p -> p.compareTo(query.start()) >= 0 && p.compareTo(query.end()) <= 0)
+            .toList();
+
+    // If there's an exact match at start, no point before start should be included
+    if (!withinPoints.isEmpty() && withinPoints.getFirst().compareTo(query.start()) == 0) {
+      assertThat(result.stream().noneMatch(p -> p.compareTo(query.start()) < 0))
+          .describedAs("No point before start when exact match exists at start")
+          .isTrue();
+    }
+
+    // If there's an exact match at end, no point after end should be included
+    if (!withinPoints.isEmpty() && withinPoints.getLast().compareTo(query.end()) == 0) {
+      assertThat(result.stream().noneMatch(p -> p.compareTo(query.end()) > 0))
+          .describedAs("No point after end when exact match exists at end")
           .isTrue();
     }
   }
 
   @Property(tries = 100)
-  void smallestCoverDoesNotExcludeOverlappingIntervals(
+  void smallestCoverThrowsWhenPointsAreNotSorted(
       @ForAll("intervals") final Interval<Integer> query,
-      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
-    // All overlapping intervals from input must be in the result
-    final var result = query.smallestCover(intervals);
+      @ForAll("sortedPoints") final List<Integer> points) {
+    // Shuffle the points to make them unsorted
+    final var shuffled = new ArrayList<>(points);
+    Collections.shuffle(shuffled);
 
-    for (final var interval : intervals) {
-      if (interval.overlapsWith(query)) {
-        assertThat(result)
-            .describedAs("Overlapping interval %s should be in result", interval)
-            .contains(interval);
-      }
-    }
-  }
-
-  @Property(tries = 100)
-  void smallestCoverPreservesInputOrder(
-      @ForAll("intervals") final Interval<Integer> query,
-      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
-    // Result should be a subsequence of input (preserving order)
-    final var result = query.smallestCover(intervals);
-
-    var inputIndex = 0;
-    for (final var resultInterval : result) {
-      // Find this interval in the remaining input
-      while (inputIndex < intervals.size() && !intervals.get(inputIndex).equals(resultInterval)) {
-        inputIndex++;
-      }
-      assertThat(inputIndex)
-          .describedAs("Result interval %s should appear in input in order", resultInterval)
-          .isLessThan(intervals.size());
-      inputIndex++;
-    }
-  }
-
-  @Property(tries = 100)
-  void smallestCoverResultIsContiguous(
-      @ForAll("intervals") final Interval<Integer> query,
-      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
-    // Since input is contiguous and result is a subsequence, result should also be contiguous
-    // (because overlapping intervals from a contiguous list must be consecutive)
-    final var result = query.smallestCover(intervals);
-
-    if (result.size() > 1) {
-      final var resultList = new ArrayList<>(result);
-      for (int i = 0; i < resultList.size() - 1; i++) {
-        final var current = resultList.get(i);
-        final var next = resultList.get(i + 1);
-        // They should meet at a boundary
-        assertThat(current.end())
-            .describedAs("Interval %s should meet interval %s at boundary", current, next)
-            .isEqualTo(next.start());
-      }
-    }
-  }
-
-  @Property(tries = 100)
-  void smallestCoverUnionContainsQueryWhenFullyCovered(
-      @ForAll("intervals") final Interval<Integer> query,
-      @ForAll("contiguousIntervalLists") final List<Interval<Integer>> intervals) {
-    // If the query is fully covered by the input intervals, the result's union should contain query
-    if (intervals.isEmpty()) {
-      return;
-    }
-
-    final var inputStart = intervals.getFirst().start();
-    final var inputEnd = intervals.getLast().end();
-
-    // Check if query is within the range covered by input
-    if (query.start() >= inputStart && query.end() <= inputEnd) {
-      final var result = query.smallestCover(intervals);
-
-      if (!result.isEmpty()) {
-        final var resultList = new ArrayList<>(result);
-        final var resultStart = resultList.getFirst().start();
-        final var resultEnd = resultList.getLast().end();
-
-        // The result's union should cover the query
-        assertThat(resultStart)
-            .describedAs("Result union start should be <= query start")
-            .isLessThanOrEqualTo(query.start());
-        assertThat(resultEnd)
-            .describedAs("Result union end should be >= query end")
-            .isGreaterThanOrEqualTo(query.end());
-      }
+    // Only test when shuffling actually changed the order
+    if (!shuffled.equals(points)) {
+      assertThatThrownBy(() -> query.smallestCover(shuffled))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("strictly sorted in ascending order with no duplicates");
     }
   }
 

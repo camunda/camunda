@@ -1,0 +1,375 @@
+# This is a comment.
+# Each line is a file pattern followed by one or more owners.
+# If you'd like to be added as an owner, don't hesitate to reach out to one of the existing ones.
+
+
+################################
+## @camunda/qa-engineering
+################################
+
+# QA and testing (default for all QA modules unless overridden)
+/qa/                        @camunda/qa-engineering
+
+# QA modules (explicit assignments)
+/qa/acceptance-tests/       @camunda/qa-engineering
+/qa/http/                   @camunda/qa-engineering
+/qa/c8-orchestration-cluster-e2e-test-suite/ @camunda/qa-engineering
+
+# Acceptance tests shared utilities (dual ownership)
+/qa/acceptance-tests/src/test/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
+/qa/acceptance-tests/src/main/java/io/camunda/it/util/       @camunda/qa-engineering @camunda/orchestration-cluster
+
+################################
+## @camunda/orchestration-cluster
+################################
+
+# Documentation
+/README.md                  @camunda/orchestration-cluster
+/CONTRIBUTING.md            @camunda/orchestration-cluster
+/docs/                      @camunda/orchestration-cluster
+
+# Documentation - Testing (specific owners)
+/docs/testing.md            @camunda/orchestration-cluster
+/docs/assets/testing*       @camunda/orchestration-cluster
+/docs/testing/              @camunda/orchestration-cluster
+
+# Documentation - Observability (specific owners)
+/docs/observability.md      @camunda/orchestration-cluster
+/docs/assets/observability* @camunda/orchestration-cluster
+
+# Shared infrastructure
+/configuration/             @camunda/orchestration-cluster
+/monitor/                   @camunda/orchestration-cluster
+/build-tools/               @camunda/orchestration-cluster
+
+# Build and packaging
+/dist/                      @camunda/orchestration-cluster
+/docker-notice.txt          @camunda/orchestration-cluster
+
+# QA modules (overrides for qa-engineering default)
+/qa/archunit-tests/         @camunda/orchestration-cluster
+/qa/util/                   @camunda/orchestration-cluster
+
+# Zeebe shared ownership modules
+/zeebe/                     @camunda/orchestration-cluster
+/zeebe/exporter-api/        @camunda/orchestration-cluster
+/zeebe/qa/                  @camunda/orchestration-cluster
+/zeebe/util/                @camunda/orchestration-cluster
+/zeebe/test-util/           @camunda/orchestration-cluster
+/zeebe/docker/              @camunda/orchestration-cluster
+
+
+################################
+## @camunda/camundaex
+################################
+
+# Clients and SDKs
+/clients/                   @camunda/camundaex
+
+# Testing frameworks
+/testing/                   @camunda/camundaex
+
+# Spring utilities
+/spring-utils/              @camunda/camundaex
+
+# Acceptance tests
+/qa/acceptance-tests/src/test/java/io/camunda/it/client/     @camunda/camundaex
+/qa/acceptance-tests/src/test/java/io/camunda/it/spring/     @camunda/camundaex
+
+################################
+## @camunda/connectors-agentic-ai
+################################
+
+# MCP gateway
+/gateways/gateway-mcp/      @camunda/connectors-agentic-ai
+
+################################
+## @camunda/identity
+################################
+
+# Identity application
+/identity/                  @camunda/identity-frontend
+/authentication/            @camunda/identity
+/security/                  @camunda/identity
+
+# Acceptance tests
+/qa/acceptance-tests/src/test/java/io/camunda/it/identity/   @camunda/identity
+/qa/acceptance-tests/src/test/java/io/camunda/it/auth/       @camunda/identity
+/qa/acceptance-tests/src/test/java/io/camunda/it/csrf/       @camunda/identity
+/qa/acceptance-tests/src/test/java/io/camunda/it/logout/     @camunda/identity
+/qa/acceptance-tests/src/test/java/io/camunda/it/oidc/       @camunda/identity
+
+# CI/CD
+/.github/workflows/identity-e2e-tests.yml @camunda/identity
+/.github/workflows/identity-regression-test.yml @camunda/identity
+
+################################
+## @camunda/zeebe-distributed-platform
+################################
+
+# Zeebe distributed system modules
+/zeebe/atomix/              @camunda/zeebe-distributed-platform
+/zeebe/backup/              @camunda/zeebe-distributed-platform
+/zeebe/backup-stores/       @camunda/zeebe-distributed-platform
+/zeebe/broker/              @camunda/zeebe-distributed-platform
+/zeebe/broker-client/       @camunda/zeebe-distributed-platform
+/zeebe/dynamic-config/      @camunda/zeebe-distributed-platform
+/zeebe/dynamic-node-id-provider/ @camunda/zeebe-distributed-platform
+/zeebe/journal/             @camunda/zeebe-distributed-platform
+/zeebe/logstreams/          @camunda/zeebe-distributed-platform
+/zeebe/restore/             @camunda/zeebe-distributed-platform
+/zeebe/scheduler/           @camunda/zeebe-distributed-platform
+/zeebe/snapshot/            @camunda/zeebe-distributed-platform
+/zeebe/stream-platform/     @camunda/zeebe-distributed-platform
+/zeebe/transport/           @camunda/zeebe-distributed-platform
+/zeebe/zb-db/               @camunda/zeebe-distributed-platform
+
+# Zeebe QA cluster integration tests
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/cluster/ @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/shared/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
+/zeebe/qa/integration-tests/src/main/java/io/camunda/zeebe/it/util/ @camunda/core-features @camunda/zeebe-distributed-platform
+
+# Acceptance tests
+/qa/acceptance-tests/src/test/java/io/camunda/it/cluster/    @camunda/zeebe-distributed-platform
+/qa/acceptance-tests/src/test/java/io/camunda/it/backup/     @camunda/zeebe-distributed-platform
+/qa/acceptance-tests/src/test/java/io/camunda/it/network/    @camunda/zeebe-distributed-platform
+
+# Debug CLI
+/debug-cli/                 @camunda/zeebe-distributed-platform
+
+################################
+## @camunda/core-features
+################################
+
+# Zeebe engine and core processing modules (overrides for distributed-platform default)
+/zeebe/auth/                @camunda/core-features
+/zeebe/bpmn-model/          @camunda/core-features
+/zeebe/dmn/                 @camunda/core-features
+/zeebe/engine/              @camunda/core-features
+/zeebe/expression-language/ @camunda/core-features
+/zeebe/feel/                @camunda/core-features
+/zeebe/feel-tagged-parameters/ @camunda/core-features
+
+# Protocol modules
+/zeebe/protocol/            @camunda/core-features
+/zeebe/protocol-asserts/    @camunda/core-features
+/zeebe/protocol-impl/       @camunda/core-features
+/zeebe/protocol-jackson/    @camunda/core-features
+/zeebe/protocol-test-util/  @camunda/core-features
+/zeebe/msgpack-core/        @camunda/core-features
+/zeebe/msgpack-value/       @camunda/core-features
+
+# Gateway modules
+/zeebe/gateway/             @camunda/core-features
+/zeebe/gateway-grpc/        @camunda/core-features
+/zeebe/gateway-protocol/    @camunda/core-features
+/zeebe/gateway-protocol/src/main/proto/v2/ @camunda/c8-api-team
+/zeebe/gateway-protocol-impl/ @camunda/core-features
+/zeebe/gateway-rest/        @camunda/core-features
+
+# Zeebe QA
+/zeebe/qa/util/             @camunda/core-features
+/zeebe/qa/update-tests/     @camunda/core-features
+/zeebe/qa/integration-tests/ @camunda/core-features
+/zeebe/qa/integration-tests/src/test/java/io/camunda/zeebe/it/engine/ @camunda/core-features
+
+
+# Broker core features packages
+/zeebe/broker/src/main/java/io/camunda/zeebe/broker/engine/ @camunda/core-features
+/zeebe/broker/src/test/java/io/camunda/zeebe/broker/engine/ @camunda/core-features
+
+# Operate
+/operate/                   @camunda/core-features
+/operate/client/            @camunda/core-features
+/operate/common/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
+/operate/webapp/src/test/java/io/camunda/operate/OperateCoreFeaturesTestSuite.java @camunda/core-features
+
+# Tasklist
+/tasklist/                  @camunda/core-features
+/tasklist/client/           @camunda/core-features
+
+# Optimize
+/optimize/                  @camunda/core-features
+/optimize-distro/           @camunda/core-features
+/optimize/client/           @camunda/core-features
+
+# Shared modules
+/document/                  @camunda/core-features
+/service/                   @camunda/core-features
+
+# Client Components (shared UI library)
+/client-components/         @camunda/core-features
+
+# Gateways
+/gateways/gateway-mapping-http/ @camunda/core-features
+/gateways/gateway-model/    @camunda/core-features
+
+# Acceptance tests
+/qa/acceptance-tests/src/test/java/io/camunda/it/operate/    @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/tasklist/   @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/task/       @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/auditlog/   @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/document/   @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/historydeletion/ @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/mcp/        @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/orchestration/ @camunda/core-features
+/qa/acceptance-tests/src/test/java/io/camunda/it/tenancy/    @camunda/core-features
+
+# CI/CD Workflows
+/.github/workflows/operate-ci-build-observe-reusable.yml @camunda/core-features
+/.github/workflows/operate-ci-build-reusable.yml @camunda/core-features
+/.github/workflows/operate-ci.yml @camunda/core-features
+/.github/workflows/operate-ci-test-reusable.yml @camunda/core-features
+/.github/workflows/operate-e2e-tests.yml @camunda/core-features
+/.github/workflows/operate-playwright.yml @camunda/core-features
+/.github/workflows/operate-docker-tests.yml @camunda/core-features
+/.github/workflows/operate-release-*.yml @camunda/core-features
+/.github/workflows/ci-operate.yml @camunda/core-features
+/.github/workflows/ci-tasklist.yml @camunda/core-features
+/.github/workflows/ci-client-components.yml @camunda/core-features
+/.github/workflows/tasklist-ci-test-reusable.yml @camunda/core-features
+/.github/workflows/tasklist-ci.yml @camunda/core-features
+/.github/workflows/tasklist-e2e-tests.yml @camunda/core-features
+/.github/workflows/tasklist-docker-tests.yml @camunda/core-features
+/.github/workflows/tasklist-update_visual_snapshots.yml @camunda/core-features
+/.github/workflows/ci-optimize.yml @camunda/core-features
+/.github/workflows/optimize-*.yml @camunda/core-features
+/.github/workflows/zeebe-daily-qa.yml @camunda/core-features
+/.github/workflows/ci-zeebe.yml @camunda/core-features
+/.github/workflows/zeebe-*.yml @camunda/core-features
+/.github/workflows/c8-orchestration-cluster-*.yml @camunda/core-features
+/.github/workflows/gh-inherit-core-fields.yml @camunda/core-features
+/.github/workflows/assign-urgency-to-issue.yml @camunda/core-features
+
+
+################################
+## @camunda/reliability-testing
+################################
+
+# Performance and load testing
+/load-tests/                @camunda/reliability-testing
+/microbenchmarks/           @camunda/reliability-testing
+
+# Zeebe benchmarks
+/zeebe/benchmarks/          @camunda/reliability-testing
+/zeebe/load-tests/          @camunda/reliability-testing
+
+# CI/CD Workflows
+/.github/workflows/*load-test*.yml @camunda/reliability-testing
+/.github/workflows/profile-load-test.yml @camunda/reliability-testing
+
+################################
+## @camunda/data-layer
+################################
+
+# Database and search infrastructure
+/db/                        @camunda/data-layer
+/search/                    @camunda/data-layer
+/schema-manager/            @camunda/data-layer
+/webapps-backup/            @camunda/data-layer
+/webapps-common/            @camunda/data-layer
+/webapps-schema/            @camunda/data-layer
+
+# Migration utilities
+/migration/                 @camunda/data-layer
+
+# Zeebe exporters
+/zeebe/exporter-common/     @camunda/data-layer
+/zeebe/exporter-test/       @camunda/data-layer
+/zeebe/exporters/           @camunda/data-layer
+
+# Operate data processing
+/operate/archiver/          @camunda/data-layer
+/operate/importer/          @camunda/data-layer
+/operate/importer-8_6/      @camunda/data-layer
+/operate/importer-8_7/      @camunda/data-layer
+/operate/importer-common/   @camunda/data-layer
+/operate/schema/            @camunda/data-layer
+/operate/common/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java @camunda/data-layer
+/operate/webapp/src/test/java/io/camunda/operate/OperateDataLayerTestSuite.java @camunda/data-layer
+
+# Tasklist data processing
+/tasklist/archiver/         @camunda/data-layer
+/tasklist/importer/         @camunda/data-layer
+/tasklist/importer-860/     @camunda/data-layer
+/tasklist/importer-870/     @camunda/data-layer
+/tasklist/importer-common/  @camunda/data-layer
+
+# Acceptance tests
+/qa/acceptance-tests/src/test/java/io/camunda/it/rdbms/      @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/schema/     @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/nodb/       @camunda/data-layer
+/qa/acceptance-tests/src/test/java/io/camunda/it/historycleanup/ @camunda/data-layer
+
+# CI/CD Workflows
+/.github/workflows/operate-test-backup-restore.yml @camunda/data-layer
+/.github/workflows/operate-test-importer.yml @camunda/data-layer
+
+################################
+## @camunda/distribution
+################################
+
+# C8Run
+/c8run/                     @camunda/distribution
+
+# CI/CD
+/.github/actions/setup-c8run/* @camunda/distribution
+/.github/workflows/c8run*   @camunda/distribution
+
+
+################################
+## @camunda/monorepo-devops-team
+################################
+
+# Root build configuration
+/pom.xml                    @camunda/monorepo-devops-team
+/maven-settings.xml         @camunda/monorepo-devops-team
+/.mvn/                      @camunda/monorepo-devops-team
+/library-parent/            @camunda/monorepo-devops-team
+/parent/                    @camunda/monorepo-devops-team
+/bom/                       @camunda/monorepo-devops-team
+
+# Monorepo docs site
+/monorepo-docs-site/        @camunda/monorepo-devops-team
+
+# GitHub Actions and CI/CD
+/.github/actions/build*/*   @camunda/monorepo-devops-team
+/.github/actions/is-fork/*  @camunda/monorepo-devops-team
+/.github/actions/observe*/* @camunda/monorepo-devops-team
+/.github/actions/paths-filter/* @camunda/monorepo-devops-team
+/.github/actions/setup-build/* @camunda/monorepo-devops-team
+/.github/actions/setup-maven*/* @camunda/monorepo-devops-team
+/.github/workflows/add-to-projects.yml @camunda/monorepo-devops-team
+/.github/workflows/backport.yml @camunda/monorepo-devops-team
+/.github/workflows/camunda-helm-integration.yml @camunda/monorepo-devops-team
+/.github/workflows/camunda-platform-release* @camunda/monorepo-devops-team
+/.github/workflows/chatops* @camunda/monorepo-devops-team
+/.github/workflows/check-licenses.yml @camunda/monorepo-devops-team
+/.github/workflows/check-pr-conflicts.yml @camunda/monorepo-devops-team
+/.github/workflows/ci.yml @camunda/monorepo-devops-team
+/.github/workflows/ci-database-integration-tests-reusable.yml @camunda/monorepo-devops-team
+/.github/workflows/ci-webapp-run-ut-reuseable.yml @camunda/monorepo-devops-team
+/.github/workflows/commitlint.yml @camunda/monorepo-devops-team
+/.github/workflows/dispatch-release* @camunda/monorepo-devops-team
+/.github/workflows/docs* @camunda/monorepo-devops-team
+/.github/workflows/issue-add-support-label.yml @camunda/monorepo-devops-team
+/.github/workflows/labeler.yml @camunda/monorepo-devops-team
+/.github/workflows/preview-env* @camunda/monorepo-devops-team
+/.github/workflows/reject-updates-using-merge-commit.yml @camunda/monorepo-devops-team
+/.github/workflows/renovatelint.yml @camunda/monorepo-devops-team
+/.github/workflows/retry-workflow.yml @camunda/monorepo-devops-team
+/.github/workflows/statistics-daily.yml @camunda/monorepo-devops-team
+/.github/workflows/statistics-weekly.yml @camunda/monorepo-devops-team
+/.github/workflows/zeebe-release-stable-dry-run.yml @camunda/monorepo-devops-team
+/.github/workflows/check-outdated-prs.yml @camunda/monorepo-devops-team
+/.github/workflows/create-urgent-hotfix-img.yml @camunda/monorepo-devops-team
+/.github/workflows/auto-merge-back-to-stable.yml @camunda/monorepo-devops-team
+/.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml @camunda/monorepo-devops-team
+/.github/workflows/opened_issue_labeler.yml @camunda/monorepo-devops-team
+/.github/workflows/migration-labeler.yml @camunda/monorepo-devops-team
+/.github/workflows/critical-issue.yml @camunda/monorepo-devops-team
+/.github/workflows/release-branch-notifications.yml @camunda/monorepo-devops-team
+/.github/workflows/add-release-comments-to-issues.yml @camunda/monorepo-devops-team
+/.github/workflows/update-identity.yml @camunda/monorepo-devops-team

@@ -58,8 +58,10 @@ final class TestRepository extends NoopArchiverRepository {
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
       final Executor executor) {
-    moves.add(new DocumentMove(sourceIndexName, destinationIndexName, keysByField, executor));
+    moves.add(
+        new DocumentMove(sourceIndexName, destinationIndexName, keysByField, filters, executor));
     return CompletableFuture.completedFuture(null);
   }
 
@@ -67,5 +69,14 @@ final class TestRepository extends NoopArchiverRepository {
       String sourceIndexName,
       String destinationIndexName,
       Map<String, List<String>> keysByField,
-      Executor executor) {}
+      Map<String, String> filters,
+      Executor executor) {
+    public DocumentMove(
+        final String sourceIndexName,
+        final String destinationIndexName,
+        final Map<String, List<String>> keysByField,
+        final Executor executor) {
+      this(sourceIndexName, destinationIndexName, keysByField, Map.of(), executor);
+    }
+  }
 }

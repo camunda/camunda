@@ -38,4 +38,8 @@ final class SimplePartitionMessageService implements PartitionMessagingService {
   public void unsubscribe(final String subject) {
     consumers.remove(subject);
   }
+
+  public void clear() {
+    consumers.clear();
+  }
 }

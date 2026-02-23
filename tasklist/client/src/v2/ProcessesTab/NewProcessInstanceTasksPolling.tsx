@@ -12,7 +12,7 @@ import {tracking} from 'common/tracking';
 import {useQuery} from '@tanstack/react-query';
 import {request} from 'common/api/request';
 import {api} from 'v2/api';
-import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryUserTasksResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {NewProcessInstance} from 'common/processes/newProcessInstance';
 import {observer} from 'mobx-react-lite';
 

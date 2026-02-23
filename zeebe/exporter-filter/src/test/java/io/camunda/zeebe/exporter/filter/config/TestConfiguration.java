@@ -47,11 +47,6 @@ public final class TestConfiguration implements FilterConfiguration {
     return this;
   }
 
-  /** Access to the underlying index config for tests that need to configure name rules. */
-  public TestIndexConfig testIndexConfig() {
-    return indexConfig;
-  }
-
   @Override
   public boolean shouldIndexValueType(final ValueType valueType) {
     return normalFlags.getOrDefault(valueType, false);
@@ -68,7 +63,7 @@ public final class TestConfiguration implements FilterConfiguration {
   }
 
   @Override
-  public IndexConfig filterIndexConfig() {
+  public TestIndexConfig filterIndexConfig() {
     return indexConfig;
   }
 }

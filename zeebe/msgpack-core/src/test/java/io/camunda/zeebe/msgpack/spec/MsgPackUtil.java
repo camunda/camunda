@@ -49,4 +49,9 @@ public final class MsgPackUtil {
   public interface CheckedConsumer<T> {
     void accept(T t) throws Exception;
   }
+
+  @FunctionalInterface
+  public interface CheckedToIntFunction<T> {
+    int apply(T t) throws Exception;
+  }
 }

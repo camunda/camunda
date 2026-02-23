@@ -8,7 +8,7 @@
 
 import {mockServer} from 'modules/mock-server/node';
 import {type DefaultBodyType, delay, http, HttpResponse} from 'msw';
-import {type MockedFunction} from 'vitest';
+import type {MockedFunction} from 'vitest';
 
 const checkPollingHeader = ({
   req,
@@ -396,5 +396,4 @@ export {
   mockDeleteRequest,
   mockPutRequest,
   mockPatchRequest,
-  checkPollingHeader,
 };

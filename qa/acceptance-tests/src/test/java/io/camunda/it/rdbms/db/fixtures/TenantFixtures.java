@@ -30,7 +30,14 @@ public final class TenantFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomTenants(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomTenants(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomTenants(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getTenantWriter().create(TenantFixtures.createRandomized(builderFunction));
     }
 

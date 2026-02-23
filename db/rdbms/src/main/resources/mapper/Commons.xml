@@ -218,20 +218,21 @@
     WHERE t1.${keyColumn} = t2.${keyColumn}
   </sql>
 
-  <sql id="rootProcessInstanceHistoryDeletion">
+  <!-- shared SQL for history deletion and cleanup -->
+  <sql id="historyDeletionByKeys">
     DELETE
     FROM ${prefix}${tableName}
-    WHERE ROOT_PROCESS_INSTANCE_KEY IN
-    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+    WHERE ${deletionKeyColumn} IN
+    <foreach collection="deletionKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
     LIMIT #{limit}
   </sql>
-  <sql id="rootProcessInstanceHistoryDeletion" databaseId="mssql">
+  <sql id="historyDeletionByKeys" databaseId="mssql">
     DELETE TOP (#{limit})
     FROM ${prefix}${tableName}
-    WHERE ROOT_PROCESS_INSTANCE_KEY IN
-    <foreach collection="rootProcessInstanceKeys" item="key" open="(" separator=", " close=")">
+    WHERE ${deletionKeyColumn} IN
+    <foreach collection="deletionKeys" item="key" open="(" separator=", " close=")">
       #{key}
     </foreach>
   </sql>
@@ -240,34 +241,50 @@
     We also do not use an IN clause to select the process instance keys,
     but use XMLTABLE to handle large lists of keys. Oracle has a natural limit of 1000 elements per IN clause.
   -->
-  <sql id="rootProcessInstanceHistoryDeletion" databaseId="oracle">
+  <sql id="historyDeletionByKeys" databaseId="oracle">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'rowid'"/>
     DELETE
     FROM ${prefix}${tableName} t1
     WHERE ${keyColumn} IN (SELECT t2.${keyColumn}
-                           FROM ${prefix}${tableName} t2
-                           WHERE t2.ROOT_PROCESS_INSTANCE_KEY IN (
-                               SELECT COLUMN_VALUE
-                               FROM XMLTABLE('/d/r'
-                                    PASSING XMLTYPE(#{rootProcessInstanceKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
-                                    COLUMNS COLUMN_VALUE NUMBER PATH 'text()')
-                             )
-                           AND ROWNUM &lt;= #{limit})
+    FROM ${prefix}${tableName} t2
+    WHERE t2.${deletionKeyColumn} IN (
+    SELECT COLUMN_VALUE
+    FROM XMLTABLE('/d/r'
+    PASSING XMLTYPE(#{deletionKeys, typeHandler=io.camunda.db.rdbms.sql.typehandler.OracleXmlArrayTypeHandler})
+    COLUMNS COLUMN_VALUE NUMBER PATH 'text()')
+    )
+    AND ROWNUM &lt;= #{limit})
   </sql>
 
   <!--
     Special handling for PostgreSQL to delete using ctid or a specified primary key column.
     This avoids issues with large IN clauses by using ANY with an array parameter.
     -->
-  <sql id="rootProcessInstanceHistoryDeletion" databaseId="postgresql">
+  <sql id="historyDeletionByKeys" databaseId="postgresql">
     <bind name="keyColumn" value="primaryKeyColumn != null &amp;&amp; primaryKeyColumn != '' ? primaryKeyColumn : 'ctid'"/>
     DELETE
     FROM ${prefix}${tableName} t1
     USING (SELECT ${keyColumn}
-           FROM ${prefix}${tableName}
-           WHERE ROOT_PROCESS_INSTANCE_KEY = ANY(#{rootProcessInstanceKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
-           LIMIT #{limit}) t2
+    FROM ${prefix}${tableName}
+    WHERE ${deletionKeyColumn} = ANY(#{deletionKeys, jdbcType=ARRAY, typeHandler=io.camunda.db.rdbms.sql.typehandler.PostgresLongListToArrayTypeHandler})
+    LIMIT #{limit}) t2
     WHERE t1.${keyColumn} = t2.${keyColumn}
+  </sql>
+
+  <!-- history cleanup deletes by root process instance -->
+  <sql id="rootProcessInstanceHistoryDeletion">
+    <bind name="deletionKeys" value="rootProcessInstanceKeys"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletionByKeys">
+        <property name="deletionKeyColumn" value="ROOT_PROCESS_INSTANCE_KEY"/>
+    </include>
+  </sql>
+
+  <!-- history deletion API deletes by process instance -->
+  <sql id="processInstanceHistoryDeletion">
+    <bind name="deletionKeys" value="processInstanceKeys"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.historyDeletionByKeys">
+      <property name="deletionKeyColumn" value="PROCESS_INSTANCE_KEY"/>
+    </include>
   </sql>
 
   <resultMap id="flowNodeStatisticsResultMap"

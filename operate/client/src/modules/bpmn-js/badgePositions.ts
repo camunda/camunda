@@ -7,7 +7,6 @@
  */
 
 const MODIFICATIONS = {top: -14, right: -7};
-const FLOW_NODE_STATE = {bottom: 17, left: -7};
 const DECISION_STATE = {
   bottom: 12,
   left: -12,
@@ -42,7 +41,6 @@ const SUBPROCESS_WITH_INCIDENTS = {
 
 export {
   MODIFICATIONS,
-  FLOW_NODE_STATE,
   DECISION_STATE,
   ACTIVE_BADGE,
   INCIDENTS_BADGE,

@@ -24,15 +24,7 @@
   </licenses>
 
   <properties>
-    <!-- The Spring Boot version is managed explicitly here to avoid inheriting
-    Spring Boot version from the parent pom.xml, which is the reference for internal modules.
-    This allows decoupled control of the Spring Boot version for this user facing artifact. -->
-    <version.spring-boot>4.0.0</version.spring-boot>
-    <!-- The Spring Framework version is also explicitly managed here to be compatible
-    with Spring Boot 4.0. -->
-    <version.spring>7.0.1</version.spring>
-    <!-- JUnit 6.0.1 is required for Spring Boot 4.0 compatibility -->
-    <version.junit>6.0.1</version.junit>
+    <!-- No overrides as zeebe-parent was migrated to Spring Boot 4.0.0 -->
   </properties>
 
 </project>

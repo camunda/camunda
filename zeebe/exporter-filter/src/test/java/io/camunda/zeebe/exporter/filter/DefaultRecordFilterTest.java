@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.filter.config.TestConfiguration;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -95,7 +96,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionExact(List.of("included"));
+    configuration.filterIndexConfig().withVariableNameInclusionExact(List.of("included"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -117,7 +118,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude the exact name "excluded".
-    configuration.testIndexConfig().withVariableNameExclusionExact(List.of("excluded"));
+    configuration.filterIndexConfig().withVariableNameExclusionExact(List.of("excluded"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -141,7 +142,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionStartWith(List.of("incl"));
+    configuration.filterIndexConfig().withVariableNameInclusionStartWith(List.of("incl"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -161,7 +162,7 @@ final class DefaultRecordFilterTest {
             .withIndexedRecordType(RecordType.EVENT)
             .withIndexedValueType(ValueType.VARIABLE);
 
-    configuration.testIndexConfig().withVariableNameInclusionEndWith(List.of("_suffix"));
+    configuration.filterIndexConfig().withVariableNameInclusionEndWith(List.of("_suffix"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -183,7 +184,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude names starting with "secret_".
-    configuration.testIndexConfig().withVariableNameExclusionStartWith(List.of("secret_"));
+    configuration.filterIndexConfig().withVariableNameExclusionStartWith(List.of("secret_"));
 
     final var filter = new DefaultRecordFilter(configuration);
 
@@ -209,7 +210,7 @@ final class DefaultRecordFilterTest {
 
     // No inclusion rules -> all variable names are included by default,
     // but we explicitly exclude names ending with "_tmp".
-    configuration.testIndexConfig().withVariableNameExclusionEndWith(List.of("_tmp"));
+    configuration.filterIndexConfig().withVariableNameExclusionEndWith(List.of("_tmp"));
 
     final var excluded = variableRecord("value_tmp");
     final var other = variableRecord("value");
@@ -225,19 +226,208 @@ final class DefaultRecordFilterTest {
         .isTrue();
   }
 
+  @Test
+  void shouldApplyVariableValueTypeInclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    // Only STRING variables should be included
+    configuration.filterIndexConfig().withVariableValueTypeInclusion(List.of("STRING"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // JSON string -> STRING
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+    // JSON number -> DOUBLE
+    final var numberVar = variableRecord("v_number", "42");
+
+    // when / then
+    assertThat(filter.acceptRecord(stringVar))
+        .as("STRING variable should be accepted by inclusion type filter")
+        .isTrue();
+    assertThat(filter.acceptRecord(numberVar))
+        .as("non-STRING variable should be rejected by inclusion type filter")
+        .isFalse();
+  }
+
+  @Test
+  void shouldApplyVariableValueTypeExclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    // Exclude DOUBLE variables
+    configuration.filterIndexConfig().withVariableValueTypeExclusion(List.of("NUMBER"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    // JSON string -> STRING
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+    // JSON number -> DOUBLE
+    final var numberVar = variableRecord("v_number", "42");
+
+    // when / then
+    assertThat(filter.acceptRecord(numberVar))
+        .as("DOUBLE variable should be rejected by exclusion type filter")
+        .isFalse();
+    assertThat(filter.acceptRecord(stringVar))
+        .as("non-DOUBLE variable should be accepted by exclusion type filter")
+        .isTrue();
+  }
+
+  @Test
+  void shouldNotApplyVariableNameFilterWhenNoNameRulesConfigured() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var record1 = variableRecord("anyName");
+
+    // when / then
+    assertThat(filter.acceptRecord(record1))
+        .as("Without name inclusion/exclusion rules, all variable names should be accepted")
+        .isTrue();
+  }
+
+  @Test
+  void shouldApplyOptimizeModeFilterWhenOptimizeModeEnabled() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            // We pick JOB because OptimizeModeFilter never accepts JOB records
+            .withIndexedValueType(ValueType.JOB);
+
+    // Enable Optimize mode on the index config so that createRecordFilters()
+    // adds an OptimizeModeFilter to the chain.
+    configuration.filterIndexConfig().withOptimizeModeEnabled(true);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    @SuppressWarnings("unchecked")
+    final Record<?> jobRecord = (Record<?>) mock(Record.class);
+    when(jobRecord.getRecordType()).thenReturn(RecordType.EVENT);
+    when(jobRecord.getValueType()).thenReturn(ValueType.JOB);
+    when(jobRecord.getBrokerVersion()).thenReturn("8.9.0");
+
+    // when / then
+    assertThat(filter.acceptRecord(jobRecord))
+        .as("With Optimize mode enabled, non-Optimize value types like JOB should be rejected")
+        .isFalse();
+  }
+
+  @Test
+  void shouldNotApplyVariableValueTypeFilterWhenNoTypeRulesConfigured() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.VARIABLE);
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var stringVar = variableRecord("v_string", "\"foo\"");
+
+    // when / then
+    assertThat(filter.acceptRecord(stringVar))
+        .as("Without type inclusion/exclusion rules, STRING variables should be accepted")
+        .isTrue();
+  }
+
+  @Test
+  void shouldApplyBpmnProcessIdInclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.PROCESS_INSTANCE);
+
+    configuration.filterIndexConfig().withBpmnProcessIdInclusion(List.of("order-process"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var included = processInstanceRecord("order-process");
+    final var other = processInstanceRecord("payment-process");
+
+    // when / then
+    assertThat(filter.acceptRecord(included))
+        .as("Records for included BPMN process id should be accepted")
+        .isTrue();
+    assertThat(filter.acceptRecord(other))
+        .as("Records for non-included BPMN process id should be rejected")
+        .isFalse();
+  }
+
+  @Test
+  void shouldApplyBpmnProcessIdExclusionFromTestConfiguration() {
+    // given
+    final var configuration =
+        new TestConfiguration()
+            .withIndexedRecordType(RecordType.EVENT)
+            .withIndexedValueType(ValueType.PROCESS_INSTANCE);
+
+    configuration.filterIndexConfig().withBpmnProcessIdExclusion(List.of("deprecated-process"));
+
+    final var filter = new DefaultRecordFilter(configuration);
+
+    final var excluded = processInstanceRecord("deprecated-process");
+    final var other = processInstanceRecord("active-process");
+
+    // when / then
+    assertThat(filter.acceptRecord(excluded))
+        .as("Records for excluded BPMN process id should be rejected")
+        .isFalse();
+    assertThat(filter.acceptRecord(other))
+        .as("Records for other BPMN process ids should be accepted")
+        .isTrue();
+  }
+
   // ---------------------------------------------------------------------------
   // helpers
   // ---------------------------------------------------------------------------
-  @SuppressWarnings("unchecked")
   private static Record<VariableRecordValue> variableRecord(final String name) {
-    final var record = (Record<VariableRecordValue>) mock(Record.class);
+    return variableRecord(name, null);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<VariableRecordValue> variableRecord(
+      final String name, final String rawValue) {
+
+    final Record<VariableRecordValue> record = (Record<VariableRecordValue>) mock(Record.class);
     final var value = mock(VariableRecordValue.class);
 
     when(record.getRecordType()).thenReturn(RecordType.EVENT);
     when(record.getValueType()).thenReturn(ValueType.VARIABLE);
-    when(record.getBrokerVersion()).thenReturn("8.9.0"); // satisfies VariableNameFilterRecord
+    when(record.getBrokerVersion()).thenReturn("8.9.0");
     when(record.getValue()).thenReturn(value);
     when(value.getName()).thenReturn(name);
+    when(value.getValue()).thenReturn(rawValue);
+
+    return record;
+  }
+
+  @SuppressWarnings("unchecked")
+  private static Record<ProcessInstanceRecordValue> processInstanceRecord(
+      final String bpmnProcessId) {
+
+    final Record<ProcessInstanceRecordValue> record =
+        (Record<ProcessInstanceRecordValue>) mock(Record.class);
+    final var value = mock(ProcessInstanceRecordValue.class);
+
+    when(record.getRecordType()).thenReturn(RecordType.EVENT);
+    when(record.getValueType()).thenReturn(ValueType.PROCESS_INSTANCE);
+    when(record.getBrokerVersion()).thenReturn("8.9.0");
+    when(record.getValue()).thenReturn(value);
+    when(value.getBpmnProcessId()).thenReturn(bpmnProcessId);
 
     return record;
   }

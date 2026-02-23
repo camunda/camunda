@@ -17,11 +17,13 @@ import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.DecisionInstanceServices;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -46,9 +48,9 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldDeleteDecisionInstance() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(123L);
-    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
     when(decisionInstanceServices.deleteDecisionInstance(1L, 123L))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -68,15 +70,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"123","batchOperationType":"DELETE_DECISION_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
 
     verify(decisionInstanceServices).deleteDecisionInstance(1L, 123L);
   }
@@ -84,9 +78,9 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldDeleteDecisionInstanceWithNoBody() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(456L);
-    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
     when(decisionInstanceServices.deleteDecisionInstance(2L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -98,15 +92,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .accept(MediaType.APPLICATION_JSON)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"456","batchOperationType":"DELETE_DECISION_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
 
     verify(decisionInstanceServices).deleteDecisionInstance(2L, null);
   }
@@ -114,9 +100,9 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
   @Test
   void shouldDeleteDecisionInstanceWithEmptyBody() {
     // given
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(789L);
-    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+    final var record = new HistoryDeletionRecord();
+    record.setResourceKey(123L);
+    record.setResourceType(HistoryDeletionType.DECISION_INSTANCE);
 
     when(decisionInstanceServices.deleteDecisionInstance(3L, null))
         .thenReturn(CompletableFuture.completedFuture(record));
@@ -134,15 +120,7 @@ public class DecisionInstanceControllerTest extends RestControllerTest {
         .bodyValue(request)
         .exchange()
         .expectStatus()
-        .isOk()
-        .expectHeader()
-        .contentType(MediaType.APPLICATION_JSON)
-        .expectBody()
-        .json(
-            """
-          {"batchOperationKey":"789","batchOperationType":"DELETE_DECISION_INSTANCE"}
-        """,
-            JsonCompareMode.STRICT);
+        .isNoContent();
 
     verify(decisionInstanceServices).deleteDecisionInstance(3L, null);
   }

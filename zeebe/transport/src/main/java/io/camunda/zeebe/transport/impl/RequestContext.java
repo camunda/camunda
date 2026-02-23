@@ -7,13 +7,10 @@
  */
 package io.camunda.zeebe.transport.impl;
 
-import static io.camunda.zeebe.transport.impl.AtomixServerTransport.topicName;
-
 import io.atomix.utils.net.Address;
 import io.camunda.zeebe.scheduler.ScheduledTimer;
 import io.camunda.zeebe.scheduler.clock.ActorClock;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
-import io.camunda.zeebe.transport.RequestType;
 import java.time.Duration;
 import java.util.concurrent.TimeoutException;
 import java.util.function.Predicate;
@@ -24,8 +21,7 @@ final class RequestContext {
 
   private final CompletableActorFuture<DirectBuffer> currentFuture;
   private final Supplier<String> nodeAddressSupplier;
-  private final int partitionId;
-  private final RequestType requestType;
+  private final String topicName;
   private final byte[] requestBytes;
   private final boolean shouldRetry;
   private final long startTime;
@@ -37,16 +33,14 @@ final class RequestContext {
   RequestContext(
       final CompletableActorFuture<DirectBuffer> currentFuture,
       final Supplier<String> nodeAddressSupplier,
-      final int partitionId,
-      final RequestType requestType,
+      final String topicName,
       final byte[] requestBytes,
       final Predicate<DirectBuffer> responseValidator,
       final boolean shouldRetry,
       final Duration timeout) {
     this.currentFuture = currentFuture;
     this.nodeAddressSupplier = nodeAddressSupplier;
-    this.partitionId = partitionId;
-    this.requestType = requestType;
+    this.topicName = topicName;
     this.requestBytes = requestBytes;
     this.shouldRetry = shouldRetry;
     startTime = ActorClock.currentTimeMillis();
@@ -64,7 +58,7 @@ final class RequestContext {
   }
 
   String getTopicName() {
-    return topicName(partitionId, requestType);
+    return topicName;
   }
 
   byte[] getRequestBytes() {

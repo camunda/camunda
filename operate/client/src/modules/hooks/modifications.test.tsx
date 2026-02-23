@@ -14,13 +14,17 @@ import {
   useModificationsByFlowNode,
   useWillAllFlowNodesBeCanceled,
   useNewScopeKeyForElement,
+  useAvailableModifications,
 } from './modifications';
 import {modificationsStore} from 'modules/stores/modifications';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockProcessWithInputOutputMappingsXML} from 'modules/testUtils';
+import {
+  mockProcessWithInputOutputMappingsXML,
+  eventSubProcess,
+} from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -411,6 +415,164 @@ describe('modifications hooks', () => {
       });
 
       expect(result.current).toBeNull();
+    });
+  });
+
+  describe('useAvailableModifications', () => {
+    beforeEach(() => {
+      mockFetchProcessInstance().withSuccess(mockProcessInstance);
+      mockFetchProcessDefinitionXml().withSuccess(eventSubProcess);
+      mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    });
+
+    afterEach(() => {
+      modificationsStore.reset();
+    });
+
+    it('should return empty array if element cannot be modified', async () => {
+      const {result: resultNonModifiable} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'StartEvent_1',
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => {
+        expect(resultNonModifiable.current).toEqual([]);
+      });
+    });
+
+    it('should return only add when no active instances in statistics', async () => {
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'ServiceTask_1daop2o',
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => expect(result.current.length).toBeGreaterThan(0));
+      expect(result.current).toEqual(['add']);
+    });
+
+    it('should return only add for subprocess when no active instances', async () => {
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'ServiceTask_0ruokei',
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => expect(result.current.length).toBeGreaterThan(0));
+      expect(result.current).toEqual(['add']);
+    });
+
+    it('should not include add option if elementInstanceKey is provided', () => {
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'ServiceTask_1daop2o',
+            isSpecificElementInstanceSelected: true,
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      expect(result.current).not.toContain('add');
+    });
+
+    it('should include add, cancel-instance, and move-instance with single active instance', async () => {
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            elementId: 'ServiceTask_1daop2o',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
+
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'ServiceTask_1daop2o',
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => expect(result.current.length).toBe(3));
+
+      expect(result.current).toEqual([
+        'add',
+        'cancel-instance',
+        'move-instance',
+      ]);
+    });
+
+    it('should include add, cancel-all, and move-all with multiple active instances', async () => {
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            elementId: 'ServiceTask_1daop2o',
+            active: 5,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
+
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 5,
+            elementId: 'ServiceTask_1daop2o',
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => expect(result.current.length).toBe(3));
+      expect(result.current).toEqual(['add', 'cancel-all', 'move-all']);
+    });
+
+    it('should not include move options for subprocess even with active instances', async () => {
+      mockFetchFlownodeInstancesStatistics().withSuccess({
+        items: [
+          {
+            elementId: 'ServiceTask_0ruokei',
+            active: 1,
+            incidents: 0,
+            completed: 0,
+            canceled: 0,
+          },
+        ],
+      });
+
+      const {result} = renderHook(
+        () =>
+          useAvailableModifications({
+            runningElementInstanceCount: 1,
+            elementId: 'ServiceTask_0ruokei',
+            isElementInstanceKeyAvailable: true,
+          }),
+        {wrapper: getWrapper()},
+      );
+
+      await waitFor(() => expect(result.current.length).toBe(2));
+      expect(result.current).toEqual(['add', 'cancel-all']);
     });
   });
 });

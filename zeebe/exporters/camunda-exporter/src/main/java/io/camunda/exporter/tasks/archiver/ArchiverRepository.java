@@ -48,19 +48,39 @@ public interface ArchiverRepository extends AutoCloseable {
   CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName, final Map<String, List<String>> keysByField);
 
+  CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters);
+
   CompletableFuture<Void> reindexDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField);
+
+  CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters);
 
   default CompletableFuture<Void> moveDocuments(
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField,
       final Executor executor) {
-    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField)
+    return moveDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of(), executor);
+  }
+
+  default CompletableFuture<Void> moveDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters,
+      final Executor executor) {
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, filters)
         .thenComposeAsync(ok -> setIndexLifeCycle(destinationIndexName), executor)
-        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField), executor);
+        .thenComposeAsync(ok -> deleteDocuments(sourceIndexName, keysByField, filters), executor);
   }
 
   CompletableFuture<Integer> getCountOfProcessInstancesAwaitingArchival();

@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface InputSet extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface InputSet extends BaseElement, NamedBpmnElement {
 
   Collection<DataInput> getDataInputs();
 

@@ -62,6 +62,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.ArrayList;
 import java.util.List;
@@ -262,7 +263,8 @@ public final class RequestMapper extends RequestUtil {
         .setTenantId(ensureTenantIdSet("CreateProcessInstance", grpcRequest.getTenantId()))
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList())
-        .setTags(Set.copyOf(grpcRequest.getTagsList()));
+        .setTags(Set.copyOf(grpcRequest.getTagsList()))
+        .setBusinessId(grpcRequest.getBusinessId());
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());
@@ -285,7 +287,8 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(request.getVariables()))
         .setStartInstructions(request.getStartInstructionsList())
         .setTags(Set.copyOf(request.getTagsList()))
-        .setFetchVariables(grpcRequest.getFetchVariablesList());
+        .setFetchVariables(grpcRequest.getFetchVariablesList())
+        .setBusinessId(request.getBusinessId());
 
     if (request.hasOperationReference()) {
       brokerRequest.setOperationReference(request.getOperationReference());
@@ -336,15 +339,31 @@ public final class RequestMapper extends RequestUtil {
   public static BrokerActivateJobsRequest toActivateJobsRequest(
       final ActivateJobsRequest grpcRequest) {
 
-    List<String> tenantIds = grpcRequest.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("ActivateJobs", tenantIds);
+    final List<String> tenantIds;
+    final var tenantFilter =
+        switch (grpcRequest.getTenantFilter()) {
+          case ASSIGNED -> {
+            // When ASSIGNED, tenant IDs will be determined from authorized tenants, not from
+            // request
+            tenantIds = List.of();
+            yield TenantFilter.ASSIGNED;
+          }
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("ActivateJobs", grpcRequest.getTenantIdsList());
+            yield TenantFilter.PROVIDED;
+          }
+          case UNRECOGNIZED ->
+              throw new IllegalArgumentException(
+                  "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+        };
 
     return new BrokerActivateJobsRequest(grpcRequest.getType())
         .setTimeout(grpcRequest.getTimeout())
         .setWorker(grpcRequest.getWorker())
         .setMaxJobsToActivate(grpcRequest.getMaxJobsToActivate())
         .setVariables(grpcRequest.getFetchVariableList())
-        .setTenantIds(tenantIds);
+        .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter);
   }
 
   public static BrokerResolveIncidentRequest toResolveIncidentRequest(
@@ -424,8 +443,18 @@ public final class RequestMapper extends RequestUtil {
   public static JobActivationProperties toJobActivationProperties(
       final StreamActivatedJobsRequest request, final Map<String, Object> claims) {
 
-    List<String> tenantIds = request.getTenantIdsList();
-    tenantIds = ensureTenantIdsSet("StreamActivatedJobs", tenantIds);
+    final List<String> tenantIds;
+    final var tenantFilter =
+        switch (convertTenantFilter(request.getTenantFilter())) {
+          case ASSIGNED -> {
+            tenantIds = List.of();
+            yield TenantFilter.ASSIGNED;
+          }
+          case PROVIDED -> {
+            tenantIds = ensureTenantIdsSet("StreamActivatedJobs", request.getTenantIdsList());
+            yield TenantFilter.PROVIDED;
+          }
+        };
 
     final JobActivationPropertiesImpl jobActivationProperties = new JobActivationPropertiesImpl();
     final DirectBuffer worker = wrapString(request.getWorker());
@@ -434,6 +463,7 @@ public final class RequestMapper extends RequestUtil {
         .setTimeout(request.getTimeout())
         .setFetchVariables(request.getFetchVariableList().stream().map(StringValue::new).toList())
         .setTenantIds(tenantIds)
+        .setTenantFilter(tenantFilter)
         .setClaims(claims);
 
     return jobActivationProperties;
@@ -484,5 +514,16 @@ public final class RequestMapper extends RequestUtil {
     tenantIds.stream().forEach(tenantId -> ensureTenantIdSet(commandName, tenantId));
 
     return tenantIds;
+  }
+
+  private static TenantFilter convertTenantFilter(
+      final GatewayOuterClass.TenantFilter grpcTenantFilter) {
+    return switch (grpcTenantFilter) {
+      case ASSIGNED -> TenantFilter.ASSIGNED;
+      case PROVIDED -> TenantFilter.PROVIDED;
+      case UNRECOGNIZED ->
+          throw new IllegalArgumentException(
+              "Unrecognized tenantFilter option; expected one of ASSIGNED or PROVIDED.");
+    };
   }
 }

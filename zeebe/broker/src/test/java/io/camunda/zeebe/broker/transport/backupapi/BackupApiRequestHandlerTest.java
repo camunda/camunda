@@ -458,6 +458,7 @@ final class BackupApiRequestHandlerTest {
     when(checkpointState.getLatestBackupType()).thenReturn(CheckpointType.SCHEDULED_BACKUP);
     when(checkpointState.getLatestBackupTimestamp()).thenReturn(100L);
     when(checkpointState.getLatestBackupPosition()).thenReturn(20L);
+    when(checkpointState.getLatestBackupFirstLogPosition()).thenReturn(5L);
     when(checkpointState.getLatestCheckpointId()).thenReturn(NO_CHECKPOINT);
 
     final var request =
@@ -475,7 +476,8 @@ final class BackupApiRequestHandlerTest {
         .returns(1, PartitionCheckpointState::partitionId)
         .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
         .returns(100L, PartitionCheckpointState::checkpointTimestamp)
-        .returns(20L, PartitionCheckpointState::checkpointPosition);
+        .returns(20L, PartitionCheckpointState::checkpointPosition)
+        .returns(5L, PartitionCheckpointState::firstLogPosition);
     assertThat(stateResponse.getCheckpointStates()).isEmpty();
   }
 
@@ -485,6 +487,7 @@ final class BackupApiRequestHandlerTest {
     when(checkpointState.getLatestBackupType()).thenReturn(CheckpointType.SCHEDULED_BACKUP);
     when(checkpointState.getLatestBackupTimestamp()).thenReturn(100L);
     when(checkpointState.getLatestBackupPosition()).thenReturn(20L);
+    when(checkpointState.getLatestBackupFirstLogPosition()).thenReturn(5L);
     when(checkpointState.getLatestCheckpointId()).thenReturn(15L);
     when(checkpointState.getLatestCheckpointType()).thenReturn(CheckpointType.MANUAL_BACKUP);
     when(checkpointState.getLatestCheckpointTimestamp()).thenReturn(150L);
@@ -505,7 +508,8 @@ final class BackupApiRequestHandlerTest {
         .returns(1, PartitionCheckpointState::partitionId)
         .returns(CheckpointType.SCHEDULED_BACKUP, PartitionCheckpointState::checkpointType)
         .returns(100L, PartitionCheckpointState::checkpointTimestamp)
-        .returns(20L, PartitionCheckpointState::checkpointPosition);
+        .returns(20L, PartitionCheckpointState::checkpointPosition)
+        .returns(5L, PartitionCheckpointState::firstLogPosition);
     assertThat(stateResponse.getCheckpointStates())
         .hasSize(1)
         .singleElement()

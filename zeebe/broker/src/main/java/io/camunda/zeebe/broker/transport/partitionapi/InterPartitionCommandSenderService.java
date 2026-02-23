@@ -26,8 +26,10 @@ public final class InterPartitionCommandSenderService extends Actor
   final int partitionId;
 
   public InterPartitionCommandSenderService(
-      final ClusterCommunicationService communicationService, final int partitionId) {
-    commandSender = new InterPartitionCommandSenderImpl(communicationService);
+      final ClusterCommunicationService communicationService,
+      final int partitionId,
+      final String sendingSubjectPrefix) {
+    commandSender = new InterPartitionCommandSenderImpl(communicationService, sendingSubjectPrefix);
     this.partitionId = partitionId;
   }
 

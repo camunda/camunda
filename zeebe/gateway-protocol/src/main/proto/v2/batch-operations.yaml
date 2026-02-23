@@ -70,7 +70,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/cancellation:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: cancelBatchOperation
@@ -108,7 +108,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/suspension:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: suspendBatchOperation
@@ -148,7 +148,7 @@ paths:
 
   /batch-operations/{batchOperationKey}/resumption:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Batch operation
       operationId: resumeBatchOperation
@@ -295,6 +295,8 @@ components:
     BatchOperationSearchQueryResult:
       description: The batch operation search query result.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -305,6 +307,8 @@ components:
             $ref: '#/components/schemas/BatchOperationResponse'
 
     BatchOperationResponse:
+      required:
+        - errors
       type: object
       properties:
         batchOperationKey:
@@ -425,6 +429,8 @@ components:
 
     BatchOperationItemSearchQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -436,6 +442,8 @@ components:
 
     BatchOperationItemResponse:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         operationType:
           $ref: '#/components/schemas/BatchOperationTypeEnum'
@@ -450,6 +458,14 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: the process instance key of the processed item.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         state:
           description: State of the item.
           type: string
@@ -465,6 +481,7 @@ components:
           format: date-time
         errorMessage:
           description: the error message from the engine in case of a failed operation.
+          nullable: true
           type: string
 
     DecisionInstanceDeletionBatchOperationRequest:

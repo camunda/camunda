@@ -11,7 +11,7 @@ import {Stack} from '@carbon/react';
 import {CheckmarkFilled} from '@carbon/react/icons';
 import {match, Pattern} from 'ts-pattern';
 import {AssigneeTag} from 'common/components/AssigneeTag';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
 import {ActiveTransitionLoadingText} from 'common/tasks/details/ActiveTransitionLoadingText';
@@ -28,7 +28,8 @@ type Props = {
     | 'ASSIGNING'
     | 'UPDATING'
     | 'COMPLETING'
-    | 'CANCELING';
+    | 'CANCELING'
+    | 'CREATING';
   assignButton: React.ReactNode;
   user: CurrentUser;
 };
@@ -129,6 +130,9 @@ const TaskDetailsHeader: React.FC<Props> = ({
           ))
           .with({taskState: 'ASSIGNING'}, () => (
             <span className={styles.assignButtonContainer}>{assignButton}</span>
+          ))
+          .with({taskState: 'CREATING'}, () => (
+            <ActiveTransitionLoadingText taskState={taskState} />
           ))
           .exhaustive()}
       </div>

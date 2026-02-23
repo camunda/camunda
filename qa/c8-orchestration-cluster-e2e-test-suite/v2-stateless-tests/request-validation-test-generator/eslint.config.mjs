@@ -16,11 +16,11 @@ export default tseslint.config(
     },
     rules: {
       'no-unused-vars': 'off', // handled by TS
-      '@typescript-eslint/no-unused-vars': ['warn',{ argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': ['warn', {argsIgnorePattern: '^_'}],
       'no-undef': 'off',
       'no-console': 'off',
-      'prefer-const': 'warn'
-    }
+      'prefer-const': 'warn',
+    },
   },
   {
     files: ['generated/**/*.ts'],
@@ -28,7 +28,7 @@ export default tseslint.config(
       // Generated code leniency (can tighten later)
       '@typescript-eslint/no-explicit-any': 'off',
       // Allow intentionally empty catch blocks used to swallow logging failures
-      'no-empty': ['error', { allowEmptyCatch: true }]
-    }
-  }
+      'no-empty': ['error', {allowEmptyCatch: true}],
+    },
+  },
 );

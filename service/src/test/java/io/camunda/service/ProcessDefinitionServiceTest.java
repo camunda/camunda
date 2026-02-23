@@ -106,17 +106,16 @@ public class ProcessDefinitionServiceTest {
     when(processDefinitionSearchClient.processDefinitionInstanceVersionStatistics(any()))
         .thenReturn(statsResult);
 
-    final var originalQuery = new ProcessDefinitionInstanceVersionStatisticsQuery.Builder().build();
+    final var query =
+        ProcessDefinitionInstanceVersionStatisticsQuery.of(
+            b -> b.filter(f -> f.processDefinitionId(processDefinitionId)));
 
     // when
-    final var result =
-        services.searchProcessDefinitionInstanceVersionStatistics(
-            processDefinitionId, originalQuery);
+    final var result = services.searchProcessDefinitionInstanceVersionStatistics(query);
 
     // then
     assertThat(result).isEqualTo(statsResult);
 
-    // verify that the invoked query contains the processDefinitionId regardless of operator type
     verify(processDefinitionSearchClient)
         .processDefinitionInstanceVersionStatistics(
             argThat(
@@ -125,8 +124,6 @@ public class ProcessDefinitionServiceTest {
                         && q.filter() != null
                         && q.filter().processDefinitionId() != null
                         && processDefinitionId.equals(q.filter().processDefinitionId())
-                        && q.filter().tenantId() == null
-                        && q.page().equals(originalQuery.page())
-                        && q.sort().equals(originalQuery.sort())));
+                        && q.filter().tenantId() == null));
   }
 }

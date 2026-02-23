@@ -7,38 +7,34 @@
  */
 package io.camunda.identity.webapp.controllers;
 
-import io.camunda.webapps.controllers.WebappsRequestForwardManager;
-import jakarta.servlet.ServletContext;
+import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
+
+import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+/**
+ * @deprecated please use {@link AdminIndexController} instead.
+ */
 @Controller
+@Deprecated
+@ConditionalOnWebappUiEnabled({"identity", "admin"})
 public class IdentityIndexController {
 
-  private final ServletContext context;
-
-  private final WebappsRequestForwardManager webappsRequestForwardManager;
-
-  public IdentityIndexController(
-      final ServletContext context,
-      final WebappsRequestForwardManager webappsRequestForwardManager) {
-    this.context = context;
-    this.webappsRequestForwardManager = webappsRequestForwardManager;
+  @GetMapping({"/identity", "/identity/", "/identity/index.html"})
+  public String redirectIdentityRoot(final HttpServletRequest request) {
+    return "redirect:/admin" + getRequestedUrl(request).replaceFirst("^/identity", "");
   }
 
-  @GetMapping("/identity")
-  public String identity(final Model model) throws IOException {
-    model.addAttribute("contextPath", context.getContextPath() + "/identity/");
-    return "identity/index";
-  }
-
-  @RequestMapping(
-      value = {"/identity/", "/identity/{regex:[\\w-]+}", "/identity/**/{regex:[\\w-]+}"})
-  public String forwardToIdentity(final HttpServletRequest request) {
-    return webappsRequestForwardManager.forward(request, "identity");
+  /**
+   * Redirects all legacy /identity/* routes to /admin/*.
+   *
+   * <p>Excludes assets as they are handled by static resource handlers.
+   */
+  @RequestMapping(value = {"/identity/{path:^(?!assets).*}", "/identity/{path:^(?!assets).*}/**"})
+  public String redirectIdentityRoutes(final HttpServletRequest request) {
+    return "redirect:/admin" + getRequestedUrl(request).replaceFirst("^/identity", "");
   }
 }

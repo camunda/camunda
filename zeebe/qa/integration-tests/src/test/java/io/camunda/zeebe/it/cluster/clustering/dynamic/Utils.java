@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
 import org.awaitility.Awaitility;
 
-final class Utils {
+public final class Utils {
 
   public static final String DEFAULT_PROCESS_ID = "processId";
 
@@ -135,7 +135,7 @@ final class Utils {
     return deployProcessModel(camundaClient, process, waitDeployment);
   }
 
-  static List<Long> createInstanceWithAJobOnAllPartitions(
+  public static List<Long> createInstanceWithAJobOnAllPartitions(
       final CamundaClient camundaClient, final String jobType, final int partitionsCount) {
     return createInstanceWithAJobOnAllPartitions(
         camundaClient, jobType, partitionsCount, true, DEFAULT_PROCESS_ID);

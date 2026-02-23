@@ -39,6 +39,7 @@ import io.camunda.zeebe.test.util.socket.SocketUtil;
 import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.impl.AtomixClientTransportAdapter;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.transport.impl.ServerResponseImpl;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -109,11 +110,16 @@ public class SnapshotApiRequestHandlerTest {
             clusterService,
             scheduler.getActorScheduler(),
             brokerTopology,
-            metrics);
+            metrics,
+            TopicSupplier.withLegacyTopicName());
     brokerClient.start();
 
     serverTransport =
-        submitActor(new AtomixServerTransport(messagingService, new SnowflakeIdGenerator(1L)));
+        submitActor(
+            new AtomixServerTransport(
+                messagingService,
+                new SnowflakeIdGenerator(1L),
+                List.of(TopicSupplier.withLegacyTopicName(), TopicSupplier.withPrefix("default"))));
 
     scaleUpProgressInvocationCount = new AtomicInteger();
 

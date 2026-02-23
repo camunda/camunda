@@ -27,15 +27,18 @@ async function main() {
   function scanSchema(s: any) {
     if (!s || typeof s !== 'object') return;
     if (Array.isArray(s.enum) && s.enum.length) counters.enums++;
-    if (s.format) counters.formats.set(s.format, (counters.formats.get(s.format) || 0) + 1);
+    if (s.format)
+      counters.formats.set(s.format, (counters.formats.get(s.format) || 0) + 1);
     if (typeof s.multipleOf === 'number') counters.multipleOf++;
     if (s.uniqueItems) counters.uniqueItems++;
     if (s.additionalProperties === false) counters.additionalPropsFalse++;
-    if (s.discriminator && s.discriminator.propertyName) counters.discriminators++;
+    if (s.discriminator && s.discriminator.propertyName)
+      counters.discriminators++;
     if (Array.isArray(s.anyOf)) counters.anyOf++;
     if (Array.isArray(s.allOf)) counters.allOf++;
     if (Array.isArray(s.oneOf)) counters.oneOf++;
-    if (s.properties) for (const v of Object.values(s.properties)) scanSchema(v);
+    if (s.properties)
+      for (const v of Object.values(s.properties)) scanSchema(v);
     if (s.items) scanSchema(s.items);
     if (Array.isArray(s.allOf)) s.allOf.forEach(scanSchema);
     if (Array.isArray(s.anyOf)) s.anyOf.forEach(scanSchema);
@@ -69,4 +72,7 @@ async function main() {
   console.log(JSON.stringify(result, null, 2));
 }
 
-main().catch(e => { console.error(e); process.exit(1); });
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

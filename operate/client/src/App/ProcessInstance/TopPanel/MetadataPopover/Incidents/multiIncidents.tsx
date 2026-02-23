@@ -12,10 +12,12 @@ import {SummaryText} from '../styled';
 type Props = {count: number; onButtonClick: () => void};
 
 const MultiIncidents: React.FC<Props> = ({count, onButtonClick}) => {
+  const labelId = 'metadata-popover-incidents-title';
   return (
-    <>
+    <section aria-labelledby={labelId}>
       <Header
         title="Incidents"
+        titleId={labelId}
         variant="error"
         button={{
           title: 'Show incidents',
@@ -24,7 +26,7 @@ const MultiIncidents: React.FC<Props> = ({count, onButtonClick}) => {
         }}
       />
       <SummaryText>{`${count} incidents occurred`}</SummaryText>
-    </>
+    </section>
   );
 };
 

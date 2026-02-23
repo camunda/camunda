@@ -28,6 +28,11 @@ import org.slf4j.LoggerFactory;
 
 public class DbBatchOperationState implements MutableBatchOperationState {
 
+  /**
+   * @deprecated the maximum chunk size for item keys in a batch operation chunk. This is only used
+   *     for the deprecated appendItemKeys method. The new addChunk method allows adding chunks with
+   *     any number of item keys, so this limit does not apply to it.
+   */
   public static final long MAX_DB_CHUNK_SIZE = 3500;
 
   private static final Logger LOGGER = LoggerFactory.getLogger(DbBatchOperationState.class);
@@ -150,6 +155,7 @@ public class DbBatchOperationState implements MutableBatchOperationState {
   }
 
   @Override
+  @Deprecated
   public void appendItemKeys(final long batchOperationKey, final Set<Long> itemKeys) {
     /*
      * This method appends the given itemKeys to the given batch operation. The itemKeys are added
@@ -186,6 +192,39 @@ public class DbBatchOperationState implements MutableBatchOperationState {
 
     // Finally, update the batch and the chunk in the column family
     updateChunkAndBatch(chunk, batch);
+  }
+
+  @Override
+  public void addChunk(final long key, final long batchOperationKey, final Set<Long> itemKeys) {
+    final var oBatch = get(batchOperationKey);
+    if (oBatch.isEmpty()) {
+      LOGGER.error(
+          "Batch operation with key {} not found, cannot append chunks to it.", batchOperationKey);
+      return;
+    }
+
+    chunkKey.wrapLong(key);
+    final var existingChunk = batchOperationChunksColumnFamily.get(fkBatchKeyAndChunkKey);
+    if (existingChunk != null) {
+      LOGGER.debug(
+          "Chunk with key {} already exists for batch operation {}", key, batchOperationKey);
+      return;
+    }
+
+    LOGGER.trace(
+        "Appending a chunk {} of {} item keys to batch operation with key {}",
+        key,
+        itemKeys.size(),
+        batchOperationKey);
+
+    final var batchChunk = new PersistedBatchOperationChunk();
+    batchChunk.setKey(key).setBatchOperationKey(batchOperationKey).setItemKeys(itemKeys);
+    batchOperationChunksColumnFamily.insert(fkBatchKeyAndChunkKey, batchChunk);
+
+    final var batch = oBatch.get();
+    batch.addChunkKey(key);
+    batch.setNumTotalItems(batch.getNumTotalItems() + itemKeys.size());
+    batchOperationColumnFamily.update(batchKey, batch);
   }
 
   @Override

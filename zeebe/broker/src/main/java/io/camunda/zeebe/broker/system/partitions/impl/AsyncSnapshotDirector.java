@@ -8,6 +8,7 @@
 package io.camunda.zeebe.broker.system.partitions.impl;
 
 import io.atomix.raft.RaftApplicationEntryCommittedPositionListener;
+import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.NoEntryAtSnapshotPosition;
 import io.camunda.zeebe.broker.system.partitions.StateController;
 import io.camunda.zeebe.logstreams.impl.Loggers;
@@ -60,6 +61,7 @@ public final class AsyncSnapshotDirector extends Actor
   private final String actorName;
   private final StreamProcessorMode streamProcessorMode;
   private final Callable<CompletableFuture<Void>> flushLog;
+  private final StatePositionSupplier positionSupplier;
   private final Set<FailureListener> listeners = new HashSet<>();
   private final int partitionId;
   private final TreeMap<Long, ActorFuture<Void>> commitAwaiters = new TreeMap<>();
@@ -76,7 +78,8 @@ public final class AsyncSnapshotDirector extends Actor
       final StateController stateController,
       final Duration snapshotRate,
       final StreamProcessorMode streamProcessorMode,
-      final Callable<CompletableFuture<Void>> flushLog) {
+      final Callable<CompletableFuture<Void>> flushLog,
+      final StatePositionSupplier positionSupplier) {
     this.streamProcessor = streamProcessor;
     this.stateController = stateController;
     processorName = streamProcessor.getName();
@@ -85,6 +88,7 @@ public final class AsyncSnapshotDirector extends Actor
     actorName = actorName(partitionId);
     this.streamProcessorMode = streamProcessorMode;
     this.flushLog = flushLog;
+    this.positionSupplier = positionSupplier;
     healthReport = HealthReport.healthy(this);
   }
 
@@ -97,6 +101,8 @@ public final class AsyncSnapshotDirector extends Actor
    * @param stateController state controller that manages state
    * @param streamProcessorMode mode of the stream processor
    * @param snapshotRate rate at which the snapshot is taken
+   * @param flushLog callable to flush the log
+   * @param positionSupplier supplier for positions from the state
    * @return snapshot director
    */
   public static AsyncSnapshotDirector of(
@@ -105,9 +111,16 @@ public final class AsyncSnapshotDirector extends Actor
       final StateController stateController,
       final StreamProcessorMode streamProcessorMode,
       final Duration snapshotRate,
-      final Callable<CompletableFuture<Void>> flushLog) {
+      final Callable<CompletableFuture<Void>> flushLog,
+      final StatePositionSupplier positionSupplier) {
     return new AsyncSnapshotDirector(
-        partitionId, streamProcessor, stateController, snapshotRate, streamProcessorMode, flushLog);
+        partitionId,
+        streamProcessor,
+        stateController,
+        snapshotRate,
+        streamProcessorMode,
+        flushLog,
+        positionSupplier);
   }
 
   @Override
@@ -247,7 +260,7 @@ public final class AsyncSnapshotDirector extends Actor
   private ActorFuture<PersistedSnapshot> snapshot(
       final InProgressSnapshot inProgressSnapshot, final boolean forceSnapshot) {
     return takeTransientSnapshot(inProgressSnapshot, forceSnapshot)
-        .andThen(() -> getLastWrittenPosition(inProgressSnapshot), actor)
+        .andThen(() -> getPositionsAfterSnapshot(inProgressSnapshot), actor)
         .andThen(() -> waitUntilLastWrittenPositionIsCommitted(inProgressSnapshot), actor)
         .andThen(this::flushJournal, actor)
         .andThen(() -> persistSnapshot(inProgressSnapshot), actor);
@@ -280,6 +293,7 @@ public final class AsyncSnapshotDirector extends Actor
         inProgressSnapshot
             .pendingSnapshot
             .withLastFollowupEventPosition(inProgressSnapshot.lastWrittenPosition)
+            .withMaxExportedPosition(inProgressSnapshot.maxExportedPosition)
             .persist();
     snapshotPersisted.onComplete(
         (snapshot, persistError) -> {
@@ -301,7 +315,8 @@ public final class AsyncSnapshotDirector extends Actor
     return snapshotPersisted;
   }
 
-  private ActorFuture<Void> getLastWrittenPosition(final InProgressSnapshot inProgressSnapshot) {
+  private ActorFuture<Void> getPositionsAfterSnapshot(final InProgressSnapshot inProgressSnapshot) {
+    inProgressSnapshot.maxExportedPosition = positionSupplier.getHighestExportedPosition();
     return streamProcessor
         .getLastWrittenPositionAsync()
         .andThen(
@@ -410,5 +425,6 @@ public final class AsyncSnapshotDirector extends Actor
     private long lastWrittenPosition;
     private TransientSnapshot pendingSnapshot;
     private long lowerBoundSnapshotPosition;
+    private long maxExportedPosition;
   }
 }

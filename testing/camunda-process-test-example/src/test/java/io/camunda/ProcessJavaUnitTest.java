@@ -22,7 +22,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.process.test.api.CamundaProcessTest;
 import io.camunda.process.test.api.CamundaProcessTestContext;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,9 +46,9 @@ public class ProcessJavaUnitTest {
     // given
     final String shippingId = "shipping-1";
 
-    completeJobs("collect-money", Collections.emptyMap());
-    completeJobs("fetch-items", Collections.emptyMap());
-    completeJobs("ship-parcel", Map.of("shipping_id", shippingId));
+    processTestContext.mockJobWorker("collect-money").thenComplete();
+    processTestContext.mockJobWorker("fetch-items").thenComplete();
+    processTestContext.mockJobWorker("ship-parcel").thenComplete(Map.of("shipping_id", shippingId));
 
     final var processInstance =
         client
@@ -85,10 +84,10 @@ public class ProcessJavaUnitTest {
     // given
     final String shippingId = "shipping-2";
 
-    completeJobs("collect-money", Collections.emptyMap());
-    completeJobs("fetch-items", Collections.emptyMap());
-    completeJobs("ship-parcel", Map.of("shipping_id", shippingId));
-    completeJobs("request-tracking-code", Collections.emptyMap());
+    processTestContext.mockJobWorker("collect-money").thenComplete();
+    processTestContext.mockJobWorker("fetch-items").thenComplete();
+    processTestContext.mockJobWorker("ship-parcel").thenComplete(Map.of("shipping_id", shippingId));
+    processTestContext.mockJobWorker("request-tracking-code").thenComplete();
 
     final var processInstance =
         client
@@ -109,13 +108,5 @@ public class ProcessJavaUnitTest {
         .hasCompletedElements(byName("Request tracking code"))
         .hasActiveElements(byName("Received tracking code"))
         .isActive();
-  }
-
-  private void completeJobs(final String jobType, final Map<String, Object> variables) {
-    client
-        .newWorker()
-        .jobType(jobType)
-        .handler((jobClient, job) -> jobClient.newCompleteCommand(job).variables(variables).send())
-        .open();
   }
 }

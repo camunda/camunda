@@ -265,13 +265,17 @@ public class TenantAwareBusinessRuleTaskTest {
 
     // then
     assertThat(
-            RecordingExporter.processInstanceRecords()
-                .onlyEvents()
-                .withProcessInstanceKey(processInstanceKey)
-                .withTenantId(tenantTwo)
-                .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
-                .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED))
-        .isEmpty();
+            RecordingExporter.<Boolean>expectNoMatchingRecords(
+                records ->
+                    records
+                        .processInstanceRecords()
+                        .onlyEvents()
+                        .withProcessInstanceKey(processInstanceKey)
+                        .withTenantId(tenantTwo)
+                        .withElementType(BpmnElementType.BUSINESS_RULE_TASK)
+                        .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                        .exists()))
+        .isFalse();
 
     final Record<IncidentRecordValue> incident =
         RecordingExporter.incidentRecords()

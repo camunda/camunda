@@ -1,4 +1,4 @@
-# description: trigger workflow to run the camunda-compatibility-test.yml workflow on a schedule
+# description: trigger workflow to run the camunda-client-compatibility-test.yml workflow on a schedule
 # type: CI
 # owner: @camunda/camunda-ex
 name: Camunda Compatibility Tests - stable/8.8
@@ -16,6 +16,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh workflow run .github/workflows/camunda-compatibility-test.yml \
+          gh workflow run .github/workflows/camunda-client-compatibility-test.yml \
             --ref stable/8.8 \
             --repo ${{ github.repository }}

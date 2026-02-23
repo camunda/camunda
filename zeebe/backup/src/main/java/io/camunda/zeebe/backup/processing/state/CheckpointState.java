@@ -59,7 +59,8 @@ public interface CheckpointState {
       final long checkpointId,
       final long checkpointPosition,
       final long timestamp,
-      final CheckpointType type);
+      final CheckpointType type,
+      final long firstLogPosition);
 
   /** Returns the id of the last checkpoint with a successful backup. */
   long getLatestBackupId();
@@ -72,4 +73,7 @@ public interface CheckpointState {
 
   /** Returns the type of the last created backup. */
   CheckpointType getLatestBackupType();
+
+  /** Returns the first log position of the last checkpoint with a successful backup. */
+  long getLatestBackupFirstLogPosition();
 }

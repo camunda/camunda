@@ -20,6 +20,7 @@ import {
   useDecisionInstancesSearchFilter,
   useDecisionInstancesSearchSort,
 } from 'modules/hooks/decisionInstancesSearch';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const InstancesTable: React.FC = observer(() => {
   const filter = useDecisionInstancesSearchFilter();
@@ -52,6 +53,7 @@ const InstancesTable: React.FC = observer(() => {
   });
   const decisionInstances = data?.decisionInstances ?? [];
   const filteredDecisionInstancesCount = data?.totalCount ?? 0;
+  const clientConfig = getClientConfig();
 
   const getTableState = () => {
     switch (true) {
@@ -81,7 +83,7 @@ const InstancesTable: React.FC = observer(() => {
   };
 
   const isTenantColumnVisible =
-    window.clientConfig?.multiTenancyEnabled &&
+    clientConfig.multiTenancyEnabled &&
     (filter?.tenantId === undefined || filter?.tenantId === 'all');
 
   return (

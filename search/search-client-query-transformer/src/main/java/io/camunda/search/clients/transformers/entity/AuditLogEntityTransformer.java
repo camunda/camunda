@@ -28,6 +28,7 @@ public class AuditLogEntityTransformer
         value.getTimestamp(),
         value.getActorId(),
         mapActorType(value.getActorType()),
+        value.getAgentElementId(),
         value.getTenantId(),
         mapTenantScope(value.getTenantScope()),
         mapOperationResult(value.getResult()),

@@ -26,12 +26,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     properties = {

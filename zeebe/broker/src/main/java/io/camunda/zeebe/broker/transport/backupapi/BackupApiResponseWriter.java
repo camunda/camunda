@@ -81,7 +81,8 @@ public final class BackupApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     responseWriter.accept(buffer, offset);
+    return getLength();
   }
 }

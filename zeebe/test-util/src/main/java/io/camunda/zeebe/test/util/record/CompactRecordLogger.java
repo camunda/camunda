@@ -157,6 +157,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.function.Function;
@@ -1819,24 +1820,56 @@ public class CompactRecordLogger {
   }
 
   private String summarizeGlobalListener(final GlobalListenerRecordValue value) {
-    return String.format(
-        "%s<%s> x %s%s",
-        formatId(value.getType()),
-        value.getEventTypes().stream().collect(Collectors.joining(", ")),
-        value.getRetries(),
-        value.isAfterNonGlobal() ? " [after]" : "");
+    final String summary =
+        String.format(
+            "%s<%s> %s(%s) %s %s x %d (prio: %d)",
+            value.getListenerType(),
+            value.getSource(),
+            formatId(value.getId()),
+            formatId(value.getType()),
+            value.isAfterNonGlobal() ? "after" : "before",
+            value.getEventTypes(),
+            value.getRetries(),
+            value.getPriority());
+    if (value.getConfigKey() != -1) {
+      return summary + " config: " + shortenKey(value.getConfigKey());
+    }
+    return summary;
   }
 
   private String summarizeGlobalListenerBatch(final Record<?> record) {
     final var value = (GlobalListenerBatchRecordValue) record.getValue();
     final StringBuilder summary = new StringBuilder();
-    if (record.getKey() != value.getGlobalListenerBatchKey()) {
-      summary.append("key: ").append(shortenKey(value.getGlobalListenerBatchKey())).append(" ");
+
+    if (!value.getCreatedListenerKeys().isEmpty()) {
+      summary.append(
+          value.getCreatedListenerKeys().stream()
+              .map(this::shortenKey)
+              .collect(Collectors.joining(", ", "created: [", "] ")));
+    }
+    if (!value.getUpdatedListenerKeys().isEmpty()) {
+      summary.append(
+          value.getUpdatedListenerKeys().stream()
+              .map(this::shortenKey)
+              .collect(Collectors.joining(", ", "updated: [", "]")));
+    }
+    if (!value.getDeletedListenerKeys().isEmpty()) {
+      summary.append(
+          value.getDeletedListenerKeys().stream()
+              .map(this::shortenKey)
+              .collect(Collectors.joining(", ", "deleted: [", "]")));
     }
     summary.append(
-        value.getTaskListeners().stream()
-            .map(this::summarizeGlobalListener)
-            .collect(Collectors.joining("; ", "taskListeners: {", "}")));
+        value.getListeners().stream()
+            .map(
+                listener -> {
+                  final String listenerSummary = summarizeGlobalListener(listener);
+                  return Optional.of(listener.getGlobalListenerKey())
+                      .filter(key -> key > 0)
+                      .map(key -> shortenKey(key) + ": " + listenerSummary)
+                      .orElse(listenerSummary);
+                })
+            .collect(Collectors.joining("; ", "listeners: {", "}")));
     return summary.toString();
   }
 

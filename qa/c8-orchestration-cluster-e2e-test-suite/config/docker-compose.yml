@@ -4,7 +4,7 @@ networks:
 services:
   postgres:
     container_name: postgres
-    image: postgres:17.7-alpine
+    image: postgres:18.2-alpine
     ports:
       - '5432:5432'
     environment:
@@ -15,7 +15,7 @@ services:
       - zeebe_network
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -61,7 +61,7 @@ services:
       - zeebe_network
 
   kibana:
-    image: docker.elastic.co/kibana/kibana:9.2.4
+    image: docker.elastic.co/kibana/kibana:9.3.0
     ports:
       - 5601:5601
     environment:
@@ -101,7 +101,7 @@ services:
     environment:
       - 'JAVA_TOOL_OPTIONS=-Xms512m -Xmx1g'
       - ZEEBE_BROKER_NETWORK_HOST=camunda
-      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,identity
+      - SPRING_PROFILES_ACTIVE=e2e-test,consolidated-auth,tasklist,broker,operate,admin
       - CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI=false
       - CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=true
       - CAMUNDA_SECURITY_AUTHENTICATION_METHOD=BASIC

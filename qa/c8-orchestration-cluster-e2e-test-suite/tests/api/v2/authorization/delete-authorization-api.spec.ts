@@ -217,7 +217,10 @@ test.describe.parallel('Delete Authorization API', () => {
     });
 
     await test.step('Verify authorization is deleted', async () => {
-      await expectAuthorizationCanNotBeFound(request, mappingRuleAuthorizationKey);
+      await expectAuthorizationCanNotBeFound(
+        request,
+        mappingRuleAuthorizationKey,
+      );
     });
   });
 

@@ -48,7 +48,7 @@ public class SnapshotApiResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    serializer.serialize(snapshotChunk, buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return serializer.serialize(snapshotChunk, buffer, offset);
   }
 }

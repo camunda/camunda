@@ -14,6 +14,7 @@ import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.C
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DECISION_REQUIREMENTS_DEFINITION;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.DOCUMENT;
+import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GLOBAL_LISTENER;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.GROUP;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.MAPPING_RULE;
 import static io.camunda.zeebe.protocol.record.value.AuthorizationResourceType.PROCESS_DEFINITION;
@@ -286,6 +287,10 @@ public record Authorization<T>(
 
     public Builder<T> clusterVariable() {
       return resourceType(CLUSTER_VARIABLE);
+    }
+
+    public Builder<T> globalListener() {
+      return resourceType(GLOBAL_LISTENER);
     }
 
     public Builder<T> resourceId(final String resourceId) {

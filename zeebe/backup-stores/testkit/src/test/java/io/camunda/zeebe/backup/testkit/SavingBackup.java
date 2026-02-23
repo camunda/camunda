@@ -59,7 +59,9 @@ public interface SavingBackup {
         .failsWithin(Duration.ofMinutes(1))
         .withThrowableOfType(Throwable.class)
         .withRootCauseInstanceOf(getFileNotFoundExceptionClass())
-        .withMessageContaining(deletedFile.toString());
+        .havingRootCause()
+        .withMessageContaining(deletedFile.toString())
+        .isInstanceOf(getFileNotFoundExceptionClass());
   }
 
   @ParameterizedTest

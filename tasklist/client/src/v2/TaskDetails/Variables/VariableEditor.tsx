@@ -16,8 +16,8 @@ import {
   StructuredListWrapper,
   TextInput,
 } from '@carbon/react';
-import {Popup, Close} from '@carbon/react/icons';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
+import {Maximize, Close} from '@carbon/react/icons';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Field, useFormState} from 'react-final-form';
 import {FieldArray} from 'react-final-form-arrays';
 import {DelayedErrorField} from 'common/tasks/variables-editor/VariableEditor/DelayedErrorField';
@@ -106,7 +106,7 @@ const VariableEditor: React.FC<Props> = ({
                     align="top-end"
                     leaveDelayMs={100}
                   >
-                    <Popup />
+                    <Maximize />
                   </IconButton>
                 </div>
               </StructuredListCell>
@@ -173,7 +173,7 @@ const VariableEditor: React.FC<Props> = ({
                       align="top-end"
                       leaveDelayMs={100}
                     >
-                      <Popup />
+                      <Maximize />
                     </IconButton>
                   </div>
                 </StructuredListCell>
@@ -214,7 +214,7 @@ const VariableEditor: React.FC<Props> = ({
                           )}
                           addExtraDelay={Boolean(
                             !dirtyFields?.[nameFieldName] &&
-                              dirtyFields?.[valueFieldName],
+                            dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
@@ -243,7 +243,7 @@ const VariableEditor: React.FC<Props> = ({
                           validate={validateValueComplete}
                           addExtraDelay={Boolean(
                             dirtyFields?.[nameFieldName] &&
-                              !dirtyFields?.[valueFieldName],
+                            !dirtyFields?.[valueFieldName],
                           )}
                         >
                           {({input, meta}) => (
@@ -277,7 +277,7 @@ const VariableEditor: React.FC<Props> = ({
                             align="top-end"
                             leaveDelayMs={100}
                           >
-                            <Popup />
+                            <Maximize />
                           </IconButton>
                           <IconButton
                             label={t('taskVariablesRemoveVariable', {

@@ -12,7 +12,6 @@ import static io.camunda.zeebe.model.bpmn.validation.zeebe.ZeebePriorityDefiniti
 
 import io.camunda.zeebe.el.Expression;
 import io.camunda.zeebe.el.impl.StaticExpression;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.BpmnElementContext;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
@@ -34,6 +33,7 @@ import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebePriorityDefinition;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -49,8 +49,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -151,10 +153,21 @@ public final class BpmnUserTaskBehavior {
       final BpmnElementContext context,
       final ExecutableUserTask element,
       final UserTaskProperties userTaskProperties) {
+    return createNewUserTask(
+        context,
+        element.getId(),
+        userTaskProperties,
+        element.getUserTaskProperties().getTaskHeaders());
+  }
+
+  public UserTaskRecord createNewUserTask(
+      final BpmnElementContext context,
+      final DirectBuffer id,
+      final UserTaskProperties userTaskProperties,
+      final Map<String, String> headers) {
     final var userTaskKey = keyGenerator.nextKey();
 
-    final var encodedHeaders =
-        headerEncoder.encode(element.getUserTaskProperties().getTaskHeaders());
+    final var encodedHeaders = headerEncoder.encode(headers);
 
     final var userTaskRecord =
         new UserTaskRecord()
@@ -172,7 +185,7 @@ public final class BpmnUserTaskBehavior {
             .setProcessDefinitionVersion(context.getProcessVersion())
             .setProcessDefinitionKey(context.getProcessDefinitionKey())
             .setProcessInstanceKey(context.getProcessInstanceKey())
-            .setElementId(element.getId())
+            .setElementId(id)
             .setElementInstanceKey(context.getElementInstanceKey())
             .setTenantId(context.getTenantId())
             .setPriority(userTaskProperties.getPriority())
@@ -464,7 +477,7 @@ public final class BpmnUserTaskBehavior {
 
     // Extract the list of supported listener event types
     var eventTypes =
-        globalTaskListener.getEventTypes().contains(GlobalListenerConfiguration.ALL_EVENT_TYPES)
+        globalTaskListener.getEventTypes().contains(GlobalListenerRecord.ALL_EVENT_TYPES)
             ? List.of(ZeebeTaskListenerEventType.values())
             : globalTaskListener.getEventTypes().stream()
                 .map(ZeebeTaskListenerEventType::valueOf)

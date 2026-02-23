@@ -9,6 +9,7 @@ package io.camunda.zeebe.broker.system.partitions.impl.perf;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.broker.logstreams.state.DbPositionSupplier;
 import io.camunda.zeebe.broker.system.partitions.impl.StateControllerImpl;
 import io.camunda.zeebe.test.util.jmh.JMHTestCase;
 import io.camunda.zeebe.test.util.junit.JMHTest;
@@ -87,8 +88,7 @@ public class LargeStateControllerPerformanceTest {
             context.snapshotStore(),
             context.temporaryFolder().resolve("runtime"),
             ignored -> Optional.empty(),
-            ignored -> 0L,
-            ignored -> 0L,
+            zeebeDb -> new DbPositionSupplier(zeebeDb, false),
             context.snapshotStore());
 
     // when

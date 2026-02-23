@@ -258,7 +258,7 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
-  /process-definitions/{processDefinitionId}/statistics/process-instances:
+  /process-definitions/statistics/process-instances-by-version:
     post:
       x-eventually-consistent: true
       tags:
@@ -267,15 +267,9 @@ paths:
       summary: Get process instance statistics by version
       description: |
         Get statistics about process instances, grouped by version for a given process definition.
-      parameters:
-        - name: processDefinitionId
-          in: path
-          required: true
-          description: The ID of the process definition.
-          schema:
-            $ref: "identifiers.yaml#/components/schemas/ProcessDefinitionId"
+        The process definition ID must be provided as a required field in the request body filter.
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
@@ -377,6 +371,8 @@ components:
 
     ProcessDefinitionSearchQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -391,6 +387,7 @@ components:
       properties:
         name:
           description: Name of this process definition.
+          nullable: true
           type: string
         resourceName:
           description: Resource name for this process definition.
@@ -401,6 +398,7 @@ components:
           format: int32
         versionTag:
           description: Version tag of this process definition.
+          nullable: true
           type: string
         processDefinitionId:
           allOf:
@@ -429,6 +427,8 @@ components:
           description: The process definition statistics search filters.
 
     ProcessDefinitionElementStatisticsQueryResult:
+      required:
+        - items
       description: Process definition element statistics query response.
       type: object
       properties:
@@ -467,6 +467,7 @@ components:
       type: object
       properties:
         page:
+          description: Search cursor pagination.
           allOf:
             - $ref: "search-models.yaml#/components/schemas/CursorForwardPagination"
         filter:
@@ -476,6 +477,8 @@ components:
 
     ProcessDefinitionMessageSubscriptionStatisticsQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
       properties:
@@ -513,6 +516,7 @@ components:
       type: object
       properties:
         page:
+          description: Search cursor pagination.
           allOf:
             - $ref: 'search-models.yaml#/components/schemas/OffsetPagination'
         sort:
@@ -523,6 +527,8 @@ components:
 
     ProcessDefinitionInstanceStatisticsQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -542,6 +548,7 @@ components:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         latestProcessDefinitionName:
           description: Name of the latest deployed process definition instance version.
+          nullable: true
           type: string
         hasMultipleVersions:
           description: Indicates whether multiple versions of this process definition instance are deployed.
@@ -586,17 +593,27 @@ components:
           description: The process definition instance version statistics search filters.
           allOf:
             - $ref: '#/components/schemas/ProcessDefinitionInstanceVersionStatisticsFilter'
+      required:
+        - filter
 
     ProcessDefinitionInstanceVersionStatisticsFilter:
       description: Process definition instance version statistics search filter.
       type: object
       properties:
+        processDefinitionId:
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
+          description: The ID of the process definition to retrieve version statistics for.
         tenantId:
           allOf:
               - $ref: 'identifiers.yaml#/components/schemas/TenantId'
           description: Tenant ID of this process definition.
+      required:
+        - processDefinitionId
 
     ProcessDefinitionInstanceVersionStatisticsQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -621,6 +638,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
         processDefinitionName:
           description: The name of the process definition.
+          nullable: true
           type: string
         tenantId:
           description: The tenant ID associated with the process definition.

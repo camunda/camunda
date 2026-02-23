@@ -88,12 +88,11 @@ import org.springframework.context.annotation.Profile;
 @DependsOn("unifiedConfigurationHelper")
 public class BrokerBasedPropertiesOverride {
 
+  public static final String RDBMS_EXPORTER_NAME = "rdbms";
   private static final Logger LOGGER = LoggerFactory.getLogger(BrokerBasedPropertiesOverride.class);
   private static final String CAMUNDA_EXPORTER_CLASS_NAME = "io.camunda.exporter.CamundaExporter";
   private static final String CAMUNDA_EXPORTER_NAME = "camundaexporter";
   private static final String RDBMS_EXPORTER_CLASS_NAME = "io.camunda.exporter.rdbms.RdbmsExporter";
-  private static final String RDBMS_EXPORTER_NAME = "rdbms";
-
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyBrokerBasedProperties legacyBrokerBasedProperties;
 
@@ -217,6 +216,7 @@ public class BrokerBasedPropertiesOverride {
     populateFromDistribution(override);
     populateFromBatchOperations(override);
     populateFromExpression(override);
+    populateFromProcessInstanceCreation(override);
   }
 
   private void populateFromDistribution(final BrokerBasedProperties override) {
@@ -234,7 +234,6 @@ public class BrokerBasedPropertiesOverride {
     final var batchOperationsCfg = override.getExperimental().getEngine().getBatchOperations();
     batchOperationsCfg.setSchedulerInterval(engineBatchOperation.getSchedulerInterval());
     batchOperationsCfg.setChunkSize(engineBatchOperation.getChunkSize());
-    batchOperationsCfg.setDbChunkSize(engineBatchOperation.getDbChunkSize());
     batchOperationsCfg.setQueryPageSize(engineBatchOperation.getQueryPageSize());
     batchOperationsCfg.setQueryInClauseSize(engineBatchOperation.getQueryInClauseSize());
     batchOperationsCfg.setQueryRetryMax(engineBatchOperation.getQueryRetryMax());
@@ -424,6 +423,9 @@ public class BrokerBasedPropertiesOverride {
     populateFromGlobalListeners(override);
 
     populateFromPartitioning(override);
+
+    override.getExperimental().setSendOnLegacySubject(cluster.isSendOnLegacySubject());
+    override.getExperimental().setReceiveOnLegacySubject(cluster.isReceiveOnLegacySubject());
   }
 
   private void populateFromPartitioning(final BrokerBasedProperties override) {
@@ -733,6 +735,7 @@ public class BrokerBasedPropertiesOverride {
     gcsBackupStoreConfig.setBasePath(gcs.getBasePath());
     gcsBackupStoreConfig.setHost(gcs.getHost());
     gcsBackupStoreConfig.setAuth(GcsBackupStoreAuth.valueOf(gcs.getAuth().name()));
+    gcsBackupStoreConfig.setMaxConcurrentTransfers(gcs.getMaxConcurrentTransfers());
 
     override.getData().getBackup().setGcs(gcsBackupStoreConfig);
   }
@@ -786,6 +789,9 @@ public class BrokerBasedPropertiesOverride {
 
   private void populateBackupScheduler(
       final BrokerBasedProperties override, final PrimaryStorageBackup primaryStorageBackup) {
+
+    validateSchedulerConfiguration(primaryStorageBackup);
+
     final BackupCfg backupCfg = override.getData().getBackup();
     backupCfg.setRequired(primaryStorageBackup.isRequired());
     backupCfg.setContinuous(primaryStorageBackup.isContinuous());
@@ -793,6 +799,26 @@ public class BrokerBasedPropertiesOverride {
     backupCfg.setCheckpointInterval(primaryStorageBackup.getCheckpointInterval());
     backupCfg.setOffset(primaryStorageBackup.getOffset());
     backupCfg.setRetention(primaryStorageBackup.getRetention());
+  }
+
+  private void validateSchedulerConfiguration(final PrimaryStorageBackup primaryStorageBackup) {
+    final var dbType = unifiedConfiguration.getCamunda().getData().getSecondaryStorage().getType();
+
+    final var continuousBackupsEnabledOnDocumentBasedStore =
+        (dbType.isElasticSearch() || dbType.isOpenSearch())
+            && (primaryStorageBackup.isContinuous() || hasScheduleConfig(primaryStorageBackup));
+
+    if (continuousBackupsEnabledOnDocumentBasedStore) {
+      throw new IllegalArgumentException(
+          "Continuous backups are not compatible with secondary storage: `%s`. Please disable continuous backups."
+              .formatted(dbType));
+    }
+  }
+
+  private boolean hasScheduleConfig(final PrimaryStorageBackup primaryStorageBackup) {
+    return primaryStorageBackup.getSchedule() != null
+        && !primaryStorageBackup.getSchedule().isBlank()
+        && !primaryStorageBackup.getSchedule().equalsIgnoreCase("none");
   }
 
   private void populateCamundaExporter(final BrokerBasedProperties override) {
@@ -999,5 +1025,17 @@ public class BrokerBasedPropertiesOverride {
         .getExperimental()
         .getEngine()
         .setGlobalListeners(unifiedConfiguration.getCamunda().getCluster().getGlobalListeners());
+  }
+
+  private void populateFromProcessInstanceCreation(final BrokerBasedProperties override) {
+    override
+        .getExperimental()
+        .getEngine()
+        .getProcessInstanceCreation()
+        .setBusinessIdUniquenessEnabled(
+            unifiedConfiguration
+                .getCamunda()
+                .getProcessInstanceCreation()
+                .isBusinessIdUniquenessEnabled());
   }
 }

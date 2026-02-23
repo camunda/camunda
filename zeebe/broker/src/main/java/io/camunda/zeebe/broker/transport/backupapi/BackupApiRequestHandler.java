@@ -230,7 +230,8 @@ public final class BackupApiRequestHandler
               checkpointState.getLatestBackupId(),
               checkpointState.getLatestBackupType(),
               checkpointState.getLatestBackupTimestamp(),
-              checkpointState.getLatestBackupPosition());
+              checkpointState.getLatestBackupPosition(),
+              checkpointState.getLatestBackupFirstLogPosition());
       response.getBackupStates().add(backupState);
     }
     if (checkpointState.getLatestCheckpointId() != CheckpointState.NO_CHECKPOINT) {

@@ -7,7 +7,7 @@
  */
 
 import {spawn} from 'child_process';
-import {resolve as _resolve, dirname} from 'path';
+import {dirname, resolve as _resolve} from 'path';
 import {readFile} from 'fs';
 import {parseString} from 'xml2js';
 import {fileURLToPath} from 'url';
@@ -105,7 +105,7 @@ function startBackend() {
     };
 
     backendProcess = spawnWithArgs(
-      `mvn -f optimize-distro/pom.xml exec:java -Dexec.mainClass="io.camunda.optimize.Main"`,
+      `mvn -f optimize/backend/pom.xml spring-boot:run -Dspring-boot.run.additionalClasspathElements=optimize/client/demo-data`,
       {
         cwd: _resolve(__dirname, '..', '..', '..'),
         shell: true,
@@ -113,7 +113,6 @@ function startBackend() {
           ...process.env,
           ...commonEnv,
           ...engineEnv[mode],
-          CLASSPATH_PREFIX: 'optimize/client/demo-data'
         },
       }
     );

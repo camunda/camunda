@@ -20,14 +20,7 @@ import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
 import {isMultiInstance} from './utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import {bpmnRendererColors, highlightedSequenceFlowsColor} from './styled';
-
-type OverlayData = {
-  payload?: unknown;
-  type: string;
-  flowNodeId: string;
-  position: OverlayPosition;
-  isZoomFixed?: boolean;
-};
+import type {OverlayData} from './overlayTypes';
 
 type OnFlowNodeSelection = (
   elementId?: string,
@@ -456,4 +449,5 @@ class BpmnJS {
 }
 
 export {BpmnJS};
-export type {OnFlowNodeSelection, OverlayData};
+export type {OnFlowNodeSelection};
+export type {OverlayData} from './overlayTypes';

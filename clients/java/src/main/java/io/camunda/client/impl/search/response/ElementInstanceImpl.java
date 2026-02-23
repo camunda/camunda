@@ -30,6 +30,7 @@ public final class ElementInstanceImpl implements ElementInstance {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final String elementId;
   private final String elementName;
   private final OffsetDateTime startDate;
@@ -45,6 +46,7 @@ public final class ElementInstanceImpl implements ElementInstance {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     elementId = item.getElementId();
     elementName = item.getElementName();
     startDate = ParseUtil.parseOffsetDateTimeOrNull(item.getStartDate());
@@ -74,6 +76,11 @@ public final class ElementInstanceImpl implements ElementInstance {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -127,6 +134,7 @@ public final class ElementInstanceImpl implements ElementInstance {
         elementInstanceKey,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionId,
         elementId,
         startDate,
@@ -150,6 +158,7 @@ public final class ElementInstanceImpl implements ElementInstance {
     return Objects.equals(elementInstanceKey, that.elementInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(elementId, that.elementId)
         && Objects.equals(elementName, that.elementName)

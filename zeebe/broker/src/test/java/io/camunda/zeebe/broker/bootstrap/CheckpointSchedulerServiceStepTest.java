@@ -11,7 +11,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -36,8 +35,6 @@ public class CheckpointSchedulerServiceStepTest {
   private static final Duration TIME_OUT = Duration.ofSeconds(10);
 
   private BrokerStartupContext mockBrokerStartupContext;
-  private ActorSchedulingService mockActorSchedulingService;
-  private ClusterMembershipService mockMembershipService;
   private CheckpointSchedulingService mockCheckpointSchedulingService;
 
   private ActorFuture<BrokerStartupContext> future;
@@ -47,8 +44,8 @@ public class CheckpointSchedulerServiceStepTest {
   @BeforeEach
   void setUp() {
     mockBrokerStartupContext = mock(BrokerStartupContext.class);
-    mockActorSchedulingService = mock(ActorSchedulingService.class);
-    mockMembershipService = mock(ClusterMembershipService.class);
+    final ActorSchedulingService mockActorSchedulingService = mock(ActorSchedulingService.class);
+    final ClusterMembershipService mockMembershipService = mock(ClusterMembershipService.class);
     mockCheckpointSchedulingService = mock(CheckpointSchedulingService.class);
     when(mockCheckpointSchedulingService.closeAsync())
         .thenReturn(CONCURRENCY_CONTROL.completedFuture(null));
@@ -82,33 +79,8 @@ public class CheckpointSchedulerServiceStepTest {
     // then
     assertThat(future).succeedsWithin(TIME_OUT);
     assertThat(future.join()).isNotNull();
-  }
-
-  @Test
-  void shouldRegisterSchedulingService() {
-    // when
-    TEST_BROKER_CONFIG.getData().getBackup().setContinuous(true);
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-
-    // then
-    assertThat(future).succeedsWithin(TIME_OUT);
-    assertThat(future.join()).isNotNull();
     final var argumentCaptor = ArgumentCaptor.forClass(CheckpointSchedulingService.class);
     verify(mockBrokerStartupContext).setCheckpointSchedulingService(argumentCaptor.capture());
-  }
-
-  @Test
-  void shouldNotRegisterSchedulingService() {
-    // when
-    TEST_BROKER_CONFIG.getData().getBackup().setContinuous(false);
-    sut.startupInternal(mockBrokerStartupContext, CONCURRENCY_CONTROL, future);
-
-    // then
-    assertThat(future).succeedsWithin(TIME_OUT);
-    assertThat(future.join()).isNotNull();
-    final var argumentCaptor = ArgumentCaptor.forClass(CheckpointSchedulingService.class);
-    verify(mockBrokerStartupContext, times(0))
-        .setCheckpointSchedulingService(argumentCaptor.capture());
   }
 
   @Test

@@ -35,7 +35,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch
-        uses: peter-evans/slash-command-dispatch@v4
+        uses: peter-evans/slash-command-dispatch@v5
         with:
           token: ${{ steps.github-token.outputs.token }}
           reaction-token: ${{ steps.github-token.outputs.token }}
@@ -50,7 +50,7 @@ jobs:
 
       - name: Update comment in case of failure
         if: failure()
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ github.event.comment.id }}
           body: |
@@ -84,7 +84,7 @@ jobs:
           vault-url: ${{ secrets.VAULT_ADDR }}
 
       - name: Slash Command Dispatch
-        uses: peter-evans/slash-command-dispatch@v4
+        uses: peter-evans/slash-command-dispatch@v5
         with:
           token: ${{ steps.github-token.outputs.token }}
           reaction-token: ${{ steps.github-token.outputs.token }}
@@ -96,7 +96,7 @@ jobs:
 
       - name: Update comment in case of failure
         if: failure()
-        uses: peter-evans/create-or-update-comment@v4
+        uses: peter-evans/create-or-update-comment@v5
         with:
           comment-id: ${{ github.event.comment.id }}
           body: |

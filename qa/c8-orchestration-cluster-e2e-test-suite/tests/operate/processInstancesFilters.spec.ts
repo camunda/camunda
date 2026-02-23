@@ -18,6 +18,7 @@ type ProcessInstance = {processInstanceKey: number};
 
 let callActivityProcessInstance: ProcessInstance;
 let orderProcessInstance: ProcessInstance;
+let variableProcessInstance: ProcessInstance;
 
 test.beforeAll(async () => {
   await deploy([
@@ -53,6 +54,17 @@ test.beforeAll(async () => {
         .processInstanceKey,
     ),
   };
+
+  await deploy(['./resources/Variable_Process.bpmn']);
+  variableProcessInstance = {
+    processInstanceKey: Number(
+      (await createSingleInstance('Variable_Process', 1, {filtersTest: 604}))
+        .processInstanceKey,
+    ),
+  };
+
+  await deploy(['./resources/ProcessToCancel.bpmn']);
+  await deploy(['./resources/NamedEventsProcess.bpmn']);
 });
 
 test.describe('Process Instances Filters', () => {
@@ -151,7 +163,7 @@ test.describe('Process Instances Filters', () => {
       await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
         `${orderProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
       );
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(200);
     });
 
@@ -248,6 +260,7 @@ test.describe('Process Instances Filters', () => {
     page,
     operateProcessesPage,
     operateFiltersPanelPage,
+    operateOperationsDetailsPage,
   }) => {
     await test.step('Filter by Parent Process Instance Key and assert results', async () => {
       const callActivityProcessInstanceKey =
@@ -257,12 +270,12 @@ test.describe('Process Instances Filters', () => {
         'Parent Process Instance Key',
       );
       await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
-        callActivityProcessInstanceKey,
+        `${callActivityProcessInstanceKey}`,
       );
       await expect(
         operateProcessesPage.noMatchingInstancesMessage,
       ).toBeVisible();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await waitForAssertion({
         assertion: async () => {
           await expect(page.getByText('1 result')).toBeVisible();
@@ -272,7 +285,7 @@ test.describe('Process Instances Filters', () => {
         },
       });
       await expect(operateProcessesPage.parentInstanceIdCell).toHaveText(
-        callActivityProcessInstanceKey,
+        `${callActivityProcessInstanceKey}`,
       );
       expect(await operateProcessesPage.processInstancesTable.count()).toBe(1);
     });
@@ -280,7 +293,7 @@ test.describe('Process Instances Filters', () => {
     await test.step('Reset filter', async () => {
       await operateFiltersPanelPage.clickResetFilters();
       await expect(
-        operateFiltersPanelPage.parentProcessInstanceKey,
+        operateFiltersPanelPage.parentProcessInstanceKeyFilter,
       ).toBeHidden();
       await expect
         .poll(() => operateProcessesPage.processInstancesTable.count())
@@ -288,7 +301,7 @@ test.describe('Process Instances Filters', () => {
     });
 
     await test.step('Filter by End Date Range and assert results', async () => {
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
 
       let currentRowCount =
         await operateProcessesPage.processInstancesTable.count();
@@ -346,6 +359,461 @@ test.describe('Process Instances Filters', () => {
 
       await expect(operateFiltersPanelPage.errorMessageFilter).toBeHidden();
       await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
+    });
+
+    await test.step('Filter by Parent Instance Key and by Error Message and assert results', async () => {
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Parent Process Instance Key',
+      );
+      await operateFiltersPanelPage.fillParentProcessInstanceKeyFilter(
+        `${callActivityProcessInstanceKey}`,
+      );
+      await expect(
+        operateProcessesPage.noMatchingInstancesMessage,
+      ).toBeVisible();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      const errorMessage =
+        "Failed to extract the correlation key for 'nonExistingClientId'";
+      await operateFiltersPanelPage.displayOptionalFilter('Error Message');
+      await operateFiltersPanelPage.fillErrorMessageFilter(`${errorMessage}`);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Reset filter', async () => {
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateFiltersPanelPage.parentProcessInstanceKeyFilter,
+      ).toBeHidden();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThan(1);
+    });
+
+    await test.step('Filter by variable and assert results', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.fillVariableValueFilter('604');
+
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+
+      await sleep(1_000);
+
+      await waitForAssertion({
+        assertion: async () => {
+          const variableProcessInstanceKeys = new Set<string>();
+          for (const element of await operateProcessesPage.processInstancesTable
+            .getByTestId('cell-processInstanceKey')
+            .elementHandles()) {
+            variableProcessInstanceKeys.add(await element.innerText());
+          }
+          expect(
+            variableProcessInstanceKeys.has(variableProcessInstanceKey),
+          ).toBeTruthy();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Filter by process instance key with one key and assert results', async () => {
+      await operateFiltersPanelPage.clickResetFilters();
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${variableProcessInstanceKey}`,
+      );
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(
+            variableProcessInstanceKey,
+          );
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Filter by process instance key with multiple keys and assert results', async () => {
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      const callActivityProcessInstanceKey =
+        callActivityProcessInstance.processInstanceKey.toString();
+      await operateFiltersPanelPage.resetFiltersButton.click();
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+
+      await expect(
+        operateProcessesPage.processFinishedInstancesCheckbox,
+      ).toBeVisible();
+      await expect(
+        operateProcessesPage.processFinishedInstancesCheckbox,
+      ).toBeEnabled();
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${variableProcessInstanceKey}, ${callActivityProcessInstanceKey}`,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Reset filter', async () => {
+      await operateFiltersPanelPage.clickResetFilters();
+      await expect(
+        operateFiltersPanelPage.processInstanceKeysFilter,
+      ).toBeHidden();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThan(1);
+    });
+
+    await test.step('Filter by end and start date range', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: '1',
+        toDay: '1',
+        fromTime: '00:00:00',
+        toTime: '00:00:00',
+      });
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('End Date Range');
+
+      const todayDate = new Date();
+
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: todayDate.getDate().toString(),
+        toDay: todayDate.getDate().toString(),
+        fromTime: '00:00:00',
+        toTime: '23:59:59',
+      });
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.removeOptionalFilter('Start Date Range');
+
+      await expect(operateFiltersPanelPage.startDateFilter).toBeHidden();
+      await operateFiltersPanelPage.displayOptionalFilter('Start Date Range');
+      await expect(operateFiltersPanelPage.startDateFilter).toBeVisible();
+
+      await operateFiltersPanelPage.pickDateTimeRange({
+        fromDay: todayDate.getDate().toString(),
+        toDay: todayDate.getDate().toString(),
+        fromTime: '00:00:00',
+        toTime: '23:59:59',
+      });
+
+      await operateFiltersPanelPage.clickApply();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+      await expect
+        .poll(() => operateProcessesPage.processInstancesTable.count())
+        .toBeGreaterThanOrEqual(2);
+      await operateFiltersPanelPage.clickResetFilters();
+    });
+
+    await test.step('Filter by variable and operation id and assert results', async () => {
+      const processToCancelMeowInstance = {
+        processInstanceKey: Number(
+          (await createSingleInstance('ProcessToCancel', 1, {sound: 'meow'}))
+            .processInstanceKey,
+        ),
+      };
+
+      const processToCancelGawInstance = {
+        processInstanceKey: Number(
+          (await createSingleInstance('ProcessToCancel', 1, {sound: 'gaw'}))
+            .processInstanceKey,
+        ),
+      };
+
+      const processToCancelInstanceMeowIK =
+        processToCancelMeowInstance.processInstanceKey.toString();
+      const processToCancelInstanceGawIK =
+        processToCancelGawInstance.processInstanceKey.toString();
+
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        `${processToCancelInstanceMeowIK}, ${processToCancelInstanceGawIK}`,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateProcessesPage.selectProcessCheckboxByPIK(
+        processToCancelInstanceMeowIK,
+        processToCancelInstanceGawIK,
+      );
+
+      await operateProcessesPage.clickCancelBatchOperationButton();
+
+      await operateProcessesPage.clickCancelProcessInstanceDialogButton();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.noMatchingInstancesMessage,
+          ).toBeVisible({timeout: 30000});
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateProcessesPage.clickGoToOperationDetailsButton();
+
+      await sleep(1_000);
+      await expect(operateOperationsDetailsPage.state).toBeVisible();
+
+      const operationId =
+        await operateOperationsDetailsPage.getBatchOperationId();
+
+      await page.goto(`operate/processes`);
+
+      await operateFiltersPanelPage.clickFinishedInstancesCheckbox();
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessesPage.processInstancesTable.first(),
+          ).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+      await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('2 results')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateFiltersPanelPage.displayOptionalFilter('Operation Id');
+          await operateFiltersPanelPage.fillOperationIdFilter(operationId);
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('sound');
+      await operateFiltersPanelPage.fillVariableValueFilter('"meow"');
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+  });
+
+  test('Verify flow node selection reflects in filters and assert results', async ({
+    operateFiltersPanelPage,
+    operateDiagramPage,
+    page,
+  }) => {
+    await test.step('Select process from dropdown and assert results', async () => {
+      await operateFiltersPanelPage.selectProcess('NamedEventsProcess');
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateFiltersPanelPage.processNameFilter).toHaveValue(
+            'NamedEventsProcess',
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+      await expect(operateDiagramPage.diagram).toBeVisible();
+    });
+
+    await test.step('Click start flow node and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('StartEvent_OrderReceived');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Order received',
+      );
+    });
+
+    await test.step('Click task flow nodes and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('Activity_SendOrderConfirmation');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Send order confirmation',
+      );
+
+      await operateDiagramPage.clickFlowNode('Activity_PackItems');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Pack Items',
+      );
+
+      await operateDiagramPage.clickFlowNode('Activity_SendItems');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Send items',
+      );
+    });
+
+    await test.step('Click end event flow node and assert filter value and results', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderFulfilled');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Order fulfilled',
+      );
+    });
+
+    await test.step('Click intermediate throw event flow node and assert results', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderConfirmed');
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue(
+        'Order Confirmed',
+      );
+    });
+
+    await test.step('Click same flow node again and see filter is removed', async () => {
+      await operateDiagramPage.clickFlowNode('Event_OrderConfirmed');
+
+      await expect(operateFiltersPanelPage.flowNodeFilter).toHaveValue('');
+    });
+  });
+
+  test('Reset filters when navigating away and assert results', async ({
+    page,
+    operateFiltersPanelPage,
+    operateProcessesPage,
+    operateHomePage,
+  }) => {
+    await test.step('Apply Process Instance Key and variable filter and assert results', async () => {
+      await operateFiltersPanelPage.displayOptionalFilter(
+        'Process Instance Key(s)',
+      );
+      const variableProcessInstanceKey =
+        variableProcessInstance.processInstanceKey.toString();
+      await operateFiltersPanelPage.fillProcessInstanceKeyFilter(
+        variableProcessInstanceKey,
+      );
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(operateProcessesPage.processInstanceKeyCell).toHaveText(
+            variableProcessInstanceKey,
+          );
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+
+      await operateFiltersPanelPage.displayOptionalFilter('Variable');
+      await operateFiltersPanelPage.fillVariableNameFilter('filtersTest');
+      await operateFiltersPanelPage.fillVariableValueFilter('604');
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('1 result')).toBeVisible();
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
+      });
+    });
+
+    await test.step('Click on the "Process" link button in the header and assert the results', async () => {
+      await operateHomePage.clickProcessesTab();
+      await expect(
+        operateFiltersPanelPage.processInstanceKeysFilter,
+      ).toBeHidden();
+      await expect(operateFiltersPanelPage.variableNameFilter).toBeHidden();
+      await operateFiltersPanelPage.validateCheckedState(
+        [
+          operateFiltersPanelPage.activeInstancesCheckbox,
+          operateFiltersPanelPage.incidentsInstancesCheckbox,
+          operateFiltersPanelPage.runningInstancesCheckbox,
+        ],
+
+        [
+          operateFiltersPanelPage.finishedInstancesCheckbox,
+          operateFiltersPanelPage.completedInstancesCheckbox,
+          operateFiltersPanelPage.canceledInstancesCheckbox,
+        ],
+      );
     });
   });
 });

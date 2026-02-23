@@ -1091,6 +1091,22 @@ public class AuthorizationCheckerTest {
               .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
               .thenResultContains("client-res", "role-res", "mr-res")
               .build(),
+          RetrieveScopesScenario.displayName(
+                  "user alice legacy authz (resourcePropertyName = null) wildcard -> ['*']")
+              .given(
+                  authEntity(
+                      AuthorizationOwnerType.USER,
+                      "alice",
+                      AuthorizationResourceType.AUTHORIZATION,
+                      AuthorizationResourceMatcher.ANY,
+                      WILDCARD_RESOURCE_ID,
+                      // Simulate "8.8 persisted" entity, the field didn't exist, returned as `null`
+                      null,
+                      Set.of(PermissionType.READ)))
+              .whenUser("alice")
+              .accessesResource(AuthorizationResourceType.AUTHORIZATION, PermissionType.READ)
+              .thenResultContains(WILDCARD_RESOURCE_ID)
+              .build(),
           RetrieveScopesScenario.displayName("resource type mismatch -> empty")
               .given(
                   authEntity(
@@ -1139,6 +1155,18 @@ public class AuthorizationCheckerTest {
         final AuthorizationResourceMatcher matcher,
         final String resourceId,
         final Set<PermissionType> permissionTypes) {
+      return authEntity(
+          ownerType, ownerId, resourceType, matcher, resourceId, EMPTY_STRING, permissionTypes);
+    }
+
+    private AuthorizationEntity authEntity(
+        final AuthorizationOwnerType ownerType,
+        final String ownerId,
+        final AuthorizationResourceType resourceType,
+        final AuthorizationResourceMatcher matcher,
+        final String resourceId,
+        final String resourcePropertyName,
+        final Set<PermissionType> permissionTypes) {
       return new AuthorizationEntity(
           keyCounter.incrementAndGet(),
           ownerId,
@@ -1146,7 +1174,7 @@ public class AuthorizationCheckerTest {
           resourceType.name(),
           matcher.value(),
           resourceId,
-          EMPTY_STRING,
+          resourcePropertyName,
           permissionTypes);
     }
 

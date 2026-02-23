@@ -118,6 +118,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
@@ -1126,25 +1127,99 @@ public class ElasticsearchDatabaseTestService extends DatabaseTestService {
   }
 
   private void adjustClusterSettings() {
-    final PutClusterSettingsRequest clusterUpdateSettingsRequest =
-        PutClusterSettingsRequest.of(
-            p ->
-                // we allow auto index creation because the Zeebe exporter creates indices for
-                // records
-                p.persistent("action.auto_create_index", JsonData.of(true))
-                    // all of our tests are running against a one node cluster.
-                    // Since we're creating a lot of indexes, we are easily hitting the default
-                    // value of 1000. Thus, we need to increase this value for the test setup.
-                    .persistent("cluster.max_shards_per_node", JsonData.of(10000))
-                    .flatSettings(true));
-    try {
-      optimizeElasticsearchClient
-          .elasticsearchClient()
-          .cluster()
-          .putSettings(clusterUpdateSettingsRequest);
-    } catch (final IOException e) {
-      throw new OptimizeRuntimeException("Could not update cluster settings!", e);
+    final PutClusterSettingsRequest clusterSettings = buildClusterSettingsRequest();
+    retryClusterSettingsUpdate(clusterSettings);
+  }
+
+  private PutClusterSettingsRequest buildClusterSettingsRequest() {
+    return PutClusterSettingsRequest.of(
+        p ->
+            // we allow auto index creation because the Zeebe exporter creates indices for
+            // records
+            p.persistent("action.auto_create_index", JsonData.of(true))
+                // all of our tests are running against a one node cluster.
+                // Since we're creating a lot of indexes, we are easily hitting the default
+                // value of 1000. Thus, we need to increase this value for the test setup.
+                .persistent("cluster.max_shards_per_node", JsonData.of(10000))
+                .flatSettings(true));
+  }
+
+  private void retryClusterSettingsUpdate(final PutClusterSettingsRequest clusterSettings) {
+    final int maxRetries = 10;
+    final int baseRetryDelayMs = 500;
+    final int maxDelayMs = 5000;
+
+    Exception lastException = null;
+
+    for (int attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        updateClusterSettings(clusterSettings);
+        LOG.info("Successfully updated cluster settings on attempt {}", attempt);
+        return;
+      } catch (final IOException | ElasticsearchException e) {
+        lastException = e;
+        logRetryAttempt(attempt, maxRetries, e);
+
+        if (attempt < maxRetries) {
+          sleepWithExponentialBackoff(attempt, baseRetryDelayMs, maxDelayMs);
+        }
+      }
     }
+
+    throwClusterSettingsException(maxRetries, lastException);
+  }
+
+  private void updateClusterSettings(final PutClusterSettingsRequest clusterSettings)
+      throws IOException, ElasticsearchException {
+    // Check if cluster is ready before applying settings
+    checkClusterReady();
+
+    // Apply cluster settings (idempotent - safe for concurrent execution)
+    optimizeElasticsearchClient.elasticsearchClient().cluster().putSettings(clusterSettings);
+  }
+
+  private void checkClusterReady() throws IOException {
+    final int numberOfNodes =
+        optimizeElasticsearchClient.elasticsearchClient().cluster().health().numberOfNodes();
+
+    if (numberOfNodes == 0) {
+      throw new IOException("Cluster not ready: no nodes available");
+    }
+
+    LOG.debug("Cluster ready with {} node(s)", numberOfNodes);
+  }
+
+  private void logRetryAttempt(final int attempt, final int maxRetries, final Exception e) {
+    LOG.warn(
+        "Failed to update cluster settings on attempt {}/{}: {}",
+        attempt,
+        maxRetries,
+        e.getMessage());
+  }
+
+  private void sleepWithExponentialBackoff(
+      final int attempt, final int baseDelayMs, final int maxDelayMs) {
+    try {
+      final int jitter = ThreadLocalRandom.current().nextInt(500);
+      final long exponentialDelay = (long) (baseDelayMs * Math.pow(1.5, attempt - 1));
+      final long delay = Math.min(exponentialDelay + jitter, maxDelayMs);
+
+      Thread.sleep(delay);
+    } catch (final InterruptedException ie) {
+      Thread.currentThread().interrupt();
+      throw new OptimizeRuntimeException(
+          "Interrupted while waiting to retry cluster settings update", ie);
+    }
+  }
+
+  private void throwClusterSettingsException(final int maxRetries, final Exception lastException) {
+    throw new OptimizeRuntimeException(
+        String.format(
+            "Could not update cluster settings after %d attempts! "
+                + "Ensure Elasticsearch is running, reachable, and fully initialized. "
+                + "Verify cluster settings are supported.",
+            maxRetries),
+        lastException);
   }
 
   private void executeBulk(final BulkRequest bulkRequest) {

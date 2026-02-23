@@ -149,13 +149,11 @@ public interface BackupActuator {
     public Exception decode(final String methodKey, final Response response) {
       if (response.status() == 500) {
         try {
-          final var payload = (Payload) decoder.decode(response, Payload.class);
+          final var body = response.body().asInputStream().readAllBytes();
+          final var bufferedResponse = response.toBuilder().body(body).build();
+          final var payload = (Payload) decoder.decode(bufferedResponse, Payload.class);
           return new ErrorResponse(
-              payload.failure(),
-              response.request(),
-              response.body().asInputStream().readAllBytes(),
-              response.headers(),
-              payload);
+              payload.failure(), response.request(), body, response.headers(), payload);
         } catch (final IOException e) {
           throw new UncheckedIOException(e);
         }

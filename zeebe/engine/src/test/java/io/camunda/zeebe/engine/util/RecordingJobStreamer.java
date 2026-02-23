@@ -41,6 +41,10 @@ public class RecordingJobStreamer implements JobStreamer {
             .get());
   }
 
+  public void clearStreams() {
+    jobStreams.clear();
+  }
+
   public RecordingJobStream addJobStream(
       final DirectBuffer jobType, final JobActivationProperties jobActivationProperties) {
     final var jobStream = new RecordingJobStream(jobActivationProperties);

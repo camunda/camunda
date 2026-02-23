@@ -28,7 +28,7 @@ test.describe('Identity User Flows', () => {
   const createdUsernames: string[] = [];
 
   test.beforeEach(async ({loginPage, page}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login('demo', 'demo');
   });
 
@@ -61,13 +61,13 @@ test.describe('Identity User Flows', () => {
     await identityUsersPage.deleteUser(testUser);
     await identityHeader.logout();
     await expect(page).toHaveURL(
-      `${relativizePath(Paths.login('identity'))}?next=/identity/`,
+      `${relativizePath(Paths.login('identity'))}?next=/admin/`,
     );
 
     await test.step(`Deleted user cannot access Identity`, async () => {
       await navigateToApp(page, `identity`);
       await loginPage.login(testUser.username, testUser.password);
-      await expect(page).toHaveURL(new RegExp(`identity`));
+      await expect(page).toHaveURL(new RegExp(`admin`));
       await loginPage.expectInvalidCredentialsError();
     });
 
@@ -182,7 +182,7 @@ test.describe('Identity User Flows', () => {
     await test.step(`Login with the new user and verify Identity access`, async () => {
       await identityHeader.logout();
       await loginPage.login(testUser!.username, testUser!.password);
-      await expect(page).toHaveURL(new RegExp(`identity`));
+      await expect(page).toHaveURL(new RegExp(`admin`));
       await verifyAccess(page);
     });
 
@@ -337,7 +337,7 @@ test.describe('Identity User Flows', () => {
     await test.step('Verify test user can access Identity', async () => {
       await identityHeader.logout();
       await loginPage.login(TEST_USER.username, TEST_USER.password);
-      await expect(page).toHaveURL(new RegExp('identity'), {timeout: 10000});
+      await expect(page).toHaveURL(new RegExp('admin'), {timeout: 10000});
       await sleep(2000);
       await verifyAccess(page, true);
     });
@@ -362,7 +362,7 @@ test.describe('Identity User Flows', () => {
     });
 
     await test.step('Login with demo user and create authorization for the group', async () => {
-      await navigateToApp(page, 'identity');
+      await navigateToApp(page, 'admin');
       await loginPage.login('demo', 'demo');
       await identityHeader.navigateToAuthorizations();
       await identityAuthorizationsPage.createAuthorization({

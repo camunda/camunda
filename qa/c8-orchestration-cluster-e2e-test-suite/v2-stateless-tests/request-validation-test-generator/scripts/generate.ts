@@ -1,29 +1,48 @@
 #!/usr/bin/env tsx
 import fs from 'fs';
 import path from 'path';
-import { loadSpec } from '../src/spec/loader.js';
-import { generateMissingRequired } from '../src/analysis/missingRequired.js';
-import { generateMultipartMissingRequired } from '../src/analysis/multipartMissingRequired.js';
-import { generateTypeMismatch } from '../src/analysis/typeMismatch.js';
-import { generateUnionViolations } from '../src/analysis/unionViolations.js';
-import { generateDeepMissingRequired } from '../src/analysis/deepMissingRequired.js';
-import { generateBodyTypeMismatch } from '../src/analysis/bodyTypeMismatch.js';
-import { generateConstraintViolations } from '../src/analysis/constraintViolations.js';
-import { generateEnumViolations } from '../src/analysis/enumViolations.js';
-import { generateAdditionalPropsViolations } from '../src/analysis/additionalProps.js';
-import { generateOneOfAmbiguous } from '../src/analysis/oneOfAmbiguous.js';
-import { generateOneOfNoneMatch } from '../src/analysis/oneOfNoneMatch.js';
-import { generateDiscriminatorMismatch } from '../src/analysis/discriminatorMismatch.js';
-import { generateMissingRequiredCombos } from '../src/analysis/missingRequiredCombos.js';
-import { generateParamMissing, generateParamTypeMismatch, generateParamEnumViolation } from '../src/analysis/parameters.js';
-import { generateParamConstraintViolations } from '../src/analysis/paramConstraintViolations.js';
-import { generateMissingBody, generateBodyTopTypeMismatch } from '../src/analysis/bodyTopLevel.js';
-import { generateNestedAdditionalProps, generateUniqueItemsViolations, generateMultipleOfViolations, generateFormatInvalid } from '../src/analysis/advancedSchema.js';
-import { generateUniversalAdditionalProp } from '../src/analysis/additionalPropUniversal.js';
-import { generateOneOfMultiAmbiguous, generateOneOfCrossBleed, generateDiscriminatorStructureMismatch } from '../src/analysis/oneOfAdvanced.js';
-import { generateAllOfMissingRequired, generateAllOfConflicts } from '../src/analysis/allOf.js';
-import { emitQaTests } from '../src/emit/qaEmitter.js';
-import { ValidationScenario } from '../src/model/types.js';
+import {loadSpec} from '../src/spec/loader.js';
+import {generateMissingRequired} from '../src/analysis/missingRequired.js';
+import {generateMultipartMissingRequired} from '../src/analysis/multipartMissingRequired.js';
+import {generateTypeMismatch} from '../src/analysis/typeMismatch.js';
+import {generateUnionViolations} from '../src/analysis/unionViolations.js';
+import {generateDeepMissingRequired} from '../src/analysis/deepMissingRequired.js';
+import {generateBodyTypeMismatch} from '../src/analysis/bodyTypeMismatch.js';
+import {generateConstraintViolations} from '../src/analysis/constraintViolations.js';
+import {generateEnumViolations} from '../src/analysis/enumViolations.js';
+import {generateAdditionalPropsViolations} from '../src/analysis/additionalProps.js';
+import {generateOneOfAmbiguous} from '../src/analysis/oneOfAmbiguous.js';
+import {generateOneOfNoneMatch} from '../src/analysis/oneOfNoneMatch.js';
+import {generateDiscriminatorMismatch} from '../src/analysis/discriminatorMismatch.js';
+import {generateMissingRequiredCombos} from '../src/analysis/missingRequiredCombos.js';
+import {
+  generateParamMissing,
+  generateParamTypeMismatch,
+  generateParamEnumViolation,
+} from '../src/analysis/parameters.js';
+import {generateParamConstraintViolations} from '../src/analysis/paramConstraintViolations.js';
+import {
+  generateMissingBody,
+  generateBodyTopTypeMismatch,
+} from '../src/analysis/bodyTopLevel.js';
+import {
+  generateNestedAdditionalProps,
+  generateUniqueItemsViolations,
+  generateMultipleOfViolations,
+  generateFormatInvalid,
+} from '../src/analysis/advancedSchema.js';
+import {generateUniversalAdditionalProp} from '../src/analysis/additionalPropUniversal.js';
+import {
+  generateOneOfMultiAmbiguous,
+  generateOneOfCrossBleed,
+  generateDiscriminatorStructureMismatch,
+} from '../src/analysis/oneOfAdvanced.js';
+import {
+  generateAllOfMissingRequired,
+  generateAllOfConflicts,
+} from '../src/analysis/allOf.js';
+import {emitQaTests} from '../src/emit/qaEmitter.js';
+import {ValidationScenario} from '../src/model/types.js';
 
 interface CliOptions {
   only?: Set<string>;
@@ -38,17 +57,17 @@ interface CliOptions {
 function parseArgs(): CliOptions {
   const args = process.argv.slice(2);
   // Support both `--flag value` and `--flag=value` syntaxes
-  const kv: Record<string,string> = {};
-  for (let i=0; i<args.length; i++) {
+  const kv: Record<string, string> = {};
+  for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (a.startsWith('--')) {
       const eq = a.indexOf('=');
       if (eq !== -1) {
         const key = a.slice(0, eq);
-        const val = a.slice(eq+1);
+        const val = a.slice(eq + 1);
         kv[key] = val;
-      } else if (i+1 < args.length && !args[i+1].startsWith('--')) {
-        kv[a] = args[i+1];
+      } else if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+        kv[a] = args[i + 1];
         i++; // skip value
       } else {
         // boolean style flag (e.g. --deep)
@@ -58,22 +77,30 @@ function parseArgs(): CliOptions {
   }
   const get = (k: string) => kv[k];
   const onlyRaw = get('--only');
-  const only = onlyRaw ? new Set(onlyRaw.split(',').map((s) => s.trim())) : undefined;
+  const only = onlyRaw
+    ? new Set(onlyRaw.split(',').map((s) => s.trim()))
+    : undefined;
   const outDir = get('--out-dir') || 'generated';
   const importDepth = get('--qa-import-depth');
   const qaImportDepth = importDepth ? parseInt(importDepth, 10) : 4;
   const maxMissing = get('--max-missing');
   const maxTypeMismatch = get('--max-type-mismatch');
   const onlyOpsRaw = get('--only-operations');
-  const onlyOperations = onlyOpsRaw ? new Set(onlyOpsRaw.split(',').map((s) => s.trim())) : undefined;
+  const onlyOperations = onlyOpsRaw
+    ? new Set(onlyOpsRaw.split(',').map((s) => s.trim()))
+    : undefined;
   return {
     only,
     outDir,
     qaImportDepth,
     maxMissing: maxMissing ? parseInt(maxMissing, 10) : undefined,
-    maxTypeMismatch: maxTypeMismatch ? parseInt(maxTypeMismatch, 10) : undefined,
+    maxTypeMismatch: maxTypeMismatch
+      ? parseInt(maxTypeMismatch, 10)
+      : undefined,
     onlyOperations,
-    deep: Object.prototype.hasOwnProperty.call(kv,'--deep') || args.includes('--deep'),
+    deep:
+      Object.prototype.hasOwnProperty.call(kv, '--deep') ||
+      args.includes('--deep'),
   };
 }
 
@@ -88,11 +115,16 @@ async function main() {
   let specCommit: string | undefined;
   const commitPath = path.join(path.dirname(specPath), 'spec-commit.txt');
   if (fs.existsSync(commitPath)) {
-  try { specCommit = (await fs.promises.readFile(commitPath, 'utf8')).trim(); } catch { /* ignore missing commit marker */ }
+    try {
+      specCommit = (await fs.promises.readFile(commitPath, 'utf8')).trim();
+    } catch {
+      /* ignore missing commit marker */
+    }
   }
   const generationTimestamp = new Date().toISOString();
   const scenarios: ValidationScenario[] = [];
-  const kinds = opts.only || new Set(['missing-required', 'type-mismatch', 'union']);
+  const kinds =
+    opts.only || new Set(['missing-required', 'type-mismatch', 'union']);
 
   if (kinds.has('missing-required')) {
     scenarios.push(
@@ -148,28 +180,88 @@ async function main() {
   }
   if (opts.deep) {
     scenarios.push(
-      ...generateConstraintViolations(model.operations, { capPerOperation: undefined, onlyOperations: opts.onlyOperations }),
-      ...generateEnumViolations(model.operations, { capPerOperation: undefined, onlyOperations: opts.onlyOperations }),
-      ...generateAdditionalPropsViolations(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateOneOfAmbiguous(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-      ...generateOneOfNoneMatch(model.operations, { capPerOperation: 1, onlyOperations: opts.onlyOperations }),
-      ...generateDiscriminatorMismatch(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateParamMissing(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-      ...generateParamTypeMismatch(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-  ...generateParamEnumViolation(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-  ...generateParamConstraintViolations(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-      ...generateMissingBody(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateBodyTopTypeMismatch(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateNestedAdditionalProps(model.operations, { capPerOperation: 5, onlyOperations: opts.onlyOperations }),
-      ...generateUniqueItemsViolations(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-      ...generateMultipleOfViolations(model.operations, { capPerOperation: 10, onlyOperations: opts.onlyOperations }),
-      ...generateFormatInvalid(model.operations, { capPerOperation: 20, onlyOperations: opts.onlyOperations }),
-      ...generateUniversalAdditionalProp(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateOneOfMultiAmbiguous(model.operations, { onlyOperations: opts.onlyOperations, capPerOperation: 20 }),
-      ...generateOneOfCrossBleed(model.operations, { onlyOperations: opts.onlyOperations, capPerOperation: 40 }),
-      ...generateDiscriminatorStructureMismatch(model.operations, { onlyOperations: opts.onlyOperations }),
-      ...generateAllOfMissingRequired(model.operations, { onlyOperations: opts.onlyOperations, capPerOperation: 50 }),
-      ...generateAllOfConflicts(model.operations, { onlyOperations: opts.onlyOperations, capPerOperation: 50 }),
+      ...generateConstraintViolations(model.operations, {
+        capPerOperation: undefined,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateEnumViolations(model.operations, {
+        capPerOperation: undefined,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateAdditionalPropsViolations(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateOneOfAmbiguous(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateOneOfNoneMatch(model.operations, {
+        capPerOperation: 1,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateDiscriminatorMismatch(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateParamMissing(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateParamTypeMismatch(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateParamEnumViolation(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateParamConstraintViolations(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateMissingBody(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateBodyTopTypeMismatch(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateNestedAdditionalProps(model.operations, {
+        capPerOperation: 5,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateUniqueItemsViolations(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateMultipleOfViolations(model.operations, {
+        capPerOperation: 10,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateFormatInvalid(model.operations, {
+        capPerOperation: 20,
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateUniversalAdditionalProp(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateOneOfMultiAmbiguous(model.operations, {
+        onlyOperations: opts.onlyOperations,
+        capPerOperation: 20,
+      }),
+      ...generateOneOfCrossBleed(model.operations, {
+        onlyOperations: opts.onlyOperations,
+        capPerOperation: 40,
+      }),
+      ...generateDiscriminatorStructureMismatch(model.operations, {
+        onlyOperations: opts.onlyOperations,
+      }),
+      ...generateAllOfMissingRequired(model.operations, {
+        onlyOperations: opts.onlyOperations,
+        capPerOperation: 50,
+      }),
+      ...generateAllOfConflicts(model.operations, {
+        onlyOperations: opts.onlyOperations,
+        capPerOperation: 50,
+      }),
     );
   }
 
@@ -179,8 +271,17 @@ async function main() {
   for (const s of scenarios) {
     const bodyHash = s.requestBody
       ? fastHash(JSON.stringify(s.requestBody))
-      : (s.multipartForm ? fastHash(JSON.stringify(s.multipartForm)) : '0');
-    const key = [s.method, s.path, s.type, s.target || '', s.bodyEncoding || 'json', bodyHash].join('|');
+      : s.multipartForm
+        ? fastHash(JSON.stringify(s.multipartForm))
+        : '0';
+    const key = [
+      s.method,
+      s.path,
+      s.type,
+      s.target || '',
+      s.bodyEncoding || 'json',
+      bodyHash,
+    ].join('|');
     if (seen.has(key)) continue;
     seen.add(key);
     deduped.push(s);
@@ -199,30 +300,51 @@ async function main() {
   {
     const adjusted: ValidationScenario[] = [];
     for (const s of deduped) {
-      const op = model.operations.find(o => o.operationId === s.operationId);
-      if (!op) { adjusted.push(s); continue; }
+      const op = model.operations.find((o) => o.operationId === s.operationId);
+      if (!op) {
+        adjusted.push(s);
+        continue;
+      }
       const hasJson = !!op.mediaTypes?.includes('application/json');
       const hasMultipart = !!op.mediaTypes?.includes('multipart/form-data');
       const multipartOnly = hasMultipart && !hasJson;
       if (multipartOnly) {
         const isJsonScenario = !!s.requestBody && !s.bodyEncoding; // default JSON body
         if (isJsonScenario) {
-          const form: Record<string,string> = {};
+          const form: Record<string, string> = {};
           try {
-            for (const [k,v] of Object.entries(s.requestBody as Record<string,unknown>)) {
+            for (const [k, v] of Object.entries(
+              s.requestBody as Record<string, unknown>,
+            )) {
               if (v == null) continue;
-              if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+              if (
+                typeof v === 'string' ||
+                typeof v === 'number' ||
+                typeof v === 'boolean'
+              ) {
                 form[k] = String(v);
               } else {
                 form[k] = JSON.stringify(v);
               }
             }
-          } catch { /* ignore */ }
-          adjusted.push({ ...s, bodyEncoding: 'multipart', multipartForm: form, requestBody: undefined });
+          } catch {
+            /* ignore */
+          }
+          adjusted.push({
+            ...s,
+            bodyEncoding: 'multipart',
+            multipartForm: form,
+            requestBody: undefined,
+          });
           continue;
         }
         if (s.type === 'missing-body' && !s.bodyEncoding) {
-          adjusted.push({ ...s, bodyEncoding: 'multipart', multipartForm: {}, requestBody: undefined });
+          adjusted.push({
+            ...s,
+            bodyEncoding: 'multipart',
+            multipartForm: {},
+            requestBody: undefined,
+          });
           continue;
         }
       }
@@ -232,13 +354,25 @@ async function main() {
     const seen2 = new Set<string>();
     const final: ValidationScenario[] = [];
     for (const s of adjusted) {
-      const bodyHash = s.requestBody ? fastHash(JSON.stringify(s.requestBody)) : (s.multipartForm ? fastHash(JSON.stringify(s.multipartForm)) : '0');
-      const key = [s.method, s.path, s.type, s.target || '', s.bodyEncoding || 'json', bodyHash].join('|');
+      const bodyHash = s.requestBody
+        ? fastHash(JSON.stringify(s.requestBody))
+        : s.multipartForm
+          ? fastHash(JSON.stringify(s.multipartForm))
+          : '0';
+      const key = [
+        s.method,
+        s.path,
+        s.type,
+        s.target || '',
+        s.bodyEncoding || 'json',
+        bodyHash,
+      ].join('|');
       if (seen2.has(key)) continue;
       seen2.add(key);
       final.push(s);
     }
-    deduped.length = 0; deduped.push(...final);
+    deduped.length = 0;
+    deduped.push(...final);
   }
 
   // ---- Structural Additional-Prop Dedupe (post-adaptation) ----
@@ -256,8 +390,15 @@ async function main() {
     // returns a 400 (parameter validation) instead of 415 (media type), aligning with intent.
     for (const s of deduped) {
       if (s.requestBody || s.multipartForm) continue; // already has a body representation
-      if (!(s.type === 'param-missing' || s.type === 'param-type-mismatch' || s.type === 'param-enum-violation')) continue;
-      const op = model.operations.find(o => o.operationId === s.operationId);
+      if (
+        !(
+          s.type === 'param-missing' ||
+          s.type === 'param-type-mismatch' ||
+          s.type === 'param-enum-violation'
+        )
+      )
+        continue;
+      const op = model.operations.find((o) => o.operationId === s.operationId);
       if (!op) continue;
       const hasJson = !!op.mediaTypes?.includes('application/json');
       const hasMultipart = !!op.mediaTypes?.includes('multipart/form-data');
@@ -272,30 +413,55 @@ async function main() {
     const filtered: ValidationScenario[] = [];
     let removed = 0;
     for (const s of deduped) {
-      if (s.type !== 'additional-prop' && s.type !== 'additional-prop-general') { filtered.push(s); continue; }
+      if (
+        s.type !== 'additional-prop' &&
+        s.type !== 'additional-prop-general'
+      ) {
+        filtered.push(s);
+        continue;
+      }
       // Build structural signature
       let shape = '';
       // Prefer multipartForm if present (multipart scenario) else requestBody.
-      const carrier = (s.multipartForm || s.requestBody);
+      const carrier = s.multipartForm || s.requestBody;
       if (carrier && typeof carrier === 'object' && !Array.isArray(carrier)) {
-        const entries = Object.entries(carrier as Record<string, unknown>).map(([k,v]) => {
-          const normK = k.startsWith('__') ? '__X__' : k; // normalize synthetic key
-          const t = (v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v);
-          return [normK, t] as [string,string];
-        }).sort((a,b)=> a[0].localeCompare(b[0]));
-        shape = entries.map(e=> e.join(':')).join(',');
+        const entries = Object.entries(carrier as Record<string, unknown>)
+          .map(([k, v]) => {
+            const normK = k.startsWith('__') ? '__X__' : k; // normalize synthetic key
+            const t =
+              v === null ? 'null' : Array.isArray(v) ? 'array' : typeof v;
+            return [normK, t] as [string, string];
+          })
+          .sort((a, b) => a[0].localeCompare(b[0]));
+        shape = entries.map((e) => e.join(':')).join(',');
       } else {
         shape = 'no-body';
       }
       // Group both additional-prop variants into a single class for dedupe
-      const groupType = (s.type === 'additional-prop' || s.type === 'additional-prop-general') ? 'additional-prop*' : s.type;
-      const sig = [s.method, s.path, groupType, s.bodyEncoding || 'json', shape].join('|');
-      if (structuralSeen.has(sig)) { removed++; continue; }
+      const groupType =
+        s.type === 'additional-prop' || s.type === 'additional-prop-general'
+          ? 'additional-prop*'
+          : s.type;
+      const sig = [
+        s.method,
+        s.path,
+        groupType,
+        s.bodyEncoding || 'json',
+        shape,
+      ].join('|');
+      if (structuralSeen.has(sig)) {
+        removed++;
+        continue;
+      }
       structuralSeen.add(sig);
       filtered.push(s);
     }
-    if (removed) console.log(`[generate] Structural additional-prop dedupe removed ${removed} scenarios`);
-    deduped.length = 0; deduped.push(...filtered);
+    if (removed)
+      console.log(
+        `[generate] Structural additional-prop dedupe removed ${removed} scenarios`,
+      );
+    deduped.length = 0;
+    deduped.push(...filtered);
   }
 
   // ---- Structural Multipart Param/Body Type-Mismatch Dedupe ----
@@ -307,25 +473,45 @@ async function main() {
     const filtered: ValidationScenario[] = [];
     let removed = 0;
     for (const s of deduped) {
-      const isCandidate = (s.type === 'param-type-mismatch' || s.type === 'type-mismatch');
+      const isCandidate =
+        s.type === 'param-type-mismatch' || s.type === 'type-mismatch';
       if (!isCandidate || s.bodyEncoding !== 'multipart' || !s.multipartForm) {
-        filtered.push(s); continue;
+        filtered.push(s);
+        continue;
       }
       // Build signature ignoring actual values; just the field names present plus target.
       const fieldNames = Object.keys(s.multipartForm).sort().join(',');
-      const sig = [s.method, s.path, 'any-multipart-mismatch*', s.target || '', fieldNames].join('|');
-      if (seenMultipartMismatch.has(sig)) { removed++; continue; }
+      const sig = [
+        s.method,
+        s.path,
+        'any-multipart-mismatch*',
+        s.target || '',
+        fieldNames,
+      ].join('|');
+      if (seenMultipartMismatch.has(sig)) {
+        removed++;
+        continue;
+      }
       seenMultipartMismatch.add(sig);
       filtered.push(s);
     }
-    if (removed) console.log(`[generate] Structural multipart mismatch dedupe removed ${removed} scenarios`);
-    deduped.length = 0; deduped.push(...filtered);
+    if (removed)
+      console.log(
+        `[generate] Structural multipart mismatch dedupe removed ${removed} scenarios`,
+      );
+    deduped.length = 0;
+    deduped.push(...filtered);
   }
 
-  await emitQaTests(deduped, { outDir: opts.outDir, qaImportDepth: opts.qaImportDepth, specCommit, generationTimestamp });
+  await emitQaTests(deduped, {
+    outDir: opts.outDir,
+    qaImportDepth: opts.qaImportDepth,
+    specCommit,
+    generationTimestamp,
+  });
   console.log('[generate] Summary:', {
     totalScenarios: deduped.length,
-    kinds: Array.from(new Set(deduped.map(s=>s.type))).sort(),
+    kinds: Array.from(new Set(deduped.map((s) => s.type))).sort(),
     deepMode: opts.deep,
     maxMissing: opts.maxMissing ?? null,
     maxTypeMismatch: opts.maxTypeMismatch ?? null,
@@ -333,7 +519,10 @@ async function main() {
 
   const manifest = {
     generatedAt: new Date().toISOString(),
-    counts: deduped.reduce<Record<string, number>>((acc, s) => { acc[s.type] = (acc[s.type]||0)+1; return acc; }, {}),
+    counts: deduped.reduce<Record<string, number>>((acc, s) => {
+      acc[s.type] = (acc[s.type] || 0) + 1;
+      return acc;
+    }, {}),
     specCommit,
     generationTimestamp,
     total: deduped.length,
@@ -342,22 +531,50 @@ async function main() {
       maxMissing: opts.maxMissing ?? null,
       maxTypeMismatch: opts.maxTypeMismatch ?? null,
       onlyKinds: opts.only ? Array.from(opts.only) : null,
-      onlyOperations: opts.onlyOperations ? Array.from(opts.onlyOperations) : null,
+      onlyOperations: opts.onlyOperations
+        ? Array.from(opts.onlyOperations)
+        : null,
     },
   };
-  await fs.promises.writeFile(path.join(opts.outDir, 'MANIFEST.json'), JSON.stringify(manifest, null, 2));
+  await fs.promises.writeFile(
+    path.join(opts.outDir, 'MANIFEST.json'),
+    JSON.stringify(manifest, null, 2),
+  );
   // Coverage report per operation & kind
   // Normalize kinds to avoid double counting (treat body-top-type-mismatch as type-mismatch)
-  const kindAlias: Record<string,string> = { 'body-top-type-mismatch': 'type-mismatch' };
-  const normalizedScenarios = deduped.map(s => ({ ...s, type: kindAlias[s.type] || s.type }));
-  const allKinds = Array.from(new Set(normalizedScenarios.map(s => s.type))).sort();
-  interface OpCoverage { operationId: string; method: string; path: string; counts: Record<string, number>; total: number; kinds: string[]; missingKinds: string[]; }
+  const kindAlias: Record<string, string> = {
+    'body-top-type-mismatch': 'type-mismatch',
+  };
+  const normalizedScenarios = deduped.map((s) => ({
+    ...s,
+    type: kindAlias[s.type] || s.type,
+  }));
+  const allKinds = Array.from(
+    new Set(normalizedScenarios.map((s) => s.type)),
+  ).sort();
+  interface OpCoverage {
+    operationId: string;
+    method: string;
+    path: string;
+    counts: Record<string, number>;
+    total: number;
+    kinds: string[];
+    missingKinds: string[];
+  }
   const byOperation: Record<string, OpCoverage> = {};
   for (const s of normalizedScenarios) {
     const key = s.operationId;
     let oc = byOperation[key];
     if (!oc) {
-      oc = { operationId: s.operationId, method: s.method, path: s.path, counts: {}, total: 0, kinds: [], missingKinds: [] };
+      oc = {
+        operationId: s.operationId,
+        method: s.method,
+        path: s.path,
+        counts: {},
+        total: 0,
+        kinds: [],
+        missingKinds: [],
+      };
       byOperation[key] = oc;
     }
     oc.counts[s.type] = (oc.counts[s.type] || 0) + 1;
@@ -365,7 +582,7 @@ async function main() {
   }
   for (const oc of Object.values(byOperation)) {
     oc.kinds = Object.keys(oc.counts).sort();
-    oc.missingKinds = allKinds.filter(k => !oc.counts[k]);
+    oc.missingKinds = allKinds.filter((k) => !oc.counts[k]);
   }
   const coverage = {
     generatedAt: new Date().toISOString(),
@@ -377,12 +594,22 @@ async function main() {
       maxMissing: opts.maxMissing ?? null,
       maxTypeMismatch: opts.maxTypeMismatch ?? null,
       onlyKinds: opts.only ? Array.from(opts.only) : null,
-      onlyOperations: opts.onlyOperations ? Array.from(opts.onlyOperations) : null,
+      onlyOperations: opts.onlyOperations
+        ? Array.from(opts.onlyOperations)
+        : null,
     },
-    operations: Object.values(byOperation).sort((a,b)=> a.operationId.localeCompare(b.operationId)),
+    operations: Object.values(byOperation).sort((a, b) =>
+      a.operationId.localeCompare(b.operationId),
+    ),
   };
   // ---- Applicability Analysis ----
-  interface Applicability { applicable: Set<string>; present: Set<string>; rawPct: number; applicablePct: number; missingApplicable: string[]; }
+  interface Applicability {
+    applicable: Set<string>;
+    present: Set<string>;
+    rawPct: number;
+    applicablePct: number;
+    missingApplicable: string[];
+  }
   const opScenarioKinds: Record<string, Set<string>> = {};
   for (const s of normalizedScenarios) {
     (opScenarioKinds[s.operationId] ||= new Set()).add(s.type);
@@ -391,29 +618,58 @@ async function main() {
   // Using loose typing for OpenAPI schema fragments; full typing not required for generation logic.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   function analyzeBodyFeatures(body: any): Record<string, boolean> {
-    const flags = { hasObject:false, hasEnums:false, hasOneOf:false, hasDiscriminator:false, hasAllOf:false, hasUniqueItems:false, hasMultipleOf:false, hasConstraints:false, hasFormats:false, hasNestedObject:false };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const seen = new Set<any>();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  function walk(node: any, depth:number){
-      if(!node || typeof node!=='object' || seen.has(node)) return; seen.add(node);
-      if(Array.isArray(node.oneOf)) flags.hasOneOf = true;
-      if(node.discriminator) flags.hasDiscriminator = true;
-      if(Array.isArray(node.allOf)) flags.hasAllOf = true;
-      if(Array.isArray(node.enum)) flags.hasEnums = true;
-      const t=node.type;
-      if(t==='object') { flags.hasObject = true; if (depth>0) flags.hasNestedObject = true; }
-      if(t==='array' && node.items && node.uniqueItems) flags.hasUniqueItems = true;
-      if(node.multipleOf !== undefined) flags.hasMultipleOf = true;
-      const constraintKeys=['minLength','maxLength','minimum','maximum','exclusiveMinimum','exclusiveMaximum','minItems','maxItems','pattern'];
-      if(constraintKeys.some(k=> node[k] !== undefined)) flags.hasConstraints = true;
-      if(node.format) flags.hasFormats = true;
-  if(node.properties) for (const v of Object.values(node.properties)) walk(v as any, depth+1); // eslint-disable-line @typescript-eslint/no-explicit-any
-      if(node.items) walk(node.items, depth+1);
-      if(Array.isArray(node.allOf)) for (const p of node.allOf) walk(p, depth);
-      if(Array.isArray(node.oneOf)) for (const p of node.oneOf) walk(p, depth);
+    const flags = {
+      hasObject: false,
+      hasEnums: false,
+      hasOneOf: false,
+      hasDiscriminator: false,
+      hasAllOf: false,
+      hasUniqueItems: false,
+      hasMultipleOf: false,
+      hasConstraints: false,
+      hasFormats: false,
+      hasNestedObject: false,
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const seen = new Set<any>();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    function walk(node: any, depth: number) {
+      if (!node || typeof node !== 'object' || seen.has(node)) return;
+      seen.add(node);
+      if (Array.isArray(node.oneOf)) flags.hasOneOf = true;
+      if (node.discriminator) flags.hasDiscriminator = true;
+      if (Array.isArray(node.allOf)) flags.hasAllOf = true;
+      if (Array.isArray(node.enum)) flags.hasEnums = true;
+      const t = node.type;
+      if (t === 'object') {
+        flags.hasObject = true;
+        if (depth > 0) flags.hasNestedObject = true;
+      }
+      if (t === 'array' && node.items && node.uniqueItems)
+        flags.hasUniqueItems = true;
+      if (node.multipleOf !== undefined) flags.hasMultipleOf = true;
+      const constraintKeys = [
+        'minLength',
+        'maxLength',
+        'minimum',
+        'maximum',
+        'exclusiveMinimum',
+        'exclusiveMaximum',
+        'minItems',
+        'maxItems',
+        'pattern',
+      ];
+      if (constraintKeys.some((k) => node[k] !== undefined))
+        flags.hasConstraints = true;
+      if (node.format) flags.hasFormats = true;
+      if (node.properties)
+        for (const v of Object.values(node.properties))
+          walk(v as any, depth + 1); // eslint-disable-line @typescript-eslint/no-explicit-any
+      if (node.items) walk(node.items, depth + 1);
+      if (Array.isArray(node.allOf)) for (const p of node.allOf) walk(p, depth);
+      if (Array.isArray(node.oneOf)) for (const p of node.oneOf) walk(p, depth);
     }
-    walk(body,0);
+    walk(body, 0);
     return flags;
   }
   const applicabilityPerOp: Record<string, Applicability> = {};
@@ -421,10 +677,12 @@ async function main() {
     const present = opScenarioKinds[op.operationId] || new Set();
     const applicable = new Set<string>();
     // Parameters applicability
-    const requiredParams = op.parameters.filter(p=> p.required);
+    const requiredParams = op.parameters.filter((p) => p.required);
     if (requiredParams.length) applicable.add('param-missing');
-    if (op.parameters.some(p=> p.schema && (p.schema.type || p.schema.enum))) applicable.add('param-type-mismatch');
-    if (op.parameters.some(p=> Array.isArray(p.schema?.enum))) applicable.add('param-enum-violation');
+    if (op.parameters.some((p) => p.schema && (p.schema.type || p.schema.enum)))
+      applicable.add('param-type-mismatch');
+    if (op.parameters.some((p) => Array.isArray(p.schema?.enum)))
+      applicable.add('param-enum-violation');
     // Body-based applicability
     const body = op.requestBodySchema || op.multipartSchema;
     if (body) {
@@ -432,7 +690,9 @@ async function main() {
       if (f.hasObject) {
         applicable.add('missing-body');
         // required fields
-        const reqList = Array.isArray(body.required) ? body.required : (op.multipartRequiredProps || []);
+        const reqList = Array.isArray(body.required)
+          ? body.required
+          : op.multipartRequiredProps || [];
         if (reqList.length) {
           applicable.add('missing-required');
           if (reqList.length > 1) applicable.add('missing-required-combo');
@@ -465,19 +725,33 @@ async function main() {
     }
     // Include actually present kinds in applicability to prevent >100%
     for (const pk of present) if (!applicable.has(pk)) applicable.add(pk);
-    const rawPct = present.size ? (present.size / allKinds.length)*100 : 0;
-    const applicablePct = applicable.size ? Math.min(100, (present.size / applicable.size)*100) : 0;
-    const missingApplicable = Array.from(applicable).filter(k=> !present.has(k)).sort();
-    applicabilityPerOp[op.operationId] = { applicable, present, rawPct, applicablePct, missingApplicable };
+    const rawPct = present.size ? (present.size / allKinds.length) * 100 : 0;
+    const applicablePct = applicable.size
+      ? Math.min(100, (present.size / applicable.size) * 100)
+      : 0;
+    const missingApplicable = Array.from(applicable)
+      .filter((k) => !present.has(k))
+      .sort();
+    applicabilityPerOp[op.operationId] = {
+      applicable,
+      present,
+      rawPct,
+      applicablePct,
+      missingApplicable,
+    };
   }
   // Endpoint coverage
   const totalOps = model.operations.length;
   const coveredOps = Object.keys(opScenarioKinds).length;
-  const endpointCoveragePct = totalOps ? (coveredOps/totalOps*100) : 0;
+  const endpointCoveragePct = totalOps ? (coveredOps / totalOps) * 100 : 0;
   // Enhance coverage JSON
   // Cast to mutable to enrich coverage object without creating a new interface hierarchy.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  (coverage as any).endpointTotals = { totalOps, coveredOps, endpointCoveragePct: Number(endpointCoveragePct.toFixed(1)) };
+  (coverage as any).endpointTotals = {
+    totalOps,
+    coveredOps,
+    endpointCoveragePct: Number(endpointCoveragePct.toFixed(1)),
+  };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   (coverage as any).operations = (coverage as any).operations.map((oc: any) => {
     const appl = applicabilityPerOp[oc.operationId];
@@ -490,17 +764,21 @@ async function main() {
       missingApplicableKinds: appl.missingApplicable,
     };
   });
-  await fs.promises.writeFile(path.join(opts.outDir, 'COVERAGE.json'), JSON.stringify(coverage, null, 2));
+  await fs.promises.writeFile(
+    path.join(opts.outDir, 'COVERAGE.json'),
+    JSON.stringify(coverage, null, 2),
+  );
   // Markdown summary
   const md: string[] = [];
-  md.push('# Request Validation Coverage','');
+  md.push('# Request Validation Coverage', '');
   md.push(`Generated: ${coverage.generatedAt}`);
-  md.push(`Spec Commit: ${specCommit}`,'');
-  md.push(`Total scenarios: ${coverage.totalScenarios}`,'');
+  md.push(`Spec Commit: ${specCommit}`, '');
+  md.push(`Total scenarios: ${coverage.totalScenarios}`, '');
   const totalKinds = allKinds.length || 1;
   // Precompute percentages
-  const percents: Record<string,string> = {};
-  let sumPct = 0; let fullCount = 0;
+  const percents: Record<string, string> = {};
+  let sumPct = 0;
+  let fullCount = 0;
   for (const oc of coverage.operations) {
     const pct = (oc.kinds.length / totalKinds) * 100;
     if (pct === 100) fullCount++;
@@ -510,20 +788,43 @@ async function main() {
   const avgPct = (sumPct / coverage.operations.length).toFixed(1);
   md.push(`Scenario kinds generated this run: ${totalKinds}`);
   md.push(`Average kind coverage per operation: ${avgPct}%`);
-  md.push(`Operations with full kind coverage: ${fullCount}/${coverage.operations.length}`,'');
-  md.push('Kind coverage % = (# kinds present for operation / total scenario kinds this run) * 100.');
+  md.push(
+    `Operations with full kind coverage: ${fullCount}/${coverage.operations.length}`,
+    '',
+  );
+  md.push(
+    'Kind coverage % = (# kinds present for operation / total scenario kinds this run) * 100.',
+  );
   md.push('');
-  const header = ['OperationId','Method','Path','Total','KindCov%','AppKindCov%','ApplicableKinds','PresentKinds', ...allKinds];
+  const header = [
+    'OperationId',
+    'Method',
+    'Path',
+    'Total',
+    'KindCov%',
+    'AppKindCov%',
+    'ApplicableKinds',
+    'PresentKinds',
+    ...allKinds,
+  ];
   let avgApplicablePct = 0;
   let opsWithApplicable = 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const oc of (coverage as any).operations) {
-    if (oc.applicableKindCount) { avgApplicablePct += oc.applicableKindCoveragePct; opsWithApplicable++; }
+    if (oc.applicableKindCount) {
+      avgApplicablePct += oc.applicableKindCoveragePct;
+      opsWithApplicable++;
+    }
   }
-  const avgAppPctStr = opsWithApplicable ? (avgApplicablePct/opsWithApplicable).toFixed(1) : '0.0';
-  md.push(`Average applicable kind coverage (ops with applicability): ${avgAppPctStr}%`,'');
+  const avgAppPctStr = opsWithApplicable
+    ? (avgApplicablePct / opsWithApplicable).toFixed(1)
+    : '0.0';
+  md.push(
+    `Average applicable kind coverage (ops with applicability): ${avgAppPctStr}%`,
+    '',
+  );
   md.push('| ' + header.join(' | ') + ' |');
-  md.push('| ' + header.map(()=> '---').join(' | ') + ' |');
+  md.push('| ' + header.map(() => '---').join(' | ') + ' |');
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const oc of (coverage as any).operations) {
     const row = [
@@ -532,47 +833,72 @@ async function main() {
       oc.path,
       String(oc.total),
       percents[oc.operationId],
-      oc.applicableKindCoveragePct+'%',
+      oc.applicableKindCoveragePct + '%',
       String(oc.applicableKindCount),
       String(oc.presentKindCount),
-      ...allKinds.map(k => String(oc.counts[k] || ''))
+      ...allKinds.map((k) => String(oc.counts[k] || '')),
     ];
     md.push('| ' + row.join(' | ') + ' |');
   }
   md.push('', 'Missing kinds per operation:');
   for (const oc of coverage.operations) {
-    if (oc.missingKinds.length) md.push(`- ${oc.operationId}: ${oc.missingKinds.join(', ')}`);
+    if (oc.missingKinds.length)
+      md.push(`- ${oc.operationId}: ${oc.missingKinds.join(', ')}`);
   }
-  md.push('', `Endpoint coverage: ${coveredOps}/${totalOps} (${endpointCoveragePct.toFixed(1)}%) have at least one scenario.`);
+  md.push(
+    '',
+    `Endpoint coverage: ${coveredOps}/${totalOps} (${endpointCoveragePct.toFixed(1)}%) have at least one scenario.`,
+  );
   // --- True Gaps Summary Matrix ---
   md.push('', 'True Gaps Summary (applicable missing kinds aggregated):');
-  interface KindGapStats { applicableOps: number; missingOps: number; sampleMissing: string[]; }
+  interface KindGapStats {
+    applicableOps: number;
+    missingOps: number;
+    sampleMissing: string[];
+  }
   const kindStats: Record<string, KindGapStats> = {};
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const oc of (coverage as any).operations) {
-    const appl: string[] = Array.from(applicabilityPerOp[oc.operationId].applicable);
-    const missing: Set<string> = new Set(applicabilityPerOp[oc.operationId].missingApplicable);
+    const appl: string[] = Array.from(
+      applicabilityPerOp[oc.operationId].applicable,
+    );
+    const missing: Set<string> = new Set(
+      applicabilityPerOp[oc.operationId].missingApplicable,
+    );
     for (const k of appl) {
-      const stat = kindStats[k] ||= { applicableOps: 0, missingOps: 0, sampleMissing: [] };
+      const stat = (kindStats[k] ||= {
+        applicableOps: 0,
+        missingOps: 0,
+        sampleMissing: [],
+      });
       stat.applicableOps++;
       if (missing.has(k)) {
         stat.missingOps++;
-        if (stat.sampleMissing.length < 5) stat.sampleMissing.push(oc.operationId);
+        if (stat.sampleMissing.length < 5)
+          stat.sampleMissing.push(oc.operationId);
       }
     }
   }
-  const kindRows = Object.entries(kindStats).map(([k, s]) => ({
-    kind: k,
-    applicableOps: s.applicableOps,
-    missingOps: s.missingOps,
-    missingPct: s.applicableOps ? (s.missingOps / s.applicableOps) * 100 : 0,
-    sample: s.sampleMissing.join(', '),
-  })).sort((a,b)=> b.missingOps - a.missingOps || a.kind.localeCompare(b.kind));
+  const kindRows = Object.entries(kindStats)
+    .map(([k, s]) => ({
+      kind: k,
+      applicableOps: s.applicableOps,
+      missingOps: s.missingOps,
+      missingPct: s.applicableOps ? (s.missingOps / s.applicableOps) * 100 : 0,
+      sample: s.sampleMissing.join(', '),
+    }))
+    .sort(
+      (a, b) => b.missingOps - a.missingOps || a.kind.localeCompare(b.kind),
+    );
   if (kindRows.length) {
-    md.push('| Kind | MissingOps | ApplicableOps | Missing% | SampleMissingOps |');
+    md.push(
+      '| Kind | MissingOps | ApplicableOps | Missing% | SampleMissingOps |',
+    );
     md.push('| --- | --- | --- | --- | --- |');
     for (const r of kindRows) {
-      md.push(`| ${r.kind} | ${r.missingOps} | ${r.applicableOps} | ${r.missingPct.toFixed(1)}% | ${r.sample} |`);
+      md.push(
+        `| ${r.kind} | ${r.missingOps} | ${r.applicableOps} | ${r.missingPct.toFixed(1)}% | ${r.sample} |`,
+      );
     }
   } else {
     md.push('- None');
@@ -582,17 +908,24 @@ async function main() {
   let anyFull = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   for (const oc of (coverage as any).operations) {
-    const missingApp: string[] = applicabilityPerOp[oc.operationId].missingApplicable;
-    if (missingApp.length) { md.push(`- ${oc.operationId}: ${missingApp.join(', ')}`); anyFull = true; }
+    const missingApp: string[] =
+      applicabilityPerOp[oc.operationId].missingApplicable;
+    if (missingApp.length) {
+      md.push(`- ${oc.operationId}: ${missingApp.join(', ')}`);
+      anyFull = true;
+    }
   }
   if (!anyFull) md.push('- None');
   md.push('</details>');
-  md.push('', 'Applicable missing kinds are structurally possible for that operation and should be prioritized.');
+  md.push(
+    '',
+    'Applicable missing kinds are structurally possible for that operation and should be prioritized.',
+  );
   // --- Formatting Normalization (Spotless-friendly) ---
   function normalizeMarkdown(lines: string[]): string[] {
     const out: string[] = [];
     let blankStreak = 0;
-  for (const raw of lines) {
+    for (const raw of lines) {
       // Trim trailing whitespace (Spotless will do this; we preempt churn)
       const line = raw.replace(/[ \t]+$/g, '');
       if (line.trim() === '') {
@@ -609,22 +942,33 @@ async function main() {
     for (let i = 0; i < out.length; i++) {
       const l = out[i];
       // Detect a markdown table header row followed by a separator row
-      if (/^\|.+\|$/.test(l) && i + 1 < out.length && /^\|[ \-:|]+\|$/.test(out[i + 1])) {
+      if (
+        /^\|.+\|$/.test(l) &&
+        i + 1 < out.length &&
+        /^\|[ \-:|]+\|$/.test(out[i + 1])
+      ) {
         // Collect table block until a blank line or non-row
         const tableLines = [l];
         let j = i + 1;
-        while (j < out.length && /^\|.*\|$/.test(out[j]) && out[j].trim() !== '') {
+        while (
+          j < out.length &&
+          /^\|.*\|$/.test(out[j]) &&
+          out[j].trim() !== ''
+        ) {
           tableLines.push(out[j]);
           j++;
         }
         // Normalize each table line
         const rebuilt = tableLines.map((tl, idx) => {
-          const cells = tl.split('|').slice(1, -1).map(c => c.trim());
-            if (idx === 1) {
-              // separator line: rebuild with '---'
-              return '| ' + cells.map(() => '---').join(' | ') + ' |';
-            }
-            return '| ' + cells.join(' | ') + ' |';
+          const cells = tl
+            .split('|')
+            .slice(1, -1)
+            .map((c) => c.trim());
+          if (idx === 1) {
+            // separator line: rebuild with '---'
+            return '| ' + cells.map(() => '---').join(' | ') + ' |';
+          }
+          return '| ' + cells.join(' | ') + ' |';
         });
         norm.push(...rebuilt);
         i = i + tableLines.length - 1;
@@ -649,7 +993,11 @@ main().catch((e) => {
 });
 
 function fastHash(str: string): string {
-  let h = 0, i = 0; const len = str.length;
-  while (i < len) { h = (h * 31 + str.charCodeAt(i++)) | 0; }
+  let h = 0,
+    i = 0;
+  const len = str.length;
+  while (i < len) {
+    h = (h * 31 + str.charCodeAt(i++)) | 0;
+  }
   return (h >>> 0).toString(36);
 }

@@ -125,9 +125,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -149,10 +147,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignGroupToTenant",
@@ -162,9 +157,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -186,10 +179,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignMappingRuleToTenant",
@@ -199,9 +189,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -223,10 +211,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignRoleToTenant",
@@ -236,9 +221,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -260,10 +243,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignRoleToUser",
@@ -273,9 +253,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -297,10 +275,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignUserTask",
@@ -352,9 +327,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -376,10 +349,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "assignUserToTenant",
@@ -389,9 +359,7 @@
         "param-constraint-violation": 2
       },
       "total": 2,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -413,10 +381,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "broadcastSignal",
@@ -884,11 +849,7 @@
         "additional-prop-general": 1
       },
       "total": 5,
-      "kinds": [
-        "additional-prop-general",
-        "param-missing",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "param-missing", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -1274,9 +1235,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1298,10 +1257,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "deleteResource",
@@ -1313,11 +1269,7 @@
         "additional-prop": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "constraint-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "constraint-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "enum-violation",
@@ -1354,9 +1306,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1378,10 +1328,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "deleteUser",
@@ -1391,9 +1338,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1415,10 +1360,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "evaluateDecision",
@@ -1520,9 +1462,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1544,10 +1484,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDecisionDefinition",
@@ -1557,9 +1494,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1581,10 +1516,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDecisionDefinitionXML",
@@ -1594,9 +1526,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1618,10 +1548,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDecisionInstance",
@@ -1631,9 +1558,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1655,10 +1580,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDecisionRequirements",
@@ -1668,9 +1590,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1692,10 +1612,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDecisionRequirementsXML",
@@ -1705,9 +1622,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1729,10 +1644,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getDocument",
@@ -1742,9 +1654,7 @@
         "param-missing": 1
       },
       "total": 1,
-      "kinds": [
-        "param-missing"
-      ],
+      "kinds": ["param-missing"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1766,9 +1676,7 @@
       "applicableKindCoveragePct": 50,
       "applicableKindCount": 2,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-type-mismatch"]
     },
     {
       "operationId": "getElementInstance",
@@ -1778,9 +1686,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1802,10 +1708,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getIncident",
@@ -1815,9 +1718,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1839,10 +1740,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessDefinition",
@@ -1852,9 +1750,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1876,10 +1772,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessDefinitionStatistics",
@@ -1943,9 +1836,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -1967,10 +1858,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessInstance",
@@ -1980,9 +1868,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2004,10 +1890,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessInstanceCallHierarchy",
@@ -2017,9 +1900,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2041,10 +1922,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessInstanceSequenceFlows",
@@ -2054,9 +1932,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2078,10 +1954,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getProcessInstanceStatistics",
@@ -2091,9 +1964,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2115,10 +1986,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getStartProcessForm",
@@ -2128,9 +1996,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2152,10 +2018,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getTenant",
@@ -2165,9 +2028,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2189,10 +2050,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getUsageMetrics",
@@ -2238,9 +2096,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2262,10 +2118,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getUserTask",
@@ -2275,9 +2128,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2299,10 +2150,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getUserTaskForm",
@@ -2312,9 +2160,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2336,10 +2182,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "getVariable",
@@ -2349,9 +2192,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -2373,10 +2214,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "migrateProcessInstance",
@@ -2777,11 +2615,7 @@
         "type-mismatch": 1
       },
       "total": 9,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -2827,11 +2661,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -2877,11 +2707,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -2927,11 +2753,7 @@
         "additional-prop-general": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop-general",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -2978,11 +2800,7 @@
         "additional-prop-general": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop-general",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -3082,11 +2900,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3132,11 +2946,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3182,11 +2992,7 @@
         "type-mismatch": 1
       },
       "total": 11,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3232,11 +3038,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3282,11 +3084,7 @@
         "type-mismatch": 1
       },
       "total": 9,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3385,11 +3183,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3435,11 +3229,7 @@
         "additional-prop-general": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop-general",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -3486,11 +3276,7 @@
         "type-mismatch": 1
       },
       "total": 11,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3536,11 +3322,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3586,11 +3368,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3636,11 +3414,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3688,11 +3462,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3793,11 +3563,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3843,11 +3609,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -3997,11 +3759,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4047,11 +3805,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4152,11 +3906,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4202,11 +3952,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4252,11 +3998,7 @@
         "additional-prop-general": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop-general",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -4303,11 +4045,7 @@
         "additional-prop-general": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop-general",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",
@@ -4407,11 +4145,7 @@
         "type-mismatch": 1
       },
       "total": 7,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4510,11 +4244,7 @@
         "type-mismatch": 1
       },
       "total": 6,
-      "kinds": [
-        "additional-prop",
-        "enum-violation",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop", "enum-violation", "type-mismatch"],
       "missingKinds": [
         "additional-prop-general",
         "constraint-violation",
@@ -4602,9 +4332,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4626,10 +4354,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignGroupFromTenant",
@@ -4639,9 +4364,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4663,10 +4386,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignMappingRuleFromTenant",
@@ -4676,9 +4396,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4700,10 +4418,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignRoleFromTenant",
@@ -4713,9 +4428,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4737,10 +4450,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignRoleFromUser",
@@ -4750,9 +4460,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4774,10 +4482,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignUserFromGroup",
@@ -4787,9 +4492,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4811,10 +4514,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignUserFromTenant",
@@ -4824,9 +4524,7 @@
         "param-constraint-violation": 2
       },
       "total": 2,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4848,10 +4546,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "unassignUserTask",
@@ -4861,9 +4556,7 @@
         "param-constraint-violation": 1
       },
       "total": 1,
-      "kinds": [
-        "param-constraint-violation"
-      ],
+      "kinds": ["param-constraint-violation"],
       "missingKinds": [
         "additional-prop",
         "additional-prop-general",
@@ -4885,10 +4578,7 @@
       "applicableKindCoveragePct": 33.3,
       "applicableKindCount": 3,
       "presentKindCount": 1,
-      "missingApplicableKinds": [
-        "param-missing",
-        "param-type-mismatch"
-      ]
+      "missingApplicableKinds": ["param-missing", "param-type-mismatch"]
     },
     {
       "operationId": "updateAuthorization",
@@ -5035,11 +4725,7 @@
         "additional-prop-general": 1
       },
       "total": 11,
-      "kinds": [
-        "additional-prop-general",
-        "missing-required",
-        "type-mismatch"
-      ],
+      "kinds": ["additional-prop-general", "missing-required", "type-mismatch"],
       "missingKinds": [
         "additional-prop",
         "constraint-violation",

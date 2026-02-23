@@ -35,16 +35,19 @@ import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.MultipartBodyBuilder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(ResourceController.class)
 public class ResourceControllerTest extends RestControllerTest {
 
@@ -122,7 +125,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -186,7 +193,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -254,7 +265,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"tenantId"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -347,7 +362,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        },
                        {
                           "processDefinition":{
@@ -356,7 +375,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "processDefinitionKey":"7890123",
                              "resourceName":"second.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "form": null,
+                          "resource": null
                        },
                        {
                           "form":{
@@ -365,7 +388,11 @@ public class ResourceControllerTest extends RestControllerTest {
                              "formKey":"123456",
                              "resourceName":"process.bpmn",
                              "tenantId":"<default>"
-                          }
+                          },
+                          "processDefinition": null,
+                          "decisionDefinition": null,
+                          "decisionRequirements": null,
+                          "resource": null
                        }
                     ],
                     "tenantId":"<default>"
@@ -700,7 +727,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);
@@ -734,7 +762,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);
@@ -773,7 +802,8 @@ public class ResourceControllerTest extends RestControllerTest {
           .json(
               """
               {
-                "resourceKey": "1"
+                "resourceKey": "1",
+                "batchOperation": null
               }
               """,
               JsonCompareMode.STRICT);

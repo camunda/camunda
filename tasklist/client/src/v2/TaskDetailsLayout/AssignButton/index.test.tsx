@@ -54,7 +54,7 @@ describe('AssignButton', () => {
     const {user, rerender} = render(
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
-        assignee={undefined}
+        assignee={null}
         taskState={mockUnassignedTask.state}
         currentUser={currentUser.username}
       />,
@@ -109,7 +109,7 @@ describe('AssignButton', () => {
     rerender(
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
-        assignee={undefined}
+        assignee={null}
         taskState={mockUnassignedTask.state}
         currentUser={currentUser.username}
       />,
@@ -134,7 +134,7 @@ describe('AssignButton', () => {
     const {user} = render(
       <AssignButton
         id={mockUnassignedTask.userTaskKey}
-        assignee={undefined}
+        assignee={null}
         taskState={mockUnassignedTask.state}
         currentUser={currentUser.username}
       />,

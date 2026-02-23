@@ -13,6 +13,7 @@ import io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -29,6 +30,9 @@ public class AuditLogEntry {
 
   // the type of the affected entity
   private io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType;
+
+  // the description of the affected entity
+  private String entityDescription;
 
   // the type of operation that was performed, i.e. the Zeebe record intent
   private io.camunda.search.entities.AuditLogEntity.AuditLogOperationType operationType;
@@ -97,6 +101,12 @@ public class AuditLogEntry {
 
   private Long rootProcessInstanceKey;
 
+  private String relatedEntityKey;
+
+  private AuditLogEntityType relatedEntityType;
+
+  private Agent agent;
+
   public String getEntityKey() {
     return entityKey;
   }
@@ -106,12 +116,35 @@ public class AuditLogEntry {
     return this;
   }
 
+  public Optional<Agent> getAgent() {
+    return Optional.ofNullable(agent);
+  }
+
+  public AuditLogEntry setAgent(final Agent agent) {
+    this.agent = agent;
+    return this;
+  }
+
+  public AuditLogEntry setAgent(final Optional<Agent> agent) {
+    this.agent = agent.orElse(null);
+    return this;
+  }
+
   public AuditLogEntityType getEntityType() {
     return entityType;
   }
 
   public AuditLogEntry setEntityType(final AuditLogEntityType auditLogEntityType) {
     entityType = auditLogEntityType;
+    return this;
+  }
+
+  public String getEntityDescription() {
+    return entityDescription;
+  }
+
+  public AuditLogEntry setEntityDescription(final String entityDescription) {
+    this.entityDescription = entityDescription;
     return this;
   }
 
@@ -358,6 +391,24 @@ public class AuditLogEntry {
     return this;
   }
 
+  public String getRelatedEntityKey() {
+    return relatedEntityKey;
+  }
+
+  public AuditLogEntry setRelatedEntityKey(final String relatedEntityKey) {
+    this.relatedEntityKey = relatedEntityKey;
+    return this;
+  }
+
+  public AuditLogEntityType getRelatedEntityType() {
+    return relatedEntityType;
+  }
+
+  public AuditLogEntry setRelatedEntityType(final AuditLogEntityType relatedEntityType) {
+    this.relatedEntityType = relatedEntityType;
+    return this;
+  }
+
   public static <R extends RecordValue> AuditLogEntry of(final Record<R> record) {
     final AuditLogInfo info = AuditLogInfo.of(record);
 
@@ -368,6 +419,7 @@ public class AuditLogEntry {
             .setCategory(info.category())
             .setOperationType(info.operationType())
             .setActor(info.actor())
+            .setAgent(record.getAgent())
             .setTenant(AuditLogTenant.of(record))
             .setBatchOperationKey(getBatchOperationKey(record))
             .setProcessInstanceKey(getProcessInstanceKey(record))

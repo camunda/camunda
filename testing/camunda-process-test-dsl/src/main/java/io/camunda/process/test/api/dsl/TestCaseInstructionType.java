@@ -40,6 +40,7 @@ public class TestCaseInstructionType {
   public static final String MOCK_JOB_WORKER_COMPLETE_JOB = "MOCK_JOB_WORKER_COMPLETE_JOB";
   public static final String MOCK_JOB_WORKER_THROW_BPMN_ERROR = "MOCK_JOB_WORKER_THROW_BPMN_ERROR";
   public static final String PUBLISH_MESSAGE = "PUBLISH_MESSAGE";
+  public static final String CORRELATE_MESSAGE = "CORRELATE_MESSAGE";
   public static final String RESOLVE_INCIDENT = "RESOLVE_INCIDENT";
   public static final String SET_TIME = "SET_TIME";
   public static final String THROW_BPMN_ERROR_FROM_JOB = "THROW_BPMN_ERROR_FROM_JOB";

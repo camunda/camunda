@@ -34,6 +34,8 @@ import io.camunda.search.clients.reader.FlowNodeInstanceDocumentReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormDocumentReader;
 import io.camunda.search.clients.reader.FormReader;
+import io.camunda.search.clients.reader.GlobalListenerDocumentReader;
+import io.camunda.search.clients.reader.GlobalListenerReader;
 import io.camunda.search.clients.reader.GroupDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberDocumentReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
@@ -45,6 +47,8 @@ import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByError
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
 import io.camunda.search.clients.reader.JobDocumentReader;
+import io.camunda.search.clients.reader.JobMetricsBatchDocumentReader;
+import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleDocumentReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
@@ -93,6 +97,7 @@ import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
@@ -105,6 +110,7 @@ import io.camunda.webapps.schema.descriptors.template.CorrelatedMessageSubscript
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
+import io.camunda.webapps.schema.descriptors.template.JobMetricsBatchTemplate;
 import io.camunda.webapps.schema.descriptors.template.JobTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.descriptors.template.MessageSubscriptionTemplate;
@@ -233,6 +239,13 @@ public class SearchClientReaderConfiguration {
   public JobReader jobReader(
       final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
     return new JobDocumentReader(executor, descriptors.get(JobTemplate.class));
+  }
+
+  @Bean
+  public JobMetricsBatchReader jobMetricsBatchReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new JobMetricsBatchDocumentReader(
+        executor, descriptors.get(JobMetricsBatchTemplate.class));
   }
 
   @Bean
@@ -413,6 +426,12 @@ public class SearchClientReaderConfiguration {
           final ProcessCache processCache) {
     return new IncidentProcessInstanceStatisticsByDefinitionDocumentReader(
         executor, descriptors.get(IncidentTemplate.class), processCache);
+  }
+
+  @Bean
+  public GlobalListenerReader globalListenerReader(
+      final SearchClientBasedQueryExecutor executor, final IndexDescriptors descriptors) {
+    return new GlobalListenerDocumentReader(executor, descriptors.get(GlobalListenerIndex.class));
   }
 
   @Bean

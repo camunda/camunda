@@ -23,7 +23,6 @@ import io.camunda.tasklist.webapp.service.EnvironmentService;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -60,8 +59,6 @@ import org.springframework.web.context.WebApplicationContext;
 public class ClientConfigRestServiceIT {
 
   @Autowired private WebApplicationContext context;
-
-  @InjectMocks private SecurityConfiguration securityConfiguration;
 
   private MockMvc mockMvc;
 

@@ -51,7 +51,7 @@ public class ElasticsearchExporter implements Exporter {
 
   private Controller controller;
   private ElasticsearchExporterConfiguration configuration;
-  private ElasticsearchClient client;
+  private ElasticsearchExporterClient client;
   private ElasticsearchRecordCounters recordCounters;
   private MeterRegistry registry;
   private ElasticsearchExporterSchemaManager schemaManager;
@@ -212,11 +212,11 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   // TODO: remove this and instead allow client to be inject-able for testing
-  protected ElasticsearchClient createClient() {
-    return new ElasticsearchClient(
+  protected ElasticsearchExporterClient createClient() {
+    return new ElasticsearchExporterClient(
         configuration,
         registry,
-        RestClientFactory.of(configuration, pluginRepository.asRequestInterceptor()));
+        ElasticsearchClientFactory.of(configuration, pluginRepository.asRequestInterceptor()));
   }
 
   private void flushAndReschedule() {

@@ -20,6 +20,10 @@ public class GroupEntityAuditLogTransformer implements AuditLogTransformer<Group
 
   @Override
   public void transform(final Record<GroupRecordValue> record, final AuditLogEntry log) {
-    log.setEntityKey(record.getValue().getGroupId());
+    final GroupRecordValue value = record.getValue();
+    log.setEntityKey(value.getGroupId())
+        .setRelatedEntityKey(value.getEntityId())
+        .setRelatedEntityType(
+            AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(value.getEntityType()));
   }
 }

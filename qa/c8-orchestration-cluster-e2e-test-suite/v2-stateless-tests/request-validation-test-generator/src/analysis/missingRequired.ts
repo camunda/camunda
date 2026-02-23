@@ -1,15 +1,23 @@
-import { OperationModel, ValidationScenario } from '../model/types.js';
-import { makeId, genPlaceholder } from './common.js';
+import {OperationModel, ValidationScenario} from '../model/types.js';
+import {makeId, genPlaceholder} from './common.js';
 
-interface Opts { capPerOperation?: number; onlyOperations?: Set<string>; }
+interface Opts {
+  capPerOperation?: number;
+  onlyOperations?: Set<string>;
+}
 
-export function generateMissingRequired(ops: OperationModel[], opts: Opts): ValidationScenario[] {
+export function generateMissingRequired(
+  ops: OperationModel[],
+  opts: Opts,
+): ValidationScenario[] {
   const out: ValidationScenario[] = [];
   for (const op of ops) {
-    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId)) continue;
+    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId))
+      continue;
     if (!op.requiredProps || !op.requiredProps.length) continue;
     // Only generate JSON variant if the operation actually advertises application/json
-    if (!op.requestBodySchema || op.requestBodySchema.type !== 'object') continue;
+    if (!op.requestBodySchema || op.requestBodySchema.type !== 'object')
+      continue;
     if (op.mediaTypes && !op.mediaTypes.includes('application/json')) {
       // Skip: we'll rely on multipart generator for required-part omissions
       continue;
@@ -18,8 +26,8 @@ export function generateMissingRequired(ops: OperationModel[], opts: Opts): Vali
     for (const prop of op.requiredProps) {
       if (opts.capPerOperation && count >= opts.capPerOperation) break;
       // build minimal body with all required except this one
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const body: Record<string, any> = {};
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const body: Record<string, any> = {};
       for (const p of op.requiredProps) {
         if (p === prop) continue; // omit
         const schema = op.requestBodySchema.properties?.[p];
@@ -36,7 +44,7 @@ export function generateMissingRequired(ops: OperationModel[], opts: Opts): Vali
         requestBody: body,
         params: buildDummyParams(op.path),
         expectedStatus: 400,
-        description: `Omit required field '${prop}' from body` ,
+        description: `Omit required field '${prop}' from body`,
         headersAuth: true,
         bodyEncoding: 'json',
       });
@@ -46,12 +54,12 @@ export function generateMissingRequired(ops: OperationModel[], opts: Opts): Vali
   return out;
 }
 
-function buildDummyParams(path: string): Record<string,string> | undefined {
+function buildDummyParams(path: string): Record<string, string> | undefined {
   const m = path.match(/\{([^}]+)}/g);
   if (!m) return undefined;
-  const params: Record<string,string> = {};
+  const params: Record<string, string> = {};
   for (const token of m) {
-    const name = token.slice(1,-1);
+    const name = token.slice(1, -1);
     params[name] = 'x';
   }
   return params;

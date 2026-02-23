@@ -25,12 +25,14 @@ import io.camunda.zeebe.transport.RequestType;
 import io.camunda.zeebe.transport.ServerOutput;
 import io.camunda.zeebe.transport.ServerTransport;
 import io.camunda.zeebe.transport.TransportFactory;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -63,6 +65,9 @@ public class AtomixTransportTest {
 
   private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(15);
   private static final Duration REQUEST_TIMEOUT_NO_SUCCESS = Duration.ofMillis(200);
+  private static final String TOPIC_PREFIX = "default";
+  private static final List<TopicSupplier> TOPIC_SUPPLIERS =
+      List.of(TopicSupplier.withLegacyTopicName(), TopicSupplier.withPrefix(TOPIC_PREFIX));
 
   private static Supplier<String> nodeAddressSupplier;
   private static AtomixCluster cluster;
@@ -99,7 +104,22 @@ public class AtomixTransportTest {
                 (cluster) -> {
                   final var messagingService = cluster.getMessagingService();
                   return transportFactory.createServerTransport(
-                      messagingService, requestIdGenerator);
+                      messagingService, requestIdGenerator, TOPIC_SUPPLIERS);
+                }
+          },
+          {
+            "use default-{topic}-prefixed topics in client requests",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(
+                      messagingService, TopicSupplier.withPrefix(TOPIC_PREFIX));
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createServerTransport(
+                      messagingService, requestIdGenerator, TOPIC_SUPPLIERS);
                 }
           },
           {
@@ -111,25 +131,40 @@ public class AtomixTransportTest {
                 },
             (Function<AtomixCluster, ServerTransport>)
                 (cluster) -> {
-                  if (nettyMessagingService == null) {
-                    // do only once
-                    final var socketAddress = SocketUtil.getNextAddress();
-                    serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
-                    nodeAddressSupplier = () -> serverAddress;
-                    nettyMessagingService =
-                        new NettyMessagingService(
-                            "cluster",
-                            Address.from(serverAddress),
-                            new MessagingConfig(),
-                            meterRegistry);
-                    nettyMessagingService.start().join();
-                  }
-
+                  createNettyMessagingServiceIfNull();
                   return transportFactory.createServerTransport(
-                      nettyMessagingService, requestIdGenerator);
+                      nettyMessagingService, requestIdGenerator, TOPIC_SUPPLIERS);
+                }
+          },
+          {
+            "use different messaging service and prefixed client requests",
+            (Function<AtomixCluster, ClientTransport>)
+                (cluster) -> {
+                  final var messagingService = cluster.getMessagingService();
+                  return transportFactory.createClientTransport(
+                      messagingService, TopicSupplier.withPrefix(TOPIC_PREFIX));
+                },
+            (Function<AtomixCluster, ServerTransport>)
+                (cluster) -> {
+                  createNettyMessagingServiceIfNull();
+                  return transportFactory.createServerTransport(
+                      nettyMessagingService, requestIdGenerator, TOPIC_SUPPLIERS);
                 }
           }
         });
+  }
+
+  static void createNettyMessagingServiceIfNull() {
+    if (nettyMessagingService == null) {
+      // do only once
+      final var socketAddress = SocketUtil.getNextAddress();
+      serverAddress = socketAddress.getHostName() + ":" + socketAddress.getPort();
+      nodeAddressSupplier = () -> serverAddress;
+      nettyMessagingService =
+          new NettyMessagingService(
+              "cluster", Address.from(serverAddress), new MessagingConfig(), meterRegistry);
+      nettyMessagingService.start().join();
+    }
   }
 
   @BeforeClass
@@ -426,8 +461,10 @@ public class AtomixTransportTest {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
-      buffer.putBytes(offset, msg.getBytes());
+    public int write(final MutableDirectBuffer buffer, final int offset) {
+      final var bytes = msg.getBytes();
+      buffer.putBytes(offset, bytes);
+      return bytes.length;
     }
   }
 

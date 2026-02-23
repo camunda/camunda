@@ -60,7 +60,7 @@ paths:
         "403":
           $ref: 'common-responses.yaml#/components/responses/Forbidden'
         "500":
-          description: An internal error occurred while processing the request.
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
   /roles/{roleId}:
     get:
@@ -790,6 +790,8 @@ components:
 
     RoleSearchQueryResult:
       description: Role search response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -808,6 +810,8 @@ components:
 
     RoleUserSearchResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -850,6 +854,8 @@ components:
 
     RoleClientSearchResult:
       type: object
+      required: 
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -892,6 +898,8 @@ components:
 
     RoleGroupSearchResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:

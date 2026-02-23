@@ -15,6 +15,7 @@
  */
 package io.camunda.zeebe.protocol.record;
 
+import edu.umd.cs.findbugs.annotations.Nullable;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import java.util.Map;
 import org.immutables.value.Value;
@@ -102,6 +103,15 @@ public interface Record<T extends RecordValue> extends JsonSerializable {
    * @return a Map of authorization data for this record or an empty Map if not set.
    */
   Map<String, Object> getAuthorizations();
+
+  /**
+   * Provides agent information that is associated with the record, e.g. the id and name of the
+   * agent that produced the record within an adhoc subprocess
+   *
+   * @return the agent information associated with this record, or {@code null} if no agent
+   */
+  @Nullable
+  Agent getAgent();
 
   /**
    * A record version is an integer starting from 1. The version of a record is defined when it is

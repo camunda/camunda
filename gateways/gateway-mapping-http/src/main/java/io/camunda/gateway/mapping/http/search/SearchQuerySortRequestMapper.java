@@ -11,6 +11,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_SORT
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_UNKNOWN_SORT_BY;
 
 import io.camunda.gateway.protocol.model.*;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQuerySortRequest.FieldEnum;
 import io.camunda.search.sort.AuthorizationSort;
 import io.camunda.search.sort.BatchOperationItemSort;
 import io.camunda.search.sort.BatchOperationSort;
@@ -19,6 +20,7 @@ import io.camunda.search.sort.DecisionDefinitionSort;
 import io.camunda.search.sort.DecisionInstanceSort;
 import io.camunda.search.sort.DecisionRequirementsSort;
 import io.camunda.search.sort.FlowNodeInstanceSort;
+import io.camunda.search.sort.GlobalListenerSort;
 import io.camunda.search.sort.GroupMemberSort;
 import io.camunda.search.sort.GroupSort;
 import io.camunda.search.sort.IncidentProcessInstanceStatisticsByDefinitionSort;
@@ -256,6 +258,25 @@ public class SearchQuerySortRequestMapper {
       fromIncidentProcessInstanceStatisticsByDefinitionQuerySortRequest(
           final List<IncidentProcessInstanceStatisticsByDefinitionQuerySortRequest> requests) {
     return requests.stream().map(r -> createFrom(r.getField(), r.getOrder())).toList();
+  }
+
+  public static List<SearchQuerySortRequest<GlobalTaskListenerSearchQuerySortRequest.FieldEnum>>
+      fromGlobalTaskListenerSearchQuerySortRequest(
+          final List<GlobalTaskListenerSearchQuerySortRequest> requests) {
+    // Add default sorting after provided ones, ensuring a meaningful ordering:
+    // - place "after non global" listeners at the end
+    // - sort by priority (highest priority is returned first)
+    // - sort by id to ensure a deterministic order for listeners with the same priority
+    final var requestsWithDefaultSorting = new ArrayList<>(requests);
+    requestsWithDefaultSorting.addAll(
+        List.of(
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.AFTER_NON_GLOBAL),
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.PRIORITY)
+                .order(SortOrderEnum.DESC),
+            new GlobalTaskListenerSearchQuerySortRequest(FieldEnum.ID)));
+    return requestsWithDefaultSorting.stream()
+        .map(r -> createFrom(r.getField(), r.getOrder()))
+        .toList();
   }
 
   private static <T> SearchQuerySortRequest<T> createFrom(
@@ -928,6 +949,25 @@ public class SearchQuerySortRequestMapper {
         case PROCESS_DEFINITION_KEY -> builder.processDefinitionKey();
         case TENANT_ID -> builder.tenantId();
         case ACTIVE_INSTANCES_WITH_ERROR_COUNT -> builder.activeInstancesWithErrorCount();
+        default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
+      }
+    }
+    return validationErrors;
+  }
+
+  static List<String> applyGlobalTaskListenerSortField(
+      final GlobalTaskListenerSearchQuerySortRequest.FieldEnum field,
+      final GlobalListenerSort.Builder builder) {
+    final List<String> validationErrors = new ArrayList<>();
+    if (field == null) {
+      validationErrors.add(ERROR_SORT_FIELD_MUST_NOT_BE_NULL);
+    } else {
+      switch (field) {
+        case ID -> builder.listenerId();
+        case TYPE -> builder.type();
+        case AFTER_NON_GLOBAL -> builder.afterNonGlobal();
+        case PRIORITY -> builder.priority();
+        case SOURCE -> builder.source();
         default -> validationErrors.add(ERROR_UNKNOWN_SORT_BY.formatted(field));
       }
     }

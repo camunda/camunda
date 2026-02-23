@@ -8,11 +8,11 @@
 
 import React from 'react';
 import {type AuditLogResult} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {CheckmarkFilled, ErrorFilled} from './styled';
+import {CheckmarkOutline, ErrorOutline} from './styled';
 
 const stateIconsMap = {
-  FAIL: ErrorFilled,
-  SUCCESS: CheckmarkFilled,
+  FAIL: ErrorOutline,
+  SUCCESS: CheckmarkOutline,
 } as const;
 
 type Props = {

@@ -25,11 +25,14 @@ import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -41,9 +44,6 @@ import org.slf4j.LoggerFactory;
 final class InProgressBackupImpl implements InProgressBackup {
 
   private static final Logger LOG = LoggerFactory.getLogger(InProgressBackupImpl.class);
-
-  private static final String ERROR_MSG_NO_VALID_SNAPSHOT =
-      "Cannot find a snapshot that can be included in the backup %d. All available snapshots (%s) have processedPosition or lastFollowupEventPosition > checkpointPosition %d";
 
   private final PersistedSnapshotStore snapshotStore;
   private final BackupIdentifier backupId;
@@ -94,8 +94,8 @@ final class InProgressBackupImpl implements InProgressBackup {
   }
 
   @Override
-  public ActorFuture<Void> findValidSnapshot() {
-    final ActorFuture<Void> result = concurrencyControl.createFuture();
+  public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
+    final ActorFuture<Set<PersistedSnapshot>> result = concurrencyControl.createFuture();
     snapshotStore
         .getAvailableSnapshots()
         .onComplete(
@@ -115,7 +115,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                 // no snapshot is taken until now, so return successfully
                 hasSnapshot = false;
                 availableValidSnapshots = Collections.emptySet();
-                result.complete(null);
+                result.complete(availableValidSnapshots);
               } else {
                 LOG.atTrace()
                     .addKeyValue("backup", backupId)
@@ -128,7 +128,7 @@ final class InProgressBackupImpl implements InProgressBackup {
                       new SnapshotNotFoundException(eitherSnapshots.getLeft()));
                 } else {
                   availableValidSnapshots = eitherSnapshots.get();
-                  result.complete(null);
+                  result.complete(availableValidSnapshots);
                 }
               }
             });
@@ -292,37 +292,85 @@ final class InProgressBackupImpl implements InProgressBackup {
 
   private Either<String, Set<PersistedSnapshot>> findValidSnapshot(
       final Set<PersistedSnapshot> snapshots) {
+    final var validationResults =
+        snapshots.stream().collect(Collectors.toMap(Function.identity(), this::validateSnapshot));
+
     final var validSnapshots =
-        snapshots.stream()
-            .filter(
-                s ->
-                    s.getMetadata().processedPosition()
-                        < backupDescriptor().checkpointPosition()) // &&
-            .filter(
-                s ->
-                    s.getMetadata().lastFollowupEventPosition()
-                        < backupDescriptor().checkpointPosition())
+        validationResults.entrySet().stream()
+            .filter(entry -> entry.getValue().isEmpty())
+            .map(Entry::getKey)
             .collect(Collectors.toSet());
 
     if (validSnapshots.isEmpty()) {
-      LOG.atError()
-          .addKeyValue("invalidSnapshots", snapshots::size)
-          .setMessage("No valid snapshots found for backup")
-          .log();
-      return Either.left(
-          String.format(
-              ERROR_MSG_NO_VALID_SNAPSHOT,
-              id().checkpointId(),
-              snapshots,
-              backupDescriptor().checkpointPosition()));
+      final var errorMessage =
+          "No valid snapshots found for backup:\n"
+              + snapshotValidationErrorMessage(validationResults);
+      LOG.atError().addKeyValue("backup", backupId).log(errorMessage);
+      return Either.left(errorMessage);
     } else {
-      LOG.atTrace()
-          .addKeyValue("backup", backupId)
-          .addKeyValue("validSnapshots", validSnapshots::size)
-          .setMessage("Found valid snapshots for backup")
-          .log();
+      final var validSnapshotCount = validSnapshots.size();
+      final var invalidSnapshotCount = snapshots.size() - validSnapshotCount;
+      if (invalidSnapshotCount > 0) {
+        LOG.atDebug()
+            .addKeyValue("backup", backupId)
+            .addArgument(validSnapshotCount)
+            .addArgument(invalidSnapshotCount)
+            .addArgument(() -> snapshotValidationErrorMessage(validationResults))
+            .log("Found {} valid and {} invalid snapshots for backup\n:{}");
+      } else {
+        LOG.atTrace()
+            .addKeyValue("backup", backupId)
+            .addKeyValue("validSnapshots", validSnapshots::size)
+            .log("Found {} valid snapshots for backup", validSnapshotCount);
+      }
       return Either.right(validSnapshots);
     }
+  }
+
+  private String snapshotValidationErrorMessage(
+      final Map<PersistedSnapshot, Collection<SnapshotValidation>> validationResults) {
+    return validationResults.entrySet().stream()
+        .sorted(Comparator.comparing(entry -> entry.getKey().getId()))
+        .filter(entry -> !entry.getValue().isEmpty())
+        .map(
+            entry ->
+                String.format(
+                    "Snapshot %s is not valid:\n%s",
+                    entry.getKey().getId(),
+                    entry.getValue().stream()
+                        .map(SnapshotValidation::errorMessage)
+                        .collect(Collectors.joining("\n"))
+                        .indent(4)))
+        .collect(Collectors.joining("\n"));
+  }
+
+  private Collection<SnapshotValidation> validateSnapshot(final PersistedSnapshot snapshot) {
+    final var checkpointPosition = backupDescriptor().checkpointPosition();
+    final var metadata = snapshot.getMetadata();
+
+    final var rejections = new ArrayList<SnapshotValidation>();
+
+    final var processedPositionOk = metadata.processedPosition() < checkpointPosition;
+    final var lastFollowupEventPositionOk =
+        metadata.lastFollowupEventPosition() < checkpointPosition;
+    final var maxExportedPositionOk = metadata.maxExportedPosition() < checkpointPosition;
+    if (!processedPositionOk) {
+      rejections.add(
+          new SnapshotValidation.ProcessedPositionPastCheckpoint(
+              checkpointPosition, metadata.processedPosition()));
+    }
+    if (!lastFollowupEventPositionOk) {
+      rejections.add(
+          new SnapshotValidation.FollowUpEventPositionPastCheckpoint(
+              checkpointPosition, metadata.lastFollowupEventPosition()));
+    }
+    if (!maxExportedPositionOk) {
+      rejections.add(
+          new SnapshotValidation.MaxExportedPositionPastCheckpoint(
+              checkpointPosition, metadata.maxExportedPosition()));
+    }
+
+    return rejections;
   }
 
   private void tryReserveAnySnapshot(
@@ -372,5 +420,39 @@ final class InProgressBackupImpl implements InProgressBackup {
             future.complete(null);
           }
         });
+  }
+
+  private sealed interface SnapshotValidation {
+    String errorMessage();
+
+    record ProcessedPositionPastCheckpoint(long checkpointPosition, long processedPosition)
+        implements SnapshotValidation {
+
+      @Override
+      public String errorMessage() {
+        return "processedPosition (%d) >= checkpointPosition (%d)"
+            .formatted(processedPosition, checkpointPosition);
+      }
+    }
+
+    record FollowUpEventPositionPastCheckpoint(long checkpointPosition, long followUpEventPosition)
+        implements SnapshotValidation {
+
+      @Override
+      public String errorMessage() {
+        return "lastFollowupEventPosition (%d) >= checkpointPosition (%d)"
+            .formatted(followUpEventPosition, checkpointPosition);
+      }
+    }
+
+    record MaxExportedPositionPastCheckpoint(long checkpointPosition, long maxExportedPosition)
+        implements SnapshotValidation {
+
+      @Override
+      public String errorMessage() {
+        return "maxExportedPosition (%d) >= checkpointPosition (%d)"
+            .formatted(maxExportedPosition, checkpointPosition);
+      }
+    }
   }
 }

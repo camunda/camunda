@@ -27,6 +27,7 @@ This is a small overview of the contents of the different modules:
 * `exporters/elasticsearch-exporter` contains the official Elasticsearch exporter for Zeebe
 * `exporters/opensearch-exporter` OpenSearch exporter implementation
 * `exporters/rdbms-exporter` RDBMS exporter implementation
+* `exporters/app-integrations-exporter` App Integrations exporter implementation
 * `exporter-common` common utilities for exporter implementations
 * `exporter-test` thread-safe exporter test controller
 * `expression-language` engine core expression evaluation

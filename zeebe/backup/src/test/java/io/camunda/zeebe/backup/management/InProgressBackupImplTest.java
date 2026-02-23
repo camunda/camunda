@@ -105,6 +105,7 @@ class InProgressBackupImplTest {
   void shouldFailFutureWhenSnapshotIsPastCheckpointPosition() {
     // given - checkpointPosition < processedPosition <  followupPosition
     final var invalidSnapshot = snapshotWith(11L, 20L);
+    when(invalidSnapshot.getId()).thenReturn("snapshot-1");
     setAvailableSnapshots(Set.of(invalidSnapshot));
 
     // when - then
@@ -115,13 +116,17 @@ class InProgressBackupImplTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withRootCauseInstanceOf(SnapshotNotFoundException.class);
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .withStackTraceContaining("snapshot-1")
+        .withStackTraceContaining("processedPosition (11) >= checkpointPosition (10)")
+        .withStackTraceContaining("lastFollowupEventPosition (20) >= checkpointPosition (10)");
   }
 
   @Test
   void shouldFailFutureWhenSnapshotOverlapsWithCheckpoint() {
     // given - processedPosition < checkpointPosition < followupPosition
     final var invalidSnapshot = snapshotWith(8L, 20L);
+    when(invalidSnapshot.getId()).thenReturn("snapshot-overlap");
     setAvailableSnapshots(Set.of(invalidSnapshot));
 
     // when
@@ -131,7 +136,8 @@ class InProgressBackupImplTest {
     assertThat(future)
         .failsWithin(Duration.ofMillis(100))
         .withThrowableOfType(ExecutionException.class)
-        .withRootCauseInstanceOf(SnapshotNotFoundException.class);
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .withMessageContaining("lastFollowupEventPosition (20) >= checkpointPosition (10)");
   }
 
   @Test
@@ -298,6 +304,59 @@ class InProgressBackupImplTest {
         .containsExactlyInAnyOrderEntriesOf(Map.of("file1.log", file1, "file2.log", file2));
   }
 
+  @Test
+  void shouldIgnoreSnapshotWithExporterPositionTooFarAhead() {
+    // given
+    final var checkpointPosition = inProgressBackup.backupDescriptor().checkpointPosition();
+    final var validExporterPosition = checkpointPosition - 1L;
+    final var invalidExporterPosition = checkpointPosition + 1L;
+
+    final var validSnapshot = snapshotWith(1L, 1L, validExporterPosition);
+    final var invalidSnapshot = snapshotWith(1L, 1L, invalidExporterPosition);
+    setAvailableSnapshots(Set.of(validSnapshot, invalidSnapshot));
+
+    // when
+    final var validSnapshots = inProgressBackup.findValidSnapshot().join();
+
+    // then
+    assertThat(validSnapshots).singleElement().isEqualTo(validSnapshot);
+  }
+
+  @Test
+  void shouldReportFullErrorMessageForMultipleInvalidSnapshots() {
+    // given: multiple invalid snapshots with different invalid reasons
+    final var s1 = snapshotWith(11L, 20L); // processed and follow-up past checkpoint
+    final var s2 = snapshotWith(1L, 12L); // only follow-up past checkpoint
+    final var s3 = snapshotWith(1L, 1L, 15L); // only max exported past checkpoint
+
+    when(s1.getId()).thenReturn("11-20");
+    when(s2.getId()).thenReturn("1-12");
+    when(s3.getId()).thenReturn("with-exporter");
+
+    // when - only invalid snapshots are available
+    setAvailableSnapshots(Set.of(s1, s2, s3));
+
+    // then - error message explains all invalid snapshots
+    assertThat(inProgressBackup.findValidSnapshot())
+        .failsWithin(Duration.ofMillis(200))
+        .withThrowableOfType(ExecutionException.class)
+        .withRootCauseInstanceOf(SnapshotNotFoundException.class)
+        .havingRootCause()
+        .withMessage(
+            """
+            No valid snapshots found for backup:
+            Snapshot 1-12 is not valid:
+                lastFollowupEventPosition (12) >= checkpointPosition (10)
+
+            Snapshot 11-20 is not valid:
+                processedPosition (11) >= checkpointPosition (10)
+                lastFollowupEventPosition (20) >= checkpointPosition (10)
+
+            Snapshot with-exporter is not valid:
+                maxExportedPosition (15) >= checkpointPosition (10)
+            """);
+  }
+
   private void setAvailableSnapshots(final Set<PersistedSnapshot> snapshots) {
     when(snapshotStore.getAvailableSnapshots())
         .thenReturn(TestActorFuture.completedFuture(snapshots));
@@ -327,6 +386,19 @@ class InProgressBackupImplTest {
     lenient().when(snapshot.getPath()).thenReturn(snapshotDir);
 
     lenient().when(snapshot.getChecksumPath()).thenReturn(CHECKSUM_PATH);
+    return snapshot;
+  }
+
+  private PersistedSnapshot snapshotWith(
+      final long processedPosition, final long followUpPosition, final long maxExportedPosition) {
+    final var snapshotMetadata = mock(SnapshotMetadata.class);
+    when(snapshotMetadata.processedPosition()).thenReturn(processedPosition);
+    when(snapshotMetadata.lastFollowupEventPosition()).thenReturn(followUpPosition);
+    when(snapshotMetadata.maxExportedPosition()).thenReturn(maxExportedPosition);
+
+    final var snapshot = mock(PersistedSnapshot.class);
+    when(snapshot.getId()).thenReturn(String.format("%d-%d", processedPosition, followUpPosition));
+    when(snapshot.getMetadata()).thenReturn(snapshotMetadata);
     return snapshot;
   }
 

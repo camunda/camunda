@@ -15,6 +15,7 @@
  */
 package io.camunda.client.process;
 
+import static io.camunda.client.api.command.CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER;
 import static io.camunda.client.util.RecordingGatewayService.deployedProcess;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -236,8 +237,8 @@ public final class DeployProcessTest extends ClientTest {
     assertThat(response.getKey()).isEqualTo(key);
     assertThat(response.getProcesses())
         .containsExactly(
-            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1),
-            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2));
+            new ProcessImpl(1, BPMN_1_PROCESS_ID, 1, filename1, DEFAULT_TENANT_IDENTIFIER),
+            new ProcessImpl(2, BPMN_2_PROCESS_ID, 1, filename2, DEFAULT_TENANT_IDENTIFIER));
   }
 
   @Test

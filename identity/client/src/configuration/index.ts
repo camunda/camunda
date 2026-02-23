@@ -11,7 +11,7 @@ import {
   getClientConfigString,
 } from "src/configuration/clientConfig";
 
-const identityPath = "/identity";
+const adminPath = "/admin";
 
 const apiBaseUrl = "/v2";
 
@@ -34,23 +34,23 @@ export const docsUrl = "https://docs.camunda.io";
 export const isSaaS = Boolean(getClientConfigString("organizationId"));
 
 export function getApiBaseUrl() {
-  return getBasePathBeforeIdentity() + apiBaseUrl;
+  return getBasePathBeforeAdmin() + apiBaseUrl;
 }
 
 export function getLoginApiUrl() {
-  return getBasePathBeforeIdentity() + loginApiUrl;
+  return getBasePathBeforeAdmin() + loginApiUrl;
 }
 
 export function getLogoutApiUrl() {
-  return getBasePathBeforeIdentity() + logoutApiUrl;
+  return getBasePathBeforeAdmin() + logoutApiUrl;
 }
 
 export function getBaseUrl() {
-  return getBasePathBeforeIdentity() + identityPath;
+  return getBasePathBeforeAdmin() + adminPath;
 }
 
-export function getBasePathBeforeIdentity(): string {
+export function getBasePathBeforeAdmin(): string {
   const uiPath = window.location.pathname;
-  const endIndex = uiPath.indexOf(identityPath);
+  const endIndex = uiPath.indexOf(adminPath);
   return uiPath.substring(0, endIndex);
 }

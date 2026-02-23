@@ -285,6 +285,14 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName, final Map<String, List<String>> keysByField) {
+    return deleteDocuments(sourceIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -294,7 +302,7 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(buildOrFilterQuery(keysByField))
+            .query(buildFilterQuery(keysByField, filters))
             .build();
 
     final var timer = Timer.start();
@@ -310,13 +318,22 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField) {
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
 
     final var request =
         new ReindexRequest.Builder()
-            .source(src -> src.index(sourceIndexName).query(buildOrFilterQuery(keysByField)))
+            .source(src -> src.index(sourceIndexName).query(buildFilterQuery(keysByField, filters)))
             .dest(dest -> dest.index(destinationIndexName))
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
@@ -549,15 +566,27 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
         .build();
   }
 
-  /** Builds a boolean OR filter query for the given map of keys by field. */
-  private Query buildOrFilterQuery(final Map<String, List<String>> keysByField) {
-    final var boolQ = QueryBuilders.bool();
-    for (final var entry : keysByField.entrySet()) {
-      boolQ.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+  private Query buildFilterQuery(
+      final Map<String, List<String>> keysByField, final Map<String, String> filters) {
+    final var boolBuilder = QueryBuilders.bool();
+
+    // Match any keys
+    if (!keysByField.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      for (final var entry : keysByField.entrySet()) {
+        keysBoolBuilder.should(s -> s.terms(buildIdTermsQuery(entry.getKey(), entry.getValue())));
+      }
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build()._toQuery());
     }
-    boolQ.minimumShouldMatch("1");
-    // Use filter context to avoid scoring overhead
-    return QueryBuilders.bool(b -> b.filter(boolQ.build()._toQuery()));
+
+    // Match all the extra filters
+    for (final var filter : filters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build()._toQuery();
   }
 
   private SearchRequest createFinishedBatchOperationsSearchRequest() {
@@ -584,9 +613,16 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                         d.field(JobMetricsBatchTemplate.END_TIME)
                             .lte(config.getArchivingTimePoint())));
 
+    final var partitionQ =
+        QueryBuilders.term(q -> q.field(JobMetricsBatchTemplate.PARTITION_ID).value(partitionId));
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+    boolBuilder.must(partitionQ);
+
     return createSearchRequest(
         jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
-        endDateQ,
+        boolBuilder.build()._toQuery(),
         JobMetricsBatchTemplate.END_TIME);
   }
 

@@ -118,7 +118,7 @@ test.describe('process page', () => {
     await waitForAssertion({
       assertion: async () => {
         await expect(
-          taskPanelPageV1.availableTasks.getByText('User_Task').first()
+          taskPanelPageV1.availableTasks.getByText('User_Task').first(),
         ).toBeVisible();
       },
       onFailure: async () => {

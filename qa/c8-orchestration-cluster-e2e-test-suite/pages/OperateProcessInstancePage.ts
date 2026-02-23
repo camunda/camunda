@@ -82,6 +82,29 @@ class OperateProcessInstancePage {
   readonly viewParentInstanceLink: Locator;
   readonly incidentErrorIndicators: Locator;
   readonly incidentErrorMessage: Locator;
+  readonly incidentIconsInHistory: Locator;
+  readonly modifyDialog: Locator;
+  readonly modifyDialogContinueButton: Locator;
+  private variableValueCellLocator: (name: string) => Locator;
+  private variableButtonsCellLocator: (name: string) => Locator;
+  readonly existingVariableByName: (name: string) => {
+    name: Locator;
+    value: Locator;
+    editVariableModal: {
+      button: Locator;
+      exitButton: Locator;
+      saveButton: Locator;
+      valueInputField: Locator;
+      jsonEditorButton: Locator;
+      valueErrorMessage?: Locator;
+      jsonEditorModal: {
+        header: Locator;
+        cancelButton: Locator;
+        applyButton: Locator;
+        inputField: Locator;
+      };
+    };
+  };
 
   constructor(page: Page) {
     this.page = page;
@@ -115,6 +138,9 @@ class OperateProcessInstancePage {
       this.incidentsTable.getByTestId('operation-spinner');
     this.incidentsTableRows = this.incidentsTable.getByRole('row');
     this.incidentsBanner = page.getByTestId('incidents-banner');
+    this.incidentIconsInHistory = this.instanceHistory
+      .getByRole('treeitem')
+      .getByTestId('INCIDENT-icon');
     this.variablePanelEmptyText = page.getByText(
       'to view the variables, select a single flow node instance in the instance history',
     );
@@ -134,6 +160,12 @@ class OperateProcessInstancePage {
     this.listenersTabButton = page.getByTestId('listeners-tab-button');
     this.metadataModal = this.page.getByRole('dialog', {name: 'metadata'});
     this.modifyInstanceButton = page.getByTestId('enter-modification-mode');
+    this.modifyDialog = this.page.getByLabel(
+      'Process Instance Modification Mode',
+    );
+    this.modifyDialogContinueButton = this.modifyDialog.getByRole('button', {
+      name: 'Continue',
+    });
     this.listenerTypeFilter = page.getByTestId('listener-type-filter');
     this.variableAddedBanner = this.page.getByText('Variable added');
     this.migratedTag = page.locator('.cds--tag.cds--tag--green', {
@@ -207,6 +239,75 @@ class OperateProcessInstancePage {
       .locator('xpath=following-sibling::*[1]');
     this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
     this.incidentSection = page.getByText('IncidentView');
+    this.variableValueCellLocator = (name: string) =>
+      this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(1);
+    this.variableButtonsCellLocator = (name: string) =>
+      this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(2);
+    this.incidentIconsInHistory = this.instanceHistory
+      .getByRole('treeitem')
+      .getByTestId('INCIDENT-icon');
+
+    this.existingVariableByName = (name: string) => ({
+      name: this.variablesList
+        .getByTestId(`variable-${name}`)
+        .getByRole('cell')
+        .nth(0),
+      value: this.variableValueCellLocator(name),
+      editVariableModal: {
+        button: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Edit variable ${name}`,
+        }),
+        exitButton: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Exit edit mode`,
+        }),
+        saveButton: this.variableButtonsCellLocator(name).getByRole('button', {
+          name: `Save variable`,
+        }),
+        valueInputField:
+          this.variableValueCellLocator(name).getByPlaceholder('Value'),
+        jsonEditorButton: this.variableValueCellLocator(name).getByRole(
+          'button',
+          {name: `Open JSON editor`},
+        ),
+        valueErrorMessage: this.variableValueCellLocator(name).locator(
+          '[id="value-error-msg"]',
+        ),
+        jsonEditorModal: {
+          header: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('heading'),
+          cancelButton: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('button', {name: 'Cancel'}),
+          applyButton: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('button', {name: 'Apply'}),
+          inputField: this.variableValueCellLocator(name)
+            .getByRole('dialog')
+            .getByRole('textbox'),
+        },
+      },
+    });
+  }
+
+  async checkExistingVariableErrorMessageText(
+    variableName: string,
+    message:
+      | 'Name should be unique'
+      | 'Value has to be filled'
+      | 'Name has to be filled'
+      | 'Value has to be JSON',
+  ) {
+    const errorMessage =
+      this.existingVariableByName(variableName).editVariableModal
+        .valueErrorMessage;
+    await expect(errorMessage!).toHaveText(message);
   }
 
   async connectorResultVariableName(name: string): Promise<Locator> {
@@ -285,10 +386,6 @@ class OperateProcessInstancePage {
     await this.undoModificationButton.click();
   }
 
-  async enterModificationMode() {
-    await this.modifyInstanceButton.click();
-  }
-
   async clickApplyModifications() {
     await this.applyModificationsButton.click();
   }
@@ -337,6 +434,15 @@ class OperateProcessInstancePage {
 
   getDialogCancelButton() {
     return this.modalDialog.getByRole('button', {name: 'Cancel'});
+  }
+
+  getMoveInstanceModificationText(
+    sourceFlowNode: string,
+    targetFlowNode: string,
+  ) {
+    return this.page.getByText(
+      new RegExp(`move "${sourceFlowNode}" to "${targetFlowNode}"`, 'i'),
+    );
   }
 
   async clickDialogDeleteVariableModification(index?: number) {
@@ -420,7 +526,10 @@ class OperateProcessInstancePage {
   }
 
   async getProcessInstanceKey(): Promise<string> {
-    const processInstanceKey = this.page.locator('table tbody tr td').nth(1);
+    const processInstanceKey = this.page
+      .getByTestId('instance-header')
+      .locator('table tbody tr td')
+      .nth(1);
     return (await processInstanceKey.textContent()) ?? '';
   }
 
@@ -692,6 +801,146 @@ class OperateProcessInstancePage {
   }
   getIncidentErrorMessageByText(errorText: string): Locator {
     return this.metadataPopover.getByText(errorText);
+  async getAllIncidentIconsAmountInHistory(): Promise<number> {
+    return await this.incidentIconsInHistory.count();
+  }
+
+  async clickIncidentsBanner(): Promise<void> {
+    await this.incidentsBanner.click();
+  }
+
+  async getIncidentRowByErrorMessage(errorMessage: string) {
+    return this.incidentsTable.getByRole('row').filter({
+      has: this.page
+        .getByTestId('cell-errorMessage')
+        .filter({hasText: errorMessage}),
+    });
+  }
+
+  async retryIncidentByErrorMessage(errorMessage: string) {
+    const incidentRow = await this.getIncidentRowByErrorMessage(errorMessage);
+    console.log(
+      await incidentRow.getByTestId('cell-flowNodeName').allInnerTexts(),
+    );
+    const retryButton = incidentRow.getByTestId('retry-operation');
+    await retryButton.click();
+  }
+
+  async clickModifyInstanceButton(): Promise<void> {
+    await this.modifyInstanceButton.click();
+  }
+
+  async clickModifyDialogContinueButton(): Promise<void> {
+    await this.modifyDialogContinueButton.click();
+  }
+
+  async getAllInstanceHistoryNodeDetails(): Promise<Locator[]> {
+    return this.instanceHistory
+      .getByRole('treeitem')
+      .getByTestId(/^node-details-/)
+      .all();
+  }
+
+  async checkIfPresentExpandeingElementsInMainProcess(
+    mainProcessName: string,
+  ): Promise<number> {
+    const expandingElements = this.instanceHistory
+      .getByLabel(mainProcessName, {exact: true})
+      .getByRole('group')
+      .locator('.cds--tree-parent-node__toggle-icon');
+    return await expandingElements.count();
+  }
+
+  async ensureElementExpandedInHistory(expandingElementName: string) {
+    const expandingElements = await (
+      await this.getNestedParentLocatorInHistory(expandingElementName)
+    ).all();
+    for (const element of expandingElements) {
+      await expect(element).toBeVisible();
+      let isExpanded = await element.getAttribute('aria-expanded');
+      expect(isExpanded).not.toBeNull();
+      const expandToggle = element.locator(
+        '.cds--tree-parent-node__toggle-icon',
+      );
+
+      if (isExpanded === 'false') {
+        await expandToggle.click();
+        isExpanded = await element.getAttribute('aria-expanded');
+      }
+
+      await expect(element).toHaveAttribute('aria-expanded', 'true');
+    }
+  }
+
+  async getNestedParentLocatorInHistory(
+    parentElementName: string,
+  ): Promise<Locator> {
+    return this.instanceHistory.getByRole('treeitem', {
+      name: parentElementName,
+      exact: true,
+    });
+  }
+
+  async getNestedGroupInHistoryLocator(
+    parentElementName: string,
+  ): Promise<Locator> {
+    const parentLocator =
+      await this.getNestedParentLocatorInHistory(parentElementName);
+    return parentLocator.getByRole('group');
+  }
+
+  async enterModificationMode(): Promise<void> {
+    await this.clickModifyInstanceButton();
+    if (await this.modifyDialogContinueButton.isVisible()) {
+      await this.clickModifyDialogContinueButton();
+    }
+  }
+
+  async getHistoryElementsDataByName(itemName: string) {
+    const allHistoryItemsLocators = await this.instanceHistory
+      .getByRole('treeitem')
+      .all();
+
+    var filteredElementsData = [];
+    for (const element of allHistoryItemsLocators) {
+      const testId = await element.getAttribute('data-testid');
+      const ariaLabel = await element.getAttribute('aria-label');
+      const iconLocator = element.getByTestId(/.*-icon$/).nth(1);
+      const iconTestId = await iconLocator.getAttribute('data-testid');
+
+      if (!ariaLabel?.includes(itemName)) {
+        continue;
+      }
+
+      filteredElementsData.push({
+        testId,
+        ariaLabel,
+        icon: iconTestId?.split('-')[0],
+      });
+    }
+
+    return filteredElementsData;
+  }
+
+  /**
+   *
+   * @param itemName
+   * @param expectedStatus array of icons in expected order in history, can be 'COMPLETED', 'ACTIVE', 'TERMINATED', 'INCIDENT'
+   */
+  async verifyHistoryItemsStatus(
+    itemName: string,
+    expectedStatus: string[],
+  ): Promise<void> {
+    const filteredElementsData =
+      await this.getHistoryElementsDataByName(itemName);
+    expect(filteredElementsData.length).toBeGreaterThan(0);
+    if (filteredElementsData.length !== expectedStatus.length) {
+      throw new Error(`Number does not match expected count.`);
+    }
+    expect(filteredElementsData.length).toBe(expectedStatus.length);
+    for (let i = 0; i < filteredElementsData.length; i++) {
+      expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
+    }
   }
 }
 

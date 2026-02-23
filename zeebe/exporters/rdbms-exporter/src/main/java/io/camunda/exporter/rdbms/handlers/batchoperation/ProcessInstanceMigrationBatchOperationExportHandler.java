@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceMigrationRecordValue;
+import java.util.Optional;
 
 /**
  * This handles the batch operation item status of batch operations of type
@@ -36,8 +37,14 @@ public class ProcessInstanceMigrationBatchOperationExportHandler
   }
 
   @Override
-  long getProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
-    return record.getValue().getProcessInstanceKey();
+  Optional<Long> getProcessInstanceKey(final Record<ProcessInstanceMigrationRecordValue> record) {
+    return Optional.of(record.getValue().getProcessInstanceKey());
+  }
+
+  @Override
+  Optional<Long> getRootProcessInstanceKey(
+      final Record<ProcessInstanceMigrationRecordValue> record) {
+    return Optional.of(record.getValue().getRootProcessInstanceKey());
   }
 
   @Override

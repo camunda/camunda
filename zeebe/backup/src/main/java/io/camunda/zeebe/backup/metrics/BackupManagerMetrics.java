@@ -17,12 +17,13 @@ import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BackupManagerMetrics {
+public class BackupManagerMetrics implements AutoCloseable {
 
   public static final Logger LOGGER = LoggerFactory.getLogger(BackupManagerMetrics.class);
   private final MeterRegistry registry;
@@ -51,15 +52,6 @@ public class BackupManagerMetrics {
 
   public OperationMetrics startDeleting() {
     return start(OperationType.DELETE);
-  }
-
-  public void cancelInProgressOperations() {
-    for (final var operation : OperationType.values()) {
-      final var value = operationInProgress.get(operation);
-      if (value != null) {
-        value.set(0L);
-      }
-    }
   }
 
   private Counter registerTotalOperation(
@@ -95,6 +87,24 @@ public class BackupManagerMetrics {
 
     final var timerSample = MicrometerUtil.timer(timer, Timer.start(registry.config().clock()));
     return new OperationMetrics(timerSample, operation);
+  }
+
+  @Override
+  public void close() {
+    for (final var inProgress : operationInProgress.values()) {
+      registry.remove(inProgress);
+    }
+    for (final var opLatency : backupOperationLatency.values()) {
+      registry.remove(opLatency);
+    }
+    for (final var opType : EnumSet.allOf(OperationType.class)) {
+      for (final var result : EnumSet.allOf(OperationResult.class)) {
+        final var operationCounter = totalOperations.get(opType, result);
+        if (operationCounter != null) {
+          registry.remove(operationCounter);
+        }
+      }
+    }
   }
 
   public final class OperationMetrics {

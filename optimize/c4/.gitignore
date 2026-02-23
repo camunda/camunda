@@ -4,6 +4,7 @@ dist
 lib
 dist-ssr
 *.local
+.tool-versions
 
 storybook-static
 

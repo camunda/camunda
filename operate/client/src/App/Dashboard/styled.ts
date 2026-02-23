@@ -81,6 +81,11 @@ const ErrorText = styled.span`
   color: var(--cds-text-error);
 `;
 
+const LoadingContainer = styled.div`
+  padding: var(--cds-spacing-05);
+  text-align: center;
+`;
+
 export {
   Grid,
   ScrollableContent,
@@ -90,4 +95,5 @@ export {
   ErrorMessage,
   Li,
   ErrorText,
+  LoadingContainer,
 };

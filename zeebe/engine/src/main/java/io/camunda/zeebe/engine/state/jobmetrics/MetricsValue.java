@@ -71,7 +71,7 @@ public final class MetricsValue implements DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     int currentOffset = offset;
     for (final StatusMetrics metric : metrics) {
       buffer.putInt(currentOffset, metric.getCount(), Protocol.ENDIANNESS);
@@ -79,6 +79,7 @@ public final class MetricsValue implements DbValue {
       buffer.putLong(currentOffset, metric.getLastUpdatedAt(), Protocol.ENDIANNESS);
       currentOffset += Long.BYTES;
     }
+    return getLength();
   }
 
   /**

@@ -15,7 +15,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import io.camunda.search.clients.SearchClientsProxy;
+import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
+import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -48,6 +50,7 @@ import io.camunda.zeebe.protocol.record.value.ErrorType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.NestedRecordValue;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRecordValue;
 import io.camunda.zeebe.protocol.record.value.deployment.DecisionRequirementsMetadataValue;
 import io.camunda.zeebe.protocol.record.value.deployment.Form;
@@ -67,6 +70,7 @@ import org.mockito.Mockito;
 
 public class ResourceDeletionTest {
 
+  private static final String DRG_SINGLE_DECISION_ID = "force_users";
   private static final String DRG_SINGLE_DECISION = "/dmn/decision-table-with-version-tag-v1.dmn";
   private static final String DRG_SINGLE_DECISION_V2 = "/dmn/decision-table_v2.dmn";
   private static final String DRG_MULTIPLE_DECISIONS = "/dmn/drg-force-user.dmn";
@@ -807,7 +811,11 @@ public class ResourceDeletionTest {
     // then
     verifyProcessIdWithVersionIsDeleted(processId, 1);
     verifyResourceDeletionRecords(processDefinitionKey);
-    verifyBatchOperationIsCreated(processDefinitionKey);
+    followUpCommandHistoryDeletionType(
+        processDefinitionKey,
+        BatchOperationType.DELETE_PROCESS_INSTANCE,
+        HistoryDeletionType.PROCESS_DEFINITION,
+        "\"processDefinitionKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]");
 
     assertThat(RecordingExporter.historyDeletionRecords(HistoryDeletionIntent.DELETED).limit(3))
         .describedAs(
@@ -818,6 +826,259 @@ public class ResourceDeletionTest {
             tuple(processInstanceKey1, HistoryDeletionType.PROCESS_INSTANCE),
             tuple(processInstanceKey2, HistoryDeletionType.PROCESS_INSTANCE),
             tuple(processDefinitionKey, HistoryDeletionType.PROCESS_DEFINITION));
+  }
+
+  @Test
+  public void shouldNotCreateBatchOperationOnDecisionDefinitionDeletionWhenDeleteHistoryIsFalse() {
+    // given
+    final long drgKey = deployDrg(DRG_SINGLE_DECISION);
+
+    // when
+    engine.resourceDeletion().withResourceKey(drgKey).withDeleteHistory(false).delete();
+
+    // then
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
+    verifyDecisionRequirementsIsDeleted(drgKey);
+    verifyResourceDeletionRecords(drgKey);
+
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .batchOperationCreationRecords()
+                .withIntent(BatchOperationIntent.CREATE)
+                .exists())
+        .describedAs("No batch operation should be created when deleteHistory is false")
+        .isFalse();
+    assertThat(
+            RecordingExporter.records()
+                .limit(r -> r.getIntent() == ResourceDeletionIntent.DELETED)
+                .historyDeletionRecords()
+                .exists())
+        .describedAs("No history deletion events should be written when deleteHistory is false")
+        .isFalse();
+  }
+
+  @Test
+  public void
+      shouldCreateBatchOperationAndDeleteHistoryOnDecisionDefinitionDeletionWhenDeleteHistoryIsTrue() {
+    // given
+    final long drgKey = deployDrg(DRG_SINGLE_DECISION);
+
+    // Verify decision is deployed
+    assertThat(
+            RecordingExporter.decisionRecords()
+                .withIntent(DecisionIntent.CREATED)
+                .withDecisionRequirementsKey(drgKey)
+                .getFirst())
+        .isNotNull();
+
+    // Evaluate some decision instances
+    final long decisionInstanceKey1 =
+        engine
+            .decision()
+            .ofDecisionId("jedi_or_sith")
+            .withVariable("lightsaberColor", "blue")
+            .evaluate()
+            .getKey();
+    final long decisionInstanceKey2 =
+        engine
+            .decision()
+            .ofDecisionId("jedi_or_sith")
+            .withVariable("lightsaberColor", "red")
+            .evaluate()
+            .getKey();
+
+    // Mock the search client to return the decision instances
+    final var decisionInstanceResult =
+        new SearchQueryResult.Builder<DecisionInstanceEntity>()
+            .items(
+                List.of(
+                    createDecisionInstanceEntity(decisionInstanceKey1),
+                    createDecisionInstanceEntity(decisionInstanceKey2)))
+            .total(2)
+            .build();
+    when(searchClientsProxy.searchDecisionInstances(Mockito.any(DecisionInstanceQuery.class)))
+        .thenReturn(decisionInstanceResult);
+
+    assertThat(
+            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+                .filter(r -> r.getValue().getDecisionRequirementsKey() == drgKey)
+                .limit(2))
+        .hasSize(2);
+
+    // when
+    engine.resourceDeletion().withResourceKey(drgKey).withDeleteHistory(true).delete();
+
+    // then
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
+    verifyDecisionRequirementsIsDeleted(drgKey);
+    verifyResourceDeletionRecords(drgKey);
+    followUpCommandHistoryDeletionType(
+        drgKey,
+        BatchOperationType.DELETE_DECISION_INSTANCE,
+        HistoryDeletionType.DECISION_REQUIREMENTS,
+        "\"decisionRequirementsKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]");
+
+    // Wait for batch operation to complete
+    assertThat(RecordingExporter.historyDeletionRecords(HistoryDeletionIntent.DELETED).limit(3))
+        .describedAs(
+            "History deletion events should be written for all decision instances and the decision definition")
+        .hasSize(3)
+        .extracting(r -> r.getValue().getResourceKey(), r -> r.getValue().getResourceType())
+        .containsExactlyInAnyOrder(
+            tuple(decisionInstanceKey1, HistoryDeletionType.DECISION_INSTANCE),
+            tuple(decisionInstanceKey2, HistoryDeletionType.DECISION_INSTANCE),
+            tuple(drgKey, HistoryDeletionType.DECISION_REQUIREMENTS));
+  }
+
+  @Test
+  public void shouldDeleteProcessDefinitionHistoryWhenProcessDoesNotExistInPrimaryStorage() {
+    // given
+    final var processId = helper.getBpmnProcessId();
+    final var processDefinitionKey =
+        engine
+            .deployment()
+            .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
+            .deploy()
+            .getValue()
+            .getProcessesMetadata()
+            .getFirst()
+            .getProcessDefinitionKey();
+
+    final long processInstanceKey1 = engine.processInstance().ofBpmnProcessId(processId).create();
+    final long processInstanceKey2 = engine.processInstance().ofBpmnProcessId(processId).create();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                .withProcessDefinitionKey(processDefinitionKey)
+                .limit(2))
+        .hasSize(2);
+    // Delete the process definition without deleting the history. This removes the definition from
+    // primary storage, but keeps the instances in secondary storage.
+    engine
+        .resourceDeletion()
+        .withDeleteHistory(false)
+        .withResourceKey(processDefinitionKey)
+        .delete();
+
+    final var processInstanceResult =
+        new SearchQueryResult.Builder<ProcessInstanceEntity>()
+            .items(
+                List.of(
+                    createProcessInstanceEntity(processInstanceKey1, processDefinitionKey),
+                    createProcessInstanceEntity(processInstanceKey2, processDefinitionKey)))
+            .total(2)
+            .build();
+    when(searchClientsProxy.searchProcessInstances(Mockito.any(ProcessInstanceQuery.class)))
+        .thenReturn(processInstanceResult);
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(processDefinitionKey)
+        .withDeleteHistory(true)
+        .withResourceType(ResourceType.PROCESS_DEFINITION)
+        .withResourceId(processId)
+        .delete();
+
+    // then
+    verifyProcessIdWithVersionIsDeleted(processId, 1);
+    verifyResourceDeletionRecords(processDefinitionKey);
+    followUpCommandHistoryDeletionType(
+        processDefinitionKey,
+        BatchOperationType.DELETE_PROCESS_INSTANCE,
+        HistoryDeletionType.PROCESS_DEFINITION,
+        "\"processDefinitionKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]");
+
+    assertThat(RecordingExporter.historyDeletionRecords(HistoryDeletionIntent.DELETED).limit(3))
+        .describedAs(
+            "History deletion events should be written for all process instances and the process definition")
+        .hasSize(3)
+        .extracting(r -> r.getValue().getResourceKey(), r -> r.getValue().getResourceType())
+        .containsExactlyInAnyOrder(
+            tuple(processInstanceKey1, HistoryDeletionType.PROCESS_INSTANCE),
+            tuple(processInstanceKey2, HistoryDeletionType.PROCESS_INSTANCE),
+            tuple(processDefinitionKey, HistoryDeletionType.PROCESS_DEFINITION));
+  }
+
+  @Test
+  public void shouldDeleteDrgHistoryWhenDrgDoesNotExistInPrimaryStorage() {
+    // given
+    final long drgKey = deployDrg(DRG_SINGLE_DECISION);
+
+    // Verify decision is deployed
+    assertThat(
+            RecordingExporter.decisionRecords()
+                .withIntent(DecisionIntent.CREATED)
+                .withDecisionRequirementsKey(drgKey)
+                .getFirst())
+        .isNotNull();
+
+    // Evaluate some decision instances
+    final long decisionInstanceKey1 =
+        engine
+            .decision()
+            .ofDecisionId("jedi_or_sith")
+            .withVariable("lightsaberColor", "blue")
+            .evaluate()
+            .getKey();
+    final long decisionInstanceKey2 =
+        engine
+            .decision()
+            .ofDecisionId("jedi_or_sith")
+            .withVariable("lightsaberColor", "red")
+            .evaluate()
+            .getKey();
+    assertThat(
+            RecordingExporter.decisionEvaluationRecords(DecisionEvaluationIntent.EVALUATED)
+                .filter(r -> r.getValue().getDecisionRequirementsKey() == drgKey)
+                .limit(2))
+        .hasSize(2);
+
+    // Delete the DRG without deleting the history. This removes the definition from
+    // primary storage, but keeps the instances in secondary storage.
+    engine.resourceDeletion().withDeleteHistory(false).withResourceKey(drgKey).delete();
+
+    // Mock the search client to return the decision instances
+    final var decisionInstanceResult =
+        new SearchQueryResult.Builder<DecisionInstanceEntity>()
+            .items(
+                List.of(
+                    createDecisionInstanceEntity(decisionInstanceKey1),
+                    createDecisionInstanceEntity(decisionInstanceKey2)))
+            .total(2)
+            .build();
+    when(searchClientsProxy.searchDecisionInstances(Mockito.any(DecisionInstanceQuery.class)))
+        .thenReturn(decisionInstanceResult);
+
+    // when
+    engine
+        .resourceDeletion()
+        .withResourceKey(drgKey)
+        .withDeleteHistory(true)
+        .withResourceType(ResourceType.DECISION_REQUIREMENTS)
+        .withResourceId(DRG_SINGLE_DECISION_ID)
+        .delete();
+
+    // then
+    verifyDecisionIdWithVersionIsDeleted(drgKey, "jedi_or_sith", 1);
+    verifyDecisionRequirementsIsDeleted(drgKey);
+    verifyResourceDeletionRecords(drgKey);
+    followUpCommandHistoryDeletionType(
+        drgKey,
+        BatchOperationType.DELETE_DECISION_INSTANCE,
+        HistoryDeletionType.DECISION_REQUIREMENTS,
+        "\"decisionRequirementsKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]");
+
+    // Wait for batch operation to complete
+    assertThat(RecordingExporter.historyDeletionRecords(HistoryDeletionIntent.DELETED).limit(3))
+        .describedAs(
+            "History deletion events should be written for all decision instances and the decision definition")
+        .hasSize(3)
+        .extracting(r -> r.getValue().getResourceKey(), r -> r.getValue().getResourceType())
+        .containsExactlyInAnyOrder(
+            tuple(decisionInstanceKey1, HistoryDeletionType.DECISION_INSTANCE),
+            tuple(decisionInstanceKey2, HistoryDeletionType.DECISION_INSTANCE),
+            tuple(drgKey, HistoryDeletionType.DECISION_REQUIREMENTS));
   }
 
   private long deployDrg(final String drgResource) {
@@ -1303,18 +1564,26 @@ public class ResourceDeletionTest {
         Set.of());
   }
 
-  private static void verifyBatchOperationIsCreated(final long processDefinitionKey) {
+  private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {
+    return new DecisionInstanceEntity.Builder()
+        .decisionInstanceKey(decisionInstanceKey)
+        .processInstanceKey(decisionInstanceKey)
+        .build();
+  }
+
+  private static void followUpCommandHistoryDeletionType(
+      final long resourceKey,
+      final BatchOperationType batchOperationType,
+      final HistoryDeletionType historyDeletionType,
+      final String entityFilter) {
     final var batchOperationCreated =
         RecordingExporter.batchOperationCreationRecords()
             .withIntent(BatchOperationIntent.CREATE)
             .getFirst()
             .getValue();
-    assertThat(batchOperationCreated.getBatchOperationType())
-        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    assertThat(batchOperationCreated.getBatchOperationType()).isEqualTo(batchOperationType);
     assertThat(batchOperationCreated.getEntityFilter())
-        .contains(
-            "\"processDefinitionKeyOperations\":[{\"operator\":\"EQUALS\",\"values\":[%s]}]"
-                .formatted(processDefinitionKey));
+        .contains(entityFilter.formatted(resourceKey));
     assertThat(batchOperationCreated.getFollowUpCommand())
         .isNotNull()
         .extracting(NestedRecordValue::getIntent, NestedRecordValue::getValueType)
@@ -1324,6 +1593,6 @@ public class ResourceDeletionTest {
         .asInstanceOf(InstanceOfAssertFactories.type(HistoryDeletionRecordValue.class))
         .extracting(
             HistoryDeletionRecordValue::getResourceKey, HistoryDeletionRecordValue::getResourceType)
-        .containsExactly(processDefinitionKey, HistoryDeletionType.PROCESS_DEFINITION);
+        .containsExactly(resourceKey, historyDeletionType);
   }
 }

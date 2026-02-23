@@ -24,5 +24,11 @@
   "clusterVariablesCouldNotLoad": "Cluster variables could not be loaded.",
   "copiedClusterVariableValue": "Successfully copied {{name}}",
   "value": "Value",
-  "scope": "Scope"
+  "scope": "Scope",
+  "edit": "Edit",
+  "editClusterVariable": "Edit cluster variable: {{name}}",
+  "save": "Save",
+  "clusterVariableUpdated": "Cluster variable updated",
+  "clusterVariableUpdatedSuccessfully": "You have successfully updated cluster variable {{name}}",
+  "updatingClusterVariable": "Updating cluster variable"
 }

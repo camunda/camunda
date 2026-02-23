@@ -57,6 +57,7 @@ import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatistic
 import io.camunda.client.protocol.rest.ProcessDefinitionResult;
 import io.camunda.client.protocol.rest.ProcessInstanceResult;
 import io.camunda.client.protocol.rest.ProcessInstanceSequenceFlowsQueryResult;
+import io.camunda.client.protocol.rest.ResourceResult;
 import io.camunda.client.protocol.rest.RoleCreateResult;
 import io.camunda.client.protocol.rest.RoleResult;
 import io.camunda.client.protocol.rest.RoleUpdateResult;
@@ -294,6 +295,10 @@ public class RestGatewayService {
     registerPost(RestGatewayPaths.getProcessInstancesModifyUrl(), response);
   }
 
+  public void onDeleteDecisionInstancesRequest(final BatchOperationCreatedResult response) {
+    registerPost(RestGatewayPaths.getDecisionInstancesDeletionUrl(), response);
+  }
+
   public void onCreateAuthorizationRequest(final AuthorizationCreateResult response) {
     registerPost(RestGatewayPaths.getAuthorizationsUrl(), response);
   }
@@ -414,6 +419,17 @@ public class RestGatewayService {
     registerGet(RestGatewayPaths.getClusterVariablesGetTenantUrl(tenantId, variableName), response);
   }
 
+  public void onUpdateGlobalClusterVariableRequest(
+      final String variableName, final ClusterVariableResult response) {
+    registerPut(RestGatewayPaths.getClusterVariablesUpdateGlobalUrl(variableName), response);
+  }
+
+  public void onUpdateTenantClusterVariableRequest(
+      final String tenantId, final String variableName, final ClusterVariableResult response) {
+    registerPut(
+        RestGatewayPaths.getClusterVariablesUpdateTenantUrl(tenantId, variableName), response);
+  }
+
   public void onSearchClusterVariableRequest(final SearchQueryResponse response) {
     registerPost(RestGatewayPaths.getClusterVariablesSearchUrl(), response);
   }
@@ -449,11 +465,8 @@ public class RestGatewayService {
   }
 
   public void onProcessDefinitionInstanceVersionStatisticsRequest(
-      final String processDefinitionId,
       final ProcessDefinitionInstanceVersionStatisticsQueryResult response) {
-    registerPost(
-        RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(processDefinitionId),
-        response);
+    registerPost(RestGatewayPaths.getProcessDefinitionInstanceVersionStatisticsUrl(), response);
   }
 
   public void onIncidentProcessInstanceStatisticsByErrorRequest(
@@ -464,6 +477,13 @@ public class RestGatewayService {
   public void onIncidentProcessInstanceStatisticsByDefinitionRequest(
       final IncidentProcessInstanceStatisticsByDefinitionQueryResult response) {
     registerPost(RestGatewayPaths.getIncidentProcessInstanceStatisticsByDefinitionUrl(), response);
+  }
+
+  public void onGlobalJobStatisticsRequest(
+      final io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult response) {
+    register(
+        WireMock.get(WireMock.urlPathEqualTo(RestGatewayPaths.getGlobalJobStatisticsUrl())),
+        response);
   }
 
   public void onStatusRequestHealthy() {
@@ -485,5 +505,13 @@ public class RestGatewayService {
         .register(
             WireMock.get(RestGatewayPaths.getStatusUrl())
                 .willReturn(WireMock.aResponse().withStatus(statusCode)));
+  }
+
+  public void onResourceGetRequest(final long resourceKey, final ResourceResult response) {
+    registerGet(RestGatewayPaths.getResourceUrl(String.valueOf(resourceKey)), response);
+  }
+
+  public void onResourceContentGetRequest(final long resourceKey, final String response) {
+    registerGet(RestGatewayPaths.getResourceContentUrl(String.valueOf(resourceKey)), response);
   }
 }

@@ -12,6 +12,7 @@ import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessCheck
 import static io.camunda.it.rdbms.db.fixtures.CommonFixtures.resourceAccessChecksFromTenantIds;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveRandomUserTasks;
 import static io.camunda.it.rdbms.db.fixtures.UserTaskFixtures.createAndSaveUserTask;
+import static java.util.Map.entry;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.db.rdbms.RdbmsService;
@@ -44,6 +45,7 @@ import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.assertj.core.data.TemporalUnitWithinOffset;
 import org.junit.jupiter.api.Tag;
@@ -66,6 +68,20 @@ public class UserTaskIT {
 
     final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, userTask);
+  }
+
+  @TestTemplate
+  public void shouldCreateAndFindUserTaskByKeyWithCustomHeader(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final UserTaskDbModel userTask =
+        UserTaskFixtures.createRandomized(b -> b.customHeaders(Map.of("headerKey", "headerValue")));
+    createAndSaveUserTask(rdbmsService, userTask);
+
+    final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
+    assertUserTaskEntity(instance, userTask);
+    assertThat(instance.customHeaders()).containsExactly(entry("headerKey", "headerValue"));
   }
 
   @TestTemplate
@@ -160,6 +176,30 @@ public class UserTaskIT {
 
     final var instance = rdbmsService.getUserTaskReader().findOne(userTask.userTaskKey()).get();
     assertUserTaskEntity(instance, updatedModel);
+  }
+
+  @TestTemplate
+  public void shouldFindAllUserTasksPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String processDefinitionId = UUID.randomUUID().toString();
+    createAndSaveRandomUserTasks(
+        rdbmsService, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        rdbmsService
+            .getUserTaskReader()
+            .search(
+                new UserTaskQuery(
+                    new UserTaskFilter.Builder().bpmnProcessIds(processDefinitionId).build(),
+                    UserTaskSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
   }
 
   @TestTemplate
@@ -1465,6 +1505,48 @@ public class UserTaskIT {
     } else {
       assertThat(instance.tags()).isEmpty();
     }
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final UserTaskDbReader reader = rdbmsService.getUserTaskReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        createAndSaveUserTask(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveUserTask(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveUserTask(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getUserTaskWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            UserTaskQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(UserTaskEntity::userTaskKey))
+        .containsExactlyInAnyOrder(item1.userTaskKey(), item3.userTaskKey());
   }
 
   @TestTemplate

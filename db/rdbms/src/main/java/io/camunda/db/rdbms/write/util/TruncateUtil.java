@@ -11,6 +11,15 @@ import java.nio.charset.StandardCharsets;
 
 public class TruncateUtil {
 
+  public static boolean shouldTruncate(
+      final String value, final int sizeLimit, final Integer byteLimit) {
+    if (value == null) {
+      return false;
+    }
+    return value.length() > sizeLimit
+        || byteLimit != null && value.getBytes(StandardCharsets.UTF_8).length > byteLimit;
+  }
+
   public static String truncateValue(
       final String value, final int sizeLimit, final Integer byteLimit) {
     var truncatedValue = value;

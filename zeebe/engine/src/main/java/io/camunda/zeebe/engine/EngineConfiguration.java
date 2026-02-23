@@ -33,17 +33,18 @@ public final class EngineConfiguration {
   public static final int DEFAULT_MAX_PROCESS_DEPTH = 1000;
   public static final Duration DEFAULT_USAGE_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
   public static final Duration DEFAULT_JOB_METRICS_EXPORT_INTERVAL = Duration.ofMinutes(5);
-  public static final int DEFAULT_MAX_WORKER_NAME_LENGTH = 100;
-  public static final int DEFAULT_MAX_JOB_TYPE_LENGTH = 100;
-  public static final int DEFAULT_MAX_TENANT_ID_LENGTH = 30;
-  public static final int DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS = 9500;
+  public static final int DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH = 100;
+  public static final int DEFAULT_MAX_ID_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_NAME_FIELD_LENGTH = 32 * 1024;
+  public static final int DEFAULT_MAX_WORKER_TYPE_LENGTH = 32 * 1024;
+  public static final int DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH = 100;
+  public static final int DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH = 30;
+  public static final int DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS = 9500;
   public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = true;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
   public static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
-  // key has 8 bytes, stay below 32KB block size
-  public static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
   // ES/OS have max 10000 entities per query
   public static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause
@@ -60,11 +61,17 @@ public final class EngineConfiguration {
       Duration.ofMinutes(5);
   public static final boolean DEFAULT_ENABLE_IDENTITY_SETUP = true;
   public static final Duration DEFAULT_EXPRESSION_EVALUATION_TIMEOUT = Duration.ofSeconds(5);
+  public static final boolean DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED = false;
 
-  private int maxJobTypeLength = DEFAULT_MAX_JOB_TYPE_LENGTH;
-  private int maxTenantIdLength = DEFAULT_MAX_TENANT_ID_LENGTH;
-  private int maxUniqueJobMetricsKeys = DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
-  private int maxWorkerNameLength = DEFAULT_MAX_WORKER_NAME_LENGTH;
+  private int maxIdFieldLength = DEFAULT_MAX_ID_FIELD_LENGTH;
+  private int maxNameFieldLength = DEFAULT_MAX_NAME_FIELD_LENGTH;
+  private int maxWorkerTypeLength = DEFAULT_MAX_WORKER_TYPE_LENGTH;
+  private int jobMetricsMaxTypeLength = DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH;
+  private int jobMetricsMaxTenantIdLength = DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH;
+  private int jobMetricsMaxUniqueKeys = DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS;
+  private int jobMetricsMaxWorkerNameLength = DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH;
+  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
+  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private int messagesTtlCheckerBatchLimit = DEFAULT_MESSAGES_TTL_CHECKER_BATCH_LIMIT;
   private Duration messagesTtlCheckerInterval = DEFAULT_MESSAGES_TTL_CHECKER_INTERVAL;
   private int drgCacheCapacity = DEFAULT_DRG_CACHE_CAPACITY;
@@ -80,7 +87,6 @@ public final class EngineConfiguration {
   private int maxProcessDepth = DEFAULT_MAX_PROCESS_DEPTH;
   private Duration batchOperationSchedulerInterval = DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL;
   private int batchOperationChunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
-  private int batchOperationDbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
   private int batchOperationQueryPageSize = DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE;
   private int batchOperationQueryInClauseSize = DEFAULT_BATCH_OPERATION_QUERY_IN_CLAUSE_SIZE;
   private int batchOperationQueryRetryMax = DEFAULT_BATCH_OPERATION_QUERY_RETRY_MAX;
@@ -90,16 +96,26 @@ public final class EngineConfiguration {
   private int batchOperationQueryRetryBackoffFactor =
       DEFAULT_BATCH_OPERATION_QUERY_RETRY_BACKOFF_FACTOR;
   private Duration usageMetricsExportInterval = DEFAULT_USAGE_METRICS_EXPORT_INTERVAL;
-  private Duration jobMetricsExportInterval = DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
-  private boolean jobMetricsExportEnabled = DEFAULT_JOB_METRICS_EXPORT_ENABLED;
   private boolean commandDistributionPaused = DEFAULT_COMMAND_DISTRIBUTION_PAUSED;
   private Duration commandRedistributionInterval = DEFAULT_COMMAND_REDISTRIBUTION_INTERVAL;
   private Duration commandRedistributionMaxBackoff =
       DEFAULT_COMMAND_REDISTRIBUTION_MAX_BACKOFF_DURATION;
-
   private boolean enableIdentitySetup = DEFAULT_ENABLE_IDENTITY_SETUP;
   private GlobalListenersConfiguration globalListeners = GlobalListenersConfiguration.empty();
   private Duration expressionEvaluationTimeout = DEFAULT_EXPRESSION_EVALUATION_TIMEOUT;
+
+  /**
+   * Controls uniqueness enforcement of business IDs across active process instances.
+   *
+   * <ul>
+   *   <li><b>Disabled (default):</b> Multiple active process instances can share the same business
+   *       ID. No tracking or validation is performed.
+   *   <li><b>Enabled:</b> Creating a process instance with a business ID that is already in use by
+   *       an active process instance will be rejected. Business IDs of process instances created
+   *       before enabling this setting are not tracked, so duplicates with those are not detected.
+   * </ul>
+   */
+  private boolean businessIdUniquenessEnabled = DEFAULT_BUSINESS_ID_UNIQUENESS_ENABLED;
 
   public int getMessagesTtlCheckerBatchLimit() {
     return messagesTtlCheckerBatchLimit;
@@ -241,15 +257,6 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getBatchOperationDbChunkSize() {
-    return batchOperationDbChunkSize;
-  }
-
-  public EngineConfiguration setBatchOperationDbChunkSize(final int batchOperationDbChunkSize) {
-    this.batchOperationDbChunkSize = batchOperationDbChunkSize;
-    return this;
-  }
-
   public int getBatchOperationQueryPageSize() {
     return batchOperationQueryPageSize;
   }
@@ -384,39 +391,67 @@ public final class EngineConfiguration {
     return this;
   }
 
-  public int getMaxUniqueJobMetricsKeys() {
-    return maxUniqueJobMetricsKeys;
+  public int getJobMetricsMaxUniqueKeys() {
+    return jobMetricsMaxUniqueKeys;
   }
 
-  public EngineConfiguration setMaxUniqueJobMetricsKeys(final int maxUniqueJobMetricsKeys) {
-    this.maxUniqueJobMetricsKeys = maxUniqueJobMetricsKeys;
+  public EngineConfiguration setJobMetricsMaxUniqueKeys(final int jobMetricsMaxUniqueKeys) {
+    this.jobMetricsMaxUniqueKeys = jobMetricsMaxUniqueKeys;
     return this;
   }
 
-  public int getMaxWorkerNameLength() {
-    return maxWorkerNameLength;
+  public int getJobMetricsMaxWorkerNameLength() {
+    return jobMetricsMaxWorkerNameLength;
   }
 
-  public EngineConfiguration setMaxWorkerNameLength(final int maxWorkerNameLength) {
-    this.maxWorkerNameLength = maxWorkerNameLength;
+  public EngineConfiguration setJobMetricsMaxWorkerNameLength(
+      final int jobMetricsMaxWorkerNameLength) {
+    this.jobMetricsMaxWorkerNameLength = jobMetricsMaxWorkerNameLength;
     return this;
   }
 
-  public int getMaxJobTypeLength() {
-    return maxJobTypeLength;
+  public int getMaxIdFieldLength() {
+    return maxIdFieldLength;
   }
 
-  public EngineConfiguration setMaxJobTypeLength(final int maxJobTypeLength) {
-    this.maxJobTypeLength = maxJobTypeLength;
+  public EngineConfiguration setMaxIdFieldLength(final int maxIdFieldLength) {
+    this.maxIdFieldLength = maxIdFieldLength;
     return this;
   }
 
-  public int getMaxTenantIdLength() {
-    return maxTenantIdLength;
+  public int getMaxNameFieldLength() {
+    return maxNameFieldLength;
   }
 
-  public EngineConfiguration setMaxTenantIdLength(final int maxTenantIdLength) {
-    this.maxTenantIdLength = maxTenantIdLength;
+  public EngineConfiguration setMaxNameFieldLength(final int maxNameFieldLength) {
+    this.maxNameFieldLength = maxNameFieldLength;
+    return this;
+  }
+
+  public int getMaxWorkerTypeLength() {
+    return maxWorkerTypeLength;
+  }
+
+  public EngineConfiguration setMaxWorkerTypeLength(final int maxWorkerTypeLength) {
+    this.maxWorkerTypeLength = maxWorkerTypeLength;
+    return this;
+  }
+
+  public int getJobMetricsMaxTypeLength() {
+    return jobMetricsMaxTypeLength;
+  }
+
+  public EngineConfiguration setJobMetricsMaxTypeLength(final int jobMetricsMaxTypeLength) {
+    this.jobMetricsMaxTypeLength = jobMetricsMaxTypeLength;
+    return this;
+  }
+
+  public int getJobMetricsMaxTenantIdLength() {
+    return jobMetricsMaxTenantIdLength;
+  }
+
+  public EngineConfiguration setJobMetricsMaxTenantIdLength(final int jobMetricsMaxTenantIdLength) {
+    this.jobMetricsMaxTenantIdLength = jobMetricsMaxTenantIdLength;
     return this;
   }
 
@@ -427,6 +462,16 @@ public final class EngineConfiguration {
   public EngineConfiguration setExpressionEvaluationTimeout(
       final Duration expressionEvaluationTimeout) {
     this.expressionEvaluationTimeout = expressionEvaluationTimeout;
+    return this;
+  }
+
+  public boolean isBusinessIdUniquenessEnabled() {
+    return businessIdUniquenessEnabled;
+  }
+
+  public EngineConfiguration setBusinessIdUniquenessEnabled(
+      final boolean businessIdUniquenessEnabled) {
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
     return this;
   }
 }

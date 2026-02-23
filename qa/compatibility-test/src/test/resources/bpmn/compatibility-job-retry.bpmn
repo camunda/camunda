@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions
+    xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL"
+    xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI"
+    xmlns:dc="http://www.omg.org/spec/DD/20100524/DC"
+    xmlns:zeebe="http://camunda.org/schema/zeebe/1.0"
+    id="Definitions_compatibility_job_retry"
+    targetNamespace="http://camunda.io/schema/bpmn">
+  <bpmn:process id="compatibilityRetryProcess" isExecutable="true">
+    <bpmn:startEvent id="start" />
+    <bpmn:serviceTask id="serviceTask" name="Compatibility Retry Job">
+      <bpmn:extensionElements>
+        <zeebe:taskDefinition type="compatibility-retry-worker" />
+      </bpmn:extensionElements>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="end" />
+    <bpmn:sequenceFlow id="flow_start_task" sourceRef="start" targetRef="serviceTask" />
+    <bpmn:sequenceFlow id="flow_task_end" sourceRef="serviceTask" targetRef="end" />
+  </bpmn:process>
+</bpmn:definitions>

@@ -28,8 +28,10 @@ public interface ItemProvider {
    *
    * @param itemKey the key of the item
    * @param processInstanceKey the key of the process instance this item belongs to
+   * @param rootProcessInstanceKey the key of the root process instance this item belongs to (or
+   *     null if not known)
    */
-  record Item(long itemKey, long processInstanceKey) {}
+  record Item(long itemKey, long processInstanceKey, Long rootProcessInstanceKey) {}
 
   /**
    * Internal abstraction to hold the result of a page of entity items.

@@ -225,7 +225,7 @@ runs:
       echo servers=$servers >> $GITHUB_OUTPUT
     shell: bash
   - name: Update Maven settings.xml
-    uses: s4u/maven-settings-action@v3.1.0
+    uses: s4u/maven-settings-action@v4.0.0
     with:
       githubServer: false
       servers: ${{ steps.maven.outputs.servers }}

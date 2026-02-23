@@ -8,6 +8,7 @@
 package io.camunda.tasklist.data.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;
@@ -17,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev-data")
 @Conditional(ElasticSearchCondition.class)
-@ConditionalOnProperty(value = "camunda.tasklist.webapp-enabled", matchIfMissing = true)
+@ConditionalOnWebappEnabled("tasklist")
 @DependsOn("searchEngineSchemaInitializer")
 public class DevDataGeneratorElasticSearch extends DevDataGeneratorAbstract
     implements DataGenerator {

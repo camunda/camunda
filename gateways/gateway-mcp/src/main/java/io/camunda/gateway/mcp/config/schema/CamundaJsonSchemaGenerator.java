@@ -8,6 +8,8 @@
 
 package io.camunda.gateway.mcp.config.schema;
 
+import static io.camunda.gateway.mcp.config.tool.McpToolUtils.isFrameworkParameter;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,8 +25,7 @@ import com.github.victools.jsonschema.generator.SchemaVersion;
 import com.github.victools.jsonschema.module.jackson.JacksonModule;
 import com.github.victools.jsonschema.module.jackson.JacksonOption;
 import com.github.victools.jsonschema.module.swagger2.Swagger2Module;
-import io.modelcontextprotocol.server.McpAsyncServerExchange;
-import io.modelcontextprotocol.server.McpSyncServerExchange;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.modelcontextprotocol.spec.McpSchema.CallToolRequest;
 import io.modelcontextprotocol.util.Assert;
 import io.modelcontextprotocol.util.Utils;
@@ -35,13 +36,8 @@ import java.lang.reflect.Parameter;
 import java.lang.reflect.Type;
 import java.util.Arrays;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
-import org.springaicommunity.mcp.annotation.McpMeta;
-import org.springaicommunity.mcp.annotation.McpProgressToken;
 import org.springaicommunity.mcp.annotation.McpToolParam;
-import org.springaicommunity.mcp.context.McpAsyncRequestContext;
-import org.springaicommunity.mcp.context.McpSyncRequestContext;
 import org.springaicommunity.mcp.method.tool.utils.ConcurrentReferenceHashMap;
 import org.springaicommunity.mcp.method.tool.utils.JsonParser;
 import org.springaicommunity.mcp.method.tool.utils.JsonSchemaGenerator;
@@ -49,22 +45,13 @@ import org.springaicommunity.mcp.method.tool.utils.SpringAiSchemaModule;
 import org.springframework.lang.Nullable;
 
 /**
- * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and made
- * non-static.
+ * This is an adapted variant of {@link JsonSchemaGenerator}, configured to inline defs and with
+ * support for {@link McpToolParamsUnwrapped} expansion.
  */
 public class CamundaJsonSchemaGenerator {
 
   private static final SchemaVersion SCHEMA_VERSION = SchemaVersion.DRAFT_2020_12;
   private static final boolean PROPERTY_REQUIRED_BY_DEFAULT = true;
-
-  private static final Set<Class<?>> MCP_FRAMEWORK_TYPES =
-      Set.of(
-          CallToolRequest.class,
-          McpSyncRequestContext.class,
-          McpAsyncRequestContext.class,
-          McpSyncServerExchange.class,
-          McpAsyncServerExchange.class,
-          McpMeta.class);
 
   private final Map<Method, String> methodSchemaCache = new ConcurrentReferenceHashMap<>(256);
   private final Map<Type, String> typeSchemaCache = new ConcurrentReferenceHashMap<>(256);
@@ -152,15 +139,31 @@ public class CamundaJsonSchemaGenerator {
               final ObjectNode parameterNode =
                   subtypeSchemaGenerator.generateSchema(parameter.getParameterizedType());
 
-              final String parameterDescription = getMethodParameterDescription(parameter);
-              if (Utils.hasText(parameterDescription)) {
-                parameterNode.put("description", parameterDescription);
-              }
+              // handle @McpToolParamsUnwrapped - unwrap DTO fields to root level
+              if (parameter.isAnnotationPresent(McpToolParamsUnwrapped.class)) {
+                if (parameterNode.has("properties") && parameterNode.get("properties").isObject()) {
+                  parameterNode
+                      .withObject("properties")
+                      .properties()
+                      .forEach(entry -> properties.set(entry.getKey(), entry.getValue()));
+                }
 
-              properties.set(parameterName, parameterNode);
+                if (parameterNode.has("required") && parameterNode.get("required").isArray()) {
+                  parameterNode
+                      .withArray("required")
+                      .forEach(requiredField -> required.add(requiredField.asText()));
+                }
+              } else {
+                final String parameterDescription = getMethodParameterDescription(parameter);
+                if (Utils.hasText(parameterDescription)) {
+                  parameterNode.put("description", parameterDescription);
+                }
 
-              if (isMethodParameterRequired(parameter)) {
-                required.add(parameterName);
+                properties.set(parameterName, parameterNode);
+
+                if (isMethodParameterRequired(parameter)) {
+                  required.add(parameterName);
+                }
               }
             });
 
@@ -183,16 +186,6 @@ public class CamundaJsonSchemaGenerator {
     schema.putObject("properties");
     schema.putArray("required");
     return schema;
-  }
-
-  private boolean isFrameworkParameter(final Parameter parameter) {
-    if (parameter.isAnnotationPresent(McpProgressToken.class)) {
-      return true;
-    }
-
-    final Class<?> type = parameter.getType();
-    return MCP_FRAMEWORK_TYPES.stream()
-        .anyMatch(frameworkType -> frameworkType.isAssignableFrom(type));
   }
 
   private boolean isMethodParameterRequired(final Parameter parameter) {

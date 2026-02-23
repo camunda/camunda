@@ -31,6 +31,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.broker.transport.commandapi.CommandApiServiceImpl;
 import io.camunda.zeebe.broker.transport.snapshotapi.SnapshotApiRequestHandler;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
@@ -148,4 +149,6 @@ public interface BrokerStartupContext {
   CheckpointSchedulingService getCheckpointSchedulingService();
 
   void setCheckpointSchedulingService(CheckpointSchedulingService checkpointSchedulingService);
+
+  NodeIdProvider getNodeIdProvider();
 }

@@ -517,10 +517,10 @@ class DecisionInstanceSearchIT {
     // then
     assertThat(result.items().size()).isEqualTo(2);
     assertThat(result.items())
-        .extracting("processInstanceKey", "decisionDefinitionId")
+        .extracting("processInstanceKey", "rootProcessInstanceKey", "decisionDefinitionId")
         .containsExactlyInAnyOrder(
-            tuple(processInstanceKey, DECISION_DEFINITION_ID_2),
-            tuple(processInstanceKey, DECISION_DEFINITION_ID_3));
+            tuple(processInstanceKey, processInstanceKey, DECISION_DEFINITION_ID_2),
+            tuple(processInstanceKey, processInstanceKey, DECISION_DEFINITION_ID_3));
   }
 
   @Test

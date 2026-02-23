@@ -44,7 +44,8 @@ public abstract class McpServerTest {
       final TestCamundaApplication testInstance,
       final McpSyncHttpClientRequestCustomizer httpClientRequestCustomizer) {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
-        HttpClientStreamableHttpTransport.builder("%s/mcp".formatted(testInstance.restAddress()))
+        HttpClientStreamableHttpTransport.builder("%s".formatted(testInstance.restAddress()))
+            .endpoint("/mcp/cluster")
             .openConnectionOnStartup(false);
 
     if (httpClientRequestCustomizer != null) {

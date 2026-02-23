@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.encoding;
 
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseDecoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder;
+import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.BackupStatesEncoder;
 import io.camunda.zeebe.protocol.management.CheckpointStateResponseEncoder.CheckpointStatesEncoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.management.MessageHeaderEncoder;
@@ -34,7 +35,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   @Override
   public int getLength() {
 
-    final int statesItemLength =
+    final int checkpointStatesItemLength =
         CheckpointStatesEncoder.sbeBlockLength()
             + CheckpointStatesEncoder.partitionIdEncodingLength()
             + CheckpointStatesEncoder.checkpointIdEncodingLength()
@@ -42,8 +43,17 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
             + CheckpointStatesEncoder.checkpointTimestampEncodingLength()
             + CheckpointStatesEncoder.checkpointPositionEncodingLength();
 
-    final int checkpointStatesLength = checkpointStates.size() * statesItemLength;
-    final int backupStatesLength = backupStates.size() * statesItemLength;
+    final int backupStatesItemLength =
+        BackupStatesEncoder.sbeBlockLength()
+            + BackupStatesEncoder.partitionIdEncodingLength()
+            + BackupStatesEncoder.checkpointIdEncodingLength()
+            + BackupStatesEncoder.checkpointTypeEncodingLength()
+            + BackupStatesEncoder.checkpointTimestampEncodingLength()
+            + BackupStatesEncoder.checkpointPositionEncodingLength()
+            + BackupStatesEncoder.firstLogPositionEncodingLength();
+
+    final int checkpointStatesLength = checkpointStates.size() * checkpointStatesItemLength;
+    final int backupStatesLength = backupStates.size() * backupStatesItemLength;
 
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
@@ -54,7 +64,7 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     final var checkpointStateEncoder = bodyEncoder.checkpointStatesCount(checkpointStates.size());
@@ -76,8 +86,10 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
           .checkpointId(partitionState.checkpointId)
           .checkpointType(partitionState.checkpointType.getValue())
           .checkpointTimestamp(partitionState.checkpointTimestamp)
-          .checkpointPosition(partitionState.checkpointPosition);
+          .checkpointPosition(partitionState.checkpointPosition)
+          .firstLogPosition(partitionState.firstLogPosition);
     }
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   @Override
@@ -106,7 +118,8 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
                         state.checkpointId(),
                         CheckpointType.valueOf(state.checkpointType()),
                         state.checkpointTimestamp(),
-                        state.checkpointPosition())));
+                        state.checkpointPosition(),
+                        state.firstLogPosition())));
   }
 
   public Set<PartitionCheckpointState> getCheckpointStates() {
@@ -130,5 +143,17 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
       long checkpointId,
       CheckpointType checkpointType,
       long checkpointTimestamp,
-      long checkpointPosition) {}
+      long checkpointPosition,
+      long firstLogPosition) {
+
+    /** Constructor without firstLogPosition for checkpoint states (e.g. MARKER). */
+    public PartitionCheckpointState(
+        final int partitionId,
+        final long checkpointId,
+        final CheckpointType checkpointType,
+        final long checkpointTimestamp,
+        final long checkpointPosition) {
+      this(partitionId, checkpointId, checkpointType, checkpointTimestamp, checkpointPosition, -1L);
+    }
+  }
 }

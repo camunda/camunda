@@ -85,7 +85,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>.\n For how to investigate, see <https://github.com/camunda/camunda/wiki/CI-Runbooks#camunda-helm-chart-integration-test-failure|Runbook - Camunda Helm Chart Integration Test>."
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run>.\n For how to investigate, see <https://camunda.github.io/camunda/ci-runbooks/#camunda-helm-chart-integration-test-failure|Runbook - Camunda Helm Chart Integration Test>."
                   }
                 }
               ]

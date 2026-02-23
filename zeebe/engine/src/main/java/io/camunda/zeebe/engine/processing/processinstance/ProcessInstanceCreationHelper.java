@@ -21,6 +21,8 @@ import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCh
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
+import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
+import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessState;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
@@ -50,6 +52,8 @@ public class ProcessInstanceCreationHelper {
       "Expected to find process definition with key '%d', but none found";
   private static final String ERROR_MESSAGE_NO_NONE_START_EVENT =
       "Expected to create instance of process with none start event, but there is no such event";
+  private static final String ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS =
+      "Expected to create instance of process with business id '%s', but an instance with this business id already exists for process definition key '%d'";
   private static final Set<BpmnElementType> UNSUPPORTED_ELEMENT_TYPES =
       Set.of(
           BpmnElementType.START_EVENT,
@@ -62,15 +66,24 @@ public class ProcessInstanceCreationHelper {
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
   private final ElementActivationBehavior elementActivationBehavior;
+  private final boolean businessIdUniquenessEnabled;
+  private final ElementInstanceState elementInstanceState;
+  private final BannedInstanceState bannedInstanceState;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
+      final ElementInstanceState elementInstanceState,
+      final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final BpmnBehaviors bpmnBehaviors) {
-    this.authCheckBehavior = authCheckBehavior;
+      final BpmnBehaviors bpmnBehaviors,
+      final boolean businessIdUniquenessEnabled) {
     this.processState = processState;
+    this.elementInstanceState = elementInstanceState;
+    this.bannedInstanceState = bannedInstanceState;
+    this.authCheckBehavior = authCheckBehavior;
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
+    this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -186,15 +199,19 @@ public class ProcessInstanceCreationHelper {
     final var process = deployedProcess.getProcess();
     final var startInstructions = command.startInstructions();
     final var tags = command.getTags();
+    final var businessId = command.getBusinessId();
 
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
-        .flatMap(valid -> validateElementsNotInsideAdHocSubProcess(process, startInstructions))
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .flatMap(valid -> validateTags(tags))
+        .flatMap(
+            valid ->
+                validateBusinessIdUniqueness(
+                    businessId, deployedProcess.getKey(), command.getTenantId()))
         .map(valid -> deployedProcess);
   }
 
@@ -304,43 +321,6 @@ public class ProcessInstanceCreationHelper {
     }
   }
 
-  private Either<Rejection, ?> validateElementsNotInsideAdHocSubProcess(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> isElementInsideAdHocSubProcess(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but the element with id '%s' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private boolean isElementInsideAdHocSubProcess(
-      final ExecutableProcess process, final String elementId) {
-    final var element = process.getElementById(wrapString(elementId));
-    return element != null && hasAdHocSubProcessScope(element);
-  }
-
-  private boolean hasAdHocSubProcessScope(final ExecutableFlowElement flowElement) {
-    final var flowScope = flowElement.getFlowScope();
-    if (flowScope == null) {
-      return false;
-    }
-
-    if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
-      return true;
-    } else {
-      return hasAdHocSubProcessScope(flowScope);
-    }
-  }
-
   private Either<Rejection, ?> validateTargetsSupportedElementType(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
@@ -407,6 +387,26 @@ public class ProcessInstanceCreationHelper {
               RejectionType.INVALID_ARGUMENT,
               "Expected to create instance of process with tags, but the tags '%s' are invalid. %s"
                   .formatted(String.join("', '", invalidTags), TagUtil.TAG_FORMAT_DESCRIPTION)));
+    }
+
+    return VALID;
+  }
+
+  private Either<Rejection, ?> validateBusinessIdUniqueness(
+      final String businessId, final long processDefinitionKey, final String tenantId) {
+    // If the uniqueness check is disabled or if no business id is provided, skip validation
+    if (!businessIdUniquenessEnabled || businessId == null || businessId.isEmpty()) {
+      return VALID;
+    }
+
+    // Check if a process instance with this business id already exists
+    if (elementInstanceState.hasActiveProcessInstanceWithBusinessId(
+        businessId, processDefinitionKey, tenantId, bannedInstanceState::isProcessInstanceBanned)) {
+      return Either.left(
+          new Rejection(
+              RejectionType.ALREADY_EXISTS,
+              String.format(
+                  ERROR_MESSAGE_BUSINESS_ID_ALREADY_EXISTS, businessId, processDefinitionKey)));
     }
 
     return VALID;

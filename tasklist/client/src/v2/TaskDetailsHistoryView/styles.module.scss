@@ -6,6 +6,8 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+@use '@carbon/type';
+
 .container {
   height: 100%;
   width: 100%;
@@ -25,4 +27,8 @@
   align-items: center;
   height: 100%;
   background-color: var(--cds-layer);
+}
+
+.propertyLabel {
+  @include type.type-style('caption-01');
 }

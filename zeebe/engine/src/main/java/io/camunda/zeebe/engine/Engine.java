@@ -176,7 +176,7 @@ public class Engine implements RecordProcessor {
           processingResultBuilder.withProcessInASeparateBatch();
         }
 
-        currentProcessor.processRecord(record);
+        currentProcessor.processRecord(record, processingResultBuilder);
       }
     }
     return processingResultBuilder.build();

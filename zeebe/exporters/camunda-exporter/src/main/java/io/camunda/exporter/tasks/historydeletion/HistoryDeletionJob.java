@@ -10,6 +10,8 @@ package io.camunda.exporter.tasks.historydeletion;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
+import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
+import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
@@ -43,6 +45,8 @@ public class HistoryDeletionJob implements BackgroundTask {
   private final ListViewTemplate listViewTemplate;
   private final ProcessIndex processIndex;
   private final DecisionInstanceTemplate decisionInstanceTemplate;
+  private final DecisionRequirementsIndex decisionRequirementsIndex;
+  private final DecisionIndex decisionIndex;
 
   public HistoryDeletionJob(
       final List<ProcessInstanceDependant> processInstanceDependants,
@@ -62,6 +66,9 @@ public class HistoryDeletionJob implements BackgroundTask {
     processIndex = resourceProvider.getIndexDescriptor(ProcessIndex.class);
     decisionInstanceTemplate =
         resourceProvider.getIndexTemplateDescriptor(DecisionInstanceTemplate.class);
+    decisionRequirementsIndex =
+        resourceProvider.getIndexDescriptor(DecisionRequirementsIndex.class);
+    decisionIndex = resourceProvider.getIndexDescriptor(DecisionIndex.class);
   }
 
   @Override
@@ -102,8 +109,19 @@ public class HistoryDeletionJob implements BackgroundTask {
                 })
             .toCompletableFuture();
 
-    final var deleteDecisionInstancesFuture =
+    final var deleteDecisionInstancesAndRequirementsFuture =
         deleteDecisionInstances(batch)
+            .thenCompose(
+                ids ->
+                    deleteDecisionRequirements(batch, ids)
+                        .exceptionally(
+                            ex -> {
+                              logger.warn(
+                                  "Failed to delete decision requirements for batch: {}",
+                                  batch,
+                                  ex);
+                              return ids;
+                            }))
             .exceptionally(
                 ex -> {
                   logger.warn("Failed to delete decision instances for batch: {}", batch, ex);
@@ -112,12 +130,13 @@ public class HistoryDeletionJob implements BackgroundTask {
             .toCompletableFuture();
 
     return CompletableFuture.allOf(
-            deleteProcessInstancesAndDefinitionsFuture, deleteDecisionInstancesFuture)
+            deleteProcessInstancesAndDefinitionsFuture,
+            deleteDecisionInstancesAndRequirementsFuture)
         .thenCompose(
             ignored -> {
               final var deletedResources = new ArrayList<String>();
               deletedResources.addAll(deleteProcessInstancesAndDefinitionsFuture.join());
-              deletedResources.addAll(deleteDecisionInstancesFuture.join());
+              deletedResources.addAll(deleteDecisionInstancesAndRequirementsFuture.join());
               return deleteFromHistoryDeletionIndex(deletedResources);
             });
   }
@@ -207,6 +226,40 @@ public class HistoryDeletionJob implements BackgroundTask {
             DecisionInstanceTemplate.KEY,
             decisionInstances)
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
+  }
+
+  /**
+   * This method will delete a batch of decision requirements. It will first delete any decisions
+   * that belong to the decision requirements. After it will delete the decision requirements
+   * themselves.
+   *
+   * @param batch The batch of entities to delete
+   * @return A future containing the list of history-deletion IDs that were processed
+   */
+  private CompletionStage<List<String>> deleteDecisionRequirements(
+      final HistoryDeletionBatch batch, final List<String> deletedResourceIds) {
+    final var decisionRequirements =
+        batch.getResourceKeys(HistoryDeletionType.DECISION_REQUIREMENTS);
+    if (decisionRequirements.isEmpty()) {
+      return CompletableFuture.completedFuture(deletedResourceIds);
+    }
+
+    return deleterRepository
+        .deleteDocumentsByField(
+            decisionIndex.getFullQualifiedName(),
+            DecisionIndex.DECISION_REQUIREMENTS_KEY,
+            decisionRequirements)
+        .thenCompose(
+            ignored ->
+                deleterRepository.deleteDocumentsById(
+                    decisionRequirementsIndex.getFullQualifiedName(),
+                    decisionRequirements.stream().map(Object::toString).toList()))
+        .thenApply(
+            ignored -> {
+              final var ids = new ArrayList<>(deletedResourceIds);
+              ids.addAll(batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_REQUIREMENTS));
+              return ids;
+            });
   }
 
   private CompletionStage<Integer> deleteFromHistoryDeletionIndex(final List<String> ids) {

@@ -16,7 +16,6 @@
 package io.camunda.client.api.worker;
 
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ActivateJobsCommandStep1;
 import io.camunda.client.api.command.CompleteJobCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
@@ -211,9 +210,9 @@ public interface JobClient {
    *
    * <h2>Limitations</h2>
    *
-   * <p>This feature is still under development; as such, there is currently no way to rate limit
-   * how many jobs are streamed over a single call. This can be mitigated by opening more streams of
-   * the same type, which will ensure work is fairly load balanced.
+   * <p>There is currently no way to rate limit how many jobs are streamed over a single call. This
+   * can be mitigated by opening more streams of the same type, which will ensure work is fairly
+   * load balanced.
    *
    * <p>Additionally, only jobs which are created, retried, or timed out <em>after</em> the command
    * has been registered will be streamed out. For older jobs, you must still use the {@link
@@ -245,6 +244,5 @@ public interface JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
   StreamJobsCommandStep1 newStreamJobsCommand();
 }

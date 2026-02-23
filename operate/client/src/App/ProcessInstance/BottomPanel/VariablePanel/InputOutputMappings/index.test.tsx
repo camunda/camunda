@@ -107,4 +107,12 @@ describe('Input Mappings', () => {
       expect(screen.queryByText(message)).not.toBeInTheDocument();
     },
   );
+
+  it('should not move focus to the info banner on render', () => {
+    render(<InputOutputMappings type="Input" elementId="Activity_0qtp1k6" />, {
+      wrapper: Wrapper,
+    });
+
+    expect(document.activeElement).toBe(document.body);
+  });
 });

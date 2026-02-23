@@ -27,6 +27,19 @@ public class Camunda {
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
+  @NestedConfigurationProperty private Webapps webapps = new Webapps();
+
+  @NestedConfigurationProperty
+  private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
+
+  /**
+   * Defines the mode in which Camunda is running. This is used to activate/deactivate certain
+   * features. The mode can be set via the "camunda.mode" property. Valid values are: - "all-in-one"
+   * - "broker" - "gateway" The mode is meant to be interpreted as case-insensitive. A null value
+   * means that launch modes are not used, and the behavior of the application will be defined by
+   * the active profiles and configuration properties.
+   */
+  private String mode;
 
   public Cluster getCluster() {
     return cluster;
@@ -90,5 +103,29 @@ public class Camunda {
 
   public void setExpression(final Expression expression) {
     this.expression = expression;
+  }
+
+  public ProcessInstanceCreation getProcessInstanceCreation() {
+    return processInstanceCreation;
+  }
+
+  public void setProcessInstanceCreation(final ProcessInstanceCreation processInstanceCreation) {
+    this.processInstanceCreation = processInstanceCreation;
+  }
+
+  public void setMode(final String mode) {
+    this.mode = mode;
+  }
+
+  public String getMode() {
+    return mode;
+  }
+
+  public Webapps getWebapps() {
+    return webapps;
+  }
+
+  public void setWebapps(final Webapps webapps) {
+    this.webapps = webapps;
   }
 }

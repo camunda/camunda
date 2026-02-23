@@ -18,5 +18,15 @@ package io.camunda.client.api.search.response;
 public enum DecisionInstanceState {
   EVALUATED,
   FAILED,
+  /**
+   * @deprecated for removal.
+   */
+  @Deprecated
+  UNSPECIFIED,
+  /**
+   * @deprecated for removal.
+   */
+  @Deprecated
+  UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 }

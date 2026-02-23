@@ -107,6 +107,15 @@ public class RdbmsWriterMetrics {
         .minimumExpectedValue(Duration.ofMillis(10));
   }
 
+  public ResourceSample measureJobBatchMetricsHistoryCleanupDuration() {
+    return Timer.resource(
+            meterRegistry, meterName("historyCleanup.jobBatchMetrics.duration.seconds"))
+        .description("Job batch metrics history cleanup duration in seconds")
+        .tag("partitionId", String.valueOf(partitionId))
+        .publishPercentileHistogram()
+        .minimumExpectedValue(Duration.ofMillis(10));
+  }
+
   public void recordHistoryCleanupEntities(final int bulkSize, final String entityName) {
     DistributionSummary.builder(meterName("historyCleanup.bulk.size"))
         .description("Exporter bulk size")

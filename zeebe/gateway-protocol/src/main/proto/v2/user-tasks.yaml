@@ -289,7 +289,10 @@ paths:
         - User task
       operationId: searchUserTaskVariables
       summary: Search user task variables
-      description: Search for user task variables based on given criteria. By default, long variable values in the response are truncated.
+      description: |
+        Search for user task variables based on given criteria. This endpoint returns all variables
+        visible from the user task's scope, including variables from parent scopes in the scope
+        hierarchy. By default, long variable values in the response are truncated.
       parameters:
         - name: userTaskKey
           in: path
@@ -453,10 +456,12 @@ components:
           description: The user task due date.
         processInstanceVariables:
           type: array
+          description: The variables of the process instance.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         localVariables:
           type: array
+          description: The local variables of the user task.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         userTaskKey:
@@ -480,6 +485,8 @@ components:
 
     UserTaskSearchQueryResult:
       description: User task search query response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -492,6 +499,18 @@ components:
 
     UserTaskResult:
       type: object
+      required:
+        - rootProcessInstanceKey
+        - candidateGroups
+        - candidateUsers
+        - customHeaders 
+        - tags
+        - assignee
+        - completionDate
+        - dueDate
+        - externalFormReference
+        - followUpDate
+        - formKey
       properties:
         name:
           type: string
@@ -499,6 +518,7 @@ components:
         state:
           $ref: '#/components/schemas/UserTaskStateEnum'
         assignee:
+          nullable: true
           description: The assignee of the user task.
           type: string
         elementId:
@@ -524,22 +544,26 @@ components:
           description: The creation date of a user task.
           format: date-time
         completionDate:
-          type: string
           description: The completion date of a user task.
+          nullable: true
+          type: string
           format: date-time
         followUpDate:
-          type: string
           description: The follow date of a user task.
+          nullable: true
+          type: string
           format: date-time
         dueDate:
-          type: string
           description: The due date of a user task.
+          nullable: true
+          type: string
           format: date-time
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         externalFormReference:
-          type: string
           description: The external form reference.
+          nullable: true
+          type: string
         processDefinitionVersion:
           type: integer
           description: The version of the process definition.
@@ -574,10 +598,19 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         formKey:
+          description: The key of the form.
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
-          description: The key of the form.
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
@@ -739,7 +772,9 @@ components:
     ## Enums
 
     UserTaskStateEnum:
-      description: The state of the user task.
+      description: |
+        The state of the user task.
+        Note: FAILED state is only for legacy job-worker-based tasks.
       type: string
       enum:
         - CREATING

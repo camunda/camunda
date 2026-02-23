@@ -75,4 +75,9 @@ public interface JobBatchRecordValue extends RecordValue {
    * @return the identifiers of the tenants that this job batch may contain jobs for
    */
   List<String> getTenantIds();
+
+  /**
+   * @return the tenant filtering strategy used for job activation
+   */
+  TenantFilter getTenantFilter();
 }

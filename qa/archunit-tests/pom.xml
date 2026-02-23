@@ -21,6 +21,24 @@
     </dependency>
 
     <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-xml-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-bpmn-model</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-protocol-impl</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-util</artifactId>
       <scope>test</scope>
@@ -97,6 +115,7 @@
             <dep>org.springframework:spring-web</dep>
             <dep>org.opensearch.client:opensearch-java</dep>
             <dep>com.fasterxml.jackson.core:jackson-databind</dep>
+            <dep>jakarta.validation:jakarta.validation-api</dep>
             <dep>org.springaicommunity:mcp-annotations</dep>
           </ignoredUsedUndeclaredDependencies>
         </configuration>

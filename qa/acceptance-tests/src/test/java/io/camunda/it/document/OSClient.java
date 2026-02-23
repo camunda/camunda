@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import org.apache.hc.core5.http.HttpHost;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -25,6 +26,7 @@ import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cat.indices.IndicesRecord;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.IndexRequest;
+import org.opensearch.client.opensearch.core.search.Hit;
 import org.opensearch.client.opensearch.indices.DeleteIndexRequest;
 import org.opensearch.client.opensearch.indices.RefreshRequest;
 import org.opensearch.client.opensearch.snapshot.Repository;
@@ -156,6 +158,19 @@ public class OSClient implements DocumentClient {
       throw new IOException(
           "Bulk indexing failed for " + errorCount + " documents in index: " + indexName);
     }
+  }
+
+  @Override
+  public List<Map<String, Object>> search(final String indexName, final int size)
+      throws IOException {
+    return opensearchClient
+        .search(b -> b.index(indexName).size(size), Map.class)
+        .hits()
+        .hits()
+        .stream()
+        .map(Hit::source)
+        .map(doc -> (Map<String, Object>) doc)
+        .toList();
   }
 
   @Override

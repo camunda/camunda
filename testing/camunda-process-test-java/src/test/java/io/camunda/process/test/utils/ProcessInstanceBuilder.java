@@ -26,6 +26,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private static final OffsetDateTime START_DATE = OffsetDateTime.parse("2024-01-01T09:00:00Z");
   private static final OffsetDateTime END_DATE = OffsetDateTime.parse("2024-01-02T16:00:00Z");
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String processDefinitionId;
   private String processDefinitionName;
   private Integer processDefinitionVersion;
@@ -73,6 +74,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   @Override
   public Long getParentProcessInstanceKey() {
     return parentProcessInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -142,6 +148,11 @@ public class ProcessInstanceBuilder implements ProcessInstance {
 
   public ProcessInstanceBuilder setParentElementInstanceKey(final Long parentElementInstanceKey) {
     this.parentElementInstanceKey = parentElementInstanceKey;
+    return this;
+  }
+
+  public ProcessInstanceBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

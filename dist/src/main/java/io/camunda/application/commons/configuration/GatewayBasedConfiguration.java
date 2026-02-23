@@ -14,7 +14,7 @@ import io.atomix.cluster.messaging.MessagingConfig;
 import io.atomix.cluster.protocol.SwimMembershipProtocolConfig;
 import io.atomix.utils.net.Address;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
-import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
 import io.camunda.configuration.beans.GatewayBasedProperties;
@@ -77,8 +77,11 @@ public final class GatewayBasedConfiguration {
   }
 
   @Bean
-  public BrokerClientTimeoutConfiguration brokerClientConfig() {
-    return new BrokerClientTimeoutConfiguration(properties.getCluster().getRequestTimeout());
+  public BrokerClientCfg brokerClientConfig() {
+    return new BrokerClientCfg(
+        properties.getCluster().getRequestTimeout(),
+        properties.getCluster().isSendOnLegacySubject(),
+        properties.getCluster().getDefaultEngineName());
   }
 
   @Bean

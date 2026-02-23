@@ -30,6 +30,7 @@ import io.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import io.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import io.camunda.optimize.service.util.configuration.ConfigurationService;
 import io.camunda.optimize.service.util.configuration.OpenSearchConfiguration;
+import io.camunda.optimize.service.util.configuration.ProxyConfiguration;
 import io.camunda.optimize.service.util.configuration.elasticsearch.DatabaseConnectionNodeConfiguration;
 import io.camunda.optimize.service.util.mapper.CustomAuthorizedReportDefinitionDeserializer;
 import io.camunda.optimize.service.util.mapper.CustomCollectionEntityDeserializer;
@@ -45,6 +46,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -54,6 +56,7 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.Date;
 import java.util.List;
 import javax.net.ssl.SSLContext;
@@ -402,6 +405,18 @@ public class OpenSearchClientBuilder {
         configurationService.getOpenSearchConfiguration().getSecuritySSLEnabled())) {
       setupSSLContext(httpAsyncClientBuilder, configurationService);
     }
+
+    final ProxyConfiguration proxyConfig =
+        configurationService.getOpenSearchConfiguration().getProxyConfig();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      httpAsyncClientBuilder.setProxy(
+          new HttpHost(
+              proxyConfig.isSslEnabled() ? "https" : "http",
+              proxyConfig.getHost(),
+              proxyConfig.getPort()));
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
+    }
+
     return httpAsyncClientBuilder;
   }
 
@@ -415,5 +430,27 @@ public class OpenSearchClientBuilder {
         Timeout.ofMilliseconds(
             configurationService.getOpenSearchConfiguration().getConnectionTimeout()));
     return builder;
+  }
+
+  private static void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder builder, final ProxyConfiguration proxyConfig) {
+    if (proxyConfig.getUsername() != null
+        && !proxyConfig.getUsername().isEmpty()
+        && proxyConfig.getPassword() != null
+        && !proxyConfig.getPassword().isEmpty()) {
+      final String encoded =
+          Base64.getEncoder()
+              .encodeToString(
+                  (proxyConfig.getUsername() + ":" + proxyConfig.getPassword())
+                      .getBytes(StandardCharsets.UTF_8));
+      final String proxyAuthHeaderValue = "Basic " + encoded;
+      builder.addRequestInterceptorFirst(
+          (HttpRequestInterceptor)
+              (request, entity, context) -> {
+                if (!request.containsHeader("Proxy-Authorization")) {
+                  request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+                }
+              });
+    }
   }
 }

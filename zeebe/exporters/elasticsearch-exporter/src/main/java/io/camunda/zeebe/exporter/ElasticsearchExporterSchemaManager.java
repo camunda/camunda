@@ -19,7 +19,7 @@ public class ElasticsearchExporterSchemaManager {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(ElasticsearchExporterSchemaManager.class.getPackageName());
-  private final ElasticsearchClient client;
+  private final ElasticsearchExporterClient client;
   private final ElasticsearchExporterConfiguration configuration;
   private final Set<String> indexTemplatesCreated = new HashSet<>();
 
@@ -31,7 +31,8 @@ public class ElasticsearchExporterSchemaManager {
    * @param configuration the exporter configuration
    */
   public ElasticsearchExporterSchemaManager(
-      final ElasticsearchClient client, final ElasticsearchExporterConfiguration configuration) {
+      final ElasticsearchExporterClient client,
+      final ElasticsearchExporterConfiguration configuration) {
     this.client = client;
     this.configuration = configuration;
   }
@@ -43,7 +44,7 @@ public class ElasticsearchExporterSchemaManager {
    */
   public ElasticsearchExporterSchemaManager(
       final ElasticsearchExporterConfiguration configuration) {
-    this(new ElasticsearchClient(configuration, new SimpleMeterRegistry()), configuration);
+    this(new ElasticsearchExporterClient(configuration, new SimpleMeterRegistry()), configuration);
   }
 
   public void createSchema(final String brokerVersion) {

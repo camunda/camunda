@@ -9,6 +9,7 @@ package io.camunda.authentication.config;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.service.ApiServicesExecutorProvider;
 import io.camunda.service.UserServices;
 import java.util.HashMap;
@@ -22,8 +23,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.builder.SpringApplicationBuilder;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.FilterType;
@@ -103,8 +104,16 @@ public class BasicAuthWebSecurityConfigParameterizedTest {
   @AutoConfigureWebMvc
   @ComponentScan(
       basePackages = {"io.camunda.authentication"},
-      excludeFilters = @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Controller"))
+      excludeFilters = {
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*Controller"),
+        @ComponentScan.Filter(type = FilterType.REGEX, pattern = ".*OidcFlowTestContext")
+      })
   public static class TestApplication {
+    @Bean
+    public ObjectMapper objectMapper() {
+      return new ObjectMapper();
+    }
+
     @Bean
     public UserServices userServices() {
       return new UserServices(

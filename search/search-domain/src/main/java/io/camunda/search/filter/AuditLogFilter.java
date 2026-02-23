@@ -26,6 +26,7 @@ public record AuditLogFilter(
     List<Operation<OffsetDateTime>> timestampOperations,
     List<Operation<String>> actorTypeOperations,
     List<Operation<String>> actorIdOperations,
+    List<Operation<String>> agentElementIdOperations,
     List<Operation<String>> tenantIdOperations,
     List<Operation<String>> resultOperations,
     List<Operation<String>> categoryOperations,
@@ -64,6 +65,7 @@ public record AuditLogFilter(
         .timestampOperations(timestampOperations)
         .actorTypeOperations(actorTypeOperations)
         .actorIdOperations(actorIdOperations)
+        .agentElementIdOperations(agentElementIdOperations)
         .tenantIdOperations(tenantIdOperations)
         .resultOperations(resultOperations)
         .categoryOperations(categoryOperations)
@@ -96,6 +98,7 @@ public record AuditLogFilter(
     private List<Operation<OffsetDateTime>> timestampOperations;
     private List<Operation<String>> actorTypeOperations;
     private List<Operation<String>> actorIdOperations;
+    private List<Operation<String>> agentElementIdOperations;
     private List<Operation<String>> tenantIdOperations;
     private List<Operation<String>> resultOperations;
     private List<Operation<String>> categoryOperations;
@@ -210,6 +213,17 @@ public record AuditLogFilter(
 
     public Builder actorIds(final String value, final String... values) {
       return actorIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
+    }
+
+    public Builder agentElementIdOperations(final List<Operation<String>> operations) {
+      if (operations != null) {
+        agentElementIdOperations = addValuesToList(agentElementIdOperations, operations);
+      }
+      return this;
+    }
+
+    public Builder agentElementIds(final String value, final String... values) {
+      return agentElementIdOperations(List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     public Builder tenantIdOperations(final List<Operation<String>> operations) {
@@ -467,6 +481,7 @@ public record AuditLogFilter(
           Objects.requireNonNullElse(timestampOperations, List.of()),
           Objects.requireNonNullElse(actorTypeOperations, List.of()),
           Objects.requireNonNullElse(actorIdOperations, List.of()),
+          Objects.requireNonNullElse(agentElementIdOperations, List.of()),
           Objects.requireNonNullElse(tenantIdOperations, List.of()),
           Objects.requireNonNullElse(resultOperations, List.of()),
           Objects.requireNonNullElse(categoryOperations, List.of()),

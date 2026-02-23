@@ -6,10 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor, {useMonaco} from '@monaco-editor/react';
+import Editor from '@monaco-editor/react';
 import {observer} from 'mobx-react-lite';
 import {currentTheme} from 'modules/stores/currentTheme';
-import {useLayoutEffect} from 'react';
 import {EditorStyles} from './styled';
 import {options} from 'modules/utils/editor/options';
 
@@ -36,15 +35,6 @@ const JSONEditor: React.FC<Props> = observer(
     height = '60vh',
     width = '100%',
   }) => {
-    const monaco = useMonaco();
-
-    useLayoutEffect(() => {
-      monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
-        schemaValidation: 'error',
-        schemaRequest: 'error',
-      });
-    }, [monaco]);
-
     return (
       <>
         <EditorStyles />

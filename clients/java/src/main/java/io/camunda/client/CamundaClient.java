@@ -47,6 +47,7 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
+import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
@@ -62,6 +63,7 @@ import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -75,6 +77,7 @@ import io.camunda.client.api.command.StatusRequestStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignClientFromTenantCommandStep1;
@@ -119,6 +122,8 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.ResourceContentGetRequest;
+import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
@@ -167,6 +172,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
@@ -275,6 +281,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @deprecated since 8 for removal with 8.1, replaced by {@link
    *     CamundaClient#newDeployResourceCommand()}
    */
+  @Deprecated
   DeployProcessCommandStep1 newDeployCommand();
 
   /**
@@ -384,7 +391,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param processInstanceKey the key which refers to the process instance to migrate
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/14907")
   MigrateProcessInstanceCommandStep1 newMigrateProcessInstanceCommand(long processInstanceKey);
 
   /**
@@ -406,14 +412,14 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * <pre>
    * camundaClient
-   *  .newDeleteInstanceCommand(processInstanceKey)
+   *  .newDeleteProcessInstanceCommand(processInstanceKey)
    *  .send();
    * </pre>
    *
    * @param processInstanceKey the key which identifies the corresponding process instance
    * @return a builder for the command
    */
-  DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(long processInstanceKey);
+  DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(long processInstanceKey);
 
   /**
    * Command to set and/or update the variables of a given flow element (e.g. process instance,
@@ -877,7 +883,7 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *  .send();
    * </pre>
    *
-   * @param decisionDefinitionKey the key of the process definition
+   * @param processDefinitionKey the key of the process definition
    * @return a builder for the request to get the XML of a process definition
    */
   ProcessDefinitionGetXmlRequest newProcessDefinitionGetXmlRequest(long processDefinitionKey);
@@ -977,6 +983,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   UsageMetricsStatisticsRequest newUsageMetricsRequest(
       final OffsetDateTime startTime, final OffsetDateTime endTime);
+
+  /**
+   * Executes a request to query global job statistics.
+   *
+   * <pre>
+   * camundaClient
+   *  .newGlobalJobStatisticsRequest(OffsetDateTime.now().minusDays(1), OffsetDateTime.now())
+   *  .jobType("myJobType")
+   *  .send();
+   * </pre>
+   *
+   * @param from the start of the time range (inclusive)
+   * @param to the end of the time range (inclusive)
+   * @return a builder for the global job statistics request
+   */
+  GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to);
 
   /**
    * Executes a search request to query process instance sequence flows.
@@ -1195,6 +1218,20 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a decision instance
    */
   DecisionInstanceGetRequest newDecisionInstanceGetRequest(String decisionInstanceId);
+
+  /**
+   * Command to delete a decision instance history.
+   *
+   * <pre>
+   * camundaClient
+   *  .newDeleteDecisionInstanceCommand(decisionInstanceKey)
+   *  .send();
+   * </pre>
+   *
+   * @param decisionInstanceKey the key which identifies the corresponding decision instance
+   * @return a builder for the command
+   */
+  DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(long decisionInstanceKey);
 
   /**
    * Executes a search request to query incidents.
@@ -1966,6 +2003,36 @@ public interface CamundaClient extends AutoCloseable, JobClient {
       String tenantId);
 
   /**
+   * Creates a request to update a globally-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGloballyScopedClusterVariableUpdateRequest()
+   *       .update("myVariable", "newValue")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for updating a globally-scoped cluster variable
+   */
+  GloballyScopedClusterVariableUpdateCommandStep1 newGloballyScopedClusterVariableUpdateRequest();
+
+  /**
+   * Creates a request to update a tenant-scoped cluster variable.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newTenantScopedClusterVariableUpdateRequest("my-tenant-id")
+   *       .update("myVariable", "newValue")
+   *       .send();
+   * </pre>
+   *
+   * @param tenantId the ID of the tenant for which the variable is scoped
+   * @return a builder for updating a tenant-scoped cluster variable
+   */
+  TenantScopedClusterVariableUpdateCommandStep1 newTenantScopedClusterVariableUpdateRequest(
+      String tenantId);
+
+  /**
    * Creates a request to delete a globally-scoped cluster variable.
    *
    * <pre>
@@ -2085,7 +2152,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentCommandStep1 newCreateDocumentCommand();
 
   /**
@@ -2134,7 +2200,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    *
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentBatchCommandStep1 newCreateDocumentBatchCommand();
 
   /**
@@ -2155,7 +2220,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the request
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DocumentContentGetRequest newDocumentContentGetRequest(String documentId);
 
   /**
@@ -2175,7 +2239,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the request
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DocumentContentGetRequest newDocumentContentGetRequest(
       DocumentReferenceResponse documentReferenceResponse);
 
@@ -2198,7 +2261,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(String documentId);
 
   /**
@@ -2219,7 +2281,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   CreateDocumentLinkCommandStep1 newCreateDocumentLinkCommand(
       DocumentReferenceResponse documentReferenceResponse);
 
@@ -2241,7 +2302,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentId the id of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(String documentId);
 
   /**
@@ -2261,7 +2321,6 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @param documentReferenceResponse the reference of the document
    * @return a builder for the command
    */
-  @ExperimentalApi("https://github.com/camunda/issues/issues/841")
   DeleteDocumentCommandStep1 newDeleteDocumentCommand(
       DocumentReferenceResponse documentReferenceResponse);
 
@@ -3186,4 +3245,34 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    */
   IncidentProcessInstanceStatisticsByDefinitionRequest
       newIncidentProcessInstanceStatisticsByDefinitionRequest(int errorHashCode);
+
+  /**
+   * Retrieves a resource by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource
+   */
+  ResourceGetRequest newResourceGetRequest(long resourceKey);
+
+  /**
+   * Retrieves a resource content by key.
+   *
+   * <pre>
+   * long resourceKey = ...;
+   *
+   * camundaClient
+   *  .newResourceContentGetRequest(resourceKey)
+   *  .send();
+   * </pre>
+   *
+   * @return a builder for the request to get a resource content
+   */
+  ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
 }

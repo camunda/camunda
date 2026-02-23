@@ -28,9 +28,10 @@ export class OperateFiltersPanelPage {
   readonly finishedInstancesCheckbox: Locator;
   readonly processNameFilter: Locator;
   readonly processVersionFilter: Locator;
+  readonly processNameClearButton: Locator;
   readonly processInstanceKeysFilter: Locator;
   readonly processInstanceKeysFilterOption: Locator;
-  readonly parentProcessInstanceKey: Locator;
+  readonly parentProcessInstanceKeyFilter: Locator;
   readonly processInstanceKey: Locator;
   readonly flowNodeFilter: Locator;
   readonly operationIdFilter: Locator;
@@ -55,44 +56,49 @@ export class OperateFiltersPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.runningInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Running',
-    });
-    this.activeInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Active',
-    });
-    this.incidentsInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Incidents',
-    });
-    this.completedInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Completed',
-    });
-    this.canceledInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Canceled',
-    });
-    this.finishedInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Finished',
-    });
+    this.activeInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Active'});
+    this.completedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Completed'});
+    this.canceledInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Canceled'});
+    this.runningInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Running Instances'});
+    this.incidentsInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Incidents'});
+    this.finishedInstancesCheckbox = page
+      .locator('label')
+      .filter({hasText: 'Finished Instances'});
     this.processNameFilter = this.page.getByRole('combobox', {
       name: 'Name',
     });
     this.processVersionFilter = this.page.getByRole('combobox', {
       name: 'Version',
     });
+    this.processNameClearButton = this.processNameFilter
+      .locator('..')
+      .getByRole('button', {
+        name: 'Clear selected item',
+      });
     this.processInstanceKeysFilterOption = this.page.getByRole('menuitem', {
       name: 'Process Instance Key(s)',
     });
     this.processInstanceKeysFilter = page.getByRole('textbox', {
       name: 'process instance key',
     });
-    this.parentProcessInstanceKey = page.getByRole('textbox', {
+    this.parentProcessInstanceKeyFilter = page.getByRole('textbox', {
       name: 'parent process instance key',
     });
     this.processInstanceKey = page.getByRole('textbox', {
       name: 'process instance key',
     });
     this.flowNodeFilter = this.page.getByRole('combobox', {
-      name: 'flow node',
+      name: 'element',
     });
     this.operationIdFilter = this.page.getByRole('textbox', {
       name: 'operation id',
@@ -122,7 +128,7 @@ export class OperateFiltersPanelPage {
     this.fromDateInput = this.page.getByText('From date');
     this.applyButton = this.page.getByText('Apply');
     this.jsonEditorModalButton = this.page.getByRole('button', {
-      name: /open (json )?editor modal/i,
+      name: /open (json )?editor/i,
     });
     this.variableEditorDialog = this.page.getByRole('dialog');
     this.dialogEditVariableValueText = this.variableEditorDialog.getByText(
@@ -174,12 +180,18 @@ export class OperateFiltersPanelPage {
   }
 
   async selectProcess(option: string) {
+    if (await this.processNameClearButton.isVisible()) {
+      await this.processNameClearButton.click();
+      await expect(this.processVersionFilter).toBeDisabled();
+    }
     await this.processNameFilter.click();
     await this.getOptionByName(option).click({timeout: 30000});
+    await expect(this.processVersionFilter).toBeEnabled({timeout: 3000});
   }
 
   async selectVersion(option: string) {
     await expect(this.processNameFilter).toBeVisible();
+    await expect(this.processVersionFilter).toBeEnabled();
     await this.processVersionFilter.click();
     await expect(this.getOptionByName(option)).toBeVisible();
     await this.getOptionByName(option).click({timeout: 30000});
@@ -192,17 +204,20 @@ export class OperateFiltersPanelPage {
 
   async fillVariableNameFilter(name: string) {
     await expect(this.variableNameFilter).toBeVisible();
+    await expect(this.variableNameFilter).toBeEnabled();
     await this.variableNameFilter.fill(name);
   }
 
   async fillVariableValueFilter(value: string) {
     await expect(this.variableValueFilter).toBeVisible();
+    await expect(this.variableValueFilter).toBeEnabled();
     await this.variableValueFilter.fill(value);
     await expect(this.variableValueFilter).toHaveValue(value);
   }
 
   async fillProcessInstanceKeyFilter(processInstanceKey: string) {
     await expect(this.processInstanceKeysFilter).toBeVisible();
+    await expect(this.processInstanceKeysFilter).toBeEnabled();
     await this.processInstanceKeysFilter.fill(processInstanceKey);
     await expect(this.processInstanceKeysFilter).toHaveValue(
       processInstanceKey,
@@ -210,7 +225,12 @@ export class OperateFiltersPanelPage {
   }
 
   async fillParentProcessInstanceKeyFilter(parentProcessInstanceKey: string) {
-    await this.parentProcessInstanceKey.fill(parentProcessInstanceKey);
+    await expect(this.parentProcessInstanceKeyFilter).toBeVisible();
+    await expect(this.parentProcessInstanceKeyFilter).toBeEnabled();
+    await this.parentProcessInstanceKeyFilter.fill(parentProcessInstanceKey);
+    await expect(this.parentProcessInstanceKeyFilter).toHaveValue(
+      parentProcessInstanceKey,
+    );
   }
 
   async fillFromTimeInput(fromTime: string) {
@@ -262,11 +282,17 @@ export class OperateFiltersPanelPage {
   }
 
   async fillErrorMessageFilter(errorMessage: string) {
+    await expect(this.errorMessageFilter).toBeVisible();
+    await expect(this.errorMessageFilter).toBeEnabled();
     await this.errorMessageFilter.fill(errorMessage);
+    await expect(this.errorMessageFilter).toHaveValue(errorMessage);
   }
 
   async fillOperationIdFilter(operationId: string) {
+    await expect(this.operationIdFilter).toBeVisible();
+    await expect(this.operationIdFilter).toBeEnabled();
     await this.operationIdFilter.fill(operationId);
+    await expect(this.operationIdFilter).toHaveValue(operationId);
   }
 
   async clickJsonEditorModal() {

@@ -43,7 +43,10 @@ public class TaskResponse {
   @Schema(description = "The username/id of who is assigned to the task.")
   private String assignee;
 
-  @Schema(description = "The state of the task.", accessMode = AccessMode.READ_ONLY)
+  @Schema(
+      description =
+          "The state of the task. Note: FAILED state is only for legacy job-worker-based tasks.",
+      accessMode = AccessMode.READ_ONLY)
   private TaskState taskState;
 
   @Schema(description = "Reference to the task form.")

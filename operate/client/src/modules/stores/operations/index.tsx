@@ -309,4 +309,3 @@ class Operations extends NetworkReconnectionHandler {
 }
 
 export const operationsStore = new Operations();
-export type {ErrorHandler};

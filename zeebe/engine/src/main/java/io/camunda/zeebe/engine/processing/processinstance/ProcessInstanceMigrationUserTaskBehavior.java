@@ -32,16 +32,20 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.HashMap;
 import java.util.Map;
+import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
 
 public class ProcessInstanceMigrationUserTaskBehavior {
 
   private static final String ERROR_JOB_NOT_FOUND =
       """
-                  Expected to migrate a job for process instance with key '%d', \
+                  Expected to migrate a job for user task '%s' \
+                  on process instance with key '%d', \
                   but could not find job with key '%d'. \
-                  Please report this as a bug""";
+                  Please resolve any incidents on the user task before migrating the process instance.""";
 
   private static final String ERROR_TARGET_FORM_EVALUATION =
       """
@@ -93,14 +97,14 @@ public class ProcessInstanceMigrationUserTaskBehavior {
 
   public void tryMigrateJobWorkerToCamundaUserTask() {
     final var jobKey = elementInstance.getJobKey();
+    final String elementId = elementInstance.getValue().getElementId();
 
     final var job = jobState.getJob(jobKey);
     if (job == null) {
       throw new SafetyCheckFailedException(
-          String.format(ERROR_JOB_NOT_FOUND, processInstanceKey, jobKey));
+          String.format(ERROR_JOB_NOT_FOUND, elementId, processInstanceKey, jobKey));
     }
 
-    final String elementId = elementInstance.getValue().getElementId();
     final ExecutableJobWorkerElement sourceElement =
         sourceProcessDefinition
             .getProcess()
@@ -129,7 +133,12 @@ public class ProcessInstanceMigrationUserTaskBehavior {
     migrateForm(sourceElement, customHeaders, targetProperties, context, userTaskProperties);
 
     final var userTaskRecord =
-        createNewUserTask(targetProperties, context, userTaskProperties, targetUserTask);
+        createNewUserTask(
+            targetProperties,
+            context,
+            userTaskProperties,
+            targetUserTask.getId(),
+            getCustomHeaders(customHeaders));
 
     assignUser(userTaskProperties, userTaskRecord, context, targetProperties);
 
@@ -169,7 +178,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           newProperties,
       final BpmnElementContextImpl context,
       final UserTaskProperties userTaskProperties,
-      final ExecutableUserTask targetElement) {
+      final DirectBuffer id,
+      final Map<String, String> taskHeaders) {
+
     userTaskBehavior
         .evaluatePriorityExpression(
             newProperties.getPriority(),
@@ -178,7 +189,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
         .ifRight(userTaskProperties::priority);
 
     final var userTaskRecord =
-        userTaskBehavior.createNewUserTask(context, targetElement, userTaskProperties);
+        userTaskBehavior.createNewUserTask(context, id, userTaskProperties, taskHeaders);
     userTaskBehavior.userTaskCreated(userTaskRecord);
     elementInstance.setUserTaskKey(userTaskRecord.getUserTaskKey());
     return userTaskRecord;
@@ -208,7 +219,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   failure -> {
                     throw new ProcessInstanceMigrationPreconditionFailedException(
                         ERROR_TARGET_FORM_EVALUATION.formatted(
-                            sourceElement.getId(),
+                            BufferUtil.bufferAsString(sourceElement.getId()),
                             "external",
                             targetElementProperties.getExternalFormReference(),
                             targetElementId,
@@ -230,7 +241,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   failure -> {
                     throw new ProcessInstanceMigrationPreconditionFailedException(
                         ERROR_TARGET_FORM_EVALUATION.formatted(
-                            sourceElement.getId(),
+                            BufferUtil.bufferAsString(sourceElement.getId()),
                             "internal",
                             targetElementProperties.getFormId().getExpression(),
                             targetElementId,
@@ -241,7 +252,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           // none
           LOGGER.warn(
               WARN_EMBEDDED_FORM_MIGRATION.formatted(
-                  sourceElement.getId(), targetElementId, processInstanceKey));
+                  BufferUtil.bufferAsString(sourceElement.getId()),
+                  targetElementId,
+                  processInstanceKey));
         }
       } else if (workerFormId == null) {
         // external form
@@ -286,5 +299,16 @@ public class ProcessInstanceMigrationUserTaskBehavior {
       userTaskProperties.followUpDate(followUpDate);
     }
     return userTaskProperties;
+  }
+
+  // Filter custom headers to only include non-usertask-related headers
+  private Map<String, String> getCustomHeaders(final Map<String, String> customHeaders) {
+    final Map<String, String> newMap = new HashMap<>();
+    for (final Map.Entry<String, String> entry : customHeaders.entrySet()) {
+      if (!entry.getKey().startsWith(Protocol.RESERVED_HEADER_NAME_PREFIX)) {
+        newMap.put(entry.getKey(), entry.getValue());
+      }
+    }
+    return newMap;
   }
 }

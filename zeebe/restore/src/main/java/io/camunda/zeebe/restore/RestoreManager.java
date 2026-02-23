@@ -10,6 +10,7 @@ package io.camunda.zeebe.restore;
 import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
+import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
@@ -34,7 +35,10 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.UpdateRoutingState;
 import io.camunda.zeebe.journal.CheckedJournalException.FlushException;
 import io.camunda.zeebe.restore.PartitionRestoreService.BackupValidator;
+import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.FileUtil;
+import io.camunda.zeebe.util.VisibleForTesting;
+import io.camunda.zeebe.util.concurrency.FuturesUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil.PartitionKeyNames;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -47,32 +51,57 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.agrona.collections.MutableBoolean;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class RestoreManager {
+@NullMarked
+public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
+  private final BackupRangeResolver rangeResolver;
   private final MeterRegistry meterRegistry;
   private final CheckpointIdGenerator checkpointIdGenerator;
+  @Nullable private final ExporterPositionMapper exporterPositionMapper;
+  private final ExecutorService executor;
+
+  @VisibleForTesting
+  RestoreManager(
+      final BrokerCfg configuration,
+      final BackupStore backupStore,
+      final MeterRegistry meterRegistry) {
+    this(configuration, backupStore, null, meterRegistry);
+  }
 
   public RestoreManager(
       final BrokerCfg configuration,
       final BackupStore backupStore,
+      @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
     checkpointIdGenerator =
         new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
+    rangeResolver = new BackupRangeResolver(backupStore);
+    this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
+    executor =
+        Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("zeebe-restore-", 0).factory());
   }
 
   public void restore(
@@ -82,6 +111,49 @@ public class RestoreManager {
   }
 
   public void restore(
+      @Nullable final Instant from,
+      @Nullable final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    if (exporterPositionMapper == null) {
+      if (from == null) {
+        throw new IllegalArgumentException(
+            "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
+      }
+      restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
+    } else {
+      restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
+    }
+  }
+
+  private void restoreRdbms(
+      @Nullable final Instant from,
+      @Nullable final Instant to,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+
+    final var exportedPositions = exportedPositions(partitionCount).join();
+    LOG.info("Exported positions for all partitions: {}", exportedPositions);
+    final var restoreInfos =
+        rangeResolver
+            .getRestoreInfoForAllPartitions(
+                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
+            .join();
+
+    LOG.info(
+        "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
+        from,
+        to,
+        restoreInfos.globalCheckpointId(),
+        restoreInfos.backupsByPartitionId());
+
+    restore(restoreInfos.backupsByPartitionId(), validateConfig, ignoreFilesInTarget);
+  }
+
+  public void restoreTimeRange(
       final Instant from,
       final Instant to,
       final boolean validateConfig,
@@ -124,18 +196,55 @@ public class RestoreManager {
   public void restore(
       final long[] backupIds, final boolean validateConfig, final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
+    restore(toBackupIdsByPartition(backupIds), validateConfig, ignoreFilesInTarget);
+  }
+
+  /**
+   * Converts a common array of backup IDs to a map where each partition uses the same backup IDs.
+   *
+   * @param backupIds the backup IDs to use for all partitions
+   * @return a map from partition ID to backup IDs
+   */
+  private Map<Integer, long[]> toBackupIdsByPartition(final long[] backupIds) {
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
+    return IntStream.rangeClosed(1, partitionCount)
+        .boxed()
+        .collect(
+            Collectors.toMap(
+                partition -> partition, partition -> Arrays.copyOf(backupIds, backupIds.length)));
+  }
+
+  /**
+   * Restores partitions from backups, where each partition may restore from different backup IDs.
+   *
+   * <p>This is useful when partitions have different safe start checkpoints based on their exported
+   * positions, but all need to reach the same global checkpoint.
+   *
+   * @param backupIdsByPartition map from partition ID to the backup IDs to restore for that
+   *     partition
+   * @param validateConfig whether to validate the backup configuration
+   * @param ignoreFilesInTarget files to ignore when checking if the data directory is empty
+   */
+  public void restore(
+      final Map<Integer, long[]> backupIdsByPartition,
+      final boolean validateConfig,
+      final List<String> ignoreFilesInTarget)
+      throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    verifyBackupIdsAreContinuous(backupIds);
+    verifyBackupIdsAreContinuous(backupIdsByPartition);
 
-    final var partitionsToRestore = collectPartitions();
-    try (final var executor =
-        Executors.newThreadPerTaskExecutor(
-            Thread.ofVirtual().name("zeebe-restore-", 0).factory())) {
+    try {
+      final var partitionsToRestore = collectPartitions();
       final var tasks = new ArrayList<Callable<Void>>(partitionsToRestore.size());
       for (final var partition : partitionsToRestore) {
+        final var partitionId = partition.partition().id().id();
+        final var backupIds = backupIdsByPartition.get(partitionId);
+        if (backupIds == null || backupIds.length == 0) {
+          throw new IllegalArgumentException("No backup IDs provided for partition " + partitionId);
+        }
         tasks.add(
             () -> {
               restorePartition(partition, backupIds, validateConfig);
@@ -243,15 +352,17 @@ public class RestoreManager {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private void verifyBackupIdsAreContinuous(final long[] backupIds) {
-    final var partitionCount = configuration.getCluster().getPartitionsCount();
-
+  private void verifyBackupIdsAreContinuous(final Map<Integer, long[]> backupIdsByPartition) {
     final MutableBoolean validBackupRange = new MutableBoolean(true);
-    if (backupIds.length > 1) {
-      final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
-      final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
 
-      for (int partition = 1; partition <= partitionCount; partition++) {
+    for (final var entry : backupIdsByPartition.entrySet()) {
+      final var partition = entry.getKey();
+      final var backupIds = entry.getValue();
+
+      if (backupIds.length > 1) {
+        final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
+        final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
+
         final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
         final var validRange =
             ranges.stream()
@@ -300,6 +411,39 @@ public class RestoreManager {
           .filter(path -> ignoreFilesInTarget.stream().noneMatch(path::endsWith))
           .findFirst()
           .isEmpty();
+    }
+  }
+
+  private CompletableFuture<Map<Integer, Long>> exportedPositions(final int partitionCount) {
+    return FuturesUtil.parTraverse(
+            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+            partition ->
+                CompletableFuture.supplyAsync(
+                    () -> {
+                      final var positionModel = exporterPositionMapper.findOne(partition);
+                      if (positionModel == null || positionModel.lastExportedPosition() == null) {
+                        throw new IllegalArgumentException(
+                            "No exported position found for partition " + partition + " in RDBMS");
+                      }
+
+                      return Map.entry(partition, positionModel.lastExportedPosition());
+                    },
+                    executor))
+        .thenApply(
+            s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
+  }
+
+  @Override
+  public void close() {
+    try {
+      executor.shutdown();
+      if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
+        executor.shutdownNow();
+      }
+    } catch (final InterruptedException ignored) {
+      // Not much we can do here, just report in case it's a bug in the shutdown process.
+      LOG.warn("Interrupted while waiting for executor to shutdown", ignored);
+      Thread.currentThread().interrupt();
     }
   }
 

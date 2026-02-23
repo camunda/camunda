@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.DecisionRequirementsMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}DECISION_REQUIREMENTS
-    <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_REQUIREMENTS
+      <include refid="io.camunda.db.rdbms.sql.DecisionRequirementsMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionRequirementsDbQuery"
@@ -110,4 +113,12 @@
     VALUES (#{decisionRequirementsKey}, #{decisionRequirementsId}, #{name},
             #{tenantId}, #{version}, #{resourceName}, #{xml})
   </insert>
+
+  <delete id="deleteByKeys">
+    DELETE FROM ${prefix}DECISION_REQUIREMENTS
+    WHERE DECISION_REQUIREMENTS_KEY IN
+    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
 </mapper>

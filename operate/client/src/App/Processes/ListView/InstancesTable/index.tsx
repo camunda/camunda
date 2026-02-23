@@ -33,6 +33,7 @@ import {getProcessDefinitionName} from 'modules/utils/instance';
 import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
 import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
 import {InlineLoading} from '@carbon/react';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
@@ -62,9 +63,10 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       location.search,
     );
     const listHasFinishedInstances = canceled || completed;
+    const clientConfig = getClientConfig();
 
     const isTenantColumnVisible =
-      window.clientConfig?.multiTenancyEnabled &&
+      clientConfig.multiTenancyEnabled &&
       (tenant === undefined || tenant === 'all');
 
     const batchOperationId = searchParams.get('operationId') ?? undefined;

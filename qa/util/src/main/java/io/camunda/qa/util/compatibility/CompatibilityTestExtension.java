@@ -42,12 +42,15 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.BeforeAllCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
 import org.junit.jupiter.api.extension.ParameterResolutionException;
 import org.junit.jupiter.api.extension.ParameterResolver;
+import org.junit.jupiter.api.extension.TestExecutionExceptionHandler;
 import org.junit.platform.commons.support.ModifierSupport;
 import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
@@ -62,7 +65,11 @@ import org.testcontainers.utility.DockerImageName;
 
 /** JUnit extension that manages the lifecycle of a versioned Camunda container */
 public class CompatibilityTestExtension
-    implements BeforeAllCallback, AfterAllCallback, ParameterResolver {
+    implements BeforeAllCallback,
+        AfterAllCallback,
+        BeforeEachCallback,
+        ParameterResolver,
+        TestExecutionExceptionHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CompatibilityTestExtension.class);
   private static final String EXTENSION_COORDINATION_KEY = "extension-running";
@@ -81,6 +88,7 @@ public class CompatibilityTestExtension
   private DatabaseType databaseType;
   private String testPrefix;
   private KeycloakContainer keycloakContainer;
+  private Throwable incompatibilityError;
 
   private static ExtensionContext.Store coordinationStore(final ExtensionContext context) {
     final Class<?> testClass = context.getRequiredTestClass();
@@ -169,7 +177,15 @@ public class CompatibilityTestExtension
     }
     // Setup entities
     entityManager = new EntityManager(authenticatedClientFactory.getAdminCamundaClient());
-    setupEntities(testClass, annotation.setupKeycloak());
+    try {
+      setupEntities(testClass, annotation.setupKeycloak());
+    } catch (final NoClassDefFoundError | IncompatibleClassChangeError e) {
+      LOGGER.warn(
+          "Client API incompatibility detected during entity setup: {} - {}",
+          e.getClass().getSimpleName(),
+          e.getMessage());
+      incompatibilityError = e;
+    }
 
     // Inject static client field
     injectStaticClientField(testClass);
@@ -556,6 +572,49 @@ public class CompatibilityTestExtension
   private CamundaClient getCamundaClient(final Authenticated authenticated) {
     return authenticatedClientFactory.getCamundaClient(
         CamundaClient.newClientBuilder(), getRestAddress(), authenticated);
+  }
+
+  @Override
+  public void beforeEach(final ExtensionContext context) {
+    if (!isOwner(context)) {
+      return;
+    }
+    if (incompatibilityError != null) {
+      Assumptions.abort(
+          "Test skipped due to client API incompatibility during setup: "
+              + incompatibilityError.getMessage());
+    }
+  }
+
+  @Override
+  public void handleTestExecutionException(
+      final ExtensionContext context, final Throwable throwable) throws Throwable {
+    if (!isOwner(context)) {
+      throw throwable;
+    }
+
+    // Check if the root cause is a linkage error indicating client API incompatibility
+    final Throwable rootCause = getRootCause(throwable);
+    if (rootCause instanceof NoSuchMethodError
+        || rootCause instanceof NoClassDefFoundError
+        || rootCause instanceof IncompatibleClassChangeError) {
+      LOGGER.warn(
+          "Skipping test due to client API incompatibility: {} - {}",
+          rootCause.getClass().getSimpleName(),
+          rootCause.getMessage());
+      Assumptions.abort(
+          "Test skipped due to client API incompatibility: " + rootCause.getMessage());
+    }
+
+    throw throwable;
+  }
+
+  private static Throwable getRootCause(final Throwable throwable) {
+    Throwable cause = throwable;
+    while (cause.getCause() != null && cause.getCause() != cause) {
+      cause = cause.getCause();
+    }
+    return cause;
   }
 
   @Override

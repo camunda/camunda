@@ -31,6 +31,8 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.GlobalListenerCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.GlobalListenerDeletedHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
@@ -64,6 +66,7 @@ import io.camunda.exporter.handlers.UsageMetricExportedHandler;
 import io.camunda.exporter.handlers.UserCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.UserDeletedHandler;
 import io.camunda.exporter.handlers.UserTaskCompletionVariableHandler;
+import io.camunda.exporter.handlers.UserTaskCreatingHandler;
 import io.camunda.exporter.handlers.UserTaskHandler;
 import io.camunda.exporter.handlers.UserTaskJobBasedHandler;
 import io.camunda.exporter.handlers.UserTaskProcessInstanceHandler;
@@ -74,6 +77,7 @@ import io.camunda.exporter.handlers.batchoperation.BatchOperationChunkCreatedIte
 import io.camunda.exporter.handlers.batchoperation.BatchOperationCreatedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationInitializedHandler;
 import io.camunda.exporter.handlers.batchoperation.BatchOperationLifecycleManagementHandler;
+import io.camunda.exporter.handlers.batchoperation.DecisionInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceCancellationOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceHistoryDeletionOperationHandler;
 import io.camunda.exporter.handlers.batchoperation.ProcessInstanceMigrationOperationHandler;
@@ -91,11 +95,13 @@ import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandl
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
@@ -278,9 +284,13 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new MessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors.get(MessageSubscriptionTemplate.class).getFullQualifiedName(),
                 exporterMetadata),
-            new UserTaskHandler(
+            new UserTaskCreatingHandler(
                 indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 formCache,
+                processCache,
+                exporterMetadata),
+            new UserTaskHandler(
+                indexDescriptors.get(TaskTemplate.class).getFullQualifiedName(),
                 processCache,
                 exporterMetadata),
             new UserTaskJobBasedHandler(
@@ -338,6 +348,9 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new ProcessInstanceHistoryDeletionOperationHandler(
                 indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
+            new DecisionInstanceHistoryDeletionOperationHandler(
+                indexDescriptors.get(OperationTemplate.class).getFullQualifiedName(),
+                batchOperationCache),
             new ListViewFromProcessInstanceCancellationOperationHandler(
                 indexDescriptors.get(ListViewTemplate.class).getFullQualifiedName(),
                 batchOperationCache),
@@ -362,7 +375,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName())));
+                    .getFullQualifiedName()),
+            new GlobalListenerCreatedUpdatedHandler(
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
+            new GlobalListenerDeletedHandler(
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName())));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
@@ -472,7 +489,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
     final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
-    final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
+    final var auditLogCleanupIndexName =
+        (indexDescriptors.get(AuditLogCleanupIndex.class).getFullQualifiedName());
+    final var auditLogBuilder =
+        AuditLogHandler.builder(indexName, auditLogCleanupIndexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       AuditLogTransformerRegistry.createPartitionSpecificTransformers()

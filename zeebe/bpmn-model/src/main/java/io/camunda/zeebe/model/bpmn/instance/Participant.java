@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface Participant extends BaseElement, InteractionNode {
-
-  String getName();
-
-  void setName(String name);
+public interface Participant extends BaseElement, InteractionNode, NamedBpmnElement {
 
   Process getProcess();
 

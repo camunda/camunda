@@ -129,7 +129,7 @@ const TaskDetails: React.FC = observer(() => {
     });
   }
 
-  if (formKey !== undefined) {
+  if (formKey !== null) {
     return (
       <FormJS
         key={userTaskKey}

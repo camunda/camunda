@@ -8,7 +8,7 @@
 
 import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
-import {SelectItem, Stack, Tag, Toggle} from '@carbon/react';
+import {SelectItem, Stack, Tag, Toggle, Tooltip} from '@carbon/react';
 
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {processInstanceMigrationMappingStore} from 'modules/stores/processInstanceMigrationMapping';
@@ -24,10 +24,14 @@ import {
   SourceElementName,
   ArrowRight,
   ToggleContainer,
+  WarningFilled,
 } from './styled';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import {useMigrationTargetXml} from 'modules/queries/processDefinitions/useMigrationTargetXml';
 import {processesStore} from 'modules/stores/processes/processes.migration';
+import {hasEmbeddedForm} from 'modules/bpmn-js/utils/hasEmbeddedForm';
+import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
+import {EmbeddedFormWarningNotification} from './EmbeddedFormWarningNotification';
 
 const TOGGLE_LABEL = 'Show only not mapped';
 
@@ -37,6 +41,7 @@ const BottomPanel: React.FC = observer(() => {
   const handleCheckIsRowSelected = (selectedSourceFlowNodes?: string[]) => {
     return (rowId: string) => selectedSourceFlowNodes?.includes(rowId) ?? false;
   };
+
   const {
     updateElementMapping,
     clearElementMapping,
@@ -133,6 +138,35 @@ const BottomPanel: React.FC = observer(() => {
     sourceData?.selectableSequenceFlows &&
     sourceData.selectableSequenceFlows.length > 0;
 
+  /**
+   * Returns true if sourceElement and targetElement is migration from embedded form to Camunda user task
+   */
+  const isEmbeddedFormMigration = (
+    sourceElement: string,
+    targetElement: string | undefined,
+  ) => {
+    const sourceBusinessObject = sourceData?.selectableFlowNodes.find(
+      (element) => element.id === sourceElement,
+    );
+    const targetBusinessObject = targetData?.selectableFlowNodes.find(
+      (element) => element.id === targetElement,
+    );
+    return (
+      isTargetSelected &&
+      hasEmbeddedForm(sourceBusinessObject) &&
+      isCamundaUserTask(targetBusinessObject)
+    );
+  };
+
+  /**
+   * Returns true if any of the mapped elements is migration from embedded form to Camunda user task
+   */
+  const hasAnyEmbeddedFormMigration = () => {
+    return Object.entries(elementMapping).some(([sourceId, targetId]) =>
+      isEmbeddedFormMigration(sourceId, targetId),
+    );
+  };
+
   // Automatically map elements with same id and type in source and target diagrams
   useEffect(() => {
     clearElementMapping();
@@ -200,6 +234,20 @@ const BottomPanel: React.FC = observer(() => {
                   id: sourceElement.id,
                   sourceElement: (
                     <LeftColumn>
+                      {isEmbeddedFormMigration(
+                        sourceElement.id,
+                        elementMapping[sourceElement.id] ?? '',
+                      ) && (
+                        <Tooltip
+                          label={
+                            'Embedded form in this user task will be replaced by the form defined in the target element.'
+                          }
+                          align="right-bottom"
+                          leaveDelayMs={50}
+                        >
+                          <WarningFilled />
+                        </Tooltip>
+                      )}
                       <SourceElementName>
                         {sourceElement.name ?? sourceElement.id}
                       </SourceElementName>
@@ -259,6 +307,9 @@ const BottomPanel: React.FC = observer(() => {
             )}
           />
         </>
+      )}
+      {isTargetSelected && hasAnyEmbeddedFormMigration() && (
+        <EmbeddedFormWarningNotification />
       )}
     </BottomSection>
   );

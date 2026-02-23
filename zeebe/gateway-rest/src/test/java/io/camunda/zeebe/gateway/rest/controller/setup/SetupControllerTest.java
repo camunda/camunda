@@ -12,6 +12,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -33,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
@@ -123,7 +124,7 @@ class SetupControllerTest extends RestControllerTest {
 
     // when then
     final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
+        CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, SetupController.WRONG_AUTHENTICATION_METHOD_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));
@@ -148,7 +149,7 @@ class SetupControllerTest extends RestControllerTest {
 
     // when then
     final var expectedBody =
-        ProblemDetail.forStatusAndDetail(
+        CamundaProblemDetail.forStatusAndDetail(
             HttpStatus.FORBIDDEN, SetupController.ADMIN_EXISTS_ERROR_MESSAGE);
     expectedBody.setTitle("FORBIDDEN");
     expectedBody.setInstance(URI.create(USER_PATH));

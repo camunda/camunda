@@ -9,6 +9,7 @@
 import type {BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from '../spaceAndCapitalize';
+import {Api, User} from '@carbon/react/icons';
 
 const formatBatchTitle = (batchOperationType?: BatchOperationType) => {
   switch (batchOperationType) {
@@ -37,4 +38,15 @@ const formatModalHeading = (auditLog: AuditLog) => {
   )} ${spaceAndCapitalize(auditLog.entityType)}`;
 };
 
-export {formatBatchTitle, formatModalHeading};
+const getActorIcon = (auditLog: AuditLog) => {
+  switch (auditLog.actorType) {
+    case 'USER':
+      return User;
+    case 'CLIENT':
+      return Api;
+    default:
+      return null;
+  }
+};
+
+export {formatBatchTitle, formatModalHeading, getActorIcon};

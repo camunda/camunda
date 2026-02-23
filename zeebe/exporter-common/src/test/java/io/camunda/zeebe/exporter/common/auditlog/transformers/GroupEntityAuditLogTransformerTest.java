@@ -9,11 +9,13 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogOperationType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -30,6 +32,7 @@ class GroupEntityAuditLogTransformerTest {
     final GroupRecordValue recordValue =
         ImmutableGroupRecordValue.builder()
             .from(factory.generateObject(GroupRecordValue.class))
+            .withEntityType(EntityType.MAPPING_RULE)
             .withGroupId("test-group")
             .withGroupKey(789L)
             .build();
@@ -45,5 +48,7 @@ class GroupEntityAuditLogTransformerTest {
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-group");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.ASSIGN);
+    assertThat(entity.getRelatedEntityKey()).isEqualTo(recordValue.getEntityId());
+    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.MAPPING_RULE);
   }
 }

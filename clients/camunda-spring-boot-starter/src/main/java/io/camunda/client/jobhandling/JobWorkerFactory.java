@@ -88,6 +88,9 @@ public class JobWorkerFactory {
               .filter(Objects::nonNull)
               .toList());
     }
+    if (jobWorkerValue.getTenantFilter() != null) {
+      builder.tenantFilter(jobWorkerValue.getTenantFilter().value());
+    }
     if (jobWorkerValue.getTenantIds() != null && !jobWorkerValue.getTenantIds().isEmpty()) {
       builder.tenantIds(
           jobWorkerValue.getTenantIds().stream()

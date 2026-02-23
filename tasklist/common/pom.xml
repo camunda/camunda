@@ -241,6 +241,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-suite-engine</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -261,6 +267,7 @@
         <configuration>
           <ignoredUnusedDeclaredDependencies>
             <dep>org.junit.platform:junit-platform-suite</dep>
+            <dep>org.junit.platform:junit-platform-suite-engine</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
       </plugin>

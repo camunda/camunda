@@ -23,6 +23,7 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
 
   private final String sequenceFlowId;
   private final String processInstanceKey;
+  private final String rootProcessInstanceKey;
   private final String processDefinitionKey;
   private final String processDefinitionId;
   private final String elementId;
@@ -31,6 +32,7 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
   public ProcessInstanceSequenceFlowImpl(final ProcessInstanceSequenceFlowResult result) {
     sequenceFlowId = result.getSequenceFlowId();
     processInstanceKey = result.getProcessInstanceKey();
+    rootProcessInstanceKey = result.getRootProcessInstanceKey();
     processDefinitionKey = result.getProcessDefinitionKey();
     processDefinitionId = result.getProcessDefinitionId();
     elementId = result.getElementId();
@@ -40,12 +42,14 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
   public ProcessInstanceSequenceFlowImpl(
       final String sequenceFlowId,
       final String processInstanceKey,
+      final String rootProcessInstanceKey,
       final String processDefinitionKey,
       final String processDefinitionId,
       final String elementId,
       final String tenantId) {
     this.sequenceFlowId = sequenceFlowId;
     this.processInstanceKey = processInstanceKey;
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     this.processDefinitionKey = processDefinitionKey;
     this.processDefinitionId = processDefinitionId;
     this.elementId = elementId;
@@ -60,6 +64,11 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
   @Override
   public String getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public String getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -85,7 +94,13 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
   @Override
   public int hashCode() {
     return Objects.hash(
-        processInstanceKey, processDefinitionKey, processDefinitionId, elementId, tenantId);
+        sequenceFlowId,
+        processInstanceKey,
+        rootProcessInstanceKey,
+        processDefinitionKey,
+        processDefinitionId,
+        elementId,
+        tenantId);
   }
 
   @Override
@@ -96,6 +111,7 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
     final ProcessInstanceSequenceFlowImpl that = (ProcessInstanceSequenceFlowImpl) o;
     return Objects.equals(sequenceFlowId, that.sequenceFlowId)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processDefinitionId, that.processDefinitionId)
         && Objects.equals(elementId, that.elementId)
@@ -105,9 +121,10 @@ public class ProcessInstanceSequenceFlowImpl implements ProcessInstanceSequenceF
   @Override
   public String toString() {
     return String.format(
-        "ProcessInstanceSequenceFlowImpl{sequenceFlowId='%s', processInstanceKey='%s', processDefinitionKey='%s', processDefinitionId='%s', elementId='%s', tenantId='%s'}",
+        "ProcessInstanceSequenceFlowImpl{sequenceFlowId='%s', processInstanceKey='%s', rootProcessInstanceKey='%s', processDefinitionKey='%s', processDefinitionId='%s', elementId='%s', tenantId='%s'}",
         sequenceFlowId,
         processInstanceKey,
+        rootProcessInstanceKey,
         processDefinitionKey,
         processDefinitionId,
         elementId,

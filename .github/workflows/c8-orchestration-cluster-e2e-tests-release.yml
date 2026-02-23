@@ -202,7 +202,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -278,7 +278,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E API Test Result Release v${{ needs.validate-release.outputs.release_version }}
@@ -428,7 +428,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
 
@@ -524,7 +524,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)

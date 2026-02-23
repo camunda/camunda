@@ -23,7 +23,7 @@
     <version.java>17</version.java>
     <license.header.file>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header.file>
     <version.roaster>2.31.0.Final</version.roaster>
-    <version.aspectjweaver>1.9.25</version.aspectjweaver>
+    <version.aspectjweaver>1.9.25.1</version.aspectjweaver>
     <generated.test.sources.path>${project.build.directory}/generated-test-sources/java</generated.test.sources.path>
   </properties>
 
@@ -236,6 +236,11 @@
             </path>
           </annotationProcessorPaths>
         </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.revapi</groupId>
+        <artifactId>revapi-maven-plugin</artifactId>
       </plugin>
 
       <!-- START -->

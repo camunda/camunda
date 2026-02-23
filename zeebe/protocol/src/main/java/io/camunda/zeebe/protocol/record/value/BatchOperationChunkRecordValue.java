@@ -42,5 +42,15 @@ public interface BatchOperationChunkRecordValue extends BatchOperationRelated, R
     long getItemKey();
 
     long getProcessInstanceKey();
+
+    /**
+     * Returns the key of the root process instance in the hierarchy. For items in top-level process
+     * instances, this is equal to {@link #getProcessInstanceKey()}. For items in child process
+     * instances (created via call activities), this is the key of the topmost parent process
+     * instance.
+     *
+     * @return the key of the root process instance, or {@code -1} if not set
+     */
+    long getRootProcessInstanceKey();
   }
 }

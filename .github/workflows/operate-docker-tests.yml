@@ -88,7 +88,7 @@ jobs:
           set-mvnw: true
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: 'Create settings.xml'
-        uses: s4u/maven-settings-action@v3.1.0
+        uses: s4u/maven-settings-action@v4.0.0
         with:
           githubServer: false
           servers: |

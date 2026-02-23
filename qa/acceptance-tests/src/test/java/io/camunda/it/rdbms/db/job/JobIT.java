@@ -172,6 +172,30 @@ public class JobIT {
   }
 
   @TestTemplate
+  public void shouldFindAllJobPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader processInstanceReader = rdbmsService.getJobReader();
+
+    final String processDefinitionId = JobFixtures.nextStringId();
+    createAndSaveRandomJobs(rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        processInstanceReader.search(
+            JobQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        .sort(s -> s.deadline().asc().elementId().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindJobWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -249,12 +273,55 @@ public class JobIT {
         .usingRecursiveComparison()
         // date fields are ignored because different engines produce different precisions
         // e.g., date may look like 2025-11-21T16:02:57.376Z or 2025-11-21T16:02:57.376207580Z
-        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime")
+        // customHeaders may be null on db record level but defaults to an empty Map on the Entity
+        .ignoringFields("endTime", "deadline", "creationTime", "lastUpdateTime", "customHeaders")
         .isEqualTo(original);
     assertThat(instance.jobKey()).isEqualTo(original.jobKey());
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
     assertThat(instance.deadline())
         .isCloseTo(original.deadline(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final JobDbReader reader = rdbmsService.getJobReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveJob(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getJobWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            JobQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(JobEntity::jobKey))
+        .containsExactlyInAnyOrder(item1.jobKey(), item3.jobKey());
   }
 
   @TestTemplate

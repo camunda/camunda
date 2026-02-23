@@ -123,11 +123,18 @@ public abstract class ArchiverJob<B extends ArchiveBatch> implements BackgroundT
    */
   protected CompletableFuture<Integer> archive(
       final IndexTemplateDescriptor templateDescriptor, final B batch) {
+    return archive(templateDescriptor, batch, Map.of());
+  }
+
+  protected CompletableFuture<Integer> archive(
+      final IndexTemplateDescriptor templateDescriptor,
+      final B batch,
+      final Map<String, String> filters) {
     final var sourceIdxName = templateDescriptor.getFullQualifiedName();
     final var idsMap = createIdsByFieldMap(templateDescriptor, batch);
     final var finishDate = batch.finishDate();
     return archiverRepository
-        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, executor)
+        .moveDocuments(sourceIdxName, sourceIdxName + finishDate, idsMap, filters, executor)
         .thenApplyAsync(ok -> batch.size(), executor);
   }
 

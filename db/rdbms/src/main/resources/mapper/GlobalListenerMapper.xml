@@ -1,0 +1,195 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="io.camunda.db.rdbms.sql.GlobalListenerMapper">
+
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER (ID,
+                                          LISTENER_ID,
+                                          TYPE,
+                                          RETRIES,
+                                          AFTER_NON_GLOBAL,
+                                          PRIORITY,
+                                          SOURCE,
+                                          LISTENER_TYPE)
+    VALUES (#{id},
+            #{listenerId},
+            #{type},
+            #{retries},
+            #{afterNonGlobal},
+            #{priority},
+            #{source},
+            #{listenerType})
+  </insert>
+
+  <insert id="insertEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    INSERT INTO ${prefix}GLOBAL_LISTENER_EVENT_TYPE (GLOBAL_LISTENER_ID, EVENT_TYPE)
+    VALUES
+    <foreach collection="eventTypes" item="eventType" separator=", ">
+      (#{id}, #{eventType})
+    </foreach>
+  </insert>
+
+  <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    UPDATE ${prefix}GLOBAL_LISTENER
+    SET LISTENER_ID = #{listenerId},
+        TYPE = #{type},
+        RETRIES = #{retries},
+        AFTER_NON_GLOBAL = #{afterNonGlobal},
+        PRIORITY = #{priority},
+        SOURCE = #{source},
+        LISTENER_TYPE = #{listenerType}
+    WHERE ID = #{id}
+  </update>
+
+  <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER
+    WHERE ID = #{id}
+  </delete>
+
+  <delete id="deleteEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    DELETE
+    FROM ${prefix}GLOBAL_LISTENER_EVENT_TYPE
+    WHERE GLOBAL_LISTENER_ID = #{id}
+  </delete>
+
+  <resultMap id="searchResultMap" type="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
+    <constructor>
+      <idArg column="ID" javaType="java.lang.String"/>
+    </constructor>
+    <result property="listenerId" column="LISTENER_ID" javaType="java.lang.String"/>
+    <result property="type" column="TYPE" javaType="java.lang.String"/>
+    <result property="retries" column="RETRIES" javaType="java.lang.Integer"/>
+    <result property="afterNonGlobal" column="AFTER_NON_GLOBAL" javaType="java.lang.Boolean"/>
+    <result property="priority" column="PRIORITY" javaType="java.lang.Integer"/>
+    <result property="source" column="SOURCE" javaType="io.camunda.search.entities.GlobalListenerSource"/>
+    <result property="listenerType" column="LISTENER_TYPE" javaType="io.camunda.search.entities.GlobalListenerType"/>
+    <collection property="eventTypes" ofType="java.lang.String" javaType="java.util.List">
+      <id column="EVENT_TYPE"/>
+    </collection>
+  </resultMap>
+
+  <select id="get" parameterType="java.lang.String"
+    resultMap="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchResultMap">
+    SELECT gl.*, et.EVENT_TYPE
+    FROM (
+      SELECT
+        gl.ID,
+        gl.LISTENER_ID,
+        gl.TYPE,
+        gl.RETRIES,
+        gl.AFTER_NON_GLOBAL,
+        gl.PRIORITY,
+        gl.SOURCE,
+        gl.LISTENER_TYPE
+      FROM ${prefix}GLOBAL_LISTENER gl
+      WHERE ID = #{id}
+    ) gl
+    LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
+  </select>
+
+  <select id="search"
+    parameterType="io.camunda.db.rdbms.read.domain.GlobalListenerDbQuery"
+    resultMap="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchResultMap">
+    SELECT * FROM (
+      SELECT
+        gl.*,
+        et.EVENT_TYPE
+      FROM (
+        SELECT * FROM (
+          SELECT
+            gl.ID,
+            gl.LISTENER_ID,
+            gl.TYPE,
+            gl.RETRIES,
+            gl.AFTER_NON_GLOBAL,
+            gl.PRIORITY,
+            gl.SOURCE,
+            gl.LISTENER_TYPE
+          FROM ${prefix}GLOBAL_LISTENER gl
+          <include refid="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchFilter"/>
+        ) filtered
+        <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+        <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+        <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+      ) gl
+      LEFT JOIN ${prefix}GLOBAL_LISTENER_EVENT_TYPE et ON (et.GLOBAL_LISTENER_ID = gl.ID)
+    ) sorted
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+  </select>
+
+  <select id="count" resultType="java.lang.Long">
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}GLOBAL_LISTENER gl
+      <include refid="io.camunda.db.rdbms.sql.GlobalListenerMapper.searchFilter"/>
+      ${count.limit}
+    ) t
+  </select>
+
+  <sql id="searchFilter">
+    <where>
+      <!-- basic filters -->
+      <if test="filter.listenerIdOperations != null and !filter.listenerIdOperations.isEmpty()">
+        <foreach collection="filter.listenerIdOperations" item="operation">
+          AND gl.LISTENER_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.typeOperations != null and !filter.typeOperations.isEmpty()">
+        <foreach collection="filter.typeOperations" item="operation">
+          AND gl.TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.retriesOperations != null and !filter.retriesOperations.isEmpty()">
+        <foreach collection="filter.retriesOperations" item="operation">
+          AND gl.RETRIES
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.afterNonGlobal != null">
+        AND gl.AFTER_NON_GLOBAL = #{filter.afterNonGlobal}
+      </if>
+      <if test="filter.priorityOperations != null and !filter.priorityOperations.isEmpty()">
+        <foreach collection="filter.priorityOperations" item="operation">
+          AND gl.PRIORITY
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.sourceOperations != null and !filter.sourceOperations.isEmpty()">
+        <foreach collection="filter.sourceOperations" item="operation">
+          AND gl.SOURCE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.listenerTypeOperations != null and !filter.listenerTypeOperations.isEmpty()">
+        <foreach collection="filter.listenerTypeOperations" item="operation">
+          AND gl.LISTENER_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+
+      <!-- event types -->
+      <if
+        test="filter.eventTypeOperations != null and !filter.eventTypeOperations.isEmpty()">
+        AND EXISTS (Select * from ${prefix}GLOBAL_LISTENER_EVENT_TYPE et where et.GLOBAL_LISTENER_ID = gl.ID
+        <foreach collection="filter.eventTypeOperations" item="operation">
+          AND et.EVENT_TYPE
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+        )
+      </if>
+    </where>
+  </sql>
+
+</mapper>
+

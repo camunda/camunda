@@ -30,7 +30,7 @@ test.describe.serial('tenants CRUD', () => {
   });
 
   test.beforeEach(async ({page, loginPage, identityHeader}) => {
-    await navigateToApp(page, 'identity');
+    await navigateToApp(page, 'admin');
     await loginPage.login(
       LOGIN_CREDENTIALS.username,
       LOGIN_CREDENTIALS.password,

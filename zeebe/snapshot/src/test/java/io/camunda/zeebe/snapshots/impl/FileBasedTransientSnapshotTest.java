@@ -266,10 +266,38 @@ public class FileBasedTransientSnapshotTest {
     assertThat(metadata)
         .extracting(
             SnapshotMetadata::processedPosition,
-            SnapshotMetadata::exportedPosition,
+            SnapshotMetadata::minExportedPosition,
             SnapshotMetadata::lastFollowupEventPosition,
             SnapshotMetadata::version)
         .containsExactly(3L, 4L, 100L, FileBasedSnapshotStoreImpl.VERSION);
+  }
+
+  @Test
+  public void shouldAddMaxExportedPositionToMetadata() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+
+    // when
+    final var persistedSnapshot = transientSnapshot.withMaxExportedPosition(250L).persist().join();
+
+    // then
+    final SnapshotMetadata metadata = persistedSnapshot.getMetadata();
+    assertThat(metadata.maxExportedPosition()).isEqualTo(250L);
+  }
+
+  @Test
+  public void shouldDefaultMaxExportedPositionToMaxLong() {
+    // given
+    final var transientSnapshot = snapshotStore.newTransientSnapshot(1L, 2L, 3, 4, false).get();
+    transientSnapshot.take(this::writeSnapshot).join();
+
+    // when - no withMaxExportedPosition call
+    final var persistedSnapshot = transientSnapshot.persist().join();
+
+    // then
+    final SnapshotMetadata metadata = persistedSnapshot.getMetadata();
+    assertThat(metadata.maxExportedPosition()).isEqualTo(Long.MAX_VALUE);
   }
 
   @Test

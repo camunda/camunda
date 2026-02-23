@@ -355,7 +355,8 @@ public class ElementInstanceTest extends ClientRestTest {
             .incidentKey("3")
             .processDefinitionKey("4")
             .startDate(OffsetDateTime.now().toString())
-            .endDate(OffsetDateTime.now().toString()));
+            .endDate(OffsetDateTime.now().toString())
+            .rootProcessInstanceKey("5"));
 
     // when
     client.newElementInstanceGetRequest(elementInstanceKey).send().join();

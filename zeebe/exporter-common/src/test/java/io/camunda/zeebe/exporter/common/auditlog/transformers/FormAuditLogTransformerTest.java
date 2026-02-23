@@ -29,6 +29,7 @@ class FormAuditLogTransformerTest {
     final Form recordValue =
         ImmutableForm.builder()
             .from(factory.generateObject(Form.class))
+            .withResourceName("formResource")
             .withDeploymentKey(123L)
             .withFormKey(456L)
             .withTenantId("tenant-1")
@@ -46,5 +47,16 @@ class FormAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("456");
     assertThat(entity.getDeploymentKey()).isEqualTo(123L);
     assertThat(entity.getFormKey()).isEqualTo(456L);
+    assertThat(entity.getEntityDescription()).isEqualTo("formResource");
+  }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<Form> record =
+        factory.generateRecord(ValueType.FORM, r -> r.withIntent(FormIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
   }
 }

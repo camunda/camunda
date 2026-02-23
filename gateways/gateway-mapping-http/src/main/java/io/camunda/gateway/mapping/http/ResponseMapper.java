@@ -198,26 +198,35 @@ public final class ResponseMapper {
   }
 
   private static ActivatedJobResult toActivatedJob(final long jobKey, final JobRecord job) {
-    return new ActivatedJobResult()
-        .jobKey(KeyUtil.keyToString(jobKey))
-        .type(job.getType())
-        .processDefinitionId(job.getBpmnProcessId())
-        .elementId(job.getElementId())
-        .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
-        .processDefinitionVersion(job.getProcessDefinitionVersion())
-        .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
-        .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
-        .worker(bufferAsString(job.getWorkerBuffer()))
-        .retries(job.getRetries())
-        .deadline(job.getDeadline())
-        .variables(job.getVariables())
-        .customHeaders(job.getCustomHeadersObjectMap())
-        .userTask(toUserTaskProperties(job))
-        .tenantId(job.getTenantId())
-        .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
-        .listenerEventType(
-            EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
-        .tags(job.getTags());
+    final var result =
+        new ActivatedJobResult()
+            .jobKey(KeyUtil.keyToString(jobKey))
+            .type(job.getType())
+            .processDefinitionId(job.getBpmnProcessId())
+            .elementId(job.getElementId())
+            .processInstanceKey(KeyUtil.keyToString(job.getProcessInstanceKey()))
+            .processDefinitionVersion(job.getProcessDefinitionVersion())
+            .processDefinitionKey(KeyUtil.keyToString(job.getProcessDefinitionKey()))
+            .elementInstanceKey(KeyUtil.keyToString(job.getElementInstanceKey()))
+            .worker(bufferAsString(job.getWorkerBuffer()))
+            .retries(job.getRetries())
+            .deadline(job.getDeadline())
+            .variables(job.getVariables())
+            .customHeaders(job.getCustomHeadersObjectMap())
+            .userTask(toUserTaskProperties(job))
+            .tenantId(job.getTenantId())
+            .kind(EnumUtil.convert(job.getJobKind(), JobKindEnum.class))
+            .listenerEventType(
+                EnumUtil.convert(job.getJobListenerEventType(), JobListenerEventTypeEnum.class))
+            .tags(job.getTags());
+
+    // rootProcessInstanceKey is only set for process instances created after version 8.9
+    final long rootProcessInstanceKey = job.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      result.rootProcessInstanceKey(KeyUtil.keyToString(rootProcessInstanceKey));
+    }
+
+    return result;
   }
 
   private static UserTaskProperties toUserTaskProperties(final JobRecord job) {
@@ -495,7 +504,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         null,
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
@@ -507,7 +517,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         brokerResponse.getVariables(),
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
@@ -517,21 +528,24 @@ public final class ResponseMapper {
       final Long processInstanceKey,
       final String tenantId,
       final Map<String, Object> variables,
-      final Set<String> tags) {
+      final Set<String> tags,
+      final String businessId) {
     final var response =
         new CreateProcessInstanceResult()
             .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
             .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId);
+            .tenantId(tenantId)
+            // defaults to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .businessId(emptyToNull(businessId));
     if (variables != null) {
       response.variables(variables);
     }
     if (tags != null) {
       response.setTags(tags);
     }
-
     return response;
   }
 
@@ -662,8 +676,10 @@ public final class ResponseMapper {
             .decisionRequirementsKey(
                 KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
             .output(decisionEvaluationRecord.getDecisionOutput())
-            .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
-            .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
+            // these optional fields default to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
+            .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
             .tenantId(decisionEvaluationRecord.getTenantId())
             .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
             .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
@@ -793,6 +809,10 @@ public final class ResponseMapper {
           partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
           brokerInfo.addPartitionsItem(partitionDto);
         });
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   static class RestJobActivationResult

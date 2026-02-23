@@ -18,6 +18,7 @@ package io.camunda.client;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3;
 import io.camunda.client.CamundaClientCloudBuilderStep1.CamundaClientCloudBuilderStep2.CamundaClientCloudBuilderStep3.CamundaClientCloudBuilderStep4;
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -31,10 +32,8 @@ public final class ClientProperties {
       "camunda.client.applyEnvironmentVariableOverrides";
 
   /**
-   * @deprecated since 8.5 for removal with 8.8, where toggling between both will not be possible
    * @see CamundaClientBuilder#preferRestOverGrpc(boolean)
    */
-  @Deprecated
   public static final String PREFER_REST_OVER_GRPC = "camunda.client.gateway.preferRestOverGrpc";
 
   /**
@@ -61,6 +60,12 @@ public final class ClientProperties {
    * @see CamundaClientBuilder#defaultJobWorkerTenantIds(List)
    */
   public static final String DEFAULT_JOB_WORKER_TENANT_IDS = "camunda.client.worker.tenantIds";
+
+  /**
+   * @see CamundaClientBuilder#defaultJobWorkerTenantFilter(TenantFilter)
+   */
+  public static final String DEFAULT_JOB_WORKER_TENANT_FILTER_MODE =
+      "camunda.client.worker.tenant-filter";
 
   /**
    * @see CamundaClientBuilder#numJobWorkerExecutionThreads(int)

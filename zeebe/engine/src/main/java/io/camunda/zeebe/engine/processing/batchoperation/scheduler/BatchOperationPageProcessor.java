@@ -20,6 +20,7 @@ import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
@@ -125,7 +126,8 @@ public class BatchOperationPageProcessor {
   private static BatchOperationItem mapItem(final Item item) {
     return new BatchOperationItem()
         .setItemKey(item.itemKey())
-        .setProcessInstanceKey(item.processInstanceKey());
+        .setProcessInstanceKey(item.processInstanceKey())
+        .setRootProcessInstanceKey(Optional.ofNullable(item.rootProcessInstanceKey()).orElse(-1L));
   }
 
   public record PageProcessingResult(

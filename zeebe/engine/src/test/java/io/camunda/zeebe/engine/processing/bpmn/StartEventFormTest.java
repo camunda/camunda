@@ -57,7 +57,7 @@ public class StartEventFormTest {
   }
 
   @Test
-  public void shouldStartAncCompleteProcessWithForm() {
+  public void shouldStartAndCompleteProcessWithForm() {
     // given
     deployForm();
     deployProcess(FORM_ID);
@@ -87,7 +87,9 @@ public class StartEventFormTest {
   }
 
   private void assertProcessDeployed() {
-    assertThat(RecordingExporter.deploymentRecords())
+    assertThat(
+            RecordingExporter.deploymentRecords()
+                .limit(r -> r.getIntent() == DeploymentIntent.CREATED))
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
             tuple(RecordType.COMMAND, DeploymentIntent.CREATE),
@@ -96,7 +98,9 @@ public class StartEventFormTest {
 
   private void assertProcessInstanceCompleted(final long processInstanceKey) {
     assertThat(
-            RecordingExporter.processInstanceRecords().withProcessInstanceKey(processInstanceKey))
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
         .extracting(Record::getRecordType, Record::getIntent)
         .containsSequence(
             tuple(RecordType.EVENT, ProcessInstanceIntent.ELEMENT_COMPLETING),

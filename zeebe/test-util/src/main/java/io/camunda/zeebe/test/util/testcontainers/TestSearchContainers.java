@@ -30,9 +30,9 @@ public final class TestSearchContainers {
           .withTag(
               Objects.requireNonNullElse(
                   org.elasticsearch.client.RestClient.class.getPackage().getImplementationVersion(),
-                  "8.16.0"));
+                  "8.19.0"));
   private static final DockerImageName OPENSEARCH_IMAGE =
-      DockerImageName.parse("opensearchproject/opensearch").withTag("2.17.0");
+      DockerImageName.parse("opensearchproject/opensearch").withTag("2.19.0");
   private static final DockerImageName POSTGRES_IMAGE =
       DockerImageName.parse("postgres").withTag("15.3-alpine");
   private static final DockerImageName MARIADB_IMAGE =

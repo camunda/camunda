@@ -35,10 +35,7 @@ export async function cleanupMappingRules(
           );
         }
       } catch (error) {
-          console.error(
-            `Failed to delete mapping rule ${mappingRuleId}:`,
-            error,
-          );
+        console.error(`Failed to delete mapping rule ${mappingRuleId}:`, error);
       }
     }),
   );

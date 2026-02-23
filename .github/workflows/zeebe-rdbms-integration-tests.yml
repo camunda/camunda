@@ -58,6 +58,10 @@ jobs:
             database-image-version: "8.4"
             it-database-type: "rdbms_mysql"
           # MariaDB - Supported versions: 10.11, 11.4, 11.8
+          - database-name: "MariaDB 10.11"
+            database-type: "mariadb"
+            database-image-version: "10.11"
+            it-database-type: "rdbms_mariadb"
           - database-name: "MariaDB 11.4"
             database-type: "mariadb"
             database-image-version: "11.4"

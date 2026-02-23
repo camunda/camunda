@@ -17,14 +17,16 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @Disabled("Will be addressed in other issues")
 @ExtendWith(SpringExtension.class)
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {TestApplication.class, UnifiedConfigurationHelper.class, UnifiedConfiguration.class},
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,

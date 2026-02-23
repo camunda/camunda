@@ -30,7 +30,12 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
+@RunWith(Parameterized.class)
 public final class ExporterDirectorDistributionTest {
 
   private static final String EXPORTER_ID_1 = "exporter-1";
@@ -43,18 +48,16 @@ public final class ExporterDirectorDistributionTest {
 
   private static final Duration DISTRIBUTION_INTERVAL = Duration.ofSeconds(15);
 
-  private final SimplePartitionMessageService simplePartitionMessageService =
+  private static final SimplePartitionMessageService SIMPLE_PARTITION_MESSAGE_SERVICE =
       new SimplePartitionMessageService();
 
   @Rule
-  public final ExporterRule activeExporters =
-      ExporterRule.activeExporter()
-          .withPartitionMessageService(simplePartitionMessageService)
-          .withDistributionInterval(DISTRIBUTION_INTERVAL);
+  @Parameter(0)
+  public ExporterRule activeExporters;
 
   @Rule
-  public final ExporterRule passiveExporters =
-      ExporterRule.passiveExporter().withPartitionMessageService(simplePartitionMessageService);
+  @Parameter(1)
+  public ExporterRule passiveExporters;
 
   private final List<ControlledTestExporter> exporters = new ArrayList<>();
   private final List<ExporterDescriptor> exporterDescriptors = new ArrayList<>();
@@ -63,6 +66,7 @@ public final class ExporterDirectorDistributionTest {
   public void init() {
     exporters.clear();
     exporterDescriptors.clear();
+    SIMPLE_PARTITION_MESSAGE_SERVICE.clear();
 
     createExporter(EXPORTER_ID_1, EXPORTER_METADATA_1);
     createExporter(EXPORTER_ID_2, EXPORTER_METADATA_2);
@@ -183,6 +187,116 @@ public final class ExporterDirectorDistributionTest {
 
     // then - the exported position should not go back
     assertThat(passiveExporterState.getPosition(EXPORTER_ID_1)).isEqualTo(position);
+  }
+
+  @Parameters
+  public static Object[][] activeExporters() {
+    return new Object[][] {
+      create89ExporterMode(),
+      create89To810ExporterMode(),
+      create89To810ExporterModeReverse(),
+      create810ExporterMode(),
+      create810To811ExporterMode(),
+      create810To811ExporterModeReverse(),
+      create811ExporterMode(),
+      create811ExporterModeWithAnotherEngineName()
+    };
+  }
+
+  static Object[] create89ExporterMode() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL),
+      ExporterRule.passiveExporter().withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+    };
+  }
+
+  static Object[] create89To810ExporterMode() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false)),
+      ExporterRule.passiveExporter().withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+    };
+  }
+
+  static Object[] create89To810ExporterModeReverse() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false))
+    };
+  }
+
+  static Object[] create810ExporterMode() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false)),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false))
+    };
+  }
+
+  static Object[] create810To811ExporterMode() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false)),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false))
+    };
+  }
+
+  static Object[] create810To811ExporterModeReverse() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(c -> c.sendOnLegacySubject(false)),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false))
+    };
+  }
+
+  static Object[] create811ExporterMode() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false)),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false))
+    };
+  }
+
+  static Object[] create811ExporterModeWithAnotherEngineName() {
+    return new Object[] {
+      ExporterRule.activeExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withDistributionInterval(DISTRIBUTION_INTERVAL)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).engineName("foo")),
+      ExporterRule.passiveExporter()
+          .withPartitionMessageService(SIMPLE_PARTITION_MESSAGE_SERVICE)
+          .withExporterDirectorContextConfigurator(
+              c -> c.sendOnLegacySubject(false).receiveOnLegacySubject(false).engineName("foo"))
+    };
   }
 
   /**

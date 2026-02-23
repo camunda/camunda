@@ -21,11 +21,7 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Sebastian Menski
  */
-public interface ConversationLink extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface ConversationLink extends BaseElement, NamedBpmnElement {
 
   InteractionNode getSource();
 

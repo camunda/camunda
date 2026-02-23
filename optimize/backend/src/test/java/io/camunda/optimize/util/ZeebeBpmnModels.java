@@ -54,6 +54,17 @@ public final class ZeebeBpmnModels {
   public static final String SERVICE_TASK_WITH_COMPENSATION_EVENT = "compensationEvent";
   public static final String TASK = "task";
   public static final String COMPENSATION_EVENT_TASK = "compensationEventTask";
+  public static final String CONDITIONAL_START_EVENT = "conditionalStartEvent";
+  public static final String CONDITIONAL_INTERMEDIATE_CATCH = "conditionalIntermediateCatchEvent";
+  public static final String CONDITIONAL_NON_INTERRUPTING_BOUNDARY =
+      "conditionalBoundaryNonInterrupting";
+  public static final String CONDITIONAL_INTERRUPTING_BOUNDARY = "conditionalBoundaryInterrupting";
+  public static final String CONDITIONAL_NON_INT_SUB_PROCESS =
+      "conditionalStartNonInterruptingSubProcess";
+  public static final String CONDITIONAL_INT_SUB_PROCESS = "conditionalStartInterruptingSubProcess";
+  public static final String CONDITIONAL_PROCESS_SERVICE_TASK_1 = "conditionalProcessServiceTask1";
+  public static final String CONDITIONAL_PROCESS_SERVICE_TASK_2 = "conditionalProcessServiceTask2";
+  public static final String CONDITIONAL_PROCESS_END = "conditionalEndEvent";
   public static final String VERSION_TAG = "v1";
 
   private ZeebeBpmnModels() {}
@@ -327,5 +338,47 @@ public final class ZeebeBpmnModels {
         .endEvent(SIGNAL_PROCESS_END, e -> e.signal("signalToStartInterruptingSubProcess"))
         .done();
     // @formatter:on
+  }
+
+  public static BpmnModelInstance createProcessWithConditionalEvents() {
+    final ProcessBuilder processBuilder = Bpmn.createExecutableProcess("conditionalProcess");
+
+    processBuilder
+        .eventSubProcess("interruptingSubProcess")
+        .startEvent(CONDITIONAL_INT_SUB_PROCESS)
+        .condition(c -> c.condition("= triggerSubProcessInt = true"))
+        .interrupting(true)
+        .endEvent("interruptingSubProcessEnd");
+
+    processBuilder
+        .eventSubProcess("nonInterruptingSubProcess")
+        .startEvent(CONDITIONAL_NON_INT_SUB_PROCESS)
+        .condition(c -> c.condition("= triggerSubProcessNonInt = true"))
+        .interrupting(false)
+        .endEvent("nonInterruptingSubProcessEnd");
+
+    return processBuilder
+        .startEvent(CONDITIONAL_START_EVENT)
+        .condition(c -> c.condition("= triggerStart = true"))
+        .serviceTask(CONDITIONAL_PROCESS_SERVICE_TASK_1)
+        .zeebeJobType(SERVICE_TASK)
+        .boundaryEvent(CONDITIONAL_NON_INTERRUPTING_BOUNDARY)
+        .condition(c -> c.condition("= triggerBoundaryNonInt = true"))
+        .cancelActivity(false)
+        .endEvent("boundaryNonIntEnd")
+        .moveToActivity(CONDITIONAL_PROCESS_SERVICE_TASK_1)
+        .intermediateCatchEvent(CONDITIONAL_INTERMEDIATE_CATCH)
+        .condition(c -> c.condition("= triggerIntermediate = true"))
+        .serviceTask(CONDITIONAL_PROCESS_SERVICE_TASK_2)
+        .zeebeJobType(SERVICE_TASK)
+        .boundaryEvent(CONDITIONAL_INTERRUPTING_BOUNDARY)
+        .condition(c -> c.condition("= triggerBoundaryInt = true"))
+        .cancelActivity(true)
+        .serviceTask("serviceTaskAfterBoundary")
+        .zeebeJobType("waitTask")
+        .endEvent("boundaryIntEnd")
+        .moveToActivity(CONDITIONAL_PROCESS_SERVICE_TASK_2)
+        .endEvent(CONDITIONAL_PROCESS_END)
+        .done();
   }
 }

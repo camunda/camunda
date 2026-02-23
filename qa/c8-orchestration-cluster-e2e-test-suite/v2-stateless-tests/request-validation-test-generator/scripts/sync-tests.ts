@@ -1,20 +1,20 @@
 #!/usr/bin/env tsx
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
+import {fileURLToPath} from 'url';
 
 async function rmDir(dir: string) {
   if (!fs.existsSync(dir)) return;
-  await fs.promises.rm(dir, { recursive: true, force: true });
+  await fs.promises.rm(dir, {recursive: true, force: true});
 }
 
 async function ensureDir(dir: string) {
-  await fs.promises.mkdir(dir, { recursive: true });
+  await fs.promises.mkdir(dir, {recursive: true});
 }
 
 async function copyDir(src: string, dest: string) {
   await ensureDir(dest);
-  const entries = await fs.promises.readdir(src, { withFileTypes: true });
+  const entries = await fs.promises.readdir(src, {withFileTypes: true});
   for (const e of entries) {
     const s = path.join(src, e.name);
     const d = path.join(dest, e.name);
@@ -32,7 +32,13 @@ async function main() {
   const repoRoot = path.resolve(__dirname, '..', '..');
   const generatorRoot = path.resolve(__dirname, '..');
   const generatedDir = path.join(generatorRoot, 'generated');
-  const qaTestsDir = path.join(repoRoot, 'tests', 'api', 'v2', 'request-validation');
+  const qaTestsDir = path.join(
+    repoRoot,
+    'tests',
+    'api',
+    'v2',
+    'request-validation',
+  );
 
   if (!fs.existsSync(generatedDir)) {
     console.error('[sync-tests] No generated output found at', generatedDir);

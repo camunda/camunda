@@ -109,7 +109,7 @@ runs:
     - name: Setup Node
       uses: actions/setup-node@v6
       with:
-        node-version: "22"
+        node-version: 24
 
     - name: Install node dependencies
       if: ${{ inputs.source-build == 'true' }}
@@ -206,7 +206,7 @@ runs:
       env:
         JAVA_VERSION: 21.0.3
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@v6
       with:
         name: camunda8-run-build-${{ inputs.os }}
         path: ./c8run/camunda8-run*

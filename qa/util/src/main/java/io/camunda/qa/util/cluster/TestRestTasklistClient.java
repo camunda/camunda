@@ -8,8 +8,11 @@
 package io.camunda.qa.util.cluster;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
+import io.camunda.tasklist.webapp.api.rest.v1.entities.TaskSearchResponse;
 import io.camunda.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,7 +30,8 @@ import java.util.function.Consumer;
 
 public class TestRestTasklistClient implements CloseableSilently {
 
-  public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+  public static final ObjectMapper OBJECT_MAPPER =
+      new ObjectMapper().registerModule(new JavaTimeModule());
 
   private final URI endpoint;
   private final HttpClient httpClient;
@@ -35,13 +39,12 @@ public class TestRestTasklistClient implements CloseableSilently {
 
   public TestRestTasklistClient(final URI endpoint) {
     this.endpoint = endpoint;
-    this.httpClient = HttpClient.newHttpClient();
+    httpClient = HttpClient.newHttpClient();
   }
 
   public TestRestTasklistClient(final URI endpoint, final CredentialsProvider credentialsProvider) {
     this(endpoint);
-    this.authenticationApplier =
-        TestRestOperateClient.applyCredentialsProvider(credentialsProvider);
+    authenticationApplier = TestRestOperateClient.applyCredentialsProvider(credentialsProvider);
   }
 
   TestRestTasklistClient(
@@ -50,7 +53,7 @@ public class TestRestTasklistClient implements CloseableSilently {
       final String username,
       final String password) {
     this(endpoint);
-    this.authenticationApplier = applyBasicAuthenticationHeader(username, password);
+    authenticationApplier = applyBasicAuthenticationHeader(username, password);
   }
 
   public HttpResponse<String> searchRequest(final String path, final String body) {
@@ -73,7 +76,14 @@ public class TestRestTasklistClient implements CloseableSilently {
             .orElse(null));
   }
 
-  public HttpResponse<String> saveDraftVariables(final Long taskKey, String name, String value) {
+  public TaskSearchResponse[] searchAndParseTasks(final Long processInstanceKey)
+      throws JsonProcessingException {
+    return OBJECT_MAPPER.readValue(
+        searchTasks(processInstanceKey).body(), TaskSearchResponse[].class);
+  }
+
+  public HttpResponse<String> saveDraftVariables(
+      final Long taskKey, final String name, final String value) {
     final var path = String.format("%sv1/tasks/%d/variables", endpoint, taskKey);
 
     final var requestDtoVariableValue = new HashMap<String, Object>();

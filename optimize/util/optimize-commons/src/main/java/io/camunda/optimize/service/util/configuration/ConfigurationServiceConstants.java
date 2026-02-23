@@ -102,6 +102,7 @@ public final class ConfigurationServiceConstants {
   public static final String ELASTICSEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES =
       ELASTICSEARCH + ".security.ssl.certificate_authorities";
 
+  public static final String OPENSEARCH_PROXY = OPENSEARCH + ".connection.proxy";
   public static final String OPENSEARCH_CONNECTION_NODES = OPENSEARCH + ".connection.nodes";
 
   public static final String OPENSEARCH_SECURITY_USERNAME = OPENSEARCH + ".security.username";

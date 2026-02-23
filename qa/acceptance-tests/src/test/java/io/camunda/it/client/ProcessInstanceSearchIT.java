@@ -125,6 +125,7 @@ public class ProcessInstanceSearchIT {
     assertThat(result.getProcessDefinitionName()).isEqualTo("Service tasks v1");
     assertThat(result.getProcessDefinitionVersion()).isEqualTo(1);
     assertThat(result.getProcessDefinitionKey()).isEqualTo(processDefinitionKey);
+    assertThat(result.getRootProcessInstanceKey()).isEqualTo(processInstanceKey);
     assertThat(result.getStartDate()).isNotNull();
     assertThat(result.getEndDate()).isNull();
     assertThat(result.getState()).isEqualTo(ACTIVE);
@@ -759,6 +760,8 @@ public class ProcessInstanceSearchIT {
     assertThat(result.items().size()).isEqualTo(1);
     assertThat(result.items().stream().map(ProcessInstance::getProcessDefinitionId).toList())
         .containsExactlyInAnyOrder("child_process_v1");
+    assertThat(result.items().getFirst().getRootProcessInstanceKey())
+        .isEqualTo(parentProcessInstanceKey);
   }
 
   @Test

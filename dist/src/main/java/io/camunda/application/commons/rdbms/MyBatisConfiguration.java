@@ -23,6 +23,7 @@ import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.FormMapper;
+import io.camunda.db.rdbms.sql.GlobalListenerMapper;
 import io.camunda.db.rdbms.sql.GroupMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
@@ -59,7 +60,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
+import org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
@@ -329,6 +330,12 @@ public class MyBatisConfiguration {
   MapperFactoryBean<PersistentWebSessionMapper> persistentWebSessionMapper(
       final SqlSessionFactory sqlSessionFactory) {
     return createMapperFactoryBean(sqlSessionFactory, PersistentWebSessionMapper.class);
+  }
+
+  @Bean
+  public MapperFactoryBean<GlobalListenerMapper> globalListenerMapper(
+      final SqlSessionFactory sqlSessionFactory) {
+    return createMapperFactoryBean(sqlSessionFactory, GlobalListenerMapper.class);
   }
 
   private <T> MapperFactoryBean<T> createMapperFactoryBean(

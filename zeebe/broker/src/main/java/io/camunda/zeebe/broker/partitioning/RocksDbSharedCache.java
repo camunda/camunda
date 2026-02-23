@@ -67,6 +67,10 @@ public class RocksDbSharedCache {
       // check that memoryFraction is between 0 and 1 and warn if it is too high
       warnIfTooHighFraction(rocksdbCfg);
     } else {
+      if (rocksdbCfg.getMemoryAllocationStrategy() == MemoryAllocationStrategy.PARTITION) {
+        LOGGER.warn(
+            "Note: CAMUNDA_DATA_PRIMARYSTORAGE_ROCKSDB_MEMORYFRACTION is set to PARTITION, this configuration will be set to FRACTION by default in 8.10. If the intended goal is to use PARTITION strategy, please set it explicitly.");
+      }
       // for strategies other than FRACTION which are static sizes, we check if maxMemoryFraction is
       // correctly set, and if so, we validate the allocated memory does not go above the threshold.
       validateMaxMemoryFraction(rocksdbCfg, totalMemorySize, blockCacheBytes);

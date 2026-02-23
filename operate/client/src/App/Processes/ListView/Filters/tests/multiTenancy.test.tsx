@@ -22,6 +22,7 @@ import {
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 describe('Filters', () => {
   beforeEach(() => {
@@ -40,7 +41,8 @@ describe('Filters', () => {
   });
 
   it('should load values from the URL when multi tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(
@@ -125,7 +127,8 @@ describe('Filters', () => {
   });
 
   it('should set modified values to the URL when multi tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(
@@ -204,7 +207,8 @@ describe('Filters', () => {
   });
 
   it('should disable processes field when tenant is not selected', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 
@@ -216,7 +220,8 @@ describe('Filters', () => {
   });
 
   it('should clear process and version field when tenant filter is changed', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
     mockSearchProcessDefinitions().withSuccess(

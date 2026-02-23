@@ -34,7 +34,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
+import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 
@@ -106,6 +106,7 @@ public class DecisionInstanceSpecificFilterIT {
                     .decisionDefinitionKey(decisionDefinition.decisionDefinitionKey())
                     .decisionDefinitionId(decisionDefinition.decisionDefinitionId())
                     .rootDecisionDefinitionKey(rootDecisionDefinitionKey)
+                    .decisionRequirementsKey(567L)
                     .evaluationFailure("failure-42")
                     .tenantId("unique-tenant-42")
                     .result("result-42")
@@ -147,6 +148,7 @@ public class DecisionInstanceSpecificFilterIT {
         DecisionInstanceFilter.of(b -> b.evaluationDateOperations(Operation.lte(THEN))),
         DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeys(200L)),
         DecisionInstanceFilter.of(b -> b.rootDecisionDefinitionKeyOperations(Operation.eq(200L))),
+        DecisionInstanceFilter.of(b -> b.decisionRequirementsKeyOperations(Operation.eq(567L))),
         DecisionInstanceFilter.of(b -> b.tenantIds("unique-tenant-42", "foo")),
         DecisionInstanceFilter.of(b -> b.partitionId(1)));
   }

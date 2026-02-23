@@ -14,7 +14,7 @@ import io.camunda.zeebe.gateway.impl.SpringGatewayBridge;
 import java.util.function.Supplier;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.boot.actuate.health.Health;
+import org.springframework.boot.health.contributor.Health;
 
 public class StartedHealthIndicatorAutoConfigurationTest {
 
@@ -53,6 +53,6 @@ public class StartedHealthIndicatorAutoConfigurationTest {
     // then
     assertThat(actualHealth).isNotNull();
     assertThat(actualHealth.getStatus())
-        .isSameAs(org.springframework.boot.actuate.health.Status.UP);
+        .isSameAs(org.springframework.boot.health.contributor.Status.UP);
   }
 }

@@ -300,6 +300,13 @@ components:
           type: array
           items:
             $ref: 'identifiers.yaml#/components/schemas/TenantId'
+        tenantFilter:
+          allOf:
+            - $ref: '#/components/schemas/TenantFilterEnum'
+          description: >
+            The tenant filtering strategy - determines whether to use provided tenant IDs or
+            assigned tenant IDs from the authenticated principal's authorized tenants.
+          default: PROVIDED
       required:
         - type
         - timeout
@@ -340,6 +347,8 @@ components:
         - elementInstanceKey
         - kind
         - listenerEventType
+        - rootProcessInstanceKey
+        - tags
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -398,6 +407,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the job's process definition.
         elementInstanceKey:
+          description: The element instance key of the task.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         kind:
@@ -408,8 +418,20 @@ components:
           $ref: '#/components/schemas/UserTaskProperties'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
 
     UserTaskProperties:
+      required:
+        - candidateGroups
+        - candidateUsers
+        - changedAttributes
       type: object
       description: Contains properties of a user task.
       properties:
@@ -604,6 +626,8 @@ components:
 
     JobSearchQueryResult:
       description: Job search response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -632,6 +656,7 @@ components:
         - tenantId
         - type
         - worker
+        - rootProcessInstanceKey
       properties:
         customHeaders:
           description: A set of custom headers defined during modelling.
@@ -648,7 +673,8 @@ components:
           type: string
           nullable: true
         elementId:
-          description: The element ID associated with the job.
+          description: The element ID associated with the job. May be missing on job failure.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ElementId"
         elementInstanceKey:
@@ -694,6 +720,14 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
           description: The process instance key associated with the job.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: "keys.yaml#/components/schemas/ProcessInstanceKey"
         retries:
           description: The amount of retries left to this job.
           type: integer
@@ -933,6 +967,17 @@ components:
           nullable: true
 
     ## Enums
+
+    TenantFilterEnum:
+      description: >
+        The tenant filtering strategy for job activation.
+        Determines whether to use tenant IDs provided in the request or tenant IDs
+        assigned to the authenticated principal.
+      type: string
+      enum:
+        - PROVIDED
+        - ASSIGNED
+      default: PROVIDED
 
     JobStateEnum:
       description: The state of the job.

@@ -194,9 +194,7 @@ test.describe.parallel('Roles API Tests', () => {
     }).toPass(defaultAssertionOptions);
   });
 
-  test('Update Role Missing Description Success 200', async ({
-    request,
-  }) => {
+  test('Update Role Missing Description Success 200', async ({request}) => {
     const p = {roleId: state['roleId1'] as string};
     const expectedBody = {
       ...p,

@@ -76,10 +76,17 @@ public final class VariableFixtures extends CommonFixtures {
   public static List<VariableDbModel> createAndSaveRandomVariables(
       final RdbmsService rdbmsService,
       final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
+    return createAndSaveRandomVariables(rdbmsService, 20, builderFunction);
+  }
+
+  public static List<VariableDbModel> createAndSaveRandomVariables(
+      final RdbmsService rdbmsService,
+      final int numberOfInstances,
+      final Function<VariableDbModelBuilder, VariableDbModelBuilder> builderFunction) {
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(0L);
 
     final List<VariableDbModel> models = new ArrayList<>();
-    for (int i = 0; i < 20; i++) {
+    for (int i = 0; i < numberOfInstances; i++) {
       final VariableDbModel randomized = createRandomized(builderFunction);
       models.add(randomized);
       rdbmsWriters.getVariableWriter().create(randomized);

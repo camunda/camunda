@@ -13,6 +13,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -33,6 +34,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.BackupCfg.BackupStore
 import io.camunda.zeebe.broker.system.configuration.backup.BackupSchedulerRetentionCfg;
 import io.camunda.zeebe.broker.system.partitions.ZeebePartition;
 import io.camunda.zeebe.scheduler.ActorScheduler;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.lang.reflect.Field;
@@ -118,9 +120,14 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
 
-    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
+    verify(scheduler, times(1))
+        .submitActor(
+            argThat(BackupRetention.class::isInstance),
+            argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
   }
 
   @Test
@@ -138,8 +145,8 @@ public class CheckpointSchedulerServiceTest {
         new ClusterMembershipEvent(ClusterMembershipEvent.Type.MEMBER_REMOVED, member3));
 
     // then
-    verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance));
-    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance));
+    verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance), any());
+    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
   @Test
@@ -161,8 +168,13 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
-    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+    verify(scheduler, times(1))
+        .submitActor(
+            argThat(BackupRetention.class::isInstance),
+            argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
   }
 
   @Test
@@ -184,8 +196,13 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
-    verify(scheduler, times(1)).submitActor(argThat(BackupRetention.class::isInstance));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+    verify(scheduler, times(1))
+        .submitActor(
+            argThat(BackupRetention.class::isInstance),
+            argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
   }
 
   @Test
@@ -203,8 +220,8 @@ public class CheckpointSchedulerServiceTest {
     schedulingService.event(new ClusterMembershipEvent(Type.MEMBER_ADDED, member2));
 
     // then
-    verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance));
-    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance));
+    verify(scheduler, times(0)).submitActor(argThat(CheckpointScheduler.class::isInstance), any());
+    verify(scheduler, times(0)).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
   @Test
@@ -215,7 +232,10 @@ public class CheckpointSchedulerServiceTest {
     doReturn(Set.of(member2, member3)).when(membershipService).getMembers();
     schedulingService.onActorStarting();
     schedulingService.onActorStarted();
-    verify(scheduler, times(1)).submitActor(argThat(CheckpointScheduler.class::isInstance));
+    verify(scheduler, times(1))
+        .submitActor(
+            argThat(CheckpointScheduler.class::isInstance),
+            argThat(arg -> arg.equals(SchedulingHints.IO_BOUND)));
     final var checkpointCreatorSpy = getCheckpointCreator(schedulingService);
     final var retentionJobSpy = getRetentionJob(schedulingService);
 
@@ -248,7 +268,9 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
     assertThat(getSchedule(schedulingService, "checkpointSchedule")).isNotNull();
     assertThat(getSchedule(schedulingService, "backupSchedule")).isNull();
   }
@@ -282,7 +304,9 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
 
     assertThat(getSchedule(schedulingService, "checkpointSchedule")).isNotNull();
     assertThat(getSchedule(schedulingService, "backupSchedule")).isNull();
@@ -309,9 +333,63 @@ public class CheckpointSchedulerServiceTest {
         .untilAsserted(
             () ->
                 verify(scheduler, times(1))
-                    .submitActor(argThat(CheckpointScheduler.class::isInstance)));
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
     assertThat(getSchedule(schedulingService, "checkpointSchedule")).isNull();
     assertThat(getSchedule(schedulingService, "backupSchedule")).isNotNull();
+  }
+
+  @Test
+  void shouldNotRegisterRetentionJobOnEmptySchedule() {
+
+    // given
+    brokerConfig.getData().getBackup().getRetention().setCleanupSchedule(null);
+    final var member = mock(Member.class);
+    doReturn(Set.of(member)).when(membershipService).getMembers();
+    doReturn(MemberId.from("0")).when(member).id();
+    doReturn(member).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+
+    verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
+  }
+
+  @Test
+  void shouldNotRegisterRetentionJobOnNullSchedule() {
+
+    // given
+    brokerConfig.getData().getBackup().getRetention().setWindow(null);
+    final var member = mock(Member.class);
+    doReturn(Set.of(member)).when(membershipService).getMembers();
+    doReturn(MemberId.from("0")).when(member).id();
+    doReturn(member).when(membershipService).getLocalMember();
+
+    // when
+    schedulingService.onActorStarting();
+    schedulingService.onActorStarted();
+
+    // then
+    Awaitility.await()
+        .untilAsserted(
+            () ->
+                verify(scheduler, times(1))
+                    .submitActor(
+                        argThat(CheckpointScheduler.class::isInstance),
+                        argThat(arg -> arg.equals(SchedulingHints.IO_BOUND))));
+
+    verify(scheduler, never()).submitActor(argThat(BackupRetention.class::isInstance), any());
   }
 
   private CheckpointScheduler getCheckpointCreator(

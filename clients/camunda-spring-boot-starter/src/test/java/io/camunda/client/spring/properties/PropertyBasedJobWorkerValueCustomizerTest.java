@@ -28,6 +28,7 @@ import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotat
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromDefaultProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
 import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.GeneratedFromMethodInfo;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import java.time.Duration;
 import java.util.Collection;
@@ -536,6 +537,39 @@ public class PropertyBasedJobWorkerValueCustomizerTest {
     // then
     assertThat(jobWorkerValue.getTenantIds())
         .contains(new FromOverrideProperty<>("overriddenTenantId"));
+  }
+
+  @Test
+  void shouldSetTenantFilterOnProperties() {
+    // given
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
+
+    // when
+    properties.setTenantFilter(TenantFilter.ASSIGNED);
+
+    // then
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  void shouldSetTenantFilterToProvided() {
+    // given
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties();
+
+    // when
+    properties.setTenantFilter(TenantFilter.PROVIDED);
+
+    // then
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+  }
+
+  @Test
+  void shouldInitializeWithDefaultTenantFilter() {
+    // given/when
+    final CamundaClientJobWorkerProperties properties = new CamundaClientJobWorkerProperties(true);
+
+    // then
+    assertThat(properties.getTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
   }
 
   private record Input<T>(

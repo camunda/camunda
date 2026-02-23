@@ -8,6 +8,7 @@
 package io.camunda.zeebe.dynamic.nodeid;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatException;
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
 import static org.mockito.ArgumentMatchers.any;
@@ -28,6 +29,8 @@ import io.camunda.zeebe.dynamic.nodeid.repository.s3.S3NodeIdRepository.S3Client
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +40,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.awaitility.Awaitility;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,11 +70,12 @@ class RepositoryNodeIdProviderIT {
   @AutoClose private static S3Client client;
   S3NodeIdRepository.Config config;
   @AutoClose private S3NodeIdRepository repository;
-  @AutoClose private RepositoryNodeIdProvider nodeIdProvider;
+  private RepositoryNodeIdProvider nodeIdProvider;
   private ControlledInstantSource clock;
   private int clusterSize;
   private String taskId;
   private volatile boolean leaseFailed = false;
+  private final List<AutoCloseable> resourcesToClose = new ArrayList<>();
 
   @BeforeAll
   static void setUpAll() {
@@ -94,6 +99,19 @@ class RepositoryNodeIdProviderIT {
     repository = new S3NodeIdRepository(client, config, clock, false);
   }
 
+  @AfterEach
+  void cleanUp() {
+    resourcesToClose.forEach(
+        autoCloseable -> {
+          try {
+            autoCloseable.close();
+          } catch (final Exception e) {
+            // ignore failue
+          }
+        });
+    resourcesToClose.clear();
+  }
+
   @Test
   void shouldAcquireALease() throws ExecutionException, InterruptedException, TimeoutException {
     // given
@@ -113,6 +131,61 @@ class RepositoryNodeIdProviderIT {
     assertThat(acquiredLease.lease().timestamp())
         .isEqualTo(clock.instant().plus(EXPIRY_DURATION).toEpochMilli());
     assertThat(repository.getLease(nodeId)).isEqualTo(acquiredLease);
+  }
+
+  @Test
+  void shouldAcquireLeaseIfClusterSizeChangedAfterInitialization() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+    final var lease0 = repository.getLease(0);
+    final var newLease =
+        lease0
+            .acquireInitialLease(taskId, clock, Duration.ofMinutes(5))
+            .orElseThrow(); // never expires
+    repository.acquire(newLease, lease0.eTag());
+
+    // when
+    // nodeIdProvider is configured with different cluster size
+    nodeIdProvider = ofSize(1);
+    assertLeaseIsReady();
+
+    // then
+    final var acquiredLease = nodeIdProvider.getCurrentLease();
+    final var nodeId = acquiredLease.lease().nodeInstance().id();
+    assertThat(nodeId).isGreaterThan(0); // should acquire a lease for nodeid 1 or 2.
+  }
+
+  @Test
+  void shouldAcquireInitialLeaseIfClusterSizeChangedConcurrently() {
+    // given
+    final var initialClusterSize = 1;
+    repository.initialize(initialClusterSize);
+    final var lease0 = repository.getLease(0);
+    final var newLease =
+        lease0
+            .acquireInitialLease(taskId, clock, Duration.ofMinutes(5)) // never expires
+            .orElseThrow();
+    repository.acquire(newLease, lease0.eTag());
+    assertThatException()
+        .isThrownBy(() -> repository.getLease(1))
+        .withMessageContaining("key does not exist"); // only one lease exists
+
+    // when
+    final var nodeIdProvider1 = ofSize(initialClusterSize, false);
+    final var nodeIdProvider2 = ofSize(initialClusterSize, false);
+
+    repository.scale(3);
+
+    // then
+    Awaitility.await().until(() -> nodeIdProvider1.isValid().join());
+    Awaitility.await().until(() -> nodeIdProvider2.isValid().join());
+
+    final var newLeases = new ArrayList<Integer>();
+    newLeases.add(nodeIdProvider1.getCurrentLease().node().id());
+    newLeases.add(nodeIdProvider2.getCurrentLease().node().id());
+
+    assertThat(newLeases).containsExactlyInAnyOrder(1, 2);
   }
 
   @Test
@@ -413,6 +486,7 @@ class RepositoryNodeIdProviderIT {
             Duration.ofSeconds(60),
             taskId,
             () -> leaseFailed = true);
+    resourcesToClose.add(provider);
     final var future = provider.initialize(clusterSize);
     if (awaitInitialization) {
       future.join();

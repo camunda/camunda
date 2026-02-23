@@ -8,6 +8,7 @@
 package io.camunda.zeebe.protocol.impl.record;
 
 import io.camunda.zeebe.protocol.Protocol;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
@@ -50,6 +51,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private final AuthInfo authorization = new AuthInfo();
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private AgentInfo agent;
 
   // always the current version by default
   private int protocolVersion = Protocol.PROTOCOL_VERSION;
@@ -117,6 +119,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     } else {
       decoder.skipAuthorization();
     }
+
+    final int agentLength = decoder.agentLength();
+    if (agentLength > 0) {
+      agent = new AgentInfo();
+      final var agentBuffer = new UnsafeBuffer();
+      decoder.wrapAgent(agentBuffer);
+      agent.wrap(agentBuffer);
+    } else {
+      decoder.skipAgent();
+    }
   }
 
   @Override
@@ -125,21 +137,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + authorization.getLength()
+        + RecordMetadataEncoder.agentHeaderLength()
+        + (agent != null ? agent.getLength() : 0);
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder.wrap(buffer, offset);
-
-    headerEncoder
-        .blockLength(encoder.sbeBlockLength())
-        .templateId(encoder.sbeTemplateId())
-        .schemaId(encoder.sbeSchemaId())
-        .version(encoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-    encoder.wrap(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    encoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     // working with fixed-length fields
     encoder
@@ -162,7 +167,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
-    encoder.putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+    final var authorizationBuffer = authorization.toDirectBuffer();
+    encoder.putAuthorization(authorizationBuffer, 0, authorizationBuffer.capacity());
+
+    if (agent != null) {
+      final var bb = agent.toDirectBuffer();
+      encoder.putAgent(bb, 0, bb.capacity());
+    } else {
+      encoder.agent("");
+    }
+    return headerEncoder.encodedLength() + encoder.encodedLength();
   }
 
   public long getRequestId() {
@@ -258,6 +272,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     return authorization;
   }
 
+  public AgentInfo getAgent() {
+    return agent;
+  }
+
+  public RecordMetadata agent(final AgentInfo agent) {
+    this.agent = agent;
+    return this;
+  }
+
   public RecordMetadata brokerVersion(final VersionInfo brokerVersion) {
     this.brokerVersion = brokerVersion;
     return this;
@@ -305,6 +328,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
     authorization.reset();
+    agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
     operationReference = RecordMetadataEncoder.operationReferenceNullValue();
@@ -327,7 +351,8 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         brokerVersion,
         recordVersion,
         operationReference,
-        batchOperationReference);
+        batchOperationReference,
+        agent);
   }
 
   @Override
@@ -348,6 +373,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
         && authorization.equals(that.authorization)
+        && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
         && operationReference == that.operationReference
@@ -384,6 +410,9 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     }
     if (batchOperationReference != RecordMetadataEncoder.batchOperationReferenceNullValue()) {
       builder.append(", batchOperationReference=").append(batchOperationReference);
+    }
+    if (agent != null) {
+      builder.append(", agent=").append(agent);
     }
 
     builder.append('}');

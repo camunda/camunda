@@ -21,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -50,6 +51,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private final CompletableFuture<Boolean> previousNodeGracefullyShutdown =
       new CompletableFuture<>();
   private final CompletableFuture<Boolean> readinessFuture = new CompletableFuture<>();
+  private final ExecutorService backgroundTaskExecutor;
 
   public RepositoryNodeIdProvider(
       final NodeIdRepository nodeIdRepository,
@@ -69,15 +71,31 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
     renewalDelay = leaseDuration.dividedBy(3);
-    executor = Executors.newSingleThreadScheduledExecutor(r -> new Thread(r, "NodeIdProvider"));
+    executor =
+        Executors.newSingleThreadScheduledExecutor(
+            r -> {
+              final var thread = new Thread(r, "NodeIdProvider");
+              thread.setDaemon(true);
+              return thread;
+            });
+
+    // Used for short tasks that need to be executed asynchronously without blocking the main lease
+    // renewal
+    backgroundTaskExecutor = Executors.newVirtualThreadPerTaskExecutor();
   }
 
   @Override
   public CompletableFuture<Void> initialize(final int clusterSize) {
-    nodeIdRepository.initialize(clusterSize);
-    return CompletableFuture.runAsync(() -> acquireInitialLease(clusterSize), executor)
+    final var availableNodeIdCount = nodeIdRepository.initialize(clusterSize);
+    return CompletableFuture.runAsync(() -> acquireInitialLease(availableNodeIdCount), executor)
         .thenRun(this::startRenewalTimer)
         .thenRun(() -> scheduleReadinessCheck(clusterSize));
+  }
+
+  @Override
+  public CompletableFuture<Void> scale(final int newClusterSize) {
+    return CompletableFuture.runAsync(
+        () -> nodeIdRepository.scale(newClusterSize), backgroundTaskExecutor);
   }
 
   @Override
@@ -191,25 +209,33 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           "Expected to acquire initial lease, but lease is already acquired: " + currentLease);
     }
     var i = 0;
-    var retryRound = 0;
+    var availableLeaseCount = clusterSize;
     NodeIdRepository.StoredLease storedLease = null;
     while (currentLease == null) {
-      if (i % clusterSize == 0) {
-        retryRound++;
+      if (i % availableLeaseCount == 0 && i > 0) {
+        // Refresh available lease count - a scale operation might have added new leases
+        final var refreshedCount = nodeIdRepository.getAvailableLeaseCount();
+        if (refreshedCount > availableLeaseCount) {
+          LOG.debug(
+              "Available lease count increased from {} to {} (likely due to scale operation)",
+              availableLeaseCount,
+              refreshedCount);
+          availableLeaseCount = refreshedCount;
+        }
+
         // wait a bit before retrying on all leases again.
-        if (retryRound > 1) {
-          try {
-            final var currentDelay = backoff.nextDelay();
-            LOG.debug(
-                "Attempt to acquire the lease failed for all nodeIds, sleeping {} and retrying again",
-                currentDelay);
-            Thread.sleep(currentDelay);
-          } catch (final InterruptedException e) {
-            break;
-          }
+        try {
+          final var currentDelay = backoff.nextDelay();
+          LOG.debug(
+              "Attempt to acquire the lease failed for all {} nodeIds, sleeping {} and retrying again",
+              availableLeaseCount,
+              currentDelay);
+          Thread.sleep(currentDelay);
+        } catch (final InterruptedException e) {
+          break;
         }
       }
-      final var nodeId = i++ % clusterSize;
+      final var nodeId = i++ % availableLeaseCount;
       storedLease = nodeIdRepository.getLease(nodeId);
       currentLease = tryAcquireInitialLease(storedLease);
     }
@@ -272,6 +298,13 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
         if (!executor.awaitTermination(1, TimeUnit.SECONDS)) {
           executor.shutdownNow();
         }
+      }
+    }
+
+    if (!backgroundTaskExecutor.isShutdown()) {
+      backgroundTaskExecutor.shutdown();
+      if (!backgroundTaskExecutor.awaitTermination(1, TimeUnit.SECONDS)) {
+        backgroundTaskExecutor.shutdownNow();
       }
     }
   }

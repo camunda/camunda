@@ -13,6 +13,7 @@ import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -20,6 +21,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
+import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationOwnerType;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceMatcher;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
@@ -29,6 +31,7 @@ import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.test.util.Strings;
+import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.util.List;
 import java.util.UUID;
@@ -111,6 +114,33 @@ public final class CompleteJobTest {
         .hasDeadline(job.getDeadline())
         .hasTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
         .hasResult(new JobResult().setDenied(false));
+  }
+
+  @Test
+  public void shouldCompleteAgenticJobWithFollowupMetadata() {
+    // given
+    final var jobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final JobRecordValue job = batchRecord.getValue().getJobs().get(0);
+
+    // when
+    final Record<JobRecordValue> jobCompletedRecord =
+        ENGINE.job().withKey(batchRecord.getValue().getJobKeys().get(0)).complete();
+
+    // then
+    final JobRecordValue recordValue = jobCompletedRecord.getValue();
+    assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompletedRecord.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == recordValue.getProcessInstanceKey()))
+        .isNotEmpty()
+        .allMatch(r -> "task".equals(r.getAgent().getElementId()));
   }
 
   @Test

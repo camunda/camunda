@@ -31,6 +31,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
@@ -64,6 +65,8 @@ public final class ExporterRule implements TestRule {
   private Duration distributionInterval = Duration.ofSeconds(15);
   private EventFilter positionsToSkipFilter = SkipPositionsFilter.of(Set.of());
 
+  private Consumer<ExporterDirectorContext> contextApplier = c -> {};
+
   private ExporterRule(final ExporterMode exporterMode) {
     this.exporterMode = exporterMode;
     final SetupRule rule = new SetupRule(PARTITION_ID);
@@ -94,6 +97,12 @@ public final class ExporterRule implements TestRule {
 
   public ExporterRule withPositionsToSkipFilter(final EventFilter positionsToSkipFilter) {
     this.positionsToSkipFilter = positionsToSkipFilter;
+    return this;
+  }
+
+  public ExporterRule withExporterDirectorContextConfigurator(
+      final Consumer<ExporterDirectorContext> contextApplier) {
+    this.contextApplier = contextApplier;
     return this;
   }
 
@@ -138,8 +147,10 @@ public final class ExporterRule implements TestRule {
             .partitionMessagingService(partitionMessagingService)
             .descriptors(descriptorsWithInitializationInfo)
             .meterRegistry(new SimpleMeterRegistry())
-            .positionsToSkipFilter(positionsToSkipFilter);
+            .positionsToSkipFilter(positionsToSkipFilter)
+            .engineName("default");
 
+    contextApplier.accept(context);
     director = new ExporterDirector(context, phase, recordExporter);
     director.startAsync(actorSchedulerRule.get()).join();
   }

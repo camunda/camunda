@@ -16,6 +16,7 @@ import {nodeMockServer} from 'common/testing/nodeMockServer';
 import * as userMocks from 'common/mocks/current-user';
 import {getStateLocally, storeStateLocally} from 'common/local-storage';
 import {createMockProcess} from 'v1/api/useProcesses.query';
+import * as clientConfig from 'common/config/getClientConfig';
 
 const createWrapper = (
   initialEntries: React.ComponentProps<
@@ -35,21 +36,12 @@ const createWrapper = (
   return Wrapper;
 };
 
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig() {
-      return {
-        ...actual.getClientConfig(),
-        clientMode: 'v1',
-      };
-    },
-  };
-});
-
 describe('<CollapsiblePanel />', () => {
   beforeEach(() => {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      clientMode: 'v1',
+    });
     nodeMockServer.use(
       http.get(
         '/v2/authentication/me',

@@ -36,6 +36,7 @@ import io.camunda.search.test.utils.SearchClientAdapter;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.search.test.utils.TestObjectMapper;
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -90,6 +91,7 @@ final class ElasticsearchArchiverRepositoryIT {
   private final String zeebeIndexPrefix = "zeebe-record";
   private String processInstanceIndex;
   private String batchOperationIndex;
+  private String auditLogIndex;
   private TestExporterResourceProvider resourceProvider;
   private final String zeebeIndex = zeebeIndexPrefix + "-" + UUID.randomUUID();
   private final ElasticsearchClient testClient = new ElasticsearchClient(transport);
@@ -113,6 +115,8 @@ final class ElasticsearchArchiverRepositoryIT {
         resourceProvider
             .getIndexTemplateDescriptor(BatchOperationTemplate.class)
             .getFullQualifiedName();
+    auditLogIndex =
+        resourceProvider.getIndexTemplateDescriptor(AuditLogTemplate.class).getFullQualifiedName();
   }
 
   @Test
@@ -141,6 +145,127 @@ final class ElasticsearchArchiverRepositoryIT {
         .first()
         .extracting(Hit::id)
         .isEqualTo("3");
+  }
+
+  @Test
+  void shouldDeleteDocumentsWithFilters() throws IOException {
+    // given
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestAuditLogDocument("1", "A"),
+            new TestAuditLogDocument("2", "B"),
+            new TestAuditLogDocument("3", "A"));
+    createAuditLogIndex();
+    documents.forEach(doc -> index(auditLogIndex, doc));
+    testClient.indices().refresh(r -> r.index(auditLogIndex));
+
+    // when - delete documents with ids [1, 2, 3], but only if the type is "A"
+    final var result =
+        repository.deleteDocuments(
+            auditLogIndex, Map.of("id", List.of("1", "2", "3")), Map.of("entityType", "A"));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(auditLogIndex));
+    final var remaining =
+        testClient.search(
+            r -> r.index(auditLogIndex).requestCache(false).query(q -> q.matchAll(m -> m)),
+            TestAuditLogDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("documents 1,3 should be deleted")
+        .hasSize(1)
+        .first()
+        .extracting(h -> h.source().id())
+        .isEqualTo("2");
+  }
+
+  @Test
+  void shouldReindexDocumentsWithFilters() throws IOException {
+    // given
+    final var sourceIndexName = UUID.randomUUID().toString();
+    final var destIndexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestAuditLogDocument("1", "A"),
+            new TestAuditLogDocument("2", "B"),
+            new TestAuditLogDocument("3", "A"));
+    createAuditLogIndex(sourceIndexName);
+    createAuditLogIndex(destIndexName);
+    documents.forEach(doc -> index(sourceIndexName, doc));
+    testClient.indices().refresh(r -> r.index(sourceIndexName));
+
+    // when - reindex documents with id "1" or "2", but only if the type is "A"
+    final var result =
+        repository.reindexDocuments(
+            sourceIndexName,
+            destIndexName,
+            Map.of("id", List.of("1", "2", "3")),
+            Map.of("entityType", "A"));
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(destIndexName));
+    final var reindexed =
+        testClient.search(
+            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
+            TestAuditLogDocument.class);
+    assertThat(reindexed.hits().hits())
+        .as("documents 1,3 should be reindexed")
+        .hasSize(2)
+        .extracting(h -> h.source().id())
+        .containsExactlyInAnyOrder("1", "3");
+  }
+
+  @Test
+  void shouldMoveDocumentsWithFilters() throws IOException {
+    // given
+    final var sourceIndexName = UUID.randomUUID().toString();
+    final var destIndexName = UUID.randomUUID().toString();
+    final var repository = createRepository();
+    final var documents =
+        List.of(
+            new TestAuditLogDocument("1", "A"),
+            new TestAuditLogDocument("2", "B"),
+            new TestAuditLogDocument("3", "A"));
+    createAuditLogIndex(sourceIndexName);
+    createAuditLogIndex(destIndexName);
+    documents.forEach(doc -> index(sourceIndexName, doc));
+    testClient.indices().refresh(r -> r.index(sourceIndexName));
+
+    // when
+    final var result =
+        repository.moveDocuments(
+            sourceIndexName,
+            destIndexName,
+            Map.of("id", List.of("1", "2", "3")),
+            Map.of("entityType", "A"),
+            Runnable::run);
+
+    // then
+    assertThat(result).succeedsWithin(Duration.ofSeconds(30));
+    testClient.indices().refresh(r -> r.index(sourceIndexName, destIndexName));
+
+    final var remaining =
+        testClient.search(
+            r -> r.index(sourceIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
+            TestAuditLogDocument.class);
+    assertThat(remaining.hits().hits())
+        .as("only document 2 should remain")
+        .hasSize(1)
+        .extracting(h -> h.source().id())
+        .containsExactlyInAnyOrder("2");
+
+    final var moved =
+        testClient.search(
+            r -> r.index(destIndexName).requestCache(false).query(q -> q.matchAll(m -> m)),
+            TestAuditLogDocument.class);
+    assertThat(moved.hits().hits())
+        .as("documents 1,3 should be moved")
+        .hasSize(2)
+        .extracting(h -> h.source().id())
+        .containsExactlyInAnyOrder("1", "3");
   }
 
   @Test
@@ -1185,6 +1310,28 @@ final class ElasticsearchArchiverRepositoryIT {
                     .aliases(standaloneDecisionIndex + "alias", a -> a.isWriteIndex(false)));
   }
 
+  private void createAuditLogIndex() throws IOException {
+    createAuditLogIndex(auditLogIndex);
+  }
+
+  private void createAuditLogIndex(final String indexName) throws IOException {
+    final var idProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var entityTypeProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var batchOperationKeyProp = Property.of(p -> p.keyword(k -> k.index(true)));
+    final var properties =
+        TypeMapping.of(
+            m ->
+                m.properties(
+                    Map.of(
+                        "id",
+                        idProp,
+                        "entityType",
+                        entityTypeProp,
+                        "batchOperationKey",
+                        batchOperationKeyProp)));
+    testClient.indices().create(r -> r.index(indexName).mappings(properties));
+  }
+
   @Test
   void shouldMaintainSeparateArchiverDatesForDifferentTemplates() throws IOException {
     // given
@@ -1228,6 +1375,8 @@ final class ElasticsearchArchiverRepositoryIT {
     assertThat(piBatch.finishDate()).isEqualTo("2025-05-02");
     assertThat(batchOperationBatch.finishDate()).isEqualTo("2025-01-02");
   }
+
+  private record TestAuditLogDocument(String id, String entityType) implements TDocument {}
 
   private record TestDocument(String id) implements TDocument {}
 

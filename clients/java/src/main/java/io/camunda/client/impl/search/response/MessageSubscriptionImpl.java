@@ -29,6 +29,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   private final String processDefinitionId;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final String elementId;
   private final Long elementInstanceKey;
   private final MessageSubscriptionState messageSubscriptionState;
@@ -42,6 +43,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     elementId = item.getElementId();
     elementInstanceKey = ParseUtil.parseLongOrNull(item.getElementInstanceKey());
     messageSubscriptionState =
@@ -70,6 +72,11 @@ public class MessageSubscriptionImpl implements MessageSubscription {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -114,6 +121,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         processDefinitionId,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         elementId,
         elementInstanceKey,
         messageSubscriptionState,
@@ -136,6 +144,7 @@ public class MessageSubscriptionImpl implements MessageSubscription {
         && Objects.equals(processDefinitionId, subscription.processDefinitionId)
         && Objects.equals(processDefinitionKey, subscription.processDefinitionKey)
         && Objects.equals(processInstanceKey, subscription.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, subscription.rootProcessInstanceKey)
         && Objects.equals(elementId, subscription.elementId)
         && Objects.equals(elementInstanceKey, subscription.elementInstanceKey)
         && messageSubscriptionState == subscription.messageSubscriptionState

@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.deployment.transform;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -27,6 +28,7 @@ import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
 public final class FormResourceTransformer implements DeploymentResourceTransformer {
+  private static final Either<Failure, Object> NO_VALIDATION_ERROR = Either.right(null);
 
   private static final int INITIAL_VERSION = 1;
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -35,16 +37,19 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final FormState formState;
+  private final EngineConfiguration config;
 
   public FormResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
-      final FormState formState) {
+      final FormState formState,
+      final EngineConfiguration config) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.formState = formState;
+    this.config = config;
   }
 
   @Override
@@ -56,8 +61,9 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .flatMap(
             form ->
                 checkForDuplicateFormId(form.id, resource, deployment)
+                    .flatMap(valid -> checkForFormIdLength(form.id, resource))
                     .map(
-                        noDuplicates -> {
+                        valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
                           appendMetadataToFormRecord(formRecord, form, resource, deployment);
                           return null;
@@ -122,7 +128,21 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                       formId, duplicatedForm.getResourceName(), resource.getResourceName());
               return Either.left(new Failure(failureMessage));
             })
-        .orElse(Either.right(null));
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
+  private Either<Failure, ?> checkForFormIdLength(
+      final String formId, final DeploymentResource resource) {
+
+    if (formId != null && formId.length() > config.getMaxIdFieldLength()) {
+      final var failureMessage =
+          String.format(
+              "The ID of a form must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+              config.getMaxIdFieldLength(), formId, resource.getResourceName());
+      return Either.left(new Failure(failureMessage));
+    }
+
+    return NO_VALIDATION_ERROR;
   }
 
   private void appendMetadataToFormRecord(

@@ -27,6 +27,7 @@ public class VariableImpl implements Variable {
   private final String value;
   private final Long scopeKey;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final String tenantId;
   private final Boolean isTruncated;
 
@@ -36,6 +37,7 @@ public class VariableImpl implements Variable {
     value = item.getValue();
     scopeKey = ParseUtil.parseLongOrNull(item.getScopeKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = item.getIsTruncated();
   }
@@ -46,6 +48,7 @@ public class VariableImpl implements Variable {
     value = item.getValue();
     scopeKey = ParseUtil.parseLongOrNull(item.getScopeKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     tenantId = item.getTenantId();
     isTruncated = false;
   }
@@ -73,6 +76,11 @@ public class VariableImpl implements Variable {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override

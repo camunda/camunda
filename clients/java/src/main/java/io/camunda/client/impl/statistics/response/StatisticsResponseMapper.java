@@ -20,8 +20,10 @@ import static java.util.Optional.ofNullable;
 
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.SearchResponsePage;
+import io.camunda.client.api.statistics.response.GlobalJobStatistics;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByDefinition;
 import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisticsByError;
+import io.camunda.client.api.statistics.response.JobStatusMetric;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -30,13 +32,17 @@ import io.camunda.client.api.statistics.response.ProcessElementStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatistics;
 import io.camunda.client.api.statistics.response.UsageMetricsStatisticsItem;
 import io.camunda.client.impl.search.response.SearchResponseImpl;
+import io.camunda.client.impl.util.ParseUtil;
+import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionMessageSubscriptionStatisticsQueryResult;
+import io.camunda.client.protocol.rest.StatusMetric;
 import io.camunda.client.protocol.rest.UsageMetricsResponse;
 import io.camunda.client.protocol.rest.UsageMetricsResponseItem;
+import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -156,5 +162,23 @@ public class StatisticsResponseMapper {
     return Optional.ofNullable(items)
         .map(i -> i.stream().map(mapper).collect(Collectors.toList()))
         .orElse(Collections.emptyList());
+  }
+
+  public static GlobalJobStatistics toGlobalJobStatisticsResponse(
+      final GlobalJobStatisticsQueryResult response) {
+    return new GlobalJobStatisticsImpl(
+        toJobStatusMetric(response.getCreated()),
+        toJobStatusMetric(response.getCompleted()),
+        toJobStatusMetric(response.getFailed()),
+        response.getIsIncomplete());
+  }
+
+  private static JobStatusMetric toJobStatusMetric(final StatusMetric metric) {
+    if (metric == null) {
+      return new JobStatusMetricImpl(0L, null);
+    }
+    final OffsetDateTime lastUpdatedAt =
+        ParseUtil.parseOffsetDateTimeOrNull(metric.getLastUpdatedAt());
+    return new JobStatusMetricImpl(ofNullable(metric.getCount()).orElse(0L), lastUpdatedAt);
   }
 }

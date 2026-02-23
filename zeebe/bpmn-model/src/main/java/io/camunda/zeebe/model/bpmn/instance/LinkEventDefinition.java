@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface LinkEventDefinition extends EventDefinition {
-
-  String getName();
-
-  void setName(String name);
+public interface LinkEventDefinition extends EventDefinition, NamedBpmnElement {
 
   Collection<LinkEventDefinition> getSources();
 

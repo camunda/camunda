@@ -27,17 +27,20 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = ConditionalController.class)
 public class ConditionalControllerTest extends RestControllerTest {
 
@@ -154,7 +157,7 @@ public class ConditionalControllerTest extends RestControllerTest {
             "type":"about:blank",
             "title":"INVALID_ARGUMENT",
             "status":400,
-            "detail":"Expected to handle request Evaluate Conditional with tenant identifiers [], but no tenant identifier was provided.",
+            "detail":"Expected to handle request Evaluate Conditional with multi-tenancy enabled, but no tenant identifier was provided.",
             "instance":"/v2/conditionals/evaluation"
          }""";
 

@@ -272,7 +272,12 @@ public final class BpmnProcessors {
 
     final var processInstanceCreationHelper =
         new ProcessInstanceCreationHelper(
-            processingState.getProcessState(), authCheckBehavior, bpmnBehaviors);
+            processingState.getProcessState(),
+            elementInstanceState,
+            processingState.getBannedInstanceState(),
+            authCheckBehavior,
+            bpmnBehaviors,
+            config.isBusinessIdUniquenessEnabled());
     final ProcessInstanceCreationCreateProcessor createProcessor =
         new ProcessInstanceCreationCreateProcessor(
             keyGenerator, writers, metrics, processInstanceCreationHelper);

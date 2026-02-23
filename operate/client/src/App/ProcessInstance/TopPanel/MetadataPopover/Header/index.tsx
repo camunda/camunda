@@ -12,6 +12,7 @@ import {Header as BaseHeader, Title, Stack} from './styled';
 type Props = {
   variant?: 'default' | 'error';
   title: string;
+  titleId?: string;
   link?: {href: string; label: string; onClick: () => void};
   button?: {
     onClick: () => void;
@@ -22,13 +23,16 @@ type Props = {
 
 const Header: React.FC<Props> = ({
   title,
+  titleId,
   variant = 'default',
   link,
   button,
 }) => {
   return (
     <BaseHeader>
-      <Title $variant={variant}>{title}</Title>
+      <Title $variant={variant} id={titleId}>
+        {title}
+      </Title>
       {(button !== undefined || link !== undefined) && (
         <Stack orientation="horizontal" gap={3}>
           {link && (

@@ -355,4 +355,228 @@ public class ClusterVariableCommandIT {
         .isInstanceOf(ProblemException.class)
         .hasMessageContaining("Failed with code 404: 'Not Found'");
   }
+
+  // ============ UPDATE TESTS ============
+
+  @Test
+  void shouldUpdateGlobalScopedClusterVariable() {
+    // given
+    final var variableName = "globalVarUpdate_" + UUID.randomUUID();
+    final var initialValue = "initialValue_" + UUID.randomUUID();
+    final var updatedValue = "updatedValue_" + UUID.randomUUID();
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, initialValue)
+        .send()
+        .join();
+
+    // when
+    final var response =
+        camundaClient
+            .newGloballyScopedClusterVariableUpdateRequest()
+            .update(variableName, updatedValue)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getName()).isEqualTo(variableName);
+    assertThat(response.getValue()).isEqualTo(VALUE_RESULT.formatted(updatedValue));
+  }
+
+  @Test
+  void shouldUpdateTenantScopedClusterVariable() {
+    // given
+    final var variableName = "tenantVarUpdate_" + UUID.randomUUID();
+    final var initialValue = "initialValue_" + UUID.randomUUID();
+    final var updatedValue = "updatedValue_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
+
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, initialValue)
+        .send()
+        .join();
+
+    // when
+    final var response =
+        camundaClient
+            .newTenantScopedClusterVariableUpdateRequest(tenantId)
+            .update(variableName, updatedValue)
+            .send()
+            .join();
+
+    // then
+    assertThat(response).isNotNull();
+    assertThat(response.getName()).isEqualTo(variableName);
+    assertThat(response.getValue()).isEqualTo(VALUE_RESULT.formatted(updatedValue));
+    assertThat(response.getTenantId()).isEqualTo(tenantId);
+  }
+
+  @Test
+  void shouldRejectUpdateIfVariableNameIsNull() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableUpdateRequest()
+                    .update(null, "value")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be null");
+  }
+
+  @Test
+  void shouldRejectUpdateIfVariableNameIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableUpdateRequest()
+                    .update("", "value")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("name must not be empty");
+  }
+
+  @Test
+  void shouldRejectUpdateIfTenantIdIsNull() {
+    // when / then
+    assertThatThrownBy(() -> camundaClient.newTenantScopedClusterVariableUpdateRequest(null))
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be null");
+  }
+
+  @Test
+  void shouldRejectUpdateIfTenantIdIsEmpty() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantScopedClusterVariableUpdateRequest("")
+                    .update("variableName", "value")
+                    .send()
+                    .join())
+        .isInstanceOf(IllegalArgumentException.class)
+        .hasMessageContaining("tenantId must not be empty");
+  }
+
+  @Test
+  void shouldRejectUpdateIfGlobalVariableDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableUpdateRequest()
+                    .update("nonExistentVar_" + UUID.randomUUID(), "newValue")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldRejectUpdateIfTenantVariableDoesNotExist() {
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantScopedClusterVariableUpdateRequest("tenant_123")
+                    .update("nonExistentVar_" + UUID.randomUUID(), "newValue")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldNotAllowUpdatingGlobalVariableWithTenantScope() {
+    // given
+    final var variableName = "globalVarNoTenantUpdate_" + UUID.randomUUID();
+    final var variableValue = "testValue_" + UUID.randomUUID();
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, variableValue)
+        .send()
+        .join();
+
+    final var tenantId = "tenant_1";
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newTenantScopedClusterVariableUpdateRequest(tenantId)
+                    .update(variableName, "newValue")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldNotAllowUpdatingTenantVariableWithGlobalScope() {
+    // given
+    final var variableName = "tenantVarNoGlobalUpdate_" + UUID.randomUUID();
+    final var variableValue = "testValue_" + UUID.randomUUID();
+    final var tenantId = "tenant_1";
+
+    camundaClient
+        .newTenantScopedClusterVariableCreateRequest(tenantId)
+        .create(variableName, variableValue)
+        .send()
+        .join();
+
+    // when / then
+    assertThatThrownBy(
+            () ->
+                camundaClient
+                    .newGloballyScopedClusterVariableUpdateRequest()
+                    .update(variableName, "newValue")
+                    .send()
+                    .join())
+        .isInstanceOf(ProblemException.class)
+        .hasMessageContaining("Failed with code 404: 'Not Found'");
+  }
+
+  @Test
+  void shouldUpdateVariableMultipleTimes() {
+    // given
+    final var variableName = "multiUpdateVar_" + UUID.randomUUID();
+    final var initialValue = "initialValue_" + UUID.randomUUID();
+    final var secondValue = "secondValue_" + UUID.randomUUID();
+    final var thirdValue = "thirdValue_" + UUID.randomUUID();
+
+    camundaClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, initialValue)
+        .send()
+        .join();
+
+    // when - first update
+    final var response1 =
+        camundaClient
+            .newGloballyScopedClusterVariableUpdateRequest()
+            .update(variableName, secondValue)
+            .send()
+            .join();
+
+    // then
+    assertThat(response1.getValue()).isEqualTo(VALUE_RESULT.formatted(secondValue));
+
+    // when - second update
+    final var response2 =
+        camundaClient
+            .newGloballyScopedClusterVariableUpdateRequest()
+            .update(variableName, thirdValue)
+            .send()
+            .join();
+
+    // then
+    assertThat(response2.getValue()).isEqualTo(VALUE_RESULT.formatted(thirdValue));
+  }
 }

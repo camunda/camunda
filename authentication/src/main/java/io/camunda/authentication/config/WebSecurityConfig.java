@@ -44,9 +44,6 @@ import io.camunda.service.TenantServices;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageDisabled;
 import io.camunda.spring.utils.ConditionalOnSecondaryStorageEnabled;
 import io.micrometer.common.KeyValues;
-import io.micrometer.core.instrument.MeterRegistry;
-import io.micrometer.core.instrument.observation.DefaultMeterObservationHandler;
-import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.micrometer.observation.ObservationRegistry;
 import jakarta.annotation.PostConstruct;
 import jakarta.servlet.FilterChain;
@@ -62,8 +59,9 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.boot.actuate.logging.LoggersEndpoint;
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -93,9 +91,11 @@ import org.springframework.security.oauth2.client.endpoint.OAuth2RefreshTokenGra
 import org.springframework.security.oauth2.client.endpoint.RestClientRefreshTokenTokenResponseClient;
 import org.springframework.security.oauth2.client.http.OAuth2ErrorResponseErrorHandler;
 import org.springframework.security.oauth2.client.oidc.authentication.OidcIdTokenDecoderFactory;
+import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
 import org.springframework.security.oauth2.client.registration.ClientRegistration;
 import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
 import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
+import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.web.DefaultOAuth2AuthorizedClientManager;
 import org.springframework.security.oauth2.client.web.HttpSessionOAuth2AuthorizedClientRepository;
 import org.springframework.security.oauth2.client.web.OAuth2AuthorizationRequestResolver;
@@ -122,6 +122,7 @@ import org.springframework.security.web.header.writers.CrossOriginResourcePolicy
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
 import org.springframework.security.web.savedrequest.NullRequestCache;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 @Configuration
@@ -132,7 +133,8 @@ public class WebSecurityConfig {
   public static final String X_CSRF_TOKEN = "X-CSRF-TOKEN";
   public static final String LOGIN_URL = "/login";
   public static final String LOGOUT_URL = "/logout";
-  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp");
+  public static final String REDIRECT_URI = "/sso-callback";
+  public static final Set<String> API_PATHS = Set.of("/api/**", "/v1/**", "/v2/**", "/mcp/**");
   public static final Set<String> UNPROTECTED_API_PATHS =
       Set.of(
           // these v2 endpoints are public
@@ -151,6 +153,8 @@ public class WebSecurityConfig {
           "/ready",
           "/health",
           "/startup",
+          // post logout decision endpoint
+          "/post-logout",
           // swagger-ui endpoint
           "/swagger/**",
           "/swagger-ui/**",
@@ -166,6 +170,7 @@ public class WebSecurityConfig {
           "/login/**",
           "/logout",
           "/identity/**",
+          "/admin/**",
           "/operate/**",
           "/tasklist/**",
           "/",
@@ -609,11 +614,6 @@ public class WebSecurityConfig {
     }
 
     @Bean
-    public MeterRegistry meterRegistry() {
-      return new SimpleMeterRegistry();
-    }
-
-    @Bean
     public TokenClaimsConverter tokenClaimsConverter(
         final SecurityConfiguration securityConfiguration,
         final MembershipService membershipService) {
@@ -758,11 +758,11 @@ public class WebSecurityConfig {
     public OidcTokenEndpointCustomizer oidcTokenEndpointCustomizer(
         final OidcAuthenticationConfigurationRepository oidcAuthenticationConfigurationRepository,
         final AssertionJwkProvider assertionJwkProvider,
-        final MeterRegistry meterRegistry) {
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
       return new OidcTokenEndpointCustomizer(
           oidcAuthenticationConfigurationRepository,
           assertionJwkProvider,
-          restClient(meterRegistry));
+          restClient(observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP)));
     }
 
     @Bean
@@ -770,14 +770,15 @@ public class WebSecurityConfig {
         final ClientRegistrationRepository registrations,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final AssertionJwkProvider assertionJwkProvider,
-        final MeterRegistry meterRegistry) {
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
 
       final var manager =
           new DefaultOAuth2AuthorizedClientManager(registrations, authorizedClientRepository);
 
       // we build a refresh token flow client manually to add support for private_key_jwt
       final var refreshClient = new RestClientRefreshTokenTokenResponseClient();
-      refreshClient.setRestClient(restClient(meterRegistry));
+      refreshClient.setRestClient(
+          restClient(observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP)));
       final var assertionConverter =
           new NimbusJwtClientAuthenticationParametersConverter<OAuth2RefreshTokenGrantRequest>(
               registration -> assertionJwkProvider.createJwk(registration.getRegistrationId()));
@@ -792,6 +793,29 @@ public class WebSecurityConfig {
 
       manager.setAuthorizedClientProvider(provider);
       return manager;
+    }
+
+    @Bean
+    public OidcUserService oidcUserService(
+        final ObjectProvider<ObservationRegistry> observationRegistry) {
+      final var oauthUserService = new DefaultOAuth2UserService();
+      final var oidcUserService = new OidcUserService();
+      oidcUserService.setOauth2UserService(oauthUserService);
+
+      // see DefaultOAuth2UserService#setRestOperations for the minimum handlers/converters required
+      final var restTemplate = new RestTemplate();
+      restTemplate.setErrorHandler(new OAuth2ErrorResponseErrorHandler());
+
+      // instrument user service requests so we can track them via metrics
+      restTemplate.setObservationConvention(
+          new CustomDefaultClientRequestObservationConvention(
+              CAMUNDA_AUTHENTICATION_OBSERVATION_NAME,
+              CAMUNDA_AUTHENTICATION_OBSERVATION_DOMAIN_IDENTITY_TAGS));
+      restTemplate.setObservationRegistry(
+          observationRegistry.getIfAvailable(() -> ObservationRegistry.NOOP));
+
+      oauthUserService.setRestOperations(restTemplate);
+      return oidcUserService;
     }
 
     @Bean
@@ -852,6 +876,29 @@ public class WebSecurityConfig {
     }
 
     @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public WebappRedirectStrategy webappRedirectStrategy() {
+      return new WebappRedirectStrategy();
+    }
+
+    @Bean
+    @ConditionalOnSecondaryStorageEnabled
+    public LogoutSuccessHandler oidcLogoutSuccessHandler(
+        final WebappRedirectStrategy redirectStrategy,
+        final ClientRegistrationRepository repository,
+        final SecurityConfiguration config) {
+      final var oidcConfig = config.getAuthentication().getOidc();
+      if (!oidcConfig.isIdpLogoutEnabled()) {
+        return new NoContentResponseHandler();
+      }
+
+      final var handler = new CamundaOidcLogoutSuccessHandler(repository);
+      handler.setPostLogoutRedirectUri("{baseUrl}/post-logout");
+      handler.setRedirectStrategy(redirectStrategy);
+      return handler;
+    }
+
+    @Bean
     @Order(ORDER_WEBAPP_API)
     @ConditionalOnSecondaryStorageEnabled
     public SecurityFilterChain oidcWebappSecurity(
@@ -866,7 +913,9 @@ public class WebSecurityConfig {
         final CookieCsrfTokenRepository csrfTokenRepository,
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OAuth2AuthorizedClientManager authorizedClientManager,
-        final OidcTokenEndpointCustomizer tokenEndpointCustomizer)
+        final OidcTokenEndpointCustomizer tokenEndpointCustomizer,
+        final LogoutSuccessHandler logoutSuccessHandler,
+        final OidcUserService oidcUserService)
         throws Exception {
       final var filterChainBuilder =
           httpSecurity
@@ -896,15 +945,19 @@ public class WebSecurityConfig {
               .formLogin(AbstractHttpConfigurer::disable)
               .anonymous(AbstractHttpConfigurer::disable)
               .oauth2ResourceServer(
-                  oauth2 -> oauth2.jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder)))
+                  oauth2 ->
+                      oauth2
+                          .jwt(jwtConfigurer -> jwtConfigurer.decoder(jwtDecoder))
+                          .withObjectPostProcessor(postProcessBearerTokenFailureHandler()))
               .oauth2Login(
                   oauthLoginConfigurer -> {
                     oauthLoginConfigurer
                         .clientRegistrationRepository(clientRegistrationRepository)
                         .authorizedClientRepository(authorizedClientRepository)
+                        .userInfoEndpoint(c -> c.oidcUserService(oidcUserService))
                         .redirectionEndpoint(
                             redirectionEndpointConfig ->
-                                redirectionEndpointConfig.baseUri("/sso-callback"))
+                                redirectionEndpointConfig.baseUri(REDIRECT_URI))
                         .authorizationEndpoint(
                             authorization ->
                                 authorization.authorizationRequestResolver(
@@ -918,8 +971,9 @@ public class WebSecurityConfig {
                   (logout) ->
                       logout
                           .logoutUrl(LOGOUT_URL)
-                          .logoutSuccessHandler(new NoContentResponseHandler())
-                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN))
+                          .deleteCookies(SESSION_COOKIE, X_CSRF_TOKEN)
+                          .invalidateHttpSession(true)
+                          .logoutSuccessHandler(logoutSuccessHandler))
               .addFilterAfter(
                   new WebComponentAuthorizationCheckFilter(
                       securityConfiguration, authenticationProvider, resourceAccessProvider),
@@ -975,14 +1029,7 @@ public class WebSecurityConfig {
       };
     }
 
-    private RestClient restClient(final MeterRegistry meterRegistry) {
-      // Setup observation for RestClient as per
-      // https://docs.spring.io/spring-framework/reference/integration/observability.html#observability.http-client.restclient
-      final var observationRegistry = ObservationRegistry.create();
-      observationRegistry
-          .observationConfig()
-          .observationHandler(new DefaultMeterObservationHandler(meterRegistry));
-
+    private RestClient restClient(final ObservationRegistry observationRegistry) {
       // The message converters are taken from the expected rest client in
       // AbstractRestClientOAuth2AccessTokenResponseClient
       return RestClient.builder()

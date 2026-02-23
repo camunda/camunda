@@ -25,6 +25,8 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionJoinOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionLeaveOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PartitionChangeOperation.PartitionReconfigurePriorityOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PostScalingOperation;
+import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.PreScalingOperation;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRedistributionCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.AwaitRelocationCompletion;
 import io.camunda.zeebe.dynamic.config.state.ClusterConfigurationChangeOperation.ScaleUpOperation.StartPartitionScaleUp;
@@ -296,9 +298,13 @@ final class ClusterApiUtilsTest {
         new MemberJoinOperation(memberId1),
         new MemberLeaveOperation(memberId1),
         new MemberRemoveOperation(memberId1, memberId2),
+
+        // General cluster operations
         new DeleteHistoryOperation(memberId1),
         new UpdateRoutingState(memberId1, emptyRoutingState),
         new UpdateIncarnationNumberOperation(memberId1),
+        new PreScalingOperation(memberId1, memberCollection),
+        new PostScalingOperation(memberId1, memberCollection),
 
         // Scale up operations
         new StartPartitionScaleUp(memberId1, 8),

@@ -23,6 +23,11 @@
   <build>
     <resources>
       <resource>
+        <targetPath>${project.build.outputDirectory}/META-INF/resources/admin</targetPath>
+        <directory>dist</directory>
+      </resource>
+      <!-- Legacy Identity path for backwards compatibility -->
+      <resource>
         <targetPath>${project.build.outputDirectory}/META-INF/resources/identity</targetPath>
         <directory>dist</directory>
       </resource>

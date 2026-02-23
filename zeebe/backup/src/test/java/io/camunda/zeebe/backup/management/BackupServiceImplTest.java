@@ -46,12 +46,14 @@ import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
+import io.camunda.zeebe.snapshots.PersistedSnapshot;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.OptionalLong;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.BeforeEach;
@@ -638,7 +640,7 @@ class BackupServiceImplTest {
     verify(backupStore, never()).storeRangeMarker(partitionId, new End(checkpointId));
   }
 
-  private ActorFuture<Void> failedFuture() {
+  private <T> ActorFuture<T> failedFuture() {
     return concurrencyControl.failedFuture(new RuntimeException("Expected"));
   }
 
@@ -656,7 +658,8 @@ class BackupServiceImplTest {
 
     private final BackupIdentifier id;
     private final BackupDescriptor checkpointDescriptor;
-    private ActorFuture<Void> findValidSnapshotFuture = TestActorFuture.completedFuture(null);
+    private ActorFuture<Set<PersistedSnapshot>> findValidSnapshotFuture =
+        TestActorFuture.completedFuture(null);
     private ActorFuture<Void> reserveSnapshotFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> findSnapshotFilesFuture = TestActorFuture.completedFuture(null);
     private ActorFuture<Void> findSegmentFilesFuture = TestActorFuture.completedFuture(null);
@@ -684,7 +687,7 @@ class BackupServiceImplTest {
     }
 
     @Override
-    public ActorFuture<Void> findValidSnapshot() {
+    public ActorFuture<Set<PersistedSnapshot>> findValidSnapshot() {
       return findValidSnapshotFuture;
     }
 

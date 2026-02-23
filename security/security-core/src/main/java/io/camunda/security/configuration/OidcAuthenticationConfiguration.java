@@ -55,6 +55,7 @@ public class OidcAuthenticationConfiguration {
   private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
   private Duration clockSkew = DEFAULT_CLOCK_SKEW;
   private boolean idpLogoutEnabled = true;
+  private boolean userInfoEnabled = true;
 
   @PostConstruct
   public void validate() {
@@ -259,6 +260,14 @@ public class OidcAuthenticationConfiguration {
     this.idpLogoutEnabled = idpLogoutEnabled;
   }
 
+  public boolean isUserInfoEnabled() {
+    return userInfoEnabled;
+  }
+
+  public void setUserInfoEnabled(final boolean userInfoEnabled) {
+    this.userInfoEnabled = userInfoEnabled;
+  }
+
   public boolean isSet() {
     return issuerUri != null
         || clientId != null
@@ -289,8 +298,7 @@ public class OidcAuthenticationConfiguration {
         || assertionConfiguration.getKidDigestAlgorithm() != KidDigestAlgorithm.SHA256
         || assertionConfiguration.getKidEncoding() != KidEncoding.BASE64URL
         || assertionConfiguration.getKidCase() != null
-        || !DEFAULT_CLOCK_SKEW.equals(clockSkew)
-        || !idpLogoutEnabled;
+        || !DEFAULT_CLOCK_SKEW.equals(clockSkew);
   }
 
   public static Builder builder() {
@@ -322,6 +330,7 @@ public class OidcAuthenticationConfiguration {
     private AssertionConfiguration assertionConfiguration = new AssertionConfiguration();
     private Duration clockSkew = DEFAULT_CLOCK_SKEW;
     private boolean idpLogoutEnabled = true;
+    private boolean userInfoEnabled = true;
 
     public Builder issuerUri(final String issuerUri) {
       this.issuerUri = issuerUri;
@@ -440,6 +449,11 @@ public class OidcAuthenticationConfiguration {
       return this;
     }
 
+    public Builder userInfoEnabled(final boolean userInfoEnabled) {
+      this.userInfoEnabled = userInfoEnabled;
+      return this;
+    }
+
     public OidcAuthenticationConfiguration build() {
       final OidcAuthenticationConfiguration config = new OidcAuthenticationConfiguration();
       config.setIssuerUri(issuerUri);
@@ -465,6 +479,7 @@ public class OidcAuthenticationConfiguration {
       config.setAssertion(assertionConfiguration);
       config.setClockSkew(clockSkew);
       config.setIdpLogoutEnabled(idpLogoutEnabled);
+      config.setUserInfoEnabled(userInfoEnabled);
       return config;
     }
   }

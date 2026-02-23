@@ -21,6 +21,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -35,6 +36,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
@@ -126,6 +128,15 @@ public final class SearchQueryRequestMapper {
     }
     return Either.right(
         SearchQueryBuilders.globalJobStatisticsSearchQuery().filter(filter.get()).build());
+  }
+
+  public static Either<ProblemDetail, io.camunda.search.query.JobTypeStatisticsQuery>
+      toJobTypeStatisticsQuery(
+          final io.camunda.gateway.protocol.model.JobTypeStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobTypeStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -712,10 +723,7 @@ public final class SearchQueryRequestMapper {
       return Either.right(
           SearchQueryBuilders.processDefinitionMessageSubscriptionStatisticsQuery().build());
     }
-    final Either<List<String>, SearchQueryPage> page =
-        request.getPage() == null
-            ? Either.right(null)
-            : Either.right(toSearchQueryPage(request.getPage()));
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
     final var filter = SearchQueryFilterMapper.toMessageSubscriptionFilter(request.getFilter());
     return buildSearchQuery(
         filter,
@@ -768,9 +776,13 @@ public final class SearchQueryRequestMapper {
           ProblemDetail, io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery>
       toProcessDefinitionInstanceVersionStatisticsQuery(
           final ProcessDefinitionInstanceVersionStatisticsQuery request) {
-    if (request == null) {
-      return Either.right(
-          SearchQueryBuilders.processDefinitionInstanceVersionStatisticsQuery().build());
+    if (request == null || request.getFilter() == null) {
+      final var problem =
+          RequestValidator.createProblemDetail(
+              List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+      if (problem.isPresent()) {
+        return Either.left(problem.get());
+      }
     }
 
     final var page = toOffsetPagination(request.getPage());
@@ -830,6 +842,25 @@ public final class SearchQueryRequestMapper {
         SearchQueryBuilders::incidentProcessInstanceStatisticsByDefinitionQuery);
   }
 
+  public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQuery(
+      final GlobalTaskListenerSearchQueryRequest request) {
+    // Create empty request if not provided, then pass through normal transformation to apply
+    // default values
+    final GlobalTaskListenerSearchQueryRequest actualRequest =
+        request == null ? new GlobalTaskListenerSearchQueryRequest() : request;
+
+    final var page = SearchQueryRequestMapper.toSearchQueryPage(actualRequest.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromGlobalTaskListenerSearchQuerySortRequest(
+                actualRequest.getSort()),
+            SortOptionBuilders::globalListener,
+            SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
+    final GlobalListenerFilter filter =
+        SearchQueryFilterMapper.toGlobalTaskListenerFilter(actualRequest.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
+  }
+
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(
       final SearchQueryPageRequest requestedPage) {
     if (requestedPage == null) {
@@ -837,30 +868,32 @@ public final class SearchQueryRequestMapper {
     }
 
     return switch (requestedPage) {
-      case final CursorBackwardPagination req -> Either.right(toSearchQueryPage(req));
-      case final CursorForwardPagination req -> Either.right(toSearchQueryPage(req));
-      case final OffsetPagination req -> Either.right(toSearchQueryPage(req));
-      case final LimitPagination req -> Either.right(toSearchQueryPage(req));
+      case final CursorBackwardPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final CursorForwardPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final OffsetPagination req -> Either.right(innerToSearchQueryPage(req));
+      case final LimitPagination req -> Either.right(innerToSearchQueryPage(req));
       default -> Either.left(List.of(ERROR_SEARCH_UNKNOWN_PAGE_TYPE));
     };
   }
 
-  private static SearchQueryPage toSearchQueryPage(final CursorBackwardPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(
+      final CursorBackwardPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).before(requestedPage.getBefore()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final CursorForwardPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(
+      final CursorForwardPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).after(requestedPage.getAfter()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final OffsetPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(final OffsetPagination requestedPage) {
     return SearchQueryPage.of(
         (p) -> p.size(requestedPage.getLimit()).from(requestedPage.getFrom()));
   }
 
-  private static SearchQueryPage toSearchQueryPage(final LimitPagination requestedPage) {
+  private static SearchQueryPage innerToSearchQueryPage(final LimitPagination requestedPage) {
     return SearchQueryPage.of((p) -> p.size(requestedPage.getLimit()));
   }
 
@@ -872,7 +905,7 @@ public final class SearchQueryRequestMapper {
     }
 
     // Delegate to the existing mapping
-    return Either.right(toSearchQueryPage(requestedPage));
+    return Either.right(innerToSearchQueryPage(requestedPage));
   }
 
   private static <

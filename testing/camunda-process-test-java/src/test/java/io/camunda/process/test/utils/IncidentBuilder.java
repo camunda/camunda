@@ -26,6 +26,7 @@ public class IncidentBuilder implements Incident {
   private Long processDefinitionKey;
   private String processDefinitionId;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private IncidentErrorType errorType;
   private String errorMessage;
   private String elementId;
@@ -53,6 +54,11 @@ public class IncidentBuilder implements Incident {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -132,6 +138,11 @@ public class IncidentBuilder implements Incident {
 
   public IncidentBuilder setErrorType(final IncidentErrorType errorType) {
     this.errorType = errorType;
+    return this;
+  }
+
+  public IncidentBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

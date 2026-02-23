@@ -15,7 +15,7 @@ import {getProcessName} from 'modules/utils/instance';
 import {getWrapper, mockRequests} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
-import {createvariable} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 
 vi.mock('modules/utils/bpmn');
 
@@ -27,7 +27,7 @@ describe('ProcessInstance', () => {
   it('should render and set the page title', async () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockSearchVariables().withSuccess({
-      items: [createvariable()],
+      items: [createVariable()],
       page: {
         totalItems: 1,
       },

@@ -17,7 +17,6 @@ package io.camunda.client.impl.command;
 
 import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.api.CamundaFuture;
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1.CreateDocumentCommandStep2;
@@ -40,7 +39,6 @@ import org.apache.hc.core5.http.ContentType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public class CreateDocumentCommandImpl extends DocumentBuilder
     implements CreateDocumentCommandStep1, CreateDocumentCommandStep2 {
 

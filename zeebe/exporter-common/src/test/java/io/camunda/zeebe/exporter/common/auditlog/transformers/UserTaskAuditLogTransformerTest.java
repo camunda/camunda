@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -16,6 +17,7 @@ import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.UserTaskRecordValue;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class UserTaskAuditLogTransformerTest {
@@ -52,5 +54,78 @@ class UserTaskAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(789L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("test-process");
     assertThat(entity.getElementInstanceKey()).isEqualTo(111L);
+    assertThat(entity.getTenant().get().tenantId()).isEqualTo("tenant-1");
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
+    assertThat(entity.getRelatedEntityKey()).isNullOrEmpty();
+    assertThat(entity.getRelatedEntityType()).isNull();
+  }
+
+  @Test
+  void shouldTransformAssignedUserTaskRecord() {
+    // given
+    final UserTaskRecordValue recordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .from(factory.generateObject(UserTaskRecordValue.class))
+            .withUserTaskKey(123L)
+            .withProcessInstanceKey(456L)
+            .withProcessDefinitionKey(789L)
+            .withBpmnProcessId("test-process")
+            .withElementInstanceKey(111L)
+            .withTenantId("tenant-1")
+            .withAssignee("assignee-1")
+            .build();
+
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getUserTaskKey()).isEqualTo(123L);
+    assertThat(entity.getEntityKey()).isEqualTo("123");
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(456L);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(789L);
+    assertThat(entity.getProcessDefinitionId()).isEqualTo("test-process");
+    assertThat(entity.getElementInstanceKey()).isEqualTo(111L);
+    assertThat(entity.getTenant().get().tenantId()).isEqualTo("tenant-1");
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
+    assertThat(entity.getRelatedEntityKey()).isEqualTo("assignee-1");
+    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
+  }
+
+  @Test
+  void shouldTransformUnassignedUserTaskRecord() {
+    // given
+    final UserTaskRecordValue recordValue =
+        ImmutableUserTaskRecordValue.builder()
+            .withUserTaskKey(123L)
+            .withProcessInstanceKey(456L)
+            .withProcessDefinitionKey(789L)
+            .withAssignee("")
+            .withChangedAttributes(List.of("assignee"))
+            .build();
+
+    final Record<UserTaskRecordValue> record =
+        factory.generateRecord(
+            ValueType.USER_TASK, r -> r.withIntent(UserTaskIntent.ASSIGNED).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getUserTaskKey()).isEqualTo(123L);
+    assertThat(entity.getEntityKey()).isEqualTo("123");
+    assertThat(entity.getProcessInstanceKey()).isEqualTo(456L);
+    assertThat(entity.getProcessDefinitionKey()).isEqualTo(789L);
+    assertThat(entity.getRelatedEntityKey()).isEqualTo("");
+    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
   }
 }

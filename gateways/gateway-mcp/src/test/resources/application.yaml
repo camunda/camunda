@@ -10,7 +10,7 @@ spring:
         annotation-scanner:
           enabled: true
         streamable-http:
-          mcp-endpoint: /mcp
+          mcp-endpoint: /mcp/cluster
         capabilities:
           completion: false
           prompt: false

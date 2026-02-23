@@ -45,7 +45,14 @@ public final class GroupFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomGroups(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomGroups(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomGroups(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getGroupWriter().create(GroupFixtures.createRandomized(builderFunction));
     }
 
@@ -55,7 +62,14 @@ public final class GroupFixtures extends CommonFixtures {
   public static void createAndSaveRandomGroupsWithMembers(
       final RdbmsWriters rdbmsWriters,
       final Function<GroupDbModel.Builder, GroupDbModel.Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomGroupsWithMembers(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomGroupsWithMembers(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<GroupDbModel.Builder, GroupDbModel.Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       final var group = GroupFixtures.createRandomized(builderFunction);
       rdbmsWriters.getGroupWriter().create(group);
       GroupMemberFixtures.createAndSaveRandomGroupMembers(

@@ -210,7 +210,7 @@ test.describe.parallel('Resource Deploy API', () => {
 
     const deploymentTypes = body.deployments.map(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (d: any) => Object.keys(d)[0],
+      (d: any) => Object.keys(d).find((key) => d[key] !== null),
     );
     expect(deploymentTypes).toContain('processDefinition');
     expect(deploymentTypes).toContain('form');

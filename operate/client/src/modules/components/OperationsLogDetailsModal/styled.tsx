@@ -35,10 +35,15 @@ const TitleListCell = styled.h5`
   padding: 15px 0;
 `;
 
+const IconTextWithTopMargin = styled(IconText)`
+  margin-top: var(--cds-spacing-03);
+`;
+
 export {
   IconText,
   FirstColumn,
   VerticallyAlignedRow,
   ParagraphWithIcon,
   TitleListCell,
+  IconTextWithTopMargin,
 };

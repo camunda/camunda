@@ -48,7 +48,7 @@ const selectFlowNode = ({user, option}: SelectProps) => {
   return selectComboBoxOption({
     user,
     option,
-    fieldName: 'Flow Node',
+    fieldName: 'Element',
   });
 };
 

@@ -14,6 +14,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.gateway.protocol.model.UserRequest;
 import io.camunda.gateway.protocol.model.UserUpdateRequest;
 import io.camunda.security.auth.CamundaAuthentication;
@@ -36,7 +37,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -132,7 +133,8 @@ public class UserControllerTest {
                   new BrokerRejection(
                       UserIntent.CREATE, -1, RejectionType.ALREADY_EXISTS, message)));
 
-      final var expectedBody = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
+      final var expectedBody =
+          CamundaProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, message);
       expectedBody.setTitle(RejectionType.ALREADY_EXISTS.name());
       expectedBody.setDetail("Command 'CREATE' rejected with code 'ALREADY_EXISTS': " + message);
       expectedBody.setInstance(URI.create(USER_BASE_URL));

@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.CopiedRecord;
@@ -106,6 +107,7 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.JobResultType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.EventType;
 import io.camunda.zeebe.protocol.record.value.UsageMetricRecordValue.IntervalType;
@@ -187,6 +189,7 @@ final class JsonSerializableToJsonTest {
               final int requestStreamId = 1;
 
               final AuthInfo authInfo = new AuthInfo().setClaims(Map.of("foo", "bar"));
+              final AgentInfo agentInfo = new AgentInfo().setElementId("agent-element");
 
               recordMetadata
                   .intent(intent)
@@ -200,6 +203,7 @@ final class JsonSerializableToJsonTest {
                   .requestId(requestId)
                   .requestStreamId(requestStreamId)
                   .authorization(authInfo)
+                  .agent(agentInfo)
                   .operationReference(1234)
                   .batchOperationReference(5678);
 
@@ -247,6 +251,9 @@ final class JsonSerializableToJsonTest {
                   "brokerVersion": "1.2.3",
                   "authorizations": {
                     "foo" : "bar"
+                  },
+                  "agent": {
+                    "elementId": "agent-element"
                   },
                   "recordVersion": 10,
                   "operationReference": 1234,
@@ -315,6 +322,7 @@ final class JsonSerializableToJsonTest {
                   "rejectionReason": "",
                   "brokerVersion": "0.0.0",
                   "authorizations": {},
+                  "agent": null,
                   "recordVersion": 1,
                   "operationReference": -1,
                   "batchOperationReference": -1,
@@ -903,7 +911,8 @@ final class JsonSerializableToJsonTest {
                     }
                   ],
                   "timeout": 2,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },
@@ -928,7 +937,8 @@ final class JsonSerializableToJsonTest {
                   "jobKeys": [],
                   "jobs": [],
                   "timeout": -1,
-                  "tenantIds": []
+                  "tenantIds": [],
+                  "tenantFilter": "PROVIDED"
                 }
                 """
       },
@@ -2559,7 +2569,9 @@ final class JsonSerializableToJsonTest {
                   .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER)
                   .setDeleteHistory(true)
                   .setBatchOperationKey(batchOperationKey)
-                  .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+                  .setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE)
+                  .setResourceType(ResourceType.PROCESS_DEFINITION)
+                  .setResourceId("foo");
             },
         """
                 {
@@ -2567,7 +2579,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "deleteHistory": true,
                   "batchOperationKey": 2,
-                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE",
+                  "resourceType": "PROCESS_DEFINITION",
+                  "resourceId": "foo"
                 }
                 """
       },
@@ -2587,7 +2601,9 @@ final class JsonSerializableToJsonTest {
                   "tenantId": "<default>",
                   "deleteHistory": false,
                   "batchOperationKey": -1,
-                  "batchOperationType": "DELETE_PROCESS_INSTANCE"
+                  "batchOperationType": "DELETE_PROCESS_INSTANCE",
+                  "resourceType": "UNKNOWN",
+                  "resourceId": ""
                 }
                 """
       },
@@ -3625,7 +3641,13 @@ final class JsonSerializableToJsonTest {
                             .setResourceType(AuthorizationResourceType.RESOURCE)
                             .setResourceMatcher(AuthorizationResourceMatcher.ID)
                             .setResourceId("resource-id")
-                            .setPermissionTypes(Set.of(PermissionType.CREATE))),
+                            .setPermissionTypes(Set.of(PermissionType.CREATE)))
+                    .addGroup(new GroupRecord().setGroupId("group1").setName("Group 1"))
+                    .addGroupMember(
+                        new GroupRecord()
+                            .setGroupId("group1")
+                            .setEntityType(EntityType.USER)
+                            .setEntityId("username")),
         """
                 {
                   "roles": [
@@ -3719,6 +3741,26 @@ final class JsonSerializableToJsonTest {
                       "resourceType": "RESOURCE",
                       "permissionTypes": ["CREATE"]
                     }
+                  ],
+                  "groups": [
+                    {
+                      "groupKey": -1,
+                      "groupId": "group1",
+                      "name": "Group 1",
+                      "description": "",
+                      "entityId": "",
+                      "entityType": "UNSPECIFIED"
+                    }
+                  ],
+                  "groupMembers": [
+                    {
+                      "groupKey": -1,
+                      "groupId": "group1",
+                      "name": "",
+                      "description": "",
+                      "entityId": "username",
+                      "entityType": "USER"
+                    }
                   ]
                 }
                 """
@@ -3750,7 +3792,9 @@ final class JsonSerializableToJsonTest {
                     "mappingRules": [],
                     "roleMembers": [],
                     "tenantMembers": [],
-                    "authorizations": []
+                    "authorizations": [],
+                    "groups": [],
+                    "groupMembers": []
                 }
                 """
       },
@@ -3760,7 +3804,7 @@ final class JsonSerializableToJsonTest {
       // ///////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "BatchOperationCreationRecord",
+        "Empty BatchOperationCreationRecord",
         (Supplier<BatchOperationCreationRecord>)
             () ->
                 new BatchOperationCreationRecord()
@@ -3902,7 +3946,10 @@ final class JsonSerializableToJsonTest {
                       "intent": "DELETE",
                       "recordValue": {
                         "resourceKey": 1,
-                        "resourceType": "PROCESS_DEFINITION"
+                        "resourceType": "PROCESS_DEFINITION",
+                        "processId": "",
+                        "tenantId": "<default>",
+                        "decisionDefinitionId": ""
                       }
                     }
                  }
@@ -3937,7 +3984,10 @@ final class JsonSerializableToJsonTest {
                     .setBatchOperationKey(12345L)
                     .setItems(
                         List.of(
-                            new BatchOperationItem().setItemKey(1L).setProcessInstanceKey(2L),
+                            new BatchOperationItem()
+                                .setItemKey(1L)
+                                .setProcessInstanceKey(2L)
+                                .setRootProcessInstanceKey(3L),
                             new BatchOperationItem().setItemKey(2L).setProcessInstanceKey(2L))),
         """
                 {
@@ -3945,14 +3995,16 @@ final class JsonSerializableToJsonTest {
                     {
                       "itemKey": 1,
                       "processInstanceKey": 2,
+                      "rootProcessInstanceKey": 3,
                       "empty": false,
-                      "encodedLength": 30
+                      "encodedLength": 54
                     },
                     {
                       "itemKey": 2,
                       "processInstanceKey": 2,
+                      "rootProcessInstanceKey": -1,
                       "empty": false,
-                      "encodedLength": 30
+                      "encodedLength": 54
                     }
                   ],
                   "batchOperationKey": 12345
@@ -4164,11 +4216,37 @@ final class JsonSerializableToJsonTest {
             () ->
                 new HistoryDeletionRecord()
                     .setResourceKey(1L)
+                    .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+                    .setProcessId("processId")
+                    .setTenantId("tenantId")
+                    .setDecisionDefinitionId("decisionDefinitionId"),
+        """
+      {
+        "resourceKey": 1,
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "processId",
+        "tenantId": "tenantId",
+        "decisionDefinitionId": "decisionDefinitionId"
+      }
+      """
+      },
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      ///////////////////////////////// Empty HistoryDeletionRecord ///////////////////////////////
+      /////////////////////////////////////////////////////////////////////////////////////////////
+      {
+        "Empty HistoryDeletionRecord",
+        (Supplier<HistoryDeletionRecord>)
+            () ->
+                new HistoryDeletionRecord()
+                    .setResourceKey(1L)
                     .setResourceType(HistoryDeletionType.PROCESS_INSTANCE),
         """
       {
         "resourceKey": 1,
-        "resourceType": "PROCESS_INSTANCE"
+        "resourceType": "PROCESS_INSTANCE",
+        "processId": "",
+        "tenantId": "<default>",
+        "decisionDefinitionId": ""
       }
       """
       },
@@ -4353,18 +4431,17 @@ final class JsonSerializableToJsonTest {
       //////////////////////////////////// GlobalListenerBatchRecord /////////////////////////////
       /////////////////////////////////////////////////////////////////////////////////////////////
       {
-        "GlobalListenerBatchRecord",
+        "GlobalListenerBatchRecord command",
         (Supplier<GlobalListenerBatchRecord>)
             () ->
                 new GlobalListenerBatchRecord()
-                    .setGlobalListenerBatchKey(1)
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener1")
                             .setType("global1")
                             .setEventTypes(List.of("creating", "assigning"))
                             .setRetries(5))
-                    .addTaskListener(
+                    .addListener(
                         new GlobalListenerRecord()
                             .setId("listener2")
                             .setType("global2")
@@ -4374,9 +4451,10 @@ final class JsonSerializableToJsonTest {
                             .setPriority(10)),
         """
       {
-        "globalListenerBatchKey": 1,
-        "taskListeners": [
+        "globalListenerBatchKey": -1,
+        "listeners": [
           {
+            "globalListenerKey": -1,
             "id": "listener1",
             "type": "global1",
             "retries": 5,
@@ -4384,9 +4462,11 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": false,
             "priority": 50,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           },
           {
+            "globalListenerKey": -1,
             "id": "listener2",
             "type": "global2",
             "retries": 3,
@@ -4394,19 +4474,118 @@ final class JsonSerializableToJsonTest {
             "afterNonGlobal": true,
             "priority": 10,
             "source": "CONFIGURATION",
-            "listenerType": "USER_TASK"
+            "listenerType": "USER_TASK",
+            "configKey": -1
           }
+         ],
+        "createdListenerKeys": [
+        ],
+        "updatedListenerKeys": [
+        ],
+        "deletedListenerKeys": [
+        ]
+      }
+      """
+      },
+      {
+        "Distributed GlobalListenerBatchRecord command",
+        (Supplier<GlobalListenerBatchRecord>)
+            () -> {
+              final var existingListener1 =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(123L)
+                      .setId("listener1")
+                      .setType("global1")
+                      .setEventTypes(List.of("creating", "assigning"))
+                      .setRetries(5);
+              final var existingListener2 =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(124L)
+                      .setId("listener2")
+                      .setType("global2")
+                      .setEventTypes(List.of("creating", "assigning"))
+                      .setRetries(5);
+              final var newListener =
+                  new GlobalListenerRecord()
+                      .setGlobalListenerKey(125L)
+                      .setId("listener3")
+                      .setType("global3")
+                      .setEventTypes(List.of("all"))
+                      .setRetries(3)
+                      .setAfterNonGlobal(true)
+                      .setPriority(10);
+              return new GlobalListenerBatchRecord()
+                  .setGlobalListenerBatchKey(1)
+                  .addListener(existingListener1)
+                  .addListener(newListener)
+                  .addListener(existingListener2)
+                  .addCreatedListener(newListener)
+                  .addUpdatedListener(existingListener1)
+                  .addDeletedListener(existingListener2);
+            },
+        """
+      {
+        "globalListenerBatchKey": 1,
+        "listeners": [
+          {
+            "globalListenerKey": 123,
+            "id": "listener1",
+            "type": "global1",
+            "retries": 5,
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false,
+            "priority": 50,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          },
+          {
+            "globalListenerKey": 125,
+            "id": "listener3",
+            "type": "global3",
+            "retries": 3,
+            "eventTypes": ["all"],
+            "afterNonGlobal": true,
+            "priority": 10,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          },
+          {
+            "globalListenerKey": 124,
+            "id": "listener2",
+            "type": "global2",
+            "retries": 5,
+            "eventTypes": ["creating", "assigning"],
+            "afterNonGlobal": false,
+            "priority": 50,
+            "source": "CONFIGURATION",
+            "listenerType": "USER_TASK",
+            "configKey": -1
+          }
+        ],
+        "createdListenerKeys": [
+          125
+        ],
+        "updatedListenerKeys": [
+          123
+        ],
+        "deletedListenerKeys": [
+          124
         ]
       }
       """
       },
       {
         "Empty GlobalListenerBatchRecord",
-        (Supplier<GlobalListenerBatchRecord>) () -> new GlobalListenerBatchRecord(),
+        (Supplier<GlobalListenerBatchRecord>) GlobalListenerBatchRecord::new,
         """
       {
         "globalListenerBatchKey": -1,
-        "taskListeners": []
+        "listeners": [],
+        "createdListenerKeys": [],
+        "updatedListenerKeys": [],
+        "deletedListenerKeys": []
       }
       """
       },
@@ -4417,15 +4596,18 @@ final class JsonSerializableToJsonTest {
         (Supplier<GlobalListenerRecord>)
             () ->
                 new GlobalListenerRecord()
+                    .setGlobalListenerKey(123L)
                     .setId("my-listener")
                     .setType("global1")
                     .setEventTypes(List.of("creating", "assigning"))
                     .setRetries(5)
                     .setAfterNonGlobal(true)
                     .setPriority(10)
-                    .setSource(GlobalListenerSource.API),
+                    .setSource(GlobalListenerSource.API)
+                    .setConfigKey(124L),
         """
     {
+      "globalListenerKey": 123,
       "id": "my-listener",
       "type": "global1",
       "retries": 5,
@@ -4433,15 +4615,17 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": true,
       "priority": 10,
       "source": "API",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": 124
     }
     """
       },
       {
         "Empty GlobalListenerRecord",
-        (Supplier<GlobalListenerRecord>) () -> new GlobalListenerRecord(),
+        (Supplier<GlobalListenerRecord>) GlobalListenerRecord::new,
         """
     {
+      "globalListenerKey": -1,
       "id": "",
       "type": "",
       "retries": 3,
@@ -4449,7 +4633,8 @@ final class JsonSerializableToJsonTest {
       "afterNonGlobal": false,
       "priority": 50,
       "source": "CONFIGURATION",
-      "listenerType": "USER_TASK"
+      "listenerType": "USER_TASK",
+      "configKey": -1
     }
     """
       }

@@ -26,7 +26,7 @@ import org.junit.jupiter.api.Test;
 class BatchOperationDbReaderTest {
   private final BatchOperationMapper batchOperationMapper = mock(BatchOperationMapper.class);
   private final BatchOperationDbReader batchOperationDbReader =
-      new BatchOperationDbReader(batchOperationMapper);
+      new BatchOperationDbReader(batchOperationMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyResultWhenAuthorizedResourceIdsIsNull() {

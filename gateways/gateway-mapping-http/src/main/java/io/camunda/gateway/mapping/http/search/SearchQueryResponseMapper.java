@@ -54,6 +54,10 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryResult;
 import io.camunda.gateway.protocol.model.GroupClientResult;
 import io.camunda.gateway.protocol.model.GroupClientSearchResult;
 import io.camunda.gateway.protocol.model.GroupResult;
@@ -73,6 +77,8 @@ import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobSearchResult;
 import io.camunda.gateway.protocol.model.JobStateEnum;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
+import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
@@ -144,12 +150,14 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -381,6 +389,7 @@ public final class SearchQueryResponseMapper {
     return new ProcessInstanceSequenceFlowResult()
         .sequenceFlowId(result.sequenceFlowId())
         .processInstanceKey(KeyUtil.keyToString(result.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(result.rootProcessInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(result.processDefinitionKey()))
         .processDefinitionId(result.processDefinitionId())
         .elementId(result.flowNodeId())
@@ -710,6 +719,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(job.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(job.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(job.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(job.rootProcessInstanceKey()))
         .elementId(job.elementId())
         .elementInstanceKey(KeyUtil.keyToString(job.elementInstanceKey()))
         .tenantId(job.tenantId())
@@ -720,6 +730,7 @@ public final class SearchQueryResponseMapper {
   public static ProcessInstanceResult toProcessInstance(final ProcessInstanceEntity p) {
     return new ProcessInstanceResult()
         .processInstanceKey(KeyUtil.keyToString(p.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(p.rootProcessInstanceKey()))
         .processDefinitionId(p.processDefinitionId())
         .processDefinitionName(p.processDefinitionName())
         .processDefinitionVersion(p.processDefinitionVersion())
@@ -796,6 +807,7 @@ public final class SearchQueryResponseMapper {
             warnIfNull(entity, BatchOperationItemEntity::processInstanceKey, "processInstanceKey")
                 .map(Object::toString)
                 .orElse(null))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .processedDate(formatDate(entity.processedDate()))
         .errorMessage(entity.errorMessage())
         .state(
@@ -947,6 +959,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(instance.processDefinitionKey()))
         .processDefinitionId(instance.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(instance.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(instance.rootProcessInstanceKey()))
         .incidentKey(KeyUtil.keyToString(instance.incidentKey()))
         .hasIncident(instance.hasIncident())
         .startDate(formatDate(instance.startDate()))
@@ -999,6 +1012,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .processDefinitionId(t.processDefinitionId())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
         .errorType(IncidentErrorTypeEnum.fromValue(t.errorType().name()))
         .errorMessage(t.errorMessage())
         .elementId(t.flowNodeId())
@@ -1023,6 +1037,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(messageSubscription.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(messageSubscription.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(messageSubscription.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(messageSubscription.rootProcessInstanceKey()))
         .elementId(messageSubscription.flowNodeId())
         .elementInstanceKey(KeyUtil.keyToString(messageSubscription.flowNodeInstanceKey()))
         .messageSubscriptionState(
@@ -1056,6 +1071,8 @@ public final class SearchQueryResponseMapper {
         .processDefinitionKey(
             KeyUtil.keyToString(correlatedMessageSubscription.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(correlatedMessageSubscription.processInstanceKey()))
+        .rootProcessInstanceKey(
+            KeyUtil.keyToString(correlatedMessageSubscription.rootProcessInstanceKey()))
         .subscriptionKey(KeyUtil.keyToString(correlatedMessageSubscription.subscriptionKey()))
         .tenantId(correlatedMessageSubscription.tenantId());
   }
@@ -1066,6 +1083,7 @@ public final class SearchQueryResponseMapper {
         .userTaskKey(KeyUtil.keyToString(t.userTaskKey()))
         .name(t.name())
         .processInstanceKey(KeyUtil.keyToString(t.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(t.rootProcessInstanceKey()))
         .processDefinitionKey(KeyUtil.keyToString(t.processDefinitionKey()))
         .elementInstanceKey(KeyUtil.keyToString(t.elementInstanceKey()))
         .processDefinitionId(t.processDefinitionId())
@@ -1138,6 +1156,7 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
@@ -1159,6 +1178,7 @@ public final class SearchQueryResponseMapper {
         .evaluationFailure(entity.evaluationFailure())
         .processDefinitionKey(KeyUtil.keyToString(entity.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(entity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(entity.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(entity.flowNodeInstanceKey()))
         .decisionDefinitionKey(KeyUtil.keyToString(entity.decisionDefinitionKey()))
         .decisionDefinitionId(entity.decisionDefinitionId())
@@ -1224,6 +1244,8 @@ public final class SearchQueryResponseMapper {
     return switch (state) {
       case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
       case FAILED -> DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
+      default -> DecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
@@ -1235,6 +1257,7 @@ public final class SearchQueryResponseMapper {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
       default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
@@ -1262,6 +1285,7 @@ public final class SearchQueryResponseMapper {
         .name(variableEntity.name())
         .value(!truncateValues ? getFullValueIfPresent(variableEntity) : variableEntity.value())
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .isTruncated(truncateValues && variableEntity.isPreview())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
@@ -1273,6 +1297,7 @@ public final class SearchQueryResponseMapper {
         .name(variableEntity.name())
         .value(getFullValueIfPresent(variableEntity))
         .processInstanceKey(KeyUtil.keyToString(variableEntity.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(variableEntity.rootProcessInstanceKey()))
         .tenantId(variableEntity.tenantId())
         .scopeKey(KeyUtil.keyToString(variableEntity.scopeKey()));
   }
@@ -1412,6 +1437,7 @@ public final class SearchQueryResponseMapper {
                 .map(Enum::name)
                 .map(AuditLogActorTypeEnum::fromValue)
                 .orElse(null))
+        .agentElementId(auditLog.agentElementId())
         .tenantId(auditLog.tenantId())
         .result(
             ofNullable(auditLog.result())
@@ -1427,6 +1453,7 @@ public final class SearchQueryResponseMapper {
         .processDefinitionId(auditLog.processDefinitionId())
         .processDefinitionKey(KeyUtil.keyToString(auditLog.processDefinitionKey()))
         .processInstanceKey(KeyUtil.keyToString(auditLog.processInstanceKey()))
+        .rootProcessInstanceKey(KeyUtil.keyToString(auditLog.rootProcessInstanceKey()))
         .elementInstanceKey(KeyUtil.keyToString(auditLog.elementInstanceKey()))
         .jobKey(KeyUtil.keyToString(auditLog.jobKey()))
         .userTaskKey(KeyUtil.keyToString(auditLog.userTaskKey()))
@@ -1437,7 +1464,14 @@ public final class SearchQueryResponseMapper {
         .decisionEvaluationKey(KeyUtil.keyToString(auditLog.decisionEvaluationKey()))
         .deploymentKey(KeyUtil.keyToString(auditLog.deploymentKey()))
         .formKey(KeyUtil.keyToString(auditLog.formKey()))
-        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()));
+        .resourceKey(KeyUtil.keyToString(auditLog.resourceKey()))
+        .relatedEntityKey(auditLog.relatedEntityKey())
+        .relatedEntityType(
+            ofNullable(auditLog.relatedEntityType())
+                .map(Enum::name)
+                .map(AuditLogEntityTypeEnum::fromValue)
+                .orElse(null))
+        .entityDescription(auditLog.entityDescription());
   }
 
   private static ProcessInstanceStateEnum toProtocolState(
@@ -1516,6 +1550,31 @@ public final class SearchQueryResponseMapper {
         .isIncomplete(entity.isIncomplete());
   }
 
+  public static JobTypeStatisticsQueryResult toJobTypeStatisticsQueryResult(
+      final SearchQueryResult<JobTypeStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobTypeStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobTypeStatisticsItem)
+                .toList());
+  }
+
+  private static JobTypeStatisticsItem toJobTypeStatisticsItem(
+      final JobTypeStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobTypeStatisticsItem();
+    }
+
+    return new JobTypeStatisticsItem()
+        .jobType(entity.jobType())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()))
+        .workers(entity.workers());
+  }
+
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
       return new StatusMetric().count(0L);
@@ -1523,6 +1582,34 @@ public final class SearchQueryResponseMapper {
     return new StatusMetric()
         .count(metric.count())
         .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
+  }
+
+  public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
+      final SearchQueryResult<GlobalListenerEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GlobalTaskListenerSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    entities ->
+                        entities.stream()
+                            .map(SearchQueryResponseMapper::toGlobalTaskListenerResult)
+                            .toList())
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalTaskListenerResult toGlobalTaskListenerResult(
+      final GlobalListenerEntity entity) {
+    return new GlobalTaskListenerResult()
+        .id(entity.listenerId())
+        .type(entity.type())
+        .retries(entity.retries())
+        .eventTypes(
+            entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
+        .afterNonGlobal(entity.afterNonGlobal())
+        .priority(entity.priority())
+        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens

@@ -8,7 +8,6 @@
 package io.camunda.security.validation;
 
 import static io.camunda.security.validation.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
-import static java.util.Collections.emptyList;
 
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.util.ArrayList;
@@ -37,13 +36,7 @@ public class TenantValidator {
 
   public List<String> validateTenantMembers(
       final List<String> memberIds, final EntityType memberType) {
-    if (memberIds == null) {
-      return emptyList();
-    }
-    final List<String> violations = new ArrayList<>();
-    memberIds.forEach(
-        memberId -> identifierValidator.validateMemberId(memberId, memberType, violations));
-    return violations;
+    return identifierValidator.validateMembers(memberIds, memberType);
   }
 
   public List<String> validateTenantMember(

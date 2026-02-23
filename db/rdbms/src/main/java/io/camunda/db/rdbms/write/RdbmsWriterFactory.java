@@ -13,12 +13,15 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -40,6 +43,8 @@ public class RdbmsWriterFactory {
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final AuditLogMapper auditLogMapper;
   private final DecisionInstanceMapper decisionInstanceMapper;
+  private final DecisionDefinitionMapper decisionDefinitionMapper;
+  private final DecisionRequirementsMapper decisionRequirementsMapper;
   private final FlowNodeInstanceMapper flowNodeInstanceMapper;
   private final IncidentMapper incidentMapper;
   private final ProcessInstanceMapper processInstanceMapper;
@@ -50,6 +55,7 @@ public class RdbmsWriterFactory {
   private final MeterRegistry meterRegistry;
   private final BatchOperationDbReader batchOperationReader;
   private final JobMapper jobMapper;
+  private final JobMetricsBatchMapper jobMetricsBatchMapper;
   private final SequenceFlowMapper sequenceFlowMapper;
   private final UsageMetricMapper usageMetricMapper;
   private final UsageMetricTUMapper usageMetricTUMapper;
@@ -65,6 +71,8 @@ public class RdbmsWriterFactory {
       final VendorDatabaseProperties vendorDatabaseProperties,
       final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
+      final DecisionDefinitionMapper decisionDefinitionMapper,
+      final DecisionRequirementsMapper decisionRequirementsMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
@@ -75,6 +83,7 @@ public class RdbmsWriterFactory {
       final MeterRegistry meterRegistry,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
+      final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
@@ -88,6 +97,8 @@ public class RdbmsWriterFactory {
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.auditLogMapper = auditLogMapper;
     this.decisionInstanceMapper = decisionInstanceMapper;
+    this.decisionDefinitionMapper = decisionDefinitionMapper;
+    this.decisionRequirementsMapper = decisionRequirementsMapper;
     this.flowNodeInstanceMapper = flowNodeInstanceMapper;
     this.incidentMapper = incidentMapper;
     this.processInstanceMapper = processInstanceMapper;
@@ -96,6 +107,7 @@ public class RdbmsWriterFactory {
     this.userTaskMapper = userTaskMapper;
     this.variableMapper = variableMapper;
     this.jobMapper = jobMapper;
+    this.jobMetricsBatchMapper = jobMetricsBatchMapper;
     this.meterRegistry = meterRegistry;
     this.batchOperationReader = batchOperationReader;
     this.sequenceFlowMapper = sequenceFlowMapper;
@@ -124,6 +136,8 @@ public class RdbmsWriterFactory {
         metrics,
         auditLogMapper,
         decisionInstanceMapper,
+        decisionDefinitionMapper,
+        decisionRequirementsMapper,
         flowNodeInstanceMapper,
         incidentMapper,
         processInstanceMapper,
@@ -134,6 +148,7 @@ public class RdbmsWriterFactory {
         vendorDatabaseProperties,
         batchOperationReader,
         jobMapper,
+        jobMetricsBatchMapper,
         sequenceFlowMapper,
         usageMetricMapper,
         usageMetricTUMapper,

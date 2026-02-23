@@ -124,10 +124,6 @@ const JSONEditorModal: React.FC<Props> = observer(
               monaco.editor.setTheme(
                 themeStore.actualTheme === 'light' ? 'light' : 'vs-dark',
               );
-              monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
-                schemaValidation: 'error',
-                schemaRequest: 'error',
-              });
             }}
           />
         ) : (

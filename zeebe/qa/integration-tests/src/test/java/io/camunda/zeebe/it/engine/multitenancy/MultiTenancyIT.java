@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ProblemException;
 import io.camunda.client.api.command.TopologyRequestStep1;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.AssignUserTaskResponse;
@@ -51,12 +52,16 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 import org.apache.hc.core5.http.HttpStatus;
 import org.assertj.core.api.InstanceOfAssertFactories;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Named;
@@ -745,6 +750,131 @@ public class MultiTenancyIT {
   }
 
   @Test
+  void shouldActivateJobWithProvidedFilterAndTenantIds() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantId(TENANT_A)
+              .tenantFilter(TenantFilter.PROVIDED)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated with PROVIDED filter and explicit tenant ID")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldActivateJobWithAssignedFilter() {
+    // given
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final Future<ActivateJobsResponse> result =
+          client
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(1)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send();
+
+      // then
+      assertThat(result)
+          .describedAs(
+              "Expect that job can be activated with ASSIGNED filter without specifying tenant IDs")
+          .succeedsWithin(Duration.ofSeconds(10));
+    }
+  }
+
+  @Test
+  void shouldOnlyActivateJobsForAssignedTenantsWithAssignedFilter() {
+    // given — deploy and create instances for both TENANT_A and TENANT_B
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      clientA
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      clientA
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var clientB = createCamundaClient(USER_TENANT_B)) {
+      clientB
+          .newDeployResourceCommand()
+          .addProcessModel(process, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+      clientB
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+    }
+
+    // when — user A activates jobs with ASSIGNED filter
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      final ActivateJobsResponse response =
+          clientA
+              .newActivateJobsCommand()
+              .jobType("type")
+              .maxJobsToActivate(10)
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .send()
+              .join();
+
+      // then — only jobs for TENANT_A should be activated, not TENANT_B
+      assertThat(response.getJobs())
+          .describedAs(
+              "Expect only jobs for the assigned tenant to be activated, not jobs for other tenants")
+          .isNotEmpty()
+          .allSatisfy(job -> assertThat(job.getTenantId()).isEqualTo(TENANT_A));
+    }
+  }
+
+  @Test
   void shouldDenyActivateJobWhenUnauthorized() {
     // given
     try (final var client = createCamundaClient(USER_TENANT_A)) {
@@ -780,6 +910,318 @@ public class MultiTenancyIT {
           .withMessageContaining("UNAUTHORIZED")
           .withMessageContaining(
               "Expected to activate job batch for tenants '[tenantA]', but user is not authorized. Authorized tenants are '[");
+    }
+  }
+
+  @Test
+  void shouldPollAndHandleJobsWithProvidedFilter() {
+    // given — use a unique job type to isolate from other tests
+    final String jobType = "poll-provided-" + UUID.randomUUID();
+    final BpmnModelInstance isolatedProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final var jobsHandled = new AtomicInteger(0);
+      try (final var ignored =
+          client
+              .newWorker()
+              .jobType(jobType)
+              .handler(
+                  (jobClient, job) -> {
+                    jobsHandled.incrementAndGet();
+                    jobClient.newCompleteCommand(job).send().join();
+                  })
+              .tenantIds(TENANT_A)
+              .tenantFilter(TenantFilter.PROVIDED)
+              .open()) {
+
+        // then
+        Awaitility.await("job worker with PROVIDED filter should handle the job")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(() -> assertThat(jobsHandled.get()).isOne());
+      }
+    }
+  }
+
+  @Test
+  void shouldPollAndHandleJobsWithAssignedFilter() {
+    // given — use a unique job type to isolate from other tests
+    final String jobType = "poll-assigned-" + UUID.randomUUID();
+    final BpmnModelInstance isolatedProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+
+    try (final var client = createCamundaClient(USER_TENANT_A)) {
+      client
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      client
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+
+      // when
+      final var jobsHandled = new AtomicInteger(0);
+      try (final var ignored =
+          client
+              .newWorker()
+              .jobType(jobType)
+              .handler(
+                  (jobClient, job) -> {
+                    jobsHandled.incrementAndGet();
+                    jobClient.newCompleteCommand(job).send().join();
+                  })
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .open()) {
+
+        // then
+        Awaitility.await("job worker with ASSIGNED filter should handle the job")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(() -> assertThat(jobsHandled.get()).isOne());
+      }
+    }
+  }
+
+  @Test
+  void shouldPollOnlyAssignedTenantsJobsWithAssignedFilter() {
+    // given — use a unique job type to isolate from other tests
+    final String jobType = "poll-assigned-only-" + UUID.randomUUID();
+    final BpmnModelInstance isolatedProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      clientA
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      clientA
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var clientB = createCamundaClient(USER_TENANT_B)) {
+      clientB
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+      clientB
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+    }
+
+    // when — user A creates worker with ASSIGNED filter
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      final var jobsHandled = new ConcurrentHashMap<String, Integer>();
+      try (final var worker =
+          clientA
+              .newWorker()
+              .jobType(jobType)
+              .handler(
+                  (jobClient, job) -> {
+                    jobsHandled.merge(job.getTenantId(), 1, Integer::sum);
+                    jobClient.newCompleteCommand(job).send().join();
+                  })
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .open()) {
+
+        // then — only jobs for TENANT_A should be polled and handled, not TENANT_B
+        Awaitility.await(
+                "job worker should poll only jobs for assigned tenants, not unauthorized tenants")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(
+                () ->
+                    assertThat(jobsHandled)
+                        .containsOnlyKeys(TENANT_A)
+                        .extractingByKey(TENANT_A)
+                        .isEqualTo(1));
+      }
+    }
+  }
+
+  @Test
+  void shouldIgnoreTenantIdsWhenPollingWithAssignedFilter() {
+    // given — use a unique job type to isolate from other tests
+    final String jobType = "poll-ignore-ids-" + UUID.randomUUID();
+    final BpmnModelInstance isolatedProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      clientA
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      clientA
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var clientB = createCamundaClient(USER_TENANT_B)) {
+      clientB
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+      clientB
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+    }
+
+    // when — user A creates worker with ASSIGNED filter but provides only TENANT_B (which user A
+    // is NOT assigned to). If the provided tenant IDs were honoured, no jobs would be returned.
+    // With ASSIGNED, the list is ignored and jobs for TENANT_A are returned instead.
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      final var jobsHandled = new ConcurrentHashMap<String, Integer>();
+      try (final var worker =
+          clientA
+              .newWorker()
+              .jobType(jobType)
+              .handler(
+                  (jobClient, job) -> {
+                    jobsHandled.merge(job.getTenantId(), 1, Integer::sum);
+                    jobClient.newCompleteCommand(job).send().join();
+                  })
+              .tenantIds(TENANT_B) // Deliberately excludes TENANT_A — should be ignored
+              .tenantFilter(TenantFilter.ASSIGNED)
+              .open()) {
+
+        // then — TENANT_A jobs should be polled (from assigned tenants), not TENANT_B
+        Awaitility.await("provided tenant IDs should be ignored when ASSIGNED filter is used")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(
+                () ->
+                    assertThat(jobsHandled)
+                        .containsOnlyKeys(TENANT_A)
+                        .extractingByKey(TENANT_A)
+                        .isEqualTo(1));
+      }
+    }
+  }
+
+  @Test
+  void shouldPollMultipleTenantsWithProvidedFilter() {
+    // given — use a unique job type to isolate from other tests
+    final String jobType = "poll-multi-provided-" + UUID.randomUUID();
+    final BpmnModelInstance isolatedProcess =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeJobType(jobType))
+            .endEvent()
+            .done();
+
+    try (final var clientA = createCamundaClient(USER_TENANT_A)) {
+      clientA
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+      clientA
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_A)
+          .send()
+          .join();
+    }
+    try (final var clientB = createCamundaClient(USER_TENANT_B)) {
+      clientB
+          .newDeployResourceCommand()
+          .addProcessModel(isolatedProcess, "process.bpmn")
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+      clientB
+          .newCreateInstanceCommand()
+          .bpmnProcessId(processId)
+          .latestVersion()
+          .tenantId(TENANT_B)
+          .send()
+          .join();
+    }
+
+    // when — user with access to both tenants creates worker with PROVIDED filter for both
+    try (final var client = createCamundaClient(USER_TENANT_A_AND_B)) {
+      final var jobsHandled = new ConcurrentHashMap<String, Integer>();
+      try (final var worker =
+          client
+              .newWorker()
+              .jobType(jobType)
+              .handler(
+                  (jobClient, job) -> {
+                    jobsHandled.merge(job.getTenantId(), 1, Integer::sum);
+                    jobClient.newCompleteCommand(job).send().join();
+                  })
+              .tenantIds(TENANT_A, TENANT_B)
+              .tenantFilter(TenantFilter.PROVIDED)
+              .open()) {
+
+        // then — jobs from both tenants should be polled and handled
+        Awaitility.await(
+                "job worker with PROVIDED filter should poll jobs from all specified tenants")
+            .atMost(Duration.ofSeconds(10))
+            .untilAsserted(
+                () ->
+                    assertThat(jobsHandled)
+                        .containsKeys(TENANT_A, TENANT_B)
+                        .allSatisfy((tenant, count) -> assertThat(count).isOne()));
+      }
     }
   }
 

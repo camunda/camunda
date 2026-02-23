@@ -15,11 +15,9 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.DeleteDocumentResponse;
 
 /** Command to delete a document from the document store. */
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface DeleteDocumentCommandStep1 extends FinalCommandStep<DeleteDocumentResponse> {
 
   /**

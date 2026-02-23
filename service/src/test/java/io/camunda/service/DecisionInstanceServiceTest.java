@@ -35,9 +35,13 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -51,7 +55,7 @@ class DecisionInstanceServiceTest {
   private static final Long DECISION_INSTANCE_KEY = 1L;
   private static final Long NON_EXISTENT_KEY = 999L;
   private static final String DECISION_INSTANCE_ID = "1-1";
-  private static final String DECISION_DEFINITION_KEY = "dd1";
+  private static final String DECISION_DEFINITION_ID = "dd1";
 
   private DecisionInstanceServices services;
   private DecisionInstanceSearchClient client;
@@ -176,37 +180,36 @@ class DecisionInstanceServiceTest {
   @Test
   void shouldDeleteDecisionInstance() {
     // given
-    final long batchOperationKey = 1L;
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(batchOperationKey);
-    record.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
+    final var decisionInstanceKey = 123L;
+    final var tenantId = "tenantId";
 
     final var entity = mock(DecisionInstanceEntity.class);
-    when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_KEY);
+    when(entity.decisionDefinitionId()).thenReturn(DECISION_DEFINITION_ID);
+    when(entity.tenantId()).thenReturn(tenantId);
 
     final var result = mock(SearchQueryResult.class);
-    when(result.items()).thenReturn(java.util.List.of(entity));
+    when(result.items()).thenReturn(List.of(entity));
     when(client.searchDecisionInstances(any(DecisionInstanceQuery.class))).thenReturn(result);
 
-    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    final var record =
+        new HistoryDeletionRecord()
+            .setResourceKey(decisionInstanceKey)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setDecisionDefinitionId(DECISION_DEFINITION_ID)
+            .setTenantId(tenantId);
+    final var captor = ArgumentCaptor.forClass(BrokerDeleteHistoryRequest.class);
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    final var deleteResult = services.deleteDecisionInstance(DECISION_INSTANCE_KEY, null).join();
+    services.deleteDecisionInstance(decisionInstanceKey, null).join();
 
     // then
-    assertThat(deleteResult.getBatchOperationKey()).isEqualTo(batchOperationKey);
-    assertThat(deleteResult.getBatchOperationType())
-        .isEqualTo(BatchOperationType.DELETE_DECISION_INSTANCE);
-
-    // and our request got enriched
-    final var enrichedRecord = captor.getValue().getRequestWriter();
-
-    assertThat(
-            MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
-        .isEqualTo(authentication);
+    final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
+    assertThat(brokerRequest.getResourceKey()).isEqualTo(decisionInstanceKey);
+    assertThat(brokerRequest.getResourceType()).isEqualTo(HistoryDeletionType.DECISION_INSTANCE);
+    assertThat(brokerRequest.getDecisionDefinitionId()).isEqualTo(DECISION_DEFINITION_ID);
+    assertThat(brokerRequest.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
@@ -225,7 +228,7 @@ class DecisionInstanceServiceTest {
   }
 
   @Test
-  void shouldDeleteProcessInstanceBatchOperationWithResult() {
+  void shouldDeleteDecisionInstanceBatchOperationWithResult() {
     // given
     final var filter =
         FilterBuilders.decisionInstance(

@@ -13,9 +13,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.JobMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}JOB
-    <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}JOB
+      <include refid="io.camunda.db.rdbms.sql.JobMapper.searchFilter" />
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -289,6 +292,12 @@
     <bind name="tableName" value="'JOB'"/>
     <bind name="primaryKeyColumn" value="'JOB_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'JOB'"/>
+    <bind name="primaryKeyColumn" value="'JOB_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

@@ -21,16 +21,14 @@ import static com.google.common.net.HttpHeaders.STRICT_TRANSPORT_SECURITY;
 import static com.google.common.net.HttpHeaders.X_CONTENT_TYPE_OPTIONS;
 import static com.google.common.net.HttpHeaders.X_FRAME_OPTIONS;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.camunda.authentication.config.controllers.TestApiController;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.headers.ContentSecurityPolicyConfig;
 import io.camunda.security.configuration.headers.PermissionsPolicyConfig;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -92,24 +90,19 @@ public class AbstractWebSecurityConfigTest {
   protected void assertDefaultSecurityHeaders(final MvcTestResult response) {
     assertThat(response)
         .headers()
-        .contains(
-            entry(X_CONTENT_TYPE_OPTIONS, List.of("nosniff")),
-            entry(CACHE_CONTROL, List.of("no-cache, no-store, max-age=0, must-revalidate")),
-            entry(PRAGMA, List.of("no-cache")),
-            entry(EXPIRES, List.of("0")),
-            entry(X_FRAME_OPTIONS, List.of("SAMEORIGIN")),
-            entry(
-                CONTENT_SECURITY_POLICY,
-                List.of(ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY)),
-            entry(REFERRER_POLICY, List.of("strict-origin-when-cross-origin")),
-            entry(CROSS_ORIGIN_OPENER_POLICY, List.of("same-origin-allow-popups")),
-            entry(CROSS_ORIGIN_EMBEDDER_POLICY, List.of("unsafe-none")),
-            entry(CROSS_ORIGIN_RESOURCE_POLICY, List.of("same-site")),
-            entry(STRICT_TRANSPORT_SECURITY, List.of("max-age=31536000")),
-            entry(
-                PERMISSIONS_POLICY,
-                List.of(PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)))
-        .doesNotContainKeys(CONTENT_SECURITY_POLICY_REPORT_ONLY);
+        .hasValue(X_CONTENT_TYPE_OPTIONS, "nosniff")
+        .hasValue(CACHE_CONTROL, "no-cache, no-store, max-age=0, must-revalidate")
+        .hasValue(PRAGMA, "no-cache")
+        .hasValue(EXPIRES, "0")
+        .hasValue(X_FRAME_OPTIONS, "SAMEORIGIN")
+        .hasValue(CONTENT_SECURITY_POLICY, ContentSecurityPolicyConfig.DEFAULT_SM_SECURITY_POLICY)
+        .hasValue(REFERRER_POLICY, "strict-origin-when-cross-origin")
+        .hasValue(CROSS_ORIGIN_OPENER_POLICY, "same-origin-allow-popups")
+        .hasValue(CROSS_ORIGIN_EMBEDDER_POLICY, "unsafe-none")
+        .hasValue(CROSS_ORIGIN_RESOURCE_POLICY, "same-site")
+        .hasValue(STRICT_TRANSPORT_SECURITY, "max-age=31536000")
+        .hasValue(PERMISSIONS_POLICY, PermissionsPolicyConfig.DEFAULT_PERMISSIONS_POLICY_VALUE)
+        .doesNotContainHeaders(CONTENT_SECURITY_POLICY_REPORT_ONLY);
   }
 
   protected void assertMissingCsrfToken(final MvcTestResult response) {

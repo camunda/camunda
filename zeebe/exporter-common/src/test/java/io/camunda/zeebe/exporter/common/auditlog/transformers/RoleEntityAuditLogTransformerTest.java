@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -31,6 +32,7 @@ class RoleEntityAuditLogTransformerTest {
         ImmutableRoleRecordValue.builder()
             .from(factory.generateObject(RoleRecordValue.class))
             .withRoleId("role-123")
+            .withEntityId("entity-id")
             .withEntityType(EntityType.USER)
             .build();
 
@@ -44,5 +46,7 @@ class RoleEntityAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("role-123");
+    assertThat(entity.getRelatedEntityKey()).isEqualTo("entity-id");
+    assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.USER);
   }
 }

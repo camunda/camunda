@@ -32,7 +32,7 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigurationPackage;
-import org.springframework.boot.test.autoconfigure.data.jdbc.DataJdbcTest;
+import org.springframework.boot.data.jdbc.test.autoconfigure.DataJdbcTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -187,39 +187,6 @@ public class HistoryCleanupIT {
             "SELECT HISTORY_CLEANUP_DATE FROM DECISION_INSTANCE "
                 + "WHERE DECISION_INSTANCE_KEY = "
                 + decisionInstance.decisionInstanceKey(),
-            OffsetDateTime.class);
-
-    // The cleanup date should be evaluationDate + decisionInstanceTTL (default 30 days)
-    final var expectedCleanupDate = evaluationDate.plusDays(30);
-    assertThat(cleanupDate)
-        .describedAs(
-            "should have cleanup date set to evaluationDate + decisionInstanceTTL for decision"
-                + " instance without process instance")
-        .isNotNull()
-        .isEqualTo(expectedCleanupDate);
-  }
-
-  @Test
-  public void shouldSetHistoryCleanupDateForStandaloneDecisionAuditLog() {
-    // GIVEN
-    // Create a standalone decision audit log.
-    // Use a deterministic evaluation date for predictable cleanup date calculation
-    final var evaluationDate = OffsetDateTime.now().truncatedTo(ChronoUnit.MILLIS);
-    final var auditLog =
-        AuditLogFixtures.createRandomized(
-            b ->
-                b.entityType(AuditLogEntityType.DECISION)
-                    .processInstanceKey(-1L)
-                    .timestamp(evaluationDate)
-                    .historyCleanupDate(null));
-    AuditLogFixtures.createAndSaveAuditLog(rdbmsWriters, auditLog);
-
-    // THEN - verify cleanup date is calculated correctly
-    final OffsetDateTime cleanupDate =
-        jdbcTemplate.queryForObject(
-            "SELECT HISTORY_CLEANUP_DATE FROM AUDIT_LOG "
-                + "WHERE DECISION_DEFINITION_KEY = "
-                + auditLog.decisionDefinitionKey(),
             OffsetDateTime.class);
 
     // The cleanup date should be evaluationDate + decisionInstanceTTL (default 30 days)

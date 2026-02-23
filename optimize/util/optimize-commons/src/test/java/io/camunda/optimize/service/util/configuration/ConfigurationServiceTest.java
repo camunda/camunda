@@ -173,6 +173,16 @@ public class ConfigurationServiceTest {
   }
 
   @Test
+  public void invalidOpenSearchProxyConfigThrowsError() {
+    final String[] locations = {
+      defaultConfigFile(), "config-samples/config-invalid-opensearch-proxy-config.yaml"
+    };
+    final ConfigurationService underTest = createConfiguration(locations);
+    assertThatThrownBy(() -> underTest.getOpenSearchConfiguration().getProxyConfig())
+        .isInstanceOf(OptimizeConfigurationException.class);
+  }
+
+  @Test
   public void resolvePropertiesFromEnvironmentVariables() {
     // when
     final String[] locations = {defaultConfigFile(), "environment-variable-test-config.yaml"};

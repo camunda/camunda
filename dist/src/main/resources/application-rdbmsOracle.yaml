@@ -1,39 +1,4 @@
-# Zeebe Standalone Broker configuration file (with embedded gateway)
-
-# This file is based on broker.standalone.yaml.template but stripped down to contain only a limited
-# set of configuration options. These are a good starting point to get to know Zeebe.
-# For advanced configuration options, have a look at the templates in this folder.
-
-# !!! Note that this configuration is not suitable for running a standalone gateway. !!!
-# If you want to run a standalone gateway node, please have a look at gateway.yaml.template
-
-# ----------------------------------------------------
-# Byte sizes
-# For buffers and others must be specified as strings and follow the following
-# format: "10U" where U (unit) must be replaced with KB = Kilobytes, MB = Megabytes or GB = Gigabytes.
-# If unit is omitted then the default unit is simply bytes.
-# Example:
-# sendBufferSize = "16MB" (creates a buffer of 16 Megabytes)
-#
-# Time units
-# Timeouts, intervals, and the likes, must be specified either in the standard ISO-8601 format used
-# by java.time.Duration, or as strings with the following format: "VU", where:
-#   - V is a numerical value (e.g. 1, 5, 10, etc.)
-#   - U is the unit, one of: ms = Millis, s = Seconds, m = Minutes, or h = Hours
-#
-# Paths:
-# Relative paths are resolved relative to the installation directory of the broker.
-# ----------------------------------------------------
-
-zeebe:
-  broker:
-    data:
-      snapshotPeriod: 1m
-
-    exporters:
-      rdbms:
-        # Classname doesn't matter, since this exporter is present via spring bean
-        className: RdbmsExporter
+# Local development configuration for Camunda with the RDBMS Oracle database from db/docker-compose.yml
 
 camunda:
   data:
@@ -42,20 +7,7 @@ camunda:
       rdbms:
         url: jdbc:oracle:thin:@localhost:1521/FREEPDB1
         username: camunda
-        password: demo
-        flushInterval: PT0.5S
-        maxQueueSize: 1000
-        history:
-          defaultHistoryTTL: PT1M
-          defaultBatchOperationHistoryTTL: PT168H
-          batchOperationCancelProcessInstanceHistoryTTL: PT24H
-          batchOperationMigrateProcessInstanceHistoryTTL: PT240H
-          batchOperationModifyProcessInstanceHistoryTTL: PT168H
-          batchOperationResolveIncidentHistoryTTL: PT120H
-          minHistoryCleanupInterval: PT1S
-          maxHistoryCleanupInterval: PT1H
-          historyCleanupBatchSize: 1000
+        password: camunda
 logging:
   level:
-    io:
-      camunda: DEBUG
+    io.camunda.db.rdbms: DEBUG

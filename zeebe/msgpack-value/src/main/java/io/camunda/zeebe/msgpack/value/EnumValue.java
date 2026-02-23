@@ -50,8 +50,8 @@ public final class EnumValue<E extends Enum<E>> extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    decodedValue.write(writer);
+  public int write(final MsgPackWriter writer) {
+    return decodedValue.write(writer);
   }
 
   @Override

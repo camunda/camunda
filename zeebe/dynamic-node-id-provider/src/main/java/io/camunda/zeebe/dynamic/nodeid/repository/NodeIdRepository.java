@@ -19,11 +19,22 @@ import java.util.Optional;
 public interface NodeIdRepository extends AutoCloseable {
 
   /**
-   * Initialize the leases if they haven't been created yet.
+   * Initialize the leases if they haven't been created yet. The parameter initialCount is used only
+   * when bootstrapping the cluster for the first time. After that new lease objects are not created
+   * even if a different count is provided.
    *
-   * @param count the number of leases to create
+   * @param initialCount the number of leases to create
+   * @return the number of available leases after initialization. This can be different from the
+   *     provided count if the repository was already initialized before.
    */
-  void initialize(int count);
+  int initialize(int initialCount);
+
+  /**
+   * Add or remove leases to match the new cluster size.
+   *
+   * @param newClusterSize the new cluster size
+   */
+  void scale(int newClusterSize);
 
   /**
    * Get a lease without acquiring it. This can be used to verify the liveness of other nodes or
@@ -69,6 +80,15 @@ public interface NodeIdRepository extends AutoCloseable {
    * @return the current restore status, or null if none exists
    */
   StoredRestoreStatus getRestoreStatus(final String restoreId);
+
+  /**
+   * Get the count of available leases in the repository. This can be used to refresh the available
+   * lease count during lease acquisition, especially when a concurrent scale operation might have
+   * added new leases.
+   *
+   * @return the number of available leases
+   */
+  int getAvailableLeaseCount();
 
   /**
    * A StoredLease represents the Lease stored in a Repository such as S3. It can be

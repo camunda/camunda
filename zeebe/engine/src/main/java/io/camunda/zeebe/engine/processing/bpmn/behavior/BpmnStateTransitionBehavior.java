@@ -657,7 +657,7 @@ public final class BpmnStateTransitionBehavior {
   }
 
   public long createChildProcessInstance(
-      final DeployedProcess process, final BpmnElementContext context) {
+      final DeployedProcess process, final BpmnElementContext context, final String businessId) {
 
     final var processInstanceKey = keyGenerator.nextKey();
 
@@ -672,7 +672,8 @@ public final class BpmnStateTransitionBehavior {
         .setElementId(process.getProcess().getId())
         .setBpmnElementType(process.getProcess().getElementType())
         .setTenantId(context.getTenantId())
-        .setRootProcessInstanceKey(context.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(context.getRootProcessInstanceKey())
+        .setBusinessId(businessId);
 
     commandWriter.appendFollowUpCommand(
         processInstanceKey, ProcessInstanceIntent.ACTIVATE_ELEMENT, childInstanceRecord);

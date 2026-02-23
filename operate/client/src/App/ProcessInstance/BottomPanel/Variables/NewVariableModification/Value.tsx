@@ -17,7 +17,7 @@ import {
   validateModifiedValueValid,
 } from '../validators';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
@@ -63,12 +63,12 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
             hideLabel
             labelText="Value"
             placeholder="Value"
-            buttonLabel="Open JSON editor modal"
+            buttonLabel="Open JSON editor"
             tooltipPosition="left"
             onIconClick={() => {
               setIsModalVisible(true);
             }}
-            Icon={Popup}
+            Icon={Maximize}
             onBlur={() => {
               form.mutators?.triggerValidation?.(valueFieldName);
               input.onBlur();

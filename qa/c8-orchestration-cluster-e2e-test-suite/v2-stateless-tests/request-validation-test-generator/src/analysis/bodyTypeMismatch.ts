@@ -1,9 +1,13 @@
-import { OperationModel, ValidationScenario } from '../model/types.js';
-import { buildWalk, WalkNode } from '../schema/walker.js';
-import { buildBaselineBody } from '../schema/baseline.js';
-import { makeId } from './common.js';
+import {OperationModel, ValidationScenario} from '../model/types.js';
+import {buildWalk, WalkNode} from '../schema/walker.js';
+import {buildBaselineBody} from '../schema/baseline.js';
+import {makeId} from './common.js';
 
-interface Opts { onlyOperations?: Set<string>; capPerOperation?: number; maxPerField?: number; }
+interface Opts {
+  onlyOperations?: Set<string>;
+  capPerOperation?: number;
+  maxPerField?: number;
+}
 
 const TYPE_MISMATCH_TABLE: Record<string, any[]> = {
   string: [123, true, {}, []],
@@ -14,10 +18,14 @@ const TYPE_MISMATCH_TABLE: Record<string, any[]> = {
   array: ['x', {}],
 };
 
-export function generateBodyTypeMismatch(ops: OperationModel[], opts: Opts): ValidationScenario[] {
+export function generateBodyTypeMismatch(
+  ops: OperationModel[],
+  opts: Opts,
+): ValidationScenario[] {
   const out: ValidationScenario[] = [];
   for (const op of ops) {
-    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId)) continue;
+    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId))
+      continue;
     const walk = buildWalk(op);
     if (!walk || !walk.root) continue;
     const baseline = buildBaselineBody(op);
@@ -33,7 +41,12 @@ export function generateBodyTypeMismatch(ops: OperationModel[], opts: Opts): Val
         if (opts.maxPerField && perField >= opts.maxPerField) break;
         const mutated = structuredClone(baseline);
         if (!applyMutation(mutated, f.path, wrong)) continue;
-        const id = makeId([op.operationId, 'bodyType', f.path.join('_'), String(perField)]);
+        const id = makeId([
+          op.operationId,
+          'bodyType',
+          f.path.join('_'),
+          String(perField),
+        ]);
         out.push({
           id,
           operationId: op.operationId,
@@ -47,7 +60,8 @@ export function generateBodyTypeMismatch(ops: OperationModel[], opts: Opts): Val
           description: `Body field '${f.path.join('.')}' wrong type from '${t}'`,
           headersAuth: true,
         });
-        produced++; perField++;
+        produced++;
+        perField++;
       }
       if (opts.capPerOperation && produced >= opts.capPerOperation) break;
     }
@@ -55,11 +69,14 @@ export function generateBodyTypeMismatch(ops: OperationModel[], opts: Opts): Val
   return out;
 }
 
-function collectFields(node: WalkNode, prefix: string[]): { path: string[]; type?: string | string[] }[] {
-  const out: { path: string[]; type?: string | string[] }[] = [];
+function collectFields(
+  node: WalkNode,
+  prefix: string[],
+): {path: string[]; type?: string | string[]}[] {
+  const out: {path: string[]; type?: string | string[]}[] = [];
   const t = Array.isArray(node.type) ? node.type[0] : node.type;
   if (t && t !== 'object' && t !== 'array') {
-    out.push({ path: prefix.slice(), type: t });
+    out.push({path: prefix.slice(), type: t});
   }
   if (t === 'object' && node.properties) {
     for (const [k, c] of Object.entries(node.properties)) {
@@ -73,21 +90,21 @@ function collectFields(node: WalkNode, prefix: string[]): { path: string[]; type
 
 function applyMutation(obj: any, path: string[], value: any): boolean {
   let target = obj;
-  for (let i=0;i<path.length-1;i++) {
+  for (let i = 0; i < path.length - 1; i++) {
     const seg = path[i];
     if (!(seg in target)) return false;
     target = target[seg];
   }
-  const last = path[path.length-1];
+  const last = path[path.length - 1];
   if (!(last in target)) return false;
   target[last] = value;
   return true;
 }
 
-function buildParams(path: string): Record<string,string> | undefined {
+function buildParams(path: string): Record<string, string> | undefined {
   const m = path.match(/\{([^}]+)}/g);
   if (!m) return undefined;
-  const params: Record<string,string> = {};
-  for (const token of m) params[token.slice(1,-1)] = 'x';
+  const params: Record<string, string> = {};
+  for (const token of m) params[token.slice(1, -1)] = 'x';
   return params;
 }

@@ -357,18 +357,9 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
 
   // TODO: This will be fixed in the https://github.com/zeebe-io/zeebe/issues/5640
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
-    headerEncoder
-        .wrap(buffer, offset)
-        .blockLength(bodyEncoder.sbeBlockLength())
-        .templateId(bodyEncoder.sbeTemplateId())
-        .schemaId(bodyEncoder.sbeSchemaId())
-        .version(bodyEncoder.sbeSchemaVersion());
-
-    offset += headerEncoder.encodedLength();
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
-        .wrap(buffer, offset)
+        .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .nodeId(nodeId)
         .partitionsCount(partitionsCount)
         .clusterSize(clusterSize)
@@ -419,6 +410,7 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         partitionHealthEncoder.next().partitionId(entry.getKey()).healthStatus(entry.getValue());
       }
     }
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public static BrokerInfo fromProperties(final Properties properties) {

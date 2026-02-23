@@ -7,15 +7,14 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {getWrapper, mockMetaData, mockProcessInstanceDeprecated} from './mocks';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
+import {getWrapper, mockProcessInstance} from './mocks';
 import {VariablePanel} from '../index';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 
 const EMPTY_PLACEHOLDER = 'The Flow Node has no Variables';
 
@@ -30,20 +29,7 @@ describe('Skeleton', () => {
     mockFetchProcessDefinitionXml({processDefinitionKey: '123'}).withSuccess(
       mockProcessXml,
     );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstance().withSuccess({
-      processInstanceKey: '1',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    });
+    mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -55,8 +41,7 @@ describe('Skeleton', () => {
         },
       ],
     });
-
-    flowNodeMetaDataStore.setMetaData(mockMetaData);
+    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper(),

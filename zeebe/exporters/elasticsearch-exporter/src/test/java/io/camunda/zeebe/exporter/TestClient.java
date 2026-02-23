@@ -8,16 +8,11 @@
 package io.camunda.zeebe.exporter;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import co.elastic.clients.json.jackson.JacksonJsonpMapper;
-import co.elastic.clients.transport.rest_client.RestClientTransport;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
+import co.elastic.clients.elasticsearch.indices.IndexState;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
-import io.camunda.zeebe.exporter.dto.Template;
 import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -25,23 +20,17 @@ import io.camunda.zeebe.util.CloseableSilently;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
 import java.io.UncheckedIOException;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import org.agrona.CloseHelper;
-import org.elasticsearch.client.Request;
-import org.elasticsearch.client.RestClient;
 
 /**
- * A thin client to verify properties from Elastic. Wraps both the low and high level clients from
- * Elastic in a closeable resource.
+ * A thin client to verify properties from Elastic. Wraps the high-level ES Java client in a
+ * closeable resource.
  */
 final class TestClient implements CloseableSilently {
   private static final ObjectMapper MAPPER =
       new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private final ElasticsearchExporterConfiguration config;
-  private final RestClient restClient;
   private final ElasticsearchClient esClient;
   private final RecordIndexRouter indexRouter;
 
@@ -49,23 +38,10 @@ final class TestClient implements CloseableSilently {
     this.config = config;
     this.indexRouter = indexRouter;
 
-    restClient = RestClientFactory.of(config);
-
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
-    esClient = new ElasticsearchClient(transport);
-  }
-
-  TestClient(
-      final ElasticsearchExporterConfiguration config,
-      final RecordIndexRouter indexRouter,
-      final RestClient restClient) {
-    this.config = config;
-    this.indexRouter = indexRouter;
-
-    this.restClient = restClient;
-
-    final var transport = new RestClientTransport(restClient, new JacksonJsonpMapper(MAPPER));
-    esClient = new ElasticsearchClient(transport);
+    // Create the ES client with the ZeebeProtocolModule so that Record<?> can be deserialized
+    // from Elasticsearch responses. The production ElasticsearchClientFactory uses a plain
+    // ObjectMapper which cannot deserialize the Record interface.
+    esClient = ElasticsearchClientFactory.of(config, MAPPER);
   }
 
   @SuppressWarnings("rawtypes")
@@ -80,46 +56,30 @@ final class TestClient implements CloseableSilently {
     }
   }
 
-  Optional<IndexTemplateWrapper> getIndexTemplate(final ValueType valueType, final String version) {
+  Optional<IndexTemplateItem> getIndexTemplate(final ValueType valueType, final String version) {
     try {
-      final var request =
-          new Request(
-              "GET", "/_index_template/" + indexRouter.indexPrefixForValueType(valueType, version));
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), IndexTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
+      final var templateName = indexRouter.indexPrefixForValueType(valueType, version);
+      final var response = esClient.indices().getIndexTemplate(b -> b.name(templateName));
+      return response.indexTemplates().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  Optional<ComponentTemplateWrapper> getComponentTemplate() {
+  Optional<ComponentTemplate> getComponentTemplate() {
     try {
-      final var request =
-          new Request(
-              "GET",
-              "/_component_template/"
-                  + config.index.prefix
-                  + "-"
-                  + VersionUtil.getVersionLowerCase());
-      final var response = restClient.performRequest(request);
-      final var templates =
-          MAPPER.readValue(response.getEntity().getContent(), ComponentTemplatesDto.class);
-      return templates.wrappers().stream().findFirst();
+      final var templateName = config.index.prefix + "-" + VersionUtil.getVersionLowerCase();
+      final var response = esClient.cluster().getComponentTemplate(b -> b.name(templateName));
+      return response.componentTemplates().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
   }
 
-  Optional<IndexSettings> getIndexSettings(final String index) {
+  Optional<IndexState> getIndexSettings(final String index) {
     try {
-      final var request = new Request("GET", index + "/_settings");
-      final var response = restClient.performRequest(request);
-      final TypeReference<Map<String, IndexSettings>> mapTypeReference = new TypeReference<>() {};
-      final Map<String, IndexSettings> settings =
-          MAPPER.readValue(response.getEntity().getContent(), mapTypeReference);
-      return settings.values().stream().findFirst();
+      final var response = esClient.indices().getSettings(b -> b.index(index));
+      return response.result().values().stream().findFirst();
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -127,8 +87,7 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndices() {
     try {
-      final var request = new Request("DELETE", config.index.prefix + "*");
-      restClient.performRequest(request);
+      esClient.indices().delete(b -> b.index(config.index.prefix + "*"));
     } catch (final IOException e) {
       throw new UncheckedIOException(e);
     }
@@ -136,29 +95,25 @@ final class TestClient implements CloseableSilently {
 
   void deleteIndexTemplates() {
     try {
-      final var request =
-          new Request("DELETE", "/_index_template/%s*".formatted(config.index.prefix));
-      restClient.performRequest(request);
-    } catch (final IOException e) {
-      if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
+      esClient.indices().deleteIndexTemplate(b -> b.name(config.index.prefix + "*"));
+    } catch (final Exception e) {
+      if (e.getMessage() != null && e.getMessage().contains("404")) {
         // Ignore 404 errors - no templates to delete
         return;
       }
-      throw new UncheckedIOException(e);
+      throw new RuntimeException(e);
     }
   }
 
   void deleteComponentTemplates() {
     try {
-      final var request =
-          new Request("DELETE", "/_component_template/%s*".formatted(config.index.prefix));
-      restClient.performRequest(request);
-    } catch (final IOException e) {
-      if (e.getMessage() != null && e.getMessage().contains("404 Not Found")) {
+      esClient.cluster().deleteComponentTemplate(b -> b.name(config.index.prefix + "*"));
+    } catch (final Exception e) {
+      if (e.getMessage() != null && e.getMessage().contains("404")) {
         // Ignore 404 errors - no templates to delete
         return;
       }
-      throw new UncheckedIOException(e);
+      throw new RuntimeException(e);
     }
   }
 
@@ -168,27 +123,10 @@ final class TestClient implements CloseableSilently {
 
   @Override
   public void close() {
-    CloseHelper.quietCloseAll(esClient._transport());
-  }
-
-  record IndexTemplatesDto(@JsonProperty("index_templates") List<IndexTemplateWrapper> wrappers) {
-    record IndexTemplateWrapper(String name, @JsonProperty("index_template") Template template) {}
-  }
-
-  record ComponentTemplatesDto(
-      @JsonProperty("component_templates") List<ComponentTemplateWrapper> wrappers) {
-    record ComponentTemplateWrapper(
-        String name, @JsonProperty("component_template") Template template) {}
-  }
-
-  @JsonIgnoreProperties(ignoreUnknown = true)
-  record IndexSettings(Settings settings) {
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Settings(Index index) {}
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record Index(Lifecycle lifecycle) {}
-
-    record Lifecycle(String name) {}
+    try {
+      esClient._transport().close();
+    } catch (final IOException e) {
+      // ignore
+    }
   }
 }

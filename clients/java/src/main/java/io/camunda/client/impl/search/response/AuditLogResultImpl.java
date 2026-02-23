@@ -35,6 +35,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String timestamp;
   private String actorId;
   private AuditLogActorTypeEnum actorType;
+  private String agentElementId;
   private String tenantId;
   private AuditLogResultEnum result;
   private String annotation;
@@ -42,6 +43,7 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String processDefinitionId;
   private String processDefinitionKey;
   private String processInstanceKey;
+  private String rootProcessInstanceKey;
   private String elementInstanceKey;
   private String jobKey;
   private String userTaskKey;
@@ -53,6 +55,9 @@ public class AuditLogResultImpl implements AuditLogResult {
   private String deploymentKey;
   private String formKey;
   private String resourceKey;
+  private String relatedEntityKey;
+  private AuditLogEntityTypeEnum relatedEntityType;
+  private String entityDescription;
 
   public AuditLogResultImpl(final io.camunda.client.protocol.rest.AuditLogResult item) {
     auditLogKey = item.getAuditLogKey();
@@ -64,6 +69,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     timestamp = item.getTimestamp();
     actorId = item.getActorId();
     actorType = EnumUtil.convert(item.getActorType(), AuditLogActorTypeEnum.class);
+    agentElementId = item.getAgentElementId();
     tenantId = item.getTenantId();
     result = EnumUtil.convert(item.getResult(), AuditLogResultEnum.class);
     annotation = item.getAnnotation();
@@ -71,6 +77,7 @@ public class AuditLogResultImpl implements AuditLogResult {
     processDefinitionId = item.getProcessDefinitionId();
     processDefinitionKey = item.getProcessDefinitionKey();
     processInstanceKey = item.getProcessInstanceKey();
+    rootProcessInstanceKey = item.getRootProcessInstanceKey();
     elementInstanceKey = item.getElementInstanceKey();
     jobKey = item.getJobKey();
     userTaskKey = item.getUserTaskKey();
@@ -82,6 +89,9 @@ public class AuditLogResultImpl implements AuditLogResult {
     deploymentKey = item.getDeploymentKey();
     formKey = item.getFormKey();
     resourceKey = item.getResourceKey();
+    relatedEntityKey = item.getRelatedEntityKey();
+    relatedEntityType = EnumUtil.convert(item.getRelatedEntityType(), AuditLogEntityTypeEnum.class);
+    entityDescription = item.getEntityDescription();
   }
 
   @Override
@@ -162,6 +172,15 @@ public class AuditLogResultImpl implements AuditLogResult {
   }
 
   @Override
+  public String getAgentElementId() {
+    return agentElementId;
+  }
+
+  public void setAgentElementId(final String agentElementId) {
+    this.agentElementId = agentElementId;
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -218,6 +237,15 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setProcessInstanceKey(final String processInstanceKey) {
     this.processInstanceKey = processInstanceKey;
+  }
+
+  @Override
+  public String getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  public void setRootProcessInstanceKey(final String rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
   }
 
   @Override
@@ -317,6 +345,33 @@ public class AuditLogResultImpl implements AuditLogResult {
 
   public void setResourceKey(final String resourceKey) {
     this.resourceKey = resourceKey;
+  }
+
+  @Override
+  public String getRelatedEntityKey() {
+    return relatedEntityKey;
+  }
+
+  public void setRelatedEntityKey(final String relatedEntityKey) {
+    this.relatedEntityKey = relatedEntityKey;
+  }
+
+  @Override
+  public AuditLogEntityTypeEnum getRelatedEntityType() {
+    return relatedEntityType;
+  }
+
+  public void setRelatedEntityType(final AuditLogEntityTypeEnum relatedEntityType) {
+    this.relatedEntityType = relatedEntityType;
+  }
+
+  @Override
+  public String getEntityDescription() {
+    return entityDescription;
+  }
+
+  public void setEntityDescription(final String entityDescription) {
+    this.entityDescription = entityDescription;
   }
 
   public void setTenantId(final String tenantId) {

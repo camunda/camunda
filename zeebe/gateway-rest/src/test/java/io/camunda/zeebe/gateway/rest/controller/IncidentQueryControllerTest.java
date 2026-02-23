@@ -35,7 +35,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -61,6 +61,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                       "processDefinitionKey": "23",
                       "processDefinitionId": "complexProcess",
                       "processInstanceKey": "42",
+                      "rootProcessInstanceKey": "37",
                       "errorType": "JOB_NO_RETRIES",
                       "errorMessage": "No retries left.",
                       "elementId": "elementId",
@@ -109,6 +110,7 @@ public class IncidentQueryControllerTest extends RestControllerTest {
                           "processDefinitionKey": "23",
                           "processDefinitionId": "complexProcess",
                           "processInstanceKey": "42",
+                          "rootProcessInstanceKey": "37",
                           "errorType": "JOB_NO_RETRIES",
                           "errorMessage": "No retries left.",
                           "elementId": "elementId",
@@ -167,6 +169,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             ],
             "page": {
               "totalItems": 1,
+              "startCursor": null,
+              "endCursor": null,
               "hasMoreTotalItems": false
             }
           }
@@ -183,6 +187,8 @@ public class IncidentQueryControllerTest extends RestControllerTest {
             ],
             "page": {
               "totalItems": 1,
+              "startCursor": null,
+              "endCursor": null,
               "hasMoreTotalItems": false
             }
           }

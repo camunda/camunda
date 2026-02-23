@@ -10,6 +10,7 @@ package io.camunda.zeebe.test.util.record;
 import static io.camunda.zeebe.test.util.record.RecordingExporter.records;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -41,10 +42,43 @@ public final class RecordingExporterTest {
 
     // when
     final List<Record<TestValue>> list =
-        records(VALUE_TYPE, TestValue.class).collect(Collectors.toList());
+        records(VALUE_TYPE, TestValue.class).limit(3).collect(Collectors.toList());
 
     // then
     assertThat(list).extracting(Record::getPosition).containsExactly(1L, 2L, 3L);
+  }
+
+  @Test
+  public void expectNoMatchingRecordsShouldLowerAndRestoreMaximumWaitTime() {
+    // given
+    final var maximumWaitTime = 123456789L;
+    RecordingExporter.setMaximumWaitTime(maximumWaitTime);
+
+    // when / then
+    RecordingExporter.expectNoMatchingRecords(
+        records -> {
+          assertThat(RecordingExporter.getMaximumWaitTime())
+              .isEqualTo(RecordingExporter.DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME);
+          return records;
+        });
+    assertThat(RecordingExporter.getMaximumWaitTime()).isEqualTo(maximumWaitTime);
+  }
+
+  @Test
+  public void expectNoMatchingRecordsShouldLowerAndRestoreMaximumWaitTimeWhenThrowing() {
+    // when / then
+    try {
+      RecordingExporter.expectNoMatchingRecords(
+          records -> {
+            assertThat(RecordingExporter.getMaximumWaitTime())
+                .isEqualTo(RecordingExporter.DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME);
+            throw new RuntimeException("expected exception");
+          });
+    } catch (final RuntimeException e) {
+      // Ignore expected exception
+    }
+    assertThat(RecordingExporter.getMaximumWaitTime())
+        .isEqualTo(RecordingExporter.DEFAULT_MAX_WAIT_TIME);
   }
 
   public static class TestRecord implements Record<TestValue> {
@@ -108,6 +142,11 @@ public final class RecordingExporterTest {
     @Override
     public Map<String, Object> getAuthorizations() {
       return Map.of();
+    }
+
+    @Override
+    public Agent getAgent() {
+      return null;
     }
 
     @Override

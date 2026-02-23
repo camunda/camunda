@@ -42,6 +42,9 @@ import org.junit.jupiter.api.Test;
 class UserTaskSearchIT {
   private static Long userTaskKeyTaskAssigned;
   private static Long userTaskSubprocessKey;
+  private static Long childUserTaskKey;
+  private static Long parentProcessInstanceKey;
+  private static Long childProcessInstanceKey;
   private static final String LARGE_VAR_NAME = "largeVariable";
   private static final String LARGE_VALUE = "b".repeat(DEFAULT_VARIABLE_SIZE_THRESHOLD + 10);
 
@@ -61,6 +64,11 @@ class UserTaskSearchIT {
     deployProcessFromResourcePath("/process/process_with_form.bpmn", "process_with_form.bpmn");
     deployProcessFromResourcePath("/process/job_worker_process.bpmn", "job_worker_process.bpmn");
 
+    // Deploy parent-child process for testing rootProcessInstanceKey
+    deployProcessFromResourcePath("/process/child_with_usertask.bpmn", "child_with_usertask.bpmn");
+    deployProcessFromResourcePath(
+        "/process/parent_with_child_usertask.bpmn", "parent_with_child_usertask.bpmn");
+
     startProcessInstance(camundaClient, "process");
     startProcessInstance(camundaClient, "process-2");
     startProcessInstance(camundaClient, "process");
@@ -74,11 +82,26 @@ class UserTaskSearchIT {
         "jobWorkerProcess"); // Start a Job Worker instance in order to validate if User Tasks
     // queries has the same result
 
+    // Start parent process that calls child process with user task
+    parentProcessInstanceKey =
+        startProcessInstance(camundaClient, "parentWithChildUserTask").getProcessInstanceKey();
+
     waitForTasksBeingExported();
 
     final var userTaskList =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.elementId("TaskSub")).send().join();
     userTaskSubprocessKey = userTaskList.items().stream().findFirst().get().getUserTaskKey();
+
+    // Get the child user task and its process instance key
+    final var childUserTaskList =
+        camundaClient
+            .newUserTaskSearchRequest()
+            .filter(f -> f.elementId("ChildUserTask"))
+            .send()
+            .join();
+    final var childUserTask = childUserTaskList.items().stream().findFirst().get();
+    childUserTaskKey = childUserTask.getUserTaskKey();
+    childProcessInstanceKey = childUserTask.getProcessInstanceKey();
   }
 
   @Test
@@ -363,7 +386,7 @@ class UserTaskSearchIT {
   @Test
   public void shouldRetrieveAllTasks() {
     final var result = camundaClient.newUserTaskSearchRequest().send().join();
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
   }
 
   @Test
@@ -429,7 +452,7 @@ class UserTaskSearchIT {
             .filter(f -> f.state(UserTaskState.CREATED))
             .send()
             .join();
-    assertThat(resultCreated.items()).hasSize(7);
+    assertThat(resultCreated.items()).hasSize(8);
     resultCreated
         .items()
         .forEach(item -> assertThat(item.getState()).isEqualTo(UserTaskState.CREATED));
@@ -541,7 +564,7 @@ class UserTaskSearchIT {
             .send()
             .join();
 
-    assertThat(resultAfter.items()).hasSize(7);
+    assertThat(resultAfter.items()).hasSize(8);
     // apply searchBefore
     final var resultBefore =
         camundaClient
@@ -558,7 +581,7 @@ class UserTaskSearchIT {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().asc()).send().join();
 
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
 
     // Assert that the creation date of item 0 is before item 1, and item 1 is before item 2
     final UserTask firstItem = result.items().get(0);
@@ -572,7 +595,7 @@ class UserTaskSearchIT {
     final var result =
         camundaClient.newUserTaskSearchRequest().sort(s -> s.creationDate().desc()).send().join();
 
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
 
     assertThat(result.items().get(0).getCreationDate())
         .isAfterOrEqualTo(result.items().get(1).getCreationDate());
@@ -596,7 +619,7 @@ class UserTaskSearchIT {
   public void shouldRetrieveTaskByTenantId() {
     final var resultDefaultTenant =
         camundaClient.newUserTaskSearchRequest().filter(f -> f.tenantId("<default>")).send().join();
-    assertThat(resultDefaultTenant.items()).hasSize(8);
+    assertThat(resultDefaultTenant.items()).hasSize(9);
     resultDefaultTenant
         .items()
         .forEach(item -> assertThat(item.getTenantId()).isEqualTo("<default>"));
@@ -638,6 +661,47 @@ class UserTaskSearchIT {
 
     // then
     assertThat(result.getUserTaskKey()).isEqualTo(userTaskKeyTaskAssigned);
+  }
+
+  @Test
+  void shouldReturnRootProcessInstanceKeyDifferentFromProcessInstanceKeyForChildProcess() {
+    // when - get the child user task from a call activity
+    final var childUserTask = camundaClient.newUserTaskGetRequest(childUserTaskKey).send().join();
+
+    // then - for child process, rootProcessInstanceKey should be the parent process instance key
+    assertThat(childUserTask.getProcessInstanceKey()).isEqualTo(childProcessInstanceKey);
+    assertThat(childUserTask.getRootProcessInstanceKey()).isEqualTo(parentProcessInstanceKey);
+    assertThat(childUserTask.getRootProcessInstanceKey())
+        .isNotEqualTo(childUserTask.getProcessInstanceKey());
+  }
+
+  @Test
+  void shouldReturnUserTaskVariablesWithRootProcessInstanceKey() {
+    // when - get variables from child user task
+    final var result =
+        camundaClient
+            .newUserTaskVariableSearchRequest(childUserTaskKey)
+            .sort(s -> s.name().asc())
+            .send()
+            .join();
+
+    // then - all variables should have rootProcessInstanceKey pointing to parent process
+    assertThat(result.items()).isNotEmpty();
+    result
+        .items()
+        .forEach(
+            variable -> {
+              assertThat(variable.getRootProcessInstanceKey())
+                  .as(
+                      "Variable '%s' should have rootProcessInstanceKey pointing to parent process",
+                      variable.getName())
+                  .isEqualTo(parentProcessInstanceKey);
+              assertThat(variable.getProcessInstanceKey())
+                  .as(
+                      "Variable '%s' should have processInstanceKey pointing to child process",
+                      variable.getName())
+                  .isEqualTo(childProcessInstanceKey);
+            });
   }
 
   @Test
@@ -819,7 +883,7 @@ class UserTaskSearchIT {
             .join();
 
     // then
-    assertThat(result.items()).hasSize(8);
+    assertThat(result.items()).hasSize(9);
   }
 
   @Test
@@ -1429,7 +1493,7 @@ class UserTaskSearchIT {
         .untilAsserted(
             () -> {
               final var result = camundaClient.newUserTaskSearchRequest().send().join();
-              assertThat(result.items()).hasSize(8);
+              assertThat(result.items()).hasSize(9);
               userTaskKeyTaskAssigned = result.items().getFirst().getUserTaskKey();
             });
 

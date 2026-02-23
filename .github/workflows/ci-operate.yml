@@ -108,7 +108,7 @@ jobs:
   fe-unit-tests:
     if: inputs.runFeTests
     name: "Unit - Front End [${{ matrix.shardIndex }}/${{ matrix.shardTotal }}]"
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 10
     permissions: {} # GITHUB_TOKEN unused in this job
     strategy:
@@ -128,14 +128,16 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run test -- --no-file-parallelism --maxWorkers 1 --reporter=blob --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         name: Unit & Integration tests
+        env:
+          NODE_OPTIONS: --max-old-space-size=8192
       - name: Upload blob report
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: operate-fe-blob-report-${{ matrix.shardIndex }}
           path: operate/client/.vitest-reports/*
@@ -157,7 +159,7 @@ jobs:
     if: ${{ !cancelled() && inputs.runFeTests }}
     needs: [fe-unit-tests]
     name: "Unit - Front End - Merge Reports"
-    runs-on: ubuntu-latest
+    runs-on: gcp-perf-core-8-default
     timeout-minutes: 5
     permissions: {} # GITHUB_TOKEN unused in this job
     env:
@@ -172,26 +174,17 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - name: Download blob reports
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           path: operate/client/.vitest-reports
           pattern: operate-fe-blob-report-*
           merge-multiple: true
       - name: Merge reports
         run: npx vitest --merge-reports
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   # Typescript Checker
   operate-fe-type-check:
@@ -212,7 +205,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run ts-check
@@ -247,7 +240,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - run: npm run eslint
@@ -274,7 +267,7 @@ jobs:
       TEST_TYPE: Tool
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.54.0
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
     defaults:
       run:
@@ -287,7 +280,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -296,7 +289,7 @@ jobs:
         run: npm run start:visual-regression &
       - name: Run A11y tests
         run: npm run test:a11y
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: operate-a11y-report
@@ -323,7 +316,7 @@ jobs:
       TEST_TYPE: visual-regression
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.54.0
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
     defaults:
       run:
@@ -336,7 +329,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         run: npm ci
       - name: Build frontend
@@ -345,7 +338,7 @@ jobs:
         run: npm run start:visual-regression &
       - name: Run Visual regression tests
         run: npm run test:visual
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: operate-visual-regression-report
@@ -372,7 +365,7 @@ jobs:
       TEST_TYPE: screenshot-update
       TEST_OWNER: Core Features
     container:
-      image: mcr.microsoft.com/playwright:v1.54.0
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
     defaults:
       run:
@@ -383,7 +376,7 @@ jobs:
         uses: ./.github/actions/print-metadata
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - run: npm ci
         name: Install dependencies
       - name: Build frontend
@@ -393,7 +386,7 @@ jobs:
       - name: Run Playwright
         working-directory: ./operate/client
         run: npm run generate-screenshots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: Playwright report

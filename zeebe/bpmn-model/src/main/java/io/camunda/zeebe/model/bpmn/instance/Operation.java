@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface Operation extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Operation extends BaseElement, NamedBpmnElement {
 
   String getImplementationRef();
 

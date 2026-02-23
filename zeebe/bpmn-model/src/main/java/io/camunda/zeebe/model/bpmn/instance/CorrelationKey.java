@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface CorrelationKey extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface CorrelationKey extends BaseElement, NamedBpmnElement {
 
   Collection<CorrelationProperty> getCorrelationProperties();
 }

@@ -7,7 +7,9 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.AuthorizationDbQuery;
+import io.camunda.db.rdbms.read.mapper.AuthorizationEntityMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
 import io.camunda.db.rdbms.sql.columns.AuthorizationSearchColumn;
 import io.camunda.db.rdbms.write.domain.AuthorizationDbModel;
@@ -17,7 +19,6 @@ import io.camunda.search.query.AuthorizationQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import org.slf4j.Logger;
@@ -30,8 +31,9 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
 
   private final AuthorizationMapper authorizationMapper;
 
-  public AuthorizationDbReader(final AuthorizationMapper authorizationMapper) {
-    super(AuthorizationSearchColumn.values());
+  public AuthorizationDbReader(
+      final AuthorizationMapper authorizationMapper, final RdbmsReaderConfig readerConfig) {
+    super(AuthorizationSearchColumn.values(), readerConfig);
     this.authorizationMapper = authorizationMapper;
   }
 
@@ -101,14 +103,6 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
   }
 
   private AuthorizationEntity map(final AuthorizationDbModel model) {
-    return new AuthorizationEntity(
-        model.authorizationKey(),
-        model.ownerId(),
-        model.ownerType(),
-        model.resourceType(),
-        model.resourceMatcher(),
-        model.resourceId(),
-        model.resourcePropertyName(),
-        new HashSet<>(model.permissionTypes()));
+    return AuthorizationEntityMapper.toEntity(model);
   }
 }

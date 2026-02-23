@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<Configuration status="WARN">
+
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout
+        pattern="%d{HH:mm:ss.SSS} [%X{actor-name}] [%t] %-5level %logger{36} - %msg%n"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="io.camunda.appint.exporter" level="trace"/>
+    <Logger name="org.apache.http.client" level="trace"/>
+    <Logger name="com.github.tomakehurst.wiremock" level="trace"/>
+
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+    </Root>
+  </Loggers>
+
+</Configuration>

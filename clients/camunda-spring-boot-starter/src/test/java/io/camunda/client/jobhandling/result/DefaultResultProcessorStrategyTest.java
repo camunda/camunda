@@ -17,6 +17,7 @@ package io.camunda.client.jobhandling.result;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.bean.MethodInfo;
@@ -38,6 +39,32 @@ class DefaultResultProcessorStrategyTest {
         resultProcessorStrategy.createProcessor(
             new ResultProcessorStrategyContext(methodInfo, mock(CamundaClient.class)));
     // Then
-    assertThat((resultProcessor instanceof DefaultResultProcessor)).isTrue();
+    assertThat(resultProcessor).isInstanceOf(DefaultResultProcessor.class);
+  }
+
+  @Test
+  void createProcessorForUserTaskResultFunctionShouldReturnResultFunctionProcessor() {
+    // Given
+    final MethodInfo methodInfo = mock(MethodInfo.class);
+    when(methodInfo.getReturnType()).thenAnswer((i) -> UserTaskResultFunction.class);
+    // When
+    final ResultProcessor resultProcessor =
+        resultProcessorStrategy.createProcessor(
+            new ResultProcessorStrategyContext(methodInfo, mock(CamundaClient.class)));
+    // Then
+    assertThat(resultProcessor).isInstanceOf(ResultFunctionResultProcessor.class);
+  }
+
+  @Test
+  void createProcessorForAdHocSubprocessTaskResultFunctionShouldReturnResultFunctionProcessor() {
+    // Given
+    final MethodInfo methodInfo = mock(MethodInfo.class);
+    when(methodInfo.getReturnType()).thenAnswer((i) -> AdHocSubProcessResultFunction.class);
+    // When
+    final ResultProcessor resultProcessor =
+        resultProcessorStrategy.createProcessor(
+            new ResultProcessorStrategyContext(methodInfo, mock(CamundaClient.class)));
+    // Then
+    assertThat(resultProcessor).isInstanceOf(ResultFunctionResultProcessor.class);
   }
 }

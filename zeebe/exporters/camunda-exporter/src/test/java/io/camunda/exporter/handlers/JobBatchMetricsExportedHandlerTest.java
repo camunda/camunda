@@ -236,6 +236,7 @@ public class JobBatchMetricsExportedHandlerTest {
             r ->
                 r.withIntent(JobMetricsBatchIntent.EXPORTED)
                     .withKey(123L)
+                    .withPartitionId(1)
                     .withValue(jobMetricsBatchRecordValue));
 
     // when
@@ -243,6 +244,7 @@ public class JobBatchMetricsExportedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then
+    assertThat(entity.getPartitionId()).isEqualTo(1);
     assertThat(entity.getStartTime())
         .isEqualTo(OffsetDateTime.ofInstant(Instant.ofEpochMilli(startTime), ZoneOffset.UTC));
     assertThat(entity.getEndTime())
@@ -319,6 +321,7 @@ public class JobBatchMetricsExportedHandlerTest {
             r ->
                 r.withIntent(JobMetricsBatchIntent.EXPORTED)
                     .withKey(789L)
+                    .withPartitionId(2)
                     .withValue(jobMetricsBatchRecordValue));
 
     // when - update second metric
@@ -326,12 +329,62 @@ public class JobBatchMetricsExportedHandlerTest {
     underTest.updateEntity(record, entity);
 
     // then - should get values from second metric
+    assertThat(entity.getPartitionId()).isEqualTo(2);
     assertThat(entity.getTenantId()).isEqualTo("tenant2");
     assertThat(entity.getJobType()).isEqualTo("jobType2");
     assertThat(entity.getWorker()).isEqualTo("worker1");
     assertThat(entity.getCreatedCount()).isEqualTo(100);
     assertThat(entity.getCompletedCount()).isEqualTo(200);
     assertThat(entity.getFailedCount()).isEqualTo(300);
+  }
+
+  @Test
+  void shouldMapPartitionIdFromRecord() {
+    // given - test with partition 0
+    final var jobMetricsBatchRecordValue =
+        ImmutableJobMetricsBatchRecordValue.builder()
+            .withBatchStartTime(1000L)
+            .withBatchEndTime(2000L)
+            .withRecordSizeLimitExceeded(false)
+            .withEncodedStrings(List.of("jobType1", "tenant1", "worker1"))
+            .withJobMetrics(
+                List.of(
+                    ImmutableJobMetricsValue.builder()
+                        .withJobTypeIndex(0)
+                        .withTenantIdIndex(1)
+                        .withWorkerNameIndex(2)
+                        .withStatusMetrics(createStatusMetrics())
+                        .build()))
+            .build();
+
+    final Record<JobMetricsBatchRecordValue> recordPartition0 =
+        factory.generateRecord(
+            ValueType.JOB_METRICS_BATCH,
+            r ->
+                r.withIntent(JobMetricsBatchIntent.EXPORTED)
+                    .withKey(100L)
+                    .withPartitionId(0)
+                    .withValue(jobMetricsBatchRecordValue));
+
+    final Record<JobMetricsBatchRecordValue> recordPartition5 =
+        factory.generateRecord(
+            ValueType.JOB_METRICS_BATCH,
+            r ->
+                r.withIntent(JobMetricsBatchIntent.EXPORTED)
+                    .withKey(200L)
+                    .withPartitionId(5)
+                    .withValue(jobMetricsBatchRecordValue));
+
+    // when
+    final JobMetricsBatchEntity entityPartition0 = new JobMetricsBatchEntity().setId("100_0_1_2");
+    underTest.updateEntity(recordPartition0, entityPartition0);
+
+    final JobMetricsBatchEntity entityPartition5 = new JobMetricsBatchEntity().setId("200_0_1_2");
+    underTest.updateEntity(recordPartition5, entityPartition5);
+
+    // then
+    assertThat(entityPartition0.getPartitionId()).isEqualTo(0);
+    assertThat(entityPartition5.getPartitionId()).isEqualTo(5);
   }
 
   private List<StatusMetricsValue> createStatusMetrics() {

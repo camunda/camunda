@@ -50,7 +50,9 @@ export enum PermissionType {
   READ_USAGE_METRIC = "READ_USAGE_METRIC",
   READ_JOB_METRIC = "READ_JOB_METRIC",
   COMPLETE = "COMPLETE",
+  COMPLETE_USER_TASK = "COMPLETE_USER_TASK",
   CLAIM = "CLAIM",
+  CLAIM_USER_TASK = "CLAIM_USER_TASK",
 }
 
 export type PermissionTypes = keyof typeof PermissionType;

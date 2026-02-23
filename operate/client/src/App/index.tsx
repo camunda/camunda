@@ -26,11 +26,11 @@ import {TrackPagination} from 'modules/tracking/TrackPagination';
 import {useEffect} from 'react';
 import {tracking} from 'modules/tracking';
 import {currentTheme} from 'modules/stores/currentTheme';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 import {ThemeSwitcher} from 'modules/components/ThemeSwitcher';
 import {ForbiddenPage} from 'modules/components/ForbiddenPage';
 import {ReactQueryProvider} from 'modules/react-query/ReactQueryProvider';
-import {getClientConfig} from '../modules/utils/getClientConfig';
 
 const Wrapper: React.FC = () => {
   return (
@@ -71,13 +71,8 @@ const routes = createRoutesFromElements(
       <Route
         index
         lazy={async () => {
-          if (getClientConfig()?.databaseType === 'rdbms') {
-            const {Dashboard} = await import('./Dashboard/v2/index');
-            return {Component: Dashboard};
-          } else {
-            const {Dashboard} = await import('./Dashboard/index');
-            return {Component: Dashboard};
-          }
+          const {Dashboard} = await import('./Dashboard/index');
+          return {Component: Dashboard};
         }}
       />
       <Route
@@ -134,7 +129,7 @@ const routes = createRoutesFromElements(
 );
 
 const router = createBrowserRouter(routes, {
-  basename: import.meta.env.DEV ? '/' : (window.clientConfig?.baseName ?? '/'),
+  basename: import.meta.env.DEV ? '/' : getClientConfig().baseName,
 });
 
 const App: React.FC = () => {

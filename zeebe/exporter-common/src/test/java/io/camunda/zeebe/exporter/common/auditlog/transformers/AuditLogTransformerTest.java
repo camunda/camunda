@@ -15,6 +15,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.intent.GroupIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
@@ -153,11 +154,26 @@ class AuditLogTransformerTest {
     assertThat(config.supports(invalidArgumentRecord)).isTrue();
   }
 
+  @Test
+  void shouldSupportDataCleanupScheduling() {
+    final var config =
+        AuditLogTransformer.TransformerConfig.with(ValueType.GROUP)
+            .withIntents(GroupIntent.DELETED)
+            .withDataCleanupIntents(GroupIntent.DELETED);
+
+    final var record =
+        factory.generateRecord(
+            ValueType.GROUP,
+            r -> r.withRecordType(RecordType.EVENT).withIntent(GroupIntent.DELETED));
+
+    assertThat(config.dataCleanupIntents().contains(record.getIntent())).isTrue();
+  }
+
   @Nested
   class CreateTest {
     @Test
     void shouldCreateAuditLogEntryWithSuccess() {
-      final Record record =
+      final var record =
           factory.generateRecord(
               ValueType.PROCESS_INSTANCE_MODIFICATION,
               r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));
@@ -199,11 +215,12 @@ class AuditLogTransformerTest {
 
       assertThat(log).isNotNull();
       assertThat(log.getResult()).isEqualTo(AuditLogOperationResult.FAIL);
+      assertThat(log.getEntityDescription()).isEqualTo(record.getRejectionType().name());
     }
 
     @Test
     void shouldCreateAuditLogEntryWithCustomTransformerResult() {
-      final Record record =
+      final var record =
           factory.generateRecord(
               ValueType.PROCESS_INSTANCE_MODIFICATION,
               r -> r.withIntent(ProcessInstanceModificationIntent.MODIFIED));

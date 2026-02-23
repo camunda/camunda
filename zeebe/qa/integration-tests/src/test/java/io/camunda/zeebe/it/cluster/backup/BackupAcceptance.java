@@ -170,8 +170,8 @@ public interface BackupAcceptance {
                   .describedAs("All backup ranges should start and end with the same backup")
                   .allSatisfy(
                       range -> {
-                        assertThat(range.getStart()).isEqualTo(backupId);
-                        assertThat(range.getEnd()).isEqualTo(backupId);
+                        assertThat(range.getStart().getCheckpointId()).isEqualTo(backupId);
+                        assertThat(range.getEnd().getCheckpointId()).isEqualTo(backupId);
                         assertThat(range.getMissingCheckpoints()).isEmpty();
                       });
             });

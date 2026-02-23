@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.resource;
 import static io.camunda.zeebe.engine.state.instance.TimerInstance.NO_ELEMENT_INSTANCE;
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.search.filter.DecisionInstanceFilter;
 import io.camunda.search.filter.ProcessInstanceFilter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.zeebe.engine.processing.bpmn.behavior.BpmnBehaviors;
@@ -65,10 +66,12 @@ import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import io.camunda.zeebe.protocol.record.value.ResourceType;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
@@ -76,6 +79,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class ResourceDeletionDeleteProcessor
     implements DistributedTypedRecordProcessor<ResourceDeletionRecord> {
+
+  private static final List<ResourceType> SUPPORTED_HISTORY_DELETION_TYPES =
+      List.of(ResourceType.PROCESS_DEFINITION, ResourceType.DECISION_REQUIREMENTS);
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -190,7 +196,12 @@ public class ResourceDeletionDeleteProcessor
         untilResourceDeleted(command, tenantId -> tryDeleteResource(command, tenantId, eventKey));
 
     if (!resourceDeleted) {
-      throw new NoSuchResourceException(value.getResourceKey());
+      if (value.isDeleteHistory()
+          && SUPPORTED_HISTORY_DELETION_TYPES.contains(value.getResourceType())) {
+        deleteHistory(eventKey, command);
+      } else {
+        throw new NoSuchResourceException(value.getResourceKey());
+      }
     }
   }
 
@@ -202,6 +213,11 @@ public class ResourceDeletionDeleteProcessor
 
     final var process = processState.getProcessByKeyAndTenant(value.getResourceKey(), tenantId);
     if (process != null) {
+      command
+          .getValue()
+          .setResourceType(ResourceType.PROCESS_DEFINITION)
+          .setResourceId(process.getBpmnProcessId())
+          .setTenantId(process.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -215,18 +231,28 @@ public class ResourceDeletionDeleteProcessor
         decisionState.findDecisionRequirementsByTenantAndKey(tenantId, value.getResourceKey());
     if (drgOptional.isPresent()) {
       final var drg = drgOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.DECISION_REQUIREMENTS)
+          .setResourceId(drg.getDecisionRequirementsId())
+          .setTenantId(drg.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
           PermissionType.DELETE_DRD,
           bufferAsString(drg.getDecisionRequirementsId()),
           drg.getTenantId(),
-          () -> deleteDecisionRequirements(drg));
+          () -> deleteDecisionRequirements(drg, command, eventKey));
     }
 
     final var formOptional = formState.findFormByKey(value.getResourceKey(), tenantId);
     if (formOptional.isPresent()) {
       final var form = formOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.FORM)
+          .setResourceId(form.getFormId())
+          .setTenantId(form.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -239,6 +265,11 @@ public class ResourceDeletionDeleteProcessor
     final var resourceOptional = resourceState.findResourceByKey(value.getResourceKey(), tenantId);
     if (resourceOptional.isPresent()) {
       final var resource = resourceOptional.get();
+      command
+          .getValue()
+          .setResourceType(ResourceType.UNKNOWN)
+          .setResourceId(resource.getResourceId())
+          .setTenantId(resource.getTenantId());
       return authorizeAndDelete(
           command,
           eventKey,
@@ -266,11 +297,18 @@ public class ResourceDeletionDeleteProcessor
     return true;
   }
 
-  private void deleteDecisionRequirements(final DeployedDrg drg) {
+  private void deleteDecisionRequirements(
+      final DeployedDrg drg,
+      final TypedRecord<ResourceDeletionRecord> command,
+      final long eventKey) {
     decisionState
         .findDecisionsByTenantAndDecisionRequirementsKey(
             drg.getTenantId(), drg.getDecisionRequirementsKey())
         .forEach(this::deleteDecision);
+
+    if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
+      deleteDecisionInstanceHistory(drg.getDecisionRequirementsKey(), eventKey, command.getValue());
+    }
 
     final var drgRecord =
         new DecisionRequirementsRecord()
@@ -301,6 +339,7 @@ public class ResourceDeletionDeleteProcessor
             .setDecisionRequirementsKey(persistedDecision.getDecisionRequirementsKey())
             .setTenantId(persistedDecision.getTenantId())
             .setDeploymentKey(persistedDecision.getDeploymentKey());
+
     stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), DecisionIntent.DELETED, decisionRecord);
   }
 
@@ -348,7 +387,7 @@ public class ResourceDeletionDeleteProcessor
 
     if (!hasRunningInstances) {
       if (!command.isCommandDistributed() && command.getValue().isDeleteHistory()) {
-        deleteProcessInstanceHistory(process, eventKey, command.getValue());
+        deleteProcessInstanceHistory(process.getKey(), eventKey, command.getValue());
       }
       stateWriter.appendFollowUpEvent(keyGenerator.nextKey(), ProcessIntent.DELETED, processRecord);
     } else {
@@ -356,12 +395,56 @@ public class ResourceDeletionDeleteProcessor
     }
   }
 
+  private void deleteHistory(
+      final long eventKey, final TypedRecord<ResourceDeletionRecord> command) {
+    if (command.isCommandDistributed()) {
+      // We should not create batch operations for distributed commands. This gets handled by the
+      // batch operation creator itself.
+      return;
+    }
+    final var commandValue = command.getValue();
+    final var resourceType = commandValue.getResourceType();
+
+    // We cannot rely on the existing checkAuthorization method as it would swallow the not found in
+    // case the caller has no access to the tenant.
+    final var authRequest =
+        AuthorizationRequest.builder()
+            .command(command)
+            .resourceType(AuthorizationResourceType.RESOURCE)
+            .permissionType(
+                resourceType == ResourceType.PROCESS_DEFINITION
+                    ? PermissionType.DELETE_PROCESS
+                    : PermissionType.DELETE_DRD)
+            .addResourceId(commandValue.getResourceId())
+            .tenantId(commandValue.getTenantId())
+            .build();
+    final var authResponse = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+    if (authResponse.isLeft()) {
+      if (authResponse.getLeft().type() == RejectionType.NOT_FOUND) {
+        throw new NoSuchResourceException(commandValue.getResourceKey());
+      } else {
+        throw new ForbiddenException(authRequest);
+      }
+    }
+
+    switch (resourceType) {
+      case PROCESS_DEFINITION ->
+          deleteProcessInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      case DECISION_REQUIREMENTS ->
+          deleteDecisionInstanceHistory(commandValue.getResourceKey(), eventKey, commandValue);
+      default -> {
+        // No history to delete for forms and unknown resources
+        // This should not be reached as SUPPORTED_HISTORY_DELETION_TYPES filters these out
+      }
+    }
+  }
+
   private void deleteProcessInstanceHistory(
-      final DeployedProcess process,
+      final long processDefinitionKey,
       final long eventKey,
       final ResourceDeletionRecord resourceDeletionRecord) {
     final var filter =
-        new ProcessInstanceFilter.Builder().processDefinitionKeys(process.getKey()).build();
+        new ProcessInstanceFilter.Builder().processDefinitionKeys(processDefinitionKey).build();
     final long batchOperationKey = keyGenerator.nextKey();
     final var batchOperationRecord =
         new BatchOperationCreationRecord()
@@ -375,13 +458,43 @@ public class ResourceDeletionDeleteProcessor
                 ValueType.HISTORY_DELETION,
                 HistoryDeletionIntent.DELETE,
                 new HistoryDeletionRecord()
-                    .setResourceKey(process.getKey())
+                    .setResourceKey(processDefinitionKey)
                     .setResourceType(HistoryDeletionType.PROCESS_DEFINITION));
     commandWriter.appendFollowUpCommand(
         eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
 
     resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
     resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+  }
+
+  private void deleteDecisionInstanceHistory(
+      final long decisionRequirementsKey,
+      final long eventKey,
+      final ResourceDeletionRecord resourceDeletionRecord) {
+    final var filter =
+        new DecisionInstanceFilter.Builder()
+            .decisionRequirementsKeys(decisionRequirementsKey)
+            .build();
+    final long batchOperationKey = keyGenerator.nextKey();
+    final var batchOperationRecord =
+        new BatchOperationCreationRecord()
+            .setBatchOperationKey(batchOperationKey)
+            .setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE)
+            .setEntityFilter(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(filter)))
+            .setAuthentication(
+                new UnsafeBuffer(
+                    MsgPackConverter.convertToMsgPack(CamundaAuthentication.anonymous())))
+            .setFollowUpCommand(
+                ValueType.HISTORY_DELETION,
+                HistoryDeletionIntent.DELETE,
+                new HistoryDeletionRecord()
+                    .setResourceKey(decisionRequirementsKey)
+                    .setResourceType(HistoryDeletionType.DECISION_REQUIREMENTS));
+    commandWriter.appendFollowUpCommand(
+        eventKey, BatchOperationIntent.CREATE, batchOperationRecord);
+
+    resourceDeletionRecord.setBatchOperationKey(batchOperationKey);
+    resourceDeletionRecord.setBatchOperationType(BatchOperationType.DELETE_DECISION_INSTANCE);
   }
 
   private void unsubscribeStartEvents(final DeployedProcess deployedProcess) {

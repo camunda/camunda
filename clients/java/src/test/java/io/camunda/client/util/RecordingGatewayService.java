@@ -508,6 +508,17 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final int version,
       final long processInstanceKey,
       final Set<String> tags) {
+    onCreateProcessInstanceRequest(
+        processDefinitionKey, bpmnProcessId, version, processInstanceKey, tags, "");
+  }
+
+  public void onCreateProcessInstanceRequest(
+      final long processDefinitionKey,
+      final String bpmnProcessId,
+      final int version,
+      final long processInstanceKey,
+      final Set<String> tags,
+      final String businessId) {
     addRequestHandler(
         CreateProcessInstanceRequest.class,
         request ->
@@ -517,6 +528,7 @@ public final class RecordingGatewayService extends GatewayImplBase {
                 .setVersion(version)
                 .setProcessInstanceKey(processInstanceKey)
                 .addAllTags(tags)
+                .setBusinessId(businessId)
                 .build());
   }
 

@@ -46,4 +46,14 @@ class UserAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("testuser");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<UserRecordValue> record =
+        factory.generateRecord(ValueType.USER, r -> r.withIntent(UserIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
+  }
 }

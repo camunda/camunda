@@ -20,13 +20,15 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
   private final LongProperty timestamp = new LongProperty("timestamp");
   private final EnumProperty<CheckpointType> typeProperty =
       new EnumProperty<>("type", CheckpointType.class, CheckpointType.MANUAL_BACKUP);
+  private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);
 
   public CheckpointInfo() {
-    super(4);
+    super(5);
     declareProperty(idProperty)
         .declareProperty(positionProperty)
         .declareProperty(timestamp)
-        .declareProperty(typeProperty);
+        .declareProperty(typeProperty)
+        .declareProperty(firstLogPositionProperty);
   }
 
   public long getId() {
@@ -62,6 +64,15 @@ public final class CheckpointInfo extends UnpackedObject implements DbValue {
 
   public CheckpointInfo setType(final CheckpointType type) {
     typeProperty.setValue(type);
+    return this;
+  }
+
+  public long getFirstLogPosition() {
+    return firstLogPositionProperty.getValue();
+  }
+
+  public CheckpointInfo setFirstLogPosition(final long firstLogPosition) {
+    firstLogPositionProperty.setValue(firstLogPosition);
     return this;
   }
 }

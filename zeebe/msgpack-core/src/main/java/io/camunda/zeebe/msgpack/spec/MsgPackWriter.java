@@ -59,9 +59,10 @@ public final class MsgPackWriter {
     return this;
   }
 
-  public MsgPackWriter writeArrayHeader(final int size) {
+  public int writeArrayHeader(final int size) {
     ensurePositive(size);
 
+    final int previousOffset = offset;
     if (size < (1 << 4)) {
       buffer.putByte(offset, (byte) (FIXARRAY_PREFIX | size));
       ++offset;
@@ -79,12 +80,13 @@ public final class MsgPackWriter {
       offset += SIZE_OF_INT;
     }
 
-    return this;
+    return offset - previousOffset;
   }
 
-  public MsgPackWriter writeMapHeader(final int size) {
+  public int writeMapHeader(final int size) {
     ensurePositive(size);
 
+    final int previousOffset = offset;
     if (size < (1 << 4)) {
       buffer.putByte(offset, (byte) (FIXMAP_PREFIX | size));
       ++offset;
@@ -98,7 +100,12 @@ public final class MsgPackWriter {
       offset = writeMap32Header(offset, size);
     }
 
-    return this;
+    return offset - previousOffset;
+  }
+
+  public int writeReservedMapHeader(final int offset, final int size) {
+    writeMap32Header(offset, size);
+    return SIZE_OF_INT + 1; // map32 code + int
   }
 
   private int writeMap32Header(int offset, final int size) {
@@ -114,35 +121,34 @@ public final class MsgPackWriter {
   /**
    * use this method if the map size is not known upfront. Record the offset before calling this
    * method and then use {@link #writeReservedMapHeader(int, int)} later.
+   *
+   * @return written length
    */
-  public void reserveMapHeader() {
+  public int reserveMapHeader() {
+    final int previousOffset = offset;
     offset = writeMap32Header(offset, 0);
+    return offset - previousOffset;
   }
 
-  /** does not change the writer's offset */
-  public void writeReservedMapHeader(final int offset, final int size) {
-    writeMap32Header(offset, size);
-  }
-
-  public MsgPackWriter writeRaw(final DirectBuffer buffer) {
+  public int writeRaw(final DirectBuffer buffer) {
     return writeRaw(buffer, 0, buffer.capacity());
   }
 
-  public MsgPackWriter writeRaw(final DirectBuffer buff, final int offset, final int length) {
+  public int writeRaw(final DirectBuffer buff, final int offset, final int length) {
     buffer.putBytes(this.offset, buff, offset, length);
     this.offset += length;
 
-    return this;
+    return length;
   }
 
-  public MsgPackWriter writeString(final DirectBuffer bytes) {
+  public int writeString(final DirectBuffer bytes) {
     return writeString(bytes, 0, bytes.capacity());
   }
 
-  public MsgPackWriter writeString(final DirectBuffer buff, final int offset, final int length) {
-    writeStringHeader(length);
-    writeRaw(buff, offset, length);
-    return this;
+  public int writeString(final DirectBuffer buff, final int offset, final int length) {
+    int written = writeStringHeader(length);
+    written += writeRaw(buff, offset, length);
+    return written;
   }
 
   /**
@@ -151,7 +157,8 @@ public final class MsgPackWriter {
    * @param v value to write
    * @return this object
    */
-  public MsgPackWriter writeInteger(final long v) {
+  public int writeInteger(final long v) {
+    final int previousOffset = offset;
     if (v < -(1L << 5)) {
       if (v < -(1L << 15)) {
         if (v < -(1L << 31)) {
@@ -208,11 +215,12 @@ public final class MsgPackWriter {
         }
       }
     }
-    return this;
+    return offset - previousOffset;
   }
 
-  public MsgPackWriter writeStringHeader(final int len) {
+  public int writeStringHeader(final int len) {
     ensurePositive(len);
+    final int previousOffset = offset;
     if (len < (1 << 5)) {
       buffer.putByte(offset, (byte) (FIXSTR_PREFIX | len));
       ++offset;
@@ -236,21 +244,22 @@ public final class MsgPackWriter {
       offset += SIZE_OF_INT;
     }
 
-    return this;
+    return offset - previousOffset;
   }
 
-  public MsgPackWriter writeBinary(final DirectBuffer data) {
+  public int writeBinary(final DirectBuffer data) {
     return writeBinary(data, 0, data.capacity());
   }
 
-  public MsgPackWriter writeBinary(final DirectBuffer data, final int offset, final int length) {
-    writeBinaryHeader(length);
-    writeRaw(data, offset, length);
-    return this;
+  public int writeBinary(final DirectBuffer data, final int offset, final int length) {
+    int written = writeBinaryHeader(length);
+    written += writeRaw(data, offset, length);
+    return written;
   }
 
-  public MsgPackWriter writeBinaryHeader(final int len) {
+  public int writeBinaryHeader(final int len) {
     ensurePositive(len);
+    final int previousOffset = offset;
     if (len < (1 << 8)) {
       buffer.putByte(offset, BIN8);
       ++offset;
@@ -271,30 +280,33 @@ public final class MsgPackWriter {
       offset += SIZE_OF_INT;
     }
 
-    return this;
+    return offset - previousOffset;
   }
 
-  public MsgPackWriter writeBoolean(final boolean val) {
+  public int writeBoolean(final boolean val) {
+    final int previousOffset = offset;
     buffer.putByte(offset, val ? TRUE : FALSE);
     ++offset;
 
-    return this;
+    return offset - previousOffset;
   }
 
-  public MsgPackWriter writeNil() {
+  public int writeNil() {
+    final int previousOffset = offset;
     buffer.putByte(offset, NIL);
     ++offset;
 
-    return this;
+    return offset - previousOffset;
   }
 
   /**
    * Float is the term in the msgpack spec
    *
    * @param value to write
-   * @return this object
+   * @return written length
    */
-  public MsgPackWriter writeFloat(final double value) {
+  public int writeFloat(final double value) {
+    final int previousOffset = offset;
 
     final float floatValue = (float) value;
 
@@ -312,14 +324,14 @@ public final class MsgPackWriter {
       offset += SIZE_OF_DOUBLE;
     }
 
-    return this;
+    return offset - previousOffset;
   }
 
   public int getOffset() {
     return offset;
   }
 
-  public static int getEncodedMapHeaderLenght(final int size) {
+  public static int getEncodedMapHeaderLength(final int size) {
     final int length;
 
     if (size < (1 << 4)) {
@@ -333,7 +345,7 @@ public final class MsgPackWriter {
     return length;
   }
 
-  public static int getEncodedArrayHeaderLenght(final int size) {
+  public static int getEncodedArrayHeaderLength(final int size) {
     final int length;
 
     if (size < (1 << 4)) {

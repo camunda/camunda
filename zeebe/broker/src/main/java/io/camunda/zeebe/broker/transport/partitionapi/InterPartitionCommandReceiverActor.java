@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
-import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
-
 import io.atomix.cluster.MemberId;
 import io.atomix.cluster.messaging.ClusterCommunicationService;
 import io.atomix.utils.serializer.serializers.DefaultSerializers;
@@ -18,6 +16,7 @@ import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageListener;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.scheduler.Actor;
+import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;
 
@@ -34,15 +33,18 @@ public final class InterPartitionCommandReceiverActor extends Actor
   private final ClusterCommunicationService communicationService;
   private final int partitionId;
   private final InterPartitionCommandReceiverImpl receiver;
+  private final List<String> receivingSubjects;
 
   public InterPartitionCommandReceiverActor(
       final int partitionId,
       final ClusterCommunicationService communicationService,
-      final LogStreamWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter,
+      final List<String> receivingSubjects) {
     this.partitionId = partitionId;
     this.communicationService = communicationService;
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
     actorName = buildActorName(getClass().getSimpleName(), partitionId);
+    this.receivingSubjects = receivingSubjects;
   }
 
   @Override
@@ -59,16 +61,17 @@ public final class InterPartitionCommandReceiverActor extends Actor
 
   @Override
   protected void onActorStarting() {
-    communicationService.consume(
-        TOPIC_PREFIX + partitionId,
-        DefaultSerializers.BASIC::decode,
-        this::tryHandleMessage,
-        actor::run);
+    receivingSubjects.forEach(this::consume);
   }
 
   @Override
   protected void onActorClosing() {
-    communicationService.unsubscribe(TOPIC_PREFIX + partitionId);
+    receivingSubjects.forEach(communicationService::unsubscribe);
+  }
+
+  private void consume(final String subject) {
+    communicationService.consume(
+        subject, DefaultSerializers.BASIC::decode, this::tryHandleMessage, actor::run);
   }
 
   @Override

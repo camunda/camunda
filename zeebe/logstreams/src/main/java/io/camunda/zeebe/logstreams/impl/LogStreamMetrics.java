@@ -30,7 +30,6 @@ import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlKeyNames;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.FlowControlOutcome;
 import io.camunda.zeebe.logstreams.impl.LogStreamMetricsDoc.RecordAppendedKeyNames;
 import io.camunda.zeebe.logstreams.impl.flowcontrol.FlowControl.Rejection;
-import io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata;
 import io.camunda.zeebe.logstreams.log.WriteContext;
 import io.camunda.zeebe.logstreams.log.WriteContext.InterPartition;
 import io.camunda.zeebe.logstreams.log.WriteContext.Internal;
@@ -148,8 +147,7 @@ public final class LogStreamMetrics {
         .increment(amount);
   }
 
-  public void flowControlAccepted(
-      final WriteContext context, final LogAppendEntryMetadata batchMetadata) {
+  public void flowControlAccepted(final WriteContext context, final int size) {
     triedAppends.increment();
 
     if (context instanceof UserCommand) {
@@ -161,13 +159,11 @@ public final class LogStreamMetrics {
             tagForContext(context),
             FlowControlOutcome.ACCEPTED,
             this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+        .increment(size);
   }
 
   public void flowControlRejected(
-      final WriteContext context,
-      final LogAppendEntryMetadata batchMetadata,
-      final Rejection reason) {
+      final WriteContext context, final int size, final Rejection reason) {
     triedAppends.increment();
     deferredAppends.increment();
 
@@ -181,7 +177,7 @@ public final class LogStreamMetrics {
             tagForContext(context),
             tagForRejection(reason),
             this::registerFlowControlOutcomeCounter)
-        .increment(batchMetadata.size());
+        .increment(size);
   }
 
   public void setExportingRate(final long value) {

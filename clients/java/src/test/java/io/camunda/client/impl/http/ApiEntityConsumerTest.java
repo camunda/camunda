@@ -122,7 +122,7 @@ class ApiEntityConsumerTest {
     assertThat(problemDetail.getTitle()).isEqualTo("Something went wrong");
     assertThat(problemDetail.getStatus()).isEqualTo(400);
     assertThat(problemDetail.getDetail()).isEqualTo("Invalid request");
-    assertThat(problemDetail.getInstance()).isEqualTo(URI.create("/v1/entity/123"));
+    assertThat(problemDetail.getInstance()).isEqualTo("/v1/entity/123");
   }
 
   @Test
@@ -324,7 +324,7 @@ class ApiEntityConsumerTest {
     assertThat(problemDetail.getTitle()).isEqualTo("Something went wrong");
     assertThat(problemDetail.getStatus()).isEqualTo(400);
     assertThat(problemDetail.getDetail()).isEqualTo("Invalid request");
-    assertThat(problemDetail.getInstance()).isEqualTo(URI.create("/v1/entity/123"));
+    assertThat(problemDetail.getInstance()).isEqualTo("/v1/entity/123");
   }
 
   // Test entity class used for JSON serialization/deserialization

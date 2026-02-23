@@ -19,16 +19,14 @@ import {observer} from 'mobx-react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {createVariableFieldName} from './createVariableFieldName';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
 import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
-import {getScopeId} from 'modules/utils/variables';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useVariableScopeKey} from 'modules/hooks/variables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 type Props = {
   id?: string;
@@ -104,9 +102,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
     } = useVariable(id!, {
       enabled: isPreview && id !== undefined,
     });
-    const variableScopeKey = IS_ELEMENT_SELECTION_V2
-      ? useVariableScopeKey()
-      : getScopeId();
+    const variableScopeKey = useVariableScopeKey();
 
     useEffect(() => {
       if (error) {
@@ -128,8 +124,21 @@ const ExistingVariableValue: React.FC<Props> = observer(
 
     const isValid = !validating && valid;
 
-    const getInitialValue = (variable?: Variable) =>
-      variable?.value ?? variableValue;
+    const pendingEditModification =
+      isModificationModeEnabled && variableScopeKey !== null
+        ? modificationsStore.getLastVariableModification(
+            variableScopeKey,
+            variableName,
+            'EDIT_VARIABLE',
+          )
+        : undefined;
+
+    const getInitialValue = (variable?: Variable) => {
+      if (pendingEditModification !== undefined) {
+        return pendingEditModification.newValue;
+      }
+      return variable?.value ?? variableValue;
+    };
 
     const isVariableValueUndefined = variable?.value === undefined;
     const pauseValidation = isPreview && isVariableValueUndefined;
@@ -161,7 +170,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
               labelText="Value"
               placeholder="Value"
               data-testid="edit-variable-value"
-              buttonLabel="Open JSON editor modal"
+              buttonLabel="Open JSON editor"
               tooltipPosition="left"
               onIconClick={() => {
                 if (formState.submitting) {
@@ -174,7 +183,7 @@ const ExistingVariableValue: React.FC<Props> = observer(
                   variant: 'edit-variable',
                 });
               }}
-              Icon={Popup}
+              Icon={Maximize}
               autoFocus={!isModificationModeEnabled || meta.active}
               isLoading={isLoading}
               onFocus={(event) => {

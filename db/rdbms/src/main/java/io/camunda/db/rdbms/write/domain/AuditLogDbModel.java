@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.write.domain;
 
+import io.camunda.db.rdbms.write.util.TruncateUtil;
 import io.camunda.search.entities.AuditLogEntity;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.util.ObjectBuilder;
@@ -26,6 +27,7 @@ public record AuditLogDbModel(
     OffsetDateTime timestamp,
     AuditLogEntity.AuditLogActorType actorType,
     String actorId,
+    String agentElementId,
     String tenantId,
     AuditLogEntity.AuditLogTenantScope tenantScope,
     AuditLogEntity.AuditLogOperationResult result,
@@ -56,47 +58,7 @@ public record AuditLogDbModel(
   @Override
   public AuditLogDbModel copy(
       final Function<ObjectBuilder<AuditLogDbModel>, ObjectBuilder<AuditLogDbModel>> copyFunction) {
-    return copyFunction
-        .apply(
-            new Builder()
-                .auditLogKey(auditLogKey)
-                .entityKey(entityKey)
-                .entityType(entityType)
-                .operationType(operationType)
-                .entityVersion(entityVersion)
-                .entityValueType(entityValueType)
-                .entityOperationIntent(entityOperationIntent)
-                .batchOperationKey(batchOperationKey)
-                .batchOperationType(batchOperationType)
-                .timestamp(timestamp)
-                .actorType(actorType)
-                .actorId(actorId)
-                .tenantId(tenantId)
-                .tenantScope(tenantScope)
-                .result(result)
-                .annotation(annotation)
-                .category(category)
-                .processDefinitionId(processDefinitionId)
-                .decisionRequirementsId(decisionRequirementsId)
-                .decisionDefinitionId(decisionDefinitionId)
-                .processDefinitionKey(processDefinitionKey)
-                .processInstanceKey(processInstanceKey)
-                .rootProcessInstanceKey(rootProcessInstanceKey)
-                .elementInstanceKey(elementInstanceKey)
-                .jobKey(jobKey)
-                .userTaskKey(userTaskKey)
-                .decisionRequirementsKey(decisionRequirementsKey)
-                .decisionDefinitionKey(decisionDefinitionKey)
-                .decisionEvaluationKey(decisionEvaluationKey)
-                .deploymentKey(deploymentKey)
-                .formKey(formKey)
-                .resourceKey(resourceKey)
-                .relatedEntityType(relatedEntityType)
-                .relatedEntityKey(relatedEntityKey)
-                .entityDescription(entityDescription)
-                .partitionId(partitionId)
-                .historyCleanupDate(historyCleanupDate))
-        .build();
+    return copyFunction.apply(toBuilder()).build();
   }
 
   public Builder toBuilder() {
@@ -113,6 +75,7 @@ public record AuditLogDbModel(
         .timestamp(timestamp)
         .actorType(actorType)
         .actorId(actorId)
+        .agentElementId(agentElementId)
         .tenantId(tenantId)
         .tenantScope(tenantScope)
         .result(result)
@@ -136,7 +99,20 @@ public record AuditLogDbModel(
         .relatedEntityKey(relatedEntityKey)
         .entityDescription(entityDescription)
         .partitionId(partitionId)
-        .historyCleanupDate(historyCleanupDate);
+        .historyCleanupDate(historyCleanupDate)
+        .rootProcessInstanceKey(rootProcessInstanceKey);
+  }
+
+  public AuditLogDbModel truncateEntityDescription(final int sizeLimit, final Integer byteLimit) {
+    if (TruncateUtil.shouldTruncate(entityDescription(), sizeLimit, byteLimit)) {
+
+      return copy(
+          fn ->
+              ((Builder) fn)
+                  .entityDescription(
+                      TruncateUtil.truncateValue(entityDescription(), sizeLimit, byteLimit)));
+    }
+    return this;
   }
 
   public static class Builder implements ObjectBuilder<AuditLogDbModel> {
@@ -153,6 +129,7 @@ public record AuditLogDbModel(
     private OffsetDateTime timestamp;
     private AuditLogEntity.AuditLogActorType actorType;
     private String actorId;
+    private String agentElementId;
     private String tenantId;
     private AuditLogEntity.AuditLogTenantScope tenantScope;
     private AuditLogEntity.AuditLogOperationResult result;
@@ -238,6 +215,11 @@ public record AuditLogDbModel(
 
     public Builder actorId(final String actorId) {
       this.actorId = actorId;
+      return this;
+    }
+
+    public Builder agentElementId(final String agentElementId) {
+      this.agentElementId = agentElementId;
       return this;
     }
 
@@ -381,6 +363,7 @@ public record AuditLogDbModel(
           timestamp,
           actorType,
           actorId,
+          agentElementId,
           tenantId,
           tenantScope,
           result,

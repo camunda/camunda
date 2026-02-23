@@ -42,18 +42,21 @@ import java.util.Objects;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = ElementInstanceController.class)
 public class ElementInstanceQueryControllerTest extends RestControllerTest {
 
@@ -64,6 +67,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   {
                    "elementInstanceKey":"1",
                    "processInstanceKey":"2",
+                   "rootProcessInstanceKey":"37",
                    "processDefinitionKey":"3",
                    "processDefinitionId":"bpmnProcessId",
                    "startDate": "2023-05-17T00:00:00.000Z",
@@ -73,6 +77,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                    "type":"SERVICE_TASK",
                    "state":"ACTIVE",
                    "hasIncident":false,
+                   "incidentKey": null,
                    "tenantId":"<default>"
                  }
               ],
@@ -115,6 +120,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                  {
                    "elementInstanceKey":"23",
                    "processInstanceKey":"5",
+                   "rootProcessInstanceKey":"37",
                    "processDefinitionKey":"17",
                    "processDefinitionId":"complexProcess",
                    "startDate": "2023-05-17T10:10:10.000Z",
@@ -173,6 +179,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
             "processDefinitionKey": "3",
             "processDefinitionId": "processDefId",
             "processInstanceKey": "2",
+            "rootProcessInstanceKey": "37",
             "errorType": "JOB_NO_RETRIES",
             "errorMessage": "error",
             "elementId": "elementId",
@@ -185,6 +192,8 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
         ],
         "page": {
           "totalItems": 1,
+          "startCursor": null,
+          "endCursor": null,
           "hasMoreTotalItems": false
         }
       }
@@ -204,6 +213,7 @@ public class ElementInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionId": "Test_Process",
                   "errorMessage": "Process crashed",
                   "processInstanceKey": "789",
+                  "rootProcessInstanceKey": "37",
                   "errorType": "CALLED_DECISION_ERROR",
                   "elementId": "elementId",
                   "elementInstanceKey": "123",

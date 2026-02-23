@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public record DecisionInstanceEntity(
@@ -33,6 +34,14 @@ public record DecisionInstanceEntity(
     List<DecisionInstanceInputEntity> evaluatedInputs,
     List<DecisionInstanceOutputEntity> evaluatedOutputs)
     implements TenantOwnedEntity {
+
+  public DecisionInstanceEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
+    evaluatedInputs = evaluatedInputs != null ? evaluatedInputs : new ArrayList<>();
+    evaluatedOutputs = evaluatedOutputs != null ? evaluatedOutputs : new ArrayList<>();
+  }
 
   public Builder toBuilder() {
     return new Builder()
@@ -215,6 +224,7 @@ public record DecisionInstanceEntity(
   public enum DecisionDefinitionType {
     DECISION_TABLE,
     LITERAL_EXPRESSION,
+    UNSPECIFIED,
     UNKNOWN;
 
     public static DecisionDefinitionType fromValue(final String value) {
@@ -229,7 +239,9 @@ public record DecisionInstanceEntity(
 
   public enum DecisionInstanceState {
     EVALUATED,
-    FAILED;
+    FAILED,
+    UNKNOWN,
+    UNSPECIFIED;
 
     public static DecisionInstanceState fromValue(final String value) {
       for (final DecisionInstanceState b : DecisionInstanceState.values()) {

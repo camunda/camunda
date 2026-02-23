@@ -23,7 +23,11 @@ import io.camunda.client.api.response.PartitionInfo;
 import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import java.net.URI;
+import java.time.Duration;
+import java.util.Optional;
 import java.util.function.Supplier;
+import org.awaitility.Awaitility;
+import org.awaitility.core.ConditionTimeoutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,12 +40,14 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
   private final URI camundaGrpcApiAddress;
   private final URI camundaMonitoringApiAddress;
   private final URI connectorsRestApiAddress;
+  private final Duration runtimeConnectionTimeout;
   private final CamundaClientBuilderFactory camundaClientBuilderFactory;
 
   public CamundaProcessTestRemoteRuntime(final CamundaProcessTestRuntimeBuilder builder) {
     camundaClientBuilderFactory = builder.getConfiguredCamundaClientBuilderFactory();
     camundaMonitoringApiAddress = builder.getRemoteCamundaMonitoringApiAddress();
     connectorsRestApiAddress = builder.getRemoteConnectorsRestApiAddress();
+    runtimeConnectionTimeout = builder.getRemoteRuntimeConnectionTimeout();
 
     final CamundaClientConfiguration clientConfiguration =
         getClientConfiguration(camundaClientBuilderFactory);
@@ -69,7 +75,19 @@ public class CamundaProcessTestRemoteRuntime implements CamundaProcessTestRuntim
         connectorsRestApiAddress);
 
     // check connection to remote runtime
-    checkConnectionToRemoteRuntime();
+    try {
+      Awaitility.await()
+          .atMost(runtimeConnectionTimeout)
+          .pollInterval(Duration.ofSeconds(1))
+          .pollDelay(Duration.ZERO)
+          .ignoreExceptions()
+          .untilAsserted(this::checkConnectionToRemoteRuntime);
+    } catch (final ConditionTimeoutException timeout) {
+      throw new RuntimeException(
+          Optional.ofNullable(timeout.getCause())
+              .map(Throwable::getMessage)
+              .orElse("Failed to connect to remote Camunda runtime."));
+    }
   }
 
   @Override

@@ -339,6 +339,6 @@ class BatchOperationInitializationHelperTest {
   }
 
   private Item createItem(final long key) {
-    return new Item(key, key + 1000);
+    return new Item(key, key + 1000, null);
   }
 }

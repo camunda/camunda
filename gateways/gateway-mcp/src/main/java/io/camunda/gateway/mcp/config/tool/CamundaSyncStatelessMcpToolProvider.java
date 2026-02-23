@@ -7,6 +7,8 @@
  */
 package io.camunda.gateway.mcp.config.tool;
 
+import static io.camunda.gateway.mcp.config.tool.McpToolUtils.isFrameworkParameter;
+
 import io.camunda.gateway.mcp.config.schema.CamundaJsonSchemaGenerator;
 import io.modelcontextprotocol.common.McpTransportContext;
 import io.modelcontextprotocol.server.McpStatelessServerFeatures.SyncToolSpecification;
@@ -16,6 +18,8 @@ import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import io.modelcontextprotocol.spec.McpSchema.ToolAnnotations;
 import io.modelcontextprotocol.util.Utils;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -98,6 +102,8 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
   private SyncToolSpecification createSyncToolSpecification(
       final Object toolObject, final Method mcpToolMethod) {
+    validateMcpToolParamsUnwrappedUsage(mcpToolMethod);
+
     final var toolAnnotation = mcpToolMethod.getAnnotation(CamundaMcpTool.class);
 
     final String toolName =
@@ -138,7 +144,7 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
 
     toolBuilder.title(toolTitle);
 
-    // Generate Output Schema from the method return type.
+    // generate output schema from the method return type
     final Class<?> methodReturnType = mcpToolMethod.getReturnType();
     if (toolAnnotation.generateOutputSchema()
         && methodReturnType != CallToolResult.class
@@ -165,6 +171,56 @@ public class CamundaSyncStatelessMcpToolProvider extends AbstractMcpToolProvider
             returnMode, mcpToolMethod, toolObject, doGetToolCallException());
 
     return SyncToolSpecification.builder().tool(tool).callHandler(methodCallback).build();
+  }
+
+  /**
+   * Validates that @{@link McpToolParamsUnwrapped} is used correctly.
+   *
+   * <p>Enforces mutual exclusivity: a method can have EITHER individual tool parameters OR a single
+   * {@code @McpToolParamsUnwrapped} wrapper parameter, but not both. The only parameters allowed
+   * alongside {@code @McpToolParamsUnwrapped} are MCP framework types (context, exchange, progress
+   * token, meta, request).
+   *
+   * @param method the tool method to validate
+   * @throws IllegalStateException if @McpToolParams is used incorrectly
+   */
+  private void validateMcpToolParamsUnwrappedUsage(final Method method) {
+    final Parameter[] parameters = method.getParameters();
+
+    final long annotatedParametersCount =
+        Arrays.stream(parameters)
+            .filter(parameter -> parameter.isAnnotationPresent(McpToolParamsUnwrapped.class))
+            .count();
+
+    if (annotatedParametersCount == 0) {
+      return;
+    }
+
+    if (annotatedParametersCount > 1) {
+      throw new IllegalStateException(
+          String.format(
+              "Method '%s.%s' has multiple @McpToolParamsUnwrapped parameters. "
+                  + "Only a single @McpToolParamsUnwrapped parameter is allowed per method.",
+              method.getDeclaringClass().getSimpleName(), method.getName()));
+    }
+
+    Arrays.stream(parameters)
+        .filter(
+            parameter ->
+                !parameter.isAnnotationPresent(McpToolParamsUnwrapped.class)
+                    && !isFrameworkParameter(parameter))
+        .findFirst()
+        .ifPresent(
+            parameter -> {
+              throw new IllegalStateException(
+                  String.format(
+                      "Method '%s.%s' mixes @McpToolParamsUnwrapped with individual parameter '%s' (type: %s). "
+                          + "Use either individual parameters OR a single @McpToolParamsUnwrapped wrapper, not both.",
+                      method.getDeclaringClass().getSimpleName(),
+                      method.getName(),
+                      parameter.getName(),
+                      parameter.getType().getSimpleName()));
+            });
   }
 
   private Boolean applyIfNotDefaultValue(final boolean value, final boolean defaultValue) {

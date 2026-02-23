@@ -46,4 +46,14 @@ class TenantAuditLogTransformerTest {
     assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<TenantRecordValue> record =
+        factory.generateRecord(ValueType.TENANT, r -> r.withIntent(TenantIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
+  }
 }

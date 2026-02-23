@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.exporter.opensearch;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.plugin.PluginConfiguration;
 import io.camunda.zeebe.exporter.filter.FilterConfiguration;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public class OpensearchExporterConfiguration implements FilterConfiguration {
 
@@ -30,7 +34,25 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final ProxyConfiguration proxy = new ProxyConfiguration();
+  private final SecurityConfiguration security = new SecurityConfiguration();
   private boolean includeEnabledRecords = false;
+  @JsonIgnore // ensure this doesn't get injected when creating the config during serialization
+  private ObjectMapper objectMapper = new ObjectMapper();
+
+  public String getUrl() {
+    return url;
+  }
+
+  public List<String> getUrls() {
+    return Optional.ofNullable(url)
+        .map(urls -> Arrays.stream(urls.split(",")).toList())
+        .orElse(List.of());
+  }
+
+  public int getRequestTimeoutMs() {
+    return requestTimeoutMs;
+  }
 
   public boolean hasAuthenticationPresent() {
     return getAuthentication().isPresent();
@@ -40,8 +62,41 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     return authentication;
   }
 
+  public SecurityConfiguration getSecurity() {
+    return security;
+  }
+
+  public boolean hasProxyConfigured() {
+    return proxy.isEnabled();
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
+  }
+
   public List<PluginConfiguration> getInterceptorPlugins() {
     return interceptorPlugins;
+  }
+
+  public boolean getIsIncludeEnabledRecords() {
+    return includeEnabledRecords;
+  }
+
+  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
+    this.includeEnabledRecords = includeEnabledRecords;
+  }
+
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
+  public void setObjectMapper(final ObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
+  }
+
+  public OpensearchExporterConfiguration withObjectMapper(final ObjectMapper objectMapper) {
+    setObjectMapper(objectMapper);
+    return this;
   }
 
   @Override
@@ -58,6 +113,8 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
         + aws
         + ", retention="
         + retention
+        + ", proxy="
+        + proxy
         + ", interceptorPlugins="
         + interceptorPlugins
         + '}';
@@ -149,14 +206,6 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     return index;
   }
 
-  public boolean getIsIncludeEnabledRecords() {
-    return includeEnabledRecords;
-  }
-
-  public void setIncludeEnabledRecords(final boolean includeEnabledRecords) {
-    this.includeEnabledRecords = includeEnabledRecords;
-  }
-
   public static class IndexConfiguration implements IndexConfig {
 
     public static final int DEFAULT_INDEX_TEMPLATE_PRIORITY = 20;
@@ -237,12 +286,23 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     private int priority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     // variable name filters
-    private final List<String> variableNameInclusionExact = new ArrayList<>();
-    private final List<String> variableNameInclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameInclusionEndWith = new ArrayList<>();
-    private final List<String> variableNameExclusionExact = new ArrayList<>();
-    private final List<String> variableNameExclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameExclusionEndWith = new ArrayList<>();
+    private List<String> variableNameInclusionExact = new ArrayList<>();
+    private List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private List<String> variableNameExclusionExact = new ArrayList<>();
+    private List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private List<String> variableNameExclusionEndWith = new ArrayList<>();
+
+    // variable value type filters
+    private List<String> variableValueTypeInclusion = new ArrayList<>();
+    private List<String> variableValueTypeExclusion = new ArrayList<>();
+
+    // optimize mode
+    private boolean optimizeModeEnabled = false;
+
+    // BPMN process id filters
+    private List<String> bpmnProcessIdInclusion = new ArrayList<>();
+    private List<String> bpmnProcessIdExclusion = new ArrayList<>();
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -275,27 +335,98 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
 
     @Override
     public List<String> getVariableNameInclusionStartWith() {
-      return variableNameInclusionStartWith;
+      return List.copyOf(variableNameInclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameInclusionEndWith() {
-      return variableNameInclusionEndWith;
+      return List.copyOf(variableNameInclusionEndWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionExact() {
-      return variableNameExclusionExact;
+      return List.copyOf(variableNameExclusionExact);
     }
 
     @Override
     public List<String> getVariableNameExclusionStartWith() {
-      return variableNameExclusionStartWith;
+      return List.copyOf(variableNameExclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionEndWith() {
-      return variableNameExclusionEndWith;
+      return List.copyOf(variableNameExclusionEndWith);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeInclusion() {
+      return List.copyOf(variableValueTypeInclusion);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeExclusion() {
+      return List.copyOf(variableValueTypeExclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdInclusion() {
+      return List.copyOf(bpmnProcessIdInclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdExclusion() {
+      return List.copyOf(bpmnProcessIdExclusion);
+    }
+
+    @Override
+    public boolean isOptimizeModeEnabled() {
+      return optimizeModeEnabled;
+    }
+
+    public void setOptimizeModeEnabled(final boolean optimizeModeEnabled) {
+      this.optimizeModeEnabled = optimizeModeEnabled;
+    }
+
+    public void setBpmnProcessIdExclusion(final List<String> bpmnProcessIdExclusion) {
+      this.bpmnProcessIdExclusion = bpmnProcessIdExclusion;
+    }
+
+    public void setBpmnProcessIdInclusion(final List<String> bpmnProcessIdInclusion) {
+      this.bpmnProcessIdInclusion = bpmnProcessIdInclusion;
+    }
+
+    public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
+      this.variableValueTypeExclusion = variableValueTypeExclusion;
+    }
+
+    public void setVariableValueTypeInclusion(final List<String> variableValueTypeInclusion) {
+      this.variableValueTypeInclusion = variableValueTypeInclusion;
+    }
+
+    public void setVariableNameExclusionEndWith(final List<String> variableNameExclusionEndWith) {
+      this.variableNameExclusionEndWith = variableNameExclusionEndWith;
+    }
+
+    public void setVariableNameExclusionStartWith(
+        final List<String> variableNameExclusionStartWith) {
+      this.variableNameExclusionStartWith = variableNameExclusionStartWith;
+    }
+
+    public void setVariableNameExclusionExact(final List<String> variableNameExclusionExact) {
+      this.variableNameExclusionExact = variableNameExclusionExact;
+    }
+
+    public void setVariableNameInclusionEndWith(final List<String> variableNameInclusionEndWith) {
+      this.variableNameInclusionEndWith = variableNameInclusionEndWith;
+    }
+
+    public void setVariableNameInclusionStartWith(
+        final List<String> variableNameInclusionStartWith) {
+      this.variableNameInclusionStartWith = variableNameInclusionStartWith;
+    }
+
+    public void setVariableNameInclusionExact(final List<String> variableNameInclusionExact) {
+      this.variableNameInclusionExact = variableNameInclusionExact;
     }
 
     @Override
@@ -403,6 +534,16 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + variableNameExclusionStartWith
           + ", variableNameExclusionEndWith="
           + variableNameExclusionEndWith
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
+          + ", optimizeModeEnabled="
+          + optimizeModeEnabled
+          + ", bpmnProcessIdInclusion="
+          + bpmnProcessIdInclusion
+          + ", bpmnProcessIdExclusion="
+          + bpmnProcessIdExclusion
           + '}';
     }
   }
@@ -459,6 +600,30 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     }
   }
 
+  public static class SecurityConfiguration {
+    private static final boolean ENABLED_DEFAULT = false;
+    private static final boolean SELF_SIGNED_DEFAULT = false;
+
+    private boolean enabled = ENABLED_DEFAULT;
+    private boolean selfSigned = SELF_SIGNED_DEFAULT;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public boolean isSelfSigned() {
+      return selfSigned;
+    }
+
+    public void setSelfSigned(final boolean selfSigned) {
+      this.selfSigned = selfSigned;
+    }
+  }
+
   public static class AwsConfiguration {
 
     private static final String AWS_REGION_ENV_VARIABLE = "AWS_REGION";
@@ -471,6 +636,30 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
     // The AWS_REGION gets injected into the pod by AWS. If we are running on AWS this should always
     // be available.
     public String region = System.getenv(AWS_REGION_ENV_VARIABLE);
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getServiceName() {
+      return serviceName;
+    }
+
+    public void setServiceName(final String serviceName) {
+      this.serviceName = serviceName;
+    }
+
+    public String getRegion() {
+      return region;
+    }
+
+    public void setRegion(final String region) {
+      this.region = region;
+    }
 
     @Override
     public String toString() {
@@ -531,6 +720,82 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
           + policyName
           + ", policyDescription='"
           + policyDescription
+          + '\''
+          + '}';
+    }
+  }
+
+  public static class ProxyConfiguration {
+    private boolean enabled = false;
+    private String host;
+    private Integer port;
+    private boolean sslEnabled = false;
+    private String username;
+    private String password;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public void setHost(final String host) {
+      this.host = host;
+    }
+
+    public Integer getPort() {
+      return port;
+    }
+
+    public void setPort(final Integer port) {
+      this.port = port;
+    }
+
+    public boolean isSslEnabled() {
+      return sslEnabled;
+    }
+
+    public void setSslEnabled(final boolean sslEnabled) {
+      this.sslEnabled = sslEnabled;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
+    }
+
+    @Override
+    public String toString() {
+      // we don't want to expose the password
+      return "ProxyConfiguration{"
+          + "enabled="
+          + enabled
+          + ", host='"
+          + host
+          + '\''
+          + ", port="
+          + port
+          + ", sslEnabled="
+          + sslEnabled
+          + ", username='"
+          + username
           + '\''
           + '}';
     }

@@ -96,7 +96,8 @@ public class OpensearchProcessStore implements ProcessStore {
   public ProcessEntity getProcessByKey(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
+            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)))
+            .source(sourceExclude(ProcessIndex.BPMN_XML));
 
     return richOpenSearchClient
         .doc()

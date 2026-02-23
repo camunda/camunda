@@ -13,12 +13,20 @@ import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationExceptio
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.Auto;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 
-public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionConfig connection) {
+public record GcsBackupConfig(
+    String bucketName,
+    String basePath,
+    GcsConnectionConfig connection,
+    int maxConcurrentTransfers) {
   public GcsBackupConfig(
-      final String bucketName, final String basePath, final GcsConnectionConfig connection) {
+      final String bucketName,
+      final String basePath,
+      final GcsConnectionConfig connection,
+      final int maxConcurrentTransfers) {
     this.bucketName = requireBucketName(bucketName);
     this.basePath = sanitizeBasePath(basePath);
     this.connection = requireNonNull(connection);
+    this.maxConcurrentTransfers = maxConcurrentTransfers;
   }
 
   private static String requireBucketName(final String bucketName) {
@@ -60,6 +68,9 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
     private String host;
     private GcsConnectionConfig.Authentication auth;
 
+    /** Default parallelism for file transfers (uploads and downloads) using virtual threads */
+    private int maxConcurrentTransfers = 50;
+
     public Builder withBucketName(final String bucketName) {
       this.bucketName = bucketName;
       return this;
@@ -75,6 +86,11 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
       return this;
     }
 
+    public Builder withMaxConcurrentTransfers(final int maxConcurrentTransfers) {
+      this.maxConcurrentTransfers = maxConcurrentTransfers;
+      return this;
+    }
+
     public Builder withoutAuthentication() {
       // This is only used for testing, so we can make up a project id for it.
       auth = new None("tmp");
@@ -87,7 +103,8 @@ public record GcsBackupConfig(String bucketName, String basePath, GcsConnectionC
     }
 
     public GcsBackupConfig build() {
-      return new GcsBackupConfig(bucketName, basePath, new GcsConnectionConfig(host, auth));
+      return new GcsBackupConfig(
+          bucketName, basePath, new GcsConnectionConfig(host, auth), maxConcurrentTransfers);
     }
   }
 }

@@ -12,7 +12,7 @@ import java.time.Duration;
 public final class HistoryDeletionConfiguration {
 
   private static final Duration DEFAULT_DELAY_BETWEEN_RUNS = Duration.ofSeconds(1);
-  private static final Duration DEFAULT_MAX_DELAY_BETWEEN_RUNS = Duration.ofMinutes(5);
+  private static final Duration DEFAULT_MAX_DELAY_BETWEEN_RUNS = Duration.ofSeconds(15);
   private static final int DEFAULT_QUEUE_BATCH_SIZE = 100;
   private static final int DEFAULT_DEPENDENT_ROW_LIMIT = 10000;
 

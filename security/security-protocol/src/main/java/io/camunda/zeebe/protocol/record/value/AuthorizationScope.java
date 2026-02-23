@@ -22,9 +22,7 @@ public class AuthorizationScope {
   public AuthorizationScope() {}
 
   public AuthorizationScope(final AuthorizationResourceMatcher matcher, final String resourceId) {
-    this.matcher = matcher;
-    this.resourceId = resourceId;
-    this.resourcePropertyName = "";
+    this(matcher, resourceId, "");
   }
 
   public AuthorizationScope(
@@ -33,7 +31,10 @@ public class AuthorizationScope {
       final String resourcePropertyName) {
     this.matcher = matcher;
     this.resourceId = resourceId;
-    this.resourcePropertyName = resourcePropertyName;
+
+    // Since this class is used for comparisons, normalize null to empty string for this field
+    // (introduced in 8.9.0) to handle cases where null is provided while empty string is expected.
+    this.resourcePropertyName = resourcePropertyName != null ? resourcePropertyName : "";
   }
 
   public AuthorizationResourceMatcher getMatcher() {
@@ -77,6 +78,20 @@ public class AuthorizationScope {
           && Objects.equals(resourcePropertyName, other.resourcePropertyName);
     }
     return false;
+  }
+
+  @Override
+  public String toString() {
+    return "AuthorizationScope{"
+        + "matcher="
+        + matcher
+        + ", resourceId='"
+        + resourceId
+        + '\''
+        + ", resourcePropertyName='"
+        + resourcePropertyName
+        + '\''
+        + '}';
   }
 
   public static AuthorizationScope id(final String resourceId) throws IllegalArgumentException {

@@ -347,4 +347,22 @@ public final class FilterBuilders {
           fn) {
     return fn.apply(globalJobStatistics()).build();
   }
+
+  public static JobTypeStatisticsFilter.Builder jobTypeStatistics() {
+    return new JobTypeStatisticsFilter.Builder();
+  }
+
+  public static JobTypeStatisticsFilter jobTypeStatistics(
+      final Function<JobTypeStatisticsFilter.Builder, ObjectBuilder<JobTypeStatisticsFilter>> fn) {
+    return fn.apply(jobTypeStatistics()).build();
+  }
+
+  public static GlobalListenerFilter.Builder globalListener() {
+    return new GlobalListenerFilter.Builder();
+  }
+
+  public static GlobalListenerFilter globalListener(
+      final Function<GlobalListenerFilter.Builder, ObjectBuilder<GlobalListenerFilter>> fn) {
+    return fn.apply(globalListener()).build();
+  }
 }

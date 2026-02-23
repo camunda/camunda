@@ -7,12 +7,16 @@
  */
 package io.camunda.zeebe.broker.system.partitions.impl.steps;
 
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.LEGACY_TOPIC_PREFIX;
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
+
 import io.atomix.raft.RaftServer.Role;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionContext;
 import io.camunda.zeebe.broker.system.partitions.PartitionTransitionStep;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandReceiverActor;
 import io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderService;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import java.util.List;
 
 public final class InterPartitionCommandServiceStep implements PartitionTransitionStep {
 
@@ -88,9 +92,24 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
   private ActorFuture<Void> installReceiver(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
     final var logStreamWriter = context.getLogStream().newLogStreamWriter();
+
+    final var config = context.getBrokerCfg().getExperimental();
+    final var partitionId = context.getPartitionId();
+    final var legacyReceivingSubject = LEGACY_TOPIC_PREFIX + partitionId;
+    final var receivingSubject =
+        TOPIC_PREFIX.formatted(config.getDefaultEngineName()) + partitionId;
+
+    final var receivingSubjects =
+        config.isReceiveOnLegacySubject()
+            ? List.of(legacyReceivingSubject, receivingSubject)
+            : List.of(receivingSubject);
+
     final var receiver =
         new InterPartitionCommandReceiverActor(
-            context.getPartitionId(), context.getClusterCommunicationService(), logStreamWriter);
+            context.getPartitionId(),
+            context.getClusterCommunicationService(),
+            logStreamWriter,
+            receivingSubjects);
     context
         .getActorSchedulingService()
         .submitActor(receiver)
@@ -110,9 +129,15 @@ public final class InterPartitionCommandServiceStep implements PartitionTransiti
   private ActorFuture<Void> installSender(final PartitionTransitionContext context) {
     final ActorFuture<Void> future = context.getConcurrencyControl().createFuture();
 
+    final var config = context.getBrokerCfg().getExperimental();
+    final var sendingSubject =
+        config.isSendOnLegacySubject()
+            ? LEGACY_TOPIC_PREFIX
+            : TOPIC_PREFIX.formatted(config.getDefaultEngineName());
+
     final var sender =
         new InterPartitionCommandSenderService(
-            context.getClusterCommunicationService(), context.getPartitionId());
+            context.getClusterCommunicationService(), context.getPartitionId(), sendingSubject);
     final var actorStarted = context.getActorSchedulingService().submitActor(sender);
     actorStarted.onComplete(
         (ignore, error) -> {

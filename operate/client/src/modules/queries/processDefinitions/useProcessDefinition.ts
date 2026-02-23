@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {skipToken, useQuery} from '@tanstack/react-query';
+import {skipToken} from '@tanstack/react-query';
 import {fetchProcessDefinition} from 'modules/api/v2/processDefinitions/fetchProcessDefinition';
 import {queryKeys} from '../queryKeys';
 
@@ -27,16 +27,4 @@ const getUseProcessDefinitionOptions = (processDefinitionKey?: string) => {
   } as const;
 };
 
-const useProcessDefinition = (
-  processDefinitionKey?: string,
-  options?: {
-    enabled?: boolean;
-  },
-) => {
-  return useQuery({
-    ...getUseProcessDefinitionOptions(processDefinitionKey),
-    ...options,
-  });
-};
-
-export {useProcessDefinition, getUseProcessDefinitionOptions};
+export {getUseProcessDefinitionOptions};

@@ -13,6 +13,7 @@ import io.camunda.zeebe.engine.state.instance.RuntimeInstructionValue;
 import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import org.agrona.DirectBuffer;
 
@@ -37,6 +38,18 @@ public interface ElementInstanceState {
    */
   void forEachChild(
       long parentKey, long startAtKey, BiFunction<Long, ElementInstance, Boolean> visitor);
+
+  /**
+   * Applies the provided visitor to each child element key of the given parent. The visitor can
+   * indicate via its return value whether the iteration should continue or not. This means that if
+   * the visitor returns {@code false}, the iteration will stop and no further child keys will be
+   * visited.
+   *
+   * @param parentKey the key of the parent element instance whose child keys should be visited
+   * @param visitor the visitor which is applied to each child key; returning {@code true} to
+   *     continue iteration, or {@code false} to stop it
+   */
+  void forEachChildKey(long parentKey, Function<Long, Boolean> visitor);
 
   /**
    * Applies the provided visitor to each child element of the given parent. The visitor can
@@ -132,6 +145,27 @@ public interface ElementInstanceState {
    */
   List<RuntimeInstructionValue> getRuntimeInstructionsForElementId(
       long processInstanceKey, String elementId);
+
+  /**
+   * Verifies if there is an active process instance with the given business id. This method is used
+   * to enforce uniqueness of business id per process definition (scoped by tenant).
+   *
+   * <p>The {@code ignoreWhen} predicate can be used to exclude certain process instances from the
+   * check, for example banned process instances. This allows the caller to handle edge cases where
+   * a process instance should not be considered as active.
+   *
+   * @param businessId the business id to look up
+   * @param processDefinitionKey the process definition key
+   * @param tenantId the tenant id
+   * @param ignoreWhen a predicate that takes a process instance key and returns true if the process
+   *     instance should be ignored (e.g. because it is banned), and false otherwise
+   * @return true if an active process instance exists with the given business id, false otherwise
+   */
+  boolean hasActiveProcessInstanceWithBusinessId(
+      String businessId,
+      long processDefinitionKey,
+      String tenantId,
+      final Predicate<Long> ignoreWhen);
 
   @FunctionalInterface
   interface TakenSequenceFlowVisitor {

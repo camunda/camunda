@@ -19,4 +19,6 @@ public interface DecisionRequirementsMapper {
   Long count(DecisionRequirementsDbQuery filter);
 
   List<DecisionRequirementsEntity> search(DecisionRequirementsDbQuery filter);
+
+  void deleteByKeys(List<Long> decisionRequirementsKeys);
 }

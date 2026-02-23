@@ -49,8 +49,8 @@ public record DbForeignKey<K extends DbKey>(
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-    inner.write(buffer, offset);
+  public int write(final MutableDirectBuffer buffer, final int offset) {
+    return inner.write(buffer, offset);
   }
 
   @Override

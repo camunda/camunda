@@ -496,6 +496,7 @@ jamesives/github-pages-deploy-action@*,
 joelanford/go-apidiff@*,
 jwalton/gh-docker-logs@*,
 korthout/backport-action@*,
+lewagon/wait-on-check-action@*,
 marocchino/sticky-pull-request-comment@*,
 mavrosxristoforos/get-xml-info@*,
 misiekhardcore/infra-report-action@*,
@@ -696,7 +697,7 @@ The scan is performed by a GitHub Actions workflows for:
 
 ### How to deal with CI alerts that fire?
 
-Follow the Monorepo CI medic routines and check out the available [CI runbooks](https://github.com/camunda/camunda/wiki/CI-Runbooks) for each alert.
+Follow the Monorepo CI medic routines and check out the available [CI runbooks](./ci-runbooks.md) for each alert.
 
 ### Why is my CI check failing?
 

@@ -41,6 +41,7 @@
     <module>exporter-filter</module>
     <module>exporter-test</module>
     <module>protocol-asserts</module>
+    <module>exporters/app-integrations-exporter</module>
     <module>exporters/camunda-exporter</module>
     <module>exporters/elasticsearch-exporter</module>
     <module>exporters/opensearch-exporter</module>

@@ -1,13 +1,20 @@
-import { OperationModel, ValidationScenario } from '../model/types.js';
-import { makeId } from './common.js';
+import {OperationModel, ValidationScenario} from '../model/types.js';
+import {makeId} from './common.js';
 
-interface Opts { onlyOperations?: Set<string>; capPerOperation?: number; }
+interface Opts {
+  onlyOperations?: Set<string>;
+  capPerOperation?: number;
+}
 
 // Produces a body that intentionally matches none of the oneOf variants (by omitting discriminator or required markers)
-export function generateOneOfNoneMatch(ops: OperationModel[], opts: Opts): ValidationScenario[] {
+export function generateOneOfNoneMatch(
+  ops: OperationModel[],
+  opts: Opts,
+): ValidationScenario[] {
   const out: ValidationScenario[] = [];
   for (const op of ops) {
-    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId)) continue;
+    if (opts.onlyOperations && !opts.onlyOperations.has(op.operationId))
+      continue;
     const root = op.requestBodySchema;
     if (!root || !Array.isArray(root.oneOf) || root.oneOf.length < 2) continue;
     let produced = 0;
@@ -50,13 +57,25 @@ function placeholder(schema: any): any {
   if (!schema) return 'x';
   if (schema.enum && schema.enum.length) return '__NOT_ENUM__';
   switch (schema.type) {
-    case 'string': return 'x';
+    case 'string':
+      return 'x';
     case 'integer':
-    case 'number': return 1;
-    case 'boolean': return true;
-    case 'array': return [];
-    case 'object': return {}; // shallow
-    default: return 'x';
+    case 'number':
+      return 1;
+    case 'boolean':
+      return true;
+    case 'array':
+      return [];
+    case 'object':
+      return {}; // shallow
+    default:
+      return 'x';
   }
 }
-function buildParams(path: string): Record<string,string> | undefined { const m=path.match(/\{([^}]+)}/g); if(!m) return undefined; const params: Record<string,string>={}; for(const token of m) params[token.slice(1,-1)]='x'; return params; }
+function buildParams(path: string): Record<string, string> | undefined {
+  const m = path.match(/\{([^}]+)}/g);
+  if (!m) return undefined;
+  const params: Record<string, string> = {};
+  for (const token of m) params[token.slice(1, -1)] = 'x';
+  return params;
+}

@@ -54,6 +54,10 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private String actorId;
 
+  // the element id of the agent that performed the operation (e.g. ad-hoc subprocess element id)
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  private String agentElementId;
+
   // marks if the operations was successful or failed
   @SinceVersion(value = "8.9.0", requireDefault = false)
   private AuditLogOperationResult result;
@@ -219,6 +223,15 @@ public class AuditLogEntity extends AbstractExporterEntity<AuditLogEntity> {
 
   public AuditLogEntity setActorId(final String actorId) {
     this.actorId = actorId;
+    return this;
+  }
+
+  public String getAgentElementId() {
+    return agentElementId;
+  }
+
+  public AuditLogEntity setAgentElementId(final String agentElementId) {
+    this.agentElementId = agentElementId;
     return this;
   }
 

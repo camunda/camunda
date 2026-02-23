@@ -7,11 +7,7 @@
  */
 
 import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {
-  ProcessInstanceEntity,
-  InstanceOperationEntity,
-  OperationEntityType,
-} from 'modules/types/operate';
+import type {ProcessInstanceEntity} from 'modules/types/operate';
 
 /**
  * @returns a boolean showing if the current instance has an incident
@@ -50,22 +46,10 @@ const getProcessDefinitionName = (instance: ProcessInstance) => {
   return instance.processDefinitionName ?? instance.processDefinitionId;
 };
 
-const createOperation = (
-  operationType: OperationEntityType,
-): InstanceOperationEntity => {
-  return {
-    type: operationType,
-    state: 'SCHEDULED',
-    errorMessage: null,
-    completedDate: null,
-  };
-};
-
 export {
   hasIncident,
   getProcessDefinitionName,
   isInstanceRunning,
   isRunning,
   getProcessName,
-  createOperation,
 };

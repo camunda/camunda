@@ -30,6 +30,7 @@ class ProcessAuditLogTransformerTest {
     final Process recordValue =
         ImmutableProcess.builder()
             .from(factory.generateObject(Process.class))
+            .withResourceName("processResource")
             .withDeploymentKey(123L)
             .withProcessDefinitionKey(456L)
             .withBpmnProcessId("process-id")
@@ -51,5 +52,6 @@ class ProcessAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionId()).isEqualTo("process-id");
     assertThat(entity.getTenant().orElseThrow().tenantId()).isEqualTo("tenant-1");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getEntityDescription()).isEqualTo("processResource");
   }
 }

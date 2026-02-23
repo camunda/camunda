@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
@@ -28,11 +29,11 @@ public class ExporterStateDistributionTest {
     partitionMessagingService = new SimplePartitionMessageService();
     exporterStateDistributionService =
         new ExporterStateDistributionService(
-            exporterState::put, partitionMessagingService, "topic");
+            exporterState::put, partitionMessagingService, "topic", List.of("topic", "foo"));
   }
 
   @Test
-  public void shouldSubscribeForGivenTopic() {
+  public void shouldSubscribeForGivenTopics() {
     // given
 
     // when
@@ -40,6 +41,7 @@ public class ExporterStateDistributionTest {
 
     // then
     assertThat(partitionMessagingService.consumers).containsKey("topic");
+    assertThat(partitionMessagingService.consumers).containsKey("foo");
   }
 
   @Test

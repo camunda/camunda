@@ -182,6 +182,33 @@ public class ClusterVariableIT {
   }
 
   @TestTemplate
+  public void shouldFindAllTenantClusterVariablesPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String tenantId = CommonFixtures.nextStringId();
+    ClusterVariableFixtures.createAndSaveRandomsTenantClusterVariablesWithFixedTenantId(
+        rdbmsService, 120, tenantId);
+
+    final var searchResult =
+        rdbmsService
+            .getClusterVariableReader()
+            .search(
+                new ClusterVariableQuery(
+                    new ClusterVariableFilter.Builder()
+                        .scopes("TENANT")
+                        .tenantIds(tenantId)
+                        .build(),
+                    ClusterVariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllTenantClusterVariablesPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

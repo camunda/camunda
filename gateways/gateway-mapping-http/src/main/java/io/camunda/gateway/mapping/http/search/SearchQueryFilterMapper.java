@@ -12,6 +12,7 @@ import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESS
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_EMPTY_ATTRIBUTE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_NAME;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_NULL_VARIABLE_VALUE;
+import static io.camunda.gateway.mapping.http.validator.RequestValidator.validateDate;
 import static java.util.Optional.ofNullable;
 
 import io.camunda.gateway.mapping.http.converters.AuditLogActorTypeConverter;
@@ -26,6 +27,7 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
@@ -34,6 +36,7 @@ import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -46,9 +49,11 @@ import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
+import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
+import io.camunda.search.filter.JobTypeStatisticsFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
@@ -274,6 +279,9 @@ public class SearchQueryFilterMapper {
       ofNullable(filter.getRootDecisionDefinitionKey())
           .map(mapToOperations(Long.class))
           .ifPresent(builder::rootDecisionDefinitionKeyOperations);
+      ofNullable(filter.getDecisionRequirementsKey())
+          .map(mapToOperations(Long.class))
+          .ifPresent(builder::decisionRequirementsKeyOperations);
       ofNullable(filter.getTenantId()).ifPresent(builder::tenantIds);
     }
     return builder.build();
@@ -408,6 +416,31 @@ public class SearchQueryFilterMapper {
     }
 
     Optional.ofNullable(jobType).ifPresent(builder::jobType);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, JobTypeStatisticsFilter> toJobTypeStatisticsFilter(
+      final io.camunda.gateway.protocol.model.JobTypeStatisticsFilter filter) {
+    final var builder = FilterBuilders.jobTypeStatistics();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter == null) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
+      return Either.left(validationErrors);
+    }
+
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
+    Optional.ofNullable(from).ifPresent(builder::from);
+
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
+    Optional.ofNullable(to).ifPresent(builder::to);
+
+    Optional.ofNullable(filter.getJobType())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::jobTypeOperations);
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
@@ -975,6 +1008,9 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getActorType())
         .map(mapToOperations(String.class, new AuditLogActorTypeConverter()))
         .ifPresent(builder::actorTypeOperations);
+    ofNullable(filter.getAgentElementId())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::agentElementIdOperations);
     ofNullable(filter.getEntityType())
         .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
         .ifPresent(builder::entityTypeOperations);
@@ -1023,19 +1059,35 @@ public class SearchQueryFilterMapper {
     ofNullable(filter.getDecisionEvaluationKey())
         .map(mapToOperations(Long.class))
         .ifPresent(builder::decisionEvaluationKeyOperations);
+    ofNullable(filter.getRelatedEntityKey())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::relatedEntityKeyOperations);
+    ofNullable(filter.getRelatedEntityType())
+        .map(mapToOperations(String.class, new AuditLogEntityTypeConverter()))
+        .ifPresent(builder::relatedEntityTypeOperations);
+    ofNullable(filter.getEntityDescription())
+        .map(mapToOperations(String.class))
+        .ifPresent(builder::entityDescriptionOperations);
     return builder.build();
   }
 
-  static ProcessDefinitionInstanceVersionStatisticsFilter
+  static Either<List<String>, ProcessDefinitionInstanceVersionStatisticsFilter>
       toProcessDefinitionInstanceVersionStatisticsFilter(
           final io.camunda.gateway.protocol.model.ProcessDefinitionInstanceVersionStatisticsFilter
               filter) {
-    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
-    if (filter != null) {
-      Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+    if (filter == null) {
+      return Either.left(List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter")));
+    }
+    if (filter.getProcessDefinitionId() == null || filter.getProcessDefinitionId().isBlank()) {
+      return Either.left(
+          List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter.processDefinitionId")));
     }
 
-    return builder.build();
+    final var builder = FilterBuilders.processDefinitionInstanceVersionStatistics();
+    builder.processDefinitionId(filter.getProcessDefinitionId());
+    Optional.ofNullable(filter.getTenantId()).ifPresent(builder::tenantId);
+
+    return Either.right(builder.build());
   }
 
   private static Either<List<String>, List<VariableValueFilter>> toVariableValueFilters(
@@ -1150,5 +1202,36 @@ public class SearchQueryFilterMapper {
     return Either.right(
         io.camunda.search.filter.FilterBuilders.incidentProcessInstanceStatisticsByDefinition(
             f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(filter.getErrorHashCode())));
+  }
+
+  static GlobalListenerFilter toGlobalTaskListenerFilter(
+      final GlobalTaskListenerSearchQueryFilterRequest filter) {
+
+    final var builder =
+        FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
+
+    if (filter != null) {
+      ofNullable(filter.getId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::listenerIdOperations);
+      ofNullable(filter.getType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::typeOperations);
+      ofNullable(filter.getRetries())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getEventTypes())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::eventTypeOperations);
+      ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
+      ofNullable(filter.getPriority())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::priorityOperations);
+      ofNullable(filter.getSource())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::sourceOperations);
+    }
+
+    return builder.build();
   }
 }

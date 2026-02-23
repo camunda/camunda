@@ -8,10 +8,10 @@
 package io.camunda.application.commons.sources;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -44,8 +44,6 @@ public class DefaultObjectMapperConfiguration {
   @Bean
   @Primary
   public ObjectMapper defaultObjectMapper(
-      @Qualifier("standardJacksonObjectMapperBuilderCustomizer")
-          final Optional<Jackson2ObjectMapperBuilderCustomizer> standardCustomizer,
       @Qualifier("operateObjectMapperCustomizer")
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> operateCustomizer,
       @Qualifier("tasklistObjectMapperCustomizer")
@@ -54,7 +52,9 @@ public class DefaultObjectMapperConfiguration {
           final Optional<Consumer<Jackson2ObjectMapperBuilder>> gatewayRestCustomizer) {
 
     final var builder = Jackson2ObjectMapperBuilder.json();
-    standardCustomizer.ifPresent(c -> c.customize(builder));
+    // Configure proper date/time serialization for date types
+    builder.featuresToDisable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    // Apply optional customizers
     tasklistCustomizer.ifPresent(c -> c.accept(builder));
     operateCustomizer.ifPresent(c -> c.accept(builder));
     gatewayRestCustomizer.ifPresent(c -> c.accept(builder));

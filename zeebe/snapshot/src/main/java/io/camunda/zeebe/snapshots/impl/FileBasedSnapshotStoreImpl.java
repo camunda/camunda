@@ -210,7 +210,9 @@ public final class FileBasedSnapshotStoreImpl {
           VERSION,
           snapshotId.getProcessedPosition(),
           snapshotId.getExportedPosition(),
-          Long.MAX_VALUE);
+          Long.MAX_VALUE,
+          Long.MAX_VALUE,
+          false);
     }
   }
 

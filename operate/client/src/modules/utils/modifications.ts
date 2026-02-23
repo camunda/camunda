@@ -8,7 +8,10 @@
 
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import {modificationsStore} from 'modules/stores/modifications';
+import {
+  modificationsStore,
+  type AncestorScopeType,
+} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from './generateUniqueID';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -34,7 +37,7 @@ const finishMovingToken = (
   businessObjects: BusinessObjects,
   bpmnProcessId?: string,
   targetFlowNodeId?: string,
-  ancestorSelectionRequired?: boolean,
+  ancestorScopeType?: AncestorScopeType,
 ) => {
   tracking.track({
     eventName: 'move-token',
@@ -69,14 +72,11 @@ const finishMovingToken = (
       newScopeCount,
       businessObjects,
       bpmnProcessId,
+      ancestorScopeType,
     });
   }
 
-  if (ancestorSelectionRequired) {
-    modificationsStore.setStatus('requires-ancestor-selection');
-  } else {
-    modificationsStore.setStatus('enabled');
-  }
+  modificationsStore.setStatus('enabled');
   modificationsStore.setSourceFlowNodeIdForMoveOperation(null);
   modificationsStore.setSourceFlowNodeInstanceKeyForMoveOperation(null);
 };

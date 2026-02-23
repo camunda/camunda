@@ -16,6 +16,7 @@
 package io.camunda.client;
 
 import static io.camunda.client.ClientProperties.CLOUD_REGION;
+import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE;
 import static io.camunda.client.ClientProperties.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.ClientProperties.DEFAULT_REQUEST_TIMEOUT_OFFSET;
@@ -34,6 +35,7 @@ import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MESSAGE_TT
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REST_ADDRESS;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CAMUNDA_CLIENT_WORKER_STREAM_ENABLED;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.CA_CERTIFICATE_VAR;
+import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_JOB_WORKER_TENANT_IDS_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.DEFAULT_TENANT_ID_VAR;
 import static io.camunda.client.impl.CamundaClientEnvironmentVariables.GRPC_ADDRESS_VAR;
@@ -54,6 +56,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
 import io.camunda.client.api.command.CommandWithTenantStep;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
 import io.camunda.client.impl.CamundaClientCloudBuilderImpl;
@@ -1164,6 +1167,135 @@ public final class CamundaClientTest {
         .describedAs(
             "This method has no effect on the cloud client builder while under development")
         .isEqualTo(builder);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithCloudClientBuilder() {
+    final CamundaClientCloudBuilderImpl builder = new CamundaClientCloudBuilderImpl();
+
+    final CamundaClient client =
+        builder
+            .withClusterId("clusterId")
+            .withClientId("clientId")
+            .withClientSecret("clientSecret")
+            .defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED)
+            .build();
+
+    assertThat(client.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterWithClientBuilder() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    builder.defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
+    final CamundaClient clientBuilder = builder.build();
+
+    // then
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldDefaultToProvidedTenantFilter() {
+    // given
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+
+    // when
+    final CamundaClient clientBuilder = builder.build();
+
+    // then
+    assertThat(clientBuilder.getConfiguration().getDefaultJobWorkerTenantFilter())
+        .isEqualTo(TenantFilter.PROVIDED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromPropertyWithClientBuilder() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "ASSIGNED");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarCaseInsensitive() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "assigned");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromEnvVarWithWhitespace() {
+    // given
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, " ASSIGNED ");
+
+    // when
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+  }
+
+  @Test
+  public void shouldSetDefaultJobWorkerTenantFilterFromPropertyCaseInsensitive() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "provided");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+  }
+
+  @Test
+  public void shouldSetFinalDefaultJobWorkerTenantFilterFromEnvVarWithClientBuilder() {
+    // given
+    final Properties properties = new Properties();
+    properties.setProperty(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE, "PROVIDED");
+    Environment.system().put(DEFAULT_JOB_WORKER_TENANT_FILTER_MODE_VAR, "ASSIGNED");
+    final CamundaClientBuilderImpl builder = new CamundaClientBuilderImpl();
+    builder.defaultJobWorkerTenantFilter(TenantFilter.PROVIDED);
+    builder.withProperties(properties);
+
+    // when
+    builder.build();
+
+    // then
+    assertThat(builder.getDefaultJobWorkerTenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
   }
 
   @Test

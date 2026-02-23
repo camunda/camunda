@@ -19,11 +19,15 @@ const fetchProcessDefinitionVersionStatistics = async (
 ) => {
   return requestWithThrow<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
     {
-      url: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl({
-        processDefinitionId,
-      }),
+      url: endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
       method: endpoints.getProcessDefinitionInstanceVersionStatistics.method,
-      body: payload,
+      body: {
+        ...payload,
+        filter: {
+          ...payload?.filter,
+          processDefinitionId,
+        },
+      },
     },
   );
 };

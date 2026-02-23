@@ -30,6 +30,7 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     final DecisionRequirementsRecordValue recordValue =
         ImmutableDecisionRequirementsRecordValue.builder()
             .from(factory.generateObject(DecisionRequirementsRecordValue.class))
+            .withResourceName("resourceName")
             .withDecisionRequirementsKey(123L)
             .withDecisionRequirementsId("decision-requirements-1")
             .withTenantId("tenant-1")
@@ -50,6 +51,7 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(123L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decision-requirements-1");
     assertThat(entity.getDeploymentKey()).isEqualTo(1234L);
+    assertThat(entity.getEntityDescription()).isEqualTo("resourceName");
   }
 
   @Test
@@ -58,6 +60,7 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     final DecisionRequirementsRecordValue recordValue =
         ImmutableDecisionRequirementsRecordValue.builder()
             .from(factory.generateObject(DecisionRequirementsRecordValue.class))
+            .withResourceName("resourceName")
             .withDecisionRequirementsKey(456L)
             .withDecisionRequirementsId("decision-requirements-2")
             .withTenantId("tenant-2")
@@ -78,5 +81,6 @@ class DecisionRequirementsRecordAuditLogTransformerTest {
     assertThat(entity.getDecisionRequirementsKey()).isEqualTo(456L);
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decision-requirements-2");
     assertThat(entity.getDeploymentKey()).isEqualTo(1234L);
+    assertThat(entity.getEntityDescription()).isEqualTo("resourceName");
   }
 }

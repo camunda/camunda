@@ -30,6 +30,7 @@ class GroupAuditLogTransformerTest {
     final GroupRecordValue recordValue =
         ImmutableGroupRecordValue.builder()
             .from(factory.generateObject(GroupRecordValue.class))
+            .withName("groupName")
             .withGroupId("test-group")
             .withGroupKey(789L)
             .build();
@@ -45,5 +46,16 @@ class GroupAuditLogTransformerTest {
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-group");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getEntityDescription()).isEqualTo("groupName");
+  }
+
+  @Test
+  void shouldScheduleCleanUp() {
+    // given
+    final Record<GroupRecordValue> record =
+        factory.generateRecord(ValueType.GROUP, r -> r.withIntent(GroupIntent.DELETED));
+
+    // then
+    assertThat(transformer.triggersCleanUp(record)).isTrue();
   }
 }

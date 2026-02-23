@@ -9,21 +9,11 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
-import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.UserServices;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.system.EmbeddedGatewayService;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -31,13 +21,10 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
-import java.util.Collections;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class EmbeddedGatewayServiceStepTest {
   private static final TestConcurrencyControl CONCURRENCY_CONTROL = new TestConcurrencyControl();
@@ -51,7 +38,7 @@ class EmbeddedGatewayServiceStepTest {
   }
 
   private final EmbeddedGatewayServiceStep sut = new EmbeddedGatewayServiceStep();
-  private BrokerStartupContextImpl testBrokerStartupContext;
+  private MockBrokerStartupContext testBrokerStartupContext;
 
   @Test
   void shouldHaveDescriptiveName() {
@@ -75,24 +62,11 @@ class EmbeddedGatewayServiceStepTest {
       actorScheduler.start();
       startupFuture = CONCURRENCY_CONTROL.createFuture();
 
-      testBrokerStartupContext =
-          new BrokerStartupContextImpl(
-              mock(BrokerInfo.class),
-              TEST_BROKER_CONFIG,
-              mock(SpringBrokerBridge.class),
-              actorScheduler,
-              mock(BrokerHealthCheckService.class),
-              mock(ExporterRepository.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
-              mock(BrokerClient.class),
-              Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration(),
-              mock(UserServices.class),
-              mock(PasswordEncoder.class),
-              mock(JwtDecoder.class),
-              mock(SearchClientsProxy.class),
-              mock(BrokerRequestAuthorizationConverter.class));
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(actorScheduler);
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
       final var port = SocketUtil.getNextAddress().getPort();
       final var commandApiCfg = TEST_BROKER_CONFIG.getGateway().getNetwork();
@@ -150,24 +124,11 @@ class EmbeddedGatewayServiceStepTest {
     void setUp() {
       mockEmbeddedGatewayService = mock(EmbeddedGatewayService.class);
 
-      testBrokerStartupContext =
-          new BrokerStartupContextImpl(
-              mock(BrokerInfo.class),
-              TEST_BROKER_CONFIG,
-              mock(SpringBrokerBridge.class),
-              mock(ActorScheduler.class),
-              mock(BrokerHealthCheckService.class),
-              mock(ExporterRepository.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
-              mock(BrokerClient.class),
-              Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration(),
-              mock(UserServices.class),
-              mock(PasswordEncoder.class),
-              mock(JwtDecoder.class),
-              mock(SearchClientsProxy.class),
-              mock(BrokerRequestAuthorizationConverter.class));
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
       testBrokerStartupContext.setEmbeddedGatewayService(mockEmbeddedGatewayService);
       shutdownFuture = CONCURRENCY_CONTROL.createFuture();

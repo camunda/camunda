@@ -49,7 +49,13 @@ class BatchOperationWriterTest {
                 .map(
                     i ->
                         new BatchOperationItemDbModel(
-                            "42", i, i, BatchOperationItemState.ACTIVE, OffsetDateTime.now(), null))
+                            "42",
+                            i,
+                            i,
+                            i,
+                            BatchOperationItemState.ACTIVE,
+                            OffsetDateTime.now(),
+                            null))
                 .toList());
 
     // when

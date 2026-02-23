@@ -21,7 +21,7 @@ import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {tracking} from 'modules/tracking';
 import {TextInputField} from 'modules/components/TextInputField';
 import {IconTextInputField} from 'modules/components/IconTextInputField';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {EditButtons} from '../EditButtons';
 import {useVariables} from 'modules/queries/variables/useVariables';
@@ -75,7 +75,7 @@ const NewVariable: React.FC = () => {
               hideLabel
               labelText="Value"
               placeholder="Value"
-              buttonLabel="Open JSON editor modal"
+              buttonLabel="Open JSON editor"
               tooltipPosition="left"
               onIconClick={() => {
                 setIsModalVisible(true);
@@ -84,7 +84,7 @@ const NewVariable: React.FC = () => {
                   variant: 'add-variable',
                 });
               }}
-              Icon={Popup}
+              Icon={Maximize}
             />
           )}
         </Field>

@@ -106,12 +106,13 @@ public class RestoreNodeIdProviderConfiguration {
         yield (context -> {
           final var restoreId = context.restoreId();
           final var nodeId = context.nodeId();
-          if (!context.skippedRestore()) {
-            restoreStatusManager.markNodeRestored(restoreId, nodeId);
-          }
           // Validate even if we skipped in case the restore was retried with empty disk, but the s3
           // object was not deleted.
           validateAfterRestore(brokerCfg, context);
+
+          if (!context.skippedRestore()) {
+            restoreStatusManager.markNodeRestored(restoreId, nodeId);
+          }
 
           restoreStatusManager.waitForAllNodesRestored(
               restoreId, cluster.getSize(), Duration.ofSeconds(10));

@@ -55,6 +55,7 @@ import io.camunda.client.api.command.CreateRoleCommandStep1;
 import io.camunda.client.api.command.CreateTenantCommandStep1;
 import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
+import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
@@ -71,6 +72,7 @@ import io.camunda.client.api.command.EvaluateExpressionCommandStep1;
 import io.camunda.client.api.command.FailJobCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.GloballyScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.GloballyScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.MigrateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.PinClockCommandStep1;
@@ -85,6 +87,7 @@ import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.SuspendBatchOperationStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableCreationCommandStep1;
 import io.camunda.client.api.command.TenantScopedClusterVariableDeletionCommandStep1;
+import io.camunda.client.api.command.TenantScopedClusterVariableUpdateCommandStep1;
 import io.camunda.client.api.command.ThrowErrorCommandStep1;
 import io.camunda.client.api.command.TopologyRequestStep1;
 import io.camunda.client.api.command.UnassignClientFromGroupCommandStep1;
@@ -130,6 +133,8 @@ import io.camunda.client.api.fetch.ProcessDefinitionGetRequest;
 import io.camunda.client.api.fetch.ProcessDefinitionGetXmlRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetCallHierarchyRequest;
 import io.camunda.client.api.fetch.ProcessInstanceGetRequest;
+import io.camunda.client.api.fetch.ResourceContentGetRequest;
+import io.camunda.client.api.fetch.ResourceGetRequest;
 import io.camunda.client.api.fetch.RoleGetRequest;
 import io.camunda.client.api.fetch.RolesSearchRequest;
 import io.camunda.client.api.fetch.TenantGetRequest;
@@ -178,6 +183,7 @@ import io.camunda.client.api.search.request.UsersByRoleSearchRequest;
 import io.camunda.client.api.search.request.UsersByTenantSearchRequest;
 import io.camunda.client.api.search.request.UsersSearchRequest;
 import io.camunda.client.api.search.request.VariableSearchRequest;
+import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
@@ -219,6 +225,7 @@ import io.camunda.client.impl.command.CreateRoleCommandImpl;
 import io.camunda.client.impl.command.CreateTenantCommandImpl;
 import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
+import io.camunda.client.impl.command.DeleteDecisionInstanceCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
@@ -234,6 +241,7 @@ import io.camunda.client.impl.command.EvaluateDecisionCommandImpl;
 import io.camunda.client.impl.command.EvaluateExpressionCommandImpl;
 import io.camunda.client.impl.command.GloballyScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.GloballyScopedDeleteClusterVariableImpl;
+import io.camunda.client.impl.command.GloballyScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.JobUpdateRetriesCommandImpl;
 import io.camunda.client.impl.command.JobUpdateTimeoutCommandImpl;
 import io.camunda.client.impl.command.MigrateProcessInstanceCommandImpl;
@@ -250,6 +258,7 @@ import io.camunda.client.impl.command.StreamJobsCommandImpl;
 import io.camunda.client.impl.command.SuspendBatchOperationCommandImpl;
 import io.camunda.client.impl.command.TenantScopedCreateClusterVariableImpl;
 import io.camunda.client.impl.command.TenantScopedDeleteClusterVariableImpl;
+import io.camunda.client.impl.command.TenantScopedUpdateClusterVariableImpl;
 import io.camunda.client.impl.command.TopologyRequestImpl;
 import io.camunda.client.impl.command.UnassignClientFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignClientFromTenantCommandImpl;
@@ -291,6 +300,8 @@ import io.camunda.client.impl.fetch.ProcessDefinitionGetRequestImpl;
 import io.camunda.client.impl.fetch.ProcessDefinitionGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetCallHierarchyRequestImpl;
 import io.camunda.client.impl.fetch.ProcessInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceContentGetRequestImpl;
+import io.camunda.client.impl.fetch.ResourceGetRequestImpl;
 import io.camunda.client.impl.fetch.RoleGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantGetRequestImpl;
 import io.camunda.client.impl.fetch.TenantScopedClusterVariableGetRequestImpl;
@@ -340,6 +351,7 @@ import io.camunda.client.impl.search.request.UsersByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersByTenantSearchRequestImpl;
 import io.camunda.client.impl.search.request.UsersSearchRequestImpl;
 import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
+import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
@@ -699,7 +711,8 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
-  public DeleteProcessInstanceCommandStep1 newDeleteInstanceCommand(final long processInstanceKey) {
+  public DeleteProcessInstanceCommandStep1 newDeleteProcessInstanceCommand(
+      final long processInstanceKey) {
     return new DeleteProcessInstanceCommandImpl(processInstanceKey, config, httpClient, jsonMapper);
   }
 
@@ -907,6 +920,12 @@ public final class CamundaClientImpl implements CamundaClient {
   }
 
   @Override
+  public GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to) {
+    return new GlobalJobStatisticsRequestImpl(httpClient, from, to);
+  }
+
+  @Override
   public ProcessInstanceSequenceFlowsRequest newProcessInstanceSequenceFlowsRequest(
       final long processInstanceKey) {
     return new ProcessInstanceSequenceFlowsRequestImpl(httpClient, processInstanceKey);
@@ -974,6 +993,13 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public DecisionInstanceGetRequest newDecisionInstanceGetRequest(final String decisionInstanceId) {
     return new DecisionInstanceGetRequestImpl(httpClient, jsonMapper, decisionInstanceId);
+  }
+
+  @Override
+  public DeleteDecisionInstanceCommandStep1 newDeleteDecisionInstanceCommand(
+      final long decisionInstanceKey) {
+    return new DeleteDecisionInstanceCommandImpl(
+        decisionInstanceKey, config, httpClient, jsonMapper);
   }
 
   @Override
@@ -1203,6 +1229,18 @@ public final class CamundaClientImpl implements CamundaClient {
   public TenantScopedClusterVariableCreationCommandStep1
       newTenantScopedClusterVariableCreateRequest(final String tenantId) {
     return new TenantScopedCreateClusterVariableImpl(httpClient, jsonMapper, tenantId);
+  }
+
+  @Override
+  public GloballyScopedClusterVariableUpdateCommandStep1
+      newGloballyScopedClusterVariableUpdateRequest() {
+    return new GloballyScopedUpdateClusterVariableImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public TenantScopedClusterVariableUpdateCommandStep1 newTenantScopedClusterVariableUpdateRequest(
+      final String tenantId) {
+    return new TenantScopedUpdateClusterVariableImpl(httpClient, jsonMapper, tenantId);
   }
 
   @Override
@@ -1580,6 +1618,16 @@ public final class CamundaClientImpl implements CamundaClient {
       newIncidentProcessInstanceStatisticsByDefinitionRequest(final int errorHashCode) {
     return new IncidentProcessInstanceStatisticsByDefinitionRequestImpl(
         httpClient, jsonMapper, errorHashCode);
+  }
+
+  @Override
+  public ResourceGetRequest newResourceGetRequest(final long resourceKey) {
+    return new ResourceGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public ResourceContentGetRequest newResourceContentGetRequest(final long resourceKey) {
+    return new ResourceContentGetRequestImpl(httpClient, resourceKey);
   }
 
   private JobClient newJobClient() {

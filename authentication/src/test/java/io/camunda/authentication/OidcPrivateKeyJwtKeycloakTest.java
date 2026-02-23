@@ -43,9 +43,9 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpSession;
@@ -171,7 +171,7 @@ class OidcPrivateKeyJwtKeycloakTest {
         mockMvcTester.get().uri("/").accept(MediaType.TEXT_HTML).exchange();
     assertThat(result)
         .hasStatus(HttpStatus.FOUND)
-        .hasHeader("Location", "http://localhost/oauth2/authorization/oidc");
+        .hasHeader("Location", "/oauth2/authorization/oidc");
   }
 
   @Test

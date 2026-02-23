@@ -13,6 +13,7 @@ import type {RequestError} from 'modules/request';
 
 type CancelBatchOperationOptions = {
   onError?: (error: RequestError) => Promise<unknown> | unknown;
+  onSuccess?: () => Promise<unknown> | unknown;
 };
 
 function useCancelBatchOperation(options?: CancelBatchOperationOptions) {
@@ -32,6 +33,7 @@ function useCancelBatchOperation(options?: CancelBatchOperationOptions) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.batchOperations.get(batchOperationKey),
       });
+      options?.onSuccess?.();
     },
     onError: options?.onError,
   });

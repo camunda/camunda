@@ -40,4 +40,7 @@ export const Paths = {
   operationsLog() {
     return "/operations-log";
   },
+  globalTaskListeners() {
+    return "/global-task-listeners";
+  },
 } as const;

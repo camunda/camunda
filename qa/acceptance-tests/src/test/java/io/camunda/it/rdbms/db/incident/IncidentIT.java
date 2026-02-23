@@ -195,6 +195,31 @@ public class IncidentIT {
   }
 
   @TestTemplate
+  public void shouldFindAllIncidentPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final String processDefinitionId = IncidentFixtures.nextStringId();
+    createAndSaveRandomIncidents(
+        rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        incidentReader.search(
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        .sort(s -> s.creationTime().asc().flowNodeId().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindIncidentWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -281,6 +306,48 @@ public class IncidentIT {
     assertThat(instance.processDefinitionId()).isEqualTo(original.processDefinitionId());
     assertThat(instance.creationTime())
         .isCloseTo(original.creationDate(), new TemporalUnitWithinOffset(1, ChronoUnit.MILLIS));
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader reader = rdbmsService.getIncidentReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        createAndSaveIncident(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveIncident(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveIncident(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getIncidentWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(IncidentEntity::incidentKey))
+        .containsExactlyInAnyOrder(item1.incidentKey(), item3.incidentKey());
   }
 
   @TestTemplate

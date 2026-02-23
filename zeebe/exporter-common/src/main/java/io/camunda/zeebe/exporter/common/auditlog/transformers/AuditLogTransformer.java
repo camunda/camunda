@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory;
  */
 public interface AuditLogTransformer<R extends RecordValue> {
 
-  public static final Logger LOG = LoggerFactory.getLogger(AuditLogTransformer.class);
+  Logger LOG = LoggerFactory.getLogger(AuditLogTransformer.class);
 
   TransformerConfig config();
 
@@ -48,6 +48,7 @@ public interface AuditLogTransformer<R extends RecordValue> {
     if (log.getResult() == null) {
       if (RecordType.COMMAND_REJECTION.equals(record.getRecordType())) {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
+        log.setEntityDescription(record.getRejectionType().name());
       } else {
         log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS);
       }
@@ -58,51 +59,79 @@ public interface AuditLogTransformer<R extends RecordValue> {
 
   default void transform(final Record<R> record, final AuditLogEntry log) {}
 
-  default boolean supports(final Record record) {
+  default boolean supports(final Record<?> record) {
     return config().supports(record);
+  }
+
+  default boolean triggersCleanUp(final Record<R> record) {
+    return config().dataCleanupIntents().contains(record.getIntent());
   }
 
   public record TransformerConfig(
       ValueType valueType,
       Set<Intent> supportedIntents,
       Set<Intent> supportedRejections,
-      Set<RejectionType> supportedRejectionTypes) {
+      Set<RejectionType> supportedRejectionTypes,
+      Set<Intent> dataCleanupIntents) {
 
     public static TransformerConfig with(final ValueType valueType) {
-      return new TransformerConfig(valueType, Set.of(), Set.of(), Set.of());
+      return new TransformerConfig(valueType, Set.of(), Set.of(), Set.of(), Set.of());
     }
 
     public TransformerConfig withIntents(final Intent... intents) {
       return new TransformerConfig(
-          valueType(), Set.of(intents), supportedRejections(), supportedRejectionTypes);
+          valueType(),
+          Set.of(intents),
+          supportedRejections(),
+          supportedRejectionTypes,
+          dataCleanupIntents());
     }
 
     public TransformerConfig withRejections(
         final Intent rejectionIntent, final RejectionType... rejectionTypes) {
       return new TransformerConfig(
-          valueType(), supportedIntents(), Set.of(rejectionIntent), Set.of(rejectionTypes));
+          valueType(),
+          supportedIntents(),
+          Set.of(rejectionIntent),
+          Set.of(rejectionTypes),
+          dataCleanupIntents());
     }
 
     public TransformerConfig withRejections(final Intent... rejectionIntents) {
       return new TransformerConfig(
-          valueType(), supportedIntents(), Set.of(rejectionIntents), supportedRejectionTypes());
+          valueType(),
+          supportedIntents(),
+          Set.of(rejectionIntents),
+          supportedRejectionTypes(),
+          dataCleanupIntents());
     }
 
     public TransformerConfig withRejectionTypes(final RejectionType... rejectionTypes) {
       return new TransformerConfig(
-          valueType(), supportedIntents(), supportedRejections(), Set.of(rejectionTypes));
+          valueType(),
+          supportedIntents(),
+          supportedRejections(),
+          Set.of(rejectionTypes),
+          dataCleanupIntents());
     }
 
-    boolean supports(final Record record) {
-      switch (record.getRecordType()) {
-        case EVENT:
-          return supportedIntents().contains(record.getIntent());
-        case COMMAND_REJECTION:
-          return supportedRejections().contains(record.getIntent())
-              && supportedRejectionTypes().contains(record.getRejectionType());
-        default:
-          return false;
-      }
+    public TransformerConfig withDataCleanupIntents(final Intent... dataCleanupIntents) {
+      return new TransformerConfig(
+          valueType(),
+          supportedIntents(),
+          supportedRejections(),
+          supportedRejectionTypes(),
+          Set.of(dataCleanupIntents));
+    }
+
+    boolean supports(final Record<?> record) {
+      return switch (record.getRecordType()) {
+        case EVENT -> supportedIntents().contains(record.getIntent());
+        case COMMAND_REJECTION ->
+            supportedRejections().contains(record.getIntent())
+                && supportedRejectionTypes().contains(record.getRejectionType());
+        default -> false;
+      };
     }
   }
 }

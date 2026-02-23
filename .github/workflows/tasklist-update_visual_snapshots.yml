@@ -19,7 +19,7 @@ jobs:
     if: github.event.pull_request.state != 'closed' && (github.event.label.name == 'update-snapshots' || contains( github.event.pull_request.labels.*.name, 'update-snapshots'))
     runs-on: ubuntu-latest
     container:
-      image: mcr.microsoft.com/playwright:v1.56.1
+      image: mcr.microsoft.com/playwright:v1.58.2
       options: --user 1001:1000
 
     steps:
@@ -28,7 +28,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
       - name: Install node dependencies
         working-directory: ./tasklist/client
         run: npm ci
@@ -42,7 +42,7 @@ jobs:
         working-directory: ./tasklist/client
         run: npm run test:visual --update-snapshots
       - name: Commit screenshots
-        uses: stefanzweifel/git-auto-commit-action@v6
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
           commit_message: "test: updated tasklist snapshots"
           file_pattern: "tasklist/client/**/*.png"

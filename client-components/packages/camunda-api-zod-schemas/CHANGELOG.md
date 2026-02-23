@@ -1,5 +1,62 @@
 # Changelog
 
+## v0.0.42
+
+### 🚀 Enhancements
+
+- fix audit log shape ([#46339](https://github.com/camunda/camunda/issues/46339))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.41
+
+### 🚀 Enhancements
+
+- fix 8.9 defs and mark optional fields as nullable ([#46339](https://github.com/camunda/camunda/issues/46339))
+- add missing 8.9 defs ([#463100](https://github.com/camunda/camunda/issues/463100))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.40
+
+### 🚀 Enhancements
+
+Accidental empty release
+
+## v0.0.39
+
+### 🚀 Enhancements
+
+- update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
+## v0.0.38
+
+### 🚀 Enhancements
+
+- update zod schema for audit log endpoint with related entity fields and description ([#45669](https://github.com/camunda/camunda/pull/45669))
+
+### ❤️ Contributors
+
+- Daniel Kelemen ([@danielkelemen](https://github.com/danielkelemen))
+
+## v0.0.37
+
+### 🚀 Enhancements
+
+- update zod schema for version statistics endpoint ([#45418](https://github.com/camunda/camunda/pull/45418))
+
+### ❤️ Contributors
+
+- Eddie Tsedeke ([@tsedekey](https://github.com/tsedekey))
+
 ## v0.0.36
 
 ### 🚀 Enhancements

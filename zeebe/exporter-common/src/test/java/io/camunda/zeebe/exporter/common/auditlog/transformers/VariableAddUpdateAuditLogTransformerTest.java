@@ -31,6 +31,7 @@ class VariableAddUpdateAuditLogTransformerTest {
     final VariableRecordValue recordValue =
         ImmutableVariableRecordValue.builder()
             .from(factory.generateObject(VariableRecordValue.class))
+            .withName("variable-name")
             .withProcessDefinitionKey(456L)
             .withBpmnProcessId("bpmn-process-id")
             .withTenantId("tenant-1")
@@ -52,5 +53,10 @@ class VariableAddUpdateAuditLogTransformerTest {
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
     assertThat(entity.getElementInstanceKey()).isEqualTo(789L);
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getTenant().get().tenantId()).isEqualTo("tenant-1");
+    assertThat(entity.getRootProcessInstanceKey())
+        .isPositive()
+        .isEqualTo(record.getValue().getRootProcessInstanceKey());
+    assertThat(entity.getEntityDescription()).isEqualTo("variable-name");
   }
 }

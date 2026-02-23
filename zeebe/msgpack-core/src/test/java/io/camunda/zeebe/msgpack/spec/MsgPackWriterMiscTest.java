@@ -15,16 +15,16 @@ public final class MsgPackWriterMiscTest {
 
   @Test
   public void testEncodedMapHeaderLength() {
-    assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0x0f)).isEqualTo(1);
-    assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0xffff)).isEqualTo(3);
-    assertThat(MsgPackWriter.getEncodedMapHeaderLenght(0x7fff_ffff)).isEqualTo(5);
+    assertThat(MsgPackWriter.getEncodedMapHeaderLength(0x0f)).isEqualTo(1);
+    assertThat(MsgPackWriter.getEncodedMapHeaderLength(0xffff)).isEqualTo(3);
+    assertThat(MsgPackWriter.getEncodedMapHeaderLength(0x7fff_ffff)).isEqualTo(5);
   }
 
   @Test
   public void testEncodedArayHeaderLength() {
-    assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0x0f)).isEqualTo(1);
-    assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0xffff)).isEqualTo(3);
-    assertThat(MsgPackWriter.getEncodedArrayHeaderLenght(0x7fff_ffff)).isEqualTo(5);
+    assertThat(MsgPackWriter.getEncodedArrayHeaderLength(0x0f)).isEqualTo(1);
+    assertThat(MsgPackWriter.getEncodedArrayHeaderLength(0xffff)).isEqualTo(3);
+    assertThat(MsgPackWriter.getEncodedArrayHeaderLength(0x7fff_ffff)).isEqualTo(5);
   }
 
   @Test

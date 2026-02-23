@@ -10,6 +10,8 @@ package io.camunda.zeebe.broker.bootstrap;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.impl.AtomixServerTransport;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
+import java.util.List;
 
 /** Starts the server transport which can receive commands from the gateway * */
 final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
@@ -44,8 +46,17 @@ final class GatewayBrokerTransportStep extends AbstractBrokerStartupStep {
     final var messagingService = brokerStartupContext.getApiMessagingService();
     final var requestIdGenerator = brokerStartupContext.getRequestIdGenerator();
 
+    final var config = brokerStartupContext.getBrokerConfiguration().getExperimental();
+    final TopicSupplier legacyTopicSupplier = TopicSupplier.withLegacyTopicName();
+    final TopicSupplier topicSupplier = TopicSupplier.withPrefix(config.getDefaultEngineName());
+
+    final var receiveOnTopicSuppliers =
+        config.isReceiveOnLegacySubject()
+            ? List.of(legacyTopicSupplier, topicSupplier)
+            : List.of(topicSupplier);
+
     final var atomixServerTransport =
-        new AtomixServerTransport(messagingService, requestIdGenerator);
+        new AtomixServerTransport(messagingService, requestIdGenerator, receiveOnTopicSuppliers);
 
     concurrencyControl.runOnCompletion(
         schedulingService.submitActor(atomixServerTransport),

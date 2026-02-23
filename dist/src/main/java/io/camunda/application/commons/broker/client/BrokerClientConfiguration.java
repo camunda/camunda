@@ -14,6 +14,7 @@ import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
 import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.time.Duration;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +24,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 public final class BrokerClientConfiguration {
 
-  private final BrokerClientTimeoutConfiguration config;
+  private final BrokerClientCfg config;
   private final AtomixCluster cluster;
   private final ActorScheduler scheduler;
   private final BrokerTopologyManager topologyManager;
@@ -31,7 +32,7 @@ public final class BrokerClientConfiguration {
 
   @Autowired
   public BrokerClientConfiguration(
-      final BrokerClientTimeoutConfiguration config,
+      final BrokerClientCfg config,
       final AtomixCluster cluster,
       final ActorScheduler scheduler,
       final BrokerTopologyManager topologyManager,
@@ -45,6 +46,11 @@ public final class BrokerClientConfiguration {
 
   @Bean(destroyMethod = "close")
   public BrokerClient brokerClient() {
+    final TopicSupplier sendingTopicSupplier =
+        config.sendOnLegacySubject()
+            ? TopicSupplier.withLegacyTopicName()
+            : TopicSupplier.withPrefix(config.engineName());
+
     final var brokerClient =
         new BrokerClientImpl(
             config.requestTimeout(),
@@ -52,10 +58,12 @@ public final class BrokerClientConfiguration {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            metrics);
+            metrics,
+            sendingTopicSupplier);
     brokerClient.start().forEach(ActorFuture::join);
     return brokerClient;
   }
 
-  public record BrokerClientTimeoutConfiguration(Duration requestTimeout) {}
+  public record BrokerClientCfg(
+      Duration requestTimeout, boolean sendOnLegacySubject, String engineName) {}
 }

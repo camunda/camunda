@@ -47,11 +47,14 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
+import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ForkJoinPool;
@@ -541,36 +544,35 @@ public final class ProcessInstanceServiceTest {
   @Test
   void shouldDeleteProcessInstanceWithResult() {
     // given
-    final long batchOperationKey = 1L;
     final long processInstanceKey = 123L;
-    final var record = new BatchOperationCreationRecord();
-    record.setBatchOperationKey(batchOperationKey);
-    record.setBatchOperationType(BatchOperationType.DELETE_PROCESS_INSTANCE);
+    final var processId = "processId";
+    final var tenantId = "tenantId";
 
     final var entity = mock(ProcessInstanceEntity.class);
     when(entity.processInstanceKey()).thenReturn(processInstanceKey);
-    when(entity.processDefinitionId()).thenReturn("processId");
+    when(entity.processDefinitionId()).thenReturn(processId);
+    when(entity.tenantId()).thenReturn(tenantId);
     when(processInstanceSearchClient.getProcessInstance(eq(processInstanceKey))).thenReturn(entity);
 
-    final var captor = ArgumentCaptor.forClass(BrokerCreateBatchOperationRequest.class);
+    final var record =
+        new HistoryDeletionRecord()
+            .setResourceKey(processInstanceKey)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setProcessId(processId)
+            .setTenantId(tenantId);
+    final var captor = ArgumentCaptor.forClass(BrokerDeleteHistoryRequest.class);
     when(brokerClient.sendRequest(captor.capture()))
         .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(record)));
 
     // when
-    final var result = services.deleteProcessInstance(processInstanceKey, null).join();
+    services.deleteProcessInstance(processInstanceKey, null).join();
 
     // then
-    assertThat(result.getBatchOperationKey()).isEqualTo(batchOperationKey);
-    assertThat(result.getBatchOperationType())
-        .isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
-
-    // and our request got enriched
-    final var enrichedRecord = captor.getValue().getRequestWriter();
-
-    assertThat(
-            MsgPackConverter.convertToObject(
-                enrichedRecord.getAuthenticationBuffer(), CamundaAuthentication.class))
-        .isEqualTo(authentication);
+    final var brokerRequest = (HistoryDeletionRecord) captor.getValue().getRequestWriter();
+    assertThat(brokerRequest.getResourceKey()).isEqualTo(processInstanceKey);
+    assertThat(brokerRequest.getResourceType()).isEqualTo(HistoryDeletionType.PROCESS_INSTANCE);
+    assertThat(brokerRequest.getProcessId()).isEqualTo(processId);
+    assertThat(brokerRequest.getTenantId()).isEqualTo(tenantId);
   }
 
   @Test
@@ -588,5 +590,121 @@ public final class ProcessInstanceServiceTest {
     assertThatThrownBy(() -> services.deleteProcessInstance(processInstanceKey, null).join())
         .isInstanceOf(ServiceException.class)
         .hasMessage("Process Instance with key '123' not found");
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithResultUsingCustomRequestTimeout() {
+    // given
+    final var request =
+        new ProcessInstanceServices.ProcessInstanceCreateRequest(
+            123L, // processDefinitionKey
+            "", // bpmnProcessId
+            -1, // version
+            null, // variables
+            "<default>", // tenantId
+            true, // awaitCompletion
+            600000L, // requestTimeout (10 minutes)
+            null, // operationReference
+            List.of(), // startInstructions
+            List.of(), // runtimeInstructions
+            List.of(), // fetchVariables
+            null, // tags
+            null // businessId
+            );
+
+    final var mockResponse =
+        new io.camunda.zeebe.protocol.impl.record.value.processinstance
+            .ProcessInstanceResultRecord();
+    when(brokerClient.sendRequest(any(), any(java.time.Duration.class)))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
+
+    // when
+    services.createProcessInstanceWithResult(request).join();
+
+    // then
+    verify(brokerClient)
+        .sendRequest(
+            any(
+                io.camunda.zeebe.gateway.impl.broker.request
+                    .BrokerCreateProcessInstanceWithResultRequest.class),
+            eq(java.time.Duration.ofMillis(600000L)));
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithResultUsingDefaultTimeoutWhenNotProvided() {
+    // given
+    final var request =
+        new ProcessInstanceServices.ProcessInstanceCreateRequest(
+            123L, // processDefinitionKey
+            "", // bpmnProcessId
+            -1, // version
+            null, // variables
+            "<default>", // tenantId
+            true, // awaitCompletion
+            null, // requestTimeout (not provided)
+            null, // operationReference
+            List.of(), // startInstructions
+            List.of(), // runtimeInstructions
+            List.of(), // fetchVariables
+            null, // tags
+            null // businessId
+            );
+
+    final var mockResponse =
+        new io.camunda.zeebe.protocol.impl.record.value.processinstance
+            .ProcessInstanceResultRecord();
+    when(brokerClient.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
+
+    // when
+    services.createProcessInstanceWithResult(request).join();
+
+    // then
+    verify(brokerClient)
+        .sendRequest(
+            any(
+                io.camunda.zeebe.gateway.impl.broker.request
+                    .BrokerCreateProcessInstanceWithResultRequest.class));
+    verify(brokerClient, org.mockito.Mockito.never())
+        .sendRequest(any(), any(java.time.Duration.class));
+  }
+
+  @Test
+  void shouldCreateProcessInstanceWithResultUsingDefaultTimeoutWhenRequestTimeoutIsZero() {
+    // given
+    final var request =
+        new ProcessInstanceServices.ProcessInstanceCreateRequest(
+            123L, // processDefinitionKey
+            "", // bpmnProcessId
+            -1, // version
+            null, // variables
+            "<default>", // tenantId
+            true, // awaitCompletion
+            0L, // requestTimeout explicitly set to zero
+            null, // operationReference
+            List.of(), // startInstructions
+            List.of(), // runtimeInstructions
+            List.of(), // fetchVariables
+            null, // tags
+            null // businessId
+            );
+
+    final var mockResponse =
+        new io.camunda.zeebe.protocol.impl.record.value.processinstance
+            .ProcessInstanceResultRecord();
+    when(brokerClient.sendRequest(any()))
+        .thenReturn(CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse)));
+
+    // when
+    services.createProcessInstanceWithResult(request).join();
+
+    // then
+    verify(brokerClient)
+        .sendRequest(
+            any(
+                io.camunda.zeebe.gateway.impl.broker.request
+                    .BrokerCreateProcessInstanceWithResultRequest.class));
+    verify(brokerClient, org.mockito.Mockito.never())
+        .sendRequest(any(), any(java.time.Duration.class));
   }
 }

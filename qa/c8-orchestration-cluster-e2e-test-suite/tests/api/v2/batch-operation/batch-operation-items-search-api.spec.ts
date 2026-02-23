@@ -278,14 +278,8 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
     });
 
     await test.step('Poll process instances can be found', async () => {
-      await expectProcessInstanceCanBeFound(
-        request,
-        processInstanceKey1,
-      );
-      await expectProcessInstanceCanBeFound(
-        request,
-        processInstanceKey2,
-      );
+      await expectProcessInstanceCanBeFound(request, processInstanceKey1);
+      await expectProcessInstanceCanBeFound(request, processInstanceKey2);
     });
 
     await test.step('Create a Batch Operation to Cancel Process Instances', async () => {
@@ -351,11 +345,15 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         expect(body.items.length).toEqual(2);
 
         const item = body.items[0];
-        expect([processInstanceKey1, processInstanceKey2]).toContain(item.itemKey)
+        expect([processInstanceKey1, processInstanceKey2]).toContain(
+          item.itemKey,
+        );
         expect(item.batchOperationKey).toBe(batchOperationKey);
         expect(item.operationType).toBe('CANCEL_PROCESS_INSTANCE');
         expect(item.state).toBeDefined();
-        expect([processInstanceKey1, processInstanceKey2]).toContain(item.processInstanceKey);
+        expect([processInstanceKey1, processInstanceKey2]).toContain(
+          item.processInstanceKey,
+        );
       }).toPass(defaultAssertionOptions);
     });
   });

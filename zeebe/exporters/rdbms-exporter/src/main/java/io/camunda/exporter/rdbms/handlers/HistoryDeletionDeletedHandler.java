@@ -7,8 +7,8 @@
  */
 package io.camunda.exporter.rdbms.handlers;
 
-import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.DECISION_DEFINITION;
 import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.DECISION_INSTANCE;
+import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS;
 import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_DEFINITION;
 import static io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel.PROCESS_INSTANCE;
 
@@ -55,7 +55,7 @@ public record HistoryDeletionDeletedHandler(HistoryDeletionWriter historyDeletio
       case PROCESS_INSTANCE -> PROCESS_INSTANCE;
       case PROCESS_DEFINITION -> PROCESS_DEFINITION;
       case DECISION_INSTANCE -> DECISION_INSTANCE;
-      case DECISION_DEFINITION -> DECISION_DEFINITION;
+      case DECISION_REQUIREMENTS -> DECISION_REQUIREMENTS;
     };
   }
 }

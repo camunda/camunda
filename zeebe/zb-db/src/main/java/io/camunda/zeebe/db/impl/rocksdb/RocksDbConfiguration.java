@@ -43,7 +43,7 @@ public final class RocksDbConfiguration {
 
   public static final int DEFAULT_IO_RATE_BYTES_PER_SECOND = 0;
   public static final MemoryAllocationStrategy DEFAULT_ROCKSDB_MEMORY_ALLOCATION_STRATEGY =
-      MemoryAllocationStrategy.FRACTION;
+      MemoryAllocationStrategy.PARTITION;
   private Properties columnFamilyOptions = new Properties();
   private boolean statisticsEnabled = DEFAULT_STATISTICS_ENABLED;
   private long memoryLimit = DEFAULT_MEMORY_LIMIT;

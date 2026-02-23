@@ -90,6 +90,7 @@ public class JobBatchMetricsExportedHandler
             .orElseThrow();
 
     entity
+        .setPartitionId(record.getPartitionId())
         .setStartTime(
             OffsetDateTime.ofInstant(
                 Instant.ofEpochMilli(jobMetricsBatchRecord.getBatchStartTime()), ZoneOffset.UTC))
@@ -127,9 +128,11 @@ public class JobBatchMetricsExportedHandler
 
   private OffsetDateTime getLastUpdatedAtForStatus(
       final JobMetricsValue jobMetrics, final JobMetricsExportState jobState) {
-    return OffsetDateTime.ofInstant(
-        Instant.ofEpochMilli(
-            jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt()),
-        ZoneOffset.UTC);
+    final long lastUpdatedAt =
+        jobMetrics.getStatusMetrics().get(jobState.getIndex()).getLastUpdatedAt();
+    if (lastUpdatedAt == -1L) {
+      return null;
+    }
+    return OffsetDateTime.ofInstant(Instant.ofEpochMilli(lastUpdatedAt), ZoneOffset.UTC);
   }
 }

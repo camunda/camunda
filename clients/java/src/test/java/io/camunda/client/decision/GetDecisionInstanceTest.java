@@ -40,6 +40,7 @@ public final class GetDecisionInstanceTest extends ClientRestTest {
             .processDefinitionKey("4")
             .processInstanceKey("5")
             .rootDecisionDefinitionKey("6")
+            .rootProcessInstanceKey("7")
             .evaluationDate(OffsetDateTime.now().toString()));
 
     // when

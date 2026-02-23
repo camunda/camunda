@@ -12,6 +12,7 @@ import static java.util.Optional.ofNullable;
 import io.camunda.zeebe.protocol.impl.record.value.jobmetrics.JobMetricsBatchRecord;
 import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
+import io.camunda.zeebe.stream.api.StreamProcessorLifecycleAware;
 import io.camunda.zeebe.stream.api.scheduling.SimpleProcessingScheduleService.ScheduledTask;
 import io.camunda.zeebe.stream.api.scheduling.Task;
 import io.camunda.zeebe.stream.api.scheduling.TaskResult;
@@ -26,7 +27,7 @@ import org.slf4j.LoggerFactory;
  * Task that periodically sends a JOB_METRICS_BATCH EXPORT command to trigger the export of job
  * worker metrics.
  */
-public class JobMetricsCheckScheduler implements Task {
+public class JobMetricsCheckScheduler implements Task, StreamProcessorLifecycleAware {
 
   private static final Logger LOG = LoggerFactory.getLogger(JobMetricsCheckScheduler.class);
 
@@ -71,11 +72,31 @@ public class JobMetricsCheckScheduler implements Task {
     return taskResultBuilder.build();
   }
 
-  public void setProcessingContext(final ReadonlyStreamProcessorContext processingContext) {
+  @Override
+  public void onRecovered(final ReadonlyStreamProcessorContext processingContext) {
     this.processingContext = processingContext;
+    shouldReschedule = true;
+    schedule(true);
   }
 
-  public void setShouldReschedule(final boolean shouldReschedule) {
-    this.shouldReschedule = shouldReschedule;
+  @Override
+  public void onClose() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onFailed() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onPaused() {
+    shouldReschedule = false;
+  }
+
+  @Override
+  public void onResumed() {
+    shouldReschedule = true;
+    schedule(true);
   }
 }

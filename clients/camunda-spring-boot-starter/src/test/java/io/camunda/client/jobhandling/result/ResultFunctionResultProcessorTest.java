@@ -19,14 +19,24 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 
 import io.camunda.client.api.response.ActivatedJob;
-import io.camunda.client.jobhandling.UserTaskResultFunction;
 import org.junit.jupiter.api.Test;
 
 public class ResultFunctionResultProcessorTest {
 
   @Test
-  void shouldReturnResultFunction() {
+  void shouldReturnUserTaskResultFunction() {
     final UserTaskResultFunction resultFunction = r -> r.correctAssignee("demo");
+    final ResultFunctionResultProcessor resultFunctionResultProcessor =
+        new ResultFunctionResultProcessor();
+    final Object processedResult =
+        resultFunctionResultProcessor.process(
+            new ResultProcessorContext(resultFunction, mock(ActivatedJob.class)));
+    assertThat(processedResult).isEqualTo(resultFunction);
+  }
+
+  @Test
+  void shouldReturnAdHocSubprocessResultFunction() {
+    final AdHocSubProcessResultFunction resultFunction = r -> r.activateElement("example");
     final ResultFunctionResultProcessor resultFunctionResultProcessor =
         new ResultFunctionResultProcessor();
     final Object processedResult =

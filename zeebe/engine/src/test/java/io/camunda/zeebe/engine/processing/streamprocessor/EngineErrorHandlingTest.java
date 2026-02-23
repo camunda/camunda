@@ -211,14 +211,17 @@ public final class EngineErrorHandlingTest {
                   .onCommand(
                       ValueType.PROCESS_INSTANCE,
                       ProcessInstanceIntent.ACTIVATE_ELEMENT,
-                      record -> {
-                        processingContext
-                            .getWriters()
-                            .state()
-                            .appendFollowUpEvent(
-                                keyGenerator.getCurrentKey() + 1000,
-                                ProcessInstanceIntent.ELEMENT_ACTIVATED,
-                                record.getValue());
+                      new TypedRecordProcessor<UnifiedRecordValue>() {
+                        @Override
+                        public void processRecord(final TypedRecord<UnifiedRecordValue> record) {
+                          processingContext
+                              .getWriters()
+                              .state()
+                              .appendFollowUpEvent(
+                                  keyGenerator.getCurrentKey() + 1000,
+                                  ProcessInstanceIntent.ELEMENT_ACTIVATED,
+                                  record.getValue());
+                        }
                       });
             });
     final AtomicReference<HealthReport> reportRef = new AtomicReference<>();

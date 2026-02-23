@@ -43,9 +43,12 @@
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"
     resultType="long">
-    SELECT COUNT(*)
-    FROM ${prefix}MAPPING_RULES m
-    <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}MAPPING_RULES m
+      <include refid="io.camunda.db.rdbms.sql.MappingRuleMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.MappingRuleDbQuery"

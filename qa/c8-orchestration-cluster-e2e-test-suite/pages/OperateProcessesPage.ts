@@ -69,6 +69,7 @@ class OperateProcessesPage {
       | 'Cancel Process Instance',
   ) => Locator;
   readonly processCouldNotBeFoundMessage: Locator;
+  readonly goToOperationDetailsButton: Locator;
 
   constructor(page: Page) {
     this.page = page;
@@ -151,8 +152,8 @@ class OperateProcessesPage {
       .locator('label')
       .filter({hasText: 'Incidents'});
     this.processFinishedInstancesCheckbox = page
-      .getByTestId('filter-finished-instances')
-      .getByRole('checkbox');
+      .locator('label')
+      .filter({hasText: 'Finished Instances'});
     this.dataList = page.getByTestId('data-list');
     this.continueButton = page.getByRole('button', {name: 'continue'});
     this.processInstancesPanel = page.getByRole('region', {
@@ -200,6 +201,9 @@ class OperateProcessesPage {
     this.processCouldNotBeFoundMessage = this.page
       .getByRole('status')
       .getByText('Process could not be found');
+    this.goToOperationDetailsButton = this.page.getByText(
+      'Go to operation details',
+    );
   }
 
   async filterByProcessName(name: string): Promise<void> {
@@ -418,30 +422,6 @@ class OperateProcessesPage {
     ).toBeVisible();
   }
 
-  async clickProcessActiveCheckbox(): Promise<void> {
-    await this.processActiveCheckbox.click();
-  }
-
-  async clickProcessCompletedCheckbox(): Promise<void> {
-    await this.processCompletedCheckbox.click({timeout: 120000});
-  }
-
-  async clickProcessCanceledCheckbox(): Promise<void> {
-    await this.processCanceledCheckbox.click({timeout: 120000});
-  }
-
-  async clickProcessIncidentsCheckbox(): Promise<void> {
-    await this.processIncidentsCheckbox.click({timeout: 90000});
-  }
-
-  async clickRunningProcessInstancesCheckbox(): Promise<void> {
-    await this.processRunningInstancesCheckbox.click({timeout: 90000});
-  }
-
-  async clickFinishedProcessInstancesCheckbox(): Promise<void> {
-    await this.processFinishedInstancesCheckbox.click({timeout: 90000});
-  }
-
   async clickMigrateButton(): Promise<void> {
     await this.migrateButton.click();
   }
@@ -464,6 +444,16 @@ class OperateProcessesPage {
       .getByRole('row')
       .nth(index + 1) // +1 to skip header row
       .getByRole('checkbox');
+  }
+
+  async scrollUntilElementIsVisible(locator: Locator): Promise<void> {
+    while (!(await locator.isVisible())) {
+      await this.page.mouse.wheel(0, 600);
+    }
+  }
+
+  async clickGoToOperationDetailsButton(): Promise<void> {
+    await this.goToOperationDetailsButton.click();
   }
 }
 

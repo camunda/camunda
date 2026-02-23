@@ -119,6 +119,7 @@
       <field name="checkpointType" id="3"  type="uint8"/>
       <field name="checkpointPosition" id="4"  type="uint64"/>
       <field name="checkpointTimestamp" id="5"  type="uint64"/>
+      <field name="firstLogPosition" id="6"  type="int64"/>
     </group>
   </sbe:message>
 

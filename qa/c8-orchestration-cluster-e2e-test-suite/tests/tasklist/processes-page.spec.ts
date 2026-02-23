@@ -118,8 +118,8 @@ test.describe('process page', () => {
     await waitForAssertion({
       assertion: async () => {
         await expect(
-          taskPanelPage.availableTasks.getByText('User_Task').first())
-        .toBeVisible();
+          taskPanelPage.availableTasks.getByText('User_Task').first(),
+        ).toBeVisible();
       },
       onFailure: async () => {
         page.reload();

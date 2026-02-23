@@ -18,6 +18,7 @@ import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.DecisionRequirementsDbReader;
 import io.camunda.db.rdbms.read.service.FlowNodeInstanceDbReader;
 import io.camunda.db.rdbms.read.service.FormDbReader;
+import io.camunda.db.rdbms.read.service.GlobalListenerDbReader;
 import io.camunda.db.rdbms.read.service.GroupDbReader;
 import io.camunda.db.rdbms.read.service.GroupMemberDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
@@ -25,6 +26,7 @@ import io.camunda.db.rdbms.read.service.IncidentDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByDefinitionDbReader;
 import io.camunda.db.rdbms.read.service.IncidentProcessInstanceStatisticsByErrorDbReader;
 import io.camunda.db.rdbms.read.service.JobDbReader;
+import io.camunda.db.rdbms.read.service.JobMetricsBatchDbReader;
 import io.camunda.db.rdbms.read.service.MappingRuleDbReader;
 import io.camunda.db.rdbms.read.service.MessageSubscriptionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessDefinitionDbReader;
@@ -77,6 +79,7 @@ public class RdbmsService {
   private final SequenceFlowDbReader sequenceFlowReader;
   private final BatchOperationItemDbReader batchOperationItemReader;
   private final JobDbReader jobReader;
+  private final JobMetricsBatchDbReader jobMetricsBatchDbReader;
   private final UsageMetricsDbReader usageMetricReader;
   private final UsageMetricTUDbReader usageMetricTUDbReader;
   private final MessageSubscriptionDbReader messageSubscriptionReader;
@@ -92,6 +95,7 @@ public class RdbmsService {
       incidentProcessInstanceStatisticsByErrorDbReader;
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader
       incidentProcessInstanceStatisticsByDefinitionDbReader;
+  private final GlobalListenerDbReader globalListenerDbReader;
 
   public RdbmsService(
       final RdbmsWriterFactory rdbmsWriterFactory,
@@ -120,6 +124,7 @@ public class RdbmsService {
       final SequenceFlowDbReader sequenceFlowReader,
       final BatchOperationItemDbReader batchOperationItemReader,
       final JobDbReader jobReader,
+      final JobMetricsBatchDbReader jobMetricsBatchDbReader,
       final UsageMetricsDbReader usageMetricReader,
       final UsageMetricTUDbReader usageMetricTUDbReader,
       final MessageSubscriptionDbReader messageSubscriptionReader,
@@ -133,7 +138,8 @@ public class RdbmsService {
       final IncidentProcessInstanceStatisticsByErrorDbReader
           incidentProcessInstanceStatisticsByErrorDbReader,
       final IncidentProcessInstanceStatisticsByDefinitionDbReader
-          incidentProcessInstanceStatisticsByDefinitionDbReader) {
+          incidentProcessInstanceStatisticsByDefinitionDbReader,
+      final GlobalListenerDbReader globalListenerDbReader) {
     this.rdbmsWriterFactory = rdbmsWriterFactory;
     this.auditLogReader = auditLogReader;
     this.authorizationReader = authorizationReader;
@@ -160,6 +166,7 @@ public class RdbmsService {
     this.sequenceFlowReader = sequenceFlowReader;
     this.batchOperationItemReader = batchOperationItemReader;
     this.jobReader = jobReader;
+    this.jobMetricsBatchDbReader = jobMetricsBatchDbReader;
     this.usageMetricReader = usageMetricReader;
     this.usageMetricTUDbReader = usageMetricTUDbReader;
     this.messageSubscriptionReader = messageSubscriptionReader;
@@ -174,6 +181,7 @@ public class RdbmsService {
         incidentProcessInstanceStatisticsByErrorDbReader;
     this.incidentProcessInstanceStatisticsByDefinitionDbReader =
         incidentProcessInstanceStatisticsByDefinitionDbReader;
+    this.globalListenerDbReader = globalListenerDbReader;
   }
 
   public AuthorizationDbReader getAuthorizationReader() {
@@ -284,6 +292,10 @@ public class RdbmsService {
     return jobReader;
   }
 
+  public JobMetricsBatchDbReader getJobMetricsBatchDbReader() {
+    return jobMetricsBatchDbReader;
+  }
+
   public MessageSubscriptionDbReader getMessageSubscriptionReader() {
     return messageSubscriptionReader;
   }
@@ -323,6 +335,10 @@ public class RdbmsService {
   public IncidentProcessInstanceStatisticsByDefinitionDbReader
       getIncidentProcessInstanceStatisticsByDefinitionReader() {
     return incidentProcessInstanceStatisticsByDefinitionDbReader;
+  }
+
+  public GlobalListenerDbReader getGlobalListenerDbReader() {
+    return globalListenerDbReader;
   }
 
   public RdbmsWriters createWriter(final RdbmsWriterConfig config) {

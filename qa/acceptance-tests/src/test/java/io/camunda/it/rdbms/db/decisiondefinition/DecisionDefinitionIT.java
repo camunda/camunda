@@ -185,6 +185,32 @@ public class DecisionDefinitionIT {
   }
 
   @TestTemplate
+  public void shouldFindAllPagedWithHasMoreHits(final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionDefinitionDbReader decisionDefinitionReader =
+        rdbmsService.getDecisionDefinitionReader();
+
+    final String decisionDefinitionId = DecisionDefinitionFixtures.nextStringId();
+    createAndSaveRandomDecisionDefinitions(
+        rdbmsWriters, 120, b -> b.decisionDefinitionId(decisionDefinitionId));
+
+    final var searchResult =
+        decisionDefinitionReader.search(
+            new DecisionDefinitionQuery(
+                new DecisionDefinitionFilter.Builder()
+                    .decisionDefinitionIds(decisionDefinitionId)
+                    .build(),
+                DecisionDefinitionSort.of(b -> b),
+                SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllPageValuesAreNull(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);

@@ -123,10 +123,6 @@ public class OidcAuthenticationConfigurationTest {
             OidcAuthenticationConfiguration.builder().build(),
             false),
         Arguments.of(
-            "idpLogoutEnabled is set",
-            OidcAuthenticationConfiguration.builder().idpLogoutEnabled(false).build(),
-            true),
-        Arguments.of(
             "issuerUri is set",
             OidcAuthenticationConfiguration.builder().issuerUri("issuer").build(),
             true),
@@ -263,10 +259,6 @@ public class OidcAuthenticationConfigurationTest {
         Arguments.of(
             "default scope is set",
             OidcAuthenticationConfiguration.builder().scope(List.of("openid", "profile")).build(),
-            false),
-        Arguments.of(
-            "default for idpLogoutEnabled is set",
-            OidcAuthenticationConfiguration.builder().idpLogoutEnabled(true).build(),
             false),
         Arguments.of(
             "default clientAuthenticationMethod is set",

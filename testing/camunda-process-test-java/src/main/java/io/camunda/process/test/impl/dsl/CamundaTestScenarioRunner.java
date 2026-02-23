@@ -39,6 +39,7 @@ import io.camunda.process.test.impl.dsl.instructions.CompleteJobAdHocSubProcessI
 import io.camunda.process.test.impl.dsl.instructions.CompleteJobInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CompleteJobUserTaskListenerInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CompleteUserTaskInstructionHandler;
+import io.camunda.process.test.impl.dsl.instructions.CorrelateMessageInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.CreateProcessInstanceInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.EvaluateConditionalStartEventInstructionHandler;
 import io.camunda.process.test.impl.dsl.instructions.EvaluateDecisionInstructionHandler;
@@ -91,6 +92,7 @@ public class CamundaTestScenarioRunner implements TestScenarioRunner {
     registerHandler(new MockJobWorkerCompleteJobInstructionHandler());
     registerHandler(new MockJobWorkerThrowBpmnErrorInstructionHandler());
     registerHandler(new PublishMessageInstructionHandler());
+    registerHandler(new CorrelateMessageInstructionHandler());
     registerHandler(new ResolveIncidentInstructionHandler());
     registerHandler(new SetTimeInstructionHandler());
     registerHandler(new ThrowBpmnErrorFromJobInstructionHandler());

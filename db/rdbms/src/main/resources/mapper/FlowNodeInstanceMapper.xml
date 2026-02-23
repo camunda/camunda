@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}FLOW_NODE_INSTANCE fni
-    <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}FLOW_NODE_INSTANCE fni
+      <include refid="io.camunda.db.rdbms.sql.FlowNodeInstanceMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->
@@ -248,6 +251,12 @@
     <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
     <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'FLOW_NODE_INSTANCE'"/>
+    <bind name="primaryKeyColumn" value="'FLOW_NODE_INSTANCE_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
 </mapper>

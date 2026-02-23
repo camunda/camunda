@@ -21,6 +21,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.DateUtil;
 import io.camunda.zeebe.util.VisibleForTesting;
+import java.util.Optional;
 
 /**
  * Abstract base class for handling the status of batch operation items. Subclasses of this class
@@ -76,7 +77,8 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
         new BatchOperationItemDbModel(
             String.valueOf(record.getBatchOperationReference()),
             getItemKey(record),
-            getProcessInstanceKey(record),
+            getProcessInstanceKey(record).orElse(null),
+            getRootProcessInstanceKey(record).orElse(null),
             state,
             DateUtil.toOffsetDateTime(record.getTimestamp()),
             errorMessage));
@@ -121,7 +123,15 @@ public abstract class RdbmsBatchOperationStatusExportHandler<T extends RecordVal
    * @param record the record
    * @return the process instance key
    */
-  abstract long getProcessInstanceKey(Record<T> record);
+  abstract Optional<Long> getProcessInstanceKey(Record<T> record);
+
+  /**
+   * Extract the root process instance key from the record.
+   *
+   * @param record the record
+   * @return the root process instance key
+   */
+  abstract Optional<Long> getRootProcessInstanceKey(Record<T> record);
 
   /** Checks if the batch operation item is completed */
   abstract boolean isCompleted(Record<T> record);

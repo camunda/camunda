@@ -12,8 +12,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.SequencedCollection;
 import java.util.function.Function;
+import org.jspecify.annotations.NullMarked;
 
 /**
  * Represents a generic range with a start and end value, with configurable inclusiveness for each
@@ -25,6 +25,7 @@ import java.util.function.Function;
  * @param end the last value in the range
  * @param endInclusive whether the end bound is inclusive
  */
+@NullMarked
 public record Interval<T extends Comparable<T>>(
     T start, boolean startInclusive, T end, boolean endInclusive) {
 
@@ -104,6 +105,40 @@ public record Interval<T extends Comparable<T>>(
     return new Interval<>(start, false, end, true);
   }
 
+  public static <T extends Comparable<T>> Interval<T> point(final T value) {
+    return Interval.closed(value, value);
+  }
+
+  /**
+   * Creates a new Interval instance with the specified end value.
+   *
+   * @param newEnd The new end value for the interval.
+   * @return A new Interval instance with the updated end value, while preserving the start, start
+   *     inclusion, and end inclusion properties of the original interval.
+   */
+  public Interval<T> withEnd(final T newEnd) {
+    return new Interval<>(start, startInclusive, newEnd, endInclusive);
+  }
+
+  /**
+   * Creates a new Interval instance with a specified start value while preserving the other
+   * properties of the original interval.
+   *
+   * @param newStart the new start value for the interval
+   * @return a new Interval instance with the updated start value
+   */
+  public Interval<T> withStart(final T newStart) {
+    return new Interval<>(newStart, startInclusive, end, endInclusive);
+  }
+
+  public Interval<T> withStartInclusive(final boolean startInclusive) {
+    return new Interval<>(start, startInclusive, end, endInclusive);
+  }
+
+  public Interval<T> withEndInclusive(final boolean endInclusive) {
+    return new Interval<>(start, startInclusive, end, endInclusive);
+  }
+
   /**
    * Computes the intersection of all intervals in the collection. The intersection is the largest
    * interval that is contained by all input intervals.
@@ -165,6 +200,111 @@ public record Interval<T extends Comparable<T>>(
   }
 
   /**
+   * Convenience overload of {@link #smallestCover(List, Function)} that uses the identity mapper.
+   *
+   * @see #smallestCover(List, Function)
+   */
+  public List<T> smallestCover(final List<T> sortedPoints) {
+    return smallestCover(sortedPoints, Function.identity());
+  }
+
+  /**
+   * Returns the smallest subset of sorted points that covers this interval, using a mapper function
+   * to extract the comparable value from each point.
+   *
+   * <p>The result includes:
+   *
+   * <ul>
+   *   <li>All points whose mapped value falls within this interval.
+   *   <li>The last point before the interval start, if no point has an exact match at the start
+   *       boundary.
+   *   <li>The first point after the interval end, if no point has an exact match at the end
+   *       boundary.
+   * </ul>
+   *
+   * <p>A valid cover requires at least one point at or before the interval start and at least one
+   * point at or after the interval end. If the points cannot cover the interval, an empty list is
+   * returned.
+   *
+   * <p>Examples:
+   *
+   * <ul>
+   *   <li>Interval [3, 7], points [1, 3, 5, 7, 9] &rarr; [3, 5, 7] (exact matches at both
+   *       boundaries)
+   *   <li>Interval [4, 6], points [1, 3, 5, 7, 9] &rarr; [3, 5, 7] (3 is last before 4, 7 is first
+   *       after 6)
+   *   <li>Interval [4, 6], points [1, 3, 7, 9] &rarr; [3, 7] (no points within, neighbors cover)
+   *   <li>Interval [10, 20], points [1, 3, 5] &rarr; [] (no coverage at end)
+   * </ul>
+   *
+   * <p>This is useful when the points are of a different type than the interval bounds. For
+   * example, you might have a list of {@code BackupStatus} objects but want to query using an
+   * {@code Interval<Instant>} by mapping each backup status to its timestamp.
+   *
+   * @param sortedPoints the points in strictly ascending order with no duplicates (by the mapped
+   *     value)
+   * @param mapper function to extract the comparable value from each point
+   * @return the subset of points that covers this interval, or empty if no cover exists
+   * @param <S> the type of the points
+   */
+  public <S> List<S> smallestCover(final List<S> sortedPoints, final Function<S, T> mapper) {
+    S lastBefore = null;
+    S firstAfter = null;
+    final var within = new ArrayList<S>();
+
+    T previousValue = null;
+    for (final var point : sortedPoints) {
+      final var value = mapper.apply(point);
+      if (previousValue != null && value.compareTo(previousValue) <= 0) {
+        throw new IllegalArgumentException(
+            "Points must be strictly sorted in ascending order with no duplicates, but found %s after %s"
+                .formatted(value, previousValue));
+      }
+      previousValue = value;
+      if (value.compareTo(start) < 0) {
+        lastBefore = point;
+      } else if (value.compareTo(end) > 0) {
+        if (firstAfter == null) {
+          firstAfter = point;
+        }
+      } else {
+        within.add(point);
+      }
+    }
+
+    // A valid cover requires at least one point at-or-before start
+    // and at least one point at-or-after end
+    final var hasStartCoverage =
+        lastBefore != null
+            || (!within.isEmpty() && mapper.apply(within.getFirst()).compareTo(start) <= 0);
+    final var hasEndCoverage =
+        firstAfter != null
+            || (!within.isEmpty() && mapper.apply(within.getLast()).compareTo(end) >= 0);
+
+    if (!hasStartCoverage || !hasEndCoverage) {
+      return List.of();
+    }
+
+    final var result = new ArrayList<S>();
+
+    // Include last point before start if no point has an exact match at start
+    if (lastBefore != null
+        && (within.isEmpty() || mapper.apply(within.getFirst()).compareTo(start) != 0)) {
+      result.add(lastBefore);
+    }
+
+    result.addAll(within);
+
+    // Include first point after end if no point has an exact match at end
+    if (firstAfter != null
+        && (within.isEmpty() || mapper.apply(within.getLast()).compareTo(end) != 0)) {
+      result.add(firstAfter);
+    }
+
+    return result;
+  }
+
+  /**
    * @param other interval to check
    * @return true if this interval completely covers the other interval
    */
@@ -190,6 +330,33 @@ public record Interval<T extends Comparable<T>>(
   }
 
   /**
+   * Checks if a value is contained in this interval by mapping the interval bounds to a comparable
+   * type.
+   *
+   * @param value the value to check
+   * @param mapper function to map interval bounds to the comparable type
+   * @return true if the value is within the mapped interval
+   * @param <U> the comparable type to map to
+   */
+  public <U extends Comparable<U>> boolean contains(final U value, final Function<T, U> mapper) {
+    return map(mapper).contains(value);
+  }
+
+  /**
+   * Checks if another interval is completely contained in this interval by mapping both intervals
+   * to a comparable type.
+   *
+   * @param other the interval to check
+   * @param mapper function to map interval bounds to the comparable type
+   * @return true if the other interval is completely within the mapped interval
+   * @param <U> the comparable type to map to
+   */
+  public <U extends Comparable<U>> boolean contains(
+      final Interval<U> other, final Function<T, U> mapper) {
+    return map(mapper).contains(other);
+  }
+
+  /**
    * @param other interval to check
    * @return true if this interval is entirely before the other (no overlap)
    */
@@ -212,38 +379,6 @@ public record Interval<T extends Comparable<T>>(
    */
   public boolean overlapsWith(final Interval<T> other) {
     return !isBefore(other) && !isAfter(other);
-  }
-
-  /**
-   * Given a sorted collections of intervals where interval[n-1].end == interval[n].start, returns
-   * the smallest subset of contiguous intervals from the input that cover this interval's
-   * overlapping region.
-   *
-   * @param intervals the collection of contiguous intervals
-   * @return the intervals that overlap with this interval
-   */
-  public SequencedCollection<Interval<T>> smallestCover(
-      final SequencedCollection<Interval<T>> intervals) {
-    final var result = new ArrayList<Interval<T>>();
-    Interval<T> previousInterval = null;
-    var i = 0;
-    for (final var interval : intervals) {
-      if (previousInterval != null && !areContiguous(previousInterval, interval)) {
-        throw new IllegalArgumentException(
-            "Expected intervals to be contiguous, but interval at index %d is %s, interval at index %d is %s"
-                .formatted(i - 1, previousInterval, i, interval));
-      }
-      if (interval.overlapsWith(this)) {
-        result.add(interval);
-      }
-      previousInterval = interval;
-      i++;
-    }
-    return result;
-  }
-
-  public SequencedCollection<T> values() {
-    return List.of(start, end);
   }
 
   /**
@@ -293,20 +428,5 @@ public record Interval<T extends Comparable<T>>(
       return 0;
     }
     return inclusive1 ? inclusiveSign : -inclusiveSign;
-  }
-
-  /**
-   * Checks if two intervals are contiguous (meet at a boundary point without gap).
-   *
-   * @return true if the intervals are contiguous
-   */
-  private static <T extends Comparable<T>> boolean areContiguous(
-      final Interval<T> first, final Interval<T> second) {
-    // Contiguous means end == start and at least one bound is inclusive (no gap)
-    // [a, b] and [b, c] - both inclusive, contiguous (overlap at b is ok)
-    // [a, b) and [b, c] - first exclusive, second inclusive, contiguous
-    // [a, b] and (b, c] - first inclusive, second exclusive, contiguous
-    // [a, b) and (b, c] - both exclusive, NOT contiguous (gap at b)
-    return first.end.compareTo(second.start) == 0 && (first.endInclusive || second.startInclusive);
   }
 }

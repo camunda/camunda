@@ -237,7 +237,7 @@ paths:
 
   /process-instances/{processInstanceKey}/incident-resolution:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: resolveProcessInstanceIncidents
@@ -311,7 +311,7 @@ paths:
 
   /process-instances/cancellation:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: cancelProcessInstancesBatchOperation
@@ -351,7 +351,7 @@ paths:
 
   /process-instances/incident-resolution:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: resolveIncidentsBatchOperation
@@ -391,7 +391,7 @@ paths:
 
   /process-instances/migration:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: migrateProcessInstancesBatchOperation
@@ -431,7 +431,7 @@ paths:
 
   /process-instances/modification:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: modifyProcessInstancesBatchOperation
@@ -473,7 +473,7 @@ paths:
 
   /process-instances/{processInstanceKey}/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: deleteProcessInstance
@@ -493,12 +493,8 @@ paths:
             schema:
               $ref: '#/components/schemas/DeleteProcessInstanceRequest'
       responses:
-        "200":
-          description: The operation to delete the process instance was created.
-          content:
-            application/json:
-              schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "204":
+          description: The process instance is marked for deletion.
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
@@ -522,7 +518,7 @@ paths:
 
   /process-instances/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Process instance
       operationId: deleteProcessInstancesBatchOperation
@@ -778,6 +774,8 @@ components:
           default: 0
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceCreationInstructionByKey:
       type: object
@@ -792,6 +790,13 @@ components:
           description: |
             The unique key identifying the process definition, for example, returned for a process in the
             deploy resources endpoint.
+        processDefinitionVersion:
+          description: |
+            As the version is already identified by the `processDefinitionKey`, the value of this field is ignored.
+            It's here for backwards-compatibility only as previous releases accepted it in request bodies.
+          type: integer
+          format: int32
+          default: -1
         variables:
           description: |
             JSON object that will instantiate the variables for the root variable scope
@@ -846,6 +851,8 @@ components:
             type: string
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceCreationStartInstruction:
       type: object
@@ -899,6 +906,7 @@ components:
         - tenantId
         - variables
         - processInstanceKey
+        - tags
       type: object
       properties:
         processDefinitionId:
@@ -936,6 +944,11 @@ components:
             needs a process instance key (e.g. CancelProcessInstanceRequest).
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          nullable: true
+          description: Business id as provided on creation.
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     ProcessInstanceSearchQuerySortRequest:
       type: object
@@ -1180,28 +1193,40 @@ components:
         - processDefinitionId
         - processDefinitionName
         - processDefinitionVersion
+        - processDefinitionVersionTag
         - startDate
+        - endDate
         - state
         - hasIncident
         - tenantId
         - processInstanceKey
         - processDefinitionKey
+        - parentProcessInstanceKey
+        - parentElementInstanceKey
+        - rootProcessInstanceKey
+        - tags
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
         processDefinitionName:
           type: string
+          nullable: true
           description: The process definition name.
         processDefinitionVersion:
           type: integer
           format: int32
+          description: The process definition version.
         processDefinitionVersionTag:
-          type: string
           description: The process definition version tag.
+          nullable: true
+          type: string
         startDate:
           type: string
           format: date-time
+          description: The start time of the process instance.
         endDate:
+          description: The completion or termination time of the process instance.
+          nullable: true
           type: string
           format: date-time
         state:
@@ -1220,13 +1245,23 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The process definition key.
         parentProcessInstanceKey:
+          description: The parent process instance key.
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
-          description: The parent process instance key.
         parentElementInstanceKey:
+          description: The parent element instance key.
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
-          description: The parent element instance key.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
@@ -1267,6 +1302,8 @@ components:
 
     ProcessInstanceSequenceFlowsQueryResult:
       description: Process instance sequence flows query response.
+      required:
+        - items
       type: object
       properties:
         items:
@@ -1278,6 +1315,8 @@ components:
     ProcessInstanceSequenceFlowResult:
       description: Process instance sequence flow result.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         sequenceFlowId:
           type: string
@@ -1286,6 +1325,14 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of this process instance.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
@@ -1303,6 +1350,8 @@ components:
 
     ProcessInstanceElementStatisticsQueryResult:
       description: Process instance element statistics query response.
+      required:
+        - items
       type: object
       properties:
         items:
@@ -1477,8 +1526,8 @@ components:
     SourceElementInstanceKeyInstruction:
       type: object
       description: |
-       Defines an instruction with a sourceElementInstanceKey. The move instruction with this sourceType will terminate one active element
-       instance with the sourceElementInstanceKey and activate a new element instance at targetElementId.
+        Defines an instruction with a sourceElementInstanceKey. The move instruction with this sourceType will terminate one active element
+        instance with the sourceElementInstanceKey and activate a new element instance at targetElementId.
       properties:
         sourceType:
           description: The type of source element instruction.

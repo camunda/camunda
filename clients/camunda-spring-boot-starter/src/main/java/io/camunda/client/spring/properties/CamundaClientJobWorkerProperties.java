@@ -18,12 +18,14 @@ package io.camunda.client.spring.properties;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_POLL_INTERVAL;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_NAME_VAR;
+import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_FILTER;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_JOB_WORKER_TENANT_IDS;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_MAX_JOBS_ACTIVE;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_REQUEST_TIMEOUT;
 import static io.camunda.client.impl.CamundaClientBuilderImpl.DEFAULT_STREAM_ENABLED;
 import static io.camunda.client.impl.worker.JobWorkerBuilderImpl.DEFAULT_STREAMING_TIMEOUT;
 
+import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.List;
 
@@ -74,6 +76,12 @@ public class CamundaClientJobWorkerProperties {
    */
   private List<String> tenantIds;
 
+  /**
+   * Sets the tenant filter for the job worker, which determines how the worker considers tenant IDs
+   * when activating jobs.
+   */
+  private TenantFilter tenantFilter;
+
   /** Sets whether all variables are fetched. Overrides `fetch-variables`. */
   private Boolean forceFetchAllVariables;
 
@@ -117,6 +125,7 @@ public class CamundaClientJobWorkerProperties {
   public CamundaClientJobWorkerProperties(final boolean initWithDefaults) {
     if (initWithDefaults) {
       tenantIds = DEFAULT_JOB_WORKER_TENANT_IDS;
+      tenantFilter = DEFAULT_JOB_WORKER_TENANT_FILTER;
       timeout = DEFAULT_JOB_TIMEOUT;
       maxJobsActive = DEFAULT_MAX_JOBS_ACTIVE;
       pollInterval = DEFAULT_JOB_POLL_INTERVAL;
@@ -210,6 +219,14 @@ public class CamundaClientJobWorkerProperties {
 
   public void setTenantIds(final List<String> tenantIds) {
     this.tenantIds = tenantIds;
+  }
+
+  public TenantFilter getTenantFilter() {
+    return tenantFilter;
+  }
+
+  public void setTenantFilter(final TenantFilter tenantFilter) {
+    this.tenantFilter = tenantFilter;
   }
 
   public Boolean getForceFetchAllVariables() {

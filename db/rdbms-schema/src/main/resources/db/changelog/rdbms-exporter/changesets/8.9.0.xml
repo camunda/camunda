@@ -324,6 +324,10 @@
     <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_DEFINITION_ID">
       <column name="DECISION_DEFINITION_ID"/>
     </createIndex>
+
+    <createIndex tableName="${prefix}DECISION_DEFINITION" indexName="${prefix}IDX_DECISION_REQUIREMENTS_KEY">
+      <column name="DECISION_REQUIREMENTS_KEY"/>
+    </createIndex>
   </changeSet>
 
   <changeSet id="create_decision_requirements_table" author="camunda">
@@ -634,10 +638,19 @@
         <constraints primaryKey="true" nullable="false"/>
       </column>
       <column name="PROCESS_INSTANCE_KEY" type="BIGINT"/>
+      <column name="ROOT_PROCESS_INSTANCE_KEY" type="BIGINT"/>
       <column name="PROCESSED_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="ERROR_MESSAGE" type="VARCHAR(${errorMessageSize})"/>
       <column name="STATE" type="VARCHAR(20)" defaultValue="ACTIVE"/>
     </createTable>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_PI_KEY">
+      <column name="PROCESS_INSTANCE_KEY"/>
+    </createIndex>
+
+    <createIndex tableName="${prefix}BATCH_OPERATION_ITEM" indexName="${prefix}IDX_BATCH_OPERATION_ITEM_RPI_KEY">
+      <column name="ROOT_PROCESS_INSTANCE_KEY"/>
+    </createIndex>
 
     <createTable tableName="${prefix}BATCH_OPERATION_ERROR">
       <column name="BATCH_OPERATION_KEY" type="VARCHAR(255)">
@@ -970,7 +983,7 @@
       <column name="RESOURCE_KEY" type="BIGINT"/>
       <column name="RELATED_ENTITY_TYPE" type="VARCHAR(50)"/>
       <column name="RELATED_ENTITY_KEY" type="VARCHAR(${userCharColumnSize})"/>
-      <column name="ENTITY_DESCRIPTION" type="VARCHAR(255)"/>
+      <column name="ENTITY_DESCRIPTION" type="VARCHAR(${userCharColumnSize})"/>
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
     </createTable>
@@ -1065,6 +1078,7 @@
       <column name="JOB_METRICS_BATCH_KEY" type="VARCHAR(255)">
         <constraints primaryKey="true"/>
       </column>
+      <column name="PARTITION_ID" type="NUMBER"/>
       <column name="START_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="END_TIME" type="TIMESTAMP WITH TIME ZONE(3)"/>
       <column name="INCOMPLETE_BATCH" type="BOOLEAN"/>
@@ -1079,6 +1093,23 @@
       <column name="WORKER" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
+    <!-- Index for global job statistics queries filtering by tenant and time range -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_TENANT_TIME">
+      <column name="TENANT_ID"/>
+      <column name="START_TIME"/>
+      <column name="END_TIME"/>
+    </createIndex>
+
+    <!-- Index for cleanup operations filtering by end time -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_END_TIME">
+      <column name="END_TIME"/>
+    </createIndex>
+
+    <!-- Index for filtering by job type -->
+    <createIndex tableName="${prefix}JOB_METRICS_BATCH" indexName="${prefix}IDX_JOB_METRICS_BATCH_JOB_TYPE">
+      <column name="JOB_TYPE"/>
+    </createIndex>
+
     <modifySql dbms="mariadb,mysql">
       <!-- MariaDB doesn't support TIMESTAMP WITH TIME ZONE, but its TIMESTAMP type has already a time zone -->
       <replace replace="TIMESTAMP WITH TIME ZONE" with="TIMESTAMP"/>
@@ -1086,6 +1117,148 @@
     <modifySql dbms="mssql">
       <replace replace="datetime2" with="DATETIMEOFFSET"/>
     </modifySql>
+  </changeSet>
+
+  <changeSet id="create_global_listener_table" author="camunda">
+    <!-- Global listener table -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER">
+      <column name="ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="LISTENER_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TYPE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="RETRIES" type="SMALLINT"/>
+      <column name="AFTER_NON_GLOBAL" type="BOOLEAN"/>
+      <column name="PRIORITY" type="INT"/>
+      <column name="SOURCE" type="VARCHAR(50)"/>
+      <column name="LISTENER_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <!-- Global listener event type table: manages collection of event types for global listeners -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE">
+      <column name="GLOBAL_LISTENER_ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="EVENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+
+  </changeSet>
+
+  <changeSet id="create_variable_name_index" author="camunda">
+    <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_NAME">
+      <column name="VAR_NAME"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- audit logs are always sorted by timestamp, so we add this index as a fallback
+  when no other index is selective enough to prevent full-table-scans -->
+  <changeSet id="create_audit_log_timestamp_index" author="camunda">
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_TIMESTAMP">
+      <column name="TIMESTAMP"/>
+    </createIndex>
+  </changeSet>
+
+  <!-- CATEGORY is already covered in other index -->
+  <changeSet id="drop_audit_log_category_index" author="camunda">
+    <dropIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_CATEGORY"/>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE process instances -->
+  <changeSet id="create_process_instance_state_active_index" author="camunda">
+    <sql dbms="mysql,mariadb,h2">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_PROCESS_INSTANCE_STATE_ACTIVE
+        ON ${prefix}PROCESS_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
+
+  <!-- Default sort column for process_instance is start_date so we index it to enable index-sort-scans -->
+  <changeSet id="create_index_process_instance_start_date" author="camunda">
+    <createIndex tableName="${prefix}PROCESS_INSTANCE"
+      indexName="${prefix}IDX_PROCESS_INSTANCE_START_DATE">
+      <column name="START_DATE" />
+    </createIndex>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE flow node instances -->
+  <changeSet id="create_flow_node_instance_state_active_index" author="camunda">
+    <sql dbms="mysql,mariadb,h2">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_FNI_STATE_ACTIVE
+        ON ${prefix}FLOW_NODE_INSTANCE (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
+
+  <!-- The most common queries are on ACTIVE incidents -->
+  <changeSet id="create_incident_state_active_index" author="camunda">
+    <sql dbms="mariadb,mysql,h2">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (STATE)
+    </sql>
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (STATE)
+        WHERE STATE = 'active'
+    </sql>
+    <sql dbms="oracle">
+      CREATE INDEX ${prefix}IDX_INCIDENT_STATE_ACTIVE
+        ON ${prefix}INCIDENT (CASE WHEN STATE = 'active' THEN STATE END)
+    </sql>
+  </changeSet>
+
+  <changeSet id="add_agent_element_id_to_audit_log" author="camunda">
+    <addColumn tableName="${prefix}AUDIT_LOG">
+      <column name="AGENT_ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
+    </addColumn>
+  </changeSet>
+
+  <changeSet id="create_audit_log_element_instance_key_index" author="camunda">
+    <!-- Index for ELEMENT_INSTANCE_KEY - optimizes querying for the Operate PI detailed view,
+         when a single process element is selected -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_EI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_audit_log_user_task_key_index" author="camunda">
+    <!-- Index for USER_TASK_KEY - optimizes querying for the Tasklist history view -->
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+    </sql>
+    <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+      WHERE USER_TASK_KEY IS NOT NULL
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_audit_log_process_definition_key_index" author="camunda">
+    <!-- Index for PROCESS_DEFINITION_KEY - optimizes querying for the process instances -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
   </changeSet>
 
 </databaseChangeLog>

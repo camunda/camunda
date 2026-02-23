@@ -28,6 +28,7 @@ import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionC
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg.NodeCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
 import io.camunda.zeebe.dynamic.config.gossip.ClusterConfigurationGossiperConfig;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
@@ -383,7 +384,8 @@ final class SystemContextTest {
         mock(PasswordEncoder.class),
         mock(JwtDecoder.class),
         mock(SearchClientsProxy.class),
-        mock(BrokerRequestAuthorizationConverter.class));
+        mock(BrokerRequestAuthorizationConverter.class),
+        mock(NodeIdProvider.class));
   }
 
   @Test
@@ -492,7 +494,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.schedulerInterval must be positive");
+            "experimental.engine.batchOperations.schedulerInterval must be positive");
   }
 
   @Test
@@ -505,20 +507,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.chunkSize must be greater than 0");
-  }
-
-  @Test
-  void shouldThrowExceptionIfBatchOperationDbChunkSizeIsInvalid() {
-    // given
-    final BrokerCfg brokerCfg = new BrokerCfg();
-    brokerCfg.getExperimental().getEngine().getBatchOperations().setDbChunkSize(0);
-
-    // when - then
-    assertThatCode(() -> initSystemContext(brokerCfg))
-        .isInstanceOf(InvalidConfigurationException.class)
-        .hasMessageContaining(
-            "experimental.engine.batchOperation.dbChunkSize must be greater than 0");
+            "experimental.engine.batchOperations.chunkSize must be greater than 0");
   }
 
   @Test
@@ -531,7 +520,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryPageSize must be greater than 0");
+            "experimental.engine.batchOperations.queryPageSize must be greater than 0");
   }
 
   @Test
@@ -544,7 +533,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryInClauseSize must be greater than 0");
+            "experimental.engine.batchOperations.queryInClauseSize must be greater than 0");
   }
 
   @Test
@@ -557,7 +546,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0");
+            "experimental.engine.batchOperations.queryRetryMax must be greater than or equal to 0");
   }
 
   @Test
@@ -570,7 +559,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to");
+            "experimental.engine.batchOperations.queryRetryBackoffFactor must be greater than or equal to");
   }
 
   @Test
@@ -587,7 +576,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryInitialDelay must be positive");
+            "experimental.engine.batchOperations.queryRetryInitialDelay must be positive");
   }
 
   @Test
@@ -604,7 +593,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMaxDelay must be positive");
+            "experimental.engine.batchOperations.queryRetryMaxDelay must be positive");
   }
 
   @Test
@@ -626,7 +615,7 @@ final class SystemContextTest {
     assertThatCode(() -> initSystemContext(brokerCfg))
         .isInstanceOf(InvalidConfigurationException.class)
         .hasMessageContaining(
-            "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay");
+            "experimental.engine.batchOperations.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperations.queryRetryInitialDelay");
   }
 
   @Test
@@ -663,7 +652,7 @@ final class SystemContextTest {
         .setUserTask(
             List.of(
                 createListenerCfg("test", List.of("creating")),
-                createListenerCfg(null, List.of("assigning"))));
+                createListenerCfg("", List.of("assigning"))));
 
     // when
     initSystemContext(brokerCfg);

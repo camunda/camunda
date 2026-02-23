@@ -135,6 +135,30 @@ public class AuditLogIT {
   }
 
   @TestTemplate
+  public void shouldFindAllAuditLogsPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+
+    final Long processInstanceKey = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, 120, b -> b.processInstanceKey(processInstanceKey));
+
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(
+                b ->
+                    b.filter(f -> f.processInstanceKeys(processInstanceKey))
+                        .sort(s -> s.timestamp().asc().entityType().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAuditLogWithFullFilter(final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
@@ -238,7 +262,9 @@ public class AuditLogIT {
                                     AuditLogOperationCategory.USER_TASKS.name())))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
 
     assertThat(searchResult.items())
         .extracting(AuditLogEntity::auditLogKey)
@@ -332,7 +358,9 @@ public class AuditLogIT {
                             .resourceIds(List.of("*")))),
             TenantCheck.disabled());
 
-    final var searchResult = auditLogReader.search(AuditLogQuery.of(b -> b), resourceAccessChecks);
+    final var searchResult =
+        auditLogReader.search(
+            AuditLogQuery.of(b -> b.page(p -> p.size(1000))), resourceAccessChecks);
 
     // Should return all logs that have a process definition ID (including USER_TASKS)
     assertThat(searchResult.items())
@@ -661,5 +689,112 @@ public class AuditLogIT {
                         .page(p -> p.from(0).size(1000))));
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.items()).isEmpty();
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey1));
+    createAndSaveRandomAuditLogs(rdbmsWriters, b -> b.processInstanceKey(processInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(f -> f.processInstanceKeys(processInstanceKey1, processInstanceKey2))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1, processInstanceKey2);
+
+    // when
+    final int deleted =
+        auditLogWriter.deleteProcessInstanceRelatedData(List.of(processInstanceKey1), 1000);
+
+    // then
+    assertThat(deleted).isEqualTo(20);
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey2);
+  }
+
+  @TestTemplate
+  public void shouldDeleteRootProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final AuditLogDbReader auditLogReader = rdbmsService.getAuditLogReader();
+    final AuditLogWriter auditLogWriter = rdbmsWriters.getAuditLogWriter();
+
+    final var processInstanceKey1 = nextKey();
+    final var processInstanceKey2 = nextKey();
+    final var processInstanceKey3 = nextKey();
+    final var rootProcessInstanceKey1 = nextKey();
+    final var rootProcessInstanceKey2 = nextKey();
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey1)
+                .rootProcessInstanceKey(rootProcessInstanceKey1));
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey2)
+                .rootProcessInstanceKey(rootProcessInstanceKey2));
+    createAndSaveRandomAuditLogs(
+        rdbmsWriters,
+        b ->
+            b.processInstanceKey(processInstanceKey3)
+                .rootProcessInstanceKey(rootProcessInstanceKey2));
+
+    final AuditLogQuery auditLogQuery =
+        AuditLogQuery.of(
+            b ->
+                b.filter(
+                        f ->
+                            f.processInstanceKeys(
+                                processInstanceKey1, processInstanceKey2, processInstanceKey3))
+                    .page(p -> p.from(0).size(1000)));
+    var searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::rootProcessInstanceKey)
+        .containsOnly(rootProcessInstanceKey1, rootProcessInstanceKey2);
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1, processInstanceKey2, processInstanceKey3);
+
+    // when
+    final int deleted =
+        auditLogWriter.deleteRootProcessInstanceRelatedData(List.of(rootProcessInstanceKey2), 1000);
+
+    // then
+    assertThat(deleted).isEqualTo(40);
+    searchResult = auditLogReader.search(auditLogQuery);
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::rootProcessInstanceKey)
+        .containsOnly(rootProcessInstanceKey1);
+    assertThat(searchResult.items())
+        .isNotEmpty()
+        .extracting(AuditLogEntity::processInstanceKey)
+        .containsOnly(processInstanceKey1);
   }
 }

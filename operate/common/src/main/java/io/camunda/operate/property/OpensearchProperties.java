@@ -53,6 +53,8 @@ public class OpensearchProperties {
 
   @NestedConfigurationProperty private SslProperties ssl;
 
+  @NestedConfigurationProperty private ProxyProperties proxy;
+
   private List<PluginConfiguration> interceptorPlugins;
 
   public String getClusterName() {
@@ -200,6 +202,14 @@ public class OpensearchProperties {
 
   public void setSsl(final SslProperties ssl) {
     this.ssl = ssl;
+  }
+
+  public ProxyProperties getProxy() {
+    return proxy;
+  }
+
+  public void setProxy(final ProxyProperties proxy) {
+    this.proxy = proxy;
   }
 
   public long getBulkRequestMaxSizeInBytes() {

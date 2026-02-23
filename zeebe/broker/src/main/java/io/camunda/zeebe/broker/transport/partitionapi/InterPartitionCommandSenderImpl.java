@@ -26,9 +26,10 @@ import org.agrona.collections.Int2IntHashMap;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
-final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
+public final class InterPartitionCommandSenderImpl implements InterPartitionCommandSender {
 
-  public static final String TOPIC_PREFIX = "inter-partition-";
+  public static final String LEGACY_TOPIC_PREFIX = "inter-partition-";
+  public static final String TOPIC_PREFIX = "%s-inter-partition-";
 
   private static final Logger LOG = Loggers.TRANSPORT_LOGGER;
   private final ClusterCommunicationService communicationService;
@@ -36,9 +37,12 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
   private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(-1);
   private long checkpointId = CheckpointState.NO_CHECKPOINT;
   private CheckpointType checkpointType = CheckpointType.MANUAL_BACKUP;
+  private final String sendingSubjectPrefix;
 
-  public InterPartitionCommandSenderImpl(final ClusterCommunicationService communicationService) {
+  public InterPartitionCommandSenderImpl(
+      final ClusterCommunicationService communicationService, final String sendingSubjectPrefix) {
     this.communicationService = communicationService;
+    this.sendingSubjectPrefix = sendingSubjectPrefix;
   }
 
   @Override
@@ -97,7 +101,7 @@ final class InterPartitionCommandSenderImpl implements InterPartitionCommandSend
             authInfo);
 
     communicationService.unicast(
-        TOPIC_PREFIX + receiverPartitionId,
+        sendingSubjectPrefix + receiverPartitionId,
         message,
         DefaultSerializers.BASIC::encode,
         MemberId.from("" + partitionLeader),

@@ -15,6 +15,10 @@
 
   <name>Zeebe Distribution</name>
 
+  <properties>
+    <spring-boot.run.jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</spring-boot.run.jvmArguments>
+  </properties>
+
   <dependencies>
 
     <dependency>
@@ -173,6 +177,17 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-opensearch-exporter</artifactId>
+      <exclusions>
+        <exclusion>
+          <groupId>commons-logging</groupId>
+          <artifactId>commons-logging</artifactId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>app-integrations-exporter</artifactId>
       <exclusions>
         <exclusion>
           <groupId>commons-logging</groupId>
@@ -447,6 +462,26 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jdbc</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-jackson2</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-health</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-micrometer-metrics</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-web</artifactId>
     </dependency>
@@ -533,6 +568,17 @@
     </dependency>
 
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-opentelemetry</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-micrometer-observation</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-beans</artifactId>
     </dependency>
@@ -613,6 +659,10 @@
       <artifactId>jackson-databind</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>org.jspecify</groupId>
+      <artifactId>jspecify</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-core</artifactId>
@@ -988,6 +1038,7 @@
 
             <!-- Needed for Spring Actuators, and REST API -->
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
+            <dependency>org.springframework.boot:spring-boot-jackson2</dependency>
             <dependency>org.openapitools:jackson-databind-nullable</dependency>
             <dependency>jakarta.servlet:jakarta.servlet-api</dependency>
 
@@ -1006,6 +1057,10 @@
 
             <!-- Micrometer Exporters/Registries -->
             <dependency>io.micrometer:micrometer-registry-otlp</dependency>
+            <dependency>org.springframework.boot:spring-boot-opentelemetry</dependency>
+
+            <!-- App Integrations Exporter -->
+            <dependency>io.camunda:app-integrations-exporter</dependency>
           </usedDependencies>
           <ignoredUnusedDeclaredDependencies>
             <dep>com.nimbusds:oauth2-oidc-sdk</dep>
@@ -1083,7 +1138,7 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
         <configuration>
-          <jvmArguments>--add-opens=java.base/java.io=ALL-UNNAMED</jvmArguments>
+          <jvmArguments>${spring-boot.run.jvmArguments}</jvmArguments>
         </configuration>
         <executions>
           <execution>

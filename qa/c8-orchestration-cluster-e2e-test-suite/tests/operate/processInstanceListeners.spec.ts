@@ -12,7 +12,8 @@ import {deploy, createSingleInstance, createWorker} from 'utils/zeebeClient';
 import {captureScreenshot, captureFailureVideo} from '@setup';
 import {navigateToApp} from '@pages/UtilitiesPage';
 import {sleep} from 'utils/sleep';
-import {completeUserTask} from '@requestHelpers';
+import {completeUserTask, findUserTask} from '@requestHelpers';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 let initialData: {
   processWithListenerInstance: {processInstanceKey: string};
@@ -118,6 +119,7 @@ test.describe('Process Instance Listeners', () => {
 
   test('Listeners list filtered by flow node instance', async ({
     operateProcessInstancePage,
+    page,
   }) => {
     const processInstanceKey =
       initialData.processWithListenerInstance.processInstanceKey;
@@ -158,9 +160,21 @@ test.describe('Process Instance Listeners', () => {
         'Service Task B',
       );
       await operateProcessInstancePage.openListenersTab();
-      await expect(
-        operateProcessInstancePage.getListenerRows('execution'),
-      ).toHaveCount(2);
+
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.getListenerRows('execution'),
+          ).toHaveCount(2, {timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateProcessInstancePage.diagramHelper.clickFlowNode(
+            'Service Task B',
+          );
+          await operateProcessInstancePage.openListenersTab();
+        },
+      });
     });
 
     await test.step('Select specific flow node instance and verify single listener', async () => {
@@ -190,8 +204,6 @@ test.describe('Process Instance Listeners', () => {
         id: processInstanceKey,
       });
 
-      const responsePromise = page.waitForResponse('**/flow-node-metadata');
-
       await expect(
         operateProcessInstancePage.diagramHelper.getFlowNode('Service Task B'),
       ).toBeVisible();
@@ -199,9 +211,7 @@ test.describe('Process Instance Listeners', () => {
         'Service Task B',
       );
 
-      const response = await responsePromise;
-      const data = await response.json();
-      userTaskKey = String(data.instanceMetadata.userTaskKey);
+      userTaskKey = await findUserTask(request, processInstanceKey, 'CREATED');
 
       expect(userTaskKey).toMatch(userTaskKeyRegex);
       await expect(operateProcessInstancePage.stateOverlayActive).toBeVisible();
@@ -226,6 +236,23 @@ test.describe('Process Instance Listeners', () => {
 
     await test.step('Verify both listener types are visible by default', async () => {
       await operateProcessInstancePage.openListenersTab();
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(
+            operateProcessInstancePage.getListenerRows('execution'),
+          ).toHaveCount(1, {timeout: 5000});
+          await expect(
+            operateProcessInstancePage.getListenerRows('task'),
+          ).toHaveCount(1, {timeout: 5000});
+        },
+        onFailure: async () => {
+          await page.reload();
+          await operateProcessInstancePage.diagramHelper.clickFlowNode(
+            'Service Task B',
+          );
+          await operateProcessInstancePage.openListenersTab();
+        },
+      });
       await expect(
         operateProcessInstancePage.executionListenerText,
       ).toBeVisible();

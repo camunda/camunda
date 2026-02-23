@@ -7,11 +7,11 @@
  */
 package io.camunda.zeebe.util.health;
 
-import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
-import org.springframework.boot.actuate.autoconfigure.health.HealthContributorAutoConfiguration;
 import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.health.autoconfigure.contributor.ConditionalOnEnabledHealthIndicator;
+import org.springframework.boot.health.autoconfigure.contributor.HealthContributorAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -24,7 +24,8 @@ public class MemoryHealthIndicatorAutoConfiguration {
 
   @Bean
   @ConditionalOnMissingBean(name = "memoryHealthIndicator")
-  public MemoryHealthIndicator memoryHealthIndicator(MemoryHealthIndicatorProperties properties) {
+  public MemoryHealthIndicator memoryHealthIndicator(
+      final MemoryHealthIndicatorProperties properties) {
     return new MemoryHealthIndicator(properties.getThreshold());
   }
 }

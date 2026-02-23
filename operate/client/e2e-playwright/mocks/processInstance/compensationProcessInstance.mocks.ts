@@ -157,7 +157,7 @@ const compensationProcessInstance: InstanceMock = {
     ],
     page: {totalItems: 8},
   },
-  statisticsV2: {
+  statistics: {
     items: [
       {
         elementId: 'CompensationBoundaryEvent_1',

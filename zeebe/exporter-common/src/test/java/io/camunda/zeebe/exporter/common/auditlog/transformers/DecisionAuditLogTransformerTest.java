@@ -33,6 +33,7 @@ class DecisionAuditLogTransformerTest {
             .withDeploymentKey(123L)
             .withDecisionRequirementsKey(456L)
             .withDecisionKey(789L)
+            .withDecisionName("decisionName")
             .withDecisionRequirementsId("decisionRequirementsId")
             .withDecisionId("decisionId")
             .withTenantId("tenant-1")
@@ -54,5 +55,6 @@ class DecisionAuditLogTransformerTest {
     assertThat(entity.getDecisionRequirementsId()).isEqualTo("decisionRequirementsId");
     assertThat(entity.getDecisionDefinitionId()).isEqualTo("decisionId");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
+    assertThat(entity.getEntityDescription()).isEqualTo("decisionName");
   }
 }

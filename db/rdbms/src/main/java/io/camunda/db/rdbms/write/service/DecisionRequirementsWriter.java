@@ -7,17 +7,22 @@
  */
 package io.camunda.db.rdbms.write.service;
 
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 
 public class DecisionRequirementsWriter implements RdbmsWriter {
 
+  private final DecisionRequirementsMapper mapper;
   private final ExecutionQueue executionQueue;
 
-  public DecisionRequirementsWriter(final ExecutionQueue executionQueue) {
+  public DecisionRequirementsWriter(
+      final DecisionRequirementsMapper mapper, final ExecutionQueue executionQueue) {
+    this.mapper = mapper;
     this.executionQueue = executionQueue;
   }
 
@@ -29,5 +34,9 @@ public class DecisionRequirementsWriter implements RdbmsWriter {
             decisionRequirements.decisionRequirementsKey(),
             "io.camunda.db.rdbms.sql.DecisionRequirementsMapper.insert",
             decisionRequirements));
+  }
+
+  public void deleteByKeys(final List<Long> decisionRequirementsKeys) {
+    mapper.deleteByKeys(decisionRequirementsKeys);
   }
 }

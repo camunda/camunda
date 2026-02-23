@@ -24,7 +24,8 @@ class ProcessDefinitionStatisticsDbReaderTest {
   private final ProcessDefinitionMapper processDefinitionMapper =
       mock(ProcessDefinitionMapper.class);
   private final ProcessDefinitionStatisticsDbReader reader =
-      new ProcessDefinitionStatisticsDbReader(processDefinitionMapper);
+      new ProcessDefinitionStatisticsDbReader(
+          processDefinitionMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnStatistics() {

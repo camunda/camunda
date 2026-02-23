@@ -17,6 +17,9 @@ const sidebars = {
     'index',
     'collaboration-guidelines',
     'ci',
+    'ci-runbooks',
+    'infrastructure-services',
+    'renovate-pr-handling',
     'release',
   ],
 };

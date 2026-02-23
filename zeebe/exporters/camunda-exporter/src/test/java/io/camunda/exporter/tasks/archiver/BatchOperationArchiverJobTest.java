@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ArchiveBatch.BasicArchiveBatch;
 import io.camunda.exporter.tasks.archiver.TestRepository.DocumentMove;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.util.List;
@@ -31,11 +32,13 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
   private final TestRepository repository = new TestRepository();
   private final BatchOperationTemplate batchOperationTemplate =
       new BatchOperationTemplate("", true);
+  private final AuditLogTemplate auditLogTemplate = new AuditLogTemplate("", true);
   private final SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
   private final CamundaExporterMetrics metrics = new CamundaExporterMetrics(meterRegistry);
 
   private final BatchOperationArchiverJob job =
-      new BatchOperationArchiverJob(repository, batchOperationTemplate, metrics, LOGGER, executor);
+      new BatchOperationArchiverJob(
+          repository, batchOperationTemplate, List.of(auditLogTemplate), metrics, LOGGER, executor);
 
   @BeforeEach
   void setUp() {
@@ -72,10 +75,14 @@ final class BatchOperationArchiverJobTest extends ArchiverJobRecordingMetricsAbs
     assertThat(count).isEqualTo(3); // batch has 3 ids
     assertArchivingCounts(count); // asserted as 3 above
     assertArchiverTimer(1);
-
-    // then should move
     assertThat(repository.moves)
         .containsExactly(
+            new DocumentMove(
+                auditLogTemplate.getFullQualifiedName(),
+                auditLogTemplate.getFullQualifiedName() + "2024-01-01",
+                Map.of(AuditLogTemplate.BATCH_OPERATION_KEY, List.of("1", "2", "3")),
+                Map.of(AuditLogTemplate.ENTITY_TYPE, "BATCH"),
+                executor),
             new DocumentMove(
                 batchOperationTemplate.getFullQualifiedName(),
                 batchOperationTemplate.getFullQualifiedName() + "2024-01-01",

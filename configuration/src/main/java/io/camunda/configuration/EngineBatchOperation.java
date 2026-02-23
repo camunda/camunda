@@ -16,8 +16,6 @@ public class EngineBatchOperation {
   private static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
   private static final int DEFAULT_BATCH_OPERATION_CHUNK_SIZE = 100;
-  // key has 8 bytes, stay below 32KB block size
-  private static final int DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE = 3500;
   // ES/OS have max 10000 entities per query
   private static final int DEFAULT_BATCH_OPERATION_QUERY_PAGE_SIZE = 10000;
   // Oracle can only have 1000 elements in `IN` clause
@@ -74,19 +72,6 @@ public class EngineBatchOperation {
    * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_CHUNK_SIZE}.
    */
   private int chunkSize = DEFAULT_BATCH_OPERATION_CHUNK_SIZE;
-
-  /**
-   * Number of itemKeys in one PersistedBatchOperationChunk.
-   *
-   * <p>The items of a batch operation are stored in a separate column family in the RocksDB
-   * database. To keep the single records/values of the RocksDb to a reasonable size, the items are
-   * split into multiple chunks. Setting this value to a higher value will result in larger chunks,
-   * which can lead to a more inefficient RocksDB cache. The default value 3500 means that each
-   * chunk record will be smaller than the default rocksdb block size of 32KB.
-   *
-   * <p>Defaults to {@link #DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE}.
-   */
-  private int dbChunkSize = DEFAULT_BATCH_OPERATION_DB_CHUNK_SIZE;
 
   /**
    * The page size for batch operation queries.
@@ -200,19 +185,6 @@ public class EngineBatchOperation {
 
   public void setChunkSize(final int chunkSize) {
     this.chunkSize = chunkSize;
-  }
-
-  public int getDbChunkSize() {
-    return UnifiedConfigurationHelper.validateLegacyConfiguration(
-        PREFIX + ".db-chunk-size",
-        dbChunkSize,
-        Integer.class,
-        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
-        LEGACY_DB_CHUNK_SIZE_PROPERTIES);
-  }
-
-  public void setDbChunkSize(final int dbChunkSize) {
-    this.dbChunkSize = dbChunkSize;
   }
 
   public int getQueryPageSize() {

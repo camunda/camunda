@@ -6,17 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import Editor, { useMonaco } from "@monaco-editor/react";
+import Editor from "@monaco-editor/react";
 import { Button, FormLabel, Stack } from "@carbon/react";
 import { observer } from "mobx-react-lite";
-import {
-  ComponentProps,
-  FC,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { ComponentProps, FC, useEffect, useRef, useState } from "react";
 import { beautify as beautifyJSON } from "src/utility/components/editor/jsonUtils.ts";
 import { options } from "src/utility/components/editor/options.ts";
 import useTranslate from "src/utility/localization";
@@ -48,15 +41,6 @@ const JSONEditor: FC<JSONEditorProps> = observer(
     onValidate = () => {},
     onMount = () => {},
   }) => {
-    const monaco = useMonaco();
-
-    useLayoutEffect(() => {
-      monaco?.languages.json.jsonDefaults.setDiagnosticsOptions({
-        schemaValidation: "error",
-        schemaRequest: "error",
-      });
-    }, [monaco]);
-
     return (
       <Editor
         options={{ ...options, readOnly }}
@@ -67,7 +51,7 @@ const JSONEditor: FC<JSONEditorProps> = observer(
         onChange={(value) => {
           onChange?.(value ?? "");
         }}
-        onMount={(editor) => {
+        onMount={(editor, monaco) => {
           editor.focus();
 
           onMount({
@@ -78,6 +62,12 @@ const JSONEditor: FC<JSONEditorProps> = observer(
             hideMarkers: () => {
               editor.trigger("", "closeMarkersNavigation", undefined);
             },
+          });
+
+          monaco.languages.json.jsonDefaults.setDiagnosticsOptions({
+            ...monaco.languages.json.jsonDefaults.diagnosticsOptions,
+            schemaValidation: "error",
+            schemaRequest: "error",
           });
         }}
         onValidate={(markers) => {

@@ -27,7 +27,8 @@ class DecisionRequirementsDbReaderTest {
   private final DecisionRequirementsMapper decisionRequirementsMapper =
       mock(DecisionRequirementsMapper.class);
   private final DecisionRequirementsDbReader decisionRequirementsDbReader =
-      new DecisionRequirementsDbReader(decisionRequirementsMapper);
+      new DecisionRequirementsDbReader(
+          decisionRequirementsMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyResultWhenAuthorizedResourceIdsIsNull() {

@@ -41,6 +41,8 @@ public interface AuditLogResult {
 
   AuditLogActorTypeEnum getActorType();
 
+  String getAgentElementId();
+
   String getTenantId();
 
   AuditLogResultEnum getResult();
@@ -54,6 +56,17 @@ public interface AuditLogResult {
   String getProcessDefinitionKey();
 
   String getProcessInstanceKey();
+
+  /**
+   * Returns the key of the root process instance. The root process instance is the top-level
+   * ancestor in the process instance hierarchy.
+   *
+   * <p><strong>Note:</strong> This field is {@code null} for process instance hierarchies created
+   * before version 8.9.
+   *
+   * @return the root process instance key, or {@code null} for data created before version 8.9
+   */
+  String getRootProcessInstanceKey();
 
   String getElementInstanceKey();
 
@@ -76,4 +89,10 @@ public interface AuditLogResult {
   String getFormKey();
 
   String getResourceKey();
+
+  String getRelatedEntityKey();
+
+  AuditLogEntityTypeEnum getRelatedEntityType();
+
+  String getEntityDescription();
 }

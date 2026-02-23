@@ -15,10 +15,8 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.ExperimentalApi;
 import java.time.OffsetDateTime;
 
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface DocumentLinkResponse {
 
   /**

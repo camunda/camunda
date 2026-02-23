@@ -13,16 +13,18 @@ import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
+import io.camunda.zeebe.protocol.record.WrittenRecord;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.StringUtil;
 import java.util.Map;
 
-public final class TypedRecordImpl implements TypedRecord {
+public final class TypedRecordImpl implements TypedRecord, WrittenRecord {
   private final int partitionId;
   private LoggedEvent rawEvent;
   private RecordMetadata metadata;
@@ -95,8 +97,8 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
-  public AuthInfo getAuthInfo() {
-    return metadata.getAuthorization();
+  public Agent getAgent() {
+    return metadata.getAgent();
   }
 
   @Override
@@ -135,6 +137,11 @@ public final class TypedRecordImpl implements TypedRecord {
   }
 
   @Override
+  public AuthInfo getAuthInfo() {
+    return metadata.getAuthorization();
+  }
+
+  @Override
   @JsonIgnore
   public int getRequestStreamId() {
     return metadata.getRequestStreamId();
@@ -150,6 +157,12 @@ public final class TypedRecordImpl implements TypedRecord {
   @JsonIgnore
   public int getLength() {
     return metadata.getLength() + value.getLength();
+  }
+
+  @Override
+  @JsonIgnore
+  public int getRawLength() {
+    return rawEvent.getLength();
   }
 
   @Override

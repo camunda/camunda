@@ -500,6 +500,10 @@ components:
       description: Response body for take backup
       type: object
       properties:
+        backupId:
+          description: The ID of the backup that has been scheduled
+          allOf:
+            - $ref: '#/components/schemas/BackupId'
         message:
           description: A message indicating backup has been triggered
           type: string
@@ -644,6 +648,11 @@ components:
           type: integer
           format: int64
           example: 1500
+        firstLogPosition:
+          description: The first log position included in this backup.
+          type: integer
+          format: int64
+          example: 5
         checkpointTimestamp:
           type: string
           format: date-time
@@ -659,10 +668,10 @@ components:
             - $ref: '#/components/schemas/PartitionId'
         start:
           allOf:
-            - $ref: '#/components/schemas/CheckpointId'
+            - $ref: '#/components/schemas/PartitionBackupState'
         end:
           allOf:
-            - $ref: '#/components/schemas/CheckpointId'
+            - $ref: '#/components/schemas/PartitionBackupState'
         missingCheckpoints:
           type: array
           description: List of missing checkpoint IDs within the backup range
@@ -684,6 +693,8 @@ components:
       type: string
       enum:
         - MARKER
+        - SCHEDULED_BACKUP
+        - MANUAL_BACKUP
       example: MARKER
     CheckpointId:
       title: Checkpoint ID

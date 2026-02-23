@@ -247,6 +247,8 @@ public class JobSearchIT {
     // then
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getJobKey()).isEqualTo(taskABpmnJob.getJobKey());
+    assertThat(result.items().getFirst().getRootProcessInstanceKey())
+        .isEqualTo(taskABpmnJob.getProcessInstanceKey());
   }
 
   @Test

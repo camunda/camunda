@@ -99,6 +99,8 @@ class VariableSearchIT {
     assertThat(result.items()).hasSize(1);
     assertThat(result.items().getFirst().getVariableKey()).isEqualTo(variable.getVariableKey());
     assertThat(result.items().getFirst().getScopeKey()).isEqualTo(variable.getScopeKey());
+    assertThat(result.items().getFirst().getRootProcessInstanceKey())
+        .isEqualTo(variable.getProcessInstanceKey());
   }
 
   @Test
@@ -325,6 +327,7 @@ class VariableSearchIT {
 
     // then
     assertThat(result.getVariableKey()).isEqualTo(variable.getVariableKey());
+    assertThat(result.getRootProcessInstanceKey()).isEqualTo(variable.getProcessInstanceKey());
   }
 
   @Test

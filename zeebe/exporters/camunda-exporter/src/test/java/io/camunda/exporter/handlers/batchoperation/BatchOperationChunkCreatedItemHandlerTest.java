@@ -127,6 +127,7 @@ class BatchOperationChunkCreatedItemHandlerTest {
         .isEqualTo(String.valueOf(record.getValue().getBatchOperationKey()));
     assertThat(entity.getState()).isEqualTo(OperationState.SCHEDULED);
     assertThat(entity.getProcessInstanceKey()).isEqualTo(item.getProcessInstanceKey());
+    assertThat(entity.getRootProcessInstanceKey()).isEqualTo(item.getRootProcessInstanceKey());
   }
 
   @Test

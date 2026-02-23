@@ -25,6 +25,7 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   private String processDefinitionId;
   private Long processDefinitionKey;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String elementId;
   private Long elementInstanceKey;
   private OffsetDateTime lastUpdatedDate;
@@ -51,6 +52,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -121,6 +127,11 @@ public class MessageSubscriptionBuilder implements MessageSubscription {
 
   public MessageSubscriptionBuilder setElementId(final String elementId) {
     this.elementId = elementId;
+    return this;
+  }
+
+  public MessageSubscriptionBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

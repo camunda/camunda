@@ -1,0 +1,22 @@
+{
+  "mappings": {
+    "dynamic": "strict",
+    "properties": {
+      "id": {
+        "type": "keyword"
+      },
+      "key": {
+        "type": "keyword"
+      },
+      "keyField": {
+        "type": "keyword"
+      },
+      "entityType": {
+        "type": "keyword"
+      },
+      "partitionId": {
+        "type": "integer"
+      }
+    }
+  }
+}

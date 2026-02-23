@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 export class LoginPage {
   private page: Page;
@@ -21,7 +22,7 @@ export class LoginPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.usernameInput = page.getByLabel('Username');
+    this.usernameInput = page.getByRole('textbox', {name: 'Username'});
     this.passwordInput = page.getByRole('textbox', {name: 'password'});
     this.loginButton = page.getByRole('button', {name: 'Login'});
     this.errorMessage = page.locator('.cds--inline-notification__title');
@@ -50,7 +51,14 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await expect(this.usernameInput).toBeVisible({timeout: 180000});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.usernameInput).toBeVisible({timeout: 30000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);

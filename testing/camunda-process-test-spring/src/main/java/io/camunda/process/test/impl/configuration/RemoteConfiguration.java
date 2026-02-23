@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.configuration;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import io.camunda.process.test.impl.runtime.CamundaProcessTestRuntimeDefaults;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Objects;
 import org.springframework.boot.context.properties.NestedConfigurationProperty;
 
@@ -31,6 +32,9 @@ public class RemoteConfiguration {
 
   private URI connectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.LOCAL_CONNECTORS_REST_API_ADDRESS;
+
+  private Duration runtimeConnectionTimeout =
+      CamundaProcessTestRuntimeDefaults.DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT;
 
   public CamundaClientProperties getClient() {
     return client;
@@ -56,6 +60,20 @@ public class RemoteConfiguration {
     this.connectorsRestApiAddress = connectorsRestApiAddress;
   }
 
+  public Duration getRuntimeConnectionTimeout() {
+    return runtimeConnectionTimeout;
+  }
+
+  public void setRuntimeConnectionTimeout(final Duration runtimeConnectionTimeout) {
+    this.runtimeConnectionTimeout = runtimeConnectionTimeout;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(
+        camundaMonitoringApiAddress, connectorsRestApiAddress, runtimeConnectionTimeout);
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (o == null || getClass() != o.getClass()) {
@@ -63,11 +81,7 @@ public class RemoteConfiguration {
     }
     final RemoteConfiguration that = (RemoteConfiguration) o;
     return Objects.equals(camundaMonitoringApiAddress, that.camundaMonitoringApiAddress)
-        && Objects.equals(connectorsRestApiAddress, that.connectorsRestApiAddress);
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(camundaMonitoringApiAddress, connectorsRestApiAddress);
+        && Objects.equals(connectorsRestApiAddress, that.connectorsRestApiAddress)
+        && Objects.equals(runtimeConnectionTimeout, that.runtimeConnectionTimeout);
   }
 }

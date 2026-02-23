@@ -9,12 +9,14 @@ package io.camunda.zeebe.exporter.common.auditlog;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer.TransformerConfig;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerRegistry;
 import io.camunda.zeebe.protocol.record.intent.Intent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.protocol.record.value.EntityType;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
@@ -167,5 +169,23 @@ class AuditLogTransformerConfigsTest {
       }
     }
     return config.valueType().name();
+  }
+
+  private static Stream<Arguments> entityTypeToRelatedEntityTypeProvider() {
+    return Stream.of(
+        Arguments.of(EntityType.USER, AuditLogEntityType.USER),
+        Arguments.of(EntityType.GROUP, AuditLogEntityType.GROUP),
+        Arguments.of(EntityType.ROLE, AuditLogEntityType.ROLE),
+        Arguments.of(EntityType.MAPPING_RULE, AuditLogEntityType.MAPPING_RULE),
+        Arguments.of(EntityType.UNSPECIFIED, null),
+        Arguments.of(null, null));
+  }
+
+  @MethodSource("entityTypeToRelatedEntityTypeProvider")
+  @ParameterizedTest
+  void shouldMapOwnerTypeToEntityType(
+      final EntityType ownerType, final AuditLogEntityType expectedEntityType) {
+    final var entityType = AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(ownerType);
+    assertThat(entityType).isEqualTo(expectedEntityType);
   }
 }

@@ -17,6 +17,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.util.VisibleForTesting;
@@ -55,7 +56,12 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
 
   @Override
   public void export(final Record<R> record) {
-    auditLogWriter.create(map(record));
+    final var auditLogEntity = map(record);
+    auditLogWriter.create(auditLogEntity);
+    if (transformer.triggersCleanUp(record)) {
+      auditLogWriter.scheduleEntityRelatedAuditLogsHistoryCleanupByEndTime(
+          auditLogEntity.entityKey(), auditLogEntity.entityType(), auditLogEntity.timestamp());
+    }
   }
 
   private AuditLogDbModel map(final Record<R> record) {
@@ -73,10 +79,12 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             // Generic fields
             .entityKey(log.getEntityKey())
             .entityType(log.getEntityType())
+            .entityDescription(log.getEntityDescription())
             .category(log.getCategory())
             .operationType(log.getOperationType())
             .actorId(log.getActor().actorId())
             .actorType(log.getActor().actorType())
+            .agentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
             .tenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
             .tenantScope(
                 log.getTenant().map(AuditLogTenant::scope).orElse(AuditLogTenantScope.GLOBAL))
@@ -104,6 +112,8 @@ public class AuditLogExportHandler<R extends RecordValue> implements RdbmsExport
             .deploymentKey(log.getDeploymentKey())
             .formKey(log.getFormKey())
             .resourceKey(log.getResourceKey())
+            .relatedEntityKey(log.getRelatedEntityKey())
+            .relatedEntityType(log.getRelatedEntityType())
             .partitionId(record.getPartitionId());
 
     return auditLog.build();

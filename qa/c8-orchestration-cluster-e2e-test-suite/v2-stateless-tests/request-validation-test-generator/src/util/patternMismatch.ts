@@ -10,12 +10,31 @@ export interface PatternMismatchOptions {
 
 // Shared utility to derive a guaranteed non-matching string for a given regex pattern.
 // Returns undefined if we cannot confidently craft a mismatch (pattern appears overly permissive).
-export function buildGuaranteedPatternMismatch(pattern: string, opts: PatternMismatchOptions = {}): string | undefined {
+export function buildGuaranteedPatternMismatch(
+  pattern: string,
+  opts: PatternMismatchOptions = {},
+): string | undefined {
   let rx: RegExp | undefined;
-  try { rx = new RegExp(pattern); } catch { return undefined; }
+  try {
+    rx = new RegExp(pattern);
+  } catch {
+    return undefined;
+  }
   // Probe for permissive pattern (matches everything we throw at it)
-  const probe = ['a','1','!','_','@','abc123','A.B','x-y','+plus','', '\n'];
-  if (probe.every(s => rx!.test(s))) return undefined;
+  const probe = [
+    'a',
+    '1',
+    '!',
+    '_',
+    '@',
+    'abc123',
+    'A.B',
+    'x-y',
+    '+plus',
+    '',
+    '\n',
+  ];
+  if (probe.every((s) => rx!.test(s))) return undefined;
 
   const candidates: string[] = [];
   // Digit-only (allowing optional leading '-')
@@ -45,7 +64,7 @@ export function buildGuaranteedPatternMismatch(pattern: string, opts: PatternMis
       .replace(/\\t/g, '\t')
       .replace(/\\u2603/g, '\u2603')
       .replace(/\\u0000/g, '\u0000');
-    if ([...materialized].some(ch => reservedForPath.has(ch))) return false;
+    if ([...materialized].some((ch) => reservedForPath.has(ch))) return false;
     if (/\s/.test(materialized)) return false; // avoid whitespace which may be normalized by routers
     return true;
   }
@@ -53,7 +72,8 @@ export function buildGuaranteedPatternMismatch(pattern: string, opts: PatternMis
   // Deduplicate and test
   const seen = new Set<string>();
   for (const raw of candidates) {
-    if (seen.has(raw)) continue; seen.add(raw);
+    if (seen.has(raw)) continue;
+    seen.add(raw);
     if (!isAllowedForPath(raw)) continue;
     if (opts.disallow && opts.disallow.includes(raw)) continue;
     const materialized = raw

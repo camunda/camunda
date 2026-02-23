@@ -7,7 +7,7 @@
   "version": 1,
   "template": {
     "settings": {
-      "number_of_shards": 3,
+      "number_of_shards": 1,
       "number_of_replicas": 0,
       "index.queries.cache.enabled": false
     },
@@ -19,6 +19,9 @@
         "value": {
           "dynamic": "strict",
           "properties": {
+            "globalListenerKey": {
+              "type": "long"
+            },
             "id": {
               "type": "keyword"
             },
@@ -42,6 +45,9 @@
             },
             "listenerType": {
               "type": "keyword"
+            },
+            "configKey": {
+              "type": "long"
             }
           }
         }

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.tuple;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.BulkIndexRequest.BulkOperation;
+import io.camunda.zeebe.exporter.BulkIndexRequest.IndexOperation;
 import io.camunda.zeebe.exporter.dto.BulkIndexAction;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.impl.record.value.distribution.CommandDistributionRecord;
@@ -29,14 +29,9 @@ import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.assertj.core.groups.Tuple;
@@ -144,7 +139,7 @@ final class BulkIndexRequestTest {
 
       // then
       assertThat(request.bulkOperations())
-          .extracting(BulkOperation::metadata)
+          .extracting(IndexOperation::metadata)
           .containsExactly(action);
       assertThat(request.lastIndexedMetadata()).isEqualTo(action);
       assertThat(request.isEmpty()).isFalse();
@@ -169,7 +164,7 @@ final class BulkIndexRequestTest {
 
       // then
       assertThat(request.bulkOperations())
-          .extracting(BulkOperation::metadata)
+          .extracting(IndexOperation::metadata)
           .containsExactlyElementsOf(actions);
       assertThat(request.lastIndexedMetadata()).isEqualTo(actions.get(1));
       assertThat(request.isEmpty()).isFalse();
@@ -193,47 +188,8 @@ final class BulkIndexRequestTest {
       final var operations = request.bulkOperations();
       assertThat(operations)
           .hasSize(1)
-          .map(BulkOperation::metadata, this::deserializeSource)
+          .map(IndexOperation::metadata, this::deserializeSource)
           .containsExactly(Tuple.tuple(action, record));
-    }
-
-    @Test
-    void shouldWriteOperationsAsNDJson() throws IOException {
-      // given - use an empty authorization for comparison, since the bulk request will remove it
-      final var records =
-          recordFactory
-              .generateRecords(
-                  b -> b.withAuthorizations(Map.of()).withBrokerVersion(VersionUtil.getVersion()))
-              .limit(2)
-              .toList();
-      final var actions =
-          List.of(
-              new BulkIndexAction("index", "id", "routing"),
-              new BulkIndexAction("index2", "id2", "routing2"));
-      request.index(actions.get(0), records.get(0), new RecordSequence(PARTITION_ID, 1));
-      request.index(actions.get(1), records.get(1), new RecordSequence(PARTITION_ID, 2));
-
-      // when
-      final byte[] serializedBuffer;
-      try (final var output = new ByteArrayOutputStream()) {
-        request.writeTo(output);
-        serializedBuffer = output.toByteArray();
-      }
-
-      // then
-      final List<Tuple> deserializedOutput = new ArrayList<>();
-      try (final var input =
-          new BufferedReader(new InputStreamReader(new ByteArrayInputStream(serializedBuffer)))) {
-        deserializedOutput.add(
-            deserializeOperation(input.readLine().getBytes(), input.readLine().getBytes()));
-        deserializedOutput.add(
-            deserializeOperation(input.readLine().getBytes(), input.readLine().getBytes()));
-      }
-
-      assertThat(deserializedOutput)
-          .containsExactly(
-              Tuple.tuple(actions.get(0), records.get(0)),
-              Tuple.tuple(actions.get(1), records.get(1)));
     }
 
     @Test
@@ -728,22 +684,12 @@ final class BulkIndexRequestTest {
       return (long) field.get(recordValue);
     }
 
-    private Record<?> deserializeSource(final BulkOperation operation) {
+    private Record<?> deserializeSource(final IndexOperation operation) {
       try {
         return MAPPER.readValue(operation.source(), new TypeReference<>() {});
       } catch (final IOException e) {
         throw new UncheckedIOException(
             String.format("Failed to deserialize operation [%s] source", operation.metadata()), e);
-      }
-    }
-
-    private Tuple deserializeOperation(final byte[] metadata, final byte[] source) {
-      try {
-        return Tuple.tuple(
-            MAPPER.readValue(metadata, BulkIndexAction.class),
-            MAPPER.readValue(source, new TypeReference<Record<?>>() {}));
-      } catch (final IOException e) {
-        throw new UncheckedIOException(e);
       }
     }
   }

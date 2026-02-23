@@ -24,6 +24,7 @@ public final class EngineCfg implements ConfigurationEntry {
   private int maxProcessDepth = EngineConfiguration.DEFAULT_MAX_PROCESS_DEPTH;
   private GlobalListenersCfg globalListeners = new GlobalListenersCfg();
   private ExpressionCfg expression = new ExpressionCfg();
+  private ProcessInstanceCreationCfg processInstanceCreation = new ProcessInstanceCreationCfg();
 
   @Override
   public void init(final BrokerCfg globalConfig, final String brokerBase) {
@@ -37,6 +38,7 @@ public final class EngineCfg implements ConfigurationEntry {
     usageMetrics.init(globalConfig, brokerBase);
     globalListeners.init(globalConfig, brokerBase);
     expression.init(globalConfig, brokerBase);
+    processInstanceCreation.init(globalConfig, brokerBase);
   }
 
   public MessagesCfg getMessages() {
@@ -127,6 +129,14 @@ public final class EngineCfg implements ConfigurationEntry {
     this.expression = expression;
   }
 
+  public ProcessInstanceCreationCfg getProcessInstanceCreation() {
+    return processInstanceCreation;
+  }
+
+  public void setProcessInstanceCreation(final ProcessInstanceCreationCfg processInstanceCreation) {
+    this.processInstanceCreation = processInstanceCreation;
+  }
+
   @Override
   public String toString() {
     return "EngineCfg{"
@@ -152,6 +162,8 @@ public final class EngineCfg implements ConfigurationEntry {
         + maxProcessDepth
         + ", expression="
         + expression
+        + ", processInstanceCreation="
+        + processInstanceCreation
         + '}';
   }
 
@@ -168,9 +180,11 @@ public final class EngineCfg implements ConfigurationEntry {
         .setJobsTimeoutCheckerPollingInterval(jobs.getTimeoutCheckerPollingInterval())
         .setJobsTimeoutCheckerBatchLimit(jobs.getTimeoutCheckerBatchLimit())
         .setValidatorsResultsOutputMaxSize(validators.getResultsOutputMaxSize())
+        .setMaxIdFieldLength(validators.getMaxIdFieldLength())
+        .setMaxNameFieldLength(validators.getMaxNameFieldLength())
+        .setMaxWorkerTypeLength(validators.getMaxWorkerTypeLength())
         .setBatchOperationSchedulerInterval(batchOperations.getSchedulerInterval())
         .setBatchOperationChunkSize(batchOperations.getChunkSize())
-        .setBatchOperationDbChunkSize(batchOperations.getDbChunkSize())
         .setBatchOperationQueryPageSize(batchOperations.getQueryPageSize())
         .setBatchOperationQueryInClauseSize(batchOperations.getQueryInClauseSize())
         .setBatchOperationQueryRetryMax(batchOperations.getQueryRetryMax())
@@ -180,15 +194,16 @@ public final class EngineCfg implements ConfigurationEntry {
         .setUsageMetricsExportInterval(usageMetrics.getExportInterval())
         .setJobMetricsExportInterval(jobMetrics.getExportInterval())
         .setJobMetricsExportEnabled(jobMetrics.isEnabled())
-        .setMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())
-        .setMaxJobTypeLength(jobMetrics.getMaxJobTypeLength())
-        .setMaxTenantIdLength(jobMetrics.getMaxTenantIdLength())
-        .setMaxUniqueJobMetricsKeys(jobMetrics.getMaxUniqueKeys())
+        .setJobMetricsMaxWorkerNameLength(jobMetrics.getMaxWorkerNameLength())
+        .setJobMetricsMaxTypeLength(jobMetrics.getMaxJobTypeLength())
+        .setJobMetricsMaxTenantIdLength(jobMetrics.getMaxTenantIdLength())
+        .setJobMetricsMaxUniqueKeys(jobMetrics.getMaxUniqueKeys())
         .setCommandDistributionPaused(distribution.isPauseCommandDistribution())
         .setCommandRedistributionInterval(distribution.getRedistributionInterval())
         .setCommandRedistributionMaxBackoff(distribution.getMaxBackoffDuration())
         .setMaxProcessDepth(getMaxProcessDepth())
         .setGlobalListeners(globalListeners.createGlobalListenersConfiguration())
-        .setExpressionEvaluationTimeout(expression.getTimeout());
+        .setExpressionEvaluationTimeout(expression.getTimeout())
+        .setBusinessIdUniquenessEnabled(processInstanceCreation.isBusinessIdUniquenessEnabled());
   }
 }

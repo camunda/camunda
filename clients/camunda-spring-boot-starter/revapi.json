@@ -1,0 +1,559 @@
+[
+  {
+    "extension": "revapi.filter",
+    "id": "filter",
+    "configuration": {
+      "archives": {
+        "justification": "Ignore everything not included in the module itself",
+        "include": [
+          "io\\.camunda:camunda-spring-boot-starter:.*"
+        ]
+      },
+      "elements": {
+        "exclude": [
+          {
+            "justification": "The implementation package is not meant to be used directly, and as such does not need to maintain any backwards compatibility guarantees.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.impl(\\..*)?/"
+          },
+          {
+            "justification": "Annotation processor internals are not part of the public API surface.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.spring\\.annotation\\.processor(\\..*)?/"
+          },
+          {
+            "justification": "Test support classes are not part of the public API surface.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.spring\\.testsupport(\\..*)?/"
+          },
+          {
+            "justification": "Spring events are not part of the public API surface and should be excluded.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.spring\\.event(\\..*)?/"
+          },
+          {
+            "justification": "Actuator classes are not part of the public API surface and should be excluded.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.spring\\.actuator(\\..*)?/"
+          },
+          {
+            "justification": "JobHandling classes are not part of the public API surface and should be excluded.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.spring\\.jobhandling(\\..*)?/"
+          },
+          {
+            "justification": "Annotation value classes are not part of the public API surface and should be excluded.",
+            "matcher": "java-package",
+            "match": "/io\\.camunda\\.client\\.annotation\\.value(\\..*)?/"
+          }
+        ]
+      }
+    }
+  },
+  {
+    "extension": "revapi.differences",
+    "id": "differences",
+    "configuration": {
+      "differences": [
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Optional<io.camunda.client.annotation.value.DeploymentValue> io.camunda.client.annotation.AnnotationUtil::getDeploymentValue(io.camunda.client.bean.BeanInfo)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method boolean io.camunda.client.annotation.JobWorker::autoComplete()",
+          "new": "method boolean[] io.camunda.client.annotation.JobWorker::autoComplete()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method boolean io.camunda.client.annotation.JobWorker::enabled()",
+          "new": "method boolean[] io.camunda.client.annotation.JobWorker::enabled()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method boolean io.camunda.client.annotation.JobWorker::fetchAllVariables()",
+          "new": "method boolean[] io.camunda.client.annotation.JobWorker::fetchAllVariables()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method boolean io.camunda.client.annotation.JobWorker::streamEnabled()",
+          "new": "method boolean[] io.camunda.client.annotation.JobWorker::streamEnabled()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.annotation.value.DeploymentValue.DeploymentValueBuilder",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.annotation.value.DeploymentValue.DeploymentValueBuilder io.camunda.client.annotation.value.DeploymentValue::builder()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.bean.BeanInfo io.camunda.client.annotation.value.DeploymentValue::getClassInfo()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::<init>(java.lang.String, java.lang.String, java.time.Duration, java.lang.Integer, java.time.Duration, java.time.Duration, java.lang.Boolean, java.util.List<java.lang.String>, java.lang.Boolean, io.camunda.client.bean.MethodInfo, java.util.List<java.lang.String>, java.lang.Boolean, java.lang.Boolean, java.time.Duration, java.lang.Integer)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Boolean io.camunda.client.annotation.value.JobWorkerValue::getAutoComplete()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Boolean> io.camunda.client.annotation.value.JobWorkerValue::getAutoComplete()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Boolean io.camunda.client.annotation.value.JobWorkerValue::getEnabled()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Boolean> io.camunda.client.annotation.value.JobWorkerValue::getEnabled()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Boolean io.camunda.client.annotation.value.JobWorkerValue::getForceFetchAllVariables()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Boolean> io.camunda.client.annotation.value.JobWorkerValue::getForceFetchAllVariables()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Integer io.camunda.client.annotation.value.JobWorkerValue::getMaxJobsActive()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Integer> io.camunda.client.annotation.value.JobWorkerValue::getMaxJobsActive()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Integer io.camunda.client.annotation.value.JobWorkerValue::getMaxRetries()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Integer> io.camunda.client.annotation.value.JobWorkerValue::getMaxRetries()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.String io.camunda.client.annotation.value.JobWorkerValue::getName()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.String> io.camunda.client.annotation.value.JobWorkerValue::getName()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.time.Duration io.camunda.client.annotation.value.JobWorkerValue::getPollInterval()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.time.Duration> io.camunda.client.annotation.value.JobWorkerValue::getPollInterval()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.time.Duration io.camunda.client.annotation.value.JobWorkerValue::getRequestTimeout()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.time.Duration> io.camunda.client.annotation.value.JobWorkerValue::getRequestTimeout()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.Boolean io.camunda.client.annotation.value.JobWorkerValue::getStreamEnabled()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.Boolean> io.camunda.client.annotation.value.JobWorkerValue::getStreamEnabled()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.time.Duration io.camunda.client.annotation.value.JobWorkerValue::getStreamTimeout()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.time.Duration> io.camunda.client.annotation.value.JobWorkerValue::getStreamTimeout()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.time.Duration io.camunda.client.annotation.value.JobWorkerValue::getTimeout()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.time.Duration> io.camunda.client.annotation.value.JobWorkerValue::getTimeout()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.lang.String io.camunda.client.annotation.value.JobWorkerValue::getType()",
+          "new": "method io.camunda.client.annotation.value.JobWorkerValue.SourceAware<java.lang.String> io.camunda.client.annotation.value.JobWorkerValue::getType()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setAutoComplete(java.lang.Boolean)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setEnabled(java.lang.Boolean)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setForceFetchAllVariables(java.lang.Boolean)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setMaxJobsActive(java.lang.Integer)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setMaxRetries(java.lang.Integer)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setName(java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setPollInterval(java.time.Duration)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setRequestTimeout(java.time.Duration)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setStreamEnabled(java.lang.Boolean)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setStreamTimeout(java.time.Duration)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setTimeout(java.time.Duration)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.annotation.value.JobWorkerValue::setType(java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.api.response.DeploymentEvent io.camunda.client.event.CamundaPostDeploymentEvent::getDeployment()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.exception.JobError::<init>(java.lang.String, java.lang.Object, java.lang.Integer, java.time.Duration, java.lang.Throwable)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.returnTypeChanged",
+          "old": "method java.time.Duration io.camunda.client.exception.JobError::getRetryBackoff()",
+          "new": "method java.util.function.Function<java.lang.Integer, java.time.Duration> io.camunda.client.exception.JobError::getRetryBackoff()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.concurrent.ScheduledExecutorService io.camunda.client.jobhandling.CamundaClientExecutorService::get()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean io.camunda.client.jobhandling.CamundaClientExecutorService::isOwnedByCamundaClient()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.CommandWrapper::<init>(io.camunda.client.api.command.FinalCommandStep<?>, io.camunda.client.api.response.ActivatedJob, io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, int)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.CommandWrapper::executeAsyncWithMetrics(java.lang.String, java.lang.String, java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.jobhandling.DefaultJobExceptionHandlingStrategy",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface io.camunda.client.jobhandling.JobExceptionHandlingStrategy",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.JobHandlerInvokingBeans::<init>(io.camunda.client.annotation.value.JobWorkerValue, io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, java.util.List<io.camunda.client.jobhandling.parameter.ParameterResolver>, io.camunda.client.jobhandling.result.ResultProcessor, io.camunda.client.jobhandling.JobExceptionHandlingStrategy)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.List<io.camunda.client.jobhandling.parameter.ParameterResolver> io.camunda.client.jobhandling.JobHandlingUtil::createParameterResolvers(io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.annotation.value.JobWorkerValue)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.result.ResultProcessor io.camunda.client.jobhandling.JobHandlingUtil::createResultProcessor(io.camunda.client.jobhandling.result.ResultProcessorStrategy, io.camunda.client.annotation.value.JobWorkerValue)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.JobWorkerManager::<init>(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.jobhandling.result.ResultProcessorStrategy, io.camunda.client.api.worker.BackoffSupplier, io.camunda.client.jobhandling.JobExceptionHandlingStrategy)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.JobWorkerManager::closeAllOpenWorkers()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.JobWorkerManager::closeWorker(io.camunda.client.api.worker.JobWorker)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Optional<io.camunda.client.annotation.value.JobWorkerValue> io.camunda.client.jobhandling.JobWorkerManager::findJobWorkerConfigByName(java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.util.Optional<io.camunda.client.annotation.value.JobWorkerValue> io.camunda.client.jobhandling.JobWorkerManager::findJobWorkerConfigByType(java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.api.worker.JobWorker io.camunda.client.jobhandling.JobWorkerManager::openWorker(io.camunda.client.CamundaClient, io.camunda.client.annotation.value.JobWorkerValue)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.api.worker.JobWorker io.camunda.client.jobhandling.JobWorkerManager::openWorker(io.camunda.client.CamundaClient, io.camunda.client.annotation.value.JobWorkerValue, io.camunda.client.api.worker.JobHandler)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::<init>(io.camunda.client.api.JsonMapper, io.camunda.client.CamundaClient)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::<init>(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.api.worker.JobClient, io.camunda.client.CamundaClient)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolver io.camunda.client.jobhandling.parameter.DefaultParameterResolverStrategy::createResolver(io.camunda.client.bean.ParameterInfo)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolver io.camunda.client.jobhandling.parameter.ParameterResolverStrategy::createResolver(io.camunda.client.bean.ParameterInfo)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy::<init>(io.camunda.client.CamundaClient, io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.result.ResultProcessor io.camunda.client.jobhandling.result.DefaultResultProcessorStrategy::createProcessor(io.camunda.client.bean.MethodInfo)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.result.ResultProcessor io.camunda.client.jobhandling.result.ResultProcessorStrategy::createProcessor(io.camunda.client.bean.MethodInfo)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.metrics.CamundaClientMetricsBridge",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.DefaultNoopMetricsRecorder::executeWithTimer(java.lang.String, java.lang.String, java.lang.Runnable)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.DefaultNoopMetricsRecorder::increase(java.lang.String, java.lang.String, java.lang.String, int)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.MetricsRecorder::executeWithTimer(java.lang.String, java.lang.String, java.lang.Runnable)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.MetricsRecorder::increase(java.lang.String, java.lang.String, java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.MetricsRecorder::increase(java.lang.String, java.lang.String, java.lang.String, int)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.MicrometerMetricsRecorder::executeWithTimer(java.lang.String, java.lang.String, java.lang.Runnable)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.metrics.MicrometerMetricsRecorder::increase(java.lang.String, java.lang.String, java.lang.String, int)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.micrometer.core.instrument.Counter io.camunda.client.metrics.MicrometerMetricsRecorder::newCounter(java.lang.String, java.lang.String, java.lang.String)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class io.camunda.client.metrics.SimpleMetricsRecorder",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor io.camunda.client.spring.configuration.AnnotationProcessorConfiguration::jobWorkerPostProcessor(io.camunda.client.jobhandling.JobWorkerManager, java.util.List<io.camunda.client.annotation.customizer.JobWorkerValueCustomizer>)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.CommandExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::commandExceptionHandlingStrategy(io.camunda.client.jobhandling.CamundaClientExecutorService)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.JobExceptionHandlingStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobExceptionHandlingStrategy(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.JobWorkerManager io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::jobWorkerManager(io.camunda.client.jobhandling.CommandExceptionHandlingStrategy, io.camunda.client.metrics.MetricsRecorder, io.camunda.client.jobhandling.parameter.ParameterResolverStrategy, io.camunda.client.jobhandling.result.ResultProcessorStrategy, io.camunda.client.api.worker.BackoffSupplier, io.camunda.client.jobhandling.JobExceptionHandlingStrategy)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.parameter.ParameterResolverStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::parameterResolverStrategy(io.camunda.client.api.JsonMapper, io.camunda.zeebe.client.ZeebeClient, io.camunda.client.CamundaClient)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.result.ResultProcessorStrategy io.camunda.client.spring.configuration.CamundaClientAllAutoConfiguration::resultProcessorStrategy(io.camunda.client.CamundaClient, io.camunda.client.jobhandling.result.DocumentResultProcessorFailureHandlingStrategy)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.CamundaClientConfiguration io.camunda.client.spring.configuration.CamundaClientProdAutoConfiguration::camundaClientConfiguration(io.camunda.client.spring.properties.CamundaClientProperties, io.camunda.client.api.JsonMapper, java.util.List<io.grpc.ClientInterceptor>, java.util.List<org.apache.hc.client5.http.async.AsyncExecChainHandler>, io.camunda.client.jobhandling.CamundaClientExecutorService, io.camunda.client.CredentialsProvider)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.jobhandling.CamundaClientExecutorService io.camunda.client.spring.configuration.ExecutorServiceConfiguration::camundaClientThreadPool(io.micrometer.core.instrument.MeterRegistry)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.spring.configuration.JsonMapperConfiguration::<init>(com.fasterxml.jackson.databind.ObjectMapper)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method io.camunda.client.api.JsonMapper io.camunda.client.spring.configuration.JsonMapperConfiguration::jsonMapper()",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void io.camunda.client.spring.configuration.SpringCamundaClientConfiguration::<init>(io.camunda.client.spring.properties.CamundaClientProperties, io.camunda.client.api.JsonMapper, java.util.List<io.grpc.ClientInterceptor>, java.util.List<org.apache.hc.client5.http.async.AsyncExecChainHandler>, io.camunda.client.jobhandling.CamundaClientExecutorService, io.camunda.client.CredentialsProvider)",
+          "justification": "Internal refactor; compatibility impact accepted for this release."
+        }
+      ]
+    }
+  }
+]

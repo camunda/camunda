@@ -49,7 +49,7 @@ public final class QueryResponseWriter implements ResponseWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
     // protocol header
     headerEncoder.wrap(buffer, offset);
 
@@ -64,6 +64,8 @@ public final class QueryResponseWriter implements ResponseWriter {
     responseEncoder.wrap(buffer, offset);
 
     responseEncoder.putBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
+
+    return getLength();
   }
 
   public QueryResponseWriter bpmnProcessId(final DirectBuffer bpmnProcessId) {

@@ -19,7 +19,6 @@ import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.security.entity.AuthenticationMethod;
 import io.modelcontextprotocol.client.transport.customizer.McpSyncHttpClientRequestCustomizer;
-import java.util.List;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -34,15 +33,24 @@ public class OidcMcpServerIT extends AuthenticatedMcpServerTest {
   static final TestCamundaApplication TEST_INSTANCE =
       new TestCamundaApplication()
           .withAuthenticationMethod(AuthenticationMethod.OIDC)
-          .withAuthenticatedAccess()
-          .withSecurityConfig(c -> c.getInitialization().getUsers().clear())
+          .withAuthorizationsEnabled()
+          .withSecurityConfig(
+              c -> {
+                c.getAuthentication().getOidc().setClientIdClaim("client_id");
+                c.getInitialization().getUsers().clear();
+              })
           .withProperty("camunda.mcp.enabled", true);
 
   // Injected by the MultiDbTest extension
   private static KeycloakContainer keycloak;
 
   @ClientDefinition
-  private static final TestClient MCP_CLIENT = new TestClient("mcpClient", List.of());
+  private static final TestClient UNRESTRICTED_CLIENT =
+      new TestClient(UNRESTRICTED_PRINCIPAL_NAME, UNRESTRICTED_PERMISSIONS);
+
+  @ClientDefinition
+  private static final TestClient RESTRICTED_CLIENT =
+      new TestClient(RESTRICTED_PRINCIPAL_NAME, RESTRICTED_PERMISSIONS);
 
   @Override
   protected TestCamundaApplication testInstance() {
@@ -51,18 +59,27 @@ public class OidcMcpServerIT extends AuthenticatedMcpServerTest {
 
   @Override
   protected McpSyncHttpClientRequestCustomizer createMcpClientRequestCustomizer() {
-    return (builder, method, endpoint, body, context) ->
-        builder.header("Authorization", "Bearer " + getAccessToken(MCP_CLIENT));
+    return createBearerTokenAuthenticator(UNRESTRICTED_PRINCIPAL_NAME);
   }
 
-  private static String getAccessToken(final TestClient testClient) {
+  @Override
+  protected McpSyncHttpClientRequestCustomizer createRestrictedMcpClientRequestCustomizer() {
+    return createBearerTokenAuthenticator(RESTRICTED_PRINCIPAL_NAME);
+  }
+
+  private McpSyncHttpClientRequestCustomizer createBearerTokenAuthenticator(final String clientId) {
+    return (builder, method, endpoint, body, context) ->
+        builder.header("Authorization", "Bearer " + getAccessToken(clientId));
+  }
+
+  private static String getAccessToken(final String clientId) {
     final HttpHeaders httpHeaders = new HttpHeaders();
     httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
     final MultiValueMap<String, String> map = new LinkedMultiValueMap<>();
     map.put("grant_type", singletonList("client_credentials"));
-    map.put("client_id", singletonList(testClient.clientId()));
-    map.put("client_secret", singletonList(testClient.clientId()));
+    map.put("client_id", singletonList(clientId));
+    map.put("client_secret", singletonList(clientId));
 
     final RestTemplate restTemplate = new RestTemplate();
     final KeycloakToken token =

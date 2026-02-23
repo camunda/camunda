@@ -14,7 +14,7 @@ import io.camunda.search.entities.FlowNodeInstanceEntity;
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public interface FlowNodeInstanceMapper extends RootProcessInstanceDependantMapper {
+public interface FlowNodeInstanceMapper extends ProcessInstanceDependantMapper {
 
   void insert(BatchInsertDto<FlowNodeInstanceDbModel> dto);
 

@@ -30,7 +30,7 @@ import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -65,6 +65,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                     "processDefinitionId": "processDefinitionId",
                     "processDefinitionKey": "2",
                     "processInstanceKey": "3",
+                    "rootProcessInstanceKey": "37",
                     "elementId": "elementId",
                     "elementInstanceKey": "4",
                     "tenantId": "<default>",
@@ -104,6 +105,7 @@ public class JobQueryControllerTest extends RestControllerTest {
                       .processDefinitionId("processDefinitionId")
                       .processDefinitionKey(2L)
                       .processInstanceKey(3L)
+                      .rootProcessInstanceKey(37L)
                       .elementId("elementId")
                       .elementInstanceKey(4L)
                       .tenantId("<default>")

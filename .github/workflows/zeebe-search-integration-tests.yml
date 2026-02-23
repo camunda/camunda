@@ -1,0 +1,70 @@
+# description: Runs Integration tests on min/max supported versions of Elasticsearch and OpenSearch
+# test location: /qa/acceptance-tests
+# type: CI
+# owner: @camunda/core-features, @camunda/data-layer
+name: Search DB Manual/Scheduled Run Integration Tests
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - ".github/workflows/zeebe-search-integration-tests.yml"
+  schedule:
+    - cron: "0 5 * * Mon-Fri"
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  search-integration-tests:
+    name: "Search ${{ matrix.database-name }}"
+    permissions:
+      actions: write
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Elasticsearch 8 - Supported versions: 8.16.6 (min) to 8.19.10 (max)
+          - database-name: "Elasticsearch 8.16.6"
+            database-type: "elasticsearch"
+            database-image-version: "8.16.6"
+            it-database-type: "es"
+          - database-name: "Elasticsearch 8.19.10"
+            database-type: "elasticsearch"
+            database-image-version: "8.19.10"
+            it-database-type: "es"
+          # Elasticsearch 9 - Supported versions: 9.0.0 (min) to 9.3.0 (max)
+          - database-name: "Elasticsearch 9.0.0"
+            database-type: "elasticsearch"
+            database-image-version: "9.0.0"
+            it-database-type: "es"
+            job-name-suffix: "9"
+          - database-name: "Elasticsearch 9.3.0"
+            database-type: "elasticsearch"
+            database-image-version: "9.3.0"
+            it-database-type: "es"
+            job-name-suffix: "9"
+          # OpenSearch 2 - Supported versions: 2.17.0 (min) to 2.19.4 (max)
+          - database-name: "OpenSearch 2.17.0"
+            database-type: "opensearch"
+            database-image-version: "2.17.0"
+            it-database-type: "os"
+          - database-name: "OpenSearch 2.19.4"
+            database-type: "opensearch"
+            database-image-version: "2.19.4"
+            it-database-type: "os"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    secrets: inherit
+    with:
+      database-type: ${{ matrix.database-type }}
+      database-image-version: ${{ matrix.database-image-version }}
+      it-database-type: ${{ matrix.it-database-type }}
+      job-name-suffix: ${{ matrix.job-name-suffix || '' }}
+      notify-slack-on-failure: ${{ github.event_name == 'schedule' }}

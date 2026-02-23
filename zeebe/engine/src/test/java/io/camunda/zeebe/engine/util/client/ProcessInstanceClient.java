@@ -221,6 +221,11 @@ public final class ProcessInstanceClient {
       return this;
     }
 
+    public ProcessInstanceCreationWithResultClient withBusinessId(final String businessId) {
+      record.setBusinessId(businessId);
+      return this;
+    }
+
     public long create() {
       final long position =
           writer.writeCommand(

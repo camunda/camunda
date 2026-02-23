@@ -10,7 +10,7 @@ import {ContainedList, ContainedListItem, Tag} from '@carbon/react';
 import {formatDate} from 'common/dates/formatDate';
 import styles from './styles.module.scss';
 import taskDetailsLayoutCommon from 'common/tasks/details/taskDetailsLayoutCommon.module.scss';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useTranslation} from 'react-i18next';
 import {getPriorityLabel} from 'common/tasks/getPriorityLabel';
 

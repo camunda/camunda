@@ -110,7 +110,7 @@ class SchemaManagerStartupIT {
       camunda
           .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "true")
           .withEnv("SPRING_PROFILES_ACTIVE", "broker,operate,dev")
-          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECK_ENABLED", "false");
+          .withEnv("CAMUNDA_OPERATE_ELASTICSEARCH_HEALTHCHECKENABLED", "false");
     } else {
       camunda
           .withEnv("ZEEBE_BROKER_GATEWAY_ENABLE", "false")
@@ -160,7 +160,7 @@ class SchemaManagerStartupIT {
             () ->
                 assertThat(camunda.getLogs())
                     .contains(
-                        "org.springframework.boot.web.embedded.tomcat.GracefulShutdown - Graceful shutdown complete")
+                        "org.springframework.boot.tomcat.GracefulShutdown - Graceful shutdown complete")
                     .contains("io.camunda.zeebe.broker.system - Broker shut down"));
     assertThat(camunda.getLogs())
         .doesNotContain("Failed to start application")
@@ -181,7 +181,7 @@ class SchemaManagerStartupIT {
     camunda.start();
 
     // then
-    assertThat(camunda.getLogs()).contains("Started StandaloneCamunda");
+    assertThat(camunda.getLogs()).contains("Started Camunda");
   }
 
   private WaitAllStrategy newDefaultWaitStrategy() {

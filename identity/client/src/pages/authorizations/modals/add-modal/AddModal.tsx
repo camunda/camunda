@@ -92,6 +92,8 @@ const resourcePermissions: ResourcePermissionsType = {
   MESSAGE: [PermissionType.CREATE, PermissionType.READ],
   PROCESS_DEFINITION: [
     PermissionType.CANCEL_PROCESS_INSTANCE,
+    PermissionType.CLAIM_USER_TASK,
+    PermissionType.COMPLETE_USER_TASK,
     PermissionType.CREATE_PROCESS_INSTANCE,
     PermissionType.DELETE_PROCESS_INSTANCE,
     PermissionType.MODIFY_PROCESS_INSTANCE,

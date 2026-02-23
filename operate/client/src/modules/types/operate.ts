@@ -72,8 +72,6 @@ interface ProcessInstanceEntity {
   tenantId: string;
 }
 
-type SortOrder = 'asc' | 'desc';
-
 type FlowNodeInstanceDto = {
   id: string;
   type: string;
@@ -94,6 +92,5 @@ export type {
   OperationEntity,
   InstanceOperationEntity,
   ProcessInstanceEntity,
-  SortOrder,
   FlowNodeInstance,
 };

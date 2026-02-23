@@ -16,7 +16,7 @@ env-h2-up:
 	ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME=io.camunda.exporter.rdbms.RdbmsExporter \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,identity,consolidated-auth
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,admin,consolidated-auth
 
 .PHONY: env-up
 env-up:
@@ -126,7 +126,7 @@ env-identity-up:
   CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED=false \
 	mvn clean install -DskipTests -DskipChecks -f ../dist/pom.xml exec:java \
 	  -Dexec.mainClass="io.camunda.application.StandaloneCamunda" \
-	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,identity
+	  -Dspring.profiles.active=operate,broker,dev,dev-data,consolidated-auth,admin
 
 
 .PHONY: env-down

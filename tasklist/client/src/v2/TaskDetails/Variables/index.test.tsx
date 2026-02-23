@@ -15,7 +15,7 @@ import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import noop from 'lodash/noop';
 import {currentUser} from 'common/mocks/current-user';
-import type {Variable} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
@@ -1205,6 +1205,7 @@ describe('<Variables />', () => {
       tenantId: DEFAULT_TENANT_ID,
       scopeKey: '1-myVar',
       processInstanceKey: '1-myVar',
+      rootProcessInstanceKey: null,
     };
     const mockNewValue = '"new-value"';
     nodeMockServer.use(
@@ -1635,6 +1636,7 @@ describe('<Variables />', () => {
       tenantId: DEFAULT_TENANT_ID,
       scopeKey: 'var.with.dots',
       processInstanceKey: 'var.with.dots',
+      rootProcessInstanceKey: null,
     } satisfies Variable;
 
     nodeMockServer.use(

@@ -8,6 +8,7 @@
 package io.camunda.authentication.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -16,7 +17,6 @@ import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -78,7 +78,7 @@ public final class AuthFailureHandler
       final HttpStatus status,
       final Exception error)
       throws IOException {
-    final var problem = ProblemDetail.forStatus(status);
+    final var problem = CamundaProblemDetail.forStatus(status);
     problem.setDetail(error.getMessage());
     problem.setInstance(URI.create(request.getRequestURI()));
 

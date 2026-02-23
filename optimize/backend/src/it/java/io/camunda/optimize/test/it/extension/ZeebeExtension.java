@@ -18,6 +18,7 @@ import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
+import io.camunda.client.api.response.ProcessInstanceReference;
 import io.camunda.client.api.worker.JobHandler;
 import io.camunda.client.api.worker.JobWorker;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
@@ -205,6 +206,25 @@ public class ZeebeExtension implements BeforeEachCallback, AfterEachCallback {
 
   public void broadcastSignalWithName(final String signalName) {
     camundaClient.newBroadcastSignalCommand().signalName(signalName).send().join();
+  }
+
+  public long startProcessInstanceByConditionalEvaluation(
+      final long processDefinitionKey, final Map<String, Object> variables) {
+    return camundaClient
+        .newEvaluateConditionalCommand()
+        .variables(variables)
+        .processDefinitionKey(processDefinitionKey)
+        .send()
+        .join()
+        .getProcessInstances()
+        .stream()
+        .findFirst()
+        .map(ProcessInstanceReference::getProcessInstanceKey)
+        .orElseThrow(
+            () ->
+                new RuntimeException(
+                    "No process instance created by conditional evaluation for process definition key: "
+                        + processDefinitionKey));
   }
 
   public void startProcessInstanceBeforeElementWithIds(

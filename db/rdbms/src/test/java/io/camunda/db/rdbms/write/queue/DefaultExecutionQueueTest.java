@@ -410,7 +410,6 @@ class DefaultExecutionQueueTest {
   @CsvSource({
     // statementId, expectedResult
     "foo.updateHistoryCleanupDate,true",
-    "foo.updateProcessHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
     "some.other.Statement,false"

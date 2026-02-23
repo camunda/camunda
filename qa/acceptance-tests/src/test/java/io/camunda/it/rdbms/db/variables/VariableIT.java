@@ -219,6 +219,29 @@ public class VariableIT {
   }
 
   @TestTemplate
+  public void shouldFindAllVariablesPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final String varName = "var-name-" + nextStringId();
+    VariableFixtures.createAndSaveRandomVariables(rdbmsService, 120, b -> b.name(varName));
+
+    final var searchResult =
+        rdbmsService
+            .getVariableReader()
+            .search(
+                new VariableQuery(
+                    new VariableFilter.Builder().names(varName).build(),
+                    VariableSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindAllVariablesPageValuesAreNull(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -300,6 +323,41 @@ public class VariableIT {
     assertThat(nextPage.total()).isEqualTo(20);
     assertThat(nextPage.items()).hasSize(5);
     assertThat(nextPage.items()).isEqualTo(searchResult.items().subList(15, 20));
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final VariableDbReader reader = rdbmsService.getVariableReader();
+
+    final var tenantId = nextStringId();
+    final var item1 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+    final var item2 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+    final var item3 = createAndSaveVariable(rdbmsService, b -> b.tenantId(tenantId));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getVariableWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            VariableQuery.of(
+                b ->
+                    b.filter(f -> f.tenantIds(tenantId))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(VariableEntity::variableKey))
+        .containsExactlyInAnyOrder(item1.variableKey(), item3.variableKey());
   }
 
   @TestTemplate

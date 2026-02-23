@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
@@ -38,7 +39,9 @@ public class Cluster implements Cloneable {
           "clusterName",
           "zeebe.gateway.cluster.clusterName",
           "initialContactPoints",
-          "zeebe.gateway.cluster.initialContactPoints");
+          "zeebe.gateway.cluster.initialContactPoints",
+          "gatewayId",
+          "zeebe.gateway.cluster.memberId");
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -108,6 +111,12 @@ public class Cluster implements Cloneable {
    */
   private String clusterId;
 
+  /**
+   * The member id of this gateway node in the cluster. Only relevant for standalone gateway
+   * deployments.
+   */
+  private String gatewayId = DEFAULT_CLUSTER_MEMBER_ID;
+
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
 
@@ -141,6 +150,9 @@ public class Cluster implements Cloneable {
    * appear, and all partitions should be specified with the appropriate replication factor.
    */
   @NestedConfigurationProperty private Partitioning partitioning = new Partitioning();
+
+  private boolean sendOnLegacySubject = true;
+  private boolean receiveOnLegacySubject = true;
 
   public NodeIdProvider getNodeIdProvider() {
     return nodeIdProvider;
@@ -260,6 +272,19 @@ public class Cluster implements Cloneable {
     this.clusterId = clusterId;
   }
 
+  public String getGatewayId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".gateway-id",
+        gatewayId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_GATEWAY_PROPERTIES.get("gatewayId")));
+  }
+
+  public void setGatewayId(final String gatewayId) {
+    this.gatewayId = gatewayId;
+  }
+
   public Raft getRaft() {
     return raft;
   }
@@ -295,6 +320,22 @@ public class Cluster implements Cloneable {
 
   public void setPartitioning(final Partitioning partitioning) {
     this.partitioning = partitioning;
+  }
+
+  public boolean isReceiveOnLegacySubject() {
+    return receiveOnLegacySubject;
+  }
+
+  public void setReceiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
+  }
+
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
+  }
+
+  public void setSendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
   }
 
   @Override
@@ -336,6 +377,10 @@ public class Cluster implements Cloneable {
         + compressionAlgorithm
         + ", globalListeners="
         + globalListeners
+        + ", sendOnLegacySubject="
+        + sendOnLegacySubject
+        + ", receiveOnLegacySubject="
+        + receiveOnLegacySubject
         + '}';
   }
 

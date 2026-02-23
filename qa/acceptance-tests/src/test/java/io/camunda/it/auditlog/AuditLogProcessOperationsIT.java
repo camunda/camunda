@@ -27,6 +27,7 @@ import io.camunda.client.api.search.enums.AuditLogEntityTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogOperationTypeEnum;
 import io.camunda.client.api.search.enums.AuditLogResultEnum;
 import io.camunda.client.api.search.enums.IncidentState;
+import io.camunda.client.api.search.filter.AuditLogFilter;
 import io.camunda.client.api.search.response.AuditLogResult;
 import io.camunda.client.api.search.response.Incident;
 import io.camunda.qa.util.auth.Authenticated;
@@ -37,6 +38,7 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.Consumer;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -279,22 +281,23 @@ public class AuditLogProcessOperationsIT {
         .send()
         .join();
 
-    // then - wait for audit log entry and verify
+    // then - verify audit log entry
     final var auditLogItems =
-        awaitAuditLogEntry(
+        awaitAuditLogEntryWithFilters(
             client,
-            AuditLogEntityTypeEnum.VARIABLE,
-            AuditLogOperationTypeEnum.CREATE,
-            String.valueOf(processInstanceKey));
+            fn ->
+                fn.processInstanceKey(String.valueOf(processInstanceKey))
+                    .entityDescription("newVar"));
 
-    assertThat(auditLogItems).isNotEmpty();
+    assertThat(auditLogItems.size()).isEqualTo(1);
     final var auditLog = auditLogItems.getFirst();
     assertVariableAuditLog(
         auditLog,
         AuditLogOperationTypeEnum.CREATE,
         processInstanceKey,
         sharedProcessDefinitionKey,
-        SERVICE_TASKS_PROCESS_ID);
+        SERVICE_TASKS_PROCESS_ID,
+        "newVar");
   }
 
   @Test
@@ -331,7 +334,8 @@ public class AuditLogProcessOperationsIT {
         AuditLogOperationTypeEnum.UPDATE,
         processInstanceKey,
         processInstance.getProcessDefinitionKey(),
-        SERVICE_TASKS_PROCESS_ID);
+        SERVICE_TASKS_PROCESS_ID,
+        "existingVar");
   }
 
   // ========================================================================================
@@ -684,13 +688,15 @@ public class AuditLogProcessOperationsIT {
       final AuditLogOperationTypeEnum operationType,
       final long processInstanceKey,
       final long processDefinitionKey,
-      final String processDefinitionId) {
+      final String processDefinitionId,
+      final String variableName) {
     assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.VARIABLE, operationType);
     assertThat(auditLog.getEntityKey()).isNotNull();
     assertThat(auditLog.getProcessInstanceKey()).isEqualTo(String.valueOf(processInstanceKey));
     assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
     assertThat(auditLog.getTenantId()).isEqualTo(TENANT_A);
     assertThat(auditLog.getProcessDefinitionId()).isEqualTo(processDefinitionId);
+    assertThat(auditLog.getEntityDescription()).isEqualTo(variableName);
   }
 
   /**
@@ -807,6 +813,20 @@ public class AuditLogProcessOperationsIT {
               } else {
                 return !auditLogItems.items().isEmpty() ? auditLogItems.items() : null;
               }
+            },
+            Objects::nonNull);
+  }
+
+  private List<AuditLogResult> awaitAuditLogEntryWithFilters(
+      final CamundaClient client, final Consumer<AuditLogFilter> auditLogFilterConsumer) {
+    return Awaitility.await("Audit log entry is created")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(20))
+        .until(
+            () -> {
+              final var auditLogItems =
+                  client.newAuditLogSearchRequest().filter(auditLogFilterConsumer).send().join();
+              return !auditLogItems.items().isEmpty() ? auditLogItems.items() : null;
             },
             Objects::nonNull);
   }

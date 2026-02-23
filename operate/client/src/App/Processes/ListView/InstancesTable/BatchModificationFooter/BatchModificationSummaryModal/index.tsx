@@ -78,7 +78,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
 
     const headers = [
       {header: 'Operation', key: 'operation', width: '30%'},
-      {header: 'Flow Node', key: 'flowNode', width: '40%'},
+      {header: 'Element', key: 'flowNode', width: '40%'},
       {header: 'Affected instances', key: 'affectedInstances', width: '30%'},
     ];
 
@@ -128,7 +128,7 @@ const BatchModificationSummaryModal: React.FC<StateProps> = observer(
         <p>
           {`Planned modifications for "${processName}". Click "Apply" to proceed.`}
         </p>
-        <Title>Flow Node Modifications</Title>
+        <Title>Element Modifications</Title>
         <DataTable headers={headers} rows={rows} />
       </Modal>
     );

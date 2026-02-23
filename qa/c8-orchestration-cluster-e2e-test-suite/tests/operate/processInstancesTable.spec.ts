@@ -296,24 +296,24 @@ test.describe('Process Instances Table', () => {
     });
 
     await test.step('Scroll to 100th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[49]}`})
-        .scrollIntoViewIfNeeded();
+      await operateProcessesPage.scrollUntilElementIsVisible(
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[50]}`}),
+      );
 
       await expect(instanceRows).toHaveCount(100);
     });
 
     await test.step('Scroll to 150th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[99]}`})
-        .scrollIntoViewIfNeeded();
+      await operateProcessesPage.scrollUntilElementIsVisible(
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[100]}`}),
+      );
       await expect(instanceRows).toHaveCount(150);
     });
 
     await test.step('Scroll to 200th instance', async () => {
-      await page
-        .getByRole('row', {name: `Instance ${descendingInstanceIds[149]}`})
-        .scrollIntoViewIfNeeded();
+      await operateProcessesPage.scrollUntilElementIsVisible(
+        page.getByRole('row', {name: `Instance ${descendingInstanceIds[150]}`}),
+      );
       await sleep(500);
       await expect(instanceRows).toHaveCount(200);
       await expect

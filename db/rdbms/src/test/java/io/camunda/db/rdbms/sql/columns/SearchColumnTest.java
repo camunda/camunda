@@ -24,6 +24,8 @@ import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionInstanceState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeState;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.GlobalListenerSource;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.entities.JobEntity.JobKind;
@@ -169,7 +171,17 @@ public class SearchColumnTest {
               AuditLogTenantScope.class,
               List.of(
                   Tuple.of(AuditLogTenantScope.TENANT, AuditLogTenantScope.TENANT),
-                  Tuple.of(AuditLogTenantScope.TENANT, "TENANT"))));
+                  Tuple.of(AuditLogTenantScope.TENANT, "TENANT"))),
+          Map.entry(
+              GlobalListenerSource.class,
+              List.of(
+                  Tuple.of(GlobalListenerSource.API, GlobalListenerSource.API),
+                  Tuple.of(GlobalListenerSource.API, "API"))),
+          Map.entry(
+              GlobalListenerType.class,
+              List.of(
+                  Tuple.of(GlobalListenerType.USER_TASK, GlobalListenerType.USER_TASK),
+                  Tuple.of(GlobalListenerType.USER_TASK, "USER_TASK"))));
 
   private static List<Object[]> provideSearchColumns() {
     return SearchColumnUtils.findAll().stream()

@@ -40,7 +40,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -60,6 +60,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerType": "USER",
                  "resourceType": "PROCESS_DEFINITION",
                  "resourceId": "2",
+                 "resourcePropertyName": null,
                  "permissionTypes": ["CREATE"]
                },
                {
@@ -68,6 +69,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerType": "USER",
                  "resourceType": "RESOURCE",
                  "resourceId": "*",
+                 "resourcePropertyName": null,
                  "permissionTypes": ["CREATE"]
                },
                {
@@ -75,6 +77,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                  "ownerId": "foo",
                  "ownerType": "USER",
                  "resourceType": "USER_TASK",
+                 "resourceId": null,
                  "resourcePropertyName": "assignee",
                  "permissionTypes": ["CLAIM"]
                }
@@ -169,6 +172,7 @@ public class AuthorizationQueryControllerTest extends RestControllerTest {
                   "ownerType": "USER",
                   "resourceId": "resourceId",
                   "resourceType": "PROCESS_DEFINITION",
+                  "resourcePropertyName": null,
                   "permissionTypes": ["CREATE"]
                 }""",
             JsonCompareMode.STRICT);

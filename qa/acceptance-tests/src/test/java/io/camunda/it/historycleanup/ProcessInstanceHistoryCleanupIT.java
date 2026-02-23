@@ -14,10 +14,13 @@ import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.worker.JobWorker;
+import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.multidb.CamundaMultiDBExtension.DatabaseType;
 import io.camunda.qa.util.multidb.HistoryMultiDbTest;
+import io.camunda.qa.util.multidb.MultiDbTestApplication;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.io.ByteArrayInputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -37,11 +40,15 @@ import org.slf4j.LoggerFactory;
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
 public class ProcessInstanceHistoryCleanupIT {
 
+  // To generate audit logs we need to have authenticated access
+  @MultiDbTestApplication
+  static final TestStandaloneBroker BROKER =
+      new TestStandaloneBroker().withBasicAuth().withAuthenticatedAccess();
+
   private static final Logger LOGGER =
       LoggerFactory.getLogger(ProcessInstanceHistoryCleanupIT.class);
-  private static CamundaClient client;
+  @Authenticated private static CamundaClient client;
   private static DatabaseType databaseType;
-
   private static final String ROOT_PROCESS_ID = "rootProcess";
   private static final String CHILD_PROCESS_ID = "childProcess";
   private static final String DECISION_ID = "jedi_or_sith";
@@ -49,7 +56,6 @@ public class ProcessInstanceHistoryCleanupIT {
   private static final String JOB_TYPE = "job";
   private static final Duration TIMEOUT = Duration.ofSeconds(10);
   private static Duration cleanupTimeout;
-
   private final AtomicBoolean shouldWorkerCompleteJob = new AtomicBoolean(false);
 
   @BeforeAll
@@ -206,17 +212,15 @@ public class ProcessInstanceHistoryCleanupIT {
                 .join()
                 .items(),
         "sequence flow",
-        () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join());
-    /* TODO enable this when the audit log for process instances cleanup is implemented
-    "audit log",
-    () ->
-        client
-            .newAuditLogSearchRequest()
-            .filter(f -> f.processInstanceKey(String.valueOf(processInstanceKey)))
-            .send()
-            .join()
-            .items());
-     */
+        () -> client.newProcessInstanceSequenceFlowsRequest(processInstanceKey).send().join(),
+        "audit log",
+        () ->
+            client
+                .newAuditLogSearchRequest()
+                .filter(f -> f.processInstanceKey(String.valueOf(processInstanceKey)))
+                .send()
+                .join()
+                .items());
   }
 
   private void assertProcessInstanceState(

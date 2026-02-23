@@ -40,9 +40,8 @@ import org.opensearch.testcontainers.OpenSearchContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.EnableRetry;
-import org.springframework.retry.annotation.Retryable;
+import org.springframework.resilience.annotation.EnableResilientMethods;
+import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
@@ -54,7 +53,7 @@ import org.testcontainers.utility.DockerImageName;
 
 @Component
 @Configuration
-@EnableRetry
+@EnableResilientMethods
 public class TestContainerUtil {
 
   public static final String ELS_NETWORK_ALIAS = "elasticsearch";
@@ -331,10 +330,7 @@ public class TestContainerUtil {
     }
   }
 
-  @Retryable(
-      retryFor = TasklistRuntimeException.class,
-      maxAttempts = 5,
-      backoff = @Backoff(delay = 3000))
+  @Retryable(maxRetries = 5, delay = 3000, includes = TasklistRuntimeException.class)
   public void checkElasticsearchHealth(final TestContext testContext) {
     try {
       final RestClient restClient =
@@ -353,14 +349,11 @@ public class TestContainerUtil {
         LOGGER.warn("ElasticSearch cluster health status is : '{}'", healthStatus);
       }
     } catch (final IOException | ElasticsearchException e) {
-      throw new TasklistRuntimeException(e);
+      throw new TasklistRuntimeException("Elasticsearch health check failed", e);
     }
   }
 
-  @Retryable(
-      retryFor = TasklistRuntimeException.class,
-      maxAttempts = 5,
-      backoff = @Backoff(delay = 3000))
+  @Retryable(maxRetries = 5, delay = 3000, includes = TasklistRuntimeException.class)
   public void checkOpenSearchHealth(final OpenSearchClient osClient) {
     try {
       final org.opensearch.client.opensearch.cluster.HealthResponse healthResponse =
@@ -375,7 +368,7 @@ public class TestContainerUtil {
         LOGGER.warn("OpenSearch cluster health status is : '{}'", healthStatus);
       }
     } catch (final IOException | OpenSearchException ex) {
-      throw new TasklistRuntimeException();
+      throw new TasklistRuntimeException("OpenSearch health check failed", ex);
     }
   }
 

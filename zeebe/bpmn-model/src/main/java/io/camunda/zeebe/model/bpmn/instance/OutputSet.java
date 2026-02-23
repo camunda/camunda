@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface OutputSet extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface OutputSet extends BaseElement, NamedBpmnElement {
 
   Collection<DataOutput> getDataOutputRefs();
 

@@ -14,14 +14,10 @@ import {createVariableFieldName} from './createVariableFieldName';
 import {reaction} from 'mobx';
 import {type VariableFormValues} from 'modules/types/variables';
 import {useFieldArray} from 'react-final-form-arrays';
-import {getScopeId} from 'modules/utils/variables';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useVariableScopeKey} from 'modules/hooks/variables';
 
 const OnLastVariableModificationRemoved: React.FC = observer(() => {
-  const scopeKey = IS_ELEMENT_SELECTION_V2
-    ? useVariableScopeKey()
-    : getScopeId();
+  const scopeKey = useVariableScopeKey();
   const form = useForm();
   const formState = useFormState<VariableFormValues>();
   const fieldArray = useFieldArray('newVariables');

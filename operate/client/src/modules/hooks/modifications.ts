@@ -262,17 +262,17 @@ const useCanBeModified = (elementId?: string) => {
 type UseAvailableModificationsParams = {
   runningElementInstanceCount: number;
   elementId?: string;
-  elementInstanceKey?: string;
+  isSpecificElementInstanceSelected?: boolean;
   isMultiInstanceBody?: boolean;
-  isElementInstanceResolved?: boolean;
+  isElementInstanceKeyAvailable?: boolean;
 };
 
 const useAvailableModifications = ({
   runningElementInstanceCount,
   elementId,
-  elementInstanceKey,
+  isSpecificElementInstanceSelected,
   isMultiInstanceBody,
-  isElementInstanceResolved,
+  isElementInstanceKeyAvailable,
 }: UseAvailableModificationsParams) => {
   const options: ModificationOption[] = [];
   const appendableFlowNodes = useAppendableFlowNodes();
@@ -290,7 +290,7 @@ const useAvailableModifications = ({
   if (
     appendableFlowNodes.includes(elementId) &&
     !(isMultiInstance(businessObjects?.[elementId]) && !isMultiInstanceBody) &&
-    elementInstanceKey === undefined
+    !isSpecificElementInstanceSelected
   ) {
     options.push('add');
   }
@@ -300,7 +300,7 @@ const useAvailableModifications = ({
   }
 
   const isSingleOperationAllowed =
-    isElementInstanceResolved &&
+    isElementInstanceKeyAvailable &&
     runningElementInstanceCount === 1 &&
     !isSubProcess(businessObjects?.[elementId]);
 

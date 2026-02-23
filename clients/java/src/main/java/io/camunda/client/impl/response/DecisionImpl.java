@@ -15,7 +15,6 @@
  */
 package io.camunda.client.impl.response;
 
-import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.response.Decision;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
 import java.util.Objects;
@@ -39,35 +38,6 @@ public final class DecisionImpl implements Decision {
         metadata.getDmnDecisionRequirementsId(),
         metadata.getDecisionRequirementsKey(),
         metadata.getTenantId());
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link DecisionImpl#DecisionImpl(String dmnDecisionId, String
-   *     dmnDecisionName, int version, long decisionKey, String dmnDecisionRequirementsId, long
-   *     decisionRequirementsKey, String tenantId)}
-   */
-  @Deprecated
-  public DecisionImpl(
-      final String dmnDecisionId,
-      final String dmnDecisionName,
-      final int version,
-      final long decisionKey,
-      final String dmnDecisionRequirementsId,
-      final long decisionRequirementsKey) {
-    this(
-        dmnDecisionId,
-        dmnDecisionName,
-        version,
-        decisionKey,
-        dmnDecisionRequirementsId,
-        decisionRequirementsKey,
-        CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   public DecisionImpl(

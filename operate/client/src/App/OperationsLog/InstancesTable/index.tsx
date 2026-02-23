@@ -33,10 +33,6 @@ import {
 } from '../auditLogFilters';
 import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
 import {observer} from 'mobx-react';
-import {CellAppliedTo} from './CellAppliedTo';
-import {CellOperationType} from './CellOperationType';
-import {CellResult} from './CellResult';
-import {CellComment} from './CellComment';
 import {
   useProcessDefinitionNames,
   useSelectedProcessDefinition,
@@ -48,25 +44,36 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
+import {CellOperationType} from './Cell/CellOperationType';
+import {CellResult} from './Cell/CellResult';
+import {CellReference} from './Cell/CellReference';
+import {CellProperty} from './Cell/CellProperty';
+import {CellActor} from './Cell/CellActor';
+import {CellComment} from './Cell/CellComment';
 
 const headerColumns = [
   {
-    header: 'Operation',
+    header: '',
+    key: 'result',
+  },
+  {
+    header: 'Operation type',
     key: 'operationType',
     sortKey: 'operationType',
   },
   {
-    header: 'Entity',
+    header: 'Entity type',
     key: 'entityType',
     sortKey: 'entityType',
   },
   {
-    header: 'Status',
-    key: 'result',
+    header: 'Reference to entity',
+    key: 'reference',
+    isDisabled: true,
   },
   {
-    header: 'Applied to',
-    key: 'appliedTo',
+    header: 'Property',
+    key: 'property',
     isDisabled: true,
   },
   {
@@ -75,7 +82,7 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
-    header: 'Time',
+    header: 'Date',
     key: 'timestamp',
     sortKey: 'timestamp',
   },
@@ -203,11 +210,11 @@ const InstancesTable: React.FC = observer(() => {
     () =>
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
-        entityType: spaceAndCapitalize(item.entityType),
-        operationType: <CellOperationType item={item} />,
         result: <CellResult item={item} />,
-        appliedTo: (
-          <CellAppliedTo
+        operationType: <CellOperationType item={item} />,
+        entityType: spaceAndCapitalize(item.entityType),
+        reference: (
+          <CellReference
             item={item}
             processDefinitionName={
               item.processDefinitionKey
@@ -216,7 +223,8 @@ const InstancesTable: React.FC = observer(() => {
             }
           />
         ),
-        user: item.actorId,
+        property: <CellProperty item={item} />,
+        user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: <CellComment item={item} setDetailsModal={setDetailsModal} />,
       })) || [],
@@ -253,6 +261,7 @@ const InstancesTable: React.FC = observer(() => {
           fetchPreviousPage,
           fetchNextPage,
         }}
+        stickyHeader
       />
       {detailsModal.auditLog && (
         <DetailsModal

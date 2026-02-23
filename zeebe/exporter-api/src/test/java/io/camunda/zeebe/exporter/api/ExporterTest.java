@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.camunda.zeebe.exporter.api.context.Configuration;
 import io.camunda.zeebe.exporter.api.context.Context;
 import io.camunda.zeebe.exporter.api.context.Context.RecordFilter;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
@@ -233,6 +234,11 @@ public final class ExporterTest {
     @Override
     public Map<String, Object> getAuthorizations() {
       return Map.of();
+    }
+
+    @Override
+    public Agent getAgent() {
+      return null;
     }
 
     @Override

@@ -178,8 +178,8 @@ test.describe('Process Instances Filters', () => {
     await filtersPanel.variableNameFilter.fill('filtersTest');
     await filtersPanel.variableValueFilter.fill('123');
 
-    // open json editor modal and check content
-    await page.getByRole('button', {name: /open json editor modal/i}).click();
+    // open json editor and check content
+    await page.getByRole('button', {name: /open json editor/i}).click();
     await expect(
       page.getByRole('dialog').getByText(/edit variable value/i),
     ).toBeVisible();

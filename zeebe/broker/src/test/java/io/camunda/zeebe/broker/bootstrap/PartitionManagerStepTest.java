@@ -9,7 +9,6 @@ package io.camunda.zeebe.broker.bootstrap;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
-import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -17,21 +16,12 @@ import static org.mockito.Mockito.when;
 import io.atomix.cluster.ClusterMembershipService;
 import io.atomix.cluster.Member;
 import io.atomix.cluster.MemberConfig;
-import io.camunda.search.clients.SearchClientsProxy;
-import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
-import io.camunda.security.configuration.SecurityConfiguration;
-import io.camunda.service.UserServices;
-import io.camunda.zeebe.broker.SpringBrokerBridge;
-import io.camunda.zeebe.broker.client.api.BrokerClient;
-import io.camunda.zeebe.broker.clustering.ClusterServicesImpl;
-import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.jobstream.JobStreamService;
 import io.camunda.zeebe.broker.partitioning.PartitionManagerImpl;
 import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.management.BrokerAdminServiceImpl;
-import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
 import io.camunda.zeebe.broker.transport.adminapi.AdminApiRequestHandler;
 import io.camunda.zeebe.protocol.impl.encoding.BrokerInfo;
 import io.camunda.zeebe.scheduler.ActorScheduler;
@@ -40,7 +30,6 @@ import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.scheduler.testing.TestConcurrencyControl;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +37,6 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.oauth2.jwt.JwtDecoder;
 
 class PartitionManagerStepTest {
   public static final Duration TEST_SHUTDOWN_TIMEOUT = Duration.ofSeconds(10);
@@ -64,7 +51,7 @@ class PartitionManagerStepTest {
 
   private final Logger log = LoggerFactory.getLogger(PartitionManagerStepTest.class);
   private final PartitionManagerStep sut = new PartitionManagerStep();
-  private BrokerStartupContextImpl testBrokerStartupContext;
+  private MockBrokerStartupContext testBrokerStartupContext;
 
   @Test
   void shouldHaveDescriptiveName() {
@@ -87,24 +74,11 @@ class PartitionManagerStepTest {
       actorScheduler.start();
       startupFuture = CONCURRENCY_CONTROL.createFuture();
 
-      testBrokerStartupContext =
-          new BrokerStartupContextImpl(
-              mock(BrokerInfo.class),
-              TEST_BROKER_CONFIG,
-              mock(SpringBrokerBridge.class),
-              actorScheduler,
-              mock(BrokerHealthCheckService.class),
-              mock(ExporterRepository.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
-              mock(BrokerClient.class),
-              Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration(),
-              mock(UserServices.class),
-              mock(PasswordEncoder.class),
-              mock(JwtDecoder.class),
-              mock(SearchClientsProxy.class),
-              mock(BrokerRequestAuthorizationConverter.class));
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(actorScheduler);
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
       testBrokerStartupContext.setConcurrencyControl(CONCURRENCY_CONTROL);
       testBrokerStartupContext.setAdminApiService(mock(AdminApiRequestHandler.class));
       testBrokerStartupContext.setBrokerAdminService(mock(BrokerAdminServiceImpl.class));
@@ -191,24 +165,11 @@ class PartitionManagerStepTest {
       mockPartitionManager = mock(PartitionManagerImpl.class);
       when(mockPartitionManager.stop()).thenReturn(CompletableActorFuture.completed(null));
 
-      testBrokerStartupContext =
-          new BrokerStartupContextImpl(
-              mock(BrokerInfo.class),
-              TEST_BROKER_CONFIG,
-              mock(SpringBrokerBridge.class),
-              mock(ActorScheduler.class),
-              mock(BrokerHealthCheckService.class),
-              mock(ExporterRepository.class),
-              mock(ClusterServicesImpl.class, RETURNS_DEEP_STUBS),
-              mock(BrokerClient.class),
-              Collections.emptyList(),
-              TEST_SHUTDOWN_TIMEOUT,
-              new SecurityConfiguration(),
-              mock(UserServices.class),
-              mock(PasswordEncoder.class),
-              mock(JwtDecoder.class),
-              mock(SearchClientsProxy.class),
-              mock(BrokerRequestAuthorizationConverter.class));
+      testBrokerStartupContext = new MockBrokerStartupContext();
+      testBrokerStartupContext.setBrokerInfo(mock(BrokerInfo.class));
+      testBrokerStartupContext.setBrokerConfiguration(TEST_BROKER_CONFIG);
+      testBrokerStartupContext.setActorSchedulingService(mock(ActorScheduler.class));
+      testBrokerStartupContext.setShutdownTimeout(TEST_SHUTDOWN_TIMEOUT);
 
       testBrokerStartupContext.setPartitionManager(mockPartitionManager);
       final ClusterConfigurationService mockClusterTopology =

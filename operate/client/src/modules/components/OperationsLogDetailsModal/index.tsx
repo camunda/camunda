@@ -28,6 +28,7 @@ import {
   IconText,
   ParagraphWithIcon,
   VerticallyAlignedRow,
+  IconTextWithTopMargin,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -35,8 +36,11 @@ import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon'
 import {
   formatBatchTitle,
   formatModalHeading,
+  getActorIcon,
 } from 'modules/utils/operationsLog';
 import {Paths} from 'modules/Routes';
+import {useMemo} from 'react';
+import AiAgentIcon from 'modules/components/Icon/ai-agent.svg?react';
 
 type Props = {
   isOpen: boolean;
@@ -50,6 +54,8 @@ type DetailsModalState = {
 };
 
 const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
+  const ActorIcon = useMemo(() => getActorIcon(auditLog), [auditLog]);
+
   return (
     <Modal
       size="md"
@@ -57,7 +63,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
       onRequestClose={onClose}
       modalHeading={formatModalHeading(auditLog)}
       primaryButtonDisabled
-      secondaryButtonText="Close"
+      passiveModal
     >
       {auditLog.entityType !== 'BATCH' && auditLog.batchOperationKey ? (
         <ParagraphWithIcon>
@@ -97,13 +103,28 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Actor
               </IconText>
             </FirstColumn>
-            <StructuredListCell>{auditLog.actorId}</StructuredListCell>
+            <StructuredListCell>
+              {!ActorIcon ? (
+                auditLog.actorId
+              ) : (
+                <IconText>
+                  <ActorIcon />
+                  <CodeSnippet wrapText>{auditLog.actorId}</CodeSnippet>
+                </IconText>
+              )}
+              {auditLog.agentElementId && (
+                <IconTextWithTopMargin>
+                  <AiAgentIcon />
+                  <CodeSnippet wrapText>{auditLog.agentElementId}</CodeSnippet>
+                </IconTextWithTopMargin>
+              )}
+            </StructuredListCell>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
               <IconText>
                 <EventSchedule />
-                Time
+                Date
               </IconText>
             </FirstColumn>
             <StructuredListCell>

@@ -22,10 +22,21 @@ import org.testcontainers.containers.wait.strategy.WaitStrategy;
 import org.testcontainers.containers.wait.strategy.WaitStrategyTarget;
 import org.testcontainers.utility.DockerImageName;
 
+/**
+ * Testcontainers wrapper for <a href="https://github.com/fsouza/fake-gcs-server">fake-gcs-server
+ * </a>.
+ *
+ * <p>By default the container advertises its host-mapped endpoint so that host-side clients can
+ * perform multipart uploads. When the container needs to be reachable from other Docker containers
+ * (e.g. via a shared {@link org.testcontainers.containers.Network}), call {@link
+ * #withNetworkAlias(String)} to make the server advertise the internal endpoint instead.
+ */
 public final class GcsContainer extends GenericContainer<GcsContainer> {
   private static final DockerImageName IMAGE = DockerImageName.parse("fsouza/fake-gcs-server");
   private static final String IMAGE_TAG = "1";
   private static final int PORT = 8000;
+
+  private String networkAlias;
 
   public GcsContainer() {
     super(IMAGE.withTag(IMAGE_TAG));
@@ -43,21 +54,53 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
             .withStrategy(new URLUpdatingStrategy()));
   }
 
+  /**
+   * Sets a network alias and makes the server advertise the internal endpoint ({@code
+   * http://<alias>:8000}) so that other containers on the same Docker network can perform uploads.
+   * Host-side reads still work via {@link #externalEndpoint()}.
+   */
+  public GcsContainer withNetworkAlias(final String alias) {
+    networkAlias = alias;
+    withNetworkAliases(alias);
+    return this;
+  }
+
+  /** Returns the endpoint reachable from the host ({@code http://localhost:<mapped-port>}). */
   public String externalEndpoint() {
     return "http://%s:%d".formatted(getHost(), getMappedPort(PORT));
   }
 
-  private static final class URLUpdatingStrategy implements WaitStrategy {
+  /**
+   * Returns the endpoint reachable from other containers on the same Docker network. Only available
+   * when a network alias has been set via {@link #withNetworkAlias(String)}.
+   *
+   * @throws IllegalStateException if no network alias has been configured
+   */
+  public String internalEndpoint() {
+    if (networkAlias == null) {
+      throw new IllegalStateException(
+          "No network alias configured — call withNetworkAlias(String) first");
+    }
+    return "http://%s:%d".formatted(networkAlias, PORT);
+  }
+
+  /** The advertised URL: internal if a network alias is set, external otherwise. */
+  private String advertisedUrl() {
+    return networkAlias != null ? internalEndpoint() : externalEndpoint();
+  }
+
+  private final class URLUpdatingStrategy implements WaitStrategy {
 
     private Duration startupTimeout = Duration.ofSeconds(30);
 
     @Override
     public void waitUntilReady(final WaitStrategyTarget waitStrategyTarget) {
-      final var endpoint =
+      final var hostEndpoint =
           "http://" + waitStrategyTarget.getHost() + ":" + waitStrategyTarget.getMappedPort(PORT);
+      final var advertisedEndpoint = advertisedUrl();
       Awaitility.await("until the external URL has been changed")
           .atMost(startupTimeout)
-          .untilAsserted(() -> refreshExternalURL(endpoint));
+          .untilAsserted(() -> refreshExternalURL(hostEndpoint, advertisedEndpoint));
     }
 
     @Override
@@ -66,9 +109,10 @@ public final class GcsContainer extends GenericContainer<GcsContainer> {
       return this;
     }
 
-    private void refreshExternalURL(final String endpoint) throws Exception {
-      final var modifyExternalUrlRequestUri = endpoint + "/_internal/config";
-      final var updateExternalUrlJson = "{\"externalUrl\": \"" + endpoint + "\"}";
+    private void refreshExternalURL(final String hostEndpoint, final String advertisedEndpoint)
+        throws Exception {
+      final var modifyExternalUrlRequestUri = hostEndpoint + "/_internal/config";
+      final var updateExternalUrlJson = "{\"externalUrl\": \"" + advertisedEndpoint + "\"}";
       final var req =
           HttpRequest.newBuilder()
               .uri(URI.create(modifyExternalUrlRequestUri))

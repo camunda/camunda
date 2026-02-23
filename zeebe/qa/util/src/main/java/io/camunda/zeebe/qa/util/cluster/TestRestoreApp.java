@@ -12,7 +12,10 @@ import io.camunda.application.Profile;
 import io.camunda.configuration.Camunda;
 import io.camunda.zeebe.qa.util.actuator.HealthActuator;
 import io.camunda.zeebe.restore.RestoreApp;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.springframework.boot.WebApplicationType;
@@ -22,6 +25,8 @@ import org.springframework.boot.builder.SpringApplicationBuilder;
 public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> {
   private final Camunda config;
   private long[] backupId;
+  private Instant from;
+  private Instant to;
 
   public TestRestoreApp() {
     this(new Camunda());
@@ -63,12 +68,16 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   @Override
   protected String[] commandLineArgs() {
-    return backupId == null
-        ? super.commandLineArgs()
-        : new String[] {
+    final List<String> args = new ArrayList<>(List.of(super.commandLineArgs()));
+    if (backupId != null) {
+      args.add(
           "--backupId="
-              + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(","))
-        };
+              + Arrays.stream(backupId).mapToObj(Long::toString).collect(Collectors.joining(",")));
+    } else if (from != null && to != null) {
+      args.add("--from=" + from);
+      args.add("--to=" + to);
+    }
+    return args.toArray(String[]::new);
   }
 
   @Override
@@ -78,6 +87,12 @@ public final class TestRestoreApp extends TestSpringApplication<TestRestoreApp> 
 
   public TestRestoreApp withBackupId(final long... backupId) {
     this.backupId = backupId;
+    return this;
+  }
+
+  public TestRestoreApp withTimeRange(final Instant from, final Instant to) {
+    this.from = from;
+    this.to = to;
     return this;
   }
 }

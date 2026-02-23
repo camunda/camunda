@@ -217,7 +217,6 @@ An example payload looks like this:
     "inputs": {
       "name": benchmark_name,
       "ref": zeebe_ref_name,
-      "cluster": "zeebe-cluster",
       "stable-vms": stable_vms
     }
 }
@@ -283,7 +282,7 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 ##### Labeling a PR
 
-It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-pr-benchmark.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
+It is as easy as it sounds; we can label an existing PR with the [**benchmark**](https://github.com/camunda/camunda/labels/benchmark) label, which triggers a [GitHub Workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-pr-load-test.yaml). The workflow will build a new Docker image, based on the PR branch, and deploy a new load test against this version.
 
 This method allows no specific configuration or adjustment. If this is needed, triggering the [Camunda load test GitHub workflow](https://github.com/camunda/camunda/actions/workflows/camunda-load-test.yml) is recommended.
 

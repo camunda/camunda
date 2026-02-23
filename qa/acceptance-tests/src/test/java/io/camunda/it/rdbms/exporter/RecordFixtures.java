@@ -25,7 +25,9 @@ import io.camunda.zeebe.protocol.record.intent.DecisionIntent;
 import io.camunda.zeebe.protocol.record.intent.DecisionRequirementsIntent;
 import io.camunda.zeebe.protocol.record.intent.FormIntent;
 import io.camunda.zeebe.protocol.record.intent.GroupIntent;
+import io.camunda.zeebe.protocol.record.intent.HistoryDeletionIntent;
 import io.camunda.zeebe.protocol.record.intent.IncidentIntent;
+import io.camunda.zeebe.protocol.record.intent.JobMetricsBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.MappingRuleIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceMigrationIntent;
@@ -45,15 +47,19 @@ import io.camunda.zeebe.protocol.record.value.ClusterVariableScope;
 import io.camunda.zeebe.protocol.record.value.EntityType;
 import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
 import io.camunda.zeebe.protocol.record.value.GroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
 import io.camunda.zeebe.protocol.record.value.ImmutableAuthorizationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationChunkRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationCreationRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationInitializationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationItemValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableBatchOperationLifecycleManagementRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableClusterVariableRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableDecisionEvaluationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableGroupRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableHistoryDeletionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableIncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.ImmutableJobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableJobRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceMigrationRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableProcessInstanceModificationRecordValue;
@@ -63,6 +69,7 @@ import io.camunda.zeebe.protocol.record.value.ImmutableTenantRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserRecordValue;
 import io.camunda.zeebe.protocol.record.value.ImmutableUserTaskRecordValue;
 import io.camunda.zeebe.protocol.record.value.IncidentRecordValue;
+import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue.JobMetricsValue;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import io.camunda.zeebe.protocol.record.value.RoleRecordValue;
@@ -401,6 +408,34 @@ public class RecordFixtures {
         .build();
   }
 
+  public ImmutableRecord<RecordValue> getJobMetricsBatchRecord(
+      final JobMetricsBatchIntent intent,
+      final long startTime,
+      final long endTime,
+      final List<String> encodedStrings,
+      final List<? extends JobMetricsValue> metrics,
+      final boolean recordSizeLimitExceeded) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.JOB_METRICS_BATCH);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(intent)
+        .withKey(nextPosition())
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableJobMetricsBatchRecordValue.builder()
+                .withBatchStartTime(startTime)
+                .withBatchEndTime(endTime)
+                .withJobMetrics(metrics)
+                .withEncodedStrings(encodedStrings)
+                .withRecordSizeLimitExceeded(recordSizeLimitExceeded)
+                .build())
+        .build();
+  }
+
   public ImmutableRecord<RecordValue> getGlobalClusterVariableRecord(
       final ClusterVariableIntent intent) {
     final Record<RecordValue> recordValueRecord =
@@ -530,6 +565,28 @@ public class RecordFixtures {
         .build();
   }
 
+  public ImmutableRecord<RecordValue> getHistoryDeletionRecord(
+      final HistoryDeletionIntent intent,
+      final long resourceKey,
+      final HistoryDeletionType deletionType) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.HISTORY_DELETION);
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withKey(resourceKey)
+        .withIntent(intent)
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableHistoryDeletionRecordValue.builder()
+                .from((ImmutableHistoryDeletionRecordValue) recordValueRecord.getValue())
+                .withResourceKey(resourceKey)
+                .withResourceType(deletionType)
+                .build())
+        .build();
+  }
+
   public ImmutableRecord<RecordValue> getAuthorizationRecord(
       final AuthorizationIntent intent,
       final Long authorizationKey,
@@ -577,6 +634,26 @@ public class RecordFixtures {
             ImmutableBatchOperationCreationRecordValue.builder()
                 .from((ImmutableBatchOperationCreationRecordValue) recordValueRecord.getValue())
                 .withBatchOperationType(type)
+                .build())
+        .build();
+  }
+
+  public ImmutableRecord<RecordValue> getBatchOperationInitializedRecord(
+      final Long batchOperationKey) {
+    final Record<RecordValue> recordValueRecord =
+        FACTORY.generateRecord(ValueType.BATCH_OPERATION_INITIALIZATION);
+
+    return ImmutableRecord.builder()
+        .from(recordValueRecord)
+        .withIntent(BatchOperationIntent.INITIALIZED)
+        .withPosition(nextPosition())
+        .withPartitionId(1)
+        .withTimestamp(System.currentTimeMillis())
+        .withValue(
+            ImmutableBatchOperationInitializationRecordValue.builder()
+                .from(
+                    (ImmutableBatchOperationInitializationRecordValue) recordValueRecord.getValue())
+                .withBatchOperationKey(batchOperationKey)
                 .build())
         .build();
   }

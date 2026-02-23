@@ -36,6 +36,7 @@ public record DecisionInstanceFilter(
     List<Integer> decisionDefinitionVersions,
     List<DecisionDefinitionType> decisionTypes,
     List<Operation<Long>> rootDecisionDefinitionKeyOperations,
+    List<Operation<Long>> decisionRequirementsKeyOperations,
     List<String> tenantIds,
     Integer partitionId)
     implements FilterBase {
@@ -61,6 +62,7 @@ public record DecisionInstanceFilter(
         .decisionDefinitionVersions(decisionDefinitionVersions)
         .decisionTypes(decisionTypes)
         .rootDecisionDefinitionKeyOperations(rootDecisionDefinitionKeyOperations)
+        .decisionRequirementsKeyOperations(decisionRequirementsKeyOperations)
         .tenantIds(tenantIds)
         .partitionId(partitionId);
   }
@@ -81,6 +83,7 @@ public record DecisionInstanceFilter(
     private List<Integer> decisionDefinitionVersions;
     private List<DecisionDefinitionType> decisionTypes;
     private List<Operation<Long>> rootDecisionDefinitionKeyOperations;
+    private List<Operation<Long>> decisionRequirementsKeyOperations;
     private List<String> tenantIds;
     private Integer partitionId;
 
@@ -184,7 +187,8 @@ public record DecisionInstanceFilter(
     }
 
     public Builder decisionDefinitionKeys(final Long value, final Long... values) {
-      return decisionDefinitionKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+      return decisionDefinitionKeyOperations(
+          List.of(FilterUtil.mapDefaultToOperation(value, values)));
     }
 
     @SafeVarargs
@@ -245,6 +249,22 @@ public record DecisionInstanceFilter(
       return rootDecisionDefinitionKeyOperations(collectValues(operation, operations));
     }
 
+    public Builder decisionRequirementsKeyOperations(final List<Operation<Long>> operations) {
+      decisionRequirementsKeyOperations =
+          addValuesToList(decisionRequirementsKeyOperations, operations);
+      return this;
+    }
+
+    public Builder decisionRequirementsKeys(final Long value, final Long... values) {
+      return decisionRequirementsKeyOperations(FilterUtil.mapDefaultToOperation(value, values));
+    }
+
+    @SafeVarargs
+    public final Builder decisionRequirementsKeyOperations(
+        final Operation<Long> operation, final Operation<Long>... operations) {
+      return decisionRequirementsKeyOperations(collectValues(operation, operations));
+    }
+
     public Builder tenantIds(final List<String> values) {
       tenantIds = addValuesToList(tenantIds, values);
       return this;
@@ -276,6 +296,7 @@ public record DecisionInstanceFilter(
           Objects.requireNonNullElse(decisionDefinitionVersions, Collections.emptyList()),
           Objects.requireNonNullElse(decisionTypes, Collections.emptyList()),
           Objects.requireNonNullElse(rootDecisionDefinitionKeyOperations, Collections.emptyList()),
+          Objects.requireNonNullElse(decisionRequirementsKeyOperations, Collections.emptyList()),
           Objects.requireNonNullElse(tenantIds, Collections.emptyList()),
           partitionId);
     }

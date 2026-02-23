@@ -611,12 +611,17 @@ test.describe.serial('Process Instance Migration', () => {
     });
 
     await test.step('Verify remaining instances still at source version', async () => {
-      await operateFiltersPanelPage.clickResetFilters();
-
       await operateFiltersPanelPage.selectProcess(sourceBpmnProcessId);
       await operateFiltersPanelPage.selectVersion(sourceVersion);
-      await expect(page.getByText(/3 results/i)).toBeVisible({
-        timeout: 30000,
+      await waitForAssertion({
+        assertion: async () => {
+          await expect(page.getByText('3 results')).toBeVisible({
+            timeout: 30000,
+          });
+        },
+        onFailure: async () => {
+          await page.reload();
+        },
       });
     });
   });
@@ -671,6 +676,7 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test('Migrated message events', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,
@@ -732,6 +738,7 @@ test.describe.serial('Process Instance Migration', () => {
   });
 
   test('Migrated gateways', async ({
+    page,
     operateFiltersPanelPage,
     operateProcessesPage,
     operateDiagramPage,

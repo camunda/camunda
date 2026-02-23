@@ -21,8 +21,9 @@ public class FormAuditLogTransformer implements AuditLogTransformer<Form> {
   @Override
   public void transform(final Record<Form> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setEntityKey(String.valueOf(value.getFormKey()));
-    log.setDeploymentKey(value.getDeploymentKey());
-    log.setFormKey(value.getFormKey());
+    log.setEntityKey(String.valueOf(value.getFormKey()))
+        .setDeploymentKey(value.getDeploymentKey())
+        .setFormKey(value.getFormKey())
+        .setEntityDescription(value.getResourceName());
   }
 }

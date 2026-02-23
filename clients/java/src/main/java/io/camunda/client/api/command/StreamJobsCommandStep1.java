@@ -15,14 +15,12 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 
-@ExperimentalApi("https://github.com/camunda/camunda/issues/11231")
 public interface StreamJobsCommandStep1 {
   /**
    * Set the type of jobs to work on; only jobs of this type will be activated and consumed by this

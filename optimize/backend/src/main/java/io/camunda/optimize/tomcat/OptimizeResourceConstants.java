@@ -28,7 +28,7 @@ public class OptimizeResourceConstants implements ConfigurationReloadable {
   public static final String ACTUATOR_PORT_DEFAULT = "9600";
 
   @SuppressWarnings("checkstyle:StaticVariableName")
-  public static String ACTUATOR_ENDPOINT;
+  public static String ACTUATOR_ENDPOINT = "/actuator";
 
   @SuppressWarnings("checkstyle:StaticVariableName")
   public static int ACTUATOR_PORT;

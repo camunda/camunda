@@ -44,4 +44,14 @@ public interface ResourceDeletionRecordValue
    * @return the batch operation type
    */
   BatchOperationType getBatchOperationType();
+
+  /**
+   * @return the type of the deleted resource
+   */
+  ResourceType getResourceType();
+
+  /**
+   * @return the id of the deleted resource
+   */
+  String getResourceId();
 }

@@ -14,6 +14,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {createUser} from 'modules/testUtils';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 function getWrapper(initialPath = '/operations-log') {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -69,7 +70,8 @@ describe('OperationsLog Filters', () => {
   });
 
   it('should render tenant field when multi-tenancy is enabled', () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 

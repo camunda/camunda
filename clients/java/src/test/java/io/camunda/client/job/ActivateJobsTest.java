@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.camunda.client.api.command.ActivateJobsCommandStep1.ActivateJobsCommandStep3;
 import io.camunda.client.api.command.ClientException;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivateJobsResponse;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import io.camunda.client.impl.CamundaClientBuilderImpl;
@@ -29,6 +30,7 @@ import io.camunda.client.impl.CamundaObjectMapper;
 import io.camunda.client.impl.response.ActivatedJobImpl;
 import io.camunda.client.impl.util.EnumUtil;
 import io.camunda.client.util.ClientTest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob.JobKind;
@@ -614,6 +616,66 @@ public final class ActivateJobsTest extends ClientTest {
     assertThat(documentReferenceResponse.getMetadata().getFileName()).isEqualTo("file-name");
     assertThat(documentReferenceResponse.getMetadata().getExpiresAt())
         .isEqualTo("2025-06-28T07:32:28.93912+02:00");
+  }
+
+  @Test
+  public void shouldSetTenantFilterToProvidedAndIncludeTenantIds() {
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds("tenant1", "tenant2")
+        .tenantFilter(TenantFilter.PROVIDED)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.PROVIDED);
+    assertThat(request.getTenantIdsList()).containsExactlyInAnyOrder("tenant1", "tenant2");
+  }
+
+  @Test
+  public void shouldSetTenantFilterToAssignedAndExcludeTenantIds() {
+    // when
+    client
+        .newActivateJobsCommand()
+        .jobType("foo")
+        .maxJobsToActivate(3)
+        .tenantIds("tenant1", "tenant2")
+        .tenantFilter(TenantFilter.ASSIGNED)
+        .send()
+        .join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.ASSIGNED);
+    assertThat(request.getTenantIdsList()).isEmpty();
+  }
+
+  @Test
+  public void shouldDefaultTenantFilterToProvided() {
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.PROVIDED);
+  }
+
+  @Test
+  public void shouldUseDefaultTenantFilterFromConfiguration() {
+    // given
+    rule.getClientBuilder().defaultJobWorkerTenantFilter(TenantFilter.ASSIGNED);
+
+    // when
+    client.newActivateJobsCommand().jobType("foo").maxJobsToActivate(3).send().join();
+
+    // then
+    final ActivateJobsRequest request = gatewayService.getLastRequest();
+    assertThat(request.getTenantFilter()).isEqualTo(GatewayOuterClass.TenantFilter.ASSIGNED);
+    assertThat(request.getTenantIdsList()).isEmpty();
   }
 
   private static final class VariablesPojo {

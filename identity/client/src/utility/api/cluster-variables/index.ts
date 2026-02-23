@@ -11,6 +11,7 @@ import {
   apiDelete,
   apiGet,
   apiPost,
+  apiPut,
 } from "src/utility/api/request.ts";
 import { PageSearchParams, SearchResponse } from "src/utility/api";
 import { EntityData } from "src/components/entityList/EntityList.tsx";
@@ -89,3 +90,16 @@ export const deleteClusterVariable: ApiDefinition<
   DeleteClusterVariableParams
 > = ({ scope, tenantId, name }) =>
   apiDelete(`${buildEndpoint(scope, tenantId)}/${name}`);
+
+type UpdateClusterVariableParams = {
+  scope: ScopeType;
+  tenantId?: string;
+  name: string;
+  value: string;
+};
+
+export const updateClusterVariable: ApiDefinition<
+  ClusterVariable,
+  UpdateClusterVariableParams
+> = ({ scope, tenantId, name, value }) =>
+  apiPut(`${buildEndpoint(scope, tenantId)}/${name}`, { value });

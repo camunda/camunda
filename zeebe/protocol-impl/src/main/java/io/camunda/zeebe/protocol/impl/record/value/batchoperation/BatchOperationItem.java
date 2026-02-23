@@ -16,16 +16,22 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
   private final LongProperty itemKeyProperty = new LongProperty("itemKey", -1);
   private final LongProperty processInstanceKeyProperty =
       new LongProperty("processInstanceKey", -1);
+  private final LongProperty rootProcessInstanceKeyProperty =
+      new LongProperty("rootProcessInstanceKey", -1);
 
   public BatchOperationItem() {
-    super(2);
-    declareProperty(itemKeyProperty).declareProperty(processInstanceKeyProperty);
+    super(3);
+    declareProperty(itemKeyProperty)
+        .declareProperty(processInstanceKeyProperty)
+        .declareProperty(rootProcessInstanceKeyProperty);
   }
 
-  public BatchOperationItem(final long itemKey, final long processInstanceKey) {
+  public BatchOperationItem(
+      final long itemKey, final long processInstanceKey, final long rootProcessInstanceKey) {
     this();
     setItemKey(itemKey);
     setProcessInstanceKey(processInstanceKey);
+    setRootProcessInstanceKey(rootProcessInstanceKey);
   }
 
   @Override
@@ -48,9 +54,20 @@ public final class BatchOperationItem extends ObjectValue implements BatchOperat
     return this;
   }
 
+  @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProperty.getValue();
+  }
+
+  public BatchOperationItem setRootProcessInstanceKey(final long rootProcessInstanceKey) {
+    rootProcessInstanceKeyProperty.setValue(rootProcessInstanceKey);
+    return this;
+  }
+
   public BatchOperationItem wrap(final BatchOperationItemValue value) {
     setItemKey(value.getItemKey());
     setProcessInstanceKey(value.getProcessInstanceKey());
+    setRootProcessInstanceKey(value.getRootProcessInstanceKey());
     return this;
   }
 }

@@ -29,16 +29,19 @@ import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = VariableController.class)
 public class VariablesQueryControllerTest extends RestControllerTest {
 
@@ -54,6 +57,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "value": "v",
               "scopeKey": "2",
               "processInstanceKey": "3",
+              "rootProcessInstanceKey": "4",
               "tenantId": "<default>"
           }""";
   private static final String EXPECT_SINGLE_TRUNCATED_VARIABLE_RESPONSE =
@@ -64,6 +68,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
               "value": "ve",
               "scopeKey": "2",
               "processInstanceKey": "3",
+              "rootProcessInstanceKey": "4",
               "tenantId": "<default>"
           }""";
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -76,6 +81,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -85,6 +91,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": true
                   }
@@ -107,6 +114,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "v",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   },
@@ -116,6 +124,7 @@ public class VariablesQueryControllerTest extends RestControllerTest {
                         "value": "ve",
                         "scopeKey": "2",
                         "processInstanceKey": "3",
+                        "rootProcessInstanceKey": "4",
                         "tenantId": "<default>",
                         "isTruncated": false
                   }

@@ -14,6 +14,7 @@ import io.camunda.zeebe.dmn.DecisionEngineFactory;
 import io.camunda.zeebe.dmn.ParsedDecision;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
 import io.camunda.zeebe.dmn.impl.ParsedDmnScalaDrg;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
@@ -46,7 +47,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
   private static final long UNKNOWN_DECISION_REQUIREMENTS_KEY = -1L;
 
-  private static final Either<Failure, Object> NO_DUPLICATES = Either.right(null);
+  private static final Either<Failure, Object> NO_VALIDATION_ERROR = Either.right(null);
 
   private final DecisionEngine decisionEngine = DecisionEngineFactory.createDecisionEngine();
 
@@ -54,16 +55,19 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
   private final StateWriter stateWriter;
   private final ChecksumGenerator checksumGenerator;
   private final DecisionState decisionState;
+  private final EngineConfiguration engineConfiguration;
 
   public DmnResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
-      final DecisionState decisionState) {
+      final DecisionState decisionState,
+      final EngineConfiguration engineConfiguration) {
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
     this.decisionState = decisionState;
+    this.engineConfiguration = engineConfiguration;
   }
 
   @Override
@@ -77,8 +81,11 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
 
     if (parsedDrg.isValid()) {
       return checkForDuplicateIds(resource, parsedDrg, deployment)
+          .flatMap(valid -> checkDrdIdNameLength(resource, parsedDrg))
+          .flatMap(valid -> checkDecisionIdLength(resource, parsedDrg))
+          .flatMap(valid -> checkDecisionNameLength(resource, parsedDrg))
           .map(
-              noDuplicates -> {
+              valid -> {
                 appendMetadataToDeploymentEvent(resource, parsedDrg, deployment);
                 return null;
               });
@@ -190,7 +197,7 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                       resource.getResourceName());
               return Either.left(new Failure(failureMessage));
             })
-        .orElse(NO_DUPLICATES);
+        .orElse(NO_VALIDATION_ERROR);
   }
 
   private Either<Failure, ?> checkDuplicatedDecisionIds(
@@ -216,7 +223,71 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
                       resource.getResourceName());
               return Either.left(new Failure(failureMessage));
             })
-        .orElse(NO_DUPLICATES);
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
+  private Either<Failure, ?> checkDrdIdNameLength(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+    final var decisionRequirementsId = parsedDrg.getId();
+    final var decisionRequirementsName = parsedDrg.getName();
+
+    if (decisionRequirementsId != null
+        && decisionRequirementsId.length() > engineConfiguration.getMaxIdFieldLength()) {
+      final var failureMessage =
+          String.format(
+              "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+              engineConfiguration.getMaxIdFieldLength(),
+              decisionRequirementsId,
+              resource.getResourceName());
+      return Either.left(new Failure(failureMessage));
+    } else if (decisionRequirementsName != null
+        && decisionRequirementsName.length() > engineConfiguration.getMaxNameFieldLength()) {
+      final var failureMessage =
+          String.format(
+              "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was '%s' in DRG '%s'",
+              engineConfiguration.getMaxNameFieldLength(),
+              decisionRequirementsName,
+              resource.getResourceName());
+      return Either.left(new Failure(failureMessage));
+    } else {
+      return NO_VALIDATION_ERROR;
+    }
+  }
+
+  private Either<Failure, ?> checkDecisionIdLength(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+    return parsedDrg.getDecisions().stream()
+        .map(ParsedDecision::getId)
+        .filter(id -> id != null && id.length() > engineConfiguration.getMaxIdFieldLength())
+        .findFirst()
+        .map(
+            id ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
+                            engineConfiguration.getMaxIdFieldLength(),
+                            id,
+                            resource.getResourceName()))))
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
+  private Either<Failure, ?> checkDecisionNameLength(
+      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
+    return parsedDrg.getDecisions().stream()
+        .map(ParsedDecision::getName)
+        .filter(name -> name != null && name.length() > engineConfiguration.getMaxNameFieldLength())
+        .findFirst()
+        .map(
+            name ->
+                Either.left(
+                    new Failure(
+                        String.format(
+                            "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
+                            engineConfiguration.getMaxNameFieldLength(),
+                            name,
+                            resource.getResourceName()))))
+        .orElse(NO_VALIDATION_ERROR);
   }
 
   private String findResourceName(

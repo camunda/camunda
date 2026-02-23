@@ -41,7 +41,8 @@ public record SequencedBatch(
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     SequencedBatchSerializer.serializeBatch(buffer, offset, this);
+    return length;
   }
 }

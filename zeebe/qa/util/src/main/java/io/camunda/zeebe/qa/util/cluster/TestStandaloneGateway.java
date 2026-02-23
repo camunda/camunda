@@ -54,6 +54,8 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
         // ---
         GatewayModuleConfiguration.class,
         CommonsModuleConfiguration.class);
+    // this is needed to ensure no default spring boot 4.0 security setup kicks in
+    withAdditionalProfile(Profile.CONSOLIDATED_AUTH);
 
     unifiedConfig = new Camunda();
 
@@ -86,7 +88,7 @@ public final class TestStandaloneGateway extends TestSpringApplication<TestStand
   @Override
   public MemberId nodeId() {
     // Gateway member ID via property
-    return MemberId.from(property("zeebe.gateway.cluster.memberId", String.class, "gateway"));
+    return MemberId.from(unifiedConfig.getCluster().getGatewayId());
   }
 
   @Override

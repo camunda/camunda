@@ -14,7 +14,7 @@ import io.camunda.search.entities.ProcessDefinitionMessageSubscriptionStatistics
 import java.util.List;
 
 public interface MessageSubscriptionMapper
-    extends HistoryCleanupMapper, RootProcessInstanceDependantMapper {
+    extends HistoryCleanupMapper, ProcessInstanceDependantMapper {
 
   void insert(MessageSubscriptionDbModel messageSubscription);
 

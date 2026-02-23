@@ -11,17 +11,21 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.write.domain.DecisionRequirementsDbModel;
 import io.camunda.db.rdbms.write.queue.ContextType;
 import io.camunda.db.rdbms.write.queue.ExecutionQueue;
 import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 
 class DecisionRequirementsWriterTest {
 
+  private final DecisionRequirementsMapper mapper = mock(DecisionRequirementsMapper.class);
   private final ExecutionQueue executionQueue = mock(ExecutionQueue.class);
-  private final DecisionRequirementsWriter writer = new DecisionRequirementsWriter(executionQueue);
+  private final DecisionRequirementsWriter writer =
+      new DecisionRequirementsWriter(mapper, executionQueue);
 
   @Test
   void shouldCreateDecisionRequirements() {
@@ -42,5 +46,14 @@ class DecisionRequirementsWriterTest {
                     model.decisionRequirementsKey(),
                     "io.camunda.db.rdbms.sql.DecisionRequirementsMapper.insert",
                     model)));
+  }
+
+  @Test
+  void shouldDeleteDecisionRequirementsByKeys() {
+    final var decisionRequirementsKeys = List.of(1L, 2L, 3L);
+
+    writer.deleteByKeys(decisionRequirementsKeys);
+
+    verify(mapper).deleteByKeys(eq(decisionRequirementsKeys));
   }
 }

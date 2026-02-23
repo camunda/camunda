@@ -14,7 +14,7 @@ import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
 
 interface ProcessDefinitionWithIdentifier extends ProcessDefinition {
-  /** A `definitionId`--`tenantId` tuple that is almost unique but not unique across versions. */
+  /** A `definitionId`##`tenantId` tuple that is almost unique but not unique across versions. */
   identifier: string;
   /** A computed label for the definition. Usually the `name`, but uses the `processDefinitionId` as fallback. */
   label: string;
@@ -29,7 +29,7 @@ type ProcessDefinitionSelection =
     };
 
 function getDefinitionIdentifier(definitionId: string, tenantId?: string) {
-  return `${definitionId}--${tenantId ?? DEFAULT_TENANT}`;
+  return `${definitionId}##${tenantId ?? DEFAULT_TENANT}`;
 }
 
 function getProcessDefinitionName(
@@ -39,7 +39,7 @@ function getProcessDefinitionName(
 }
 
 function splitDefinitionIdentifier(identifier?: string) {
-  const [definitionId, tenantId] = identifier?.split('--') ?? [];
+  const [definitionId, tenantId] = identifier?.split('##') ?? [];
   return {
     definitionId: definitionId || undefined,
     tenantId: tenantId || undefined,

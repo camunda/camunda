@@ -120,6 +120,7 @@ const parseProcessInstancesSearchFilter = (
 
   if (filter.flowNodeId) {
     apiFilter.elementId = {$eq: filter.flowNodeId};
+    apiFilter.elementInstanceState = {$eq: 'ACTIVE'};
   }
 
   if (filter.operationId) {

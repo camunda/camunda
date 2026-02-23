@@ -12,13 +12,9 @@ import {
   type GetProcessDefinitionInstanceVersionStatisticsResponseBody,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 
-const mockFetchProcessDefinitionVersionStatistics = (
-  processDefinitionId: string,
-) =>
+const mockFetchProcessDefinitionVersionStatistics = () =>
   mockPostRequest<GetProcessDefinitionInstanceVersionStatisticsResponseBody>(
-    endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl({
-      processDefinitionId,
-    }),
+    endpoints.getProcessDefinitionInstanceVersionStatistics.getUrl(),
   );
 
 export {mockFetchProcessDefinitionVersionStatistics};

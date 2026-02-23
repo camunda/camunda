@@ -36,7 +36,7 @@ public class GetVariableTest extends ClientRestTest {
             .variableKey("1")
             .processInstanceKey("2")
             .scopeKey("3")
-            .processInstanceKey("4"));
+            .rootProcessInstanceKey("4"));
 
     // when
     client.newVariableGetRequest(variableKey).send().join();

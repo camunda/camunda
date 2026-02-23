@@ -14,11 +14,9 @@ import {Layer} from '@carbon/react';
 
 import type {RequestError} from 'modules/request';
 import {EmptyMessage} from 'modules/components/EmptyMessage';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
 import {formatDate} from 'modules/utils/date';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 
 import {
   CellContainer,
@@ -66,14 +64,8 @@ const Listeners: React.FC<Props> = observer(
     hasNextPage,
     hasPreviousPage,
   }) => {
-    const isUserTaskV1 =
-      flowNodeMetaDataStore.state.metaData?.instanceMetadata?.flowNodeType ===
-      'USER_TASK';
-
     const {resolvedElementInstance} = useProcessInstanceElementSelection();
-    const hasUserTaskSelected = IS_ELEMENT_SELECTION_V2
-      ? resolvedElementInstance?.type === 'USER_TASK'
-      : isUserTaskV1;
+    const hasUserTaskSelected = resolvedElementInstance?.type === 'USER_TASK';
 
     const [selectedOption, setSelectedOption] =
       useState<FilterLabelMappingKeys>('All listeners');

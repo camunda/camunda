@@ -161,8 +161,8 @@ test.describe('Operations', () => {
       await operateProcessesPage.cancelButton.click();
       await operateProcessesPage.applyButton.click();
 
-      await operateProcessesPage.clickProcessIncidentsCheckbox();
-      await operateProcessesPage.clickProcessCanceledCheckbox();
+      await operateFiltersPanelPage.clickIncidentsInstancesCheckbox();
+      await operateFiltersPanelPage.clickCanceledInstancesCheckbox();
 
       await expect(
         operateProcessesPage.batchOperationStartedMessage(

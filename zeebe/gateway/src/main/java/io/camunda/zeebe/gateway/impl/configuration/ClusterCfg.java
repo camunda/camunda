@@ -45,6 +45,8 @@ public final class ClusterCfg {
   private ConfigManagerCfg configManager = ConfigManagerCfg.defaultConfig();
   private DataSize socketSendBuffer = null;
   private DataSize socketReceiveBuffer = null;
+  private boolean sendOnLegacySubject = true;
+  private String defaultEngineName = "default";
 
   public String getMemberId() {
     return memberId;
@@ -178,6 +180,24 @@ public final class ClusterCfg {
     return this;
   }
 
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
+  }
+
+  public ClusterCfg setSendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
+    return this;
+  }
+
+  public String getDefaultEngineName() {
+    return defaultEngineName;
+  }
+
+  public ClusterCfg setDefaultEngineName(final String defaultEngineName) {
+    this.defaultEngineName = defaultEngineName;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -192,7 +212,9 @@ public final class ClusterCfg {
         messageCompression,
         configManager,
         socketSendBuffer,
-        socketReceiveBuffer);
+        socketReceiveBuffer,
+        defaultEngineName,
+        sendOnLegacySubject);
   }
 
   @Override
@@ -215,7 +237,9 @@ public final class ClusterCfg {
         && Objects.equals(messageCompression, that.messageCompression)
         && Objects.equals(configManager, that.configManager)
         && Objects.equals(socketSendBuffer, that.socketSendBuffer)
-        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer);
+        && Objects.equals(socketReceiveBuffer, that.socketReceiveBuffer)
+        && Objects.equals(defaultEngineName, that.defaultEngineName)
+        && Objects.equals(sendOnLegacySubject, that.sendOnLegacySubject);
   }
 
   @Override
@@ -248,6 +272,10 @@ public final class ClusterCfg {
         + socketSendBuffer
         + ", socketReceiveBuffer="
         + socketReceiveBuffer
+        + ", sendOnLegacySubject="
+        + sendOnLegacySubject
+        + ", engineName="
+        + defaultEngineName
         + '}';
   }
 }

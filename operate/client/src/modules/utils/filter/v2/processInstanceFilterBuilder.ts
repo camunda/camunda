@@ -343,4 +343,4 @@ const buildProcessInstanceFilter = (
 };
 
 export {buildProcessInstanceFilter};
-export type {BuildProcessInstanceFilterOptions, ProcessInstanceFilterQuery};
+export type {BuildProcessInstanceFilterOptions};

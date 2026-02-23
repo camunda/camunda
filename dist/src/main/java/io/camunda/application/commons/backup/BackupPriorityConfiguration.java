@@ -19,11 +19,13 @@ import io.camunda.webapps.schema.descriptors.backup.Prio2Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
 import io.camunda.webapps.schema.descriptors.backup.Prio5Backup;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
@@ -145,9 +147,11 @@ public class BackupPriorityConfiguration {
             new UsageMetricTUTemplate(indexPrefix, isElasticsearch),
             // AUDIT LOG
             new AuditLogTemplate(indexPrefix, isElasticsearch),
+            new AuditLogCleanupIndex(indexPrefix, isElasticsearch),
             // CAMUNDA
             new ClusterVariableIndex(indexPrefix, isElasticsearch),
-            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch));
+            new JobMetricsBatchTemplate(indexPrefix, isElasticsearch),
+            new GlobalListenerIndex(indexPrefix, isElasticsearch));
 
     LOG.debug("Prio1 are {}", prio1);
     LOG.debug("Prio2 are {}", prio2);

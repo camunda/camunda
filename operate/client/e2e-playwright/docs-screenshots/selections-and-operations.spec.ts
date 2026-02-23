@@ -12,7 +12,7 @@ import {
   mockBatchOperations,
   mockResponses as mockProcessesResponses,
   mockOrderProcessInstances,
-  mockStatisticsV2,
+  mockStatistics,
   mockProcessDefinitions,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
@@ -36,7 +36,7 @@ test.describe('selections and operations', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),
@@ -86,7 +86,7 @@ test.describe('selections and operations', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),

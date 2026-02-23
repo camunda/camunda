@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.security.configuration.SecurityConfigurations;
 import io.camunda.zeebe.engine.EngineConfiguration;
+import io.camunda.zeebe.engine.processing.identity.AuthenticatedAuthorizedTenants;
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.job.JobBatchCollector.TooLargeJob;
 import io.camunda.zeebe.engine.state.mutable.MutableProcessingState;
@@ -27,6 +28,7 @@ import io.camunda.zeebe.protocol.record.value.JobBatchRecordValueAssert;
 import io.camunda.zeebe.protocol.record.value.JobKind;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValueAssert;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.stream.api.StreamClock.ControllableStreamClock;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
@@ -83,7 +85,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to only accept the first job
     lengthEvaluator.canWriteEventOfLength = (length) -> toggle.getAndSet(false);
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -105,7 +108,8 @@ final class JobBatchCollectorTest {
 
     // when - set up the evaluator to accept no jobs
     lengthEvaluator.canWriteEventOfLength = (length) -> false;
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -128,7 +132,7 @@ final class JobBatchCollectorTest {
     createJobWithVariables(secondScopeKey, secondJobVariables);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -151,7 +155,7 @@ final class JobBatchCollectorTest {
     final List<Job> jobs = Arrays.asList(createJob(scopeKey), createJob(scopeKey));
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -167,7 +171,8 @@ final class JobBatchCollectorTest {
     record.getValue().setMaxJobsToActivate(1);
 
     // when
-    final Either<TooLargeJob, Map<JobKind, Integer>> result = collector.collectJobs(record);
+    final Either<TooLargeJob, Map<JobKind, Integer>> result =
+        collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -192,7 +197,7 @@ final class JobBatchCollectorTest {
     createJob(scopeKey);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -220,7 +225,7 @@ final class JobBatchCollectorTest {
     record.getValue().setWorker(expectedWorker);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -250,7 +255,7 @@ final class JobBatchCollectorTest {
     record.getValue().variables().add().wrap(BufferUtil.wrapString("foo"));
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -290,7 +295,7 @@ final class JobBatchCollectorTest {
           estimatedLength.set(length);
           return true;
         };
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
 
     // then
     // the expected length is then the length of the initial record + the length of the activated
@@ -315,7 +320,7 @@ final class JobBatchCollectorTest {
     createJob(secondScopeKey, tenantB);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(tenantA, tenantB));
 
     // then
     final JobBatchRecord batchRecord = record.getValue();
@@ -341,9 +346,166 @@ final class JobBatchCollectorTest {
     createJob(secondScopeKey, tenantB);
 
     // when
-    collector.collectJobs(record);
+    collector.collectJobs(record, List.of(tenantA));
 
     // then
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(1);
+              JobRecordValueAssert.assertThat(activatedJobs.get(0)).hasTenantId(tenantA);
+            });
+  }
+
+  @Test
+  public void shouldCollectJobsBasedOnAssignedTenantsWhenFilterIsAssigned() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+    final String tenantC = "tenant-c";
+    final TypedRecord<JobBatchRecord> record = createRecordWithTenantFilter(TenantFilter.ASSIGNED);
+
+    final long scopeKeyA = state.getKeyGenerator().nextKey();
+    final long scopeKeyB = state.getKeyGenerator().nextKey();
+    final long scopeKeyC = state.getKeyGenerator().nextKey();
+
+    createJob(scopeKeyA, tenantA);
+    createJob(scopeKeyB, tenantB);
+    createJob(scopeKeyC, tenantC);
+
+    // when - user is authorized for tenantA and tenantB only
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of(tenantA, tenantB));
+    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+
+    // then - only jobs from tenantA and tenantB should be collected
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(2);
+              assertThat(activatedJobs.stream().map(JobRecordValue::getTenantId).toList())
+                  .containsExactlyInAnyOrder(tenantA, tenantB);
+            });
+  }
+
+  @Test
+  public void shouldIgnoreProvidedTenantIdsWhenFilterIsAssigned() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+    final String tenantC = "tenant-c";
+
+    // Create record with tenantC in the tenant IDs list but ASSIGNED filter
+    final TypedRecord<JobBatchRecord> record =
+        createRecordWithTenantFilter(TenantFilter.ASSIGNED, tenantC);
+
+    final long scopeKeyA = state.getKeyGenerator().nextKey();
+    final long scopeKeyB = state.getKeyGenerator().nextKey();
+    final long scopeKeyC = state.getKeyGenerator().nextKey();
+
+    createJob(scopeKeyA, tenantA);
+    createJob(scopeKeyB, tenantB);
+    createJob(scopeKeyC, tenantC);
+
+    // when - user is authorized for tenantA and tenantB, record specifies tenantC
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(List.of(tenantA, tenantB));
+    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+
+    // then - should use authorized tenants (A, B) and ignore provided tenant (C)
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(2);
+              assertThat(activatedJobs.stream().map(JobRecordValue::getTenantId).toList())
+                  .containsExactlyInAnyOrder(tenantA, tenantB)
+                  .doesNotContain(tenantC);
+            });
+  }
+
+  @Test
+  public void shouldUseAssignedTenantsEvenWhenProvidedTenantIdsIsEmpty() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+
+    // Create record with empty tenant IDs but ASSIGNED filter
+    final TypedRecord<JobBatchRecord> record = createRecordWithTenantFilter(TenantFilter.ASSIGNED);
+
+    final long scopeKeyA = state.getKeyGenerator().nextKey();
+    final long scopeKeyB = state.getKeyGenerator().nextKey();
+    final long scopeKeyDefault = state.getKeyGenerator().nextKey();
+
+    createJob(scopeKeyA, tenantA);
+    createJob(scopeKeyB, tenantB);
+    createJob(scopeKeyDefault, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+    // when - user is authorized for tenantA only, record has empty tenant IDs
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantA);
+    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+
+    // then - should use assigned tenants (A) and not default tenant
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).hasSize(1);
+              JobRecordValueAssert.assertThat(activatedJobs.get(0)).hasTenantId(tenantA);
+            });
+  }
+
+  @Test
+  public void shouldCollectNoJobsWhenAssignedTenantsHaveNoMatchingJobs() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+
+    final TypedRecord<JobBatchRecord> record = createRecordWithTenantFilter(TenantFilter.ASSIGNED);
+
+    final long scopeKeyA = state.getKeyGenerator().nextKey();
+
+    createJob(scopeKeyA, tenantA);
+
+    // when - user is authorized for tenantB only, but job exists for tenantA
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantB);
+    collector.collectJobs(record, authorizedTenants.getAuthorizedTenantIds());
+
+    // then - no jobs should be collected
+    final JobBatchRecord batchRecord = record.getValue();
+    JobBatchRecordValueAssert.assertThat(batchRecord)
+        .satisfies(
+            batch -> {
+              final List<JobRecordValue> activatedJobs = batch.getJobs();
+              assertThat(activatedJobs).isEmpty();
+            });
+  }
+
+  @Test
+  public void shouldUseProvidedTenantsWhenFilterIsProvided() {
+    // given
+    final String tenantA = "tenant-a";
+    final String tenantB = "tenant-b";
+
+    // Create record with tenantA in tenant IDs and PROVIDED filter (default)
+    final TypedRecord<JobBatchRecord> record =
+        createRecordWithTenantFilter(TenantFilter.PROVIDED, tenantA);
+
+    final long scopeKeyA = state.getKeyGenerator().nextKey();
+    final long scopeKeyB = state.getKeyGenerator().nextKey();
+
+    createJob(scopeKeyA, tenantA);
+    createJob(scopeKeyB, tenantB);
+
+    // when - user is authorized for tenantB, but record specifies tenantA
+    final var authorizedTenants = new AuthenticatedAuthorizedTenants(tenantB);
+    collector.collectJobs(record, List.of(tenantA));
+
+    // then - should use provided tenant (A) from record
     final JobBatchRecord batchRecord = record.getValue();
     JobBatchRecordValueAssert.assertThat(batchRecord)
         .satisfies(
@@ -370,6 +532,30 @@ final class JobBatchCollectorTest {
     final List<String> tenantIdsList =
         tenantIds.length > 0 ? List.of(tenantIds) : List.of(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
     batchRecord.setTenantIds(tenantIdsList);
+
+    return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
+  }
+
+  private TypedRecord<JobBatchRecord> createRecordWithTenantFilter(
+      final TenantFilter tenantFilter, final String... tenantIds) {
+    final RecordMetadata metadata =
+        new RecordMetadata()
+            .recordType(RecordType.COMMAND)
+            .intent(JobBatchIntent.ACTIVATE)
+            .valueType(ValueType.JOB_BATCH);
+    final var batchRecord =
+        new JobBatchRecord()
+            .setTimeout(Duration.ofSeconds(10).toMillis())
+            .setMaxJobsToActivate(10)
+            .setType(JOB_TYPE)
+            .setWorker("test")
+            .setTenantFilter(tenantFilter);
+
+    if (tenantIds.length > 0) {
+      batchRecord.setTenantIds(List.of(tenantIds));
+    } else {
+      batchRecord.setTenantIds(List.of());
+    }
 
     return new MockTypedRecord<>(state.getKeyGenerator().nextKey(), metadata, batchRecord);
   }

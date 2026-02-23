@@ -18,6 +18,7 @@ package io.camunda.process.test.impl.runtime;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 
@@ -38,6 +39,8 @@ public class CamundaProcessTestRuntimeDefaults {
   public static final URI LOCAL_CAMUNDA_MONITORING_API_ADDRESS =
       URI.create("http://0.0.0.0:" + ContainerRuntimePorts.CAMUNDA_MONITORING_API);
   public static final URI LOCAL_CONNECTORS_REST_API_ADDRESS = URI.create("http://0.0.0.0:8085");
+
+  public static final Duration DEFAULT_REMOTE_RUNTIME_CONNECTION_TIMEOUT = Duration.ofMinutes(1);
 
   public static final String DEFAULT_COVERAGE_REPORT_DIRECTORY = "target/coverage-report";
 
@@ -76,6 +79,9 @@ public class CamundaProcessTestRuntimeDefaults {
       PROPERTIES_UTIL.getRemoteCamundaMonitoringApiAddress();
   public static final URI REMOTE_CONNECTORS_REST_API_ADDRESS =
       PROPERTIES_UTIL.getRemoteConnectorsRestApiAddress();
+
+  public static final Duration REMOTE_RUNTIME_CONNECTION_TIMEOUT =
+      PROPERTIES_UTIL.getRemoteRuntimeConnectionTimeout();
 
   public static final URI REMOTE_CLIENT_GRPC_ADDRESS = PROPERTIES_UTIL.getRemoteClientGrpcAddress();
   public static final URI REMOTE_CLIENT_REST_ADDRESS = PROPERTIES_UTIL.getRemoteClientRestAddress();

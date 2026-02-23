@@ -10,6 +10,7 @@ package io.camunda.search.connect.os;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.search.connect.SearchClientConnectException;
 import io.camunda.search.connect.configuration.ConnectConfiguration;
+import io.camunda.search.connect.configuration.ProxyConfiguration;
 import io.camunda.search.connect.configuration.SecurityConfiguration;
 import io.camunda.search.connect.jackson.JacksonConfiguration;
 import io.camunda.search.connect.os.json.SearchRequestJacksonJsonpMapperWrapper;
@@ -17,6 +18,8 @@ import io.camunda.search.connect.plugin.PluginRepository;
 import io.camunda.search.connect.util.SecurityUtil;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import org.apache.hc.client5.http.auth.AuthScope;
 import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
 import org.apache.hc.client5.http.config.RequestConfig;
@@ -191,6 +194,13 @@ public final class OpensearchConnector {
     if (osConfig.getSecurity() != null && osConfig.getSecurity().isEnabled()) {
       setupSSLContext(httpAsyncClientBuilder, osConfig.getSecurity());
     }
+
+    final var proxyConfig = osConfig.getProxy();
+    if (proxyConfig != null && proxyConfig.isEnabled()) {
+      setupProxy(httpAsyncClientBuilder, proxyConfig);
+      addPreemptiveProxyAuthInterceptor(httpAsyncClientBuilder, proxyConfig);
+    }
+
     return httpAsyncClientBuilder;
   }
 
@@ -225,6 +235,39 @@ public final class OpensearchConnector {
 
     builder.setDefaultCredentialsProvider(credentialsProvider);
     return builder;
+  }
+
+  private void setupProxy(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
+    httpAsyncClientBuilder.setProxy(
+        new HttpHost(
+            proxyConfig.isSslEnabled() ? "https" : "http",
+            proxyConfig.getHost(),
+            proxyConfig.getPort()));
+  }
+
+  private void addPreemptiveProxyAuthInterceptor(
+      final HttpAsyncClientBuilder httpAsyncClientBuilder, final ProxyConfiguration proxyConfig) {
+    final String username = proxyConfig.getUsername();
+    final String password = proxyConfig.getPassword();
+
+    if (username == null || password == null || username.isEmpty() || password.isEmpty()) {
+      return;
+    }
+
+    final String credentials = username + ":" + password;
+    final String encodedCredentials =
+        Base64.getEncoder().encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
+    final String proxyAuthHeaderValue = "Basic " + encodedCredentials;
+
+    httpAsyncClientBuilder.addRequestInterceptorFirst(
+        (request, entity, context) -> {
+          if (!request.containsHeader("Proxy-Authorization")) {
+            request.addHeader("Proxy-Authorization", proxyAuthHeaderValue);
+          }
+        });
+
+    LOGGER.debug("Preemptive proxy authentication enabled for proxy");
   }
 
   private void setupSSLContext(

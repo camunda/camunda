@@ -202,6 +202,7 @@ public final class BackupEndpoint {
     response.setPartitionId(state.partitionId());
     response.setCheckpointId(state.checkpointId());
     response.setCheckpointPosition(state.checkpointPosition());
+    response.setFirstLogPosition(state.firstLogPosition());
     response.setCheckpointTimestamp(
         OffsetDateTime.ofInstant(
             Instant.ofEpochMilli(state.checkpointTimestamp()), ZoneId.of("UTC")));
@@ -212,18 +213,31 @@ public final class BackupEndpoint {
   private PartitionBackupRange toRange(final BackupRangesResponse.PartitionBackupRange range) {
     final var response = new PartitionBackupRange();
     response.setPartitionId(range.partitionId());
-    response.setStart(range.first() == null ? null : range.first().checkpointId());
-    response.setEnd(range.last() == null ? null : range.last().checkpointId());
+    response.setStart(range.first() == null ? null : toBackupState(range.first()));
+    response.setEnd(range.last() == null ? null : toBackupState(range.last()));
     response.setMissingCheckpoints(range.missingCheckpoints().stream().toList());
     return response;
   }
 
+  private PartitionBackupState toBackupState(final BackupRangesResponse.CheckpointInfo info) {
+    final var state = new PartitionBackupState();
+    state.setCheckpointId(info.checkpointId());
+    state.setCheckpointPosition(info.checkpointPosition());
+    state.setFirstLogPosition(info.firstLogPosition());
+    state.setCheckpointType(toBackupType(info.checkpointType()));
+    state.setCheckpointTimestamp(
+        OffsetDateTime.ofInstant(info.checkpointTimestamp(), ZoneId.of("UTC")));
+    return state;
+  }
+
   private CheckpointType toCheckpointType(
       final io.camunda.zeebe.protocol.record.value.management.CheckpointType checkpointType) {
-    if (checkpointType == io.camunda.zeebe.protocol.record.value.management.CheckpointType.MARKER) {
-      return CheckpointType.MARKER;
-    }
-    return null;
+    return switch (checkpointType) {
+      case SCHEDULED_BACKUP -> CheckpointType.SCHEDULED_BACKUP;
+      case MANUAL_BACKUP -> CheckpointType.MANUAL_BACKUP;
+      case MARKER -> CheckpointType.MARKER;
+      case null -> null;
+    };
   }
 
   private BackupType toBackupType(
@@ -232,6 +246,7 @@ public final class BackupEndpoint {
       case MANUAL_BACKUP -> BackupType.MANUAL_BACKUP;
       case SCHEDULED_BACKUP -> BackupType.SCHEDULED_BACKUP;
       case MARKER -> null;
+      case null -> null;
     };
   }
 
@@ -368,6 +383,7 @@ public final class BackupEndpoint {
       final long backupId) {
     return new WebEndpointResponse<>(
         new TakeBackupRuntimeResponse()
+            .backupId(backupId)
             .message(
                 "A backup with id %d has been scheduled. Use GET actuator/backups/%d to monitor the status."
                     .formatted(backupId, backupId)),

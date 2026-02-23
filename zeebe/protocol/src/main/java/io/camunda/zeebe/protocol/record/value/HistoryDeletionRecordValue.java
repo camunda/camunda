@@ -21,7 +21,7 @@ import org.immutables.value.Value;
 
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableHistoryDeletionRecordValue.Builder.class)
-public interface HistoryDeletionRecordValue extends RecordValue {
+public interface HistoryDeletionRecordValue extends RecordValue, TenantOwned {
 
   /**
    * The key of the resource to delete. Depending on the {@link HistoryDeletionType} this can be one
@@ -31,7 +31,7 @@ public interface HistoryDeletionRecordValue extends RecordValue {
    *   <li>{@link HistoryDeletionType#PROCESS_INSTANCE}: the process instance key
    *   <li>{@link HistoryDeletionType#PROCESS_DEFINITION}: the process definition key
    *   <li>{@link HistoryDeletionType#DECISION_INSTANCE}: the decision instance key
-   *   <li>{@link HistoryDeletionType#DECISION_DEFINITION}: the decision definition key
+   *   <li>{@link HistoryDeletionType#DECISION_REQUIREMENTS}: the decision requirements key
    * </ul>
    *
    * @return the key of the resource
@@ -40,4 +40,22 @@ public interface HistoryDeletionRecordValue extends RecordValue {
 
   /** Returns the type of resource to delete. */
   HistoryDeletionType getResourceType();
+
+  /**
+   * Returns the process id which belongs to the process instance to delete.
+   *
+   * <p>This is only set when performing a singular deletion (not a batch operation) and is used for
+   * performing the authorization checks. We cannot rely on the resource key for this as the
+   * resource will be deleted from primary storage.
+   */
+  String getProcessId();
+
+  /**
+   * Returns the decision definition id which belongs to the decision instance to delete.
+   *
+   * <p>This is only set when performing a singular deletion (not a batch operation) and is used for
+   * performing the authorization checks. We cannot rely on the resource key for this as the
+   * resource will be deleted from primary storage.
+   */
+  String getDecisionDefinitionId();
 }

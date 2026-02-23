@@ -30,4 +30,9 @@ public final class AnonymouslyAuthorizedTenants implements AuthorizedTenants {
     throw new UnsupportedOperationException(
         "Retrieval of authorized tenants is not supported when authenticated anonymously");
   }
+
+  @Override
+  public boolean isAnonymous() {
+    return true;
+  }
 }

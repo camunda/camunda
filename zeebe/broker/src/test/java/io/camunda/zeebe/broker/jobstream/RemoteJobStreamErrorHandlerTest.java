@@ -107,7 +107,9 @@ final class RemoteJobStreamErrorHandlerTest {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {}
+    public int write(final MutableDirectBuffer buffer, final int offset) {
+      return 0;
+    }
   }
 
   private record TestErrorHandler(List<TestErrorHandler.Error> errors)

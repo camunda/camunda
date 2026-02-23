@@ -22,6 +22,7 @@ import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import io.camunda.process.test.impl.containers.CamundaContainer.MultiTenancyConfiguration;
 import io.camunda.process.test.impl.containers.ContainerFactory;
 import java.net.URI;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -80,6 +81,9 @@ public class CamundaProcessTestRuntimeBuilder {
       CamundaProcessTestRuntimeDefaults.REMOTE_CAMUNDA_MONITORING_API_ADDRESS;
   private URI remoteConnectorsRestApiAddress =
       CamundaProcessTestRuntimeDefaults.REMOTE_CONNECTORS_REST_API_ADDRESS;
+
+  private Duration remoteRuntimeConnectionTimeout =
+      CamundaProcessTestRuntimeDefaults.REMOTE_RUNTIME_CONNECTION_TIMEOUT;
 
   private boolean isMultiTenancyEnabled = CamundaProcessTestRuntimeDefaults.MULTI_TENANCY_ENABLED;
 
@@ -232,6 +236,12 @@ public class CamundaProcessTestRuntimeBuilder {
     return this;
   }
 
+  public CamundaProcessTestRuntimeBuilder withRemoteRuntimeConnectionTimeout(
+      final Duration remoteRuntimeConnectionTimeout) {
+    this.remoteRuntimeConnectionTimeout = remoteRuntimeConnectionTimeout;
+    return this;
+  }
+
   public CamundaProcessTestRuntimeBuilder withMultiTenancyEnabled(final boolean enabled) {
     isMultiTenancyEnabled = enabled;
     return this;
@@ -359,6 +369,10 @@ public class CamundaProcessTestRuntimeBuilder {
 
   public URI getRemoteConnectorsRestApiAddress() {
     return remoteConnectorsRestApiAddress;
+  }
+
+  public Duration getRemoteRuntimeConnectionTimeout() {
+    return remoteRuntimeConnectionTimeout;
   }
 
   public String getCoverageReportDirectory() {

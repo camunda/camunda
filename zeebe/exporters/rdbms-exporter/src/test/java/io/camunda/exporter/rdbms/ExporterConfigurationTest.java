@@ -7,8 +7,12 @@
  */
 package io.camunda.exporter.rdbms;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.time.Duration;
 import org.junit.jupiter.api.Test;
 
@@ -36,6 +40,8 @@ class ExporterConfigurationTest {
     historyConfiguration.setMaxHistoryCleanupInterval(Duration.ofMillis(-2000));
     historyConfiguration.setUsageMetricsCleanup(Duration.ofMillis(-2000));
     historyConfiguration.setUsageMetricsTTL(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-2000));
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-2000));
     historyConfiguration.setHistoryCleanupBatchSize(-1000);
     historyConfiguration.setBatchOperationCancelProcessInstanceHistoryTTL(Duration.ofMillis(-1000));
     historyConfiguration.setBatchOperationMigrateProcessInstanceHistoryTTL(
@@ -67,6 +73,8 @@ class ExporterConfigurationTest {
         .hasMessageContaining("maxHistoryCleanupInterval must be a positive duration")
         .hasMessageContaining("usageMetricsCleanup must be a positive duration")
         .hasMessageContaining("usageMetricsTTL must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration")
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration")
         .hasMessageContaining(
             "maxHistoryCleanupInterval must be greater than minHistoryCleanupInterval")
         .hasMessageContaining("historyCleanupBatchSize must be")
@@ -403,5 +411,75 @@ class ExporterConfigurationTest {
 
     assertThatThrownBy(configuration::validate)
         .hasMessageContaining("insertBatching.maxAuditLogInsertBatchSize must be");
+  }
+
+  @Test
+  public void shouldSetBatchSizesToOneWhenVendorDoesNotSupportInsertBatching() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
+    configuration.getInsertBatching().setMaxJobInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(25);
+
+    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
+    when(vendorProps.supportsInsertBatching()).thenReturn(false);
+
+    // when
+    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+
+    // then
+    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(1);
+    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(1);
+  }
+
+  @Test
+  public void shouldUseBatchSizesFromConfigWhenVendorSupportsInsertBatching() {
+    // given
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.getInsertBatching().setMaxVariableInsertBatchSize(25);
+    configuration.getInsertBatching().setMaxAuditLogInsertBatchSize(50);
+    configuration.getInsertBatching().setMaxJobInsertBatchSize(30);
+    configuration.getInsertBatching().setMaxFlowNodeInsertBatchSize(35);
+
+    final VendorDatabaseProperties vendorProps = mock(VendorDatabaseProperties.class);
+    when(vendorProps.supportsInsertBatching()).thenReturn(true);
+
+    // when
+    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+
+    // then
+    assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
+    assertThat(writerConfig.insertBatchingConfig().auditLogInsertBatchSize()).isEqualTo(50);
+    assertThat(writerConfig.insertBatchingConfig().jobInsertBatchSize()).isEqualTo(30);
+    assertThat(writerConfig.insertBatchingConfig().flowNodeInsertBatchSize()).isEqualTo(35);
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchCleanup() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsCleanup(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsCleanup must be a positive duration");
+  }
+
+  @Test
+  public void shouldFailWithNegativeJobMetricsBatchTTL() {
+    final ExporterConfiguration.HistoryConfiguration historyConfiguration =
+        new ExporterConfiguration.HistoryConfiguration();
+    final ExporterConfiguration configuration = new ExporterConfiguration();
+    configuration.setHistory(historyConfiguration);
+
+    historyConfiguration.setJobBatchMetricsTTL(Duration.ofMillis(-1000));
+
+    assertThatThrownBy(configuration::validate)
+        .hasMessageContaining("jobBatchMetricsTTL must be a positive duration");
   }
 }

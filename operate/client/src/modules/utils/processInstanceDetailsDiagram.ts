@@ -12,6 +12,7 @@ import type {
 } from 'bpmn-js/lib/NavigatedViewer';
 import {isAdHocSubProcess} from 'modules/bpmn-js/utils/isAdHocSubProcess';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
+import type {AncestorScopeType} from 'modules/stores/modifications';
 
 const checkScope = (
   parentFlowNode: BusinessObject | undefined,
@@ -98,9 +99,62 @@ const getFlowNodeParents = (
   return getFlowNodesInBetween(businessObjects, flowNodeId, bpmnProcessId);
 };
 
+const areInSameRunningScope = (
+  businessObjects: BusinessObjects,
+  sourceFlowNodeId: string,
+  targetFlowNodeId: string,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+): boolean => {
+  const sourceFlowNode = businessObjects[sourceFlowNodeId];
+  const targetFlowNode = businessObjects[targetFlowNodeId];
+
+  if (!sourceFlowNode || !targetFlowNode) {
+    return false;
+  }
+
+  const sourceParent = sourceFlowNode.$parent;
+  const targetParent = targetFlowNode.$parent;
+
+  if (!sourceParent || !targetParent) {
+    return false;
+  }
+
+  if (sourceParent.id === targetParent.id) {
+    const runningCount =
+      totalRunningInstancesByFlowNode?.[sourceParent.id] ?? 0;
+    return runningCount > 0;
+  }
+
+  return false;
+};
+
+const getAncestorScopeType = (
+  businessObjects: BusinessObjects,
+  sourceFlowNodeId: string,
+  targetFlowNodeId: string,
+  totalRunningInstancesByFlowNode?: Record<string, number>,
+): AncestorScopeType => {
+  const targetFlowNode = businessObjects[targetFlowNodeId];
+
+  if (!hasMultipleScopes(targetFlowNode, totalRunningInstancesByFlowNode)) {
+    return;
+  }
+
+  const inSameScope = areInSameRunningScope(
+    businessObjects,
+    sourceFlowNodeId,
+    targetFlowNodeId,
+    totalRunningInstancesByFlowNode,
+  );
+
+  return inSameScope ? 'sourceParent' : 'inferred';
+};
+
 export {
   getFlowNodeParents,
   hasMultipleScopes,
   hasSingleScope,
   getFlowNodesInBetween,
+  areInSameRunningScope,
+  getAncestorScopeType,
 };

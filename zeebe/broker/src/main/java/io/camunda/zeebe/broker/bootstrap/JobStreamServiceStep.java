@@ -15,6 +15,7 @@ import io.camunda.zeebe.broker.jobstream.YieldingJobStreamErrorHandler;
 import io.camunda.zeebe.protocol.impl.stream.job.ActivatedJob;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationProperties;
 import io.camunda.zeebe.protocol.impl.stream.job.JobActivationPropertiesImpl;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.transport.TransportFactory;
@@ -127,6 +128,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
         mutable.timeout(),
         mutable.fetchVariables(),
         mutable.tenantIds(),
+        mutable.tenantFilter(),
         mutable.claims());
   }
 
@@ -140,6 +142,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
       long timeout,
       Collection<DirectBuffer> fetchVariables,
       Collection<String> tenantIds,
+      TenantFilter tenantFilter,
       Map<String, Object> claims)
       implements JobActivationProperties {
 
@@ -149,7 +152,7 @@ public final class JobStreamServiceStep extends AbstractBrokerStartupStep {
     }
 
     @Override
-    public void write(final MutableDirectBuffer buffer, final int offset) {
+    public int write(final MutableDirectBuffer buffer, final int offset) {
       throw new UnsupportedOperationException();
     }
   }

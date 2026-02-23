@@ -14,6 +14,7 @@ import io.camunda.search.entities.JobEntity.JobKind;
 import io.camunda.search.entities.JobEntity.JobState;
 import io.camunda.search.entities.JobEntity.ListenerEventType;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -33,6 +34,24 @@ class JobEntityTransformerTest {
     when(entityValue.getState()).thenReturn(JobState.CREATED.name());
     when(entityValue.getJobKind()).thenReturn(JobKind.BPMN_ELEMENT.name());
     when(entityValue.getListenerEventType()).thenReturn(ListenerEventType.UNSPECIFIED.name());
+  }
+
+  @Test
+  void shouldMapRootProcessInstanceKey() {
+    when(entityValue.getRootProcessInstanceKey()).thenReturn(999L);
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.rootProcessInstanceKey()).isEqualTo(999L);
+  }
+
+  @Test
+  void shouldMapNullRootProcessInstanceKey() {
+    when(entityValue.getRootProcessInstanceKey()).thenReturn(null);
+
+    final var transformed = transformer.apply(entityValue);
+
+    assertThat(transformed.rootProcessInstanceKey()).isNull();
   }
 
   @ParameterizedTest

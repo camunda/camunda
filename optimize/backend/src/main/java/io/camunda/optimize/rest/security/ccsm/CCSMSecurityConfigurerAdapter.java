@@ -53,7 +53,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.preauth.AbstractPreAuthenticatedProcessingFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 
 @Configuration
 @EnableWebSecurity
@@ -114,8 +114,9 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
         http.securityMatchers(
             securityMatchers ->
                 securityMatchers.requestMatchers(
-                    new AntPathRequestMatcher(PUBLIC_API_PATH),
-                    new AntPathRequestMatcher(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))));
+                    PathPatternRequestMatcher.withDefaults().matcher(PUBLIC_API_PATH),
+                    PathPatternRequestMatcher.withDefaults()
+                        .matcher(createApiPath(INGESTION_PATH, VARIABLE_SUB_PATH))));
     return applyPublicApiOptions(httpSecurityBuilder);
   }
 
@@ -129,41 +130,52 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
               requests ->
                   requests
                       // ready endpoint is public
-                      .requestMatchers(new AntPathRequestMatcher(createApiPath(READYZ_PATH)))
+                      .requestMatchers(
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(READYZ_PATH)))
                       .permitAll()
                       // Identity callback request handling is public
                       .requestMatchers(
-                          new AntPathRequestMatcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)))
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)))
                       .permitAll()
                       // Static resources
                       .requestMatchers(
-                          new AntPathRequestMatcher("/*.ico"),
-                          new AntPathRequestMatcher("/*.html"),
-                          new AntPathRequestMatcher("/static/*.js"),
-                          new AntPathRequestMatcher("/static/*.css"),
-                          new AntPathRequestMatcher("/static/*.html"))
+                          PathPatternRequestMatcher.withDefaults().matcher("/*.ico"),
+                          PathPatternRequestMatcher.withDefaults().matcher("/*.html"),
+                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.js"),
+                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.css"),
+                          PathPatternRequestMatcher.withDefaults().matcher("/static/*.html"))
                       .permitAll()
                       // public share resources
                       .requestMatchers(
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/index*"),
-                          new AntPathRequestMatcher(
-                              EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.js"),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/*.ico"))
+                          PathPatternRequestMatcher.withDefaults().matcher(EXTERNAL_SUB_PATH + "/"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/index*"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + STATIC_RESOURCE_PATH + "/**"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/*.js"),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/*.ico"))
                       .permitAll()
                       // public share related resources (API)
                       .requestMatchers(
-                          new AntPathRequestMatcher(
-                              createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
-                          new AntPathRequestMatcher(EXTERNAL_SUB_PATH + "/api/**"))
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(EXTERNAL_SUB_PATH + DEEP_SUB_PATH_ANY)),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(EXTERNAL_SUB_PATH + "/api/**"))
                       .permitAll()
                       // common public api resources
                       .requestMatchers(
-                          new AntPathRequestMatcher(createApiPath(UI_CONFIGURATION_PATH)),
-                          new AntPathRequestMatcher(createApiPath(LOCALIZATION_PATH)))
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(UI_CONFIGURATION_PATH)),
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(createApiPath(LOCALIZATION_PATH)))
                       .permitAll()
-                      .requestMatchers(new AntPathRequestMatcher(ACTUATOR_ENDPOINT + "/**"))
+                      .requestMatchers(
+                          PathPatternRequestMatcher.withDefaults()
+                              .matcher(ACTUATOR_ENDPOINT + "/**"))
                       .permitAll()
                       .anyRequest()
                       .authenticated())
@@ -174,9 +186,10 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                   exceptionHandling
                       .defaultAuthenticationEntryPointFor(
                           new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED),
-                          new AntPathRequestMatcher(REST_API_PATH + "/**"))
+                          PathPatternRequestMatcher.withDefaults().matcher(REST_API_PATH + "/**"))
                       .defaultAuthenticationEntryPointFor(
-                          this::redirectToIdentity, new AntPathRequestMatcher("/**")))
+                          this::redirectToIdentity,
+                          PathPatternRequestMatcher.withDefaults().matcher("/**")))
           .build();
     } catch (final Exception e) {
       throw new OptimizeRuntimeException(e);

@@ -57,6 +57,7 @@ public final class ActivatedJobImpl implements ActivatedJob {
   private final JobKind kind;
   private final ListenerEventType listenerEventType;
   private final Set<String> tags;
+  private final Long rootProcessInstanceKey;
 
   private Map<String, Object> variablesAsMap;
 
@@ -86,6 +87,8 @@ public final class ActivatedJobImpl implements ActivatedJob {
     kind = EnumUtil.convert(job.getKind(), JobKind.class);
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
     tags = Collections.unmodifiableSet(new HashSet<>(job.getTagsList()));
+    // gRPC doesn't have rootProcessInstanceKey - return null
+    rootProcessInstanceKey = null;
   }
 
   public ActivatedJobImpl(
@@ -122,6 +125,10 @@ public final class ActivatedJobImpl implements ActivatedJob {
     listenerEventType = EnumUtil.convert(job.getListenerEventType(), ListenerEventType.class);
     tags =
         job.getTags() == null ? Collections.emptySet() : Collections.unmodifiableSet(job.getTags());
+    rootProcessInstanceKey =
+        job.getRootProcessInstanceKey() != null
+            ? Long.parseLong(job.getRootProcessInstanceKey())
+            : null;
   }
 
   @Override
@@ -247,6 +254,11 @@ public final class ActivatedJobImpl implements ActivatedJob {
   @Override
   public Set<String> getTags() {
     return tags;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override

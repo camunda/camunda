@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.RecordToWrite;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -224,12 +225,7 @@ public final class CreateProcessInstanceTest {
     // given
     ENGINE
         .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess("process")
-                .startEvent()
-                .serviceTask("my-task", t -> t.zeebeJobType("my-job"))
-                .endEvent()
-                .done())
+        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
         .deploy();
 
     // when
@@ -271,17 +267,18 @@ public final class CreateProcessInstanceTest {
 
   @Test
   public void shouldCreateProcessInstanceWithBusinessId() {
+    final var processId = helper.getBpmnProcessId();
+    final String businessId = "biz-123";
+
     // given
     ENGINE
         .deployment()
-        .withXmlResource(Bpmn.createExecutableProcess("process").startEvent().endEvent().done())
+        .withXmlResource(Bpmn.createExecutableProcess(processId).startEvent().endEvent().done())
         .deploy();
-
-    final String businessId = "biz-123";
 
     // when
     final long processInstanceKey =
-        ENGINE.processInstance().ofBpmnProcessId("process").withBusinessId(businessId).create();
+        ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
 
     // then
     final Record<ProcessInstanceRecordValue> processActivated =
@@ -569,5 +566,62 @@ public final class CreateProcessInstanceTest {
                 BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATING),
             tuple(
                 BpmnElementType.START_EVENT, "noneStart", ProcessInstanceIntent.ELEMENT_ACTIVATED));
+  }
+
+  @Test
+  public void shouldAllowDuplicateBusinessIdWhenUniquenessCheckDisabled() {
+    // Note: businessIdUniquenessEnabled is disabled by default
+    final String processId = helper.getBpmnProcessId();
+    final String businessId = "biz-duplicate";
+
+    // given
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // create first process instance with business id
+    final var firstInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("firstInstance")
+            .create();
+
+    // when - create second process instance with the same business id
+    final var secondInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // then - both instances should be created successfully since uniqueness check is disabled
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("firstInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(firstInstanceKey);
+
+    Assertions.assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .withBpmnProcessId(processId)
+                .valueFilter(r -> r.getTags().contains("secondInstance"))
+                .getFirst()
+                .getValue())
+        .hasBusinessId(businessId)
+        .hasProcessInstanceKey(secondInstanceKey);
   }
 }

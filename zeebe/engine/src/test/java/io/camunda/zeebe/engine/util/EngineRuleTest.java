@@ -9,6 +9,7 @@ package io.camunda.zeebe.engine.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.camunda.zeebe.protocol.record.intent.MessageIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import java.time.Instant;
@@ -35,7 +36,8 @@ public class EngineRuleTest {
     engineRule.awaitProcessingOf(message);
 
     // then
-    final var records = RecordingExporter.messageRecords();
+    final var records =
+        RecordingExporter.messageRecords().limit(r -> r.getIntent() == MessageIntent.PUBLISHED);
     assertThat(records)
         .allSatisfy(
             record ->

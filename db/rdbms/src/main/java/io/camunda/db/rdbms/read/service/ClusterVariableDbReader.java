@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.ClusterVariableDbQuery;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.columns.ClusterVariableSearchColumn;
@@ -29,8 +30,9 @@ public class ClusterVariableDbReader extends AbstractEntityReader<ClusterVariabl
 
   private final ClusterVariableMapper clusterVariableMapper;
 
-  public ClusterVariableDbReader(final ClusterVariableMapper clusterVariableMapper) {
-    super(ClusterVariableSearchColumn.values());
+  public ClusterVariableDbReader(
+      final ClusterVariableMapper clusterVariableMapper, final RdbmsReaderConfig readerConfig) {
+    super(ClusterVariableSearchColumn.values(), readerConfig);
     this.clusterVariableMapper = clusterVariableMapper;
   }
 

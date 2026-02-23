@@ -16,9 +16,7 @@
 package io.camunda.client.api.response;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import io.camunda.client.api.ExperimentalApi;
 
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface DocumentReferenceResponse {
 
   @JsonProperty("camunda.document.type")

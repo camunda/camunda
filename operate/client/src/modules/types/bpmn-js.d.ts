@@ -79,6 +79,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       values: {
         $type: string;
         type?: string;
+        formKey?: string;
         $children?: {
           $type: string;
           source: string;

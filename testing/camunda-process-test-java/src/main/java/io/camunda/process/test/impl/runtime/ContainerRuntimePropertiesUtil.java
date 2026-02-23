@@ -30,6 +30,7 @@ import io.camunda.process.test.impl.runtime.util.VersionedPropertiesUtil;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -212,6 +213,10 @@ public final class ContainerRuntimePropertiesUtil {
 
   public URI getRemoteClientRestAddress() {
     return remoteRuntimeProperties.getRemoteClientProperties().getRestAddress();
+  }
+
+  public Duration getRemoteRuntimeConnectionTimeout() {
+    return remoteRuntimeProperties.getRuntimeConnectionTimeout();
   }
 
   public CamundaProcessTestRuntimeMode getRuntimeMode() {

@@ -47,14 +47,15 @@ class McpServerRequestObservationConventionTest {
 
   @ParameterizedTest
   @MethodSource("mcpRequestCases")
-  void tracksMcpDetailsInObservationTags(final String requestContent, final String expectedUriTag) {
+  void tracksMcpDetailsInObservationTags(
+      final String servletPath, final String requestContent, final String expectedUriTag) {
     // given
     final ContentCachingRequestWrapper request = mock(ContentCachingRequestWrapper.class);
     final ServerRequestObservationContext observationContext =
         mock(ServerRequestObservationContext.class);
     when(observationContext.getCarrier()).thenReturn(request);
     when(request.getMethod()).thenReturn(HttpMethod.POST.name());
-    when(request.getServletPath()).thenReturn("/mcp");
+    when(request.getServletPath()).thenReturn(servletPath);
     when(request.getContentAsString()).thenReturn(requestContent == null ? "" : requestContent);
 
     // when
@@ -67,19 +68,39 @@ class McpServerRequestObservationConventionTest {
 
   private static Stream<Arguments> mcpRequestCases() {
     return Stream.of(
-        Arguments.of(null, "/mcp"),
-        Arguments.of("", "/mcp"),
-        Arguments.of("invalid-json", "/mcp"),
-        Arguments.of("{}", "/mcp"),
-        Arguments.of("{\"foo\":\"\"}", "/mcp"),
-        Arguments.of("{\"method\":\"\"}", "/mcp"),
-        Arguments.of("{\"method\":\"tools/list\"}", "/mcp/tools/list"),
-        Arguments.of("{\"method\":\"tools/call\",\"params\":{}}", "/mcp/tools/call"),
+        // /mcp/cluster path
+        Arguments.of("/mcp/cluster", null, "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "", "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "invalid-json", "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "{}", "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "{\"foo\":\"\"}", "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "{\"method\":\"\"}", "/mcp/cluster"),
+        Arguments.of("/mcp/cluster", "{\"method\":\"tools/list\"}", "/mcp/cluster/tools/list"),
         Arguments.of(
+            "/mcp/cluster", "{\"method\":\"tools/call\",\"params\":{}}", "/mcp/cluster/tools/call"),
+        Arguments.of(
+            "/mcp/cluster",
             "{\"method\":\"tools/call\",\"params\":{\"name\":\"cluster\"}}",
-            "/mcp/tools/call/cluster"),
+            "/mcp/cluster/tools/call/cluster"),
         Arguments.of(
+            "/mcp/cluster",
             "{\"method\":\"tools/call\",\"params\":{\"name\":\"cluster\", \"arguments\":{ \"foo\":\"bar\"}}}",
-            "/mcp/tools/call/cluster"));
+            "/mcp/cluster/tools/call/cluster"),
+        // /mcp/processes path
+        Arguments.of("/mcp/processes", null, "/mcp/processes"),
+        Arguments.of("/mcp/processes", "{\"method\":\"tools/list\"}", "/mcp/processes/tools/list"),
+        Arguments.of(
+            "/mcp/processes",
+            "{\"method\":\"tools/call\",\"params\":{\"name\":\"start\"}}",
+            "/mcp/processes/tools/call/start"),
+        // /mcp/business path
+        Arguments.of("/mcp/business", null, "/mcp/business"),
+        Arguments.of("/mcp/business", "{\"method\":\"tools/list\"}", "/mcp/business/tools/list"),
+        // nested path like /mcp/processes/tenant/{tenantId}
+        Arguments.of("/mcp/processes/tenant/tenant1", null, "/mcp/processes/tenant/tenant1"),
+        Arguments.of(
+            "/mcp/processes/tenant/tenant1",
+            "{\"method\":\"tools/call\",\"params\":{\"name\":\"deploy\"}}",
+            "/mcp/processes/tenant/tenant1/tools/call/deploy"));
   }
 }

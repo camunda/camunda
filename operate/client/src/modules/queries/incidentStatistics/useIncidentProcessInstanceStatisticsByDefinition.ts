@@ -46,7 +46,6 @@ const useIncidentProcessInstanceStatisticsByDefinition = ({
       throw error;
     },
     enabled,
-    refetchInterval: 5000,
   });
 };
 

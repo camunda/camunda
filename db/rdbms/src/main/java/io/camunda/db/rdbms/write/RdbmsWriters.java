@@ -13,11 +13,14 @@ import io.camunda.db.rdbms.sql.AuditLogMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.ClusterVariableMapper;
 import io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper;
+import io.camunda.db.rdbms.sql.DecisionDefinitionMapper;
 import io.camunda.db.rdbms.sql.DecisionInstanceMapper;
+import io.camunda.db.rdbms.sql.DecisionRequirementsMapper;
 import io.camunda.db.rdbms.sql.FlowNodeInstanceMapper;
 import io.camunda.db.rdbms.sql.HistoryDeletionMapper;
 import io.camunda.db.rdbms.sql.IncidentMapper;
 import io.camunda.db.rdbms.sql.JobMapper;
+import io.camunda.db.rdbms.sql.JobMetricsBatchMapper;
 import io.camunda.db.rdbms.sql.MessageSubscriptionMapper;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.db.rdbms.sql.ProcessInstanceMapper;
@@ -39,6 +42,7 @@ import io.camunda.db.rdbms.write.service.DecisionRequirementsWriter;
 import io.camunda.db.rdbms.write.service.ExporterPositionService;
 import io.camunda.db.rdbms.write.service.FlowNodeInstanceWriter;
 import io.camunda.db.rdbms.write.service.FormWriter;
+import io.camunda.db.rdbms.write.service.GlobalListenerWriter;
 import io.camunda.db.rdbms.write.service.GroupWriter;
 import io.camunda.db.rdbms.write.service.HistoryDeletionWriter;
 import io.camunda.db.rdbms.write.service.IncidentWriter;
@@ -47,11 +51,11 @@ import io.camunda.db.rdbms.write.service.JobWriter;
 import io.camunda.db.rdbms.write.service.MappingRuleWriter;
 import io.camunda.db.rdbms.write.service.MessageSubscriptionWriter;
 import io.camunda.db.rdbms.write.service.ProcessDefinitionWriter;
+import io.camunda.db.rdbms.write.service.ProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.db.rdbms.write.service.RdbmsPurger;
 import io.camunda.db.rdbms.write.service.RdbmsWriter;
 import io.camunda.db.rdbms.write.service.RoleWriter;
-import io.camunda.db.rdbms.write.service.RootProcessInstanceDependant;
 import io.camunda.db.rdbms.write.service.SequenceFlowWriter;
 import io.camunda.db.rdbms.write.service.TenantWriter;
 import io.camunda.db.rdbms.write.service.UsageMetricTUWriter;
@@ -81,6 +85,8 @@ public class RdbmsWriters {
       final RdbmsWriterMetrics metrics,
       final AuditLogMapper auditLogMapper,
       final DecisionInstanceMapper decisionInstanceMapper,
+      final DecisionDefinitionMapper decisionDefinitionMapper,
+      final DecisionRequirementsMapper decisionRequirementsMapper,
       final FlowNodeInstanceMapper flowNodeInstanceMapper,
       final IncidentMapper incidentMapper,
       final ProcessInstanceMapper processInstanceMapper,
@@ -91,6 +97,7 @@ public class RdbmsWriters {
       final VendorDatabaseProperties vendorDatabaseProperties,
       final BatchOperationDbReader batchOperationReader,
       final JobMapper jobMapper,
+      final JobMetricsBatchMapper jobMetricsBatchMapper,
       final SequenceFlowMapper sequenceFlowMapper,
       final UsageMetricMapper usageMetricMapper,
       final UsageMetricTUMapper usageMetricTUMapper,
@@ -109,12 +116,16 @@ public class RdbmsWriters {
         AuditLogWriter.class,
         new AuditLogWriter(executionQueue, auditLogMapper, vendorDatabaseProperties, config));
     writers.put(AuthorizationWriter.class, new AuthorizationWriter(executionQueue));
-    writers.put(DecisionDefinitionWriter.class, new DecisionDefinitionWriter(executionQueue));
+    writers.put(
+        DecisionDefinitionWriter.class,
+        new DecisionDefinitionWriter(decisionDefinitionMapper, executionQueue));
     writers.put(
         DecisionInstanceWriter.class,
         new DecisionInstanceWriter(
             decisionInstanceMapper, executionQueue, vendorDatabaseProperties, config));
-    writers.put(DecisionRequirementsWriter.class, new DecisionRequirementsWriter(executionQueue));
+    writers.put(
+        DecisionRequirementsWriter.class,
+        new DecisionRequirementsWriter(decisionRequirementsMapper, executionQueue));
     writers.put(
         FlowNodeInstanceWriter.class,
         new FlowNodeInstanceWriter(executionQueue, flowNodeInstanceMapper, config));
@@ -148,7 +159,9 @@ public class RdbmsWriters {
     writers.put(
         JobWriter.class,
         new JobWriter(executionQueue, jobMapper, vendorDatabaseProperties, config));
-    writers.put(JobMetricsBatchWriter.class, new JobMetricsBatchWriter(executionQueue));
+    writers.put(
+        JobMetricsBatchWriter.class,
+        new JobMetricsBatchWriter(executionQueue, jobMetricsBatchMapper));
     writers.put(
         SequenceFlowWriter.class, new SequenceFlowWriter(executionQueue, sequenceFlowMapper));
     writers.put(UsageMetricWriter.class, new UsageMetricWriter(executionQueue, usageMetricMapper));
@@ -167,6 +180,7 @@ public class RdbmsWriters {
     writers.put(
         HistoryDeletionWriter.class,
         new HistoryDeletionWriter(executionQueue, historyDeletionMapper));
+    writers.put(GlobalListenerWriter.class, new GlobalListenerWriter(executionQueue));
   }
 
   public AuthorizationWriter getAuthorizationWriter() {
@@ -277,10 +291,14 @@ public class RdbmsWriters {
     return getWriter(HistoryDeletionWriter.class);
   }
 
-  public List<RootProcessInstanceDependant> getProcessInstanceDependantWriters() {
+  public GlobalListenerWriter getGlobalListenerWriter() {
+    return getWriter(GlobalListenerWriter.class);
+  }
+
+  public List<ProcessInstanceDependant> getProcessInstanceDependantWriters() {
     return writers.values().stream()
-        .filter(RootProcessInstanceDependant.class::isInstance)
-        .map(RootProcessInstanceDependant.class::cast)
+        .filter(ProcessInstanceDependant.class::isInstance)
+        .map(ProcessInstanceDependant.class::cast)
         .toList();
   }
 

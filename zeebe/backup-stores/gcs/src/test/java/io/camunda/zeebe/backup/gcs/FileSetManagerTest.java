@@ -20,46 +20,103 @@ import io.camunda.zeebe.backup.common.FileSet;
 import io.camunda.zeebe.backup.common.FileSet.NamedFile;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+@ExtendWith(MockitoExtension.class)
 final class FileSetManagerTest {
-  @Test
-  void shouldSaveFileSet() throws IOException {
-    // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
-    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    final var namedFileSet =
-        new NamedFileSetImpl(
-            Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
+  private final Storage storage;
+  private final FileSetManager manager;
 
-    // when
-    manager.save(backupIdentifier, "filesetName", namedFileSet);
-
-    // then
-    verify(mockClient).createFrom(any(), eq(Path.of("file1")), any());
-    verify(mockClient).createFrom(any(), eq(Path.of("file2")), any());
+  FileSetManagerTest(@Mock final Storage storage) {
+    this.storage = storage;
+    manager =
+        new FileSetManager(
+            storage,
+            BucketInfo.of("bucket"),
+            "basePath",
+            Executors.newVirtualThreadPerTaskExecutor(),
+            50);
   }
 
   @Test
-  void shouldThrowExceptionOnSaveFileSet() throws IOException {
+  void shouldSaveSnapshotFilesInParallel(@TempDir final Path tempDir) throws IOException {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
     final var namedFileSet =
-        new NamedFileSetImpl(
-            Map.of("snapshotFile1", Path.of("file1"), "snapshotFile2", Path.of("file2")));
-    when(mockClient.createFrom(any(), any(Path.class), any()))
+        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet);
+
+    // then - snapshots are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
+  }
+
+  @Test
+  void shouldThrowExceptionOnSaveSnapshotWhenUploadFails(@TempDir final Path tempDir)
+      throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("snapshotFile1", file1, "snapshotFile2", file2));
+    when(storage.createFrom(any(), any(InputStream.class), any()))
         .thenThrow(new StorageException(412, "expected"));
 
     // when throw
-    Assertions.assertThatThrownBy(() -> manager.save(backupIdentifier, "filesetName", namedFileSet))
-        .isInstanceOf(StorageException.class)
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SNAPSHOT_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
+        .hasMessageContaining("expected");
+  }
+
+  @Test
+  void shouldSaveSegmentFilesInParallel(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+
+    // when
+    manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet);
+
+    // then - segments are uploaded in parallel using the executor
+    verify(storage, times(2)).createFrom(any(), any(InputStream.class), any());
+  }
+
+  @Test
+  void shouldThrowExceptionOnSaveSegments(@TempDir final Path tempDir) throws IOException {
+    // given
+    final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
+    final var file1 = Files.createFile(tempDir.resolve("file1"));
+    final var file2 = Files.createFile(tempDir.resolve("file2"));
+    final var namedFileSet =
+        new NamedFileSetImpl(Map.of("segmentFile1", file1, "segmentFile2", file2));
+    when(storage.createFrom(any(), any(InputStream.class), any()))
+        .thenThrow(new StorageException(412, "expected"));
+
+    // when throw
+    Assertions.assertThatThrownBy(
+            () ->
+                manager.save(backupIdentifier, FileSetManager.SEGMENTS_FILESET_NAME, namedFileSet))
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 
@@ -67,14 +124,12 @@ final class FileSetManagerTest {
   @Test
   void shouldDeleteFileSet() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final var mockBlob = mock(Blob.class);
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
+    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
 
     // when
     manager.delete(backupIdentifier, "filesetName");
@@ -86,10 +141,8 @@ final class FileSetManagerTest {
   @Test
   void shouldThrowExceptionOnDeleteFileSetWhenListThrows() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
-    when(mockClient.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
+    when(storage.list(eq("bucket"), any())).thenThrow(new StorageException(412, "expected"));
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
@@ -101,15 +154,13 @@ final class FileSetManagerTest {
   @Test
   void shouldThrowExceptionOnDeleteFileSetWhenBlobDeleteThrows() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
 
     final Blob mockBlob = mock(Blob.class);
     when(mockBlob.delete()).thenThrow(new StorageException(412, "expected"));
     final var mockPage = mock(Page.class);
     when(mockPage.iterateAll()).thenReturn(List.of(mockBlob));
-    when(mockClient.list(eq("bucket"), any())).thenReturn(mockPage);
+    when(storage.list(eq("bucket"), any())).thenReturn(mockPage);
 
     // when throw
     Assertions.assertThatThrownBy(() -> manager.delete(backupIdentifier, "filesetName"))
@@ -120,8 +171,6 @@ final class FileSetManagerTest {
   @Test
   void shouldRestoreFileSet() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
@@ -137,26 +186,22 @@ final class FileSetManagerTest {
     Assertions.assertThat(namedFileSet.namedFiles())
         .isEqualTo(Map.of("snapshotFile", expectedPath1, "snapshotFile2", expectedPath2));
 
-    verify(mockClient).downloadTo(any(), eq(expectedPath1));
-    verify(mockClient).downloadTo(any(), eq(expectedPath2));
+    verify(storage).downloadTo(any(), eq(expectedPath1));
+    verify(storage).downloadTo(any(), eq(expectedPath2));
   }
 
   @Test
   void shouldThrowRestoreFileSetWhenDownloadToFails() {
     // given
-    final var mockClient = mock(Storage.class);
-    final var manager = new FileSetManager(mockClient, BucketInfo.of("bucket"), "basePath");
     final var backupIdentifier = new BackupIdentifierImpl(1, 2, 3);
     final var fileSet =
         new FileSet(List.of(new NamedFile("snapshotFile"), new NamedFile("snapshotFile2")));
     final Path restorePath = Path.of("restorePath");
-    doThrow(new StorageException(412, "expected"))
-        .when(mockClient)
-        .downloadTo(any(), any(Path.class));
+    doThrow(new StorageException(412, "expected")).when(storage).downloadTo(any(), any(Path.class));
 
     // when - then throw
     assertThatThrownBy(() -> manager.restore(backupIdentifier, "filesetName", fileSet, restorePath))
-        .isInstanceOf(StorageException.class)
+        .hasCauseInstanceOf(StorageException.class)
         .hasMessageContaining("expected");
   }
 }

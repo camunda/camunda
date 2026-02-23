@@ -45,6 +45,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
   private final String evaluationFailure;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final Long elementInstanceKey;
   private final long decisionKey;
   private final String decisionDefinitionId;
@@ -67,6 +68,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
+        ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey()),
         Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
@@ -91,6 +93,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         item.getEvaluationFailure(),
         Long.parseLong(item.getProcessDefinitionKey()),
         Long.parseLong(item.getProcessInstanceKey()),
+        ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey()),
         Long.parseLong(item.getElementInstanceKey()),
         Long.parseLong(item.getDecisionDefinitionKey()),
         item.getDecisionDefinitionId(),
@@ -117,6 +120,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
       final String evaluationFailure,
       final Long processDefinitionKey,
       final Long processInstanceKey,
+      final Long rootProcessInstanceKey,
       final Long elementInstanceKey,
       final long decisionKey,
       final String decisionDefinitionId,
@@ -136,6 +140,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
     this.evaluationFailure = evaluationFailure;
     this.processDefinitionKey = processDefinitionKey;
     this.processInstanceKey = processInstanceKey;
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
     this.decisionKey = decisionKey;
     this.decisionDefinitionId = decisionDefinitionId;
@@ -159,6 +164,8 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionDefinitionType.DECISION_TABLE;
       case LITERAL_EXPRESSION:
         return DecisionDefinitionType.LITERAL_EXPRESSION;
+      case UNSPECIFIED:
+        return DecisionDefinitionType.UNSPECIFIED;
       case UNKNOWN:
         return DecisionDefinitionType.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
@@ -179,6 +186,10 @@ public class DecisionInstanceImpl implements DecisionInstance {
         return DecisionInstanceState.EVALUATED;
       case FAILED:
         return DecisionInstanceState.FAILED;
+      case UNSPECIFIED:
+        return DecisionInstanceState.UNSPECIFIED;
+      case UNKNOWN:
+        return DecisionInstanceState.UNKNOWN;
       case UNKNOWN_DEFAULT_OPEN_API:
       default:
         EnumUtil.logUnknownEnumValue(
@@ -220,6 +231,11 @@ public class DecisionInstanceImpl implements DecisionInstance {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -292,6 +308,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         evaluationFailure,
         processDefinitionKey,
         processInstanceKey,
+        rootProcessInstanceKey,
         elementInstanceKey,
         decisionKey,
         decisionDefinitionId,
@@ -321,6 +338,7 @@ public class DecisionInstanceImpl implements DecisionInstance {
         && Objects.equals(evaluationFailure, that.evaluationFailure)
         && Objects.equals(processDefinitionKey, that.processDefinitionKey)
         && Objects.equals(processInstanceKey, that.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, that.rootProcessInstanceKey)
         && Objects.equals(elementInstanceKey, that.elementInstanceKey)
         && Objects.equals(decisionDefinitionId, that.decisionDefinitionId)
         && Objects.equals(decisionDefinitionName, that.decisionDefinitionName)

@@ -13,6 +13,9 @@ import java.util.List;
 
 public interface BannedInstanceState extends StreamProcessorLifecycleAware {
 
+  /** Returns true if the process instance with the given key is banned, false otherwise. */
+  boolean isProcessInstanceBanned(final long key);
+
   boolean isBanned(final TypedRecord record);
 
   /** Returns a list of keys of all banned process instances */

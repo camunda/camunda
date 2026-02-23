@@ -20,7 +20,7 @@ import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {tracking} from 'modules/tracking';
 import {Title} from 'modules/components/FiltersPanel/styled';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {TextInputField} from 'modules/components/TextInputField';
 import {createPortal} from 'react-dom';
 import {Stack} from '@carbon/react';
@@ -95,7 +95,7 @@ const Variable: React.FC = observer(() => {
                         variant: 'search-multiple-variables',
                       });
                     }}
-                    Icon={Popup}
+                    Icon={Maximize}
                   />
                 );
               } else {
@@ -107,7 +107,7 @@ const Variable: React.FC = observer(() => {
                     placeholder="in JSON format"
                     data-testid="optional-filter-variable-value"
                     labelText="Value"
-                    buttonLabel="Open JSON editor modal"
+                    buttonLabel="Open JSON editor"
                     onIconClick={() => {
                       setIsModalVisible(true);
                       tracking.track({
@@ -115,7 +115,7 @@ const Variable: React.FC = observer(() => {
                         variant: 'search-variable',
                       });
                     }}
-                    Icon={Popup}
+                    Icon={Maximize}
                   />
                 );
               }

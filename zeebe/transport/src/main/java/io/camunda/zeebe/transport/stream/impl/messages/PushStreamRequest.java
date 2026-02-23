@@ -45,7 +45,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
 
     if (streamId != null) {
@@ -60,6 +60,7 @@ public final class PushStreamRequest implements BufferReader, BufferWriter {
         PushStreamRequestEncoder.payloadHeaderLength(),
         messageEncoder,
         PushStreamRequestEncoder.BYTE_ORDER);
+    return getLength();
   }
 
   /** May return null if it was never read or set. */

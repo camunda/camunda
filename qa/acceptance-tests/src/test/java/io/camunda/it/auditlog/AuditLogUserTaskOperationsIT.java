@@ -41,6 +41,7 @@ public class AuditLogUserTaskOperationsIT {
           .withAuthenticatedAccess();
 
   private static UserTaskRecordValue userTask;
+  private static UserTaskRecordValue unassignedUserTask;
   private static CamundaClient adminClient;
   private static AuditLogUtils utils;
 
@@ -50,6 +51,8 @@ public class AuditLogUserTaskOperationsIT {
     userTask = utils.getUserTasks().getFirst();
     updateUserTask(userTask);
     completeUserTask(userTask);
+    unassignedUserTask = utils.getUserTasks().get(1);
+    unassignUserTask(unassignedUserTask);
   }
 
   @Test
@@ -99,8 +102,34 @@ public class AuditLogUserTaskOperationsIT {
     final var auditLog = auditLogItems.items().getFirst();
     assertThat(auditLog).isNotNull();
     assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertThat(auditLog.getRelatedEntityKey()).isEqualTo(DEFAULT_USERNAME);
+    assertThat(auditLog.getRelatedEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER);
     assertUserTaskAuditLog(
         auditLog, AuditLogOperationTypeEnum.ASSIGN, userTask.getProcessDefinitionKey());
+  }
+
+  @Test
+  void shouldSearchUserTaskAuditLogByKeyWithUnassignOperation(
+      @Authenticated final CamundaClient client) {
+    // given
+    final long userTaskKey = unassignedUserTask.getUserTaskKey();
+
+    // when
+    final var auditLogItems =
+        client
+            .newUserTaskAuditLogSearchRequest(userTaskKey)
+            .filter(f -> f.operationType(AuditLogOperationTypeEnum.UNASSIGN))
+            .send()
+            .join();
+
+    // then
+    final var auditLog = auditLogItems.items().getFirst();
+    assertThat(auditLog).isNotNull();
+    assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+    assertThat(auditLog.getRelatedEntityKey()).isBlank();
+    assertThat(auditLog.getRelatedEntityType()).isEqualTo(AuditLogEntityTypeEnum.USER);
+    assertUserTaskAuditLog(
+        auditLog, AuditLogOperationTypeEnum.UNASSIGN, unassignedUserTask.getProcessDefinitionKey());
   }
 
   @Test
@@ -169,6 +198,29 @@ public class AuditLogUserTaskOperationsIT {
     assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
     assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
     assertThat(auditLog.getProcessDefinitionKey()).isEqualTo(String.valueOf(processDefinitionKey));
+  }
+
+  public static void unassignUserTask(final UserTaskRecordValue userTask) {
+    adminClient.newUnassignUserTaskCommand(userTask.getUserTaskKey()).send().join();
+
+    Awaitility.await("Audit log entry is created for the updated user task")
+        .ignoreExceptionsInstanceOf(ProblemException.class)
+        .atMost(Duration.ofSeconds(20))
+        .untilAsserted(
+            () -> {
+              final var auditLogItems =
+                  adminClient
+                      .newAuditLogSearchRequest()
+                      .filter(
+                          fn ->
+                              fn.processInstanceKey(
+                                      String.valueOf(userTask.getProcessInstanceKey()))
+                                  .entityType(AuditLogEntityTypeEnum.USER_TASK)
+                                  .operationType(AuditLogOperationTypeEnum.UNASSIGN))
+                      .send()
+                      .join();
+              assertThat(auditLogItems.items()).hasSize(1);
+            });
   }
 
   public static void updateUserTask(final UserTaskRecordValue userTask) {

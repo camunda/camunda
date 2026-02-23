@@ -36,6 +36,88 @@ class ResponseMapperTest {
   @Nested
   class ActivatedJobMappingTest {
 
+    @Test
+    void shouldMapActivatedJobWithRootProcessInstanceKey() {
+      // given
+      final long rootProcessInstanceKey = 789L;
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              .setRootProcessInstanceKey(rootProcessInstanceKey)
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecordWithRootProcessInstanceKey(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(
+              job -> {
+                assertThat(job.getProcessInstanceKey()).isEqualTo("456");
+                assertThat(job.getRootProcessInstanceKey()).isEqualTo("789");
+              });
+    }
+
+    @Test
+    void shouldNotSetRootProcessInstanceKeyWhenNotAvailableForActivatedJob() {
+      // given - old process instance hierarchy (pre-8.9) where rootProcessInstanceKey is -1
+      final JobRecord jobRecord =
+          new JobRecord()
+              .setJobKind(JobKind.BPMN_ELEMENT)
+              .setType("test-type")
+              .setBpmnProcessId("procId")
+              .setElementId("elementId")
+              .setProcessInstanceKey(456L)
+              .setProcessDefinitionVersion(1)
+              .setProcessDefinitionKey(123L)
+              .setElementInstanceKey(555L)
+              .setWorker("worker")
+              .setRetries(3)
+              .setDeadline(0L)
+              // rootProcessInstanceKey defaults to -1 for old hierarchies
+              .setTenantId(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      jobRecord.setVariables(new UnsafeBuffer(emptyVariables));
+
+      final JobBatchRecord batchRecord = buildJobBatchRecord(jobRecord);
+      final JobActivationResponse activationResponse =
+          new JobActivationResponse(123L, batchRecord, 1024 * 1024L);
+
+      // when
+      final var result = ResponseMapper.toActivateJobsResponse(activationResponse);
+
+      // then
+      final var jobs = result.getActivateJobsResponse().getJobs();
+      assertThat(jobs)
+          .singleElement()
+          .satisfies(
+              job -> {
+                assertThat(job.getProcessInstanceKey()).isEqualTo("456");
+                // rootProcessInstanceKey should be null when it's -1 (not set)
+                assertThat(job.getRootProcessInstanceKey()).isNull();
+              });
+    }
+
     static Stream<ActivatedJobWithUserTaskPropsCase> activatedJobWithUserTaskPropsCases() {
       return Stream.of(
           new ActivatedJobWithUserTaskPropsCase(
@@ -205,6 +287,40 @@ class ResponseMapperTest {
         jobRecord.getCustomHeadersBuffer().getBytes(0, headersCopy);
         job.setCustomHeaders(new UnsafeBuffer(headersCopy));
       }
+
+      return batchRecord;
+    }
+
+    private static JobBatchRecord buildJobBatchRecordWithRootProcessInstanceKey(
+        final JobRecord jobRecord) {
+      final JobBatchRecord batchRecord = new JobBatchRecord();
+
+      // Set required properties on the batch record
+      batchRecord.setType(jobRecord.getType());
+      batchRecord.setWorker(jobRecord.getWorker());
+
+      // Add a job key
+      batchRecord.jobKeys().add().setValue(123L);
+
+      // Add the job record to the batch by copying all properties
+      final JobRecord job = batchRecord.jobs().add();
+      job.setJobKind(jobRecord.getJobKind())
+          .setType(jobRecord.getType())
+          .setBpmnProcessId(jobRecord.getBpmnProcessId())
+          .setElementId(jobRecord.getElementId())
+          .setProcessInstanceKey(jobRecord.getProcessInstanceKey())
+          .setProcessDefinitionVersion(jobRecord.getProcessDefinitionVersion())
+          .setProcessDefinitionKey(jobRecord.getProcessDefinitionKey())
+          .setElementInstanceKey(jobRecord.getElementInstanceKey())
+          .setWorker(jobRecord.getWorker())
+          .setRetries(jobRecord.getRetries())
+          .setDeadline(jobRecord.getDeadline())
+          .setTenantId(jobRecord.getTenantId())
+          .setRootProcessInstanceKey(jobRecord.getRootProcessInstanceKey());
+
+      // Set variables as empty MsgPack map
+      final byte[] emptyVariables = MsgPackConverter.convertToMsgPack(Collections.emptyMap());
+      job.setVariables(new UnsafeBuffer(emptyVariables));
 
       return batchRecord;
     }

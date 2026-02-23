@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
-import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.LEGACY_TOPIC_PREFIX;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.assertArg;
@@ -329,7 +329,8 @@ final class InterPartitionCommandReceiverTest {
     final ClusterCommunicationService communicationService =
         mock(ClusterCommunicationService.class);
 
-    final var sender = new InterPartitionCommandSenderImpl(communicationService);
+    final var sender =
+        new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
     sender.setCurrentLeader(receiverPartitionId, receiverBrokerId);
 
     sender.sendCommand(receiverPartitionId, valueType, intent, recordKey, recordValue, authInfo);
@@ -337,7 +338,7 @@ final class InterPartitionCommandReceiverTest {
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
         .unicast(
-            eq(TOPIC_PREFIX + receiverPartitionId),
+            eq(LEGACY_TOPIC_PREFIX + receiverPartitionId),
             messageCaptor.capture(),
             any(),
             any(),

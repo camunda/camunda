@@ -33,7 +33,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class DeploymentRejectionTest {
-  @ClassRule public static final EngineRule ENGINE = EngineRule.singlePartition();
+  public static final int MAX_ID_FIELD_LENGTH = 100;
+  public static final int MAX_NAME_FIELD_LENGTH = 100;
+  public static final int MAX_WORKER_TYPE_LENGTH = 100;
+
+  @ClassRule
+  public static final EngineRule ENGINE =
+      EngineRule.singlePartition()
+          .withEngineConfig(
+              config ->
+                  config
+                      .setMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
+                      .setMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
+                      .setMaxWorkerTypeLength(MAX_WORKER_TYPE_LENGTH));
 
   @Rule
   public final RecordingExporterTestWatcher recordingExporterTestWatcher =
@@ -494,6 +506,96 @@ public class DeploymentRejectionTest {
             - Element: businessRuleTask > extensionElements > calledDecision
                 - ERROR: Expected to find decision with id 'test-decision' in current deployment, but not found.
             """);
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfIdExceedsLimit() {
+    final var processId = "a".repeat(MAX_ID_FIELD_LENGTH + 1);
+    final var startEventId = "b".repeat(MAX_ID_FIELD_LENGTH + 1);
+    final var serviceTaskId = "c".repeat(MAX_ID_FIELD_LENGTH + 1);
+    final var userTaskId = "d".repeat(MAX_ID_FIELD_LENGTH + 1);
+
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(processId)
+            .startEvent(startEventId)
+            .serviceTask(serviceTaskId, t -> t.zeebeJobType("test"))
+            .userTask(userTaskId)
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- ERROR: IDs must not be longer than the configured max-id-length of %s characters"
+                .formatted(MAX_ID_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfNameExceedsLimit() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .name("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .startEvent("startEvent")
+            .name("a".repeat(MAX_NAME_FIELD_LENGTH + 1))
+            .endEvent()
+            .done();
+
+    // when
+    final Record<DeploymentRecordValue> rejectedDeployment =
+        ENGINE.deployment().withXmlResource(process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- ERROR: Names must not be longer than the configured max-name-length of %s characters"
+                .formatted(MAX_NAME_FIELD_LENGTH));
+  }
+
+  @Test
+  public void shouldRejectDeploymentIfWorkerTypeExceedsLimit() {
+    final var workerType = "a".repeat(MAX_WORKER_TYPE_LENGTH + 1);
+
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent")
+            .serviceTask("serviceTask", t -> t.zeebeJobType(workerType))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource("process.bpmn", process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- ERROR: Worker types must not be longer than the configured max-worker-type-length of %s characters"
+                .formatted(MAX_WORKER_TYPE_LENGTH));
   }
 
   @Test

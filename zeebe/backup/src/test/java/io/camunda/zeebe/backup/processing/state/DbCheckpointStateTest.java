@@ -104,23 +104,24 @@ final class DbCheckpointStateTest {
   void shouldSetAndGetLatestBackupIdAndPosition() {
     // when
     final var timestamp = Instant.now().toEpochMilli();
-    state.setLatestBackupInfo(7L, 14L, timestamp, CheckpointType.MARKER);
+    state.setLatestBackupInfo(7L, 14L, timestamp, CheckpointType.MARKER, 3L);
 
     // then
     assertThat(state.getLatestBackupId()).isEqualTo(7L);
     assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
     assertThat(state.getLatestBackupTimestamp()).isEqualTo(timestamp);
+    assertThat(state.getLatestBackupFirstLogPosition()).isEqualTo(3L);
   }
 
   @Test
   void shouldOverwriteBackupInfo() {
     // given
     final var tsBefore = Instant.now().toEpochMilli();
-    state.setLatestBackupInfo(7L, 14L, tsBefore, CheckpointType.MARKER);
+    state.setLatestBackupInfo(7L, 14L, tsBefore, CheckpointType.MARKER, 3L);
 
     // when
     final var tsAfter = Instant.now().toEpochMilli();
-    state.setLatestBackupInfo(21L, 28L, tsAfter, CheckpointType.SCHEDULED_BACKUP);
+    state.setLatestBackupInfo(21L, 28L, tsAfter, CheckpointType.SCHEDULED_BACKUP, 10L);
 
     // then
     assertThat(state.getLatestBackupId()).isEqualTo(21L);
@@ -134,7 +135,7 @@ final class DbCheckpointStateTest {
     final var tsCheckpoint = Instant.now().toEpochMilli();
     final var tsBackup = Instant.now().toEpochMilli();
     state.setLatestCheckpointInfo(5L, 10L, tsCheckpoint, CheckpointType.MARKER);
-    state.setLatestBackupInfo(7L, 14L, tsBackup, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(7L, 14L, tsBackup, CheckpointType.MANUAL_BACKUP, 3L);
 
     // then
     assertThat(state.getLatestCheckpointId()).isEqualTo(5L);
@@ -146,6 +147,7 @@ final class DbCheckpointStateTest {
     assertThat(state.getLatestBackupPosition()).isEqualTo(14L);
     assertThat(state.getLatestBackupTimestamp()).isEqualTo(tsBackup);
     assertThat(state.getLatestBackupType()).isEqualTo(CheckpointType.MANUAL_BACKUP);
+    assertThat(state.getLatestBackupFirstLogPosition()).isEqualTo(3L);
   }
 
   @Test
@@ -154,7 +156,7 @@ final class DbCheckpointStateTest {
     final var tsCheckpoint = Instant.now().toEpochMilli();
     final var tsBackup = Instant.now().toEpochMilli();
     state.setLatestCheckpointInfo(5L, 10L, tsCheckpoint, CheckpointType.MARKER);
-    state.setLatestBackupInfo(7L, 14L, tsBackup, CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(7L, 14L, tsBackup, CheckpointType.MANUAL_BACKUP, 3L);
 
     // when
     final var tsCheckpointUpdated = Instant.now().toEpochMilli();
@@ -176,11 +178,12 @@ final class DbCheckpointStateTest {
   void shouldUpdateBackupInfoWithoutAffectingCheckpointInfo() {
     // given
     state.setLatestCheckpointInfo(5L, 10L, Instant.now().toEpochMilli(), CheckpointType.MARKER);
-    state.setLatestBackupInfo(7L, 14L, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP);
+    state.setLatestBackupInfo(
+        7L, 14L, Instant.now().toEpochMilli(), CheckpointType.MANUAL_BACKUP, 3L);
 
     // when
     state.setLatestBackupInfo(
-        21L, 28L, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP);
+        21L, 28L, Instant.now().toEpochMilli(), CheckpointType.SCHEDULED_BACKUP, 10L);
 
     // then
     assertThat(state.getLatestCheckpointId()).isEqualTo(5L);

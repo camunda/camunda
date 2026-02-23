@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.Item;
 import io.camunda.zeebe.engine.processing.batchoperation.itemprovider.ItemProvider.ItemPage;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationChunkRecord;
+import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationItem;
 import io.camunda.zeebe.protocol.record.intent.BatchOperationChunkIntent;
 import io.camunda.zeebe.stream.api.FollowUpCommandMetadata;
 import io.camunda.zeebe.stream.api.scheduling.TaskResultBuilder;
@@ -44,8 +45,8 @@ class BatchOperationPageProcessorTest {
   @Test
   void shouldProcessPageWithSingleChunk() {
     // given
-    final var item1 = new Item(100L, 200L);
-    final var item2 = new Item(101L, 201L);
+    final var item1 = new Item(100L, 200L, null);
+    final var item2 = new Item(101L, 201L, null);
     final var page = new ItemPage(List.of(item1, item2), "cursor123", 2L, false);
 
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
@@ -72,11 +73,11 @@ class BatchOperationPageProcessorTest {
     // given - 5 items with chunk size 2 should create 3 chunks (2+2+1)
     final var items =
         List.of(
-            new Item(100L, 200L),
-            new Item(101L, 201L),
-            new Item(102L, 202L),
-            new Item(103L, 203L),
-            new Item(104L, 204L));
+            new Item(100L, 200L, null),
+            new Item(101L, 201L, null),
+            new Item(102L, 202L, null),
+            new Item(103L, 203L, null),
+            new Item(104L, 204L, null));
     final var page = new ItemPage(items, "cursor456", 5L, true);
 
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);
@@ -102,7 +103,7 @@ class BatchOperationPageProcessorTest {
   @Test
   void shouldNotAppendChunksWhenTaskResultBuilderCannotAccommodate() {
     // given
-    final var items = List.of(new Item(100L, 200L), new Item(101L, 201L));
+    final var items = List.of(new Item(100L, 200L, null), new Item(101L, 201L, null));
     final var page = new ItemPage(items, "cursor789", 2L, false);
 
     when(mockTaskResultBuilder.canAppendRecords(
@@ -156,9 +157,9 @@ class BatchOperationPageProcessorTest {
   @Test
   void shouldCreateCorrectChunkRecords() {
     // given
-    final var item1 = new Item(100L, 200L);
-    final var item2 = new Item(101L, 201L);
-    final var item3 = new Item(102L, 202L);
+    final var item1 = new Item(100L, 200L, null);
+    final var item2 = new Item(101L, 201L, 111L);
+    final var item3 = new Item(102L, 202L, 112L);
     final var items = List.of(item1, item2, item3);
     final var page = new ItemPage(items, "cursor", 3L, false);
 
@@ -181,18 +182,22 @@ class BatchOperationPageProcessorTest {
 
     // First chunk should have 2 items (chunk size)
     assertThat(capturedChunks.get(0).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(capturedChunks.get(0).getItems()).hasSize(2);
+    assertThat(capturedChunks.get(0).getItems())
+        .containsExactlyInAnyOrder(
+            new BatchOperationItem(100L, 200L, -1L), new BatchOperationItem(101L, 201L, 111L));
 
     // Second chunk should have 1 item (remainder)
     assertThat(capturedChunks.get(1).getBatchOperationKey()).isEqualTo(BATCH_OPERATION_KEY);
-    assertThat(capturedChunks.get(1).getItems()).hasSize(1);
+    assertThat(capturedChunks.get(1).getItems())
+        .containsExactly(new BatchOperationItem(102L, 202L, 112L));
   }
 
   @Test
   void shouldHandleDifferentChunkSizes() {
     // given
     final var largeChunkProcessor = new BatchOperationPageProcessor(10);
-    final var items = List.of(new Item(100L, 200L), new Item(101L, 201L), new Item(102L, 202L));
+    final var items =
+        List.of(new Item(100L, 200L, null), new Item(101L, 201L, null), new Item(102L, 202L, null));
     final var page = new ItemPage(items, "cursor", 3L, false);
 
     when(mockTaskResultBuilder.canAppendRecords(any(), any())).thenReturn(true);

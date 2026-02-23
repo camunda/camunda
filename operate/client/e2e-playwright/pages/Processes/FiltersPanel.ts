@@ -77,7 +77,7 @@ export class FiltersPanel {
     });
 
     this.flowNodeFilter = this.panel.getByRole('combobox', {
-      name: /flow node/i,
+      name: /element/i,
     });
 
     this.operationIdFilter = this.panel.getByRole('textbox', {

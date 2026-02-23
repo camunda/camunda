@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
@@ -58,27 +59,45 @@ public abstract class ApiServices<T extends ApiServices<T>> {
         .thenApplyAsync(BrokerResponse::getResponse, executor);
   }
 
+  protected <R> CompletableFuture<R> sendBrokerRequest(
+      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+    return sendBrokerRequestWithFullResponse(brokerRequest, requestTimeout)
+        .thenApplyAsync(BrokerResponse::getResponse, executor);
+  }
+
   protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
       final BrokerRequest<R> brokerRequest) {
     final var brokerRequestAuthorization =
         brokerRequestAuthorizationConverter.convert(authentication);
     brokerRequest.setAuthorization(brokerRequestAuthorization);
+    return brokerClient.sendRequest(brokerRequest).handleAsync(handleBrokerResponse(), executor);
+  }
+
+  protected <R> CompletableFuture<BrokerResponse<R>> sendBrokerRequestWithFullResponse(
+      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+    final var brokerRequestAuthorization =
+        brokerRequestAuthorizationConverter.convert(authentication);
+    brokerRequest.setAuthorization(brokerRequestAuthorization);
     return brokerClient
-        .sendRequest(brokerRequest)
-        .handleAsync(
-            (response, error) -> {
-              if (error != null) {
-                throw ErrorMapper.mapError(error);
-              }
-              if (response.isError()) {
-                throw ErrorMapper.mapBrokerError(response.getError());
-              }
-              if (response.isRejection()) {
-                throw ErrorMapper.mapBrokerRejection(response.getRejection());
-              }
-              return response;
-            },
-            executor);
+        .sendRequest(brokerRequest, requestTimeout)
+        .handleAsync(handleBrokerResponse(), executor);
+  }
+
+  private <R>
+      java.util.function.BiFunction<BrokerResponse<R>, Throwable, BrokerResponse<R>>
+          handleBrokerResponse() {
+    return (response, error) -> {
+      if (error != null) {
+        throw ErrorMapper.mapError(error);
+      }
+      if (response.isError()) {
+        throw ErrorMapper.mapBrokerError(response.getError());
+      }
+      if (response.isRejection()) {
+        throw ErrorMapper.mapBrokerRejection(response.getRejection());
+      }
+      return response;
+    };
   }
 
   protected DirectBuffer getDocumentOrEmpty(final Map<String, Object> value) {

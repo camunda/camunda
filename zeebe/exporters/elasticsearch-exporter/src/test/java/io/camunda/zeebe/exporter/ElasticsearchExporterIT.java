@@ -12,12 +12,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 import co.elastic.clients.elasticsearch._types.ElasticsearchException;
+import co.elastic.clients.elasticsearch.cluster.ComponentTemplate;
 import co.elastic.clients.elasticsearch.core.GetResponse;
-import io.camunda.zeebe.exporter.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings.Index;
-import io.camunda.zeebe.exporter.TestClient.IndexSettings.Settings;
-import io.camunda.zeebe.exporter.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import co.elastic.clients.elasticsearch.indices.IndexState;
+import co.elastic.clients.elasticsearch.indices.get_index_template.IndexTemplateItem;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -44,11 +42,12 @@ import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 import org.agrona.CloseHelper;
 import org.awaitility.Awaitility;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
@@ -70,19 +69,45 @@ final class ElasticsearchExporterIT {
       TestSearchContainers.createDefeaultElasticsearchContainer()
           .withEnv("action.destructive_requires_name", "false");
 
-  private final ElasticsearchExporterConfiguration config =
-      new ElasticsearchExporterConfiguration();
+  private static ElasticsearchExporterConfiguration config;
+  private static ExporterTestController controller;
+  private static ElasticsearchExporter exporter;
+  private static RecordIndexRouter indexRouter;
+  private static TestClient testClient;
+  private static ExporterTestContext exporterTestContext;
+  private static String previousTestMethod = null;
   // omit authorizations since they are removed from the records during serialization
   private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
-  private final ExporterTestController controller = new ExporterTestController();
-  private final ElasticsearchExporter exporter = new ElasticsearchExporter();
-  private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
-
-  private TestClient testClient;
-  private ExporterTestContext exporterTestContext;
 
   @BeforeEach
-  public void beforeEach() {
+  public void beforeEach(final TestInfo testInfo) {
+    // to avoid constantly creating and re-creating indexes/templates
+    // we will only delete and re-create after each test method - not have each
+    // actual test.  This means the tests using @ParameterizedTest can
+    // execute _much_ faster
+    final String currentTestMethod = getTestMethod(testInfo);
+    if (!currentTestMethod.equals(previousTestMethod)) {
+      if (previousTestMethod != null) {
+        deletedIndices();
+      }
+      setup();
+      previousTestMethod = currentTestMethod;
+    }
+  }
+
+  static String getTestMethod(final TestInfo testInfo) {
+    return testInfo.getTestClass().orElseThrow()
+        + "."
+        + testInfo.getTestMethod().orElseThrow().getName();
+  }
+
+  static void setup() {
+    config = new ElasticsearchExporterConfiguration();
+
+    controller = new ExporterTestController();
+    exporter = new ElasticsearchExporter();
+    indexRouter = new RecordIndexRouter(config.index);
+
     config.url = CONTAINER.getHttpHostAddress();
     config.setIncludeEnabledRecords(true);
     config.index.setNumberOfShards(1);
@@ -102,12 +127,18 @@ final class ElasticsearchExporterIT {
     exporter.open(controller);
   }
 
-  @AfterEach
-  void afterEach() {
+  static void deletedIndices() {
     testClient.deleteIndices();
     testClient.deleteIndexTemplates();
     testClient.deleteComponentTemplates();
     CloseHelper.quietCloseAll(testClient);
+    exporter.close();
+  }
+
+  @AfterAll
+  static void afterAll() {
+    deletedIndices();
+    previousTestMethod = null;
   }
 
   @ParameterizedTest(name = "{0}")
@@ -226,7 +257,7 @@ final class ElasticsearchExporterIT {
         .as("should have created index template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(expectedIndexTemplateName);
   }
 
@@ -245,7 +276,7 @@ final class ElasticsearchExporterIT {
         .as("should have created the component template")
         .isPresent()
         .get()
-        .extracting(ComponentTemplateWrapper::name)
+        .extracting(ComponentTemplate::name)
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
@@ -447,7 +478,7 @@ final class ElasticsearchExporterIT {
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(item -> item.indexTemplate().priority())
           .isEqualTo((long) priority);
     }
 
@@ -467,7 +498,7 @@ final class ElasticsearchExporterIT {
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(item -> item.indexTemplate().priority())
           .isEqualTo(20L); // default priority is 20
     }
 
@@ -478,6 +509,7 @@ final class ElasticsearchExporterIT {
     private void configureExporter(
         final Consumer<ElasticsearchExporterConfiguration> configurator) {
       configurator.accept(config);
+      exporter.close();
       exporter.configure(exporterTestContext);
       exporter.open(controller);
     }
@@ -547,32 +579,42 @@ final class ElasticsearchExporterIT {
       assertThat(secondRecordIndexName).contains("8.7.0");
     }
 
-    private void assertIndexSettingsHasLifecyclePolicy(
-        final Optional<IndexSettings> indexSettings) {
-      assertThat(indexSettings)
+    private void assertIndexSettingsHasLifecyclePolicy(final Optional<IndexState> indexState) {
+      assertThat(indexState)
           .as("should have found the index")
           .isPresent()
           .get()
-          .extracting(IndexSettings::settings)
-          .extracting(Settings::index)
-          .extracting(Index::lifecycle)
+          .extracting(IndexState::settings)
+          .as("should have settings")
+          .isNotNull()
+          .extracting(s -> s.index())
+          .as("should have index settings")
+          .isNotNull()
+          .extracting(s -> s.lifecycle())
           .as("should have lifecycle config")
           .isNotNull()
-          .extracting(IndexSettings.Lifecycle::name)
+          .extracting(l -> l.name())
           .isEqualTo(config.retention.getPolicyName());
     }
 
     private static void assertIndexSettingsHasNoLifecyclePolicy(
-        final Optional<IndexSettings> indexSettings) {
-      assertThat(indexSettings)
+        final Optional<IndexState> indexState) {
+      assertThat(indexState)
           .as("should have found the index")
           .isPresent()
           .get()
-          .extracting(IndexSettings::settings)
-          .extracting(Settings::index)
-          .extracting(Index::lifecycle)
-          .as("Lifecycle policy should not be configured")
-          .isNull();
+          .extracting(IndexState::settings)
+          .as("should have settings")
+          .isNotNull()
+          .satisfies(
+              settings -> {
+                final var indexSettings = settings.index();
+                if (indexSettings != null) {
+                  assertThat(indexSettings.lifecycle())
+                      .as("Lifecycle policy should not be configured")
+                      .isNull();
+                }
+              });
     }
   }
 }

@@ -32,6 +32,13 @@ public record ProcessInstanceEntity(
     Set<String> tags)
     implements TenantOwnedEntity {
 
+  public ProcessInstanceEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
+    tags = tags != null ? tags : new HashSet<>();
+  }
+
   public ProcessInstanceEntity(
       final Long processInstanceKey,
       final Long rootProcessInstanceKey,
@@ -65,7 +72,7 @@ public record ProcessInstanceEntity(
         hasIncident,
         tenantId,
         treePath,
-        new HashSet<>());
+        null);
   }
 
   public enum ProcessInstanceState {

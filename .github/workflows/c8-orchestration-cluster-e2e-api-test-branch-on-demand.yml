@@ -1,0 +1,426 @@
+# description: Runs End to End tests on the C8 Orchestration Cluster API on the code in a branch. This workflow is run manually.
+# You select a repo branch, and the workflow builds the server on that branch, then runs the e2e tests from the branch against the server
+# It tests the server with RDBMS and ES in parallel. This helps to identify differential API behaviour based on storage engine.
+# type: CI
+# owner: @camunda/qa-engineering
+---
+name: C8 Orchestration Cluster API E2E Tests On Demand for the code in a branch
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Enter the branch to test"
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  validate-branch:
+    runs-on: ubuntu-latest
+    outputs:
+      base: ${{ steps.detect-base.outputs.base }}
+    steps:
+      - name: Check if branch exists
+        run: |
+          echo "Checking if branch '${{ github.event.inputs.branch }}' exists..."
+          branch_name="${{ github.event.inputs.branch }}"
+          branch_check=$(curl -s -o /dev/null -w "%{http_code}" \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            https://api.github.com/repos/${{ github.repository }}/branches/$branch_name)
+          if [[ "$branch_check" != "200" ]]; then
+            echo "Error: Branch '$branch_name' does not exist (HTTP $branch_check)."
+            exit 1
+          fi
+          echo "Branch '$branch_name' exists."
+
+      - uses: actions/checkout@v6
+
+      - name: Detect base branch
+        id: detect-base
+        run: |
+          branch="${{ github.event.inputs.branch }}"
+          echo "Detecting base branch for input branch: $branch"
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 main "$branch"
+          base="main"
+          for candidate in stable/8.6 stable/8.7 stable/8.8 main; do
+            if git merge-base --is-ancestor origin/$candidate origin/$branch; then
+              base="$candidate"
+              break
+            fi
+          done
+          echo "Detected base branch: $base"
+          echo "base=$base" >> "$GITHUB_OUTPUT"
+
+  c8-orchestration-cluster-api-tests-es:
+    name: C8 Orchestration Cluster API Tests (ES)
+    needs: validate-branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Print input and base branch
+        run: |
+          echo "Input branch: ${{ github.event.inputs.branch }}"
+          echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-es-api-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C
+
+      - name: Build Docker image from branch
+        run: |
+          docker build \
+            -f camunda.Dockerfile \
+            --target app \
+            --build-arg BASE=public \
+            --build-arg DISTBALL="dist/target/camunda-zeebe-*.tar.gz" \
+            -t "camunda/camunda:SNAPSHOT" \
+            .
+
+      - name: Set NON_STANDALONE variable
+        run: |
+          base="${{ needs.validate-branch.outputs.base }}"
+          if [[ "$base" == "stable/8.6" || "$base" == "stable/8.7" ]]; then
+            echo "NON_STANDALONE=true" >> "$GITHUB_ENV"
+          else
+            echo "NON_STANDALONE=false" >> "$GITHUB_ENV"
+          fi
+
+      - name: Start Camunda
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            echo "Using single services for older branches (8.6/8.7)"
+            DATABASE=elasticsearch docker compose up -d operate tasklist
+          else
+            echo "Using standalone camunda container"
+            DATABASE=elasticsearch docker compose up -d camunda
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: List running Docker containers
+        run: docker ps -a
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Wait for services to be ready
+        id: wait-for-services
+        run: |
+          echo "Checking if services are up..."
+          ready=false
+          for i in {1..90}; do
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              tasklist_status=$(curl -s -m 5 http://localhost:8080 || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8081 || echo "Failed")
+            else
+              tasklist_status=$(curl -s -m 5 http://localhost:8080/tasklist || echo "Failed")
+              operate_status=$(curl -s -m 5 http://localhost:8080/operate || echo "Failed")
+              identity_status=$(curl -s -m 5 http://localhost:8080/identity || echo "Failed")
+            fi
+            if [[ "$NON_STANDALONE" == "true" ]]; then
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            else
+              if [[ "$tasklist_status" != "Failed" && "$operate_status" != "Failed" && "$identity_status" != "Failed" ]]; then
+                echo "Services are ready!"
+                ready=true
+                break
+              fi
+            fi
+            echo "Waiting for services... ($i/90)"
+            sleep 10
+          done
+          if [ "$ready" = true ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Services failed to start in time."
+            exit 1
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Print Docker logs before failing
+        if: failure()
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            docker compose logs tasklist
+            docker compose logs operate
+          else
+            docker compose logs camunda
+          fi
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite/config
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@79632e33d6953d190b940ffa440bf97821cabd80
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_EMAIL;
+            secret/data/github.com/organizations/camunda TESTRAIL_QA_PSW;
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Python setup
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Run API tests
+        env:
+          LOCAL_TEST: "false"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+        run: |
+          if [[ "$NON_STANDALONE" == "true" ]]; then
+            export CORE_APPLICATION_TASKLIST_URL="http://localhost:8080"
+            export CORE_APPLICATION_OPERATE_URL="http://localhost:8081"
+            export ZEEBE_REST_ADDRESS="http://localhost:8089"
+          else
+            export CORE_APPLICATION_URL="http://localhost:8080"
+            export ZEEBE_REST_ADDRESS="http://localhost:8080"
+          fi
+          
+          echo "Running API tests"
+          npm run test -- --project=api-tests
+          
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Publish test results to TestRail
+        if: always()
+        env:
+          TESTRAIL_HOST: "https://camunda.testrail.com/"
+          TESTRAIL_USERNAME: ${{ steps.secrets.outputs.TESTRAIL_QA_EMAIL }}
+          TESTRAIL_KEY: ${{ steps.secrets.outputs.TESTRAIL_QA_PSW }}
+          JUNIT_RESULTS_FILE: "qa/c8-orchestration-cluster-e2e-test-suite/test-results/junit-report.xml"
+        run: |
+          pip install trcli
+          trcli -y -h "$TESTRAIL_HOST" \
+            --project 'C8' \
+            --username "$TESTRAIL_USERNAME" \
+            --key "$TESTRAIL_KEY" \
+            parse_junit --suite-id 17050 \
+            --title "On Demand C8 Orchestration Cluster API Test Run Results - ${{ github.event.inputs.branch }} - $(date '+%Y-%m-%d %H:%M:%S')" \
+            --close-run \
+            -f "$JUNIT_RESULTS_FILE"
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: C8 Orchestration Cluster API Test Result
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          retention-days: 10
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  c8-orchestration-cluster-api-tests-rdbms:
+    name: C8 Orchestration Cluster API Tests (H2/RDBMS)
+    needs: validate-branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions: {}
+    steps:
+      - name: Print input and base branch
+        run: |
+          echo "Input branch: ${{ github.event.inputs.branch }}"
+          echo "Base branch: ${{ needs.validate-branch.outputs.base }}"
+
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: e2e-h2-api-tests
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Build Camunda distribution
+        run: ./mvnw install -Dquickly -T1C
+
+      - name: Extract distribution
+        run: |
+          mkdir -p dev-dist
+          exploded="dist/target/camunda-zeebe"
+          if [ -d "$exploded/bin" ]; then
+            cp -a "$exploded"/. dev-dist/
+          else
+            tarball=$(find dist/target -maxdepth 1 -name 'camunda-zeebe-*.tar.gz' | head -1)
+            if [ -z "$tarball" ]; then
+              echo "ERROR: No dist build output found."
+              exit 1
+            fi
+            tar xzf "$tarball" --strip-components=1 -C dev-dist
+          fi
+
+      - name: Start Camunda with H2/RDBMS
+        run: |
+          chmod +x dev-dist/bin/camunda
+
+          export SPRING_PROFILES_ACTIVE="broker,consolidated-auth,admin"
+          export ZEEBE_CLOCK_CONTROLLED="true"
+
+          # Auth configuration
+          export CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI="false"
+          export CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED="true"
+          export CAMUNDA_SECURITY_AUTHENTICATION_METHOD="BASIC"
+          export CAMUNDA_SECURITY_MULTITENANCY_CHECKSENABLED="false"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME="Demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_0_EMAIL="demo@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0="demo"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_USERNAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_PASSWORD="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_NAME="lisa"
+          export CAMUNDA_SECURITY_INITIALIZATION_USERS_1_EMAIL="lisa@example.com"
+          export CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_1="lisa"
+
+          # H2 in-memory database with RDBMS secondary storage
+          export CAMUNDA_DATABASE_URL="jdbc:h2:mem:cpt;DB_CLOSE_DELAY=-1;MODE=PostgreSQL"
+          export CAMUNDA_DATABASE_TYPE="rdbms"
+          export CAMUNDA_DATABASE_USERNAME="sa"
+          export CAMUNDA_DATABASE_PASSWORD=""
+          export CAMUNDA_DATA_SECONDARY_STORAGE_TYPE="rdbms"
+          export ZEEBE_BROKER_EXPORTERS_RDBMS_CLASSNAME="io.camunda.exporter.rdbms.RdbmsExporter"
+          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_FLUSH_INTERVAL="PT0S"
+          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_DEFAULT_HISTORY_TTL="PT2S"
+          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MIN_HISTORY_CLEANUP_INTERVAL="PT2S"
+          export ZEEBE_BROKER_EXPORTERS_RDBMS_ARGS_MAX_HISTORY_CLEANUP_INTERVAL="PT5S"
+
+          # Audit log
+          export CAMUNDA_DATA_AUDITLOG_ENABLED="true"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_1="DEPLOYED_RESOURCES"
+          export CAMUNDA_DATA_AUDITLOG_USER_CATEGORIES_2="USER_TASKS"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_0="VARIABLE"
+          export CAMUNDA_DATA_AUDITLOG_USER_EXCLUDES_1="BATCH"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_CATEGORIES_0="ADMIN"
+          export CAMUNDA_DATA_AUDITLOG_CLIENT_EXCLUDES_0="PROCESS_INSTANCE"
+
+          dev-dist/bin/camunda > dev-dist/camunda.log 2>&1 &
+          echo $! > dev-dist/camunda.pid
+          echo "Camunda starting (PID $(cat dev-dist/camunda.pid))..."
+
+      - name: Wait for Camunda to be ready
+        run: |
+          echo "Waiting for Camunda to be ready..."
+          for i in $(seq 1 90); do
+            if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
+              echo "Camunda is ready!"
+              exit 0
+            fi
+            echo "Waiting... ($i/90)"
+            sleep 5
+          done
+          echo "Camunda failed to start in time."
+          echo "=== Last 100 lines of log ==="
+          tail -100 dev-dist/camunda.log
+          exit 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: qa/c8-orchestration-cluster-e2e-test-suite/package-lock.json
+
+      - name: Clean install dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Install Playwright Browsers
+        run: npx playwright install --with-deps chromium
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Run API tests
+        env:
+          LOCAL_TEST: "false"
+          CORE_APPLICATION_URL: "http://localhost:8080"
+          ZEEBE_REST_ADDRESS: "http://localhost:8080"
+          CAMUNDA_AUTH_STRATEGY: "BASIC"
+          CAMUNDA_BASIC_AUTH_USERNAME: "demo"
+          CAMUNDA_BASIC_AUTH_PASSWORD: "demo"
+          CAMUNDA_TASKLIST_V2_MODE_ENABLED: "false"
+        run: |
+          echo "Running API tests against H2/RDBMS backend"
+          npm run test -- --project=api-tests
+        working-directory: qa/c8-orchestration-cluster-e2e-test-suite
+
+      - name: Print Camunda logs on failure
+        if: failure()
+        run: |
+          echo "=== Camunda logs ==="
+          cat dev-dist/camunda.log
+
+      - uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: C8 Orchestration Cluster API Test Result (H2-RDBMS)
+          path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
+          retention-days: 10
+
+      - name: Stop Camunda
+        if: always()
+        run: |
+          if [ -f dev-dist/camunda.pid ]; then
+            kill "$(cat dev-dist/camunda.pid)" 2>/dev/null || true
+          fi
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

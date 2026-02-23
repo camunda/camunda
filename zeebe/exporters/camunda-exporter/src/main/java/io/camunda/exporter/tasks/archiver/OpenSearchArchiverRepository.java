@@ -287,6 +287,14 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
   @Override
   public CompletableFuture<Void> deleteDocuments(
       final String sourceIndexName, final Map<String, List<String>> keysByField) {
+    return deleteDocuments(sourceIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> deleteDocuments(
+      final String sourceIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
@@ -296,7 +304,7 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
             .index(sourceIndexName)
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
-            .query(buildOrFilterQuery(keysByField))
+            .query(buildFilterQuery(keysByField, filters))
             .build();
 
     final var timer = Timer.start();
@@ -311,13 +319,22 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
       final String sourceIndexName,
       final String destinationIndexName,
       final Map<String, List<String>> keysByField) {
+    return reindexDocuments(sourceIndexName, destinationIndexName, keysByField, Map.of());
+  }
+
+  @Override
+  public CompletableFuture<Void> reindexDocuments(
+      final String sourceIndexName,
+      final String destinationIndexName,
+      final Map<String, List<String>> keysByField,
+      final Map<String, String> filters) {
     if (keysByField.isEmpty()) {
       return CompletableFuture.completedFuture(null);
     }
 
     final var request =
         new ReindexRequest.Builder()
-            .source(src -> src.index(sourceIndexName).query(buildOrFilterQuery(keysByField)))
+            .source(src -> src.index(sourceIndexName).query(buildFilterQuery(keysByField, filters)))
             .dest(dest -> dest.index(destinationIndexName))
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
@@ -513,11 +530,23 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         QueryBuilders.range()
             .field(JobMetricsBatchTemplate.END_TIME)
             .lte(JsonData.of(config.getArchivingTimePoint()))
-            .build();
+            .build()
+            .toQuery();
+
+    final var partitionQ =
+        QueryBuilders.term()
+            .field(JobMetricsBatchTemplate.PARTITION_ID)
+            .value(FieldValue.of(partitionId))
+            .build()
+            .toQuery();
+
+    final var boolBuilder = QueryBuilders.bool();
+    boolBuilder.must(endDateQ);
+    boolBuilder.must(partitionQ);
 
     return createSearchRequest(
         jobMetricsBatchTemplateDescriptor.getFullQualifiedName(),
-        endDateQ.toQuery(),
+        boolBuilder.build().toQuery(),
         JobMetricsBatchTemplate.END_TIME);
   }
 
@@ -685,15 +714,27 @@ public final class OpenSearchArchiverRepository extends OpensearchRepository
         .build();
   }
 
-  /** Builds a boolean OR filter query for the given map of keys by field. */
-  private Query buildOrFilterQuery(final Map<String, List<String>> keysByField) {
-    final var boolQ = QueryBuilders.bool();
-    for (final var entry : keysByField.entrySet()) {
-      boolQ.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+  private Query buildFilterQuery(
+      final Map<String, List<String>> keysByField, final Map<String, String> filters) {
+    final var boolBuilder = QueryBuilders.bool();
+
+    // Match any keys
+    if (!keysByField.isEmpty()) {
+      final var keysBoolBuilder = QueryBuilders.bool();
+      for (final var entry : keysByField.entrySet()) {
+        keysBoolBuilder.should(buildIdTermsQuery(entry.getKey(), entry.getValue()).toQuery());
+      }
+      keysBoolBuilder.minimumShouldMatch("1");
+      boolBuilder.filter(keysBoolBuilder.build().toQuery());
     }
-    boolQ.minimumShouldMatch("1");
-    // Use filter context to avoid scoring overhead
-    return QueryBuilders.bool().filter(boolQ.build().toQuery()).build().toQuery();
+
+    // Match all the extra filters
+    for (final var filter : filters.entrySet()) {
+      boolBuilder.filter(
+          f -> f.term(t -> t.field(filter.getKey()).value(FieldValue.of(filter.getValue()))));
+    }
+
+    return boolBuilder.build().toQuery();
   }
 
   private <T> CompletableFuture<T> sendRequestAsync(final RequestSender<T> sender) {

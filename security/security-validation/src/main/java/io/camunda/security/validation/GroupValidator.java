@@ -28,17 +28,16 @@ public final class GroupValidator {
     return violations;
   }
 
+  public List<String> validateMembers(final List<String> memberIds, final EntityType memberType) {
+    return identifierValidator.validateMembers(memberIds, memberType);
+  }
+
   public List<String> validateMember(
       final String roleId, final String memberId, final EntityType memberType) {
     final List<String> violations = new ArrayList<>();
     validateGroupId(roleId, violations);
-    validateMemberId(memberId, memberType, violations);
+    identifierValidator.validateMemberId(memberId, memberType, violations);
     return violations;
-  }
-
-  private void validateId(
-      final String id, final String propertyName, final List<String> violations) {
-    identifierValidator.validateId(id, propertyName, violations);
   }
 
   private void validateGroupId(final String id, final List<String> violations) {
@@ -48,23 +47,6 @@ public final class GroupValidator {
   private static void validateGroupName(final String name, final List<String> violations) {
     if (name == null || name.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
-    }
-  }
-
-  private void validateMemberId(
-      final String entityId, final EntityType entityType, final List<String> violations) {
-    switch (entityType) {
-      case USER:
-        validateId(entityId, "username", violations);
-        break;
-      case GROUP:
-        validateId(entityId, "groupId", violations);
-        break;
-      case MAPPING_RULE:
-        validateId(entityId, "mappingRuleId", violations);
-        break;
-      default:
-        validateId(entityId, "entityId", violations);
     }
   }
 }

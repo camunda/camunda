@@ -15,7 +15,7 @@ import {
   type QueryAuditLogsRequestBody,
   auditLogSortFieldEnum,
 } from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {Container, OperationLogName} from './styled';
+import {Container} from './styled';
 import {PaginatedSortableTable} from 'modules/components/PaginatedSortableTable';
 import {getSortParams} from 'modules/utils/filter';
 import {useLocation} from 'react-router-dom';
@@ -29,11 +29,24 @@ import {
   DetailsModal,
   type DetailsModalState,
 } from 'modules/components/OperationsLogDetailsModal';
-import {OperationsLogStateIcon} from 'modules/components/OperationsLogStateIcon';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {IS_ELEMENT_SELECTION_V2} from 'modules/feature-flags';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {EmptyMessage} from 'modules/components/EmptyMessage';
+import {EmptyMessageContainer} from '../styled';
+import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
+import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
+import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
+import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
+import {Filters} from './Filters';
+import {
+  auditLogEntityTypeSchema,
+  auditLogOperationTypeSchema,
+} from '@camunda/camunda-api-zod-schemas/8.9';
+import {getFilters} from 'modules/utils/filter/getProcessInstanceFilters';
+import {
+  PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS,
+  type ProcessInstanceOperationsLogFilterField,
+  type ProcessInstanceOperationsLogFilters,
+} from './operationsLogFilters';
 
 type Props = {
   isVisible: boolean;
@@ -41,13 +54,23 @@ type Props = {
 
 const headerColumns = [
   {
-    header: 'Operation',
+    header: '',
+    key: 'result',
+  },
+  {
+    header: 'Operation Type',
     key: 'operationType',
     sortKey: 'operationType',
   },
   {
-    header: 'Status',
-    key: 'result',
+    header: 'Entity Type',
+    key: 'entityType',
+    sortKey: 'entityType',
+  },
+  {
+    header: 'Property',
+    key: 'property',
+    isDisabled: true,
   },
   {
     header: 'Actor',
@@ -55,7 +78,7 @@ const headerColumns = [
     sortKey: 'actorId',
   },
   {
-    header: 'Time',
+    header: 'Date',
     key: 'timestamp',
     sortKey: 'timestamp',
   },
@@ -74,12 +97,18 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   };
   const sortByParsed = auditLogSortFieldEnum.safeParse(sortParams.sortBy);
   const sortBy = sortByParsed.success ? sortByParsed.data : 'timestamp';
-  const {data: processInstance} = useProcessInstance();
-  const {resolvedElementInstance, isFetchingElement} =
+  const {processInstanceId: processInstanceKey} =
+    useProcessInstancePageParams();
+  const {resolvedElementInstance, isFetchingElement, hasSelection} =
     useProcessInstanceElementSelection();
-  const elementInstanceKey = IS_ELEMENT_SELECTION_V2
-    ? resolvedElementInstance?.elementInstanceKey
-    : flowNodeMetaDataStore.state.metaData?.flowNodeInstanceId;
+  const elementInstanceKey = resolvedElementInstance?.elementInstanceKey;
+  const hasMultipleInstances =
+    resolvedElementInstance?.elementInstanceKey === undefined && hasSelection;
+
+  const filterValues = getFilters<
+    ProcessInstanceOperationsLogFilterField,
+    ProcessInstanceOperationsLogFilters
+  >(location.search, PROCESS_INSTANCE_AUDIT_LOG_FILTER_FIELDS, []);
 
   const request = useMemo(
     (): QueryAuditLogsRequestBody => ({
@@ -91,15 +120,31 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
       ],
       filter: {
         category: {$neq: 'ADMIN'},
-        processInstanceKey: processInstance?.processInstanceKey,
+        processInstanceKey,
         elementInstanceKey: elementInstanceKey ?? undefined,
+        operationType: filterValues.operationType
+          ? {
+              $in: filterValues.operationType
+                .split(',')
+                .map((v) => auditLogOperationTypeSchema.parse(v)),
+            }
+          : undefined,
+        entityType: filterValues.entityType
+          ? {
+              $in: filterValues.entityType
+                .split(',')
+                .map((v) => auditLogEntityTypeSchema.parse(v)),
+            }
+          : undefined,
       },
     }),
     [
       sortBy,
       sortParams.sortOrder,
-      processInstance?.processInstanceKey,
+      processInstanceKey,
       elementInstanceKey,
+      filterValues.operationType,
+      filterValues.entityType,
     ],
   );
 
@@ -114,7 +159,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     hasNextPage,
     fetchNextPage,
   } = useAuditLogs(request, {
-    enabled: isVisible && (IS_ELEMENT_SELECTION_V2 ? !isFetchingElement : true),
+    enabled: isVisible && !isFetchingElement && !hasMultipleInstances,
     select: (data) => {
       tracking.track({
         eventName: 'audit-logs-loaded',
@@ -150,19 +195,11 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
     () =>
       data?.auditLogs.map((item: AuditLog) => ({
         id: item.auditLogKey,
-        operationType: `${spaceAndCapitalize(item.operationType.toString())} ${spaceAndCapitalize(
-          item.entityType.toString(),
-        )}`,
-        result: (
-          <OperationLogName>
-            <OperationsLogStateIcon
-              state={item.result}
-              data-testid={`${item.auditLogKey}-icon`}
-            />
-            {spaceAndCapitalize(item.result.toString())}
-          </OperationLogName>
-        ),
-        user: item.actorId,
+        result: <CellResult item={item} />,
+        operationType: spaceAndCapitalize(item.operationType.toString()),
+        entityType: spaceAndCapitalize(item.entityType.toString()),
+        property: <CellProperty item={item} />,
+        user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: (
           <Button
@@ -183,18 +220,35 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
   const getTableState = () => {
     if (!isVisible) {
       return 'skeleton';
-    } else if (isLoading) {
+    }
+
+    if (isLoading) {
       return 'loading';
-    } else if (error) {
+    }
+
+    if (error) {
       return 'error';
-    } else if (rows.length === 0) {
+    }
+
+    if (rows.length === 0) {
       return 'empty';
     }
     return 'content';
   };
 
+  if (hasMultipleInstances) {
+    return (
+      <Container>
+        <EmptyMessageContainer>
+          <EmptyMessage message="To view the Operations Log, select a single Element Instance in the Instance History." />
+        </EmptyMessageContainer>
+      </Container>
+    );
+  }
+
   return (
     <Container>
+      <Filters />
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}
@@ -210,6 +264,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
           fetchPreviousPage,
           fetchNextPage,
         }}
+        stickyHeader
       />
       {detailsModal.auditLog && (
         <DetailsModal

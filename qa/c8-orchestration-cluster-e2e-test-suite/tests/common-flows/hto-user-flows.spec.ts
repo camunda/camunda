@@ -118,6 +118,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     page,
     loginPage,
   }) => {
@@ -142,8 +143,8 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
-      await operateProcessesPage.clickProcessActiveCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
+      await operateFiltersPanelPage.clickActiveInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Form_User_Task');
       await operateProcessesPage.clickProcessInstanceLink();
@@ -155,6 +156,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     loginPage,
     page,
   }) => {
@@ -163,7 +165,7 @@ test.describe('HTO User Flow Tests', () => {
       await loginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 180000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Start_Form_Process');
       await operateProcessesPage.clickProcessInstanceLink();
@@ -176,6 +178,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     taskDetailsPage,
     taskPanelPage,
     loginPage,
@@ -221,7 +224,7 @@ test.describe('HTO User Flow Tests', () => {
       await navigateToApp(page, 'operate');
       await loginPage.login('demo', 'demo');
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName(
         'Zeebe_Priority_User_Task_Process',
@@ -237,6 +240,7 @@ test.describe('HTO User Flow Tests', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
     taskDetailsPage,
     taskPanelPage,
   }) => {
@@ -262,7 +266,7 @@ test.describe('HTO User Flow Tests', () => {
       await loginPage.login('demo', 'demo');
       await expect(operateHomePage.processesTab).toBeVisible({timeout: 120000});
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.clickProcessCompletedCheckbox();
+      await operateFiltersPanelPage.clickCompletedInstancesCheckbox();
       await sleep(1000);
       await operateProcessesPage.filterByProcessName('Zeebe_User_Task_Process');
       await operateProcessesPage.clickProcessInstanceLink();

@@ -17,6 +17,7 @@ import io.camunda.zeebe.broker.client.impl.BrokerClientImpl;
 import io.camunda.zeebe.broker.client.impl.BrokerTopologyManagerImpl;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 public final class TestBrokerClientFactory {
@@ -37,7 +38,8 @@ public final class TestBrokerClientFactory {
             atomixCluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry));
+            new BrokerClientRequestMetrics(meterRegistry),
+            TopicSupplier.withLegacyTopicName());
     client.start().forEach(ActorFuture::join);
     return client;
   }

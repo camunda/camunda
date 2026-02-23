@@ -15,13 +15,11 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.DocumentReferenceResponse;
 import java.io.InputStream;
 import java.time.Duration;
 import java.util.Map;
 
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface CreateDocumentCommandStep1 extends DocumentBuilderStep1 {
 
   /**
@@ -103,20 +101,6 @@ public interface CreateDocumentCommandStep1 extends DocumentBuilderStep1 {
     CreateDocumentCommandStep2 timeToLive(Duration timeToLive);
 
     /**
-     * Sets the process definition that the document is associated with.
-     *
-     * @param processDefinitionId the process definition ID
-     */
-    CreateDocumentCommandStep2 processDefinitionId(String processDefinitionId);
-
-    /**
-     * Sets the process instance key that the document is associated with.
-     *
-     * @param processInstanceKey the process instance key
-     */
-    CreateDocumentCommandStep2 processInstanceKey(long processInstanceKey);
-
-    /**
      * Adds a custom key-value pair to the document metadata.
      *
      * @param key custom metadata key
@@ -132,5 +116,19 @@ public interface CreateDocumentCommandStep1 extends DocumentBuilderStep1 {
      */
     @Override
     CreateDocumentCommandStep2 customMetadata(Map<String, Object> customMetadata);
+
+    /**
+     * Sets the process definition that the document is associated with.
+     *
+     * @param processDefinitionId the process definition ID
+     */
+    CreateDocumentCommandStep2 processDefinitionId(String processDefinitionId);
+
+    /**
+     * Sets the process instance key that the document is associated with.
+     *
+     * @param processInstanceKey the process instance key
+     */
+    CreateDocumentCommandStep2 processInstanceKey(long processInstanceKey);
   }
 }

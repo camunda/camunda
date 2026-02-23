@@ -64,6 +64,8 @@ public class ContainerRuntimePropertiesUtilTest {
 
     assertThat(propertiesUtil.getCoverageReportProperties().getCoverageReportDirectory())
         .isEqualTo("target/coverage-report");
+
+    assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout()).isEqualTo(Duration.ofMinutes(1));
   }
 
   @Test
@@ -495,6 +497,8 @@ public class ContainerRuntimePropertiesUtilTest {
           .isEqualTo(URI.create("http://0.0.0.0:8088"));
       assertThat(propertiesUtil.getRemoteClientRestAddress())
           .isEqualTo(URI.create("http://0.0.0.0:8089"));
+      assertThat(propertiesUtil.getRemoteRuntimeConnectionTimeout())
+          .isEqualTo(Duration.ofSeconds(30));
 
       assertThat(propertiesUtil.isMultiTenancyEnabled()).isTrue();
 

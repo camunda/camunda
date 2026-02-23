@@ -15,21 +15,7 @@ import {useCurrentUser} from 'common/api/useCurrentUser.query';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'common/testing/getMockQueryClient';
 import {Aside} from './index';
-import {getClientConfig} from 'common/config/getClientConfig';
-import {vi} from 'vitest';
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('common/config/getClientConfig')
->('common/config/getClientConfig');
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'common/config/getClientConfig';
 
 const completedTaskMock = {
   creationDate: '2024-01-01T00:00:00.000Z',
@@ -80,7 +66,6 @@ const getWrapper = (id: string = '0') => {
 
 describe('<Aside />', () => {
   beforeEach(() => {
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
     nodeMockServer.use(
       http.get('/v2/authentication/me', () => {
         return HttpResponse.json(userMocks.currentUser);
@@ -110,8 +95,8 @@ describe('<Aside />', () => {
   });
 
   it('should render tenant name', () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isMultiTenancyEnabled: true,
     });
 
@@ -130,8 +115,8 @@ describe('<Aside />', () => {
   });
 
   it('should hide tenant name if user only has access to one tenant', () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       isMultiTenancyEnabled: true,
     });
 

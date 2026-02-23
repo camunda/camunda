@@ -52,7 +52,17 @@ public final class CorrelatedMessageSubscriptionFixtures extends CommonFixtures 
               CorrelatedMessageSubscriptionDbModel.Builder,
               CorrelatedMessageSubscriptionDbModel.Builder>
           builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomCorrelatedMessageSubscriptions(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomCorrelatedMessageSubscriptions(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<
+              CorrelatedMessageSubscriptionDbModel.Builder,
+              CorrelatedMessageSubscriptionDbModel.Builder>
+          builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getCorrelatedMessageSubscriptionWriter()
           .create(createRandomized(builderFunction));

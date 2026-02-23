@@ -24,6 +24,7 @@ public class VariableBuilder implements Variable {
   private String value;
   private Long scopeKey;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String tenantId;
   private Boolean isTruncated;
 
@@ -53,6 +54,11 @@ public class VariableBuilder implements Variable {
   }
 
   @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
+  }
+
+  @Override
   public String getTenantId() {
     return tenantId;
   }
@@ -64,6 +70,11 @@ public class VariableBuilder implements Variable {
 
   public VariableBuilder setTenantId(final String tenantId) {
     this.tenantId = tenantId;
+    return this;
+  }
+
+  public VariableBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

@@ -15,12 +15,10 @@
  */
 package io.camunda.client.api.command;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.response.DocumentLinkResponse;
 import java.time.Duration;
 
 /** Command to create a document link in the document store. */
-@ExperimentalApi("https://github.com/camunda/issues/issues/841")
 public interface CreateDocumentLinkCommandStep1 extends FinalCommandStep<DocumentLinkResponse> {
 
   /**

@@ -50,17 +50,19 @@ public class RestoreValidator {
       if (!checkPartitionDirectoryIsNotEmpty(
           partitionMetadata, configuration.getData().getDirectory())) {
         LOGGER.error(
-            "Expected to find restored partition {} on broker {}, but the partition directory is empty or does not exist.",
+            "Expected to find restored partition {} on broker {}, but the partition directory {} is empty or does not exist.",
             partitionMetadata.id(),
-            localBrokerId);
+            localBrokerId,
+            getPartitionDirectory(partitionMetadata.id(), configuration.getData().getDirectory()));
         return false;
       }
     }
 
     if (!checkTopologyFileIsRestored(configuration)) {
       LOGGER.error(
-          "Expected to find restored topology file on broker {}, but it is missing in the data directory.",
-          localBrokerId);
+          "Expected to find restored topology file on broker {}, but it is missing in the data directory {}.",
+          localBrokerId,
+          configuration.getData().getDirectory());
       return false;
     }
     return true;

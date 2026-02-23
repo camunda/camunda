@@ -66,7 +66,7 @@ test.describe('process instance migration', () => {
             })),
           page: {totalItems: 3},
         },
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'checkPayment',

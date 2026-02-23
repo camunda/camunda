@@ -12,8 +12,10 @@ import static io.camunda.service.authorization.Authorizations.JOB_READ_AUTHORIZA
 import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
@@ -30,6 +32,7 @@ import io.camunda.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.camunda.zeebe.gateway.impl.job.ResponseObserver;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -78,6 +81,7 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
         new BrokerActivateJobsRequest(request.type())
             .setMaxJobsToActivate(request.maxJobsToActivate())
             .setTenantIds(request.tenantIds())
+            .setTenantFilter(request.tenantFilter())
             .setTimeout(request.timeout())
             .setWorker(request.worker())
             .setVariables(request.fetchVariable());
@@ -141,18 +145,31 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
   }
 
   public GlobalJobStatisticsEntity getGlobalStatistics(final GlobalJobStatisticsQuery query) {
-    final var authJobSearchClient =
-        jobSearchClient.withSecurityContext(
-            securityContextProvider.provideSecurityContext(
-                authentication, Authorization.of(a -> a.system().readJobMetric())));
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getGlobalJobStatistics(query));
+  }
 
-    return authJobSearchClient.getGlobalJobStatistics(query);
+  public SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(
+      final JobTypeStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getJobTypeStatistics(query));
   }
 
   public record ActivateJobsRequest(
       String type,
       int maxJobsToActivate,
       List<String> tenantIds,
+      TenantFilter tenantFilter,
       long timeout,
       String worker,
       List<String> fetchVariable,

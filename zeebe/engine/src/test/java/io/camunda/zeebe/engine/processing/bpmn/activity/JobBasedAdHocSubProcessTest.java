@@ -22,6 +22,7 @@ import io.camunda.zeebe.model.bpmn.builder.AdHocSubProcessBuilder;
 import io.camunda.zeebe.model.bpmn.impl.ZeebeConstants;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultActivateElement;
 import io.camunda.zeebe.protocol.impl.record.value.signal.SignalRecord;
@@ -41,6 +42,7 @@ import io.camunda.zeebe.protocol.record.value.BpmnElementType;
 import io.camunda.zeebe.protocol.record.value.BpmnEventType;
 import io.camunda.zeebe.protocol.record.value.DeploymentRecordValue;
 import io.camunda.zeebe.protocol.record.value.ErrorType;
+import io.camunda.zeebe.protocol.record.value.JobRecordValue;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
@@ -1176,6 +1178,31 @@ public class JobBasedAdHocSubProcessTest {
                 .formatted(ahspKey));
   }
 
+  @Test
+  public void shouldCompleteAgenticJobWithFollowupMetadata() {
+    // given
+    final var jobType = JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX;
+    final BpmnModelInstance process =
+        process(jobType, adHocSubProcess -> adHocSubProcess.task("A1").task("A2"));
+    ENGINE.deployment().withXmlResource(process).deploy();
+    final var processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when
+    final var jobCompleted = completeJob(jobType, true, Map.of("bar", "foo"));
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.records()
+                .withSourceRecordPosition(jobCompleted.getSourceRecordPosition())
+                .between(
+                    l -> l.getIntent().equals(JobIntent.COMPLETED),
+                    r ->
+                        r.getIntent().equals(ProcessInstanceIntent.ELEMENT_COMPLETED)
+                            && r.getKey() == processInstanceKey))
+        .isNotEmpty()
+        .allMatch(r -> AHSP_ELEMENT_ID.equals(r.getAgent().getElementId()));
+  }
+
   private void completeJob(
       final String jobType,
       final boolean completionConditionFulfilled,
@@ -1189,6 +1216,17 @@ public class JobBasedAdHocSubProcessTest {
             .setCompletionConditionFulfilled(completionConditionFulfilled)
             .setCancelRemainingInstances(cancelRemainingInstances);
     ENGINE.job().withKey(jobKey).withResult(jobResult).complete();
+  }
+
+  private Record<JobRecordValue> completeJob(
+      final String jobType,
+      final boolean completionConditionFulfilled,
+      final Map<String, Object> variables) {
+    final var jobKey =
+        ENGINE.jobs().withType(jobType).activate().getValue().getJobKeys().getFirst();
+    final var jobResult =
+        new JobResult().setCompletionConditionFulfilled(completionConditionFulfilled);
+    return ENGINE.job().withKey(jobKey).withResult(jobResult).withVariables(variables).complete();
   }
 
   private JobResultActivateElement activateElement(final String elementId) {

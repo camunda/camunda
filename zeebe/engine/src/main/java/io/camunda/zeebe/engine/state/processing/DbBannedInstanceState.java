@@ -68,7 +68,8 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
     }
   }
 
-  private boolean isBanned(final long key) {
+  @Override
+  public boolean isProcessInstanceBanned(final long key) {
     processInstanceKey.wrapLong(key);
     return bannedInstanceColumnFamily.exists(processInstanceKey);
   }
@@ -79,7 +80,7 @@ public final class DbBannedInstanceState implements MutableBannedInstanceState {
     if (value instanceof ProcessInstanceRelated) {
       final long processInstanceKey = ((ProcessInstanceRelated) value).getProcessInstanceKey();
       if (processInstanceKey >= 0) {
-        return isBanned(processInstanceKey);
+        return isProcessInstanceBanned(processInstanceKey);
       }
     }
     return false;

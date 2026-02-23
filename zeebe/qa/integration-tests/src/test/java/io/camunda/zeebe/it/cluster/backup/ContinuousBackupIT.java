@@ -57,7 +57,7 @@ final class ContinuousBackupIT {
   @TestZeebe
   private final TestStandaloneBroker broker =
       new TestStandaloneBroker()
-          .withSecondaryStorageType(SecondaryStorageType.elasticsearch)
+          .withSecondaryStorageType(SecondaryStorageType.none)
           .withUnifiedConfig(this::configureBroker);
 
   private BackupActuator backupActuator;

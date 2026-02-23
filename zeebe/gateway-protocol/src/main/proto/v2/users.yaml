@@ -3,7 +3,7 @@
 paths:
   /users:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - User
       operationId: createUser
@@ -104,7 +104,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
     put:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - User
       operationId: updateUser
@@ -146,7 +146,7 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/ServiceUnavailable'
 
     delete:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - User
       operationId: deleteUser

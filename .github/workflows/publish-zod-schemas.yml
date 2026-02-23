@@ -41,18 +41,17 @@ jobs:
       TEST_TYPE: Build
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Print metadata
         uses: ./.github/actions/print-metadata
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
           registry-url: 'https://registry.npmjs.org'
           scope: '@camunda'
-          always-auth: true
 
       - name: Install dependencies
         run: npm ci

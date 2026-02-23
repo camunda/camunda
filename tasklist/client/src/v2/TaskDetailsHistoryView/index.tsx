@@ -66,6 +66,13 @@ const HEADERS_MAP = {
     isDefault: false,
     isDisabled: false,
   },
+  property: {
+    key: 'property',
+    header: 'taskDetailsHistoryPropertyHeader',
+    sortKey: undefined,
+    isDefault: false,
+    isDisabled: true,
+  },
   actor: {
     key: 'actor',
     header: 'taskDetailsHistoryActorHeader',
@@ -95,6 +102,7 @@ function isHeaderKey(key: string): key is keyof typeof HEADERS_MAP {
 
 const HEADERS: HeaderConfig[] = [
   HEADERS_MAP['operation'],
+  HEADERS_MAP['property'],
   HEADERS_MAP['actor'],
   HEADERS_MAP['time'],
   HEADERS_MAP['details'],
@@ -174,6 +182,17 @@ const TaskDetailsHistoryView: React.FC = () => {
       auditLogs.map((log) => ({
         id: log.auditLogKey,
         operation: t(getOperationTypeTranslationKey(log.operationType)),
+        property:
+          log.operationType === 'ASSIGN' ? (
+            <>
+              <div className={styles.propertyLabel}>
+                {t('taskDetailsHistoryPropertyAssignee')}
+              </div>
+              {log.relatedEntityKey}
+            </>
+          ) : (
+            '-'
+          ),
         actor: log.actorId,
         time: formatDate(log.timestamp),
         details: log.auditLogKey,

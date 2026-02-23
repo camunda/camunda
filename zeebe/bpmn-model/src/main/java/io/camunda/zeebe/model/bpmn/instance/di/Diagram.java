@@ -17,17 +17,14 @@
 package io.camunda.zeebe.model.bpmn.instance.di;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.NamedBpmnElement;
 
 /**
  * The DI Diagram element
  *
  * @author Sebastian Menski
  */
-public interface Diagram extends BpmnModelElementInstance {
-
-  String getName();
-
-  void setName(String name);
+public interface Diagram extends BpmnModelElementInstance, NamedBpmnElement {
 
   String getDocumentation();
 

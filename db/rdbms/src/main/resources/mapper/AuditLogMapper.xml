@@ -11,9 +11,12 @@
 <mapper namespace="io.camunda.db.rdbms.sql.AuditLogMapper">
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}AUDIT_LOG
-    <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}AUDIT_LOG
+      <include refid="io.camunda.db.rdbms.sql.AuditLogMapper.searchFilter" />
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search"
@@ -34,6 +37,7 @@
         TIMESTAMP,
         ACTOR_TYPE,
         ACTOR_ID,
+        AGENT_ELEMENT_ID,
         TENANT_ID,
         TENANT_SCOPE,
         RESULT,
@@ -167,6 +171,12 @@
       <if test="filter.actorIdOperations != null and !filter.actorIdOperations.isEmpty()">
         <foreach collection="filter.actorIdOperations" item="operation">
           AND ACTOR_ID
+          <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
+        </foreach>
+      </if>
+      <if test="filter.agentElementIdOperations != null and !filter.agentElementIdOperations.isEmpty()">
+        <foreach collection="filter.agentElementIdOperations" item="operation">
+          AND AGENT_ELEMENT_ID
           <include refid="io.camunda.db.rdbms.sql.Commons.operationCondition"/>
         </foreach>
       </if>
@@ -313,6 +323,7 @@
       TIMESTAMP,
       ACTOR_TYPE,
       ACTOR_ID,
+      AGENT_ELEMENT_ID,
       TENANT_ID,
       TENANT_SCOPE,
       RESULT,
@@ -354,6 +365,7 @@
         #{auditLog.timestamp, jdbcType=TIMESTAMP},
         #{auditLog.actorType},
         #{auditLog.actorId},
+        #{auditLog.agentElementId},
         #{auditLog.tenantId},
         #{auditLog.tenantScope},
         #{auditLog.result},
@@ -383,10 +395,26 @@
     </foreach>
   </insert>
 
+  <update id="updateAuditLogEntityHistoryCleanupDate">
+    UPDATE ${prefix}AUDIT_LOG SET
+    HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}
+    WHERE ENTITY_KEY IN
+    <foreach collection="entityKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    AND ENTITY_TYPE = #{entityType}
+  </update>
+
   <delete id="deleteRootProcessInstanceRelatedData">
     <bind name="tableName" value="'AUDIT_LOG'"/>
     <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
+  </delete>
+
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'AUDIT_LOG'"/>
+    <bind name="primaryKeyColumn" value="'AUDIT_LOG_KEY'"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
   </delete>
 
   <delete id="deleteProcessDefinitionRelatedData">

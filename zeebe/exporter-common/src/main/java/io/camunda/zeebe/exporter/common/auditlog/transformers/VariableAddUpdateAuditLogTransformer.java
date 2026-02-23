@@ -7,6 +7,8 @@
  */
 package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
+import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
+import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableAddUpdateAuditLogTransformer
@@ -15,5 +17,15 @@ public class VariableAddUpdateAuditLogTransformer
   @Override
   public TransformerConfig config() {
     return AuditLogTransformerConfigs.VARIABLE_ADD_UPDATE_CONFIG;
+  }
+
+  @Override
+  public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
+    final VariableRecordValue value = record.getValue();
+    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      log.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
+    log.setEntityDescription(value.getName());
   }
 }

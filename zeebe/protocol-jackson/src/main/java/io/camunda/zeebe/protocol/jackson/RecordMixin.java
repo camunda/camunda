@@ -7,10 +7,13 @@
  */
 package io.camunda.zeebe.protocol.jackson;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.As;
 import com.fasterxml.jackson.annotation.JsonTypeInfo.Id;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.annotation.JsonTypeIdResolver;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.intent.Intent;
@@ -42,4 +45,7 @@ abstract class RecordMixin<T extends RecordValue> {
   @JsonTypeInfo(use = Id.CUSTOM, include = As.EXTERNAL_PROPERTY, property = "valueType")
   @JsonTypeIdResolver(RecordValueTypeIdResolver.class)
   private T recordValue;
+
+  @JsonSetter(nulls = Nulls.SKIP)
+  private Agent agent;
 }

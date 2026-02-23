@@ -21,11 +21,7 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Sebastian Menski
  */
-public interface DataOutput extends ItemAwareElement {
-
-  String getName();
-
-  void setName(String name);
+public interface DataOutput extends ItemAwareElement, NamedBpmnElement {
 
   boolean isCollection();
 

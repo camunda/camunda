@@ -33,6 +33,7 @@ import io.camunda.zeebe.gateway.interceptors.util.TestInterceptor;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.grpc.StatusRuntimeException;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -92,7 +93,8 @@ final class InterceptorIT {
             cluster.getEventService(),
             scheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(meterRegistry));
+            new BrokerClientRequestMetrics(meterRegistry),
+            TopicSupplier.withLegacyTopicName());
 
     jobStreamClient =
         new JobStreamClientImpl(scheduler, cluster.getCommunicationService(), meterRegistry);

@@ -16,6 +16,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.service.AuditLogWriter;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
@@ -144,7 +145,10 @@ class AuditLogExportHandlerTest {
             .setDeploymentKey(606L)
             .setFormKey(707L)
             .setResourceKey(808L)
-            .setRootProcessInstanceKey(909L);
+            .setRootProcessInstanceKey(909L)
+            .setRelatedEntityKey("related-entity-key")
+            .setRelatedEntityType(AuditLogEntityType.USER)
+            .setEntityDescription("entity-description");
 
     when(transformer.create(record)).thenReturn(entry);
     handler.export(record);
@@ -202,5 +206,68 @@ class AuditLogExportHandlerTest {
     assertThat(entity.resourceKey()).isEqualTo(808L);
     assertThat(entity.rootProcessInstanceKey()).isEqualTo(909L);
     assertThat(entity.partitionId()).isEqualTo(record.getPartitionId());
+    assertThat(entity.relatedEntityKey()).isEqualTo("related-entity-key");
+    assertThat(entity.relatedEntityType()).isEqualTo(AuditLogEntityType.USER);
+    assertThat(entity.entityDescription()).isEqualTo("entity-description");
+  }
+
+  @Test
+  void shouldScheduleDataCleanup() {
+    // given
+    final var entry =
+        new io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry()
+            .setEntityKey(String.valueOf(record.getKey()))
+            .setEntityType(
+                io.camunda.search.entities.AuditLogEntity.AuditLogEntityType.PROCESS_INSTANCE)
+            .setOperationType(
+                io.camunda.search.entities.AuditLogEntity.AuditLogOperationType.MODIFY)
+            .setCategory(
+                io.camunda.search.entities.AuditLogEntity.AuditLogOperationCategory
+                    .DEPLOYED_RESOURCES)
+            .setActor(
+                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogActor.of(record))
+            .setTenant(
+                io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant.of(record))
+            .setBatchOperationKey(123L)
+            .setBatchOperationType(
+                io.camunda.zeebe.protocol.record.value.BatchOperationType.CANCEL_PROCESS_INSTANCE)
+            .setProcessInstanceKey(value.getProcessInstanceKey())
+            .setEntityVersion(record.getRecordVersion())
+            .setEntityValueType(
+                io.camunda.zeebe.protocol.record.ValueType.PROCESS_INSTANCE_MODIFICATION.value())
+            .setEntityOperationIntent(
+                io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent.MODIFIED
+                    .value())
+            .setTimestamp(
+                java.time.OffsetDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(record.getTimestamp()),
+                    java.time.ZoneOffset.UTC))
+            .setAnnotation("test annotation")
+            .setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.SUCCESS)
+            .setProcessDefinitionId("process-def-id")
+            .setProcessDefinitionKey(456L)
+            .setElementInstanceKey(789L)
+            .setJobKey(101L)
+            .setUserTaskKey(202L)
+            .setDecisionEvaluationKey(303L)
+            .setDecisionRequirementsId("drg-id")
+            .setDecisionRequirementsKey(404L)
+            .setDecisionDefinitionId("decision-id")
+            .setDecisionDefinitionKey(505L)
+            .setDeploymentKey(606L)
+            .setFormKey(707L)
+            .setResourceKey(808L)
+            .setRootProcessInstanceKey(909L)
+            .setRelatedEntityKey("related-entity-key")
+            .setRelatedEntityType(AuditLogEntityType.USER)
+            .setEntityDescription("entity-description");
+    when(transformer.create(record)).thenReturn(entry);
+    when(transformer.triggersCleanUp(record)).thenReturn(true);
+
+    // when
+    handler.export(record);
+
+    // then
+    verify(writer).scheduleEntityRelatedAuditLogsHistoryCleanupByEndTime(any(), any(), any());
   }
 }

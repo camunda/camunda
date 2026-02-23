@@ -59,7 +59,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
       "Expected to export record '{}' successfully, but exception was thrown.";
   private static final String ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED =
       "Expected to find event with the snapshot position %s in log stream, but nothing was found. Failed to recover '%s'.";
-  private static final String EXPORTER_STATE_TOPIC_FORMAT = "exporterState-%d";
+  private static final String LEGACY_EXPORTER_STATE_TOPIC_FORMAT = "exporterState-%d";
+  private static final String EXPORTER_STATE_TOPIC_FORMAT = "%s-exporterState-%d";
 
   private static final Logger LOG = Loggers.EXPORTER_LOGGER;
   private final AtomicBoolean isOpened = new AtomicBoolean(false);
@@ -85,7 +86,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
   private boolean inExportingPhase;
   private ExporterPhase exporterPhase;
   private final PartitionMessagingService partitionMessagingService;
-  private final String exporterPositionsTopic;
+  private final String exporterPositionsSendingSubject;
+  private final List<String> exporterPositionsReceivingSubjects;
   private final ExporterMode exporterMode;
   private final Duration distributionInterval;
   private ExporterStateDistributionService exporterDistributionService;
@@ -132,7 +134,18 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
     zeebeDb = context.getZeebeDb();
     this.exporterPhase = exporterPhase;
     partitionMessagingService = context.getPartitionMessagingService();
-    exporterPositionsTopic = String.format(EXPORTER_STATE_TOPIC_FORMAT, partitionId);
+
+    final var exporterPositionsLegacySubject =
+        String.format(LEGACY_EXPORTER_STATE_TOPIC_FORMAT, partitionId);
+    final var exporterPositionsSubject =
+        String.format(EXPORTER_STATE_TOPIC_FORMAT, context.getEngineName(), partitionId);
+    exporterPositionsSendingSubject =
+        context.isSendOnLegacySubject() ? exporterPositionsLegacySubject : exporterPositionsSubject;
+    exporterPositionsReceivingSubjects =
+        context.isReceiveOnLegacySubject()
+            ? List.of(exporterPositionsLegacySubject, exporterPositionsSubject)
+            : List.of(exporterPositionsSubject);
+
     exporterMode = context.getExporterMode();
     distributionInterval = context.getDistributionInterval();
     positionsToSkipFilter = context.getPositionsToSkipFilter();
@@ -383,7 +396,8 @@ public final class ExporterDirector extends Actor implements HealthMonitorable, 
           new ExporterStateDistributionService(
               this::consumeExporterStateFromLeader,
               partitionMessagingService,
-              exporterPositionsTopic);
+              exporterPositionsSendingSubject,
+              exporterPositionsReceivingSubjects);
 
       // Initialize containers irrespective of if it is Active or Passive mode
       initContainers();

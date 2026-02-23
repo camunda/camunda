@@ -37,7 +37,7 @@ import java.time.OffsetDateTime;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -76,11 +76,21 @@ public class AuditLogControllerTest extends RestControllerTest {
             "decisionRequirementsKey": "222",
             "decisionDefinitionId": "decisionDefId",
             "decisionDefinitionKey": "333",
-            "decisionEvaluationKey": "444"
+            "decisionEvaluationKey": "444",
+            "agentElementId": null,
+            "deploymentKey": null,
+            "entityDescription": null,
+            "formKey": null,
+            "relatedEntityKey": null,
+            "relatedEntityType": null,
+            "resourceKey": null,
+            "rootProcessInstanceKey": null
           }
         ],
         "page": {
           "totalItems": 1,
+          "startCursor": null,
+          "endCursor": null,
           "hasMoreTotalItems": false
         }
       }
@@ -112,7 +122,15 @@ public class AuditLogControllerTest extends RestControllerTest {
         "decisionRequirementsKey": "222",
         "decisionDefinitionId": "decisionDefId",
         "decisionDefinitionKey": "333",
-        "decisionEvaluationKey": "444"
+        "decisionEvaluationKey": "444",
+        "agentElementId": null,
+        "deploymentKey": null,
+        "entityDescription": null,
+        "formKey": null,
+        "relatedEntityKey": null,
+        "relatedEntityType": null,
+        "resourceKey": null,
+        "rootProcessInstanceKey": null
       }
       """;
 

@@ -26,11 +26,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureWebMvc;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
@@ -65,7 +65,6 @@ import org.springframework.test.web.servlet.assertj.MvcTestResult;
       "logging.level.org.springframework.security=TRACE",
     })
 @ActiveProfiles("consolidated-auth")
-@ExtendWith(OutputCaptureExtension.class)
 class LoggingAuthenticationFailureHandlerTest {
   @RegisterExtension
   static WireMockExtension wireMock =
@@ -107,6 +106,7 @@ class LoggingAuthenticationFailureHandlerTest {
   }
 
   @Test
+  @ExtendWith(OutputCaptureExtension.class)
   void shouldNotLogOnErrorLevel(final CapturedOutput capturedOutput) {
     // Given: a random access token
     final String accessToken = accessToken();
@@ -121,8 +121,9 @@ class LoggingAuthenticationFailureHandlerTest {
             .exchange();
     // Then:
     assertThat(apiResult).hasStatus(HttpStatus.INTERNAL_SERVER_ERROR);
-    assertThat(capturedOutput.getOut()).contains("A technical authentication problem occurred");
-    assertThat(capturedOutput.getOut()).doesNotContain("ERROR");
+    assertThat(capturedOutput.getOut())
+        .contains("A technical authentication problem occurred")
+        .doesNotContain("ERROR");
   }
 
   private static String wellKnownResponse() {

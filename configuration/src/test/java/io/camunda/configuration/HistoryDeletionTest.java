@@ -32,7 +32,7 @@ class HistoryDeletionTest {
         .isEqualTo(Duration.ofSeconds(1));
     assertThat(historyDeletion.getMaxDelayBetweenRuns())
         .as("Default maxDelayBetweenRuns should be 5 minutes")
-        .isEqualTo(Duration.ofMinutes(5));
+        .isEqualTo(Duration.ofSeconds(15));
     assertThat(historyDeletion.getQueueBatchSize())
         .as("Default queueBatchSize should be 100")
         .isEqualTo(100);

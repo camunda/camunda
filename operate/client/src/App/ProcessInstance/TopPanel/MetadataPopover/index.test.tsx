@@ -7,23 +7,14 @@
  */
 
 import {screen} from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {
-  calledInstanceMetadata,
-  incidentFlowNodeMetaData,
-  multiInstanceCallActivityMetadata,
-  multiInstancesMetadata,
   CALL_ACTIVITY_FLOW_NODE_ID,
   PROCESS_INSTANCE_ID,
   FLOW_NODE_ID,
-  userTaskFlowNodeMetaData,
   USER_TASK_FLOW_NODE_ID,
-  retriesLeftFlowNodeMetaData,
-  singleInstanceMetadata,
   jobMetadata,
   calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {labels, renderPopover} from './mocks';
@@ -33,8 +24,6 @@ import {
   type Incident,
 } from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {init} from 'modules/utils/flowNodeMetadata';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {metadataDemoProcess} from 'modules/mocks/metadataDemoProcess';
@@ -47,6 +36,8 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {mockFetchDecisionDefinition} from 'modules/mocks/api/v2/decisionDefinitions/fetchDecisionDefinition';
 import {mockSearchIncidentsByElementInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByElementInstance';
+import {searchResult} from 'modules/testUtils';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 const MOCK_EXECUTION_DATE = '21 seconds';
 
@@ -101,29 +92,20 @@ const mockSingleIncident: Incident = {
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
-    init('process-instance', []);
-    flowNodeSelectionStore.init();
     mockFetchProcessDefinitionXml().withSuccess(metadataDemoProcess);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
     );
-    mockSearchIncidents().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchIncidents().withSuccess(searchResult([]));
 
-    mockSearchElementInstances().withSuccess({
-      items: [mockElementInstance],
-      page: {totalItems: 1},
-    });
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance]),
+    );
 
-    mockSearchProcessInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchProcessInstances().withSuccess(searchResult([]));
 
-    mockSearchUserTasks().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchUserTasks().withSuccess(searchResult([]));
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
@@ -151,22 +133,11 @@ describe('MetadataPopover', () => {
       ],
     });
 
-    mockSearchJobs().withSuccess({
-      items: [],
-      page: {
-        totalItems: 0,
-      },
-    });
+    mockSearchJobs().withSuccess(searchResult([]));
 
-    mockSearchMessageSubscriptions().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchMessageSubscriptions().withSuccess(searchResult([]));
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
-    });
+    mockSearchDecisionInstances().withSuccess(searchResult([]));
 
     mockFetchDecisionDefinition('123456').withSuccess({
       decisionDefinitionKey: '123456',
@@ -179,22 +150,11 @@ describe('MetadataPopover', () => {
     });
   });
 
-  afterEach(() => {
-    flowNodeSelectionStore.reset();
-  });
-
   it('should not show unrelated data', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-        flowNodeInstanceId: '2251799813699889',
-      },
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByRole('heading', {name: labels.details}),
@@ -224,22 +184,18 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data for element with incident', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(incidentFlowNodeMetaData);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       hasIncident: true,
     });
-    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess({
-      items: [mockSingleIncident],
-      page: {totalItems: 1},
-    });
-
-    selectFlowNode(
-      {},
-      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([mockSingleIncident]),
     );
 
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByText(labels.elementInstanceKey),
@@ -254,8 +210,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should render meta data modal', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
-    mockFetchFlowNodeMetadata().withSuccess(calledInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       startDate: '2018-12-12 00:00:00',
@@ -263,33 +217,22 @@ describe('MetadataPopover', () => {
       type: 'CALL_ACTIVITY',
     });
 
-    mockSearchProcessInstances().withSuccess({
-      items: [
+    mockSearchProcessInstances().withSuccess(
+      searchResult([
         {
           ...mockProcessInstance,
           processInstanceKey: '229843728748927482',
           processDefinitionName: 'Called Process',
         },
-      ],
-      page: {totalItems: 1},
-    });
-
-    mockSearchJobs().withSuccess({
-      items: [jobMetadata],
-      page: {
-        totalItems: 1,
-      },
-    });
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-        flowNodeInstanceId: '2251799813699889',
-      },
+      ]),
     );
 
-    const {user} = renderPopover();
+    mockSearchJobs().withSuccess(searchResult([jobMetadata]));
+
+    const {user} = renderPopover({
+      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByRole('heading', {name: labels.details}),
@@ -346,12 +289,12 @@ describe('MetadataPopover', () => {
   });
 
   it('should render metadata for multi instance elements', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
-    mockFetchFlowNodeMetadata().withSuccess(multiInstancesMetadata);
-    mockFetchElementInstance('2251799813699889').withSuccess({
-      ...mockElementInstance,
-      hasIncident: true,
-    });
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {...mockElementInstance, hasIncident: true},
+        {...mockElementInstance, hasIncident: true},
+      ]),
+    );
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -364,8 +307,8 @@ describe('MetadataPopover', () => {
       ],
     });
 
-    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess({
-      items: [
+    mockSearchIncidentsByElementInstance('2251799813699889').withSuccess(
+      searchResult([
         {
           processDefinitionId: 'invoice',
           errorType: 'CALLED_ELEMENT_ERROR',
@@ -408,18 +351,12 @@ describe('MetadataPopover', () => {
           elementInstanceKey: '2251799813699882',
           jobKey: '2251799814080733',
         },
-      ],
-      page: {totalItems: 3},
-    });
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-      },
+      ]),
     );
 
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+    });
 
     await waitFor(() => {
       expect(
@@ -442,17 +379,9 @@ describe('MetadataPopover', () => {
   });
 
   it('should not render called instances for multi instance call activities', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
-    mockFetchFlowNodeMetadata().withSuccess(multiInstanceCallActivityMetadata);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: CALL_ACTIVITY_FLOW_NODE_ID,
-      },
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: CALL_ACTIVITY_FLOW_NODE_ID,
+    });
 
     expect(
       await screen.findByText(labels.elementInstanceKey),
@@ -465,24 +394,19 @@ describe('MetadataPopover', () => {
   it('should render link to tasklist', async () => {
     const tasklistUrl = 'https://tasklist:8080';
 
-    vi.stubGlobal('clientConfig', {tasklistUrl});
-
-    mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
-    mockFetchFlowNodeMetadata().withSuccess(userTaskFlowNodeMetaData);
-
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: USER_TASK_FLOW_NODE_ID,
-        flowNodeInstanceId: '2251799813699889',
-      },
-    );
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      tasklistUrl,
+    });
 
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       type: 'USER_TASK',
     });
-    renderPopover();
+    renderPopover({
+      elementId: USER_TASK_FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByRole('link', {name: 'Open Tasklist'}),
@@ -490,24 +414,11 @@ describe('MetadataPopover', () => {
   });
 
   it('should render retries left', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
-    mockFetchFlowNodeMetadata().withSuccess(retriesLeftFlowNodeMetaData);
+    mockSearchJobs().withSuccess(searchResult([jobMetadata]));
 
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: USER_TASK_FLOW_NODE_ID,
-        flowNodeInstanceId: '2251799813699889',
-      },
-    );
-
-    renderPopover();
-
-    mockSearchJobs().withSuccess({
-      items: [jobMetadata],
-      page: {
-        totalItems: 1,
-      },
+    renderPopover({
+      elementId: USER_TASK_FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
     });
 
     expect(await screen.findByText(labels.retriesLeft)).toBeInTheDocument();
@@ -515,20 +426,14 @@ describe('MetadataPopover', () => {
   });
 
   it('should fetch and display specific element instance when selected from history', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess(
       mockElementInstance,
     );
 
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-        flowNodeInstanceId: '2251799813699889',
-      },
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByRole('heading', {name: labels.details}),
@@ -537,7 +442,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should search for single element instance when count is 1', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: [
         {
@@ -549,14 +453,13 @@ describe('MetadataPopover', () => {
         },
       ],
     });
-    mockSearchElementInstances().withSuccess({
-      items: [mockElementInstance],
-      page: {totalItems: 1},
+    mockSearchElementInstances().withSuccess(
+      searchResult([mockElementInstance]),
+    );
+
+    renderPopover({
+      elementId: FLOW_NODE_ID,
     });
-
-    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
-
-    renderPopover();
 
     expect(
       await screen.findByRole('heading', {name: labels.details}),
@@ -565,12 +468,11 @@ describe('MetadataPopover', () => {
   });
 
   it('should handle failed element instance search gracefully', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockSearchElementInstances().withNetworkError();
 
-    selectFlowNode({}, {flowNodeId: FLOW_NODE_ID});
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+    });
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),
@@ -578,18 +480,12 @@ describe('MetadataPopover', () => {
   });
 
   it('should handle failed single element instance fetch gracefully', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('invalid-key').withNetworkError();
 
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: FLOW_NODE_ID,
-        flowNodeInstanceId: 'invalid-key',
-      },
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: 'invalid-key',
+    });
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),
@@ -597,7 +493,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should render called decision instance link for business rule task', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       elementId: 'BusinessRuleTask',
@@ -608,17 +503,14 @@ describe('MetadataPopover', () => {
       rootDecisionDefinitionKey: '123456',
     };
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [rootDecisionInstance],
-      page: {totalItems: 1},
-    });
-
-    selectFlowNode(
-      {},
-      {flowNodeId: 'BusinessRuleTask', flowNodeInstanceId: '2251799813699889'},
+    mockSearchDecisionInstances().withSuccess(
+      searchResult([rootDecisionInstance]),
     );
 
-    renderPopover();
+    renderPopover({
+      elementId: 'BusinessRuleTask',
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       await screen.findByText('Called Decision Instance'),
@@ -633,18 +525,15 @@ describe('MetadataPopover', () => {
   });
 
   it('should not show decision instances for non-business rule tasks', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       type: 'SERVICE_TASK',
     });
 
-    selectFlowNode(
-      {},
-      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     await waitFor(() => {
       expect(
@@ -658,23 +547,17 @@ describe('MetadataPopover', () => {
   });
 
   it('should render called decision definition name when no decision instances exist', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       type: 'BUSINESS_RULE_TASK',
     });
 
-    mockSearchDecisionInstances().withSuccess({
-      items: [],
-      page: {totalItems: 0},
+    mockSearchDecisionInstances().withSuccess(searchResult([]));
+
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
     });
-
-    selectFlowNode(
-      {},
-      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
-    );
-
-    renderPopover();
 
     await waitFor(() => {
       expect(
@@ -688,7 +571,6 @@ describe('MetadataPopover', () => {
   });
 
   it('should handle decision instance search errors gracefully', async () => {
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchElementInstance('2251799813699889').withSuccess({
       ...mockElementInstance,
       type: 'BUSINESS_RULE_TASK',
@@ -696,12 +578,10 @@ describe('MetadataPopover', () => {
 
     mockSearchDecisionInstances().withNetworkError();
 
-    selectFlowNode(
-      {},
-      {flowNodeId: FLOW_NODE_ID, flowNodeInstanceId: '2251799813699889'},
-    );
-
-    renderPopover();
+    renderPopover({
+      elementId: FLOW_NODE_ID,
+      elementInstanceKey: '2251799813699889',
+    });
 
     expect(
       screen.queryByRole('heading', {name: labels.details}),

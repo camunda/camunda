@@ -32,7 +32,6 @@ public class EngineBatchOperationTest {
       properties = {
         "camunda.processing.engine.batch-operations.scheduler-interval=15s",
         "camunda.processing.engine.batch-operations.chunk-size=500",
-        "camunda.processing.engine.batch-operations.db-chunk-size=100",
         "camunda.processing.engine.batch-operations.query-page-size=200",
         "camunda.processing.engine.batch-operations.query-in-clause-size=50",
         "camunda.processing.engine.batch-operations.query-retry-max=5",
@@ -52,7 +51,6 @@ public class EngineBatchOperationTest {
       assertThat(brokerCfg.getExperimental().getEngine().getBatchOperations())
           .returns(Duration.ofSeconds(15), BatchOperationCfg::getSchedulerInterval)
           .returns(500, BatchOperationCfg::getChunkSize)
-          .returns(100, BatchOperationCfg::getDbChunkSize)
           .returns(200, BatchOperationCfg::getQueryPageSize)
           .returns(50, BatchOperationCfg::getQueryInClauseSize)
           .returns(5, BatchOperationCfg::getQueryRetryMax)
@@ -67,7 +65,6 @@ public class EngineBatchOperationTest {
       properties = {
         "zeebe.broker.experimental.engine.batchOperations.schedulerInterval=15s",
         "zeebe.broker.experimental.engine.batchOperations.chunkSize=500",
-        "zeebe.broker.experimental.engine.batchOperations.dbChunkSize=100",
         "zeebe.broker.experimental.engine.batchOperations.queryPageSize=200",
         "zeebe.broker.experimental.engine.batchOperations.queryInClauseSize=50",
         "zeebe.broker.experimental.engine.batchOperations.queryRetryMax=5",
@@ -87,7 +84,6 @@ public class EngineBatchOperationTest {
       assertThat(brokerCfg.getExperimental().getEngine().getBatchOperations())
           .returns(Duration.ofSeconds(15), BatchOperationCfg::getSchedulerInterval)
           .returns(500, BatchOperationCfg::getChunkSize)
-          .returns(100, BatchOperationCfg::getDbChunkSize)
           .returns(200, BatchOperationCfg::getQueryPageSize)
           .returns(50, BatchOperationCfg::getQueryInClauseSize)
           .returns(5, BatchOperationCfg::getQueryRetryMax)
@@ -103,7 +99,6 @@ public class EngineBatchOperationTest {
         // new
         "camunda.processing.engine.batch-operations.scheduler-interval=15s",
         "camunda.processing.engine.batch-operations.chunk-size=500",
-        "camunda.processing.engine.batch-operations.db-chunk-size=100",
         "camunda.processing.engine.batch-operations.query-page-size=200",
         "camunda.processing.engine.batch-operations.query-in-clause-size=50",
         "camunda.processing.engine.batch-operations.query-retry-max=5",
@@ -113,7 +108,6 @@ public class EngineBatchOperationTest {
         // legacy
         "zeebe.broker.experimental.engine.batchOperations.schedulerInterval=150s",
         "zeebe.broker.experimental.engine.batchOperations.chunkSize=5000",
-        "zeebe.broker.experimental.engine.batchOperations.dbChunkSize=1000",
         "zeebe.broker.experimental.engine.batchOperations.queryPageSize=2000",
         "zeebe.broker.experimental.engine.batchOperations.queryInClauseSize=500",
         "zeebe.broker.experimental.engine.batchOperations.queryRetryMax=50",
@@ -133,7 +127,6 @@ public class EngineBatchOperationTest {
       assertThat(brokerCfg.getExperimental().getEngine().getBatchOperations())
           .returns(Duration.ofSeconds(15), BatchOperationCfg::getSchedulerInterval)
           .returns(500, BatchOperationCfg::getChunkSize)
-          .returns(100, BatchOperationCfg::getDbChunkSize)
           .returns(200, BatchOperationCfg::getQueryPageSize)
           .returns(50, BatchOperationCfg::getQueryInClauseSize)
           .returns(5, BatchOperationCfg::getQueryRetryMax)

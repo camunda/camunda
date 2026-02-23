@@ -36,6 +36,7 @@
       <arg column="OPERATION_TYPE" javaType="io.camunda.search.entities.BatchOperationType"/>
       <arg column="ITEM_KEY" javaType="java.lang.Long"/>
       <arg column="PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
+      <arg column="ROOT_PROCESS_INSTANCE_KEY" javaType="java.lang.Long"/>
       <arg column="STATE"
         javaType="io.camunda.search.entities.BatchOperationEntity$BatchOperationItemState"/>
       <arg column="PROCESSED_DATE" javaType="java.time.OffsetDateTime"/>
@@ -68,10 +69,10 @@
 
   <insert id="insertItems"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsDto">
-    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, STATE)
+    INSERT INTO ${prefix}BATCH_OPERATION_ITEM (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, STATE)
     VALUES
     <foreach collection="items" item="item" separator=",">
-      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey}, #{item.state})
+      (#{batchOperationKey}, #{item.itemKey}, #{item.processInstanceKey}, #{item.rootProcessInstanceKey}, #{item.state})
     </foreach>
   </insert>
 
@@ -84,6 +85,14 @@
       (#{batchOperationKey}, #{error.partitionId}, #{error.type}, #{error.message})
     </foreach>
   </insert>
+
+  <update id="activate"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationActivateDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET STATE      = 'ACTIVE',
+        START_DATE = #{startDate, jdbcType=TIMESTAMP}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
 
   <update id="updateCompleted"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateDto">
@@ -98,10 +107,11 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="postgresql">
     INSERT INTO ${prefix}BATCH_OPERATION_ITEM
-    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
     VALUES (#{batchOperationKey},
     #{itemKey},
     #{processInstanceKey},
+    #{rootProcessInstanceKey},
     #{processedDate},
     #{state})
     ON CONFLICT (BATCH_OPERATION_KEY, ITEM_KEY) DO UPDATE SET
@@ -117,6 +127,7 @@
     USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,
                   #{itemKey}            AS ITEM_KEY,
                   #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
+                  #{rootProcessInstanceKey} AS ROOT_PROCESS_INSTANCE_KEY,
                   #{processedDate}      AS PROCESSED_DATE,
                   #{state}              AS STATE,
                   #{errorMessage}       AS ERROR_MESSAGE) AS source
@@ -127,18 +138,19 @@
                  PROCESSED_DATE = source.PROCESSED_DATE,
                  ERROR_MESSAGE = source.ERROR_MESSAGE
     WHEN NOT MATCHED THEN
-      INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE, ERROR_MESSAGE)
-      VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY,
+      INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE, ERROR_MESSAGE)
+      VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
               source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE);  </insert>
 
   <insert id="upsertItem"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="mariadb">
     INSERT INTO ${prefix}BATCH_OPERATION_ITEM
-    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
     VALUES (#{batchOperationKey},
     #{itemKey},
     #{processInstanceKey},
+    #{rootProcessInstanceKey},
     #{processedDate},
     #{state})
     ON DUPLICATE KEY UPDATE
@@ -149,10 +161,11 @@
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemDto"
     databaseId="mysql">
     INSERT INTO ${prefix}BATCH_OPERATION_ITEM
-    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
+    (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE)
     VALUES (#{batchOperationKey},
     #{itemKey},
     #{processInstanceKey},
+    #{rootProcessInstanceKey},
     #{processedDate},
     #{state})
     ON DUPLICATE KEY UPDATE
@@ -166,6 +179,7 @@
     USING (SELECT #{batchOperationKey}   AS BATCH_OPERATION_KEY,
     #{itemKey}            AS ITEM_KEY,
     #{processInstanceKey} AS PROCESS_INSTANCE_KEY,
+    #{rootProcessInstanceKey} AS ROOT_PROCESS_INSTANCE_KEY,
     #{processedDate}      AS PROCESSED_DATE,
     #{state}              AS STATE,
     #{errorMessage}       AS ERROR_MESSAGE
@@ -177,9 +191,9 @@
     PROCESSED_DATE = source.PROCESSED_DATE,
     ERROR_MESSAGE  = source.ERROR_MESSAGE
     WHEN NOT MATCHED THEN
-    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
     ERROR_MESSAGE)
-    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY,
+    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
     source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
   </insert>
 
@@ -190,6 +204,7 @@
     USING (SELECT CAST(#{batchOperationKey} AS VARCHAR)   AS BATCH_OPERATION_KEY,
     CAST(#{itemKey} AS BIGINT)            AS ITEM_KEY,
     CAST(#{processInstanceKey} AS BIGINT) AS PROCESS_INSTANCE_KEY,
+    CAST(#{rootProcessInstanceKey} AS BIGINT) AS ROOT_PROCESS_INSTANCE_KEY,
     CAST(#{processedDate} AS TIMESTAMP)   AS PROCESSED_DATE,
     CAST(#{state} AS VARCHAR)            AS STATE,
     CAST(#{errorMessage} AS VARCHAR)     AS ERROR_MESSAGE) source
@@ -200,9 +215,9 @@
     PROCESSED_DATE = source.PROCESSED_DATE,
     ERROR_MESSAGE  = source.ERROR_MESSAGE
     WHEN NOT MATCHED THEN
-    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
+    INSERT (BATCH_OPERATION_KEY, ITEM_KEY, PROCESS_INSTANCE_KEY, ROOT_PROCESS_INSTANCE_KEY, PROCESSED_DATE, STATE,
     ERROR_MESSAGE)
-    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY,
+    VALUES (source.BATCH_OPERATION_KEY, source.ITEM_KEY, source.PROCESS_INSTANCE_KEY, source.ROOT_PROCESS_INSTANCE_KEY,
     source.PROCESSED_DATE, source.STATE, source.ERROR_MESSAGE)
   </insert>
 
@@ -237,9 +252,12 @@
   </update>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}BATCH_OPERATION
-    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}BATCH_OPERATION
+      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search"
@@ -331,10 +349,13 @@
   </sql>
 
   <select id="countItems" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}BATCH_OPERATION_ITEM bi
-    JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
-    <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}BATCH_OPERATION_ITEM bi
+      JOIN ${prefix}BATCH_OPERATION bo ON (bi.batch_operation_key = bo.batch_operation_key)
+      <include refid="io.camunda.db.rdbms.sql.BatchOperationMapper.itemSearchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="searchItems"
@@ -347,6 +368,7 @@
     bo.OPERATION_TYPE,
     bi.ITEM_KEY,
     bi.PROCESS_INSTANCE_KEY,
+    bi.ROOT_PROCESS_INSTANCE_KEY,
     bi.STATE,
     bi.PROCESSED_DATE,
     bi.ERROR_MESSAGE

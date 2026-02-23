@@ -19,7 +19,8 @@ type ActiveTransitionLoadingTextProps = {
     | 'ASSIGNING'
     | 'UPDATING'
     | 'COMPLETING'
-    | 'CANCELING';
+    | 'CANCELING'
+    | 'CREATING';
 };
 
 const ActiveTransitionLoadingText: React.FC<
@@ -29,6 +30,7 @@ const ActiveTransitionLoadingText: React.FC<
 
   const statusLoadingMessage = {
     CREATED: null,
+    CREATING: null,
     ASSIGNING: null,
     COMPLETED: null,
     CANCELED: null,

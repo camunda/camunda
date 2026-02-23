@@ -14,6 +14,7 @@ import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.transport.ClientRequest;
 import io.camunda.zeebe.transport.ClientTransport;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import java.net.ConnectException;
 import java.time.Duration;
 import java.util.function.Predicate;
@@ -31,9 +32,16 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
       "Failed to send request to %s, no remote address found.";
 
   private final MessagingService messagingService;
+  private final TopicSupplier topicSupplier;
 
   public AtomixClientTransportAdapter(final MessagingService messagingService) {
+    this(messagingService, TopicSupplier.withLegacyTopicName());
+  }
+
+  public AtomixClientTransportAdapter(
+      final MessagingService messagingService, final TopicSupplier topicSupplier) {
     this.messagingService = messagingService;
+    this.topicSupplier = topicSupplier;
   }
 
   @Override
@@ -69,14 +77,14 @@ public final class AtomixClientTransportAdapter extends Actor implements ClientT
 
     final var partitionId = clientRequest.getPartitionId();
     final var requestType = clientRequest.getRequestType();
+    final var topicName = topicSupplier.apply(partitionId, requestType);
 
     final var requestFuture = new CompletableActorFuture<DirectBuffer>();
     final var requestContext =
         new RequestContext(
             requestFuture,
             nodeAddressSupplier,
-            partitionId,
-            requestType,
+            topicName,
             requestBytes,
             responseValidator,
             shouldRetry,

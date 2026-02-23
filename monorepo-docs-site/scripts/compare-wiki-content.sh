@@ -49,9 +49,15 @@ if [ ! -f "$DOCS_FILE" ]; then
     exit 1
 fi
 
-# Skip frontmatter when comparing (first 4 lines typically)
+# Skip frontmatter if present (lines between leading '---' delimiters)
 DOCS_TEMP=$(mktemp "/tmp/docs-content-XXXXXX.md")
-tail -n +5 "$DOCS_FILE" > "$DOCS_TEMP"
+if head -1 "$DOCS_FILE" | grep -q '^---'; then
+    # Has YAML frontmatter: strip everything up to and including the closing '---'
+    awk '/^---/{if(++c==2){found=1; next}} found' "$DOCS_FILE" > "$DOCS_TEMP"
+else
+    # No frontmatter: compare the full file
+    cp "$DOCS_FILE" "$DOCS_TEMP"
+fi
 
 echo -e "${YELLOW}--- DIFFERENCES (colored diff) ---${NC}"
 

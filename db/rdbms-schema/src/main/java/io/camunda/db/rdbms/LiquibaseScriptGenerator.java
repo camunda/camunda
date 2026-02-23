@@ -16,12 +16,15 @@ import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import liquibase.Liquibase;
+import liquibase.change.AbstractSQLChange;
+import liquibase.change.Change;
 import liquibase.changelog.ChangeSet;
 import liquibase.database.Database;
 import liquibase.database.DatabaseFactory;
 import liquibase.exception.LiquibaseException;
 import liquibase.resource.ClassLoaderResourceAccessor;
 import liquibase.sqlgenerator.SqlGeneratorFactory;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 
 public class LiquibaseScriptGenerator {
@@ -156,6 +159,10 @@ public class LiquibaseScriptGenerator {
     sqlScript.append("\n");
 
     for (final var change : changeSet.getChanges()) {
+      if (!isSupported(change, database)) {
+        continue;
+      }
+
       final var sql = sqlGenerator.generateSql(change, database);
 
       for (final var s : sql) {
@@ -184,5 +191,17 @@ public class LiquibaseScriptGenerator {
     // Match backtick pairs and remove leading/trailing whitespace inside them
     formattedSql = formattedSql.replaceAll("`\\s+([^`]+?)\\s+`", "`$1`");
     return formattedSql;
+  }
+
+  private static boolean isSupported(final Change change, final Database database) {
+    return switch (change) {
+      case final AbstractSQLChange sqlChange -> isSupported(sqlChange.getDbms(), database);
+      default -> true; // For other change types, assume they are supported
+    };
+  }
+
+  private static boolean isSupported(final String dbms, final Database database) {
+    return StringUtils.isEmpty(dbms)
+        || Arrays.stream(dbms.split(",")).anyMatch(d -> d.equals(database.getShortName()));
   }
 }

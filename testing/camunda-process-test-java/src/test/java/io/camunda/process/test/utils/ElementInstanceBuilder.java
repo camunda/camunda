@@ -29,6 +29,7 @@ public class ElementInstanceBuilder implements ElementInstance {
   private Long processDefinitionKey;
   private String processDefinitionId;
   private Long processInstanceKey;
+  private Long rootProcessInstanceKey;
   private String elementId;
   private String elementName;
   private OffsetDateTime startDate;
@@ -57,6 +58,11 @@ public class ElementInstanceBuilder implements ElementInstance {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -146,6 +152,11 @@ public class ElementInstanceBuilder implements ElementInstance {
 
   public ElementInstanceBuilder setElementId(final String elementId) {
     this.elementId = elementId;
+    return this;
+  }
+
+  public ElementInstanceBuilder setRootProcessInstanceKey(final Long rootProcessInstanceKey) {
+    this.rootProcessInstanceKey = rootProcessInstanceKey;
     return this;
   }
 

@@ -11,6 +11,7 @@ import {useSearchParams, Link} from 'react-router-dom';
 import {Breadcrumb, BreadcrumbItem, Pagination} from '@carbon/react';
 import {Locations} from 'modules/Routes';
 import {PAGE_TITLE} from 'modules/constants';
+import {tracking} from 'modules/tracking';
 import {formatDate} from 'modules/utils/date';
 import {Forbidden} from 'modules/components/Forbidden';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
@@ -89,7 +90,16 @@ const BatchOperations: React.FC = () => {
       return {
         id: batchOperationKey,
         operationType: (
-          <Link to={batchOperationKey}>
+          <Link
+            to={batchOperationKey}
+            onClick={() => {
+              tracking.track({
+                eventName: 'batch-operation-details-opened',
+                batchOperationType,
+                batchOperationState: state,
+              });
+            }}
+          >
             {formatOperationType(batchOperationType)}
           </Link>
         ),
@@ -139,6 +149,17 @@ const BatchOperations: React.FC = () => {
               state={getTableState()}
               headerColumns={headers}
               rows={rows}
+              onSort={(sortKey) => {
+                const previousOrder = sort.find(
+                  (s) => s.field === sortKey,
+                )?.order;
+
+                tracking.track({
+                  eventName: 'batch-operations-sorted',
+                  sortBy: sortKey,
+                  sortOrder: previousOrder === 'desc' ? 'asc' : 'desc',
+                });
+              }}
               emptyMessage={{
                 message: 'No batch operations found',
                 additionalInfo:

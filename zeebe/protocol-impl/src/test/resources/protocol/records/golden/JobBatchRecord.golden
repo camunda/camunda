@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record.value.job;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
@@ -19,6 +20,7 @@ import io.camunda.zeebe.msgpack.value.ValueArray;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,6 +40,7 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private static final StringValue TENANT_IDS_KEY = new StringValue("tenantIds");
   private static final StringValue VARIABLES_KEY = new StringValue("variables");
   private static final StringValue TRUNCATED_KEY = new StringValue("truncated");
+  private static final StringValue TENANT_FILTER_KEY = new StringValue("tenantFilter");
 
   private final StringProperty typeProp = new StringProperty(TYPE_KEY);
   private final StringProperty workerProp = new StringProperty(WORKER_KEY, "");
@@ -52,9 +55,11 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
   private final ArrayProperty<StringValue> variablesProp =
       new ArrayProperty<>(VARIABLES_KEY, StringValue::new);
   private final BooleanProperty truncatedProp = new BooleanProperty(TRUNCATED_KEY, false);
+  private final EnumProperty<TenantFilter> tenantFilterProp =
+      new EnumProperty<>(TENANT_FILTER_KEY, TenantFilter.class, TenantFilter.PROVIDED);
 
   public JobBatchRecord() {
-    super(9);
+    super(10);
     declareProperty(typeProp)
         .declareProperty(workerProp)
         .declareProperty(timeoutProp)
@@ -63,7 +68,8 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .declareProperty(jobsProp)
         .declareProperty(variablesProp)
         .declareProperty(truncatedProp)
-        .declareProperty(tenantIdsProp);
+        .declareProperty(tenantIdsProp)
+        .declareProperty(tenantFilterProp);
   }
 
   public JobBatchRecord setType(final DirectBuffer buf, final int offset, final int length) {
@@ -147,6 +153,16 @@ public final class JobBatchRecord extends UnifiedRecordValue implements JobBatch
         .map(StringValue::getValue)
         .map(BufferUtil::bufferAsString)
         .collect(Collectors.toList());
+  }
+
+  @Override
+  public TenantFilter getTenantFilter() {
+    return tenantFilterProp.getValue();
+  }
+
+  public JobBatchRecord setTenantFilter(final TenantFilter tenantFilter) {
+    tenantFilterProp.setValue(tenantFilter);
+    return this;
   }
 
   public JobBatchRecord setTenantIds(final List<String> tenantIds) {

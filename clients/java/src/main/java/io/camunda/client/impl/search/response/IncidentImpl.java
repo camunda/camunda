@@ -30,6 +30,7 @@ public class IncidentImpl implements Incident {
   private final Long processDefinitionKey;
   private final String processDefinitionId;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final IncidentErrorType errorType;
   private final String errorMessage;
   private final String elementId;
@@ -44,6 +45,7 @@ public class IncidentImpl implements Incident {
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processDefinitionId = item.getProcessDefinitionId();
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     errorType = EnumUtil.convert(item.getErrorType(), IncidentErrorType.class);
     errorMessage = item.getErrorMessage();
     elementId = item.getElementId();
@@ -72,6 +74,11 @@ public class IncidentImpl implements Incident {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override
@@ -121,6 +128,7 @@ public class IncidentImpl implements Incident {
         processDefinitionKey,
         processDefinitionId,
         processInstanceKey,
+        rootProcessInstanceKey,
         errorType,
         errorMessage,
         elementId,
@@ -144,6 +152,7 @@ public class IncidentImpl implements Incident {
         && Objects.equals(processDefinitionKey, incident.processDefinitionKey)
         && Objects.equals(processDefinitionId, incident.processDefinitionId)
         && Objects.equals(processInstanceKey, incident.processInstanceKey)
+        && Objects.equals(rootProcessInstanceKey, incident.rootProcessInstanceKey)
         && errorType == incident.errorType
         && Objects.equals(errorMessage, incident.errorMessage)
         && Objects.equals(elementId, incident.elementId)

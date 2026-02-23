@@ -166,6 +166,7 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "observe-aborted-jobs"
         job_id != "setup-tests"
         job_id != "utils-flaky-tests-summary"
+        job_id != "fe-unit-tests-merge"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses

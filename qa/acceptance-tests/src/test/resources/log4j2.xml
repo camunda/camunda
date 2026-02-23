@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<Configuration>
+
+  <Appenders>
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"/>
+    </Console>
+  </Appenders>
+
+  <Loggers>
+    <Logger name="io.camunda.zeebe" level="debug"/>
+    <Logger name="io.camunda.it" level="debug"/>
+    <Logger name="io.atomix" level="debug"/>
+    <Logger name="io.zeebe.containers.ZeebeTopologyWaitStrategy" level="trace"/>
+
+    <Logger name="io.atomix.cluster.messaging" level="info"/>
+    <Logger name="io.atomix.cluster.protocol" level="debug"/>
+    <Logger name="io.atomix.raft" level="debug"/>
+
+    <Logger name="org.apache.ibatis" level="debug"/>
+    <Logger name="io.camunda.db.rdbms" level="debug"/>
+    <Logger name="io.camunda.exporter.rdbms" level="info"/>
+    <Logger name="io.camunda.zeebe.engine.processing.batchoperation" level="debug"/>
+    <Logger name="io.camunda.exporter.tasks.batchoperations" level="trace"/>
+    <Logger name="io.camunda.exporter.handlers.batchoperation" level="trace"/>
+    <Logger name="io.camunda.zeebe.broker.exporter" level="trace"/>
+    <Logger name="io.camunda.zeebe.gateway.rest" level="debug"/>
+
+    <Root level="${sys:root.logging.level:-INFO}">
+      <AppenderRef ref="STDOUT"/>
+    </Root>
+  </Loggers>
+</Configuration>
+

@@ -33,6 +33,9 @@ public final class ExporterDirectorContext {
   private EventFilter positionsToSkipFilter;
   private MeterRegistry meterRegistry;
   private InstantSource clock;
+  private String engineName;
+  private boolean sendOnLegacySubject = true;
+  private boolean receiveOnLegacySubject = true;
 
   public int getId() {
     return id;
@@ -76,6 +79,18 @@ public final class ExporterDirectorContext {
 
   public InstantSource getClock() {
     return clock;
+  }
+
+  public String getEngineName() {
+    return engineName;
+  }
+
+  public boolean isSendOnLegacySubject() {
+    return sendOnLegacySubject;
+  }
+
+  public boolean isReceiveOnLegacySubject() {
+    return receiveOnLegacySubject;
   }
 
   public ExporterDirectorContext id(final int id) {
@@ -132,6 +147,21 @@ public final class ExporterDirectorContext {
 
   public ExporterDirectorContext clock(final InstantSource clock) {
     this.clock = clock;
+    return this;
+  }
+
+  public ExporterDirectorContext engineName(final String engineName) {
+    this.engineName = engineName;
+    return this;
+  }
+
+  public ExporterDirectorContext sendOnLegacySubject(final boolean sendOnLegacySubject) {
+    this.sendOnLegacySubject = sendOnLegacySubject;
+    return this;
+  }
+
+  public ExporterDirectorContext receiveOnLegacySubject(final boolean receiveOnLegacySubject) {
+    this.receiveOnLegacySubject = receiveOnLegacySubject;
     return this;
   }
 

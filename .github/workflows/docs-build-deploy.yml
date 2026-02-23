@@ -23,7 +23,7 @@ defaults:
 
 env:
   # renovate: datasource=node-version depName=node
-  NODE_VERSION: '24.6.0'
+  NODE_VERSION: '24.13.1'
 
 jobs:
   # Detect changes to avoid unnecessary builds

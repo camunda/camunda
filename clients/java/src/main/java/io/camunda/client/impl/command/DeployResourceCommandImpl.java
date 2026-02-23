@@ -23,7 +23,6 @@ import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
 import io.camunda.client.api.command.ClientException;
-import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.command.DeployResourceCommandStep1.DeployResourceCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
@@ -87,36 +86,6 @@ public final class DeployResourceCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     useRest = preferRestOverGrpc;
     this.jsonMapper = jsonMapper;
-    requestTimeout(requestTimeout);
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link
-   *     DeployResourceCommandImpl#DeployResourceCommandImpl(GatewayStub asyncStub,
-   *     CamundaClientConfiguration config, Predicate retryPredicate)}
-   */
-  @Deprecated
-  public DeployResourceCommandImpl(
-      final GatewayStub asyncStub,
-      final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate,
-      final HttpClient httpClient,
-      final boolean preferRestOverGrpc,
-      final JsonMapper jsonMapper) {
-    this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
-    this.retryPredicate = retryPredicate;
-    this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-    useRest = preferRestOverGrpc;
-    this.jsonMapper = jsonMapper;
-    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     requestTimeout(requestTimeout);
   }
 

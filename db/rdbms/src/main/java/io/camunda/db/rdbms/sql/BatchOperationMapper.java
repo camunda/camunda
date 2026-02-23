@@ -28,6 +28,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void insertErrors(BatchOperationErrorsDto error);
 
+  void activate(BatchOperationActivateDto dto);
+
   void updateCompleted(BatchOperationUpdateDto dto);
 
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
@@ -53,6 +55,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
   record CleanupBatchOperationHistoryDto(OffsetDateTime cleanupDate, int limit) {}
 
   record UpdateHistoryCleanupDateDto(String batchOperationKey, OffsetDateTime historyCleanupDate) {}
+
+  record BatchOperationActivateDto(String batchOperationKey, OffsetDateTime startDate) {}
 
   record BatchOperationUpdateDto(
       String batchOperationKey, BatchOperationState state, OffsetDateTime endDate) {}

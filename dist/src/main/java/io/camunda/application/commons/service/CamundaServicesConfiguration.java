@@ -20,6 +20,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.JobSearchClient;
@@ -52,6 +53,7 @@ import io.camunda.service.DocumentServices;
 import io.camunda.service.ElementInstanceServices;
 import io.camunda.service.ExpressionServices;
 import io.camunda.service.FormServices;
+import io.camunda.service.GlobalListenerServices;
 import io.camunda.service.GroupServices;
 import io.camunda.service.IncidentServices;
 import io.camunda.service.JobServices;
@@ -484,13 +486,17 @@ public class CamundaServicesConfiguration {
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
       final ApiServicesExecutorProvider executorProvider,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final ProcessDefinitionSearchClient processDefinitionSearchClient,
+      final DecisionRequirementSearchClient decisionRequirementSearchClient) {
     return new ResourceServices(
         brokerClient,
         securityContextProvider,
         null,
         executorProvider,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        processDefinitionSearchClient,
+        decisionRequirementSearchClient);
   }
 
   @Bean
@@ -594,6 +600,22 @@ public class CamundaServicesConfiguration {
     return new TopologyServices(
         brokerClient,
         securityContextProvider,
+        null,
+        executorProvider,
+        brokerRequestAuthorizationConverter);
+  }
+
+  @Bean
+  public GlobalListenerServices globalListenerServices(
+      final BrokerClient brokerClient,
+      final SecurityContextProvider securityContextProvider,
+      final GlobalListenerSearchClient globalListenerSearchClient,
+      final ApiServicesExecutorProvider executorProvider,
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+    return new GlobalListenerServices(
+        brokerClient,
+        securityContextProvider,
+        globalListenerSearchClient,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

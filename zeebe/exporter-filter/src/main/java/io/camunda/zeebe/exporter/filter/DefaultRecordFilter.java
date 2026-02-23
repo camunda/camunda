@@ -13,13 +13,19 @@ import static io.camunda.zeebe.exporter.filter.NameFilterRule.Type.STARTS_WITH;
 import static io.camunda.zeebe.exporter.filter.VariableNameFilter.parseRules;
 
 import io.camunda.zeebe.exporter.api.context.Context;
+import io.camunda.zeebe.exporter.filter.VariableTypeFilter.VariableValueType;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public final class DefaultRecordFilter implements Context.RecordFilter {
+
+  private static final Logger LOG = LoggerFactory.getLogger(DefaultRecordFilter.class);
 
   private final ExportRecordFilterChain exportRecordFilterChain;
   private final FilterConfiguration configuration;
@@ -35,10 +41,54 @@ public final class DefaultRecordFilter implements Context.RecordFilter {
 
     final var index = configuration.filterIndexConfig();
 
-    final var nameInclusionRules = getVariableNameInclusionRules(index);
-    final var nameExclusionRules = getVariableNameExclusionRules(index);
+    final var variableNameInclusionRules = getVariableNameInclusionRules(index);
+    final var variableNameExclusionRules = getVariableNameExclusionRules(index);
 
-    return List.of(new VariableNameFilter(nameInclusionRules, nameExclusionRules));
+    final Set<VariableValueType> valueTypeInclusion =
+        VariableTypeFilter.parseTypes(index.getVariableValueTypeInclusion());
+    final Set<VariableTypeFilter.VariableValueType> valueTypeExclusion =
+        VariableTypeFilter.parseTypes(index.getVariableValueTypeExclusion());
+
+    final List<ExporterRecordFilter> filters = new ArrayList<>();
+
+    // Just add filters if configured
+
+    if (index.isOptimizeModeEnabled()) {
+      LOG.info(
+          "Optimize mode enabled. It might filter more restrictively than the filters defined in "
+              + "acceptType, acceptValue, and acceptIntent. If you want to customize the filtering, "
+              + "please disable optimize mode and use the other filter configuration options.");
+      filters.add(new OptimizeModeFilter());
+    }
+
+    if (!variableNameInclusionRules.isEmpty() || !variableNameExclusionRules.isEmpty()) {
+      LOG.info(
+          "Variable name filters configured. Inclusion rules: {}, Exclusion rules: {}.",
+          variableNameInclusionRules,
+          variableNameExclusionRules);
+      filters.add(new VariableNameFilter(variableNameInclusionRules, variableNameExclusionRules));
+    }
+
+    if (!valueTypeInclusion.isEmpty() || !valueTypeExclusion.isEmpty()) {
+      LOG.info(
+          "Variable type filters configured. Inclusion types: {}, Exclusion types: {}.",
+          valueTypeInclusion,
+          valueTypeExclusion);
+      filters.add(new VariableTypeFilter(valueTypeInclusion, valueTypeExclusion));
+    }
+
+    if (!index.getBpmnProcessIdInclusion().isEmpty()
+        || !index.getBpmnProcessIdExclusion().isEmpty()) {
+      LOG.info(
+          "Bpmn process id filters configured. Inclusion ids: {}, Exclusion ids: {}.",
+          index.getBpmnProcessIdInclusion(),
+          index.getBpmnProcessIdExclusion());
+      filters.add(
+          new BpmnProcessFilter(
+              index.getBpmnProcessIdInclusion(), index.getBpmnProcessIdExclusion()));
+    }
+
+    return List.copyOf(filters);
   }
 
   private static List<NameFilterRule> getVariableNameInclusionRules(

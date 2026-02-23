@@ -18,7 +18,7 @@ import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -68,6 +68,7 @@ public class AuthenticationControllerTest extends RestControllerTest {
                   "tenants": [{"tenantId":"testTenantId","name":"testTenantNem","description":"testTenantDescription"}],
                   "groups": ["test group"],
                   "roles": ["test role"],
+                  "salesPlanType": null,
                   "c8Links": {},
                   "canLogout": true
                 }""",

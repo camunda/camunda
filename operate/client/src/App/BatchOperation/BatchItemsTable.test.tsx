@@ -117,7 +117,11 @@ describe('<BatchItemsTable />', () => {
     );
 
     expect(screen.getByText('3 Items')).toBeInTheDocument();
-    expect(screen.getByText('2251799813685250')).toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: /view process instance 2251799813685250/i,
+      }),
+    ).toHaveAttribute('href', '/processes/2251799813685250');
     expect(screen.getByText('2251799813685251')).toBeInTheDocument();
     expect(screen.getByText('2251799813685252')).toBeInTheDocument();
   });

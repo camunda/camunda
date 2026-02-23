@@ -87,7 +87,7 @@ jobs:
         fi
 
     - name: Add reaction
-      uses: peter-evans/create-or-update-comment@v4
+      uses: peter-evans/create-or-update-comment@v5
       with:
         token: ${{ steps.github-token.outputs.token }}
         repository: ${{ github.event.client_payload.github.payload.repository.full_name }}
@@ -97,7 +97,7 @@ jobs:
 
     - name: Update comment in case of failure
       if: failure()
-      uses: peter-evans/create-or-update-comment@v4
+      uses: peter-evans/create-or-update-comment@v5
       with:
         token: ${{ steps.github-token.outputs.token }}
         comment-id: ${{ github.event.client_payload.github.payload.comment.id }}

@@ -71,13 +71,15 @@ public final class DbCheckpointState implements CheckpointState {
       final long checkpointId,
       final long checkpointPosition,
       final long timestamp,
-      final CheckpointType type) {
+      final CheckpointType type,
+      final long firstLogPosition) {
     checkpointInfoKey.wrapString(LATEST_BACKUP_KEY);
     checkpointInfo
         .setId(checkpointId)
         .setPosition(checkpointPosition)
         .setTimestamp(timestamp)
-        .setType(type);
+        .setType(type)
+        .setFirstLogPosition(firstLogPosition);
     checkpointColumnFamily.upsert(checkpointInfoKey, checkpointInfo);
   }
 
@@ -99,6 +101,11 @@ public final class DbCheckpointState implements CheckpointState {
   @Override
   public CheckpointType getLatestBackupType() {
     return getCheckpointType(LATEST_BACKUP_KEY);
+  }
+
+  @Override
+  public long getLatestBackupFirstLogPosition() {
+    return getFirstLogPosition(LATEST_BACKUP_KEY);
   }
 
   private long getCheckpointId(final String key) {
@@ -123,5 +130,11 @@ public final class DbCheckpointState implements CheckpointState {
     checkpointInfoKey.wrapString(key);
     final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
     return info != null ? info.getType() : null;
+  }
+
+  private long getFirstLogPosition(final String key) {
+    checkpointInfoKey.wrapString(key);
+    final CheckpointInfo info = checkpointColumnFamily.get(checkpointInfoKey);
+    return info != null ? info.getFirstLogPosition() : -1L;
   }
 }

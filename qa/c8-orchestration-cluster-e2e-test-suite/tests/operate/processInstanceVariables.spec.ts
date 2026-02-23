@@ -166,12 +166,11 @@ test.describe('Process Instance Variables', () => {
     operateHomePage,
     operateProcessesPage,
     operateProcessInstancePage,
+    operateFiltersPanelPage,
   }) => {
     await test.step('Navigate to Processes tab and open the process instance', async () => {
       await operateHomePage.clickProcessesTab();
-      await operateProcessesPage.filterByProcessName(
-        'variable scrolling process',
-      );
+      await operateFiltersPanelPage.selectProcess('variable scrolling process');
       await operateProcessesPage.clickProcessInstanceLink();
     });
 

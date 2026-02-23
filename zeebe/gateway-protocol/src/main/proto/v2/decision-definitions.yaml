@@ -149,6 +149,10 @@ paths:
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "404":
           description: The decision is not found.
+          content:
+            application/problem+json:
+              schema:
+                $ref: 'problem-detail.yaml#/components/schemas/ProblemDetail'
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
         "503":
@@ -239,12 +243,15 @@ components:
 
     DecisionDefinitionSearchQueryResult:
       type: object
+      required: 
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The matching decision definitions.
           type: array
+          default: []
           items:
             $ref: '#/components/schemas/DecisionDefinitionResult'
 
@@ -369,10 +376,12 @@ components:
           type: string
         failedDecisionDefinitionId:
           description: The ID of the decision which failed during evaluation.
+          nullable: true
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/DecisionDefinitionId'
         failureMessage:
           description: Message describing why the decision which was evaluated failed.
+          nullable: true
           type: string
         tenantId:
           description: The tenant ID of the evaluated decision.
@@ -402,6 +411,9 @@ components:
             $ref: '#/components/schemas/EvaluatedDecisionResult'
 
     EvaluatedDecisionResult:
+      required:
+        - evaluatedInputs
+        - matchedRules
       x-semantic-provider:
         - decisionEvaluationInstanceKey
       type: object

@@ -43,7 +43,11 @@ public class ElasticsearchProcessDefinitionDao extends ElasticsearchDao<ProcessD
         buildQueryOn(query, ProcessDefinition.KEY, new SearchRequest.Builder(), true);
 
     try {
-      final var searchReq = searchReqBuilder.index(processIndex.getAlias()).build();
+      final var searchReq =
+          searchReqBuilder
+              .index(processIndex.getAlias())
+              .source(s -> s.filter(f -> f.excludes(BPMN_XML)))
+              .build();
 
       return searchWithResultsReturn(searchReq, ProcessDefinition.class);
     } catch (final Exception e) {

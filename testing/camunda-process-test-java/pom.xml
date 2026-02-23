@@ -19,6 +19,9 @@
     <!-- Camunda Docker image properties. CI overrides the properties to use the current image. -->
     <io.camunda.process.test.camundaDockerImageName>camunda/camunda</io.camunda.process.test.camundaDockerImageName>
     <io.camunda.process.test.camundaDockerImageVersion>${project.version}</io.camunda.process.test.camundaDockerImageVersion>
+    <!-- Connectors Docker image properties. CI overrides the properties to use the current image. -->
+    <io.camunda.process.test.connectorsDockerImageName>camunda/connectors-bundle</io.camunda.process.test.connectorsDockerImageName>
+    <io.camunda.process.test.connectorsDockerImageVersion>${project.version}</io.camunda.process.test.connectorsDockerImageVersion>
   </properties>
 
   <dependencies>
@@ -221,8 +224,8 @@
             <phase>initialize</phase>
             <configuration>
               <skip>${skip.fe.build}</skip>
-              <nodeVersion>v22.9.0</nodeVersion>
-              <npmVersion>10.8.3</npmVersion>
+              <nodeVersion>v24.13.0</nodeVersion>
+              <npmVersion>11.9.0</npmVersion>
             </configuration>
           </execution>
           <!-- Install dependencies -->

@@ -97,7 +97,7 @@ const AppContent: FC<{ children?: ReactNode }> = ({ children }) => {
   }
 
   if (
-    !camundaUser?.authorizedComponents.includes("identity") &&
+    !camundaUser?.authorizedComponents.includes("admin") &&
     !camundaUser?.authorizedComponents.includes("*")
   ) {
     return (

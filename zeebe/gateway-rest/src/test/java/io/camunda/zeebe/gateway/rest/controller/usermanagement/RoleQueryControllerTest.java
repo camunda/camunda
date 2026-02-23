@@ -37,7 +37,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -316,6 +316,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -381,6 +383,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -437,6 +441,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
              ],
              "page": {
                "totalItems": 3,
+               "startCursor": null,
+               "endCursor": null,
                "hasMoreTotalItems": false
              }
            }""",
@@ -488,6 +494,8 @@ public class RoleQueryControllerTest extends RestControllerTest {
               ],
               "page": {
                 "totalItems": 2,
+                "startCursor": null,
+                "endCursor": null,
                 "hasMoreTotalItems": false
               }
             }""",

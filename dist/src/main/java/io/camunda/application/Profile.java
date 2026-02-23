@@ -21,7 +21,8 @@ public enum Profile {
   RESTORE("restore"),
   OPERATE("operate"),
   TASKLIST("tasklist"),
-  IDENTITY("identity"),
+  IDENTITY("identity"), // Legacy, use "admin" instead
+  ADMIN("admin"),
 
   // environment profiles
   TEST("test"),
@@ -46,7 +47,7 @@ public enum Profile {
   }
 
   public static Set<Profile> getWebappProfiles() {
-    return Set.of(TASKLIST, IDENTITY, OPERATE);
+    return Set.of(TASKLIST, IDENTITY, OPERATE, ADMIN);
   }
 
   @Override

@@ -195,6 +195,12 @@
     <include refid="io.camunda.db.rdbms.sql.Commons.rootProcessInstanceHistoryDeletion"/>
   </delete>
 
+  <delete id="deleteProcessInstanceRelatedData">
+    <bind name="tableName" value="'SEQUENCE_FLOW'"/>
+    <bind name="primaryKeyColumn" value="''"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.processInstanceHistoryDeletion"/>
+  </delete>
+
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.SequenceFlowDbModel">
     DELETE FROM ${prefix}SEQUENCE_FLOW
     WHERE FLOW_NODE_ID = #{flowNodeId}

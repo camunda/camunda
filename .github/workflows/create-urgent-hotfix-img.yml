@@ -95,12 +95,25 @@ jobs:
             
             if [[ "$ITEM" =~ ^([^:]+):(.+)$ ]]; then
               COMP="${BASH_REMATCH[1]}"
+              VER="${BASH_REMATCH[2]}"
+              
+              # Validate component name
               case "$COMP" in
-                camunda|optimize|operate|tasklist|zeebe) VALID_COMPONENTS+=("$ITEM") ;;
-                *) echo "❌ Unsupported: $COMP"; exit 1 ;;
+                camunda|optimize|operate|tasklist|zeebe) ;;
+                *) echo "❌ Unsupported component: $COMP"; exit 1 ;;
               esac
+              
+              # Validate version follows semantic versioning (e.g., 8.6.1, 8.8.0-alpha1)
+              # Must start with digit(s).digit(s).digit(s), optionally followed by -prerelease
+              if [[ ! "$VER" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.-]+)?$ ]]; then
+                echo "❌ Invalid version format for $COMP: '$VER'"
+                echo "   Version must follow semantic versioning (e.g., 8.6.1, 8.8.0, 8.9.0-alpha1)"
+                exit 1
+              fi
+              
+              VALID_COMPONENTS+=("$ITEM")
             else
-              echo "❌ Invalid format: $ITEM"; exit 1
+              echo "❌ Invalid format: $ITEM (expected format: component:version)"; exit 1
             fi
           done
 
@@ -253,15 +266,15 @@ jobs:
                 # This ensures zeebe-client, search-client, etc. are installed locally
                 # Note: Building both java and java-deprecated to support legacy zeebe-client-java artifact ID
                 echo "📦 Unified branch: Building Zeebe dependencies first..."
-                ./mvnw clean install -T1C -DskipTests -DskipChecks -am -pl clients/java,clients/java-deprecated
+                ./mvnw clean install -DskipTests -DskipChecks -am -pl clients/java,clients/java-deprecated
                 
                 # Build optimize-distro with install goal (installs to local repo)
                 echo "📦 Building Optimize distribution..."
-                ./mvnw install -T1C -DskipTests -DskipChecks -PrunAssembly -am -pl optimize-distro
+                ./mvnw clean install -DskipTests -DskipChecks -Dskip.fe.build=false -PrunAssembly -am -pl optimize-distro,optimize/client
               else
                 # Dedicated/older branch (stable/optimize-8.6/8.7): Use published Zeebe dependencies from Nexus
                 echo "📦 Dedicated Optimize branch: Building with published dependencies..."
-                ./mvnw clean package -T1C -DskipTests -DskipChecks -PrunAssembly -am -pl optimize-distro
+                ./mvnw clean package -DskipTests -DskipChecks -Dskip.fe.build=false -PrunAssembly -am -pl optimize-distro,optimize/client
               fi
               ;;
             *)

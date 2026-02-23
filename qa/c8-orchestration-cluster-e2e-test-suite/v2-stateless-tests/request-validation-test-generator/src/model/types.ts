@@ -12,7 +12,7 @@ export interface OperationModel {
   parameters: ParameterModel[];
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   rootOneOf?: any[]; // array of variant schemas if oneOf at root
-  discriminator?: { propertyName: string; mapping?: Record<string,string> };
+  discriminator?: {propertyName: string; mapping?: Record<string, string>};
   /** multipart/form-data schema if present (raw dereferenced) */
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   multipartSchema?: any;

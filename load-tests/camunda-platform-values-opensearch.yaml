@@ -24,38 +24,39 @@ orchestration:
   # of the orchestration cluster.
   # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
   extraConfiguration:
-    application.yml: |
-      zeebe.gateway.monitoring.enabled: "true"
-      zeebe.gateway.threads.managementThreads: "1"
-      zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
-      zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
-      zeebe.broker.executionMetricsExporterEnabled: "true"
-      zeebe.broker.data.disk.freeSpace.processing: "3GB"
-      zeebe.broker.data.disk.freeSpace.replication: "2GB"
-      # Configure index suffix with hour pattern, so we create every hour a new index
-      # such that ILM can clean it up quickly
-      # We need to configure it for the CamundaExporter
-      zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
-      zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
-      zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
-      zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
-      # Configure a rate limit for all writes, so that we can visualize flow control metrics.
-      zeebe.broker.flowControl.write.enabled: "true"
-      zeebe.broker.flowControl.write.limit: 4000
-      zeebe.broker.flowControl.write.throttling.enabled: "true"
-      # Disable the importers
-      camunda.tasklist.importerEnabled: "false"
-      camunda.operate.importerEnabled: "false"
-      camunda.data.secondary-storage.retention.enabled: "true"
-      camunda.data.secondary-storage.retention.minimum-age: "70m"
-      camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
-      camunda.database.retention.policyName: "camunda-retention-policy"
-      zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
-      #Metrics:
-      camunda.flags.jfr.metrics: "true"
-      # RocksDB memory limit setting, limits the overall RocksDB memory usage
-      # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
-      zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
+    - file: application.yml
+      content: |
+        zeebe.gateway.monitoring.enabled: "true"
+        zeebe.gateway.threads.managementThreads: "1"
+        zeebe.broker.experimental.consistencyChecks.enablePreconditions: "true"
+        zeebe.broker.experimental.consistencyChecks.enableForeignKeyChecks: "true"
+        zeebe.broker.executionMetricsExporterEnabled: "true"
+        zeebe.broker.data.disk.freeSpace.processing: "3GB"
+        zeebe.broker.data.disk.freeSpace.replication: "2GB"
+        # Configure index suffix with hour pattern, so we create every hour a new index
+        # such that ILM can clean it up quickly
+        # We need to configure it for the CamundaExporter
+        zeebe.broker.exporters.camundaexporter.args.history.elsRolloverDateFormat: "yyyy-MM-dd-HH"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverInterval: "1h"
+        zeebe.broker.exporters.camundaexporter.args.history.rolloverBatchSize: 300
+        zeebe.broker.exporters.camundaexporter.args.history.waitPeriodBeforeArchiving: "1m"
+        # Configure a rate limit for all writes, so that we can visualize flow control metrics.
+        zeebe.broker.flowControl.write.enabled: "true"
+        zeebe.broker.flowControl.write.limit: 4000
+        zeebe.broker.flowControl.write.throttling.enabled: "true"
+        # Disable the importers
+        camunda.tasklist.importerEnabled: "false"
+        camunda.operate.importerEnabled: "false"
+        camunda.data.secondary-storage.retention.enabled: "true"
+        camunda.data.secondary-storage.retention.minimum-age: "70m"
+        camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
+        camunda.database.retention.policyName: "camunda-retention-policy"
+        zeebe.broker.exporters.camundaexporter.args.history.retention.policyName: "camunda-retention-policy"
+        #Metrics:
+        camunda.flags.jfr.metrics: "true"
+        # RocksDB memory limit setting, limits the overall RocksDB memory usage
+        # ZEEBE_BROKER_EXPERIMENTAL_ROCKSDB_MEMORYLIMIT
+        zeebe.broker.experimental.rocksdb.memoryLimit: "64MB"
 
 
 #################################################################################################

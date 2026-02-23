@@ -21,5 +21,6 @@ public enum AuditLogEntityType {
   GROUP,
   TENANT,
   AUTHORIZATION,
-  RESOURCE
+  RESOURCE,
+  CLIENT
 }

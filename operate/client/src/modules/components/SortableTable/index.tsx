@@ -88,6 +88,7 @@ const SortableTable = <
   columnsWithNoContentPadding,
   batchOperationId,
   stickyHeader = false,
+  onSort,
 }: Props<RowType, ColTypes>) => {
   let scrollableContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -120,12 +121,17 @@ const SortableTable = <
   }
 
   return (
-    <Container ref={scrollableContentRef} $isScrollable={state === 'content'}>
+    <Container
+      data-testid="data-table-container"
+      ref={scrollableContentRef}
+      $isScrollable={state === 'content'}
+    >
       <DataTable<RowType, ColTypes>
         rows={rows}
         headers={headerColumns}
         size={size}
-        render={({
+      >
+        {({
           rows,
           headers,
           getHeaderProps,
@@ -166,6 +172,7 @@ const SortableTable = <
                         sortKey={headerColumns[index].sortKey ?? header.key}
                         isDefault={headerColumns[index].isDefault}
                         isDisabled={headerColumns[index].isDisabled}
+                        onSort={onSort}
                       />
                     );
                   })}
@@ -243,7 +250,7 @@ const SortableTable = <
             </Table>
           </TableContainer>
         )}
-      />
+      </DataTable>
     </Container>
   );
 };

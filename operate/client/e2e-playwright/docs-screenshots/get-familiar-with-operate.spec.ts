@@ -18,7 +18,7 @@ import {
   mockOrderProcessInstances,
   mockProcessDefinitions,
   mockResponses as mockProcessesResponses,
-  mockStatisticsV2,
+  mockStatistics,
 } from '../mocks/processes.mocks';
 
 import {
@@ -62,7 +62,7 @@ test.describe('get familiar with operate', () => {
         processDefinitions: mockProcessDefinitions,
         batchOperations: mockBatchOperations,
         processInstances: mockOrderProcessInstances,
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/orderProcess.bpmn',
         ),
@@ -120,7 +120,7 @@ test.describe('get familiar with operate', () => {
         processInstanceDetailV2: runningOrderProcessInstance.detailV2,
         callHierarchy: runningOrderProcessInstance.callHierarchy,
         elementInstances: runningOrderProcessInstance.elementInstances,
-        statisticsV2: runningOrderProcessInstance.statisticsV2,
+        statistics: runningOrderProcessInstance.statistics,
         sequenceFlows: runningOrderProcessInstance.sequenceFlows,
         sequenceFlowsV2: runningOrderProcessInstance.sequenceFlowsV2,
         variables: runningOrderProcessInstance.variables,

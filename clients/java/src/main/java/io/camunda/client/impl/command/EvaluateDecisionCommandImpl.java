@@ -19,7 +19,6 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1;
 import io.camunda.client.api.command.EvaluateDecisionCommandStep1.EvaluateDecisionCommandStep2;
 import io.camunda.client.api.command.FinalCommandStep;
@@ -71,37 +70,6 @@ public class EvaluateDecisionCommandImpl extends CommandWithVariables<EvaluateDe
     httpRequestObject = new DecisionEvaluationInstruction();
     useRest = config.preferRestOverGrpc();
     tenantId(config.getDefaultTenantId());
-    requestTimeout(requestTimeout);
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link
-   *     EvaluateDecisionCommandImpl#EvaluateDecisionCommandImpl(GatewayStub, JsonMapper,
-   *     CamundaClientConfiguration, Predicate, HttpClient)}
-   */
-  @Deprecated
-  public EvaluateDecisionCommandImpl(
-      final GatewayStub asyncStub,
-      final JsonMapper jsonMapper,
-      final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate,
-      final HttpClient httpClient) {
-    super(jsonMapper);
-    this.asyncStub = asyncStub;
-    this.retryPredicate = retryPredicate;
-    this.jsonMapper = jsonMapper;
-    this.requestTimeout = requestTimeout;
-    grpcRequestObjectBuilder = EvaluateDecisionRequest.newBuilder();
-    this.httpClient = httpClient;
-    httpRequestConfig = httpClient.newRequestConfig();
-    httpRequestObject = new DecisionEvaluationInstruction();
-    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
     requestTimeout(requestTimeout);
   }
 

@@ -39,11 +39,11 @@ public class RecordCounterTest {
   private final ExporterTestContext context =
       new ExporterTestContext().setConfiguration(new ExporterTestConfiguration<>("test", config));
   private final ExporterTestController controller = new ExporterTestController();
-  private final ElasticsearchClient client = mock(ElasticsearchClient.class);
+  private final ElasticsearchExporterClient client = mock(ElasticsearchExporterClient.class);
   private final ElasticsearchExporter exporter =
       new ElasticsearchExporter() {
         @Override
-        protected ElasticsearchClient createClient() {
+        protected ElasticsearchExporterClient createClient() {
           return client;
         }
       };

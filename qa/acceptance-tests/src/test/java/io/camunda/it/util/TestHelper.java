@@ -14,11 +14,14 @@ import static org.awaitility.Awaitility.await;
 
 import com.ibm.icu.text.Collator;
 import io.camunda.client.CamundaClient;
+import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ProblemException;
+import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.CorrelateMessageResponse;
 import io.camunda.client.api.response.Decision;
 import io.camunda.client.api.response.DeploymentEvent;
+import io.camunda.client.api.response.EvaluateDecisionResponse;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.api.response.ProcessInstanceEvent;
 import io.camunda.client.api.search.enums.BatchOperationState;
@@ -26,24 +29,32 @@ import io.camunda.client.api.search.enums.IncidentState;
 import io.camunda.client.api.search.enums.ProcessInstanceState;
 import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
+import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
+import io.camunda.client.api.search.filter.JobFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
 import io.camunda.client.api.search.filter.ProcessInstanceFilter;
 import io.camunda.client.api.search.filter.UserTaskFilter;
 import io.camunda.client.api.search.request.SearchRequestPage;
 import io.camunda.client.api.search.response.GroupUser;
+import io.camunda.client.api.search.response.Job;
 import io.camunda.client.api.search.response.ProcessInstance;
 import io.camunda.client.api.search.response.RoleUser;
 import io.camunda.client.api.search.response.SearchResponse;
 import io.camunda.client.api.search.response.Tenant;
+import io.camunda.client.api.search.response.UserTask;
+import io.camunda.client.api.statistics.response.GlobalJobStatistics;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
+import java.io.ByteArrayInputStream;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -52,12 +63,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 
 /**
  * This class provides several static methods to facilitate common operations such as deploying
@@ -324,18 +337,19 @@ public final class TestHelper {
    *     parameters until the expected count of items is reached or the timeout is exceeded.
    * @param <T> The type of items being searched for (e.g., ProcessInstance, ElementInstance, etc.).
    *     Can typically be inferred from the searchFunction parameter.
+   * @return The list of items collected during the wait operation.
    */
-  private static <T> void waitForItemsPaginated(
+  private static <T> List<T> waitForItemsPaginated(
       final String timeoutMessage,
       final int expectedCount,
       final Function<Consumer<SearchRequestPage>, SearchResponse<T>> searchFunction) {
-    final var collected = new AtomicInteger(0);
+    final var collectedItems = new ArrayList<T>();
     Awaitility.await(timeoutMessage)
         .atMost(TIMEOUT_DATA_AVAILABILITY)
         .ignoreExceptions()
         .until(
             () -> {
-              final int currentCollected = collected.get();
+              final int currentCollected = collectedItems.size();
               if (currentCollected >= expectedCount) {
                 return true;
               }
@@ -344,11 +358,12 @@ public final class TestHelper {
               final var items = response.items();
 
               if (!items.isEmpty()) {
-                collected.addAndGet(items.size());
+                collectedItems.addAll(items);
               }
 
-              return collected.get() >= expectedCount;
+              return collectedItems.size() >= expectedCount;
             });
+    return collectedItems;
   }
 
   public static void waitForProcessInstancesToStart(
@@ -544,6 +559,19 @@ public final class TestHelper {
         page -> client.newUserTaskSearchRequest().filter(filter).page(page).execute());
   }
 
+  public static UserTask waitForUserTask(
+      final CamundaClient client, final Consumer<UserTaskFilter> filter) {
+    final UserTask[] migratedTask = new UserTask[1];
+    Awaitility.await("Should find user task with filter")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .untilAsserted(
+            () -> {
+              migratedTask[0] =
+                  client.newUserTaskSearchRequest().filter(filter).send().join().singleItem();
+            });
+    return migratedTask[0];
+  }
+
   public static void waitForBatchOperationWithCorrectTotalCount(
       final CamundaClient camundaClient, final String batchOperationKey, final int expectedItems) {
     Awaitility.await("should start batch operation with correct total count")
@@ -678,9 +706,9 @@ public final class TestHelper {
             camundaClient.newElementInstanceSearchRequest().filter(filter).page(page).execute());
   }
 
-  public static void waitForJobs(
+  public static List<Job> waitForJobs(
       final CamundaClient camundaClient, final List<Long> processInstanceKeys) {
-    waitForItemsPaginated(
+    return waitForItemsPaginated(
         "should wait until jobs are available",
         processInstanceKeys.size(),
         page ->
@@ -689,6 +717,191 @@ public final class TestHelper {
                 .filter(f -> f.processInstanceKey(b -> b.in(processInstanceKeys)))
                 .page(page)
                 .execute());
+  }
+
+  /**
+   * Waits for jobs matching the given filter to reach the expected count.
+   *
+   * @param camundaClient the Camunda client
+   * @param filter the filter to apply to the job search
+   * @param expectedCount the expected number of jobs
+   */
+  public static void waitForJobs(
+      final CamundaClient camundaClient,
+      final Consumer<JobFilter> filter,
+      final int expectedCount) {
+    Awaitility.await("should wait until jobs are available")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var result =
+                  camundaClient.newJobSearchRequest().filter(filter).send().join().items();
+              assertThat(result).hasSize(expectedCount);
+            });
+  }
+
+  /**
+   * Activates and completes jobs of the given type for a specific tenant.
+   *
+   * @param camundaClient the Camunda client
+   * @param jobType the job type to activate
+   * @param tenantId the tenant ID (can be null for default tenant)
+   * @param workerName the worker name to use
+   * @param count the number of jobs to complete
+   * @return the list of completed job keys
+   */
+  public static List<Long> activateAndCompleteJobsForTenant(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String tenantId,
+      final String workerName,
+      final int count) {
+    var command =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(count)
+            .workerName(workerName)
+            .timeout(Duration.ofMinutes(5));
+
+    if (tenantId != null) {
+      command = command.tenantIds(tenantId);
+    }
+
+    final var jobs = command.send().join().getJobs();
+
+    for (final var job : jobs) {
+      camundaClient.newCompleteCommand(job.getKey()).send().join();
+    }
+
+    return jobs.stream().map(ActivatedJob::getKey).collect(Collectors.toList());
+  }
+
+  /**
+   * Activates and completes jobs of the given type.
+   *
+   * @param camundaClient the Camunda client
+   * @param jobType the job type to activate
+   * @param workerName the worker name to use
+   * @param count the number of jobs to complete
+   * @return the list of completed job keys
+   */
+  public static List<Long> activateAndCompleteJobs(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String workerName,
+      final int count) {
+    return activateAndCompleteJobsForTenant(camundaClient, jobType, null, workerName, count);
+  }
+
+  /**
+   * Activates and fails jobs of the given type for a specific tenant.
+   *
+   * @param camundaClient the Camunda client
+   * @param jobType the job type to activate
+   * @param tenantId the tenant ID (can be null for default tenant)
+   * @param workerName the worker name to use
+   * @param count the number of jobs to fail
+   * @param errorMessage the error message for the failure
+   */
+  public static List<Long> activateAndFailJobsForTenant(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String tenantId,
+      final String workerName,
+      final int count,
+      final String errorMessage) {
+    var command =
+        camundaClient
+            .newActivateJobsCommand()
+            .jobType(jobType)
+            .maxJobsToActivate(count)
+            .workerName(workerName)
+            .timeout(Duration.ofMinutes(5));
+
+    if (tenantId != null) {
+      command = command.tenantIds(tenantId);
+    }
+
+    final var jobs = command.send().join().getJobs();
+
+    for (final var job : jobs) {
+      camundaClient
+          .newFailCommand(job.getKey())
+          .retries(0)
+          .errorMessage(errorMessage)
+          .send()
+          .join();
+    }
+
+    return jobs.stream().map(ActivatedJob::getKey).collect(Collectors.toList());
+  }
+
+  /**
+   * Activates and fails jobs of the given type.
+   *
+   * @param camundaClient the Camunda client
+   * @param jobType the job type to activate
+   * @param workerName the worker name to use
+   * @param count the number of jobs to fail
+   * @param errorMessage the error message for the failure
+   * @return the list of failed job keys
+   */
+  public static List<Long> activateAndFailJobs(
+      final CamundaClient camundaClient,
+      final String jobType,
+      final String workerName,
+      final int count,
+      final String errorMessage) {
+    return activateAndFailJobsForTenant(
+        camundaClient, jobType, null, workerName, count, errorMessage);
+  }
+
+  /**
+   * Waits for job statistics to be exported and match the given requirements.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final Consumer<GlobalJobStatistics> fnRequirements) {
+    waitForJobStatistics(camundaClient, startTime, endTime, null, fnRequirements);
+  }
+
+  /**
+   * Waits for job statistics to be exported and match the given requirements, filtered by job type.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to filter by (can be null for no filter)
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<GlobalJobStatistics> fnRequirements) {
+    Awaitility.await("should export job metrics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              var request = camundaClient.newGlobalJobStatisticsRequest(startTime, endTime);
+
+              if (jobType != null) {
+                request = request.jobType(jobType);
+              }
+
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
   }
 
   public static void waitForProcessInstances(
@@ -785,6 +998,51 @@ public final class TestHelper {
         1,
         1);
     return decisionDeployment;
+  }
+
+  public static Decision deployDmnModel(
+      final CamundaClient camundaClient,
+      final DmnModelInstance dmnModel,
+      final String resourceName) {
+    final DeploymentEvent deploymentEvent =
+        camundaClient
+            .newDeployResourceCommand()
+            .addResourceStream(
+                new ByteArrayInputStream(Dmn.convertToString(dmnModel).getBytes()),
+                resourceName + ".dmn")
+            .send()
+            .join();
+    return deploymentEvent.getDecisions().getFirst();
+  }
+
+  public static EvaluateDecisionResponse evaluateDecision(
+      final CamundaClient camundaClient, final long decisionKey, final String variables) {
+    return camundaClient
+        .newEvaluateDecisionCommand()
+        .decisionKey(decisionKey)
+        .variables(variables)
+        .send()
+        .join();
+  }
+
+  public static void waitForDecisionInstanceCount(
+      final CamundaClient camundaClient,
+      final Consumer<DecisionInstanceFilter> filter,
+      final int expectedResultCount) {
+    Awaitility.await("Expected amount of decision instances in secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              assertThat(
+                      camundaClient
+                          .newDecisionInstanceSearchRequest()
+                          .filter(filter)
+                          .send()
+                          .join()
+                          .items())
+                  .hasSize(expectedResultCount);
+            });
   }
 
   public static Process startDefaultTestDecisionProcessInstance(
@@ -1274,6 +1532,34 @@ public final class TestHelper {
                     .anySatisfy(item -> assertThat(item.getName()).isEqualTo(expectedName));
               }
             });
+  }
+
+  /**
+   * Waits for all provided CamundaFutures to complete. This method executes all futures in parallel
+   * and blocks until all have completed.
+   *
+   * <p>Example usage:
+   *
+   * <pre>{@code
+   * var futures = IntStream.rangeClosed(1, 10)
+   *   .mapToObj(i -> camundaClient.newCreateInstanceCommand()...send())
+   *   .toList();
+   * waitForAll(futures);
+   * }</pre>
+   *
+   * @param futures list of CamundaFutures to wait for
+   * @throws io.camunda.client.api.command.ClientException on unexpected errors
+   * @throws io.camunda.client.api.command.ClientStatusException on gRPC errors
+   */
+  public static void waitForAll(final List<? extends CamundaFuture<?>> futures) {
+    if (futures == null || futures.isEmpty()) {
+      return;
+    }
+    CompletableFuture.allOf(
+            futures.stream()
+                .map(CamundaFuture::toCompletableFuture)
+                .toArray(CompletableFuture[]::new))
+        .join();
   }
 
   /**

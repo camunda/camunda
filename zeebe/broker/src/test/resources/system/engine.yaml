@@ -20,6 +20,8 @@ zeebe:
           maxTenantIdLength: 20
           maxUniqueKeys: 5000
         validators:
+          maxIdFieldLength: 255
+          maxNameFieldLength: 256
           resultsOutputMaxSize: 2000
         distribution:
           redistributionInterval: 60s
@@ -40,3 +42,5 @@ zeebe:
               afterNonGlobal: true
         expression:
           timeout: 2s
+        processInstanceCreation:
+          businessIdUniquenessEnabled: true

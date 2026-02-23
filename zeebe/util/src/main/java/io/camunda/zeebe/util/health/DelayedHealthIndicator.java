@@ -13,10 +13,10 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Supplier;
-import org.springframework.boot.actuate.health.Health;
-import org.springframework.boot.actuate.health.Health.Builder;
-import org.springframework.boot.actuate.health.HealthIndicator;
-import org.springframework.boot.actuate.health.Status;
+import org.springframework.boot.health.contributor.Health;
+import org.springframework.boot.health.contributor.Health.Builder;
+import org.springframework.boot.health.contributor.HealthIndicator;
+import org.springframework.boot.health.contributor.Status;
 import org.springframework.scheduling.annotation.Scheduled;
 
 /**

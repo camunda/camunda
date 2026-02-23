@@ -7,9 +7,15 @@
  */
 package io.camunda.exporter.handlers;
 
+import static java.util.Optional.ofNullable;
+
 import io.camunda.exporter.exceptions.PersistenceException;
+import io.camunda.exporter.handlers.AuditLogHandler.AuditLogBatch;
 import io.camunda.exporter.store.BatchRequest;
+import io.camunda.webapps.schema.descriptors.template.AuditLogTemplate;
+import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogActorType;
+import io.camunda.webapps.schema.entities.auditlog.AuditLogCleanupEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntity;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogEntityType;
 import io.camunda.webapps.schema.entities.auditlog.AuditLogOperationCategory;
@@ -21,6 +27,7 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogInfo.AuditLogTenant;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformer;
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordValue;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -47,17 +54,20 @@ import java.util.Set;
  *
  * @param <R> the record value type this handler processes
  */
-public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogEntity, R> {
+public class AuditLogHandler<R extends RecordValue> implements ExportHandler<AuditLogBatch, R> {
 
   private final String indexName;
+  private final String auditLogCleanupIndexName;
   private final AuditLogTransformer<R> transformer;
   private final AuditLogConfiguration configuration;
 
   public AuditLogHandler(
       final String indexName,
+      final String auditLogCleanupIndexName,
       final AuditLogTransformer<R> transformer,
       final AuditLogConfiguration configuration) {
     this.indexName = indexName;
+    this.auditLogCleanupIndexName = auditLogCleanupIndexName;
     this.transformer = transformer;
     this.configuration = configuration;
   }
@@ -68,8 +78,8 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   @Override
-  public Class<AuditLogEntity> getEntityType() {
-    return AuditLogEntity.class;
+  public Class<AuditLogBatch> getEntityType() {
+    return AuditLogBatch.class;
   }
 
   @Override
@@ -87,22 +97,31 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   @Override
-  public AuditLogEntity createNewEntity(final String id) {
-    return new AuditLogEntity().setId(id);
+  public AuditLogBatch createNewEntity(final String id) {
+    return new AuditLogBatch(id);
   }
 
   @Override
-  public void updateEntity(final Record<R> record, final AuditLogEntity entity) {
+  public void updateEntity(final Record<R> record, final AuditLogBatch batch) {
 
     final var log = transformer.create(record);
 
-    mapToEntity(log, entity);
+    final var entity = new AuditLogEntity().setId(batch.getId());
+    batch.setAuditLogEntity(mapToEntity(log, entity));
+
+    if (transformer.triggersCleanUp(record)) {
+      final var cleanupEntity = new AuditLogCleanupEntity().setId(batch.getId());
+      batch.setAuditLogCleanupEntity(mapToCleanupEntity(record, log, cleanupEntity));
+    }
   }
 
   @Override
-  public void flush(final AuditLogEntity entity, final BatchRequest batchRequest)
+  public void flush(final AuditLogBatch batch, final BatchRequest batchRequest)
       throws PersistenceException {
-    batchRequest.add(indexName, entity);
+
+    batchRequest.add(indexName, batch.auditLogEntity);
+    ofNullable(batch.auditLogCleanupEntity)
+        .ifPresent(e -> batchRequest.add(auditLogCleanupIndexName, e));
   }
 
   @Override
@@ -110,15 +129,25 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     return indexName;
   }
 
-  private void mapToEntity(final AuditLogEntry log, final AuditLogEntity entity) {
+  private AuditLogCleanupEntity mapToCleanupEntity(
+      final Record<R> record, final AuditLogEntry log, final AuditLogCleanupEntity cleanupEntity) {
+    return cleanupEntity
+        .setKey(log.getEntityKey())
+        .setKeyField(AuditLogTemplate.ENTITY_KEY)
+        .setEntityType(mapEntityType(log.getEntityType()))
+        .setPartitionId(record.getPartitionId());
+  }
+
+  private AuditLogEntity mapToEntity(final AuditLogEntry log, final AuditLogEntity entity) {
     // generic fields
     entity
         .setEntityKey(log.getEntityKey())
-        .setEntityType(mapEntityType(log))
+        .setEntityType(mapEntityType(log.getEntityType()))
         .setCategory(mapCategory(log))
         .setOperationType(mapOperationType(log))
         .setActorType(mapActorType(log))
         .setActorId(log.getActor().actorId())
+        .setAgentElementId(log.getAgent().map(Agent::getElementId).orElse(null))
         .setTenantScope(mapTenantScope(log))
         .setTenantId(log.getTenant().map(AuditLogTenant::tenantId).orElse(null))
         .setBatchOperationKey(log.getBatchOperationKey())
@@ -146,7 +175,12 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
         .setDeploymentKey(log.getDeploymentKey())
         .setFormKey(log.getFormKey())
         .setResourceKey(log.getResourceKey())
-        .setRootProcessInstanceKey(log.getRootProcessInstanceKey());
+        .setRootProcessInstanceKey(log.getRootProcessInstanceKey())
+        .setRelatedEntityKey(log.getRelatedEntityKey())
+        .setRelatedEntityType(mapEntityType(log.getRelatedEntityType()))
+        .setEntityDescription(log.getEntityDescription());
+
+    return entity;
   }
 
   @VisibleForTesting
@@ -154,10 +188,9 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
     return transformer;
   }
 
-  private AuditLogEntityType mapEntityType(final AuditLogEntry info) {
-    return Objects.nonNull(info.getEntityType())
-        ? AuditLogEntityType.valueOf(info.getEntityType().name())
-        : null;
+  private AuditLogEntityType mapEntityType(
+      final io.camunda.search.entities.AuditLogEntity.AuditLogEntityType entityType) {
+    return Objects.nonNull(entityType) ? AuditLogEntityType.valueOf(entityType.name()) : null;
   }
 
   private AuditLogOperationResult mapResult(final AuditLogEntry log) {
@@ -192,27 +225,90 @@ public class AuditLogHandler<R extends RecordValue> implements ExportHandler<Aud
   }
 
   public static AuditLogHandlerBuilder builder(
-      final String indexName, final AuditLogConfiguration auditLog) {
-    return new AuditLogHandlerBuilder(indexName, auditLog);
+      final String indexName,
+      final String auditLogCleanupIndexName,
+      final AuditLogConfiguration auditLog) {
+    return new AuditLogHandlerBuilder(indexName, auditLogCleanupIndexName, auditLog);
   }
 
   public static class AuditLogHandlerBuilder {
     final Set<AuditLogHandler<?>> handlers = new HashSet<>();
     private final String indexName;
+    private final String auditLogCleanupIndexName;
     private final AuditLogConfiguration auditLog;
 
-    public AuditLogHandlerBuilder(final String indexName, final AuditLogConfiguration auditLog) {
+    public AuditLogHandlerBuilder(
+        final String indexName,
+        final String auditLogCleanupIndexName,
+        final AuditLogConfiguration auditLog) {
       this.indexName = indexName;
+      this.auditLogCleanupIndexName = auditLogCleanupIndexName;
       this.auditLog = auditLog;
     }
 
     public AuditLogHandlerBuilder addHandler(final AuditLogTransformer<?> transformer) {
-      handlers.add(new AuditLogHandler<>(indexName, transformer, auditLog));
+      handlers.add(
+          new AuditLogHandler<>(indexName, auditLogCleanupIndexName, transformer, auditLog));
       return this;
     }
 
     public Set<AuditLogHandler<?>> build() {
       return new HashSet<>(handlers);
+    }
+  }
+
+  public static final class AuditLogBatch implements ExporterEntity<AuditLogBatch> {
+    private final String id;
+    private AuditLogEntity auditLogEntity;
+    private AuditLogCleanupEntity auditLogCleanupEntity;
+
+    public AuditLogBatch(final String id) {
+      this.id = id;
+    }
+
+    @Override
+    public String getId() {
+      return id;
+    }
+
+    @Override
+    public AuditLogBatch setId(final String id) {
+      throw new UnsupportedOperationException("Not allowed to set an id");
+    }
+
+    public AuditLogEntity getAuditLogEntity() {
+      return auditLogEntity;
+    }
+
+    public void setAuditLogEntity(final AuditLogEntity auditLogEntity) {
+      this.auditLogEntity = auditLogEntity;
+    }
+
+    public AuditLogCleanupEntity getAuditLogCleanupEntity() {
+      return auditLogCleanupEntity;
+    }
+
+    public void setAuditLogCleanupEntity(final AuditLogCleanupEntity auditLogCleanupEntity) {
+      this.auditLogCleanupEntity = auditLogCleanupEntity;
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hash(id, auditLogEntity, auditLogCleanupEntity);
+    }
+
+    @Override
+    public boolean equals(final Object obj) {
+      if (obj == this) {
+        return true;
+      }
+      if (obj == null || obj.getClass() != getClass()) {
+        return false;
+      }
+      final var that = (AuditLogBatch) obj;
+      return Objects.equals(id, that.id)
+          && Objects.equals(auditLogEntity, that.auditLogEntity)
+          && Objects.equals(auditLogCleanupEntity, that.auditLogCleanupEntity);
     }
   }
 }

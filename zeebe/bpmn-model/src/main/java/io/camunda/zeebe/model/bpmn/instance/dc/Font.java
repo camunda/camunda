@@ -17,17 +17,14 @@
 package io.camunda.zeebe.model.bpmn.instance.dc;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.NamedBpmnElement;
 
 /**
  * The DC font element
  *
  * @author Sebastian Menski
  */
-public interface Font extends BpmnModelElementInstance {
-
-  String getName();
-
-  void setName(String name);
+public interface Font extends BpmnModelElementInstance, NamedBpmnElement {
 
   Double getSize();
 

@@ -187,8 +187,45 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   }
 
   @Test
+  public void testGetProcessByKeyExcludesBpmnXml() {
+    // Given - a process definition with BPMN XML exists
+    final Long processKey = secondProcessDefinition.getKey();
+
+    // When - we fetch the process by key
+    final ProcessEntity result = processStore.getProcessByKey(processKey);
+
+    // Then - the process entity is returned without BPMN XML
+    assertThat(result).isNotNull();
+    assertThat(result.getKey()).isEqualTo(processKey);
+    assertThat(result.getBpmnProcessId()).isEqualTo(secondProcessDefinition.getBpmnProcessId());
+    assertThat(result.getName()).isNotNull();
+
+    // Critical assertion: bpmnXml should be null (excluded from query)
+    assertThat(result.getBpmnXml()).isNull();
+  }
+
+  @Test
   public void testGetDiagramByKey() {
     final String xml = processStore.getDiagramByKey(secondProcessDefinition.getKey());
+    assertThat(xml)
+        .isEqualTo(testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn"));
+  }
+
+  @Test
+  public void testGetDiagramByKeyReturnsBpmnXml() {
+    // Given - a process definition with BPMN XML exists
+    final Long processKey = secondProcessDefinition.getKey();
+
+    // When - we explicitly request the diagram
+    final String xml = processStore.getDiagramByKey(processKey);
+
+    // Then - the BPMN XML is returned
+    assertThat(xml).isNotNull();
+    assertThat(xml).isNotEmpty();
+    assertThat(xml).contains("<?xml");
+    assertThat(xml).contains("bpmn:process");
+
+    // Verify it matches the expected content
     assertThat(xml)
         .isEqualTo(testResourceManager.readResourceFileContentsAsString("demoProcess_v_1.bpmn"));
   }

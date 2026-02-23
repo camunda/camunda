@@ -240,7 +240,7 @@ describe('MigrationView/BottomPanel', () => {
     );
   });
 
-  it.each([
+  it.sequential.each([
     {source: checkPayment, target: checkPayment},
     {source: shipArticles, target: shipArticles},
     {source: shippingSubProcess, target: shippingSubProcess},

@@ -33,6 +33,7 @@ import io.camunda.client.api.response.Topology;
 import io.camunda.process.test.api.CamundaClientBuilderFactory;
 import io.camunda.process.test.api.CamundaProcessTestRuntimeMode;
 import java.net.URI;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import org.junit.jupiter.api.Test;
@@ -173,6 +174,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
             .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
     // when/then
@@ -204,6 +206,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
             .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
     // when/then
@@ -227,6 +230,7 @@ public class CamundaProcessTestRemoteRuntimeTest {
         CamundaProcessTestContainerRuntime.newBuilder()
             .withRuntimeMode(CamundaProcessTestRuntimeMode.REMOTE)
             .withCamundaClientBuilderFactory(() -> camundaClientBuilder)
+            .withRemoteRuntimeConnectionTimeout(Duration.ofSeconds(1))
             .build();
 
     // when/then

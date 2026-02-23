@@ -23,9 +23,10 @@ public class DecisionRequirementsRecordAuditLogTransformer
   public void transform(
       final Record<DecisionRequirementsRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setEntityKey(String.valueOf(value.getDecisionRequirementsKey()));
-    log.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
-    log.setDecisionRequirementsId(value.getDecisionRequirementsId());
-    log.setDeploymentKey(value.getDeploymentKey());
+    log.setEntityKey(String.valueOf(value.getDecisionRequirementsKey()))
+        .setDecisionRequirementsKey(value.getDecisionRequirementsKey())
+        .setDecisionRequirementsId(value.getDecisionRequirementsId())
+        .setDeploymentKey(value.getDeploymentKey())
+        .setEntityDescription(value.getResourceName());
   }
 }

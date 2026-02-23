@@ -23,6 +23,7 @@ import io.camunda.client.api.command.FinalCommandStep;
 import io.camunda.client.api.command.StreamJobsCommandStep1;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep2;
 import io.camunda.client.api.command.StreamJobsCommandStep1.StreamJobsCommandStep3;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.api.response.ActivatedJob;
 import io.camunda.client.api.response.StreamJobsResponse;
 import io.camunda.client.impl.RetriableStreamingFutureImpl;
@@ -65,7 +66,9 @@ public final class StreamJobsCommandImpl
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    builder = StreamActivatedJobsRequest.newBuilder();
+    builder =
+        StreamActivatedJobsRequest.newBuilder()
+            .setTenantFilter(GatewayOuterClass.TenantFilter.PROVIDED);
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
@@ -83,10 +86,12 @@ public final class StreamJobsCommandImpl
   @Override
   public CamundaFuture<StreamJobsResponse> send() {
     builder.clearTenantIds();
-    if (customTenantIds.isEmpty()) {
-      builder.addAllTenantIds(defaultTenantIds);
-    } else {
-      builder.addAllTenantIds(customTenantIds);
+    if (builder.getTenantFilter() == GatewayOuterClass.TenantFilter.PROVIDED) {
+      if (customTenantIds.isEmpty()) {
+        builder.addAllTenantIds(defaultTenantIds);
+      } else {
+        builder.addAllTenantIds(customTenantIds);
+      }
     }
 
     final StreamActivatedJobsRequest request = builder.build();
@@ -164,6 +169,12 @@ public final class StreamJobsCommandImpl
   @Override
   public StreamJobsCommandStep3 tenantIds(final String... tenantIds) {
     return tenantIds(Arrays.asList(tenantIds));
+  }
+
+  @Override
+  public StreamJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
+    builder.setTenantFilter(GatewayOuterClass.TenantFilter.valueOf(tenantFilter.name()));
+    return this;
   }
 
   private void consumeJob(final GatewayOuterClass.ActivatedJob job) {

@@ -142,15 +142,13 @@ public class ProcessInstanceController {
   public CompletableFuture<ResponseEntity<Object>> deleteProcessInstance(
       @PathVariable("processInstanceKey") final Long processInstanceKey,
       @RequestBody(required = false) final DeleteProcessInstanceRequest request) {
-    return RequestExecutor.executeServiceMethod(
+    return RequestExecutor.executeServiceMethodWithNoContentResult(
         () ->
             processInstanceServices
                 .withAuthentication(authenticationProvider.getCamundaAuthentication())
                 .deleteProcessInstance(
                     processInstanceKey,
-                    Objects.nonNull(request) ? request.getOperationReference() : null),
-        ResponseMapper::toBatchOperationCreatedWithResultResponse,
-        HttpStatus.OK);
+                    Objects.nonNull(request) ? request.getOperationReference() : null));
   }
 
   @RequiresSecondaryStorage

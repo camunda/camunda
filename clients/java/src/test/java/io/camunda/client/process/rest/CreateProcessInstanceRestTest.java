@@ -354,6 +354,26 @@ public class CreateProcessInstanceRestTest extends ClientRestTest {
     Assertions.assertThat(request.getTags()).isEqualTo(tags);
   }
 
+  @Test
+  public void shouldCreateProcessInstanceWithBusinessId() {
+    // given
+    final String businessId = "order-12345";
+    gatewayService.onCreateProcessInstanceRequest(DUMMY_RESPONSE);
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .businessId(businessId)
+        .send()
+        .join();
+
+    // then
+    final ProcessInstanceCreationInstruction request =
+        gatewayService.getLastRequest(ProcessInstanceCreationInstruction.class);
+    Assertions.assertThat(request.getBusinessId()).isEqualTo(businessId);
+  }
+
   public static class VariableDocument {
 
     VariableDocument() {}

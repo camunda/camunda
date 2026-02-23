@@ -1,0 +1,124 @@
+# description: Runs daily to assign Renovate PRs to team members and manage stale PRs
+# type: CI Helper
+# owner: @camunda/monorepo-devops-team
+
+---
+name: Renovate Daily
+
+on:
+  schedule:
+    - cron: '0 11 * * 1-5'  # Monday through Friday at 11:00 AM UTC
+  pull_request:
+    paths:
+      - '.github/workflows/renovate-daily.yml'
+      - '.ci/scripts/renovate-assignments.py'
+  workflow_dispatch: {}
+
+env:
+  GHA_BEST_PRACTICES_LINTER: enabled
+
+jobs:
+  assign-renovate-prs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions: {}  # Using GitHub App token instead of GITHUB_TOKEN
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6
+
+      - name: Generate a GitHub token
+        id: github-token
+        uses: camunda/infra-global-github-actions/generate-github-app-token-from-vault-secrets@main
+        with:
+          github-app-id-vault-key: MONOREPO_RENOVATE_AUTOMATION_APP_ID
+          github-app-id-vault-path: secret/data/products/camunda/ci/camunda
+          github-app-private-key-vault-key: MONOREPO_RENOVATE_AUTOMATION_APP_PRIVATE_KEY
+          github-app-private-key-vault-path: secret/data/products/camunda/ci/camunda
+          vault-auth-method: approle
+          vault-url: ${{ secrets.VAULT_ADDR }}
+          vault-auth-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-auth-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests
+
+      - name: Run Renovate assignments script
+        env:
+          GITHUB_TOKEN: ${{ steps.github-token.outputs.token }}
+          DRY_RUN: ${{ github.event_name == 'pull_request' && 'true' || 'false' }}
+        run: |
+          python3 .ci/scripts/renovate-assignments.py
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
+  notify:
+    name: Send Slack notification
+    runs-on: ubuntu-latest
+    needs: [assign-renovate-prs]
+    if: ${{ always() && needs.assign-renovate-prs.result != 'success' && github.event_name == 'schedule' }}
+    timeout-minutes: 5
+    permissions: {}  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+
+      - name: Import Secrets
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false # we rely on step outputs, no need for environment variables
+          secrets: |
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+
+      - name: Send failure Slack notification
+        uses: slackapi/slack-github-action@91efab103c0de0a537f72a35f6b8cda0ee76bf0a # v2.1.1
+        with:
+          webhook: ${{ steps.secrets.outputs.SLACK_TOPMONOREPOCI_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "blocks": [
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": ":alarm: *Renovate PR Assignments* automation failed on `main`!\n"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "Please check this <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|GHA workflow run> for details, and fix the problem."
+                  }
+                }
+              ]
+            }
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}

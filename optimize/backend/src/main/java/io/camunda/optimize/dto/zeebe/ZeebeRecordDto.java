@@ -7,6 +7,7 @@
  */
 package io.camunda.optimize.dto.zeebe;
 
+import io.camunda.zeebe.protocol.record.Agent;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RecordValue;
@@ -103,6 +104,11 @@ public abstract class ZeebeRecordDto<VALUE extends RecordValue, INTENT extends I
   @Override
   public Map<String, Object> getAuthorizations() {
     return authorizations;
+  }
+
+  @Override
+  public Agent getAgent() {
+    return null;
   }
 
   @Override

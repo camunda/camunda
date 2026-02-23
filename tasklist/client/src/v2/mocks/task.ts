@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {UserTask} from '@camunda/camunda-api-zod-schemas/8.9';
 import {currentUser} from 'common/mocks/current-user';
 import {DEFAULT_TENANT_ID} from 'common/multitenancy/constants';
 import {uniqueId} from './utils';
@@ -16,6 +16,7 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   creationDate: '2024-01-01T00:00:00.000Z',
   priority: 50,
   state: 'CREATED',
+  assignee: null,
   candidateGroups: ['accounting candidate'],
   candidateUsers: ['jane candidate'],
   tenantId: DEFAULT_TENANT_ID,
@@ -28,6 +29,13 @@ const unassignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   formKey: '1',
   processInstanceKey: '0',
   processDefinitionKey: '0',
+  rootProcessInstanceKey: null,
+  dueDate: null,
+  followUpDate: null,
+  completionDate: null,
+  customHeaders: null,
+  externalFormReference: null,
+  tags: [],
   ...customFields,
 });
 
@@ -49,6 +57,13 @@ const assignedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   processDefinitionKey: '0',
   processInstanceKey: '0',
   formKey: '1',
+  rootProcessInstanceKey: null,
+  dueDate: null,
+  followUpDate: null,
+  completionDate: null,
+  customHeaders: null,
+  externalFormReference: null,
+  tags: [],
   ...customFields,
 });
 
@@ -71,6 +86,12 @@ const completedTask = (customFields: Partial<UserTask> = {}): UserTask => ({
   processDefinitionKey: '0',
   processInstanceKey: '0',
   formKey: '1',
+  rootProcessInstanceKey: null,
+  dueDate: null,
+  followUpDate: null,
+  customHeaders: null,
+  externalFormReference: null,
+  tags: [],
   ...customFields,
 });
 
@@ -94,6 +115,13 @@ const assignedTaskWithForm = (
   elementId: 'element-1',
   name: 'My Task',
   elementInstanceKey: '1',
+  rootProcessInstanceKey: null,
+  dueDate: null,
+  followUpDate: null,
+  completionDate: null,
+  customHeaders: null,
+  externalFormReference: null,
+  tags: [],
   ...customFields,
 });
 
@@ -101,6 +129,7 @@ const unassignedTaskWithForm = (
   customFields: Partial<UserTask> = {},
 ): UserTask => ({
   userTaskKey: uniqueId.next().value,
+  assignee: null,
   creationDate: '2024-01-01T00:00:00.000Z',
   priority: 50,
   state: 'CREATED',
@@ -116,6 +145,13 @@ const unassignedTaskWithForm = (
   elementId: 'element-1',
   name: 'My Task',
   elementInstanceKey: '1',
+  rootProcessInstanceKey: null,
+  dueDate: null,
+  followUpDate: null,
+  completionDate: null,
+  customHeaders: null,
+  externalFormReference: null,
+  tags: [],
   ...customFields,
 });
 

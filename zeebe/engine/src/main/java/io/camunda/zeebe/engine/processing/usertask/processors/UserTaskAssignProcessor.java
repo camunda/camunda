@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.usertask.processors;
 
-import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionUpdateUserTaskRequest;
+import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildProcessDefinitionRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskAuthorizationHelper.buildUserTaskRequest;
 import static io.camunda.zeebe.engine.processing.usertask.processors.UserTaskCommandHelper.enrichCommandForRejection;
 
@@ -121,7 +121,8 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     // First check: PROCESS_DEFINITION[UPDATE_USER_TASK] or USER_TASK[UPDATE]
     final var primaryAuthResult =
         authCheckBehavior.isAnyAuthorizedOrInternalCommand(
-            buildProcessDefinitionUpdateUserTaskRequest(command, persistedUserTask),
+            buildProcessDefinitionRequest(
+                command, persistedUserTask, PermissionType.UPDATE_USER_TASK),
             buildUserTaskRequest(command, persistedUserTask, PermissionType.UPDATE));
 
     if (primaryAuthResult.isRight()) {
@@ -129,18 +130,17 @@ public final class UserTaskAssignProcessor implements UserTaskCommandProcessor {
     }
 
     // Second check: self-unassigning case
-    // If the new assignee is empty (unassigning) and the current task assignee matches
-    // the current user, allow via USER_TASK[CLAIM] permission with any of:
-    // - Wildcard scope (*)
-    // - Resource ID scope (userTaskKey)
-    // - Property scope ("assignee")
+    // If the new assignee is empty (unassigning) and the current task assignee matches the current
+    // user, allow via PROCESS_DEFINITION[CLAIM_USER_TASK] or USER_TASK[CLAIM] permissions
     final var newAssignee = command.getValue().getAssignee();
     final var currentAssignee = persistedUserTask.getAssignee();
     final var currentUsername = getCurrentUsername(command);
 
     if (newAssignee.isEmpty() && currentUsername.filter(currentAssignee::equals).isPresent()) {
       return authCheckBehavior
-          .isAuthorizedOrInternalCommand(
+          .isAnyAuthorizedOrInternalCommand(
+              buildProcessDefinitionRequest(
+                  command, persistedUserTask, PermissionType.CLAIM_USER_TASK),
               buildUserTaskRequest(
                   command,
                   persistedUserTask,

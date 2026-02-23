@@ -15,6 +15,7 @@ import io.camunda.search.clients.SearchClientsProxy;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.security.validation.AuthorizationValidator;
+import io.camunda.security.validation.GroupValidator;
 import io.camunda.security.validation.IdentifierValidator;
 import io.camunda.security.validation.IdentityInitializationException;
 import io.camunda.security.validation.RoleValidator;
@@ -47,12 +48,18 @@ import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenerCfg;
 import io.camunda.zeebe.broker.system.configuration.engine.GlobalListenersCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.FixedPartitionCfg;
 import io.camunda.zeebe.broker.system.configuration.partitioning.Scheme;
-import io.camunda.zeebe.engine.GlobalListenerConfiguration;
+import io.camunda.zeebe.db.impl.rocksdb.ZeebeRocksDbFactory;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
+import io.camunda.zeebe.engine.processing.globallistener.GlobalListenerValidator;
 import io.camunda.zeebe.engine.processing.identity.initialize.AuthorizationConfigurer;
+import io.camunda.zeebe.engine.processing.identity.initialize.GroupConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.RoleConfigurer;
 import io.camunda.zeebe.engine.processing.identity.initialize.TenantConfigurer;
+import io.camunda.zeebe.engine.state.batchoperation.PersistedBatchOperationChunk;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.AuthorizationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.authorization.RoleRecord;
+import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerRecord;
+import io.camunda.zeebe.protocol.impl.record.value.group.GroupRecord;
 import io.camunda.zeebe.protocol.impl.record.value.tenant.TenantRecord;
 import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.util.Either;
@@ -96,6 +103,27 @@ public final class SystemContext {
           + LEGACY_INITIAL_CONTACT_POINTS_PROPERTY
           + "'.";
 
+  /**
+   * The maximum number of items stored in a single batch operation chunk. This value is limited by
+   * two factors:
+   *
+   * <ul>
+   *   <li>The hard-coded max record size of 4MB in the engine
+   *   <li>The RocksDB block size configured at 32KB. Chunks significantly larger than this would
+   *       span multiple blocks, which is not optimal for read/write performance.
+   *       <p>This value is chosen to balance between the number of database entries and the size of
+   *       each entry. A chunk size of 3000 item keys results in a chunk size of approximately 24KB
+   *       (31KB with overhead), which is reasonable for RocksDB to handle efficiently. Larger chunk
+   *       sizes could lead to increased memory usage and potential performance degradation, while
+   *       smaller chunk sizes would increase the number of database entries, leading to higher
+   *       overhead in managing them.
+   * </ul>
+   *
+   * @see ZeebeRocksDbFactory
+   * @see PersistedBatchOperationChunk
+   */
+  private static final long MAX_CHUNK_SIZE = 3000;
+
   private final Duration shutdownTimeout;
   private final BrokerCfg brokerCfg;
   private final IdentityConfiguration identityConfiguration;
@@ -110,6 +138,8 @@ public final class SystemContext {
   private final JwtDecoder jwtDecoder;
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
+  private final NodeIdProvider nodeIdProvider;
+  private final GlobalListenerValidator globalListenerValidator;
 
   public SystemContext(
       final Duration shutdownTimeout,
@@ -124,7 +154,8 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
     this.shutdownTimeout = shutdownTimeout;
     this.brokerCfg = brokerCfg;
     this.identityConfiguration = identityConfiguration;
@@ -138,6 +169,8 @@ public final class SystemContext {
     this.jwtDecoder = jwtDecoder;
     this.searchClientsProxy = searchClientsProxy;
     this.brokerRequestAuthorizationConverter = brokerRequestAuthorizationConverter;
+    this.nodeIdProvider = nodeIdProvider;
+    globalListenerValidator = new GlobalListenerValidator();
     initSystemContext();
   }
 
@@ -152,7 +185,8 @@ public final class SystemContext {
       final PasswordEncoder passwordEncoder,
       final JwtDecoder jwtDecoder,
       final SearchClientsProxy searchClientsProxy,
-      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
+      final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
+      final NodeIdProvider nodeIdProvider) {
     this(
         DEFAULT_SHUTDOWN_TIMEOUT,
         brokerCfg,
@@ -166,7 +200,8 @@ public final class SystemContext {
         passwordEncoder,
         jwtDecoder,
         searchClientsProxy,
-        brokerRequestAuthorizationConverter);
+        brokerRequestAuthorizationConverter,
+        nodeIdProvider);
   }
 
   private void initSystemContext() {
@@ -263,12 +298,12 @@ public final class SystemContext {
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getBatchOperations)
-        .ifPresent(c -> validateBatchOperationsConfig(c));
+        .ifPresent(this::validateBatchOperationsConfig);
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getEngine)
         .map(EngineCfg::getGlobalListeners)
-        .ifPresent(c -> validateListenersConfig(c));
+        .ifPresent(this::validateListenersConfig);
 
     Optional.of(experimental)
         .map(ExperimentalCfg::getRocksdb)
@@ -305,49 +340,42 @@ public final class SystemContext {
     if (config.getSchedulerInterval().isNegative()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.schedulerInterval must be positive, but was %s",
+              "experimental.engine.batchOperations.schedulerInterval must be positive, but was %s",
               config.getSchedulerInterval()));
     }
 
     if (config.getChunkSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.chunkSize must be greater than 0, but was %s",
+              "experimental.engine.batchOperations.chunkSize must be greater than 0, but was %s",
               config.getChunkSize()));
     }
 
-    // this is due to the hard-coded max record size of 4MB in the engine. For larger values
-    if (config.getChunkSize() > 5000) {
+    if (config.getChunkSize() > MAX_CHUNK_SIZE) {
       LOG.warn(
-          "Setting experimental.engine.batchOperation.chunkSize higher than 5000 "
-              + "is not recommended since it may lead to performance issues in the exporters.");
-    }
-
-    if (config.getDbChunkSize() <= 0) {
-      errors.add(
-          String.format(
-              "experimental.engine.batchOperation.dbChunkSize must be greater than 0, but was %s",
-              config.getChunkSize()));
+          "Setting experimental.engine.batchOperations.chunkSize should be lower than {}, but was {}",
+          MAX_CHUNK_SIZE,
+          config.getChunkSize());
     }
 
     if (config.getQueryPageSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryPageSize must be greater than 0, but was %s",
-              config.getChunkSize()));
+              "experimental.engine.batchOperations.queryPageSize must be greater than 0, but was %s",
+              config.getQueryPageSize()));
     }
 
     if (config.getQueryInClauseSize() <= 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryInClauseSize must be greater than 0, but was %s",
-              config.getChunkSize()));
+              "experimental.engine.batchOperations.queryInClauseSize must be greater than 0, but was %s",
+              config.getQueryInClauseSize()));
     }
 
     if (config.getQueryRetryMax() < 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMax must be greater than or equal to 0, but was %s",
+              "experimental.engine.batchOperations.queryRetryMax must be greater than or equal to 0, but was %s",
               config.getQueryRetryMax()));
     }
 
@@ -355,28 +383,28 @@ public final class SystemContext {
         || config.getQueryRetryInitialDelay().isZero()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryInitialDelay must be positive, but was %s",
+              "experimental.engine.batchOperations.queryRetryInitialDelay must be positive, but was %s",
               config.getQueryRetryInitialDelay()));
     }
 
     if (config.getQueryRetryMaxDelay().isNegative() || config.getQueryRetryMaxDelay().isZero()) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMaxDelay must be positive, but was %s",
+              "experimental.engine.batchOperations.queryRetryMaxDelay must be positive, but was %s",
               config.getQueryRetryMaxDelay()));
     }
 
     if (config.getQueryRetryMaxDelay().compareTo(config.getQueryRetryInitialDelay()) < 0) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperation.queryRetryInitialDelay of %s, but was %s",
+              "experimental.engine.batchOperations.queryRetryMaxDelay must be greater than or equal to the experimental.engine.batchOperations.queryRetryInitialDelay of %s, but was %s",
               config.getQueryRetryInitialDelay(), config.getQueryRetryMaxDelay()));
     }
 
     if (config.getQueryRetryBackoffFactor() < 1) {
       errors.add(
           String.format(
-              "experimental.engine.batchOperation.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
+              "experimental.engine.batchOperations.queryRetryBackoffFactor must be greater than or equal to 1, but was %s",
               config.getQueryRetryBackoffFactor()));
     }
 
@@ -492,6 +520,8 @@ public final class SystemContext {
         new AuthorizationConfigurer(new AuthorizationValidator(identifierValidator));
     final TenantConfigurer tenantConfigurer =
         new TenantConfigurer(new TenantValidator(identifierValidator));
+    final GroupConfigurer groupConfigurer =
+        new GroupConfigurer(new GroupValidator(identifierValidator));
     final var roleConfigurer = new RoleConfigurer(new RoleValidator(identifierValidator));
 
     final Either<List<String>, List<AuthorizationRecord>> configuredAuthorizations =
@@ -499,6 +529,8 @@ public final class SystemContext {
             securityConfiguration.getInitialization().getAuthorizations());
     final Either<List<String>, List<TenantRecord>> configuredTenants =
         tenantConfigurer.configureEntities(securityConfiguration.getInitialization().getTenants());
+    final Either<List<String>, List<GroupRecord>> configuredGroups =
+        groupConfigurer.configureEntities(securityConfiguration.getInitialization().getGroups());
     final Either<List<String>, List<RoleRecord>> configuredRoles =
         roleConfigurer.configureEntities(securityConfiguration.getInitialization().getRoles());
 
@@ -522,6 +554,13 @@ public final class SystemContext {
               "Cannot initialize configured roles: %n- %s"
                   .formatted(String.join(System.lineSeparator() + "- ", violations)));
         });
+
+    configuredGroups.ifLeft(
+        (violations) -> {
+          throw new IdentityInitializationException(
+              "Cannot initialize configured groups: %n- %s"
+                  .formatted(String.join(System.lineSeparator() + "- ", violations)));
+        });
   }
 
   private void validateNetworkSecurityConfig(final SecurityCfg security) {
@@ -533,54 +572,76 @@ public final class SystemContext {
 
   private void validateListenersConfig(final GlobalListenersCfg listeners) {
     final String propertyLocation = "camunda.cluster.global-listeners.user-task";
-    final List<String> supportedEventTypes = GlobalListenerConfiguration.TASK_LISTENER_EVENT_TYPES;
     final List<GlobalListenerCfg> taskListeners = listeners.getUserTask();
 
     // Validate listeners and ignore invalid ones
     final List<GlobalListenerCfg> validListeners = new ArrayList<>();
     for (int i = 0; i < taskListeners.size(); i++) {
-      final GlobalListenerCfg listener = taskListeners.get(i);
+      final GlobalListenerCfg listenerCfg = taskListeners.get(i);
       final String propertyPrefix = String.format("%s.%d", propertyLocation, i);
 
-      // Check if type is present
-      if (listener.getType() == null || listener.getType().isBlank()) {
+      // Check if retries actually contains a number
+      try {
+        if (Integer.parseInt(listenerCfg.getRetries()) <= 0) {
+          throw new NumberFormatException();
+        }
+      } catch (final NumberFormatException e) {
         LOG.warn(
-            String.format(
-                "Missing job type for global listener; listener will be ignored [%s.type]",
-                propertyPrefix));
+            "Invalid retries for global listener: '{}'; listener will be ignored [{}.retries]",
+            listenerCfg.getRetries(),
+            propertyPrefix);
+        continue;
+      }
+
+      // Convert to record in order to use standard validation methods
+      final GlobalListenerRecord listenerRecord =
+          listenerCfg.createGlobalListenerConfiguration().toRecord();
+
+      // Check if id is present
+      if (globalListenerValidator.idProvided(listenerRecord).isLeft()) {
+        LOG.warn(
+            "Missing id for global listener; listener will be ignored [{}.type]", propertyPrefix);
+        continue;
+      }
+
+      // Check if type is present
+      if (globalListenerValidator.typeProvided(listenerRecord).isLeft()) {
+        LOG.warn(
+            "Missing job type for global listener; listener will be ignored [{}.type]",
+            propertyPrefix);
         continue;
       }
 
       // Validate event types
+      // Note: the validator is not used directly because autocorrection is attempted here
       final var eventTypes = // consider event types in lowercase for validation
-          listener.getEventTypes().stream().map(String::toLowerCase).toList();
+          listenerRecord.getEventTypes().stream().map(String::toLowerCase).toList();
       final boolean containsAllEventsKeyword =
-          eventTypes.contains(GlobalListenerConfiguration.ALL_EVENT_TYPES);
+          eventTypes.contains(GlobalListenerRecord.ALL_EVENT_TYPES);
+
       final List<String> validEventTypes =
           eventTypes.stream()
               .filter( // check if provided event types have valid values
                   eventType -> {
-                    if (GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
-                        || supportedEventTypes.contains(eventType)) {
+                    if (globalListenerValidator.isValidEventType(listenerRecord, eventType)) {
                       return true;
                     } else {
                       LOG.warn(
-                          String.format(
-                              "Invalid event type will be ignored: '%s' [%s.eventTypes]",
-                              eventType, propertyPrefix));
+                          "Invalid event type will be ignored: '{}' [{}.eventTypes]",
+                          eventType,
+                          propertyPrefix);
                       return false;
                     }
                   })
               .filter(
                   eventType -> { // check if "all" is used alongside other event types
-                    if (!GlobalListenerConfiguration.ALL_EVENT_TYPES.equals(eventType)
+                    if (!GlobalListenerRecord.ALL_EVENT_TYPES.equals(eventType)
                         && containsAllEventsKeyword) {
                       LOG.warn(
-                          String.format(
-                              "Extra event type defined alongside '%s' will be ignored: '%s' [%s.eventTypes]",
-                              GlobalListenerConfiguration.ALL_EVENT_TYPES,
-                              eventType,
-                              propertyPrefix));
+                          "Extra event type defined alongside '{}' will be ignored: '{}' [{}.eventTypes]",
+                          GlobalListenerRecord.ALL_EVENT_TYPES,
+                          eventType,
+                          propertyPrefix);
                       return false;
                     }
                     return true;
@@ -593,9 +654,9 @@ public final class SystemContext {
           eventType -> {
             if (uniqueEventTypes.contains(eventType)) {
               LOG.warn(
-                  String.format(
-                      "Duplicated event type will be considered only once: '%s' [%s.eventTypes]",
-                      eventType, propertyPrefix));
+                  "Duplicated event type will be considered only once: '{}' [{}.eventTypes]",
+                  eventType,
+                  propertyPrefix);
             } else {
               uniqueEventTypes.add(eventType);
             }
@@ -604,27 +665,13 @@ public final class SystemContext {
       // Check if valid event types have been provided
       if (uniqueEventTypes.isEmpty()) {
         LOG.warn(
-            String.format(
-                "Missing event types for global listener; listener will be ignored [%s.eventTypes]",
-                propertyPrefix));
+            "Missing event types for global listener; listener will be ignored [{}.eventTypes]",
+            propertyPrefix);
         continue;
       }
 
-      listener.setEventTypes(uniqueEventTypes);
-
-      // Check if retries actually contains a number
-      try {
-        if (Integer.parseInt(listener.getRetries()) <= 0) {
-          throw new NumberFormatException();
-        }
-      } catch (final NumberFormatException e) {
-        LOG.warn(
-            String.format(
-                "Invalid retries for global listener: '%s'; listener will be ignored [%s.retries]",
-                listener.getRetries(), propertyPrefix));
-        continue;
-      }
-      validListeners.add(listener);
+      listenerCfg.setEventTypes(uniqueEventTypes);
+      validListeners.add(listenerCfg);
     }
 
     listeners.setUserTask(validListeners);
@@ -706,5 +753,9 @@ public final class SystemContext {
 
   public BrokerRequestAuthorizationConverter getBrokerRequestAuthorizationConverter() {
     return brokerRequestAuthorizationConverter;
+  }
+
+  public NodeIdProvider getNodeIdProvider() {
+    return nodeIdProvider;
   }
 }

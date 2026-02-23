@@ -61,6 +61,50 @@ class RaftMessageContext {
     leaderHeartbeatSubject = getSubject(prefix, "leaderHeartbeat");
   }
 
+  String getAppendV1Subject() {
+    return appendV1subject;
+  }
+
+  String getAppendV2Subject() {
+    return appendV2subject;
+  }
+
+  String getConfigureSubject() {
+    return configureSubject;
+  }
+
+  String getForceConfigureSubject() {
+    return forceConfigureSubject;
+  }
+
+  String getInstallSubject() {
+    return installSubject;
+  }
+
+  String getJoinSubject() {
+    return joinSubject;
+  }
+
+  String getLeaveSubject() {
+    return leaveSubject;
+  }
+
+  String getPollSubject() {
+    return pollSubject;
+  }
+
+  String getReconfigureSubject() {
+    return reconfigureSubject;
+  }
+
+  String getVoteSubject() {
+    return voteSubject;
+  }
+
+  String getTransferSubject() {
+    return transferSubject;
+  }
+
   private static String getSubject(final String prefix, final String type) {
     if (prefix == null) {
       return type;

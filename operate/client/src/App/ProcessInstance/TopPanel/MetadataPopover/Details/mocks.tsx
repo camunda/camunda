@@ -76,6 +76,25 @@ const mockBusinessObject: BusinessObject = {
   $type: 'bpmn:ServiceTask',
 };
 
+const mockJobWorkerUserTaskBusinessObject: BusinessObject = {
+  id: 'UserTask_1',
+  name: 'Job Worker User Task',
+  $type: 'bpmn:UserTask',
+};
+
+const mockCamundaUserTaskBusinessObject: BusinessObject = {
+  id: 'UserTask_2',
+  name: 'Camunda User Task',
+  $type: 'bpmn:UserTask',
+  extensionElements: {
+    values: [
+      {
+        $type: 'zeebe:userTask',
+      },
+    ],
+  },
+};
+
 const TestWrapper: React.FC<{children: React.ReactNode}> = ({children}) => (
   <MemoryRouter>
     <ProcessDefinitionKeyContext.Provider value="test-process-key">
@@ -92,4 +111,6 @@ export {
   mockJob,
   mockCalledProcessInstance,
   mockBusinessObject,
+  mockJobWorkerUserTaskBusinessObject,
+  mockCamundaUserTaskBusinessObject,
 };

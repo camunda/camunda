@@ -38,14 +38,17 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
+@ExtendWith(MockitoExtension.class)
 @ContextConfiguration(classes = {ProcessDefinitionTools.class})
 class ProcessDefinitionToolsTest extends ToolsTest {
 
@@ -79,7 +82,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
     mockApiServiceAuthentication(processDefinitionServices);
   }
 
-  private void assertExampleProcessDefinitionResult(ProcessDefinitionResult processDefinition) {
+  private void assertExampleProcessDefinitionResult(
+      final ProcessDefinitionResult processDefinition) {
     assertThat(processDefinition.getProcessDefinitionKey()).isEqualTo("5");
     assertThat(processDefinition.getName()).isEqualTo("Complex Process");
     assertThat(processDefinition.getProcessDefinitionId()).isEqualTo("complexProcess");
@@ -135,7 +139,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
               TextContent.class,
               textContent ->
                   assertThat(textContent.text())
-                      .contains("Process definition key must be a positive number."));
+                      .isEqualTo(
+                          "processDefinitionKey: Process definition key must be a positive number."));
     }
   }
 

@@ -48,7 +48,6 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
   @BeforeEach
   void setup() {
     gatewayService.onProcessDefinitionInstanceVersionStatisticsRequest(
-        PROCESS_DEFINITION_ID,
         Instancio.create(ProcessDefinitionInstanceVersionStatisticsQueryResult.class)
             .items(getProcessDefinitionInstanceVersionStatisticsResults()));
   }
@@ -64,13 +63,15 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
     // then
     final LoggedRequest request = RestGatewayService.getLastRequest();
     assertThat(request.getUrl())
-        .isEqualTo(
-            "/v2/process-definitions/" + PROCESS_DEFINITION_ID + "/statistics/process-instances");
+        .isEqualTo("/v2/process-definitions/statistics/process-instances-by-version");
     assertThat(request.getMethod()).isEqualTo(RequestMethod.POST);
 
     final ObjectMapper mapper = new ObjectMapper();
     final JsonNode json = mapper.readTree(request.getBodyAsString());
 
+    assertThat(json.get("filter")).isNotNull();
+    assertThat(json.get("filter").get("processDefinitionId").asText())
+        .isEqualTo(PROCESS_DEFINITION_ID);
     assertThat(json.get("page")).isNull();
     assertThat(json.get("sort")).isNotNull();
     assertThat(json.get("sort").isArray()).isTrue();
@@ -91,6 +92,9 @@ public class ProcessDefinitionInstanceVersionStatisticsTest extends ClientRestTe
         gatewayService.getLastRequest(ProcessDefinitionInstanceVersionStatisticsQuery.class);
 
     assertThat(request.getFilter()).isNotNull();
+    assertThat(request.getFilter())
+        .extracting(ProcessDefinitionInstanceVersionStatisticsFilter::getProcessDefinitionId)
+        .isEqualTo(PROCESS_DEFINITION_ID);
     assertThat(request.getFilter())
         .extracting(ProcessDefinitionInstanceVersionStatisticsFilter::getTenantId)
         .isEqualTo("tenant-a");

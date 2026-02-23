@@ -15,7 +15,7 @@ import {
   type Variable,
   endpoints,
   type ProcessDefinition,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {unassignedTask} from '@/mocks/v2/task';
 import {bpmnXml} from '@/mocks/v2/bpmnXml';
 import {

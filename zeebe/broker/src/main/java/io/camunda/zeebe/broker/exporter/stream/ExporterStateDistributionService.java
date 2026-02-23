@@ -12,6 +12,7 @@ import io.camunda.zeebe.broker.system.partitions.PartitionMessagingService;
 import io.camunda.zeebe.util.logging.ThrottledLogger;
 import java.nio.ByteBuffer;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -22,7 +23,8 @@ public class ExporterStateDistributionService implements AutoCloseable {
   private static final Logger PERIODIC_LOGGER =
       new ThrottledLogger(Loggers.EXPORTER_LOGGER, Duration.ofSeconds(60));
   private final PartitionMessagingService partitionMessagingService;
-  private final String exporterStateTopic;
+  private final String sendingSubject;
+  private final List<String> receivingSubjects;
   private final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
       exporterStateConsumer;
 
@@ -30,14 +32,16 @@ public class ExporterStateDistributionService implements AutoCloseable {
       final BiConsumer<String, ExporterStateDistributeMessage.ExporterStateEntry>
           exporterStateConsumer,
       final PartitionMessagingService partitionMessagingService,
-      final String exporterStateTopic) {
+      final String sendingSubject,
+      final List<String> receivingSubjects) {
     this.exporterStateConsumer = exporterStateConsumer;
     this.partitionMessagingService = partitionMessagingService;
-    this.exporterStateTopic = exporterStateTopic;
+    this.sendingSubject = sendingSubject;
+    this.receivingSubjects = receivingSubjects;
   }
 
   public void subscribeForExporterState(final Executor executor) {
-    partitionMessagingService.subscribe(exporterStateTopic, this::storeExporterState, executor);
+    receivingSubjects.forEach(t -> subscribe(t, executor));
   }
 
   private void storeExporterState(final ByteBuffer byteBuffer) {
@@ -54,11 +58,19 @@ public class ExporterStateDistributionService implements AutoCloseable {
   }
 
   public void distributeExporterState(final ExporterStateDistributeMessage distributeMessage) {
-    partitionMessagingService.broadcast(exporterStateTopic, distributeMessage.toByteBuffer());
+    partitionMessagingService.broadcast(sendingSubject, distributeMessage.toByteBuffer());
   }
 
   @Override
   public void close() {
-    partitionMessagingService.unsubscribe(exporterStateTopic);
+    receivingSubjects.forEach(this::unsubscribe);
+  }
+
+  private void subscribe(final String topic, final Executor executor) {
+    partitionMessagingService.subscribe(topic, this::storeExporterState, executor);
+  }
+
+  private void unsubscribe(final String topic) {
+    partitionMessagingService.unsubscribe(topic);
   }
 }

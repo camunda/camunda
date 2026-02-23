@@ -123,7 +123,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -760,7 +759,7 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .globalListenerBatch()
-                        .withTaskListener(
+                        .withListener(
                             new GlobalListenerRecord()
                                 .setId("GlobalListener_global1")
                                 .setType("global1")
@@ -776,9 +775,9 @@ public class CommandDistributionIdempotencyTest {
                 () ->
                     ENGINE
                         .globalListener()
-                        .withId("my-listener")
+                        .withId("my-listener-to-create")
                         .withType("job1")
-                        .withEventType("all")
+                        .withEventTypes("all")
                         .create()),
             GlobalListenerCreateProcessor.class
           },
@@ -790,17 +789,16 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-update")
                       .withType("job1")
-                      .withEventType("all")
+                      .withEventTypes("all")
                       .create();
 
                   return ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-update")
                       .withType("job2")
-                      .withEventType("creating")
-                      .withEventType("updating")
+                      .withEventTypes("creating", "updating")
                       .update();
                 }),
             GlobalListenerUpdateProcessor.class
@@ -813,11 +811,11 @@ public class CommandDistributionIdempotencyTest {
                 () -> {
                   ENGINE
                       .globalListener()
-                      .withId("my-listener")
+                      .withId("my-listener-to-delete")
                       .withType("job1")
-                      .withEventType("all")
+                      .withEventTypes("all")
                       .create();
-                  return ENGINE.globalListener().withId("my-listener").delete();
+                  return ENGINE.globalListener().withId("my-listener-to-delete").delete();
                 }),
             GlobalListenerDeleteProcessor.class
           },
@@ -870,8 +868,7 @@ public class CommandDistributionIdempotencyTest {
     interceptor.enable(distributionCommand);
 
     // then we expect the command will written to the target partition twice (retry)
-    RecordingExporter.setMaximumWaitTime(100);
-    Awaitility.await()
+    RecordingExporter.await()
         .untilAsserted(
             () -> {
               // wait for retry mechanism to trigger second distribution
@@ -890,7 +887,6 @@ public class CommandDistributionIdempotencyTest {
                           .limit(2))
                   .hasSize(2);
             });
-    RecordingExporter.setMaximumWaitTime(5000);
 
     // then we expect the distribution still finishes based on the second (retried) acknowledgement
     if (scenario.assertDistributionFinishes) {

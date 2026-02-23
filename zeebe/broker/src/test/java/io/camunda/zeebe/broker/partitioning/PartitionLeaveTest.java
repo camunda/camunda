@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.system.configuration.ClusterCfg;
 import io.camunda.zeebe.broker.test.TestActorSchedulerFactory;
 import io.camunda.zeebe.broker.test.TestBrokerClientFactory;
 import io.camunda.zeebe.broker.test.TestClusterFactory;
+import io.camunda.zeebe.dynamic.nodeid.NodeIdProvider;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -235,7 +236,8 @@ final class PartitionLeaveTest {
             null,
             null,
             null,
-            null);
+            null,
+            NodeIdProvider.staticProvider(brokerCfg.getCluster().getNodeId()));
 
     return new Broker(systemContext, new SpringBrokerBridge(), List.of());
   }

@@ -110,7 +110,7 @@ final class BackupRangeTrackingIT {
                                   assertThat(state.getPartitionId())
                                       .isEqualTo(range.getPartitionId());
                                   assertThat(state.getCheckpointId())
-                                      .isGreaterThanOrEqualTo(range.getStart());
+                                      .isGreaterThanOrEqualTo(range.getStart().getCheckpointId());
                                 });
                         assertThat(range.getEnd()).isNotEqualTo(range.getStart());
                       });
@@ -171,7 +171,7 @@ final class BackupRangeTrackingIT {
                       .filter(range -> range.getPartitionId() == 1)
                       .findFirst()
                       .orElseThrow();
-              assertThat(latestRange.getEnd())
+              assertThat(latestRange.getEnd().getCheckpointId())
                   .describedAs("Range should end with the latest checkpoint")
                   .isEqualTo(lastBackupAfterLeaderChange.getCheckpointId());
             });

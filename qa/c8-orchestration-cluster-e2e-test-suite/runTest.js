@@ -12,10 +12,10 @@ import {spawn} from 'node:child_process';
 const IS_LOCAL = Boolean(process.env.LOCAL_TEST);
 
 const category = await select({
-  message: "Which tests would you like to run?",
+  message: 'Which tests would you like to run?',
   choices: [
-    { name: "E2E tests", value: "e2e" },
-    { name: "API tests", value: "api" },
+    {name: 'E2E tests', value: 'e2e'},
+    {name: 'API tests', value: 'api'},
   ],
 });
 
@@ -23,8 +23,8 @@ const baseURL = getBaseURL();
 
 let args = ['run', 'test', '--'];
 
-if (category === "api") {
-  args.push("--project=api-tests");
+if (category === 'api') {
+  args.push('--project=api-tests');
 } else {
   const browser = await select({
     message: 'Select the browser to run the E2E tests on:',

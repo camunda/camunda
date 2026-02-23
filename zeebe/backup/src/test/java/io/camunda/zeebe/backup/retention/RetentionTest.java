@@ -24,13 +24,16 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
@@ -59,11 +62,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 public class RetentionTest {
 
-  private static final int[] DEFAULT_BACKUP_OFFSETS = {360, 300, 290, 130, 110, 20, 10};
+  private static final int[] DEFAULT_BACKUP_OFFSETS = {375, 315, 255, 195, 50, 30, 10};
 
   @RegisterExtension
   public final ControlledActorSchedulerExtension actorScheduler =
@@ -169,9 +174,9 @@ public class RetentionTest {
   void shouldHandleNoEndMarker() {
     // given
     final var now = actorScheduler.getClock().instant();
-    final BackupStatus backup1 = backup(now.minusSeconds(200));
-    final BackupStatus backup2 = backup(now.minusSeconds(150));
-    final BackupStatus backup3 = backup(now.minusSeconds(110));
+    final BackupStatus backup1 = backup(now.minusSeconds(190));
+    final BackupStatus backup2 = backup(now.minusSeconds(130));
+    final BackupStatus backup3 = backup(now.minusSeconds(10));
 
     when(backupStore.list(any()))
         .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3)));
@@ -180,8 +185,8 @@ public class RetentionTest {
         .thenReturn(
             CompletableFuture.completedFuture(
                 List.of(
-                    new Start(now.minusSeconds(360).toEpochMilli()),
-                    new End(now.minusSeconds(290).toEpochMilli()),
+                    new Start(now.minusSeconds(190).toEpochMilli()),
+                    new End(now.minusSeconds(140).toEpochMilli()),
                     new Start(now.minusSeconds(130).toEpochMilli()))));
 
     // when
@@ -206,8 +211,8 @@ public class RetentionTest {
     // given
     reset(backupStore);
     final var now = actorScheduler.getClock().instant();
-    final BackupStatus backup1 = backup(now.minusSeconds(200));
-    final BackupStatus backup2 = backup(now.minusSeconds(150));
+    final BackupStatus backup1 = backup(now.minusSeconds(250));
+    final BackupStatus backup2 = backup(now.minusSeconds(180));
     final BackupStatus backup3 = backup(now.minusSeconds(110));
 
     final List<BackupRangeMarker> ranges =
@@ -241,6 +246,8 @@ public class RetentionTest {
     // given
     reset(backupStore);
     when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(backupStore.rangeMarkers(anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
 
     // when
     runRetentionCycle();
@@ -312,6 +319,71 @@ public class RetentionTest {
         });
   }
 
+  @Test
+  void shouldProgressMarkerAfterFailed() {
+    // given
+    final var now = actorScheduler.getClock().instant();
+    final BackupStatus backup1 = backup(now.minusSeconds(300));
+    final BackupStatus backup2 = failedBackup(now.minusSeconds(60));
+    final BackupStatus backup3 = failedBackup(now.minusSeconds(50));
+    final BackupStatus backup4 = backup(now.minusSeconds(40));
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3, backup4)));
+
+    when(backupStore.rangeMarkers(1))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    new Start(now.minusSeconds(300).toEpochMilli()),
+                    new End(now.minusSeconds(40).toEpochMilli()))));
+
+    // when
+    runRetentionCycle();
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupStore, times(1)).delete(any());
+    verify(backupStore, times(1))
+        .storeRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup4.id().checkpointId()));
+    verify(backupStore, atLeast(1))
+        .deleteRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup1.id().checkpointId()));
+  }
+
+  @Test
+  void shouldIgnoreLastFailedBackup() {
+    // given
+    final var now = actorScheduler.getClock().instant();
+    final BackupStatus backup1 = backup(now.minusSeconds(300));
+    final BackupStatus backup2 = backup(now.minusSeconds(100));
+    final BackupStatus backup3 = failedBackup(now.minusSeconds(40));
+
+    when(backupStore.list(any()))
+        .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3)));
+
+    when(backupStore.rangeMarkers(1))
+        .thenReturn(
+            CompletableFuture.completedFuture(
+                List.of(
+                    new Start(now.minusSeconds(300).toEpochMilli()),
+                    new End(now.minusSeconds(100).toEpochMilli()))));
+
+    // when
+    runRetentionCycle();
+    actorScheduler.workUntilDone();
+
+    // then
+    verify(backupStore, times(1)).delete(any());
+    verify(backupStore, times(1))
+        .storeRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup2.id().checkpointId()));
+    verify(backupStore, atLeast(1))
+        .deleteRangeMarker(
+            anyInt(), argThat(marker -> marker.checkpointId() == backup1.id().checkpointId()));
+  }
+
   private Gauge getGauge(final String gaugeName) {
     return meterRegistry.get(gaugeName).gauge();
   }
@@ -324,7 +396,7 @@ public class RetentionTest {
     return new BackupRetention(
         backupStore,
         new IntervalSchedule(Duration.ofSeconds(10)),
-        Duration.ofMinutes(2),
+        Duration.ofMinutes(1),
         topologyManager,
         meterRegistry);
   }
@@ -356,12 +428,14 @@ public class RetentionTest {
         .toList();
   }
 
+  // private static final int[] DEFAULT_BACKUP_OFFSETS = {375, 315, 255, 195, 135, 75, 10};
+  // private static final int[] DEFAULT_BACKUP_OFFSETS = {360, 300, 290, 130, 110, 20, 10};
   private List<BackupRangeMarker> createDefaultRangeMarkers(final Instant now) {
     return List.of(
-        new Start(now.minusSeconds(360).toEpochMilli()),
-        new End(now.minusSeconds(290).toEpochMilli()),
-        new Start(now.minusSeconds(130).toEpochMilli()),
-        new End(now.minusSeconds(20).toEpochMilli()),
+        new Start(now.minusSeconds(375).toEpochMilli()),
+        new End(now.minusSeconds(255).toEpochMilli()),
+        new Start(now.minusSeconds(195).toEpochMilli()),
+        new End(now.minusSeconds(30).toEpochMilli()),
         new Start(now.minusSeconds(10).toEpochMilli()),
         new End(now.minusSeconds(10).toEpochMilli()));
   }
@@ -418,24 +492,41 @@ public class RetentionTest {
     return backup(1, 1, timestamp);
   }
 
+  private BackupStatus failedBackup(final Instant timestamp) {
+    final var descriptor =
+        new BackupDescriptorImpl(
+            10L, 3, VersionUtil.getVersion(), timestamp, CheckpointType.SCHEDULED_BACKUP);
+    return backup(1, 1, Optional.of(descriptor), timestamp, BackupStatusCode.FAILED);
+  }
+
   private BackupStatus backup(final int partition, final int nodeId, final Instant timestamp) {
-    return new BackupStatusImpl(
-        new BackupIdentifierImpl(nodeId, partition, timestamp.toEpochMilli()),
-        Optional.of(
-            new BackupDescriptorImpl(
-                10L, 3, VersionUtil.getVersion(), timestamp, CheckpointType.SCHEDULED_BACKUP)),
-        null,
-        null,
-        Optional.of(timestamp),
-        null);
+    final var descriptor =
+        new BackupDescriptorImpl(
+            10L, 3, VersionUtil.getVersion(), timestamp, CheckpointType.SCHEDULED_BACKUP);
+    return backup(
+        partition, nodeId, Optional.of(descriptor), timestamp, BackupStatusCode.COMPLETED);
   }
 
   private BackupStatus backupNoDescriptor(
       final int partition, final int nodeId, final Instant timestamp) {
+    return backup(partition, nodeId, Optional.empty(), timestamp, BackupStatusCode.COMPLETED);
+  }
+
+  private BackupStatus backupOnlyId(
+      final int partition, final int nodeId, final Instant timestamp) {
+    return backup(partition, nodeId, Optional.empty(), timestamp, BackupStatusCode.COMPLETED);
+  }
+
+  private BackupStatus backup(
+      final int partition,
+      final int nodeId,
+      final Optional<BackupDescriptor> descriptor,
+      final Instant timestamp,
+      final BackupStatusCode backupStatusCode) {
     return new BackupStatusImpl(
         new BackupIdentifierImpl(nodeId, partition, timestamp.toEpochMilli()),
-        Optional.empty(),
-        null,
+        descriptor,
+        backupStatusCode,
         null,
         Optional.empty(),
         Optional.of(timestamp));
@@ -522,6 +613,206 @@ public class RetentionTest {
       verify(backupStore, never()).deleteRangeMarker(eq(2), any());
 
       verifyRangeMarkerDeleted(1, backupsPerPartition.get(1).get(3));
+    }
+  }
+
+  @Nested
+  @MockitoSettings(strictness = Strictness.LENIENT)
+  class AtLeastOneAvailable {
+
+    @Test
+    void shouldAlwaysMaintainASingleBackup() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(200));
+      final BackupStatus backup2 = backup(now.minusSeconds(140));
+      final BackupStatus backup3 = backup(now.minusSeconds(70));
+      // Failed backup with older timestamp than the latest successful backup
+      final BackupStatus backup4 = failedBackup(now.minusSeconds(10));
+
+      when(backupStore.list(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(List.of(backup1, backup2, backup3, backup4)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new Start(now.minusSeconds(200).toEpochMilli()),
+                      new End(now.minusSeconds(70).toEpochMilli()))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verify(backupStore).delete(backup1.id());
+      verify(backupStore).delete(backup2.id());
+      verify(backupStore, never()).delete(backup4.id());
+      verify(backupStore, never()).delete(argThat(id -> id.equals(backup3.id())));
+
+      verifyRangeMarkerStored(1, backup3);
+      verifyRangeMarkerDeleted(1, backup1);
+    }
+
+    @Test
+    void shouldAlwaysMaintainASingleBackupWhenNoDescriptor() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backupNoDescriptor(1, 1, now.minusSeconds(300));
+      final BackupStatus backup2 = backupNoDescriptor(1, 1, now.minusSeconds(200));
+      final BackupStatus backup3 = backupNoDescriptor(1, 1, now.minusSeconds(130));
+
+      when(backupStore.list(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new Start(now.minusSeconds(300).toEpochMilli()),
+                      new End(now.minusSeconds(200).toEpochMilli()))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verify(backupStore).delete(backup1.id());
+      verify(backupStore).delete(backup2.id());
+      verify(backupStore, never()).delete(argThat(id -> id.equals(backup3.id())));
+
+      verifyRangeMarkerStored(1, backup3);
+      verifyRangeMarkerDeleted(1, backup1);
+    }
+
+    @Test
+    void shouldNotDeleteBackupsIfOnlyOneExists() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(500));
+
+      when(backupStore.list(any())).thenReturn(CompletableFuture.completedFuture(List.of(backup1)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(new Start(now.minusSeconds(360).toEpochMilli()))));
+
+      // when multiple runs occur
+      actorScheduler.submitActor(backupRetention);
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+      actorScheduler.updateClock(Duration.ofSeconds(10));
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(backupStore, never()).delete(any());
+    }
+
+    @Test
+    void shouldAlwaysMaintainASingleBackupOnCheckpointId() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(300));
+      final BackupStatus backup2 = backup(now.minusSeconds(200));
+      final BackupStatus backup3 = backupOnlyId(1, 1, now.minusSeconds(130));
+
+      when(backupStore.list(any()))
+          .thenReturn(CompletableFuture.completedFuture(List.of(backup1, backup2, backup3)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(new Start(now.minusSeconds(360).toEpochMilli()))));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verify(backupStore).delete(backup1.id());
+      verify(backupStore).delete(backup2.id());
+      verify(backupStore, never()).delete(argThat(id -> id.equals(backup3.id())));
+    }
+
+    @Test
+    void shouldNotInterfereIfLatestNotWithinWindow() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(290));
+      final BackupStatus backup2 = backup(now.minusSeconds(220));
+      final BackupStatus backup3 = backup(now.minusSeconds(150));
+      final BackupStatus backup4 = backup(now.minusSeconds(100));
+
+      when(backupStore.list(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(List.of(backup1, backup2, backup3, backup4)));
+
+      final List<BackupRangeMarker> ranges =
+          List.of(
+              new Start(now.minusSeconds(290).toEpochMilli()),
+              new End(now.minusSeconds(220).toEpochMilli()),
+              new Start(now.minusSeconds(150).toEpochMilli()),
+              new End(now.minusSeconds(100).toEpochMilli()));
+
+      when(backupStore.rangeMarkers(1)).thenReturn(CompletableFuture.completedFuture(ranges));
+
+      // when
+      runRetentionCycle();
+
+      // then
+      verify(backupStore).delete(backup1.id());
+      verify(backupStore).delete(backup2.id());
+      verify(backupStore, never()).delete(argThat(id -> id.equals(backup3.id())));
+      verify(backupStore, never()).delete(argThat(id -> id.equals(backup4.id())));
+
+      verify(backupStore, never()).storeRangeMarker(eq(1), any());
+      verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.getFirst())));
+      verify(backupStore).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(1))));
+      verify(backupStore, never()).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(2))));
+      verify(backupStore, never()).deleteRangeMarker(eq(1), argThat(c -> c.equals(ranges.get(3))));
+    }
+
+    @Test
+    void shouldNotDeleteBackupsRelativeToLastCompleted() {
+      // given
+      final var now = actorScheduler.getClock().instant();
+      final BackupStatus backup1 = backup(now.minusSeconds(370));
+      final BackupStatus backup2 = backup(now.minusSeconds(340));
+      final BackupStatus backup3 = backup(now.minusSeconds(300));
+      final BackupStatus backup4 = failedBackup(now.minusSeconds(220));
+      final BackupStatus backup5 = failedBackup(now.minusSeconds(210));
+
+      when(backupStore.list(any()))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(backup1, backup2, backup3, backup4, backup5)));
+
+      when(backupStore.rangeMarkers(1))
+          .thenReturn(
+              CompletableFuture.completedFuture(
+                  List.of(
+                      new Start(now.minusSeconds(300).toEpochMilli()),
+                      new End(now.minusSeconds(300).toEpochMilli()))));
+
+      // when
+      runRetentionCycle();
+      actorScheduler.workUntilDone();
+
+      // then
+      verify(backupStore, times(1))
+          .delete(argThat(backup -> backup.checkpointId() == backup1.id().checkpointId()));
+      verify(backupStore, never())
+          .delete(argThat(backup -> backup.checkpointId() == backup2.id().checkpointId()));
+      verify(backupStore, never())
+          .delete(argThat(backup -> backup.checkpointId() == backup3.id().checkpointId()));
+      verify(backupStore, never())
+          .delete(argThat(backup -> backup.checkpointId() == backup4.id().checkpointId()));
+      verify(backupStore, never())
+          .delete(argThat(backup -> backup.checkpointId() == backup5.id().checkpointId()));
+      verify(backupStore, never()).storeRangeMarker(anyInt(), any());
+      verify(backupStore, never()).deleteRangeMarker(anyInt(), any());
     }
   }
 }

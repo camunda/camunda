@@ -25,4 +25,7 @@ public interface AuthorizedTenants {
 
   /** Returns the list of authorized tenants. */
   List<String> getAuthorizedTenantIds();
+
+  /** Returns true if this represents anonymous (unauthenticated) access. */
+  boolean isAnonymous();
 }

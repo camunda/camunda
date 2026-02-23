@@ -29,6 +29,7 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
   public final RetentionConfiguration retention = new RetentionConfiguration();
   public final List<PluginConfiguration> interceptorPlugins = new ArrayList<>();
   private final AuthenticationConfiguration authentication = new AuthenticationConfiguration();
+  private final ProxyConfiguration proxy = new ProxyConfiguration();
   private boolean includeEnabledRecords = false;
 
   public boolean hasAuthenticationPresent() {
@@ -37,6 +38,14 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
   public AuthenticationConfiguration getAuthentication() {
     return authentication;
+  }
+
+  public boolean hasProxyConfigured() {
+    return proxy.isEnabled();
+  }
+
+  public ProxyConfiguration getProxy() {
+    return proxy;
   }
 
   public List<PluginConfiguration> getInterceptorPlugins() {
@@ -59,6 +68,8 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
         + retention
         + ", authentication="
         + authentication
+        + ", proxy="
+        + proxy
         + ", interceptors="
         + interceptorPlugins
         + '}';
@@ -246,12 +257,23 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
     private int templatePriority = DEFAULT_INDEX_TEMPLATE_PRIORITY;
 
     // variable name filters
-    private final List<String> variableNameInclusionExact = new ArrayList<>();
-    private final List<String> variableNameInclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameInclusionEndWith = new ArrayList<>();
-    private final List<String> variableNameExclusionExact = new ArrayList<>();
-    private final List<String> variableNameExclusionStartWith = new ArrayList<>();
-    private final List<String> variableNameExclusionEndWith = new ArrayList<>();
+    private List<String> variableNameInclusionExact = new ArrayList<>();
+    private List<String> variableNameInclusionStartWith = new ArrayList<>();
+    private List<String> variableNameInclusionEndWith = new ArrayList<>();
+    private List<String> variableNameExclusionExact = new ArrayList<>();
+    private List<String> variableNameExclusionStartWith = new ArrayList<>();
+    private List<String> variableNameExclusionEndWith = new ArrayList<>();
+
+    // variable value type filters
+    private List<String> variableValueTypeInclusion = new ArrayList<>();
+    private List<String> variableValueTypeExclusion = new ArrayList<>();
+
+    // optimize mode
+    private boolean optimizeModeEnabled = false;
+
+    // BPMN process id filters
+    private List<String> bpmnProcessIdInclusion = new ArrayList<>();
+    private List<String> bpmnProcessIdExclusion = new ArrayList<>();
 
     public Integer getNumberOfShards() {
       return numberOfShards;
@@ -284,27 +306,98 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
 
     @Override
     public List<String> getVariableNameInclusionStartWith() {
-      return variableNameInclusionStartWith;
+      return List.copyOf(variableNameInclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameInclusionEndWith() {
-      return variableNameInclusionEndWith;
+      return List.copyOf(variableNameInclusionEndWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionExact() {
-      return variableNameExclusionExact;
+      return List.copyOf(variableNameExclusionExact);
     }
 
     @Override
     public List<String> getVariableNameExclusionStartWith() {
-      return variableNameExclusionStartWith;
+      return List.copyOf(variableNameExclusionStartWith);
     }
 
     @Override
     public List<String> getVariableNameExclusionEndWith() {
-      return variableNameExclusionEndWith;
+      return List.copyOf(variableNameExclusionEndWith);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeInclusion() {
+      return List.copyOf(variableValueTypeInclusion);
+    }
+
+    @Override
+    public List<String> getVariableValueTypeExclusion() {
+      return List.copyOf(variableValueTypeExclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdInclusion() {
+      return List.copyOf(bpmnProcessIdInclusion);
+    }
+
+    @Override
+    public List<String> getBpmnProcessIdExclusion() {
+      return List.copyOf(bpmnProcessIdExclusion);
+    }
+
+    @Override
+    public boolean isOptimizeModeEnabled() {
+      return optimizeModeEnabled;
+    }
+
+    public void setOptimizeModeEnabled(final boolean optimizeModeEnabled) {
+      this.optimizeModeEnabled = optimizeModeEnabled;
+    }
+
+    public void setBpmnProcessIdExclusion(final List<String> bpmnProcessIdExclusion) {
+      this.bpmnProcessIdExclusion = bpmnProcessIdExclusion;
+    }
+
+    public void setBpmnProcessIdInclusion(final List<String> bpmnProcessIdInclusion) {
+      this.bpmnProcessIdInclusion = bpmnProcessIdInclusion;
+    }
+
+    public void setVariableValueTypeExclusion(final List<String> variableValueTypeExclusion) {
+      this.variableValueTypeExclusion = variableValueTypeExclusion;
+    }
+
+    public void setVariableValueTypeInclusion(final List<String> variableValueTypeInclusion) {
+      this.variableValueTypeInclusion = variableValueTypeInclusion;
+    }
+
+    public void setVariableNameExclusionEndWith(final List<String> variableNameExclusionEndWith) {
+      this.variableNameExclusionEndWith = variableNameExclusionEndWith;
+    }
+
+    public void setVariableNameExclusionStartWith(
+        final List<String> variableNameExclusionStartWith) {
+      this.variableNameExclusionStartWith = variableNameExclusionStartWith;
+    }
+
+    public void setVariableNameExclusionExact(final List<String> variableNameExclusionExact) {
+      this.variableNameExclusionExact = variableNameExclusionExact;
+    }
+
+    public void setVariableNameInclusionEndWith(final List<String> variableNameInclusionEndWith) {
+      this.variableNameInclusionEndWith = variableNameInclusionEndWith;
+    }
+
+    public void setVariableNameInclusionStartWith(
+        final List<String> variableNameInclusionStartWith) {
+      this.variableNameInclusionStartWith = variableNameInclusionStartWith;
+    }
+
+    public void setVariableNameInclusionExact(final List<String> variableNameInclusionExact) {
+      this.variableNameInclusionExact = variableNameInclusionExact;
     }
 
     @Override
@@ -414,6 +507,16 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + variableNameExclusionStartWith
           + ", variableNameExclusionEndWith="
           + variableNameExclusionEndWith
+          + ", variableValueTypeInclusion="
+          + variableValueTypeInclusion
+          + ", variableValueTypeExclusion="
+          + variableValueTypeExclusion
+          + ", optimizeModeEnabled="
+          + optimizeModeEnabled
+          + ", bpmnProcessIdInclusion="
+          + bpmnProcessIdInclusion
+          + ", bpmnProcessIdExclusion="
+          + bpmnProcessIdExclusion
           + '}';
     }
   }
@@ -509,6 +612,82 @@ public class ElasticsearchExporterConfiguration implements FilterConfiguration {
           + minimumAge
           + ", policyName='"
           + policyName
+          + '\''
+          + '}';
+    }
+  }
+
+  public static class ProxyConfiguration {
+    private boolean enabled = false;
+    private String host;
+    private Integer port;
+    private boolean sslEnabled = false;
+    private String username;
+    private String password;
+
+    public boolean isEnabled() {
+      return enabled;
+    }
+
+    public void setEnabled(final boolean enabled) {
+      this.enabled = enabled;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public void setHost(final String host) {
+      this.host = host;
+    }
+
+    public Integer getPort() {
+      return port;
+    }
+
+    public void setPort(final Integer port) {
+      this.port = port;
+    }
+
+    public boolean isSslEnabled() {
+      return sslEnabled;
+    }
+
+    public void setSslEnabled(final boolean sslEnabled) {
+      this.sslEnabled = sslEnabled;
+    }
+
+    public String getUsername() {
+      return username;
+    }
+
+    public void setUsername(final String username) {
+      this.username = username;
+    }
+
+    public String getPassword() {
+      return password;
+    }
+
+    public void setPassword(final String password) {
+      this.password = password;
+    }
+
+    @Override
+    public String toString() {
+      // we don't want to expose the password
+      return "ProxyConfiguration{"
+          + "enabled="
+          + enabled
+          + ", host='"
+          + host
+          + '\''
+          + ", port="
+          + port
+          + ", sslEnabled="
+          + sslEnabled
+          + ", username='"
+          + username
           + '\''
           + '}';
     }

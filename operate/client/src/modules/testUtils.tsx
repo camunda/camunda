@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {IncidentByErrorDto} from './api/incidents/fetchIncidentsByError';
 import type {BatchOperationDto} from './api/sharedTypes';
 import type {
   ProcessInstance,
@@ -32,7 +31,6 @@ const createRandomId = function* createRandomId(type: string) {
 };
 
 const randomIdIterator = createRandomId('id');
-const randomProcessIdIterator = createRandomId('processId');
 const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
@@ -168,7 +166,7 @@ const createProcessDefinition = (
   };
 };
 
-const createvariable = (options: Partial<Variable> = {}): Variable => {
+const createVariable = (options: Partial<Variable> = {}): Variable => {
   const name = options.name ?? 'testVariableName';
   return {
     variableKey: `2251799813725337-${name}`,
@@ -282,58 +280,6 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       hasStartForm: false,
     },
   ]);
-
-/**
- * @returns a mocked process Object with a unique id
- * @param {*} customProps Obj with any type of custom property
- */
-const createProcess = (options = {}) => {
-  return {
-    processId: randomProcessIdIterator.next().value,
-    tenantId: '<default>',
-    name: 'mockProcess',
-    version: 1,
-    bpmnProcessId: 'mockProcess',
-    errorMessage: 'JSON path $.paid has no result.',
-    instancesWithActiveIncidentsCount: 37,
-    activeInstancesCount: 5,
-    ...options,
-  };
-};
-
-/**
- * @returns a single mocked instanceByProcess Object
- * @param {*} customProps Obj with any type of custom property
- */
-const createIncidentByError = (
-  options: Partial<IncidentByErrorDto> = {},
-): IncidentByErrorDto => {
-  return {
-    errorMessage: "JSON path '$.paid' has no result.",
-    incidentErrorHashCode: 234254,
-    instancesWithErrorCount: 36,
-    processes: [
-      createProcess({
-        processId: '1',
-        version: 1,
-        name: 'Order process',
-        bpmnProcessId: 'orderProcess',
-        errorMessage: "JSON path '$.paid' has no result.",
-        instancesWithActiveIncidentsCount: 36,
-        activeInstancesCount: null,
-      }),
-    ],
-    ...options,
-  };
-};
-
-/**
- * @returns a mocked InstancesByError Object as exposed by 'api/incidents/byError'
- * @param {*} customProps array with any number of instanceByError Objects
- */
-const createIncidentsByError = (options: IncidentByErrorDto[]) => {
-  return options || [createIncidentByError()];
-};
 
 /**
  * @returns a mocked diagramNode Object with a unique id
@@ -501,61 +447,6 @@ const mockCallActivityProcessXML = `<?xml version="1.0" encoding="UTF-8"?>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>
 `;
-
-const mockProcessInstances = {
-  processInstances: [
-    createInstance({id: '2251799813685594', processId: '2251799813685592'}),
-    createInstance({
-      id: '2251799813685596',
-      processId: '2251799813685592',
-      state: 'INCIDENT',
-    }),
-    createInstance({
-      id: '2251799813685598',
-      processId: '2251799813685592',
-      state: 'CANCELED',
-    }),
-  ],
-  totalCount: 912,
-};
-
-const mockProcessInstancesWithOperation = {
-  processInstances: [
-    createInstance({
-      id: '0000000000000002',
-      processId: '2251799813685612',
-      state: 'ACTIVE',
-      operations: [
-        {
-          state: 'FAILED',
-          batchOperationId: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
-          errorMessage: 'Batch Operation Error Message',
-          type: 'MODIFY_PROCESS_INSTANCE',
-          completedDate: null,
-        },
-        {
-          state: 'COMPLETED',
-          batchOperationId: 'c4be6304-a0e0-4976-b81b-7a07fb4e96e5',
-          errorMessage: '',
-          type: 'MODIFY_PROCESS_INSTANCE',
-          completedDate: null,
-        },
-      ],
-    }),
-  ],
-  totalCount: 1,
-};
-
-const mockCalledProcessInstances = {
-  processInstances: [
-    createInstance({
-      id: '2251799813685837',
-      processId: '2251799813685592',
-      parentInstanceId: '22517998136837261',
-    }),
-  ],
-  totalCount: 1,
-};
 
 const operations: OperationEntity[] = [
   {
@@ -1068,25 +959,18 @@ export {
   searchResult,
   createIncident,
   createEnhancedIncident,
-  createOperation,
   mockProcessDefinitions,
-  createProcess,
-  createIncidentByError,
-  createIncidentsByError,
   createDiagramNode,
   mockProcessStatistics,
   mockMultipleStatesStatistics,
   mockProcessXML,
   mockProcessWithInputOutputMappingsXML,
   mockCallActivityProcessXML,
-  mockProcessInstances,
-  mockProcessInstancesWithOperation,
-  mockCalledProcessInstances,
   operations,
   multiInstanceProcess,
   eventSubProcess,
   mockProcessInstancesV2,
-  createvariable,
+  createVariable,
   createBatchOperation,
   createUser,
   createProcessInstance,

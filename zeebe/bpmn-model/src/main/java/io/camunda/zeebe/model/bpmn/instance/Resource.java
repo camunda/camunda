@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface Resource extends RootElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Resource extends RootElement, NamedBpmnElement {
 
   Collection<ResourceParameter> getResourceParameters();
 }

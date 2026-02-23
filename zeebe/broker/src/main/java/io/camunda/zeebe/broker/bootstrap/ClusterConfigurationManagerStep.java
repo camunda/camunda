@@ -34,6 +34,7 @@ public class ClusterConfigurationManagerStep
         new ClusterChangeExecutorImpl(
             brokerStartupContext.getConcurrencyControl(),
             brokerStartupContext.getExporterRepository(),
+            brokerStartupContext.getNodeIdProvider(),
             brokerStartupContext.getMeterRegistry());
     final ClusterConfigurationService clusterConfigurationService =
         new DynamicClusterConfigurationService(clusterChangeExecutor);

@@ -41,6 +41,7 @@ class ClusterVariableAuthorizationIT {
   private static final String ADMIN = "admin";
   private static final String CREATE_USER = "createUser";
   private static final String READ_USER = "readUser";
+  private static final String UPDATE_USER = "updateUser";
   private static final String DELETE_USER = "deleteUser";
   private static final String NO_PERMISSION_USER = "noPermissionUser";
   private static final String TEST_TENANT_ID = "test-tenant";
@@ -53,6 +54,7 @@ class ClusterVariableAuthorizationIT {
           List.of(
               new Permissions(CLUSTER_VARIABLE, CREATE, List.of("*")),
               new Permissions(CLUSTER_VARIABLE, READ, List.of("*")),
+              new Permissions(CLUSTER_VARIABLE, UPDATE, List.of("*")),
               new Permissions(CLUSTER_VARIABLE, DELETE, List.of("*"))));
 
   @UserDefinition
@@ -73,6 +75,13 @@ class ClusterVariableAuthorizationIT {
           DELETE_USER,
           "password",
           List.of(new Permissions(CLUSTER_VARIABLE, DELETE, List.of("*"))));
+
+  @UserDefinition
+  private static final TestUser UPDATE_USER_DEF =
+      new TestUser(
+          UPDATE_USER,
+          "password",
+          List.of(new Permissions(CLUSTER_VARIABLE, UPDATE, List.of("*"))));
 
   @UserDefinition
   private static final TestUser NO_PERMISSION_USER_DEF =
@@ -561,6 +570,222 @@ class ClusterVariableAuthorizationIT {
     // then
     final var problemException =
         assertThatExceptionOfType(ProblemException.class).isThrownBy(executeDelete).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  // ============= UPDATE PERMISSION TESTS =============
+
+  @Test
+  void updateGloballyScopedVariableShouldSucceedWithUpdatePermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(UPDATE_USER) final CamundaClient userClient) {
+    // given
+    final var variableName = "updateGlobalVar" + UUID.randomUUID();
+    adminClient
+        .newGloballyScopedClusterVariableCreateRequest()
+        .create(variableName, "initialValue")
+        .send()
+        .join();
+
+    try {
+      // when
+      final var result =
+          userClient
+              .newGloballyScopedClusterVariableUpdateRequest()
+              .update(variableName, "updatedValue")
+              .send()
+              .join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.getName()).isEqualTo(variableName);
+    } finally {
+      // cleanup
+      adminClient
+          .newGloballyScopedClusterVariableDeleteRequest()
+          .delete(variableName)
+          .send()
+          .join();
+      waitForClusterVariableToBeDeleted(adminClient, variableName, null);
+    }
+  }
+
+  @Test
+  void updateGloballyScopedVariableShouldFailWithoutUpdatePermission(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newGloballyScopedClusterVariableUpdateRequest()
+                .update("testVar1", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateGloballyScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveReadPermission(
+      @Authenticated(READ_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newGloballyScopedClusterVariableUpdateRequest()
+                .update("testVar1", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateGloballyScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveCreatePermission(
+      @Authenticated(CREATE_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newGloballyScopedClusterVariableUpdateRequest()
+                .update("testVar2", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateGloballyScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveDeletePermission(
+      @Authenticated(DELETE_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newGloballyScopedClusterVariableUpdateRequest()
+                .update("testVar3", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateTenantScopedVariableShouldSucceedWithUpdatePermission(
+      @Authenticated(ADMIN) final CamundaClient adminClient,
+      @Authenticated(UPDATE_USER) final CamundaClient userClient) {
+    // given
+    final var variableName = "updateTenantVar" + UUID.randomUUID();
+    adminClient
+        .newTenantScopedClusterVariableCreateRequest(TEST_TENANT_ID)
+        .create(variableName, "initialValue")
+        .send()
+        .join();
+
+    try {
+      // when
+      final var result =
+          userClient
+              .newTenantScopedClusterVariableUpdateRequest(TEST_TENANT_ID)
+              .update(variableName, "updatedValue")
+              .send()
+              .join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(result.getName()).isEqualTo(variableName);
+    } finally {
+      // cleanup
+      adminClient
+          .newTenantScopedClusterVariableDeleteRequest(TEST_TENANT_ID)
+          .delete(variableName)
+          .send()
+          .join();
+      waitForClusterVariableToBeDeleted(adminClient, variableName, TEST_TENANT_ID);
+    }
+  }
+
+  @Test
+  void updateTenantScopedVariableShouldFailWithoutUpdatePermission(
+      @Authenticated(NO_PERMISSION_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newTenantScopedClusterVariableUpdateRequest(TEST_TENANT_ID)
+                .update("tenantVar1", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateTenantScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveReadPermission(
+      @Authenticated(READ_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newTenantScopedClusterVariableUpdateRequest(TEST_TENANT_ID)
+                .update("tenantVar1", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateTenantScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveCreatePermission(
+      @Authenticated(CREATE_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newTenantScopedClusterVariableUpdateRequest(TEST_TENANT_ID)
+                .update("tenantVar2", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
+    assertThat(problemException.code()).isEqualTo(403);
+  }
+
+  @Test
+  void updateTenantScopedVariableShouldFailWithoutUpdatePermissionWhenOnlyHaveDeletePermission(
+      @Authenticated(DELETE_USER) final CamundaClient userClient) {
+    // when
+    final ThrowingCallable executeUpdate =
+        () ->
+            userClient
+                .newTenantScopedClusterVariableUpdateRequest(TEST_TENANT_ID)
+                .update("tenantVar3", "newValue")
+                .send()
+                .join();
+
+    // then
+    final var problemException =
+        assertThatExceptionOfType(ProblemException.class).isThrownBy(executeUpdate).actual();
     assertThat(problemException.code()).isEqualTo(403);
   }
 

@@ -11,10 +11,13 @@
 <mapper namespace="io.camunda.db.rdbms.sql.DecisionDefinitionMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}DECISION_DEFINITION t
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_DEFINITION t
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery"
@@ -152,4 +155,44 @@
       AND (t.TENANT_ID = lv.t_id OR (t.TENANT_ID IS NULL AND lv.t_id IS NULL))
     </if>
   </sql>
+
+  <delete id="deleteByDecisionRequirementsKeys">
+    DELETE FROM ${prefix}DECISION_DEFINITION
+    WHERE DECISION_REQUIREMENTS_KEY IN
+    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+    LIMIT #{limit}
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="mssql">
+    DELETE TOP (#{limit})
+    FROM ${prefix}DECISION_DEFINITION
+    WHERE DECISION_REQUIREMENTS_KEY IN
+    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+      #{key}
+    </foreach>
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="oracle">
+    DELETE FROM ${prefix}DECISION_DEFINITION
+    WHERE rowid IN (SELECT rowid
+                    FROM ${prefix}DECISION_DEFINITION
+                    WHERE DECISION_REQUIREMENTS_KEY IN
+                    <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+                      #{key}
+                    </foreach>
+                    AND ROWNUM &lt;= #{limit})
+  </delete>
+
+  <delete id="deleteByDecisionRequirementsKeys" databaseId="postgresql">
+    DELETE FROM ${prefix}DECISION_DEFINITION
+    WHERE ctid IN (SELECT ctid
+                   FROM ${prefix}DECISION_DEFINITION
+                   WHERE DECISION_REQUIREMENTS_KEY IN
+                   <foreach collection="decisionRequirementsKeys" item="key" open="(" separator="," close=")">
+                     #{key}
+                   </foreach>
+                   LIMIT #{limit})
+  </delete>
 </mapper>

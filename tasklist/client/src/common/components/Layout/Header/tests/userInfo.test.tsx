@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {act} from 'react';
 import {
   render,
   screen,
@@ -18,20 +19,7 @@ import {Header} from '..';
 import {getWrapper} from './mocks';
 import * as userMocks from 'common/mocks/current-user';
 import * as licenseMocks from 'common/mocks/license';
-import {getClientConfig} from 'common/config/getClientConfig';
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('common/config/getClientConfig')
->('common/config/getClientConfig');
-const mockGetClientConfig = vi.mocked(getClientConfig);
+import * as clientConfig from 'common/config/getClientConfig';
 
 describe('User info', () => {
   beforeEach(() => {
@@ -46,8 +34,6 @@ describe('User info', () => {
         },
       ),
     );
-
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
   });
 
   it('should render user display name', async () => {
@@ -108,8 +94,8 @@ describe('User info', () => {
   });
 
   it('should handle a SSO user', async () => {
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: false,
     });
 
@@ -144,6 +130,7 @@ describe('User info', () => {
   });
 
   it('should handle logout', async () => {
+    vi.useFakeTimers({shouldAdvanceTime: true});
     const logoutSpy = vi.spyOn(authenticationStore, 'handleLogout');
 
     nodeMockServer.use(
@@ -183,7 +170,14 @@ describe('User info', () => {
 
     await user.click(screen.getByText('Log out'));
 
+    act(() => {
+      vi.runOnlyPendingTimers();
+    });
+
     expect(logoutSpy).toHaveBeenCalled();
+
+    vi.clearAllTimers();
+    vi.useRealTimers();
   });
 
   it('should render links', async () => {

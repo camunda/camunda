@@ -94,18 +94,14 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
   });
 
-  test('select flow node in diagram', async ({
+  test('verify execution counts and incidents display for multi-instance flow node', async ({
     operateProcessInstancePage,
     operateDiagramPage,
   }) => {
-    await test.step('Expand and click on Task B flow node', async () => {
+    await test.step('Expand Task B (Multi instance) flow node', async () => {
       await operateProcessInstancePage.expandTreeItemInHistory(
         /^task b \(multi instance\)$/i,
       );
-      await operateProcessInstancePage
-        .findTreeItemInHistory(/^task b \(multi instance\)$/i)
-        .first()
-        .click();
     });
 
     await test.step('Verify 5 child Task B instances are visible', async () => {
@@ -138,6 +134,7 @@ test.describe('Multi Instance Flow Node Selection', () => {
     });
 
     await test.step('Click incidents banner to open incidents table', async () => {
+      await operateProcessInstancePage.navigateToRootScope();
       await operateProcessInstancePage.incidentsBanner.click();
       await expect(
         operateProcessInstancePage.incidentsViewHeader,

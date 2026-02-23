@@ -152,6 +152,38 @@ public class DecisionInstanceIT {
   }
 
   @TestTemplate
+  public void shouldFindAllDecisionInstancePagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader decisionInstanceReader =
+        rdbmsService.getDecisionInstanceReader();
+
+    final var decisionDefinition =
+        DecisionDefinitionFixtures.createAndSaveRandomDecisionDefinition(rdbmsWriters, b -> b);
+    createAndSaveRandomDecisionInstances(
+        rdbmsWriters,
+        120,
+        b -> b.decisionDefinitionKey(decisionDefinition.decisionDefinitionKey()));
+
+    final var searchResult =
+        decisionInstanceReader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(
+                            f ->
+                                f.decisionDefinitionKeys(
+                                    decisionDefinition.decisionDefinitionKey()))
+                        .sort(s -> s.evaluationDate().asc().decisionDefinitionName().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindDecisionInstanceWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();
@@ -266,6 +298,48 @@ public class DecisionInstanceIT {
 
     assertThat(actual).isNotNull();
     assertThat(actual.evaluationFailureMessage().length()).isEqualTo(4000);
+  }
+
+  @TestTemplate
+  public void shouldDeleteProcessInstanceRelatedData(
+      final CamundaRdbmsTestApplication testApplication) {
+    // given
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final DecisionInstanceDbReader reader = rdbmsService.getDecisionInstanceReader();
+
+    final var definition =
+        ProcessDefinitionFixtures.createAndSaveProcessDefinition(rdbmsWriters, b -> b);
+    final var item1 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item2 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+    final var item3 =
+        createAndSaveRandomDecisionInstance(
+            rdbmsWriters, b -> b.processDefinitionKey(definition.processDefinitionKey()));
+
+    // when
+    final int deleted =
+        rdbmsWriters
+            .getDecisionInstanceWriter()
+            .deleteProcessInstanceRelatedData(List.of(item2.processInstanceKey()), 10);
+
+    // then
+    assertThat(deleted).isEqualTo(1);
+    final var searchResult =
+        reader.search(
+            DecisionInstanceQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionKeys(definition.processDefinitionKey()))
+                        .sort(s -> s)
+                        .page(p -> p.from(0).size(20))));
+
+    assertThat(searchResult.total()).isEqualTo(2);
+    assertThat(searchResult.items()).hasSize(2);
+    assertThat(searchResult.items().stream().map(DecisionInstanceEntity::decisionInstanceKey))
+        .containsExactlyInAnyOrder(item1.decisionInstanceKey(), item3.decisionInstanceKey());
   }
 
   @TestTemplate

@@ -9,7 +9,7 @@
 import type {
   QueryUserTasksResponseBody,
   UserTask,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {currentUser} from 'common/mocks/current-user';
 import {assignedTask} from './task';
 
@@ -48,6 +48,7 @@ function getQueryTasksResponseMock(
       totalItems,
       startCursor: 'startCursor',
       endCursor: 'endCursor',
+      hasMoreTotalItems: false,
     },
   };
 }

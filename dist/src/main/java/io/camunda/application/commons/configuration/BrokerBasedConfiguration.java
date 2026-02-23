@@ -9,7 +9,7 @@ package io.camunda.application.commons.configuration;
 
 import io.atomix.cluster.ClusterConfig;
 import io.camunda.application.commons.actor.ActorSchedulerConfiguration.SchedulerConfiguration;
-import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientTimeoutConfiguration;
+import io.camunda.application.commons.broker.client.BrokerClientConfiguration.BrokerClientCfg;
 import io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled;
 import io.camunda.application.commons.configuration.WorkingDirectoryConfiguration.WorkingDirectory;
 import io.camunda.application.commons.job.JobHandlerConfiguration.ActivateJobHandlerConfiguration;
@@ -64,9 +64,11 @@ public class BrokerBasedConfiguration {
   }
 
   @Bean
-  public BrokerClientTimeoutConfiguration brokerClientConfig() {
-    return new BrokerClientTimeoutConfiguration(
-        properties.getGateway().getCluster().getRequestTimeout());
+  public BrokerClientCfg brokerClientConfig() {
+    return new BrokerClientCfg(
+        properties.getGateway().getCluster().getRequestTimeout(),
+        properties.getExperimental().isSendOnLegacySubject(),
+        properties.getExperimental().getDefaultEngineName());
   }
 
   @Bean

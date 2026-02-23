@@ -12,6 +12,7 @@ import static java.util.Objects.requireNonNull;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -41,6 +42,13 @@ public record JobEntity(
     OffsetDateTime creationTime,
     OffsetDateTime lastUpdateTime)
     implements TenantOwnedEntity {
+
+  public JobEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Map.of()) would cause UnsupportedOperationException at runtime.
+    customHeaders = customHeaders != null ? customHeaders : new HashMap<>();
+  }
 
   public static class Builder implements ObjectBuilder<JobEntity> {
     private Long jobKey;

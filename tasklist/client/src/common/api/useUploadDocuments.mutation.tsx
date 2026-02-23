@@ -13,7 +13,7 @@ import {PICKER_KEY} from 'common/document-handling/buildDocumentMultipart';
 import type {
   DocumentReference,
   CreateDocumentsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type Payload = {
   files: Map<string, File[]>;

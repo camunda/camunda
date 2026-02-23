@@ -40,6 +40,7 @@ tags:
   - name: Document
   - name: Element instance
   - name: Expression
+  - name: Global listener
   - name: Group
   - name: Incident
   - name: Job
@@ -177,6 +178,14 @@ paths:
   /expression/evaluation:
     $ref: 'expression.yaml#/paths/~1expression~1evaluation'
 
+  # Global listeners endpoints
+  /global-task-listeners:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners'
+  /global-task-listeners/{id}:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1{id}'
+  /global-task-listeners/search:
+    $ref: 'global-listeners.yaml#/paths/~1global-task-listeners~1search'
+
   # Group endpoints
   /groups:
     $ref: 'groups.yaml#/paths/~1groups'
@@ -228,6 +237,8 @@ paths:
   # Job metrics endpoints
   /jobs/statistics/global:
     $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1global'
+  /jobs/statistics/by-types:
+    $ref: 'job-metrics.yaml#/paths/~1jobs~1statistics~1by-types'
 
   # License endpoints
   /license:
@@ -264,8 +275,8 @@ paths:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1statistics~1element-instances'
   /process-definitions/{processDefinitionKey}/xml:
     $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionKey}~1xml'
-  /process-definitions/{processDefinitionId}/statistics/process-instances:
-    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1{processDefinitionId}~1statistics~1process-instances'
+  /process-definitions/statistics/process-instances-by-version:
+    $ref: 'process-definitions.yaml#/paths/~1process-definitions~1statistics~1process-instances-by-version'
 
   # Process instance endpoints
   /process-instances:

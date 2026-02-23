@@ -21,6 +21,7 @@ public record SearchClientReaders(
     GroupMemberReader groupMemberReader,
     IncidentReader incidentReader,
     JobReader jobReader,
+    JobMetricsBatchReader jobMetricsBatchReader,
     MappingRuleReader mappingRuleReader,
     MessageSubscriptionReader messageSubscriptionReader,
     ProcessDefinitionMessageSubscriptionStatisticsReader
@@ -46,4 +47,5 @@ public record SearchClientReaders(
     AuditLogReader auditLogReader,
     IncidentProcessInstanceStatisticsByErrorReader incidentProcessInstanceStatisticsByErrorReader,
     IncidentProcessInstanceStatisticsByDefinitionReader
-        incidentProcessInstanceStatisticsByDefinitionReader) {}
+        incidentProcessInstanceStatisticsByDefinitionReader,
+    GlobalListenerReader globalListenerReader) {}

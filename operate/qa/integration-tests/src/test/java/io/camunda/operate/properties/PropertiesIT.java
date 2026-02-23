@@ -11,6 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
+import io.camunda.application.initializers.WebappsConfigurationInitializer;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
@@ -24,6 +25,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
@@ -39,6 +41,7 @@ import org.springframework.test.context.junit4.SpringRunner;
       CamundaSecurityProperties.class
     },
     webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@ContextConfiguration(initializers = {WebappsConfigurationInitializer.class})
 @ActiveProfiles({"test-properties", "operate", "standalone"})
 public class PropertiesIT {
 
@@ -73,9 +76,13 @@ public class PropertiesIT {
     assertThat(operateProperties.getIdentity().getClientId()).isEqualTo("someClientId");
     assertThat(operateProperties.getIdentity().getClientSecret()).isEqualTo("jahktewpofsdifhsdg");
     assertThat(operateProperties.getIdentity().getAudience()).isEqualTo("operateAudience");
+
     // assert that it can be set from ${camunda.operate.identity.resourcePermissionsEnabled}
+    // this relationship is defined in WebappsConfigurationInitializer
     assertThat(securityConfiguration.getAuthorizations().isEnabled()).isTrue();
+
     // assert that it can be set from ${camunda.operate.multiTenancy.enabled}
+    // this relationship is defined in WebappsConfigurationInitializer
     assertThat(securityConfiguration.getMultiTenancy().isChecksEnabled()).isTrue();
   }
 }

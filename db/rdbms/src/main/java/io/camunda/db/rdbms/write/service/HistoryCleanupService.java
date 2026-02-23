@@ -11,6 +11,7 @@ import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.db.rdbms.write.RdbmsWriterMetrics;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import io.camunda.search.entities.BatchOperationType;
 import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
@@ -36,6 +37,8 @@ public class HistoryCleanupService {
   private final int processInstanceBatchSize;
   private final Duration usageMetricsCleanup;
   private final Duration usageMetricsTTL;
+  private final Duration jobBatchMetricsCleanup;
+  private final Duration jobBatchMetricsTTL;
 
   private final RdbmsWriterMetrics metrics;
 
@@ -45,8 +48,9 @@ public class HistoryCleanupService {
   private final BatchOperationWriter batchOperationWriter;
   private final UsageMetricWriter usageMetricWriter;
   private final UsageMetricTUWriter usageMetricTUWriter;
+  private final JobMetricsBatchWriter jobMetricsBatchWriter;
   private final AuditLogWriter auditLogWriter;
-  private final Map<String, RootProcessInstanceDependant> rootProcessInstanceDependentChildWriters;
+  private final Map<String, ProcessInstanceDependant> rootProcessInstanceDependentChildWriters;
 
   private final Map<Integer, Duration> lastCleanupInterval = new HashMap<>();
 
@@ -71,6 +75,8 @@ public class HistoryCleanupService {
     maxCleanupInterval = config.history().maxHistoryCleanupInterval();
     usageMetricsCleanup = config.history().usageMetricsCleanup();
     usageMetricsTTL = config.history().usageMetricsTTL();
+    jobBatchMetricsCleanup = config.history().jobBatchMetricsCleanup();
+    jobBatchMetricsTTL = config.history().jobBatchMetricsTTL();
     cleanupBatchSize = config.history().historyCleanupBatchSize();
     processInstanceBatchSize = config.history().historyCleanupProcessInstanceBatchSize();
     processInstanceWriter = rdbmsWriters.getProcessInstanceWriter();
@@ -80,6 +86,7 @@ public class HistoryCleanupService {
     batchOperationWriter = rdbmsWriters.getBatchOperationWriter();
     usageMetricWriter = rdbmsWriters.getUsageMetricWriter();
     usageMetricTUWriter = rdbmsWriters.getUsageMetricTUWriter();
+    jobMetricsBatchWriter = rdbmsWriters.getJobMetricsBatchWriter();
     auditLogWriter = rdbmsWriters.getAuditLogWriter();
 
     rootProcessInstanceDependentChildWriters =
@@ -125,6 +132,8 @@ public class HistoryCleanupService {
         batchOperationKey,
         historyCleanupDate);
     batchOperationWriter.scheduleForHistoryCleanup(batchOperationKey, historyCleanupDate);
+    auditLogWriter.scheduleEntityRelatedAuditLogsHistoryCleanupTime(
+        batchOperationKey, AuditLogEntityType.BATCH, historyCleanupDate);
   }
 
   @VisibleForTesting
@@ -260,6 +269,30 @@ public class HistoryCleanupService {
     return usageMetricsCleanup;
   }
 
+  public Duration cleanupJobBatchMetricsHistory(final int partitionId, final OffsetDateTime now) {
+
+    final var cleanupDate = now.minus(jobBatchMetricsTTL);
+    LOG.trace(
+        "Cleanup job batch metrics history for partition {} with date before {}",
+        partitionId,
+        cleanupDate);
+
+    try (final var sample = metrics.measureJobBatchMetricsHistoryCleanupDuration()) {
+      final long start = System.currentTimeMillis();
+
+      final var numDeletedRecords = new HashMap<String, Integer>();
+      numDeletedRecords.put(
+          "jobBatchMetrics",
+          jobMetricsBatchWriter.cleanupMetrics(partitionId, cleanupDate, cleanupBatchSize));
+
+      final long end = System.currentTimeMillis();
+
+      logCleanUpInfo("Job Batch Metrics", partitionId, numDeletedRecords, cleanupDate, end, start);
+    }
+
+    return jobBatchMetricsCleanup;
+  }
+
   private void logCleanUpInfo(
       final String cleanupType,
       final int partitionId,
@@ -365,5 +398,9 @@ public class HistoryCleanupService {
 
   public Duration getUsageMetricsHistoryCleanupInterval() {
     return usageMetricsCleanup;
+  }
+
+  public Duration getJobBatchMetricsHistoryCleanupInterval() {
+    return jobBatchMetricsCleanup;
   }
 }

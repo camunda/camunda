@@ -102,6 +102,11 @@ public class BatchOperationChunkCreatedItemHandler
         .setState(OperationState.SCHEDULED)
         .setProcessInstanceKey(item.getProcessInstanceKey())
         .setItemKey(item.getItemKey());
+
+    final var rootProcessInstanceKey = item.getRootProcessInstanceKey();
+    if (rootProcessInstanceKey > 0) {
+      entity.setRootProcessInstanceKey(rootProcessInstanceKey);
+    }
   }
 
   @Override

@@ -9,6 +9,7 @@ package io.camunda.search.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
+import java.util.HashSet;
 import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -20,4 +21,14 @@ public record AuthorizationEntity(
     Short resourceMatcher,
     String resourceId,
     String resourcePropertyName,
-    Set<PermissionType> permissionTypes) {}
+    Set<PermissionType> permissionTypes) {
+
+  public AuthorizationEntity {
+    // Mutable collections are required: MyBatis hydrates collection-mapped fields (e.g. from a
+    // <collection> result map or a LEFT JOIN) by calling .add() on the existing instance.
+    // Immutable defaults (e.g. Set.of()) would cause UnsupportedOperationException at runtime.
+    // Note: the API always requires at least one permission type, so null is not expected in
+    // practice — this guard exists purely as a defensive measure.
+    permissionTypes = permissionTypes != null ? permissionTypes : new HashSet<>();
+  }
+}

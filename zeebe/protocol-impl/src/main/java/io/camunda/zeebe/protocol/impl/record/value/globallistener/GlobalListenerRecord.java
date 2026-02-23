@@ -9,10 +9,12 @@ package io.camunda.zeebe.protocol.impl.record.value.globallistener;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
+import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeTaskListenerEventType;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BooleanProperty;
 import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
@@ -20,8 +22,11 @@ import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerSource;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerType;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 public final class GlobalListenerRecord extends UnifiedRecordValue
@@ -30,6 +35,22 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   public static final int DEFAULT_RETRIES = 3;
   public static final int DEFAULT_PRIORITY = 50;
 
+  /**
+   * Comparator to sort global listeners by priority in descending order, and then by id in
+   * ascending order. Used when listing global listeners to ensure a deterministic order, and to
+   * execute listeners in the correct order based on their priority.
+   */
+  public static final Comparator<GlobalListenerRecord> PRIORITY_COMPARATOR =
+      Comparator.comparingInt(GlobalListenerRecord::getPriority)
+          .reversed()
+          .thenComparing(GlobalListenerRecord::getId);
+
+  public static final String ALL_EVENT_TYPES = "all";
+  // Set of all possible task listener event types as strings, to be used while validating records
+  public static final Set<String> TASK_LISTENER_EVENT_TYPES =
+      Stream.of(ZeebeTaskListenerEventType.values()).map(Enum::name).collect(Collectors.toSet());
+
+  private final LongProperty globalListenerKeyProp = new LongProperty("globalListenerKey", -1L);
   private final StringProperty idProp = new StringProperty("id", "");
   private final StringProperty typeProp = new StringProperty("type", "");
   private final IntegerProperty retriesProp = new IntegerProperty("retries", DEFAULT_RETRIES);
@@ -38,20 +59,34 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
   private final BooleanProperty afterNonGlobalProp = new BooleanProperty("afterNonGlobal", false);
   private final IntegerProperty priorityProp = new IntegerProperty("priority", DEFAULT_PRIORITY);
   private final EnumProperty<GlobalListenerSource> sourceProp =
-      new EnumProperty<>("source", GlobalListenerSource.class, GlobalListenerSource.CONFIGURATION);
+      new EnumProperty<>("source", GlobalListenerSource.class, DEFAULT_SOURCE);
   private final EnumProperty<GlobalListenerType> listenerTypeProp =
-      new EnumProperty<>("listenerType", GlobalListenerType.class, GlobalListenerType.USER_TASK);
+      new EnumProperty<>("listenerType", GlobalListenerType.class, DEFAULT_LISTENER_TYPE);
+
+  private final LongProperty configKeyProp = new LongProperty("configKey", -1L);
 
   public GlobalListenerRecord() {
-    super(8);
-    declareProperty(idProp)
+    super(10);
+    declareProperty(globalListenerKeyProp)
+        .declareProperty(idProp)
         .declareProperty(typeProp)
         .declareProperty(retriesProp)
         .declareProperty(eventTypesProp)
         .declareProperty(afterNonGlobalProp)
         .declareProperty(priorityProp)
         .declareProperty(sourceProp)
-        .declareProperty(listenerTypeProp);
+        .declareProperty(listenerTypeProp)
+        .declareProperty(configKeyProp);
+  }
+
+  @Override
+  public Long getGlobalListenerKey() {
+    return globalListenerKeyProp.getValue();
+  }
+
+  public GlobalListenerRecord setGlobalListenerKey(final Long key) {
+    globalListenerKeyProp.setValue(key);
+    return this;
   }
 
   @Override
@@ -135,6 +170,16 @@ public final class GlobalListenerRecord extends UnifiedRecordValue
 
   public GlobalListenerRecord setListenerType(final GlobalListenerType listenerType) {
     listenerTypeProp.setValue(listenerType);
+    return this;
+  }
+
+  @Override
+  public Long getConfigKey() {
+    return configKeyProp.getValue();
+  }
+
+  public GlobalListenerRecord setConfigKey(final Long configKey) {
+    configKeyProp.setValue(configKey);
     return this;
   }
 

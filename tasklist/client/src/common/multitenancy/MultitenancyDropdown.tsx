@@ -8,7 +8,7 @@
 
 import {Dropdown} from '@carbon/react';
 import {useCurrentUser} from 'common/api/useCurrentUser.query';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useTranslation} from 'react-i18next';
 
 type Tenants = CurrentUser['tenants'][0];

@@ -159,16 +159,14 @@ public class ProcessDefinitionController {
   }
 
   @RequiresSecondaryStorage
-  @CamundaPostMapping(path = "/{processDefinitionId}/statistics/process-instances")
+  @CamundaPostMapping(path = "/statistics/process-instances-by-version")
   public ResponseEntity<ProcessDefinitionInstanceVersionStatisticsQueryResult>
       processInstanceVersionStatistics(
-          @PathVariable("processDefinitionId") final String processDefinitionId,
-          @RequestBody(required = false)
-              final ProcessDefinitionInstanceVersionStatisticsQuery query) {
+          @RequestBody() final ProcessDefinitionInstanceVersionStatisticsQuery query) {
     return SearchQueryRequestMapper.toProcessDefinitionInstanceVersionStatisticsQuery(query)
         .fold(
             RestErrorMapper::mapProblemToResponse,
-            q -> searchProcessDefinitionInstanceVersionStatistics(processDefinitionId, q));
+            this::searchProcessDefinitionInstanceVersionStatistics);
   }
 
   private ResponseEntity<ProcessDefinitionElementStatisticsQueryResult> elementStatistics(
@@ -218,13 +216,12 @@ public class ProcessDefinitionController {
 
   private ResponseEntity<ProcessDefinitionInstanceVersionStatisticsQueryResult>
       searchProcessDefinitionInstanceVersionStatistics(
-          final String processDefinitionId,
           final io.camunda.search.query.ProcessDefinitionInstanceVersionStatisticsQuery query) {
     try {
       final var result =
           processDefinitionServices
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
-              .searchProcessDefinitionInstanceVersionStatistics(processDefinitionId, query);
+              .searchProcessDefinitionInstanceVersionStatistics(query);
       return ResponseEntity.ok(
           SearchQueryResponseMapper.toProcessInstanceVersionStatisticsQueryResult(result));
     } catch (final Exception e) {

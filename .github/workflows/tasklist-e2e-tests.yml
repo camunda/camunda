@@ -47,7 +47,7 @@ jobs:
     if: ${{ needs.detect-changes.outputs.tasklist-backend-changes == 'true' || needs.detect-changes.outputs.tasklist-frontend-changes == 'true' }}
     services:
       elasticsearch:
-        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.10
+        image: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
         env:
           discovery.type: single-node
           cluster.name: docker-cluster
@@ -78,7 +78,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: 24
 
       - name: Install node dependencies
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
@@ -110,7 +110,7 @@ jobs:
 
       # Use CI Nexus as co-located pull-through cache for Maven artifacts via ~/.m2/settings.xml
       - name: "Create settings.xml"
-        uses: s4u/maven-settings-action@v3.1.0
+        uses: s4u/maven-settings-action@v4.0.0
         with:
           githubServer: false
           servers: |
@@ -128,6 +128,13 @@ jobs:
 
       - name: Start Tasklist
         env:
+          SPRING_PROFILES_ACTIVE: e2e-test,dev,tasklist,consolidated-auth,broker
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://localhost:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: false
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS: false
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
@@ -140,7 +147,6 @@ jobs:
           ./mvnw -q -B spring-boot:start -pl dist
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
           -Dspring-boot.run.fork=true
-          -Dspring-boot.run.jvmArguments="-Dspring.profiles.active=e2e-test,dev,tasklist,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false -Dcamunda.data.secondary-storage.elasticsearch.wait-for-importers=false -Dzeebe.broker.backpressure.enabled=false"
           -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616"
 
       - name: Python setup
@@ -160,7 +166,7 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         run: npm run test -- --project=tasklist-${{ matrix.tasklist_mode }}-e2e
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         if: always()
         with:
           name: C8 Orchestration Cluster E2E Test Result (${{ matrix.tasklist_mode }})

@@ -32,6 +32,14 @@ type VariableInstruction = NonNullable<
 
 type ScopeMap = {[internalScopeId: string]: string};
 
+type AncestorScopeTypes = NonNullable<
+  MoveInstruction['ancestorScopeInstruction']
+>['ancestorScopeType'];
+
+type AncestorScopeType =
+  | Extract<AncestorScopeTypes, 'inferred' | 'sourceParent'>
+  | undefined;
+
 type FlowNodeModificationPayload =
   | {
       operation: 'ADD_TOKEN';
@@ -62,13 +70,10 @@ type FlowNodeModificationPayload =
       visibleAffectedTokenCount: number;
       targetFlowNode: {id: string; name: string};
       scopeIds: string[];
-      ancestorElement?: {
-        instanceKey: string;
-        flowNodeId: string;
-      };
       parentScopeIds: {
         [flowNodeId: string]: string;
       };
+      ancestorScopeType?: AncestorScopeType;
     };
 
 type VariableModificationPayload = {
@@ -99,7 +104,6 @@ type State = {
     | 'enabled'
     | 'adding-token'
     | 'moving-token'
-    | 'requires-ancestor-selection'
     | 'disabled'
     | 'applying-modifications';
   modifications: Modification[];
@@ -223,19 +227,6 @@ class Modifications {
 
   setSourceFlowNodeIdForMoveOperation = (sourceFlowNodeId: string | null) => {
     this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
-  };
-
-  setAncestorFlowNodeKeyForMoveOperation = (ancestorElement: {
-    instanceKey: string;
-    flowNodeId: string;
-  }) => {
-    const lastModification =
-      this.state.modifications[this.state.modifications.length - 1];
-
-    if (lastModification.payload.operation === 'MOVE_TOKEN') {
-      lastModification.payload.ancestorElement = ancestorElement;
-      modificationsStore.setStatus('enabled');
-    }
   };
 
   setSourceFlowNodeInstanceKeyForMoveOperation = (
@@ -454,6 +445,30 @@ class Modifications {
     return scopeMap;
   }
 
+  #getScopeMapForModification(
+    modification: FlowNodeModificationPayload,
+  ): ScopeMap {
+    switch (modification.operation) {
+      case 'ADD_TOKEN': {
+        return this.#getScopeMap(
+          [modification.scopeId],
+          modification.flowNode.id,
+          modification.parentScopeIds,
+        );
+      }
+      case 'MOVE_TOKEN': {
+        return this.#getScopeMap(
+          modification.scopeIds,
+          modification.targetFlowNode.id,
+          modification.parentScopeIds,
+        );
+      }
+      default: {
+        return {};
+      }
+    }
+  }
+
   #getVariableInstructionsForScopeMap(
     scopeMap: ScopeMap,
   ): VariableInstruction[] {
@@ -484,11 +499,7 @@ class Modifications {
           break;
         }
         case 'ADD_TOKEN': {
-          const scopeMap = this.#getScopeMap(
-            [modification.scopeId],
-            modification.flowNode.id,
-            modification.parentScopeIds,
-          );
+          const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: ActivateInstruction = {
             elementId: modification.flowNode.id,
@@ -502,11 +513,7 @@ class Modifications {
           break;
         }
         case 'MOVE_TOKEN': {
-          const scopeMap = this.#getScopeMap(
-            modification.scopeIds,
-            modification.targetFlowNode.id,
-            modification.parentScopeIds,
-          );
+          const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: MoveInstruction = {
             sourceElementInstruction: modification.flowNodeInstanceKey
@@ -519,12 +526,8 @@ class Modifications {
                   sourceElementId: modification.flowNode.id,
                 },
             targetElementId: modification.targetFlowNode.id,
-            ancestorScopeInstruction: modification.ancestorElement?.instanceKey
-              ? {
-                  ancestorScopeType: 'direct',
-                  ancestorElementInstanceKey:
-                    modification.ancestorElement.instanceKey,
-                }
+            ancestorScopeInstruction: modification.ancestorScopeType
+              ? {ancestorScopeType: modification.ancestorScopeType}
               : undefined,
             variableInstructions:
               this.#getVariableInstructionsForScopeMap(scopeMap),
@@ -603,6 +606,38 @@ class Modifications {
     this.reset();
   };
 
+  hasOrphanedVariableModifications = (processInstanceKey: string): boolean => {
+    const variableModifications = this.variableModifications;
+    if (variableModifications.length === 0) {
+      return false;
+    }
+
+    let allPendingScopeIds = new Set<string>();
+    let hasAddOrMoveToken = false;
+
+    for (const modification of this.flowNodeModifications) {
+      const operation = modification.operation;
+      if (operation !== 'ADD_TOKEN' && operation !== 'MOVE_TOKEN') {
+        continue;
+      }
+
+      hasAddOrMoveToken = true;
+      const scopeMap = this.#getScopeMapForModification(modification);
+      for (const id of Object.keys(scopeMap)) {
+        allPendingScopeIds.add(id);
+      }
+    }
+
+    return variableModifications.some((modification) => {
+      // Root variable modification cannot be applied without an ADD/MOVE token modification
+      if (modification.scopeId === processInstanceKey) {
+        return !hasAddOrMoveToken;
+      }
+
+      return !allPendingScopeIds.has(modification.scopeId);
+    });
+  };
+
   getParentScopeId = (flowNodeId: string) => {
     const parentScope = this.flowNodeModifications.find(
       (modification) =>
@@ -666,6 +701,7 @@ class Modifications {
     visibleAffectedTokenCount,
     businessObjects,
     bpmnProcessId,
+    ancestorScopeType,
   }: {
     sourceFlowNodeId: string;
     sourceFlowNodeInstanceKey?: string;
@@ -675,6 +711,7 @@ class Modifications {
     visibleAffectedTokenCount: number;
     businessObjects: BusinessObjects;
     bpmnProcessId?: string;
+    ancestorScopeType?: AncestorScopeType;
   }) => {
     modificationsStore.addModification({
       type: 'token',
@@ -705,6 +742,7 @@ class Modifications {
           targetFlowNodeId,
           bpmnProcessId,
         ),
+        ancestorScopeType,
       },
     });
   };
@@ -715,6 +753,6 @@ class Modifications {
   };
 }
 
-export type {FlowNodeModification};
+export type {FlowNodeModification, AncestorScopeType};
 export const modificationsStore = new Modifications();
 export {EMPTY_MODIFICATION};

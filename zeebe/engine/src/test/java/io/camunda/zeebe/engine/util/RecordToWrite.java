@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.impl.record.value.adhocsubprocess.AdHocSubProcessInstructionRecord;
 import io.camunda.zeebe.protocol.impl.record.value.conditional.ConditionalSubscriptionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.error.ErrorRecord;
 import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListenerBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -31,6 +32,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.AdHocSubProcessInstructionIntent;
 import io.camunda.zeebe.protocol.record.intent.ConditionalSubscriptionIntent;
+import io.camunda.zeebe.protocol.record.intent.ErrorIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
@@ -48,6 +50,7 @@ import io.camunda.zeebe.protocol.record.intent.VariableDocumentIntent;
 import io.camunda.zeebe.protocol.record.intent.scaling.ScaleIntent;
 import io.camunda.zeebe.protocol.record.value.AdHocSubProcessInstructionRecordValue;
 import io.camunda.zeebe.protocol.record.value.ConditionalSubscriptionRecordValue;
+import io.camunda.zeebe.protocol.record.value.ErrorRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobMetricsBatchRecordValue;
 import io.camunda.zeebe.protocol.record.value.JobRecordValue;
@@ -221,6 +224,12 @@ public final class RecordToWrite implements LogAppendEntry {
       final GlobalListenerBatchIntent intent, final GlobalListenerBatchRecordValue value) {
     recordMetadata.valueType(ValueType.GLOBAL_LISTENER_BATCH).intent(intent);
     unifiedRecordValue = (GlobalListenerBatchRecord) value;
+    return this;
+  }
+
+  public RecordToWrite error(final ErrorIntent intent, final ErrorRecordValue value) {
+    recordMetadata.valueType(ValueType.ERROR).intent(intent);
+    unifiedRecordValue = (ErrorRecord) value;
     return this;
   }
 

@@ -46,19 +46,22 @@ import java.util.Set;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(value = ProcessInstanceController.class)
 public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
@@ -72,7 +75,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
   private static final ProcessInstanceEntity PROCESS_INSTANCE_ENTITY =
       new ProcessInstanceEntity(
           123L,
-          null,
+          37L,
           "demoProcess",
           "Demo Process",
           5,
@@ -91,6 +94,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
       """
             {
             "processInstanceKey": "123",
+            "rootProcessInstanceKey": "37",
             "processDefinitionId": "demoProcess",
             "processDefinitionName": "Demo Process",
             "processDefinitionVersion": 5,
@@ -99,6 +103,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "parentProcessInstanceKey": "333",
             "parentElementInstanceKey": "777",
             "startDate": "2024-01-01T00:00:00.000Z",
+            "endDate": null,
             "state": "ACTIVE",
             "hasIncident": false,
             "tenantId": "tenant",
@@ -111,6 +116,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
               "items": [
                 {
                   "processInstanceKey": "123",
+                  "rootProcessInstanceKey": "37",
                   "processDefinitionId": "demoProcess",
                   "processDefinitionName": "Demo Process",
                   "processDefinitionVersion": 5,
@@ -119,6 +125,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "parentProcessInstanceKey": "333",
                   "parentElementInstanceKey": "777",
                   "startDate": "2024-01-01T00:00:00.000Z",
+                  "endDate": null,
                   "state": "ACTIVE",
                   "hasIncident": false,
                   "tenantId": "tenant",
@@ -165,6 +172,7 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "processDefinitionId": "Test_Process",
                   "errorMessage": "Process crashed",
                   "processInstanceKey": "789",
+                  "rootProcessInstanceKey": "37",
                   "errorType": "CALLED_DECISION_ERROR",
                   "elementId": "elementId",
                   "elementInstanceKey": "234",

@@ -16,9 +16,9 @@ export function validateProcessDefinitionDeployment(
   expectedResourceName: string,
   expectedProcessDefinitionId: string,
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const processDeployment = deployments.find(
-    (d) => 'processDefinition' in (d as object),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d) => (d as any).processDefinition != null,
   ) as any;
   expect(processDeployment).toBeDefined();
   expect(processDeployment.processDefinition.tenantId).toEqual('<default>');
@@ -38,9 +38,9 @@ export function validateFormDeployment(
   expectedResourceName: string,
   expectedFormId: string,
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const formDeployment = deployments.find(
-    (d) => 'form' in (d as object),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d) => (d as any).form != null,
   ) as any;
   expect(
     formDeployment,
@@ -58,9 +58,9 @@ export function validateDecisionDefinitionDeployment(
   expectedDecisionDefinitionId: string,
   expectedName: string,
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const decisionDeployment = deployments.find(
-    (d) => 'decisionDefinition' in (d as object),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d) => (d as any).decisionDefinition != null,
   ) as any;
   expect(
     decisionDeployment,
@@ -89,9 +89,9 @@ export function validateDecisionRequirementsDeployment(
   expectedDecisionRequirementsId: string,
   expectedDecisionRequirementsName: string,
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const decisionRequirementsDeployment = deployments.find(
-    (d) => 'decisionRequirements' in (d as object),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d) => (d as any).decisionRequirements != null,
   ) as any;
   expect(
     decisionRequirementsDeployment,
@@ -124,9 +124,9 @@ export function validateRpaDeployment(
   expectedResourceName: string,
   expectedRpaId: string,
 ): void {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rpaDeployment = deployments.find(
-    (d) => 'resource' in (d as object),
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (d) => (d as any).resource != null,
   ) as any;
   expect(rpaDeployment).toBeDefined();
   expect(rpaDeployment.resource.tenantId).toEqual('<default>');

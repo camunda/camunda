@@ -24,8 +24,12 @@ public class AuthorizationEntity extends AbstractExporterEntity<AuthorizationEnt
   @BeforeVersion880 private String resourceId;
   @BeforeVersion880 private Set<PermissionType> permissionTypes;
 
-  @SinceVersion(value = "8.9.0", requireDefault = false)
-  private String resourcePropertyName;
+  // Default to empty string for backward compatibility. All new resourceId-based authorizations
+  // (starting 8.9) will have an empty string value for resourcePropertyName. For authorizations
+  // created before 8.9, this field will be null in the database, so we set this default value
+  // to provide the same output as new resourceId-based authorizations.
+  @SinceVersion(value = "8.9.0")
+  private String resourcePropertyName = "";
 
   public AuthorizationEntity() {}
 

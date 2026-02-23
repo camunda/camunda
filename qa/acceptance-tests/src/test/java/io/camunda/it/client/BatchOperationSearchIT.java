@@ -495,6 +495,7 @@ public class BatchOperationSearchIT {
       assertThat(item.get().getProcessInstanceKey()).isEqualTo(key);
       assertThat(item.get().getOperationType()).isNotNull();
       assertThat(item.get().getStatus()).isEqualTo(BatchOperationItemState.COMPLETED);
+      assertThat(item.get().getRootProcessInstanceKey()).isEqualTo(key);
     }
   }
 

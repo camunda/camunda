@@ -12,15 +12,25 @@ import 'monaco-editor/esm/vs/editor/browser/coreCommands.js';
 import 'monaco-editor/esm/vs/editor/contrib/find/browser/findController.js';
 import 'monaco-editor/esm/vs/editor/contrib/hover/browser/hoverContribution.js';
 import 'monaco-editor/esm/vs/editor/contrib/gotoError/browser/gotoError.js';
-import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
+import * as monaco from 'monaco-editor';
+import editorWorker from 'monaco-editor/esm/vs/editor/editor.worker?worker';
 import jsonWorker from 'monaco-editor/esm/vs/language/json/json.worker?worker';
 
 function loadMonaco() {
   self.MonacoEnvironment = {
-    getWorker() {
-      return new jsonWorker();
+    getWorker(_, label: string) {
+      if (label === 'json') {
+        return new jsonWorker();
+      }
+      return new editorWorker();
     },
   };
+
+  monaco.json.jsonDefaults.setDiagnosticsOptions({
+    ...monaco.json.jsonDefaults.diagnosticsOptions,
+    schemaValidation: 'error',
+    schemaRequest: 'error',
+  });
 
   loader.config({
     monaco,

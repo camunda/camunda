@@ -39,6 +39,7 @@ public class UserTaskImpl implements UserTask {
   private final String processName;
   private final Long processDefinitionKey;
   private final Long processInstanceKey;
+  private final Long rootProcessInstanceKey;
   private final Long formKey;
   private final OffsetDateTime creationDate;
   private final OffsetDateTime completionDate;
@@ -64,6 +65,7 @@ public class UserTaskImpl implements UserTask {
     processName = item.getProcessName();
     processDefinitionKey = ParseUtil.parseLongOrNull(item.getProcessDefinitionKey());
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
+    rootProcessInstanceKey = ParseUtil.parseLongOrNull(item.getRootProcessInstanceKey());
     formKey = ParseUtil.parseLongOrNull(item.getFormKey());
     creationDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCreationDate());
     completionDate = ParseUtil.parseOffsetDateTimeOrNull(item.getCompletionDate());
@@ -135,6 +137,11 @@ public class UserTaskImpl implements UserTask {
   @Override
   public Long getProcessInstanceKey() {
     return processInstanceKey;
+  }
+
+  @Override
+  public Long getRootProcessInstanceKey() {
+    return rootProcessInstanceKey;
   }
 
   @Override

@@ -11,21 +11,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
-import io.camunda.management.backups.StateCode;
+import io.camunda.management.backups.PartitionBackupState;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
-import io.camunda.zeebe.qa.util.actuator.ActorClockActuator;
-import io.camunda.zeebe.qa.util.actuator.ActorClockActuator.AddTimeRequest;
-import io.camunda.zeebe.qa.util.actuator.ActorClockActuator.PinTimeRequest;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -38,13 +35,16 @@ import org.junit.jupiter.api.Test;
  * tests verify that backups follow a rolling window pattern and that old backups and range markers
  * are properly deleted.
  */
-public interface BackupRetentionAcceptance {
+public interface BackupRetentionAcceptance extends ClockSupport {
   int PARTITION_COUNT = 3;
   int BROKER_COUNT = 3;
   int REPLICATION_FACTOR = 3;
+  // Backup tolerance to account for clock skew when taking a backup after advancing the clock
+  int BACKUP_TOLERANCE_MILLIS = 200;
   Duration BACKUP_INTERVAL = Duration.ofSeconds(5);
-  Duration CLEANUP_INTERVAL = Duration.ofSeconds(5);
-  Duration RETENTION_WINDOW = Duration.ofSeconds(15);
+  Duration CLEANUP_INTERVAL = Duration.ofSeconds(3);
+  // Retention window is slightly longer than backup interval to account for clock drift
+  Duration RETENTION_WINDOW = BACKUP_INTERVAL.plus(Duration.ofSeconds(3));
 
   TestCluster getTestCluster();
 
@@ -54,7 +54,7 @@ public interface BackupRetentionAcceptance {
 
   @BeforeEach
   default void setup() {
-    applyBackupConfig();
+    applyInitialConfig();
     containerSetup();
     getTestCluster().start().awaitCompleteTopology();
   }
@@ -62,18 +62,16 @@ public interface BackupRetentionAcceptance {
   @Test
   default void shouldMaintainRollingWindowAndDeleteOldBackupsWithRangeMarkers() {
 
-    pinClock();
+    pinClock(getTestCluster());
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
-    final List<Long> backupIds = new ArrayList<>();
 
-    // Wait for 3 completed backups
+    // Wait for 4 completed backups
     final var firstBackup = awaitNewBackup(0);
     final var secondBackup = awaitNewBackup(firstBackup);
     final var thirdBackup = awaitNewBackup(secondBackup);
-    backupIds.add(firstBackup);
-    backupIds.add(secondBackup);
+    final var fourthBackup = awaitNewBackup(thirdBackup);
 
-    resetTime();
+    restartClusterWithRetention();
 
     Awaitility.await("Retention deletes old backups")
         .atMost(Duration.ofSeconds(90))
@@ -86,32 +84,41 @@ public interface BackupRetentionAcceptance {
 
               // Initial backups should have been deleted
               assertThat(currentBackupIds)
-                  .as("Initial backup %s should have been deleted by retention", backupIds)
-                  .doesNotContainAnyElementsOf(backupIds);
+                  .as(
+                      "Initial backup %s should have been deleted by retention",
+                      List.of(firstBackup, secondBackup))
+                  .doesNotContain(firstBackup, secondBackup)
+                  .contains(thirdBackup);
             });
 
-    backupIds.forEach(this::assertManifestNotFoundFromStore);
-    assertRangeMarkerHasBeenUpdated(thirdBackup);
+    assertManifestPresentInStore(thirdBackup);
+    assertManifestNotFoundFromStore(firstBackup);
+    assertManifestNotFoundFromStore(secondBackup);
+    assertRangeMarkerHasBeenUpdated(thirdBackup, fourthBackup);
   }
 
   default long awaitNewBackup(final long previousBackup) {
-    progressClock(BACKUP_INTERVAL.toMillis());
+    progressClock(getTestCluster(), BACKUP_INTERVAL.toMillis() + BACKUP_TOLERANCE_MILLIS);
     final var actuator = BackupActuator.of(getTestCluster().availableGateway());
     Awaitility.await("Backup is created")
         .atMost(Duration.ofSeconds(30))
         .pollInterval(Duration.ofSeconds(1))
         .until(
             () -> {
-              final var backups = actuator.list();
-              return backups.stream()
-                  .anyMatch(
-                      f -> f.getState() == StateCode.COMPLETED && f.getBackupId() > previousBackup);
+              final var state = actuator.state();
+              if (state.getBackupStates().isEmpty()) {
+                return false;
+              }
+              return state.getBackupStates().stream()
+                  .filter(f -> Objects.nonNull(f.getCheckpointId()))
+                  .allMatch(f -> f.getCheckpointId() > previousBackup);
             });
-    return actuator.list().stream()
-        .filter(f -> f.getState() == StateCode.COMPLETED && f.getBackupId() > previousBackup)
+    return actuator.state().getBackupStates().stream()
+        .filter(f -> Objects.nonNull(f.getCheckpointId()))
+        .filter(f -> f.getCheckpointId() > previousBackup)
         .findFirst()
-        .get()
-        .getBackupId();
+        .map(PartitionBackupState::getCheckpointId)
+        .orElseThrow();
   }
 
   default void assertManifestNotFoundFromStore(final Long backupId) {
@@ -124,12 +131,35 @@ public interface BackupRetentionAcceptance {
                           final var identifier =
                               new BackupIdentifierImpl(brokerId, partitionId, backupId);
                           assertThat(getBackupStore().getStatus(identifier).join())
+                              .withFailMessage(
+                                  String.format(
+                                      "Expected backup manifest for broker %d partition %d backupId %d not to be present in store",
+                                      brokerId, partitionId, backupId))
                               .extracting(BackupStatus::statusCode)
                               .isEqualTo(BackupStatusCode.DOES_NOT_EXIST);
                         }));
   }
 
-  default void assertRangeMarkerHasBeenUpdated(final long newStartBackupId) {
+  default void assertManifestPresentInStore(final Long backupId) {
+    IntStream.rangeClosed(1, PARTITION_COUNT)
+        .forEach(
+            partitionId -> {
+              try (final var node = getTestCluster().leaderForPartition(partitionId)) {
+                final var brokerId = Integer.parseInt(node.nodeId().id());
+                final var identifier = new BackupIdentifierImpl(brokerId, partitionId, backupId);
+                assertThat(getBackupStore().getStatus(identifier).join())
+                    .withFailMessage(
+                        String.format(
+                            "Expected backup manifest for broker %d partition %d backupId %d to be present in store",
+                            brokerId, partitionId, backupId))
+                    .extracting(BackupStatus::statusCode)
+                    .isEqualTo(BackupStatusCode.COMPLETED);
+              }
+            });
+  }
+
+  default void assertRangeMarkerHasBeenUpdated(
+      final long newStartBackupId, final long expectedEndBackupId) {
     IntStream.rangeClosed(1, PARTITION_COUNT)
         .forEach(
             partitionId -> {
@@ -148,47 +178,14 @@ public interface BackupRetentionAcceptance {
                   .as("End range marker for partition %d should be present", partitionId)
                   .isPresent();
               AssertionsForClassTypes.assertThat(endMarker.get().checkpointId())
-                  .as("End range marker for partition %d should be greater than start", partitionId)
-                  .isGreaterThan(newStartBackupId);
-            });
-  }
-
-  private void progressClock(final long millis) {
-    getTestCluster()
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              final var clockActuator = ActorClockActuator.of(broker);
-              clockActuator.addTime(new AddTimeRequest(millis));
-            });
-  }
-
-  private void resetTime() {
-    getTestCluster()
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              final var clockActuator = ActorClockActuator.of(broker);
-              clockActuator.resetTime();
-            });
-  }
-
-  private void pinClock() {
-    getTestCluster()
-        .brokers()
-        .values()
-        .forEach(
-            broker -> {
-              final var clock = ActorClockActuator.of(broker);
-              clock.pinClock(new PinTimeRequest(clock.getCurrentClock().epochMilli()));
+                  .as("End range marker for partition %d should be updated", partitionId)
+                  .isEqualTo(expectedEndBackupId);
             });
   }
 
   Consumer<Camunda> backupConfig();
 
-  default void applyBackupConfig() {
+  default void applyInitialConfig() {
     getTestCluster()
         .brokers()
         .values()
@@ -201,12 +198,31 @@ public interface BackupRetentionAcceptance {
                     data.getPrimaryStorage()
                         .getBackup()
                         .setSchedule("PT" + BACKUP_INTERVAL.getSeconds() + "S");
-                    data.getPrimaryStorage()
-                        .getBackup()
-                        .getRetention()
-                        .setCleanupSchedule("PT" + CLEANUP_INTERVAL.getSeconds() + "S");
-                    data.getPrimaryStorage().getBackup().getRetention().setWindow(RETENTION_WINDOW);
                   });
             });
+  }
+
+  default void restartClusterWithRetention() {
+    getTestCluster()
+        .shutdown()
+        .brokers()
+        .values()
+        .forEach(
+            broker ->
+                broker.withDataConfig(
+                    data -> {
+                      // Set schedule to something that will not trigger another backup
+                      data.getPrimaryStorage().getBackup().setSchedule("PT5H");
+                      data.getPrimaryStorage()
+                          .getBackup()
+                          .getRetention()
+                          .setCleanupSchedule("PT" + CLEANUP_INTERVAL.getSeconds() + "S");
+                      data.getPrimaryStorage()
+                          .getBackup()
+                          .getRetention()
+                          .setWindow(RETENTION_WINDOW);
+                    }));
+
+    getTestCluster().start().awaitCompleteTopology();
   }
 }

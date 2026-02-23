@@ -31,11 +31,13 @@ const SingleIncident: React.FC<Props> = ({incident, onButtonClick}) => {
 
   const rootCauseDecisionInstance = data?.items[0];
   const errorTypeName = getIncidentErrorName(incident.errorType);
+  const labelId = 'metadata-popover-incident-title';
 
   return (
-    <>
+    <section aria-labelledby={labelId}>
       <Header
         title="Incident"
+        titleId={labelId}
         variant="error"
         button={{
           onClick: onButtonClick,
@@ -92,7 +94,7 @@ const SingleIncident: React.FC<Props> = ({incident, onButtonClick}) => {
           </Stack>
         )}
       </Stack>
-    </>
+    </section>
   );
 };
 

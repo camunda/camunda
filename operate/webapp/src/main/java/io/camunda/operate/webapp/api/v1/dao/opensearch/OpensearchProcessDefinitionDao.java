@@ -18,10 +18,13 @@ import io.camunda.operate.webapp.api.v1.exceptions.ServerException;
 import io.camunda.operate.webapp.opensearch.OpensearchQueryDSLWrapper;
 import io.camunda.operate.webapp.opensearch.OpensearchRequestDSLWrapper;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import org.opensearch.client.opensearch._types.SortOptions;
+import org.opensearch.client.opensearch.core.SearchRequest;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
@@ -81,6 +84,15 @@ public class OpensearchProcessDefinitionDao
     }
     throw new ResourceNotFoundException(
         String.format("Process definition for key %s not found.", key));
+  }
+
+  @Override
+  protected SearchRequest.Builder buildSearchRequest(
+      final Query<ProcessDefinition> query,
+      final org.opensearch.client.opensearch._types.query_dsl.Query filtering,
+      final ArrayList<SortOptions> sortOptions) {
+    return super.buildSearchRequest(query, filtering, sortOptions)
+        .source(queryDSLWrapper.sourceExclude(ProcessIndex.BPMN_XML));
   }
 
   @Override

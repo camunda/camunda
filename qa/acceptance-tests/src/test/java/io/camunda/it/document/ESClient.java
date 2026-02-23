@@ -14,6 +14,7 @@ import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch.cat.indices.IndicesRecord;
 import co.elastic.clients.elasticsearch.core.BulkRequest;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import co.elastic.clients.elasticsearch.indices.DeleteIndexRequest;
 import co.elastic.clients.elasticsearch.indices.RefreshRequest;
 import co.elastic.clients.elasticsearch.snapshot.Repository;
@@ -27,6 +28,7 @@ import io.camunda.webapps.backup.repository.elasticsearch.ElasticsearchBackupRep
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executor;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
@@ -150,6 +152,19 @@ public class ESClient implements DocumentClient {
       throw new IOException(
           "Bulk indexing failed for " + errorCount + " documents in index: " + indexName);
     }
+  }
+
+  @Override
+  public List<Map<String, Object>> search(final String indexName, final int size)
+      throws IOException {
+    return esClient
+        .search(b -> b.index(indexName).size(size), java.util.Map.class)
+        .hits()
+        .hits()
+        .stream()
+        .map(Hit::source)
+        .map(doc -> (Map<String, Object>) doc)
+        .toList();
   }
 
   @Override

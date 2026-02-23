@@ -16,27 +16,8 @@
 package io.camunda.client.impl.response;
 
 import io.camunda.client.api.response.DeleteProcessInstanceResponse;
-import io.camunda.client.api.search.enums.BatchOperationType;
-import io.camunda.client.impl.util.EnumUtil;
-import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 
 public class DeleteProcessInstanceResponseImpl implements DeleteProcessInstanceResponse {
-  private final String batchOperationKey;
-  private final BatchOperationType batchOperationType;
 
-  public DeleteProcessInstanceResponseImpl(final BatchOperationCreatedResult response) {
-    batchOperationKey = response.getBatchOperationKey();
-    batchOperationType =
-        EnumUtil.convert(response.getBatchOperationType(), BatchOperationType.class);
-  }
-
-  @Override
-  public String getBatchOperationKey() {
-    return batchOperationKey;
-  }
-
-  @Override
-  public BatchOperationType getBatchOperationType() {
-    return batchOperationType;
-  }
+  public DeleteProcessInstanceResponseImpl(final Void nothing) {}
 }

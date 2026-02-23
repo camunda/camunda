@@ -71,7 +71,7 @@ public class RocksDb {
    * memory limit. If set to 'FRACTION', Zeebe will allocate a configurable percentage of total RAM
    * to RocksDB that can be configured via the memoryFraction configuration [0,1].
    */
-  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.FRACTION;
+  private MemoryAllocationStrategy memoryAllocationStrategy = MemoryAllocationStrategy.PARTITION;
 
   /**
    * Configures the fraction of total system memory to allocate to RocksDB when using the 'FRACTION'

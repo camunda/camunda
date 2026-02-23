@@ -20,6 +20,7 @@ import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.PART
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
+import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_REQUIREMENTS_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_TYPE;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_VERSION;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
@@ -74,6 +75,7 @@ public final class DecisionInstanceFilterTransformer
     ofNullable(getDecisionDefinitionTypesQuery(filter.decisionTypes())).ifPresent(queries::add);
     queries.addAll(
         getRootDecisionDefinitionKeysQuery(filter.rootDecisionDefinitionKeyOperations()));
+    queries.addAll(getDecisionRequirementsKeysQuery(filter.decisionRequirementsKeyOperations()));
     ofNullable(getTenantIdsQuery(filter.tenantIds())).ifPresent(queries::add);
 
     if (filter.partitionId() != null) {
@@ -168,6 +170,11 @@ public final class DecisionInstanceFilterTransformer
                 })
             .toList();
     return stringOperations(ROOT_DECISION_DEFINITION_ID, stringOperations);
+  }
+
+  private List<SearchQuery> getDecisionRequirementsKeysQuery(
+      final List<Operation<Long>> decisionRequirementsKeyOperations) {
+    return longOperations(DECISION_REQUIREMENTS_KEY, decisionRequirementsKeyOperations);
   }
 
   private SearchQuery getTenantIdsQuery(final List<String> tenantIds) {

@@ -24,11 +24,13 @@ import io.camunda.search.clients.reader.DecisionInstanceReader;
 import io.camunda.search.clients.reader.DecisionRequirementsReader;
 import io.camunda.search.clients.reader.FlowNodeInstanceReader;
 import io.camunda.search.clients.reader.FormReader;
+import io.camunda.search.clients.reader.GlobalListenerReader;
 import io.camunda.search.clients.reader.GroupMemberReader;
 import io.camunda.search.clients.reader.GroupReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByDefinitionReader;
 import io.camunda.search.clients.reader.IncidentProcessInstanceStatisticsByErrorReader;
 import io.camunda.search.clients.reader.IncidentReader;
+import io.camunda.search.clients.reader.JobMetricsBatchReader;
 import io.camunda.search.clients.reader.JobReader;
 import io.camunda.search.clients.reader.MappingRuleReader;
 import io.camunda.search.clients.reader.MessageSubscriptionReader;
@@ -116,6 +118,7 @@ public class SearchClientConfiguration {
       final GroupMemberReader groupMemberReader,
       final IncidentReader incidentReader,
       final JobReader jobReader,
+      final JobMetricsBatchReader jobMetricsBatchReader,
       final MappingRuleReader mappingRuleReader,
       final MessageSubscriptionReader messageSubscriptionReader,
       final ProcessDefinitionMessageSubscriptionStatisticsReader
@@ -142,7 +145,8 @@ public class SearchClientConfiguration {
       final IncidentProcessInstanceStatisticsByErrorReader
           incidentProcessInstanceStatisticsByErrorReader,
       final IncidentProcessInstanceStatisticsByDefinitionReader
-          incidentProcessInstanceStatisticsByDefinitionReader) {
+          incidentProcessInstanceStatisticsByDefinitionReader,
+      final GlobalListenerReader globalListenerReader) {
     return new SearchClientReaders(
         authorizationReader,
         batchOperationReader,
@@ -157,6 +161,7 @@ public class SearchClientConfiguration {
         groupMemberReader,
         incidentReader,
         jobReader,
+        jobMetricsBatchReader,
         mappingRuleReader,
         messageSubscriptionReader,
         processDefinitionMessageSubscriptionStatisticsReader,
@@ -179,6 +184,7 @@ public class SearchClientConfiguration {
         clusterVariableReader,
         auditLogReader,
         incidentProcessInstanceStatisticsByErrorReader,
-        incidentProcessInstanceStatisticsByDefinitionReader);
+        incidentProcessInstanceStatisticsByDefinitionReader,
+        globalListenerReader);
   }
 }

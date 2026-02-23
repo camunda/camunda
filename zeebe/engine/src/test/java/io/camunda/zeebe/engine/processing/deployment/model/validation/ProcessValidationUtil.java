@@ -14,6 +14,7 @@ import io.camunda.zeebe.el.ExpressionLanguageFactory;
 import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.bpmn.clock.ZeebeFeelEngineClock;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
+import io.camunda.zeebe.engine.processing.deployment.transform.BpmnValidatorConfig;
 import io.camunda.zeebe.engine.processing.expression.ScopedEvaluationContext;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
@@ -27,6 +28,10 @@ import java.util.stream.Stream;
 import org.camunda.bpm.model.xml.validation.ValidationResults;
 
 public class ProcessValidationUtil {
+
+  public static final int MAX_ID_FIELD_LENGTH = 1024;
+  public static final int MAX_NAME_FIELD_LENGTH = 1024;
+  public static final int MAX_WORKER_TYPE_LENGTH = 1024;
 
   /**
    * Validate the provided {@link BpmnModelInstance}, asserting that is NOT a valid process
@@ -84,7 +89,13 @@ public class ProcessValidationUtil {
         new ValidationVisitor(
             Stream.of(
                     ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor),
-                    ZeebeDesignTimeValidators.VALIDATORS)
+                    ZeebeDesignTimeValidators.VALIDATORS,
+                    ZeebeConfigurationValidators.getValidators(
+                        BpmnValidatorConfig.builder()
+                            .withMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
+                            .withMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
+                            .withMaxWorkerTypeLength(MAX_WORKER_TYPE_LENGTH)
+                            .build()))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList()));
     walker.walk(visitor);

@@ -24,7 +24,7 @@ const useIncidentProcessInstanceStatisticsByError = ({
     {
       sort: [
         {field: 'activeInstancesWithErrorCount', order: 'desc'},
-        {field: 'errorMessage', order: 'desc'},
+        {field: 'errorMessage', order: 'asc'},
       ],
       ...payload,
     };

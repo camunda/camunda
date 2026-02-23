@@ -26,7 +26,7 @@ import {
   grantUserResourceAuthorization,
 } from '@requestHelpers';
 import {CREATE_CUSTOM_AUTHORIZATION_BODY} from '../../../../utils/beans/requestBeans';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponse} from 'json-body-assertions';
 
 test.describe.parallel('Get Authorization API', () => {
   const cleanups: ((request: APIRequestContext) => Promise<void>)[] = [];
@@ -83,11 +83,13 @@ test.describe.parallel('Get Authorization API', () => {
         );
         await assertStatusCode(res, 200);
         await validateResponse(
-        {
+          {
             path: '/authorizations/{authorizationKey}',
             method: 'GET',
             status: '200',
-        },res);
+          },
+          res,
+        );
         const authBody = await res.json();
         verifyAuthorizationFields(authBody, expectedUserAuthorization);
       }).toPass(defaultAssertionOptions);

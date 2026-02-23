@@ -67,13 +67,19 @@ const normalProjects = [
   {
     name: 'api-tests',
     testMatch: ['tests/api/**/*.spec.ts'],
-    testIgnore: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
+    testIgnore: [
+      'tests/api/v2/clock/*.spec.ts',
+      'tests/api/v2/usage-metrics/*.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     teardown: 'api-tests-subset',
   },
   {
     name: 'api-tests-subset',
-    testMatch: ['tests/api/v2/clock/*.spec.ts', 'tests/api/v2/usage-metrics/*.spec.ts'],
+    testMatch: [
+      'tests/api/v2/clock/*.spec.ts',
+      'tests/api/v2/usage-metrics/*.spec.ts',
+    ],
     use: devices['Desktop Chrome'],
     workers: 1,
     fullyParallel: false,
@@ -236,6 +242,8 @@ export default defineConfig({
     baseURL: getBaseURL(),
     actionTimeout: 10000,
     screenshot: 'only-on-failure',
+    trace: 'retain-on-failure',
+    video: 'retain-on-failure',
   },
   projects: isV2StatelessTestsOnly ? v2StatelessProjects : normalProjects,
   reporter:

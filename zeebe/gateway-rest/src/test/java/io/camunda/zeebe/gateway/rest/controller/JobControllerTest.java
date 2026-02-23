@@ -19,16 +19,20 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.JobServices;
+import io.camunda.service.JobServices.ActivateJobsRequest;
 import io.camunda.service.JobServices.UpdateJobChangeset;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResult;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobResultCorrections;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +45,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 
@@ -848,7 +853,7 @@ public class JobControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Activate Jobs with tenant identifiers [], but no tenant identifier was provided.",
+              "detail": "Expected to handle request Activate Jobs with multi-tenancy enabled, but no tenant identifier was provided.",
               "instance": "%s"
             }"""
                 .formatted(JOBS_BASE_URL + "/activation"),
@@ -983,5 +988,519 @@ public class JobControllerTest extends RestControllerTest {
         .isBadRequest();
 
     verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldGetJobTypeStatistics() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var statisticsEntity1 =
+        new JobTypeStatisticsEntity(
+            "fetch-customer-data",
+            new StatusMetric(100, lastUpdatedAt),
+            new StatusMetric(80, lastUpdatedAt),
+            new StatusMetric(5, lastUpdatedAt),
+            3);
+    final var statisticsEntity2 =
+        new JobTypeStatisticsEntity(
+            "process-payment",
+            new StatusMetric(50, lastUpdatedAt),
+            new StatusMetric(45, lastUpdatedAt),
+            new StatusMetric(2, lastUpdatedAt),
+            2);
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
+            .total(2L)
+            .items(List.of(statisticsEntity1, statisticsEntity2))
+            .build();
+
+    when(jobServices.getJobTypeStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "jobType": "fetch-customer-data",
+                  "created": {
+                    "count": 100,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 80,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 5,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "workers": 3
+                },
+                {
+                  "jobType": "process-payment",
+                  "created": {
+                    "count": 50,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 45,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 2,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "workers": 2
+                }
+              ],
+              "page": {
+                "totalItems": 2
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldGetJobTypeStatisticsWithJobTypeFilter() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var statisticsEntity =
+        new JobTypeStatisticsEntity(
+            "fetch-customer-data",
+            new StatusMetric(100, lastUpdatedAt),
+            new StatusMetric(80, lastUpdatedAt),
+            new StatusMetric(5, lastUpdatedAt),
+            3);
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statisticsEntity))
+            .build();
+
+    when(jobServices.getJobTypeStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": {
+                  "$like": "fetch-*"
+                }
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "jobType": "fetch-customer-data",
+                  "created": {
+                    "count": 100,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 80,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 5,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "workers": 3
+                }
+              ],
+              "page": {
+                "totalItems": 1
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldGetJobTypeStatisticsWithPagination() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var statisticsEntity =
+        new JobTypeStatisticsEntity(
+            "fetch-customer-data",
+            new StatusMetric(100, lastUpdatedAt),
+            new StatusMetric(80, lastUpdatedAt),
+            new StatusMetric(5, lastUpdatedAt),
+            3);
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
+            .total(1L)
+            .items(List.of(statisticsEntity))
+            .build();
+
+    when(jobServices.getJobTypeStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              },
+              "page": {
+                "limit": 1
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "jobType": "fetch-customer-data",
+                  "created": {
+                    "count": 100,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 80,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 5,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "workers": 3
+                }
+              ],
+              "page": {
+                "totalItems": 1
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldRejectJobTypeStatisticsWithMissingBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/statistics/by-types");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTypeStatisticsWithMissingFilter() {
+    // given
+    final var request =
+        """
+            {
+              "page": {
+                "limit": 10
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTypeStatisticsWithEmptyFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {}
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTypeStatisticsWithMissingFrom() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTypeStatisticsWithMissingTo() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-types")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldDefaultTenantFilterToProvidedWhenNotSpecified() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantIds": ["tenant-a"]
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should default to PROVIDED when tenantFilter is not specified")
+        .isEqualTo(TenantFilter.PROVIDED);
+    assertThat(capturedRequest.tenantIds()).containsExactly("tenant-a");
+  }
+
+  @Test
+  void shouldPassAssignedTenantFilterWithEmptyTenantIdsList() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantFilter": "ASSIGNED"
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should pass ASSIGNED filter through to service layer")
+        .isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(capturedRequest.tenantIds())
+        .describedAs("Tenant IDs should be empty when ASSIGNED filter is used")
+        .isEmpty();
+  }
+
+  @Test
+  void shouldPassAssignedTenantFilterWithEmptyTenantIdsListWhenTenantIdsSupplied() {
+    // given
+    when(multiTenancyCfg.isChecksEnabled()).thenReturn(true);
+    final ArgumentCaptor<ActivateJobsRequest> requestCaptor =
+        ArgumentCaptor.forClass(ActivateJobsRequest.class);
+
+    final JobActivationRequestResponseObserver mockObserver =
+        Mockito.mock(JobActivationRequestResponseObserver.class);
+    when(responseObserverProvider.apply(any()))
+        .thenAnswer(
+            invocation -> {
+              final CompletableFuture<ResponseEntity<Object>> future = invocation.getArgument(0);
+              future.complete(ResponseEntity.ok().body(new JobActivationResult(List.of())));
+              return mockObserver;
+            });
+
+    Mockito.doNothing().when(jobServices).activateJobs(requestCaptor.capture(), any(), any());
+
+    final var request =
+        """
+        {
+          "type": "test-job",
+          "maxJobsToActivate": 10,
+          "timeout": 5000,
+          "tenantIds": ["tenant-a", "tenant-b"],
+          "tenantFilter": "ASSIGNED"
+        }""";
+
+    // when
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/activation")
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk();
+
+    // then
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.tenantFilter())
+        .describedAs("Should pass ASSIGNED filter through to service layer")
+        .isEqualTo(TenantFilter.ASSIGNED);
+    assertThat(capturedRequest.tenantIds())
+        .describedAs("Tenant IDs should be empty when ASSIGNED filter is used")
+        .isEmpty();
   }
 }

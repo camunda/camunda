@@ -8,7 +8,7 @@
 
 import {getClientConfig} from 'common/config/getClientConfig';
 import {mergePathname} from './mergePathname';
-import {endpoints} from '@camunda/camunda-api-zod-schemas/8.8';
+import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
 import {buildDocumentMultipart} from 'common/document-handling/buildDocumentMultipart';
 
 const BASE_REQUEST_OPTIONS: RequestInit = {
@@ -42,9 +42,6 @@ const commonApi = {
     new Request(getFullURL('/logout'), {
       ...BASE_REQUEST_OPTIONS,
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
     }),
   getCurrentUser: () =>
     new Request(getFullURL(endpoints.getCurrentUser.getUrl()), {

@@ -30,7 +30,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -129,6 +129,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                             "operationType":"CANCEL_PROCESS_INSTANCE",
                             "itemKey":"11",
                             "processInstanceKey":"12",
+                            "rootProcessInstanceKey":"13",
                             "state":"FAILED",
                             "processedDate":"2025-03-18T10:57:44.000+01:00",
                             "errorMessage": "error"
@@ -136,6 +137,8 @@ class BatchOperationItemControllerTest extends RestControllerTest {
                     ],
                     "page":{
                       "totalItems":1,
+                      "startCursor": null,
+                      "endCursor": null,
                       "hasMoreTotalItems": false
                     }
                 }""",
@@ -152,6 +155,7 @@ class BatchOperationItemControllerTest extends RestControllerTest {
         BatchOperationType.CANCEL_PROCESS_INSTANCE,
         11L,
         12L,
+        13L,
         BatchOperationItemState.FAILED,
         OffsetDateTime.parse("2025-03-18T10:57:44+01:00"),
         "error");

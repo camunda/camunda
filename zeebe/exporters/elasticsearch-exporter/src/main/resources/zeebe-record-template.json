@@ -53,6 +53,15 @@
         },
         "batchOperationReference": {
           "type": "long"
+        },
+        "agent": {
+          "type": "object",
+          "properties": {
+            "elementId": {
+              "type": "keyword",
+              "index": false
+            }
+          }
         }
       }
     }

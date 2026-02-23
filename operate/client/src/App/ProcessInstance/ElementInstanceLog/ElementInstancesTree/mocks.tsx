@@ -15,6 +15,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {LocationLog} from 'modules/utils/LocationLog';
 import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
@@ -963,9 +964,12 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
             <Route
               path={Paths.processInstance()}
               element={
-                <TreeView label={'instance history'} hideLabel>
-                  {children}
-                </TreeView>
+                <>
+                  <TreeView label={'instance history'} hideLabel>
+                    {children}
+                  </TreeView>
+                  <LocationLog />
+                </>
               }
             />
           </Routes>

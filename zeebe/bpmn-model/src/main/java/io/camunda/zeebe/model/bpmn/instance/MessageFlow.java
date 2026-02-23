@@ -23,11 +23,7 @@ import io.camunda.zeebe.model.bpmn.instance.bpmndi.BpmnEdge;
  *
  * @author Sebastian Menski
  */
-public interface MessageFlow extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface MessageFlow extends BaseElement, NamedBpmnElement {
 
   InteractionNode getSource();
 

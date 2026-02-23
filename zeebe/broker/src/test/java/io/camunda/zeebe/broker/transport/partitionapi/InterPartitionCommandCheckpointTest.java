@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.broker.transport.partitionapi;
 
-import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.TOPIC_PREFIX;
+import static io.camunda.zeebe.broker.transport.partitionapi.InterPartitionCommandSenderImpl.LEGACY_TOPIC_PREFIX;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.inOrder;
@@ -54,7 +54,7 @@ final class InterPartitionCommandCheckpointTest {
     this.communicationService = communicationService;
     this.logStreamWriter = logStreamWriter;
 
-    sender = new InterPartitionCommandSenderImpl(communicationService);
+    sender = new InterPartitionCommandSenderImpl(communicationService, LEGACY_TOPIC_PREFIX);
     sender.setCurrentLeader(1, 2);
     receiver = new InterPartitionCommandReceiverImpl(logStreamWriter);
   }
@@ -214,7 +214,7 @@ final class InterPartitionCommandCheckpointTest {
 
     final var messageCaptor = ArgumentCaptor.forClass(byte[].class);
     verify(communicationService)
-        .unicast(eq(TOPIC_PREFIX + 1), messageCaptor.capture(), any(), any(), eq(true));
+        .unicast(eq(LEGACY_TOPIC_PREFIX + 1), messageCaptor.capture(), any(), any(), eq(true));
     receiver.handleMessage(new MemberId("0"), messageCaptor.getValue());
   }
 }

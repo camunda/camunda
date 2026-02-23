@@ -17,7 +17,6 @@ import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.camunda.zeebe.util.collection.Tuple;
-import org.awaitility.Awaitility;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -195,8 +194,7 @@ public class CommandDistributionMetricsTest {
   }
 
   private void waitUntilDistributionIsRetried(final long key) {
-    RecordingExporter.setMaximumWaitTime(100);
-    Awaitility.await()
+    RecordingExporter.await()
         .untilAsserted(
             () -> {
               // wait for retry mechanism to trigger second distribution
@@ -209,7 +207,6 @@ public class CommandDistributionMetricsTest {
               assertThat(RecordingExporter.records().withPartitionId(2).withRecordKey(key).limit(2))
                   .hasSizeGreaterThan(1);
             });
-    RecordingExporter.setMaximumWaitTime(5000);
   }
 
   private MetricSnapshot snapshotMetrics() {

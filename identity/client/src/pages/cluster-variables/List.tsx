@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { TrashCan, View } from "@carbon/react/icons";
 import useTranslate from "src/utility/localization";
 import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
@@ -21,6 +20,7 @@ import PageEmptyState from "src/components/layout/PageEmptyState";
 import { AddModal } from "./modals/add-modal";
 import DeleteModal from "./modals/DeleteModal";
 import DetailsModal from "./modals/DetailsModal";
+import EditModal from "./modals/EditModal";
 
 export default function List() {
   const { t } = useTranslate("clusterVariables");
@@ -44,6 +44,10 @@ export default function List() {
   const [viewClusterVariable, viewClusterVariableModal] = useEntityModal(
     DetailsModal,
     () => {},
+  );
+  const [editClusterVariable, editClusterVariableModal] = useEntityModal(
+    EditModal,
+    reload,
   );
 
   const shouldShowEmptyState =
@@ -99,7 +103,6 @@ export default function List() {
         menuItems={[
           {
             label: t("view"),
-            icon: View,
             onClick: ({ name, value }) => {
               viewClusterVariable({
                 name,
@@ -108,8 +111,18 @@ export default function List() {
             },
           },
           {
+            label: t("edit"),
+            onClick: ({ name, value, scope, tenantId }) => {
+              editClusterVariable({
+                name,
+                value,
+                scope,
+                tenantId,
+              });
+            },
+          },
+          {
             label: t("delete"),
-            icon: TrashCan,
             isDangerous: true,
             onClick: ({ name, scope, tenantId }) => {
               deleteClusterVariable({
@@ -133,6 +146,7 @@ export default function List() {
       {addClusterVariableModal}
       {deleteClusterVariableModal}
       {viewClusterVariableModal}
+      {editClusterVariableModal}
     </Page>
   );
 }

@@ -20,19 +20,18 @@ import org.springframework.web.util.ContentCachingRequestWrapper;
 
 /**
  * Extends the default server request observation convention to add MCP-specific data to the URI tag
- * in server request metrics. This only applies to requests to the "/mcp" endpoint. Other requests
- * are not affected.
+ * in server request metrics. This applies to all requests under the "/mcp" path. Other requests are
+ * not affected.
  */
 public class McpServerRequestObservationConvention
     extends DefaultServerRequestObservationConvention {
 
-  public static final String URI_MCP = "/mcp";
+  public static final String URI_MCP_PREFIX = "/mcp";
 
   private static final Logger LOGGER =
       LoggerFactory.getLogger(McpServerRequestObservationConvention.class);
 
   private static final String KEY_URI = "uri";
-  private static final KeyValues MCP_BASE_URI_VALUE = KeyValues.of(KeyValue.of(KEY_URI, URI_MCP));
 
   private final ObjectMapper objectMapper;
 
@@ -53,16 +52,19 @@ public class McpServerRequestObservationConvention
   protected static KeyValues getMcpRequestLowCardinalityValues(
       final ServerRequestObservationContext context, final ObjectMapper objectMapper) {
     final HttpServletRequest carrier = context.getCarrier();
-    if (carrier == null || !URI_MCP.equals(carrier.getServletPath())) {
+    if (carrier == null || !isMcpRequest(carrier)) {
       // don't adjust the URI tag value
       return KeyValues.empty();
     }
+
+    final String servletPath = carrier.getServletPath();
+    final KeyValues baseMcpUriValue = KeyValues.of(KeyValue.of(KEY_URI, servletPath));
 
     try {
       final String requestBody = getRequestBody(carrier);
       if (requestBody.isEmpty()) {
         // there is nothing we can further derive from the request
-        return MCP_BASE_URI_VALUE;
+        return baseMcpUriValue;
       }
 
       // fetch MCP metadata to enrich the URI tag as much as possible
@@ -70,13 +72,18 @@ public class McpServerRequestObservationConvention
           objectMapper.readValue(requestBody, McpRequestMetadata.class);
       if (mcpMetadata == null) {
         // there is no metadata we could use
-        return MCP_BASE_URI_VALUE;
+        return baseMcpUriValue;
       }
-      return KeyValues.of(KeyValue.of(KEY_URI, getMcpUri(mcpMetadata)));
+      return KeyValues.of(KeyValue.of(KEY_URI, getMcpUri(servletPath, mcpMetadata)));
     } catch (final Exception ex) {
       LOGGER.warn("Unable to handle MCP request correctly", ex);
-      return MCP_BASE_URI_VALUE;
+      return baseMcpUriValue;
     }
+  }
+
+  private static boolean isMcpRequest(final HttpServletRequest carrier) {
+    final String servletPath = carrier.getServletPath();
+    return servletPath != null && servletPath.startsWith(URI_MCP_PREFIX);
   }
 
   private static String getRequestBody(final HttpServletRequest carrier) {
@@ -87,12 +94,12 @@ public class McpServerRequestObservationConvention
     return "";
   }
 
-  private static String getMcpUri(final McpRequestMetadata mcpMetadata) {
+  private static String getMcpUri(final String basePath, final McpRequestMetadata mcpMetadata) {
     final String methodName = mcpMetadata.method();
     if (methodName == null || methodName.isEmpty()) {
-      return URI_MCP;
+      return basePath;
     }
-    final String mcpUriWithMethod = URI_MCP + "/" + methodName;
+    final String mcpUriWithMethod = basePath + "/" + methodName;
     if (mcpMetadata.params() == null
         || mcpMetadata.params().name() == null
         || mcpMetadata.params().name().isEmpty()) {

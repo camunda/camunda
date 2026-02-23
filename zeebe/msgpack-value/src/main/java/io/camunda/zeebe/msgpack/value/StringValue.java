@@ -87,8 +87,8 @@ public final class StringValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeString(bytes);
+  public int write(final MsgPackWriter writer) {
+    return writer.writeString(bytes);
   }
 
   @Override

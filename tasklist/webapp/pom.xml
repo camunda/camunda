@@ -371,6 +371,10 @@
       <artifactId>camunda-security-protocol</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>configuration</artifactId>
+    </dependency>
 
   </dependencies>
 

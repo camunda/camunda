@@ -146,7 +146,11 @@ public class ElasticsearchProcessStore implements ProcessStore {
     try {
       final var res =
           esClient.search(
-              s -> s.index(processIndex.getAlias()).query(tenantAwareQuery), ProcessEntity.class);
+              s ->
+                  s.index(processIndex.getAlias())
+                      .query(tenantAwareQuery)
+                      .source(src -> src.filter(f -> f.excludes(ProcessIndex.BPMN_XML))),
+              ProcessEntity.class);
       if (res.hits().total().value() == 1) {
         return res.hits().hits().getFirst().source();
       } else if (res.hits().total().value() > 1) {

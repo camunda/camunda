@@ -33,7 +33,7 @@ class HistoryDeletionConfigurationTest {
   void shouldHaveDefaultMaxDelayBetweenRuns() {
     final var config = new HistoryDeletionConfiguration();
 
-    assertThat(config.getMaxDelayBetweenRuns()).isEqualTo(Duration.ofMinutes(5));
+    assertThat(config.getMaxDelayBetweenRuns()).isEqualTo(Duration.ofSeconds(15));
   }
 
   @Test

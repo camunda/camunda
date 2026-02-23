@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import type {ProcessDefinitionStatistic} from '@camunda/camunda-api-zod-schemas/8.8';
 
 function getInstancesCount(
@@ -24,12 +23,4 @@ function getInstancesCount(
   return flowNodeStatistics.active + flowNodeStatistics.incidents;
 }
 
-const getProcessInstanceKey = () => {
-  return processInstancesSelectionStore.checkedProcessInstanceIds.length > 0
-    ? {
-        $in: processInstancesSelectionStore.checkedProcessInstanceIds,
-      }
-    : undefined;
-};
-
-export {getInstancesCount, getProcessInstanceKey};
+export {getInstancesCount};

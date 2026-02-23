@@ -163,8 +163,17 @@ public class BpmnJobActivationBehavior {
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
 
     final var ownerTenantId = jobRecord.getTenantId();
-    final var tenantIds = jobActivationProperties.tenantIds().stream().toList();
-    if (!tenantIds.contains(ownerTenantId)) {
+    final var isTenantAuthorized =
+        switch (jobActivationProperties.tenantFilter()) {
+          case ASSIGNED -> {
+            final var authorizedTenants =
+                authorizationCheckBehavior.getAuthorizedTenantIds(jobActivationProperties.claims());
+            yield !authorizedTenants.isAnonymous()
+                && authorizedTenants.isAuthorizedForTenantId(ownerTenantId);
+          }
+          case PROVIDED -> jobActivationProperties.tenantIds().contains(ownerTenantId);
+        };
+    if (!isTenantAuthorized) {
       // don't push jobs to workers that don't request them from the job's tenant
       return false;
     }

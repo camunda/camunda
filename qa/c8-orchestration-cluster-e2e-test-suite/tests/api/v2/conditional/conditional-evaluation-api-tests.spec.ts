@@ -49,13 +49,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
   test('Evaluate Conditional - Single Match Success', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL();
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
@@ -75,13 +72,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     request,
   }) => {
     const requestBody = EVALUATE_CONDITIONAL_MULTIPLE_CONDITIONS();
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
@@ -90,20 +84,20 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     expect(json.processInstances.length).toBeGreaterThan(0);
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
+      assertRequiredFields(
+        instance,
+        conditionalProcessInstanceItemRequiredFields,
+      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
 
   test('Evaluate Conditional - Partial Match', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL_PARTIAL_MATCH();
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
@@ -112,7 +106,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     expect(json.processInstances.length).toBe(1);
 
     const instance = json.processInstances[0];
-    assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
+    assertRequiredFields(
+      instance,
+      conditionalProcessInstanceItemRequiredFields,
+    );
     expect(instance.processDefinitionKey).toBeDefined();
     expect(instance.processInstanceKey).toBeDefined();
     processInstancesToCleanup.push(instance.processInstanceKey);
@@ -122,13 +119,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     request,
   }) => {
     const requestBody = EVALUATE_CONDITIONAL_NO_MATCH();
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
@@ -139,20 +133,20 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
 
   test('Evaluate Conditional With Tenant ID', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL_WITH_TENANT('<default>');
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
+      assertRequiredFields(
+        instance,
+        conditionalProcessInstanceItemRequiredFields,
+      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
@@ -181,16 +175,12 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     }
 
     // Now test the conditional evaluation with a specific process definition key
-    const requestBody = EVALUATE_CONDITIONAL_WITH_PROCESS_DEF_KEY(
-      processDefinitionKey,
-    );
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const requestBody =
+      EVALUATE_CONDITIONAL_WITH_PROCESS_DEF_KEY(processDefinitionKey);
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();
@@ -201,7 +191,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     );
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(instance, conditionalProcessInstanceItemRequiredFields);
+      assertRequiredFields(
+        instance,
+        conditionalProcessInstanceItemRequiredFields,
+      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
@@ -209,13 +202,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
   test('Evaluate Conditional - Unauthorized', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL();
 
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: {},
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: {},
+      data: requestBody,
+    });
 
     await assertUnauthorizedRequest(res);
   });
@@ -223,26 +213,20 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
   test('Evaluate Conditional - Bad Request Missing Variables', async ({
     request,
   }) => {
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: {},
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: {},
+    });
 
     await assertBadRequest(res, /variables|required/i, 'INVALID_ARGUMENT');
   });
 
   test('Evaluate Conditional - Invalid Tenant', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL_WITH_TENANT('invalidTenant');
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertBadRequest(res, /.+/, 'INVALID_ARGUMENT');
   });
@@ -251,53 +235,41 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     request,
   }) => {
     const requestBody = EVALUATE_CONDITIONAL_WITH_PROCESS_DEF_KEY('99999999');
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertNotFoundRequest(res, '');
   });
 
   test('Evaluate Conditional - Unsupported Media Type', async ({request}) => {
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: {
-          Authorization: `Basic ${Buffer.from('demo:demo').toString('base64')}`,
-          'Content-Type': 'text/plain',
-        },
-        data: 'plain text data',
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: {
+        Authorization: `Basic ${Buffer.from('demo:demo').toString('base64')}`,
+        'Content-Type': 'text/plain',
       },
-    );
+      data: 'plain text data',
+    });
 
     await assertUnsupportedMediaTypeRequest(res);
   });
 
   test('Evaluate Conditional - Invalid JSON', async ({request}) => {
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: '{invalid json',
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: '{invalid json',
+    });
 
     await assertBadRequest(res, /.+/);
   });
 
   test('Evaluate Conditional - Verify Response Schema', async ({request}) => {
     const requestBody = EVALUATE_CONDITIONAL();
-    const res = await request.post(
-      buildUrl(CONDITIONAL_EVALUATION_ENDPOINT),
-      {
-        headers: jsonHeaders(),
-        data: requestBody,
-      },
-    );
+    const res = await request.post(buildUrl(CONDITIONAL_EVALUATION_ENDPOINT), {
+      headers: jsonHeaders(),
+      data: requestBody,
+    });
 
     await assertStatusCode(res, 200);
     const json = await res.json();

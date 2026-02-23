@@ -36,7 +36,7 @@ const EntityDetail: FC<EntityDetailProps> = ({
   return loading && isDataMissing ? (
     <Skeleton entries={entries} />
   ) : (
-    <StructuredListWrapper ariaLabel={listLabel}>
+    <StructuredListWrapper aria-label={listLabel}>
       {loading && <Loading />}
       <StructuredListBody>
         {data?.map(({ label, value }, idx) => (

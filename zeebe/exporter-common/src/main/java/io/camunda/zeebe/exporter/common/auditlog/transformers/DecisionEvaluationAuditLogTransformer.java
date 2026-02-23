@@ -27,17 +27,18 @@ public class DecisionEvaluationAuditLogTransformer
   public void transform(
       final Record<DecisionEvaluationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setDecisionDefinitionId(value.getDecisionId());
-    log.setDecisionDefinitionKey(value.getDecisionKey());
-    log.setDecisionRequirementsId(value.getDecisionRequirementsId());
-    log.setDecisionRequirementsKey(value.getDecisionRequirementsKey());
-    log.setDecisionEvaluationKey(
-        Optional.ofNullable(value.getEvaluatedDecisions())
-            .filter(list -> !list.isEmpty())
-            .map(List::getFirst)
-            .map(EvaluatedDecisionValue::getDecisionKey)
-            .orElse(null));
+    log.setDecisionDefinitionId(value.getDecisionId())
+        .setDecisionDefinitionKey(value.getDecisionKey())
+        .setDecisionRequirementsId(value.getDecisionRequirementsId())
+        .setDecisionRequirementsKey(value.getDecisionRequirementsKey())
+        .setDecisionEvaluationKey(
+            Optional.ofNullable(value.getEvaluatedDecisions())
+                .filter(list -> !list.isEmpty())
+                .map(List::getFirst)
+                .map(EvaluatedDecisionValue::getDecisionKey)
+                .orElse(null));
     if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
+      log.setEntityDescription(record.getRejectionType().name());
       log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
     }
   }

@@ -43,6 +43,7 @@ public class AuditLogFilterTransformer extends IndexFilterTransformer<AuditLogFi
         stringOperations(ID, filter.auditLogKeyOperations()),
         stringOperations(ACTOR_ID, filter.actorIdOperations()),
         stringOperations(ACTOR_TYPE, filter.actorTypeOperations()),
+        stringOperations(AGENT_ELEMENT_ID, filter.agentElementIdOperations()),
         longOperations(BATCH_OPERATION_KEY, filter.batchOperationKeyOperations()),
         stringOperations(BATCH_OPERATION_TYPE, filter.batchOperationTypeOperations()),
         stringOperations(CATEGORY, filter.categoryOperations()),

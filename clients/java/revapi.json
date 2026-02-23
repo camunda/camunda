@@ -53,42 +53,6 @@
         },
         {
           "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.api.search.response.DecisionDefinitionType.UNSPECIFIED",
-          "justification": "Removed impossible state that was never returned by the system - decision definitions are always either DECISION_TABLE or LITERAL_EXPRESSION"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.api.search.response.DecisionInstanceState.UNKNOWN",
-          "justification": "Removed impossible state - decision instances can only be EVALUATED or FAILED, never UNKNOWN"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.api.search.response.DecisionInstanceState.UNSPECIFIED",
-          "justification": "Removed impossible state - decision instances can only be EVALUATED or FAILED, never UNSPECIFIED"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.protocol.rest.DecisionDefinitionTypeEnum.UNSPECIFIED",
-          "justification": "Removed impossible state from REST protocol enum - aligned with API response enum cleanup"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.protocol.rest.DecisionInstanceStateEnum.UNKNOWN",
-          "justification": "Removed impossible state from REST protocol enum - aligned with API response enum cleanup"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field io.camunda.client.protocol.rest.DecisionInstanceStateEnum.UNSPECIFIED",
-          "justification": "Removed impossible state from REST protocol enum - aligned with API response enum cleanup"
-        },
-        {
-          "ignore": true,
           "code": "java.method.removed",
           "old": "method io.camunda.client.api.search.filter.AuthorizationFilter io.camunda.client.api.search.filter.AuthorizationFilter::resourceIds(java.util.List<java.lang.String>)",
           "justification": "Updated the parameter type from List to Collection to make API more flexible. This remains backward-compatible for users, as any List already implements Collection and callers can continue passing the same arguments."

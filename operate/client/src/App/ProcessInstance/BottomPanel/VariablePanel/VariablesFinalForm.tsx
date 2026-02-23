@@ -7,6 +7,7 @@
  */
 
 import {Form as ReactFinalForm} from 'react-final-form';
+import {useMemo} from 'react';
 import {type VariableFormValues} from 'modules/types/variables';
 
 import arrayMutators from 'final-form-arrays';
@@ -17,6 +18,7 @@ import {useQueryClient} from '@tanstack/react-query';
 import {queryKeys} from 'modules/queries/queryKeys';
 import {useElementInstanceVariables} from 'modules/mutations/elementInstances/useElementInstanceVariables';
 import {handleMutationError} from 'modules/utils/notifications';
+import {modificationsStore} from 'modules/stores/modifications';
 
 type Props = {
   scopeKey: string;
@@ -30,6 +32,20 @@ const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
     processInstanceId,
   );
 
+  const initialValues = useMemo(() => {
+    if (!modificationsStore.isModificationModeEnabled) {
+      return {};
+    }
+    const addVariableModifications =
+      modificationsStore.getAddVariableModifications(scopeKey);
+    if (addVariableModifications.length === 0) {
+      return {};
+    }
+    return {
+      newVariables: addVariableModifications,
+    };
+  }, [scopeKey]);
+
   return (
     <ReactFinalForm<VariableFormValues>
       mutators={{
@@ -41,6 +57,7 @@ const VariablesFinalForm: React.FC<Props> = ({scopeKey}) => {
         },
       }}
       key={scopeKey}
+      initialValues={initialValues}
       render={(props) => <VariablesForm {...props} />}
       onSubmit={async (values, form) => {
         const {initialValues} = form.getState();

@@ -80,7 +80,7 @@ const MoveAction: React.FC = observer(() => {
       return 'The selected element type is not supported.';
     }
     if (!hasSelectedRunningInstances) {
-      return 'You can only move flow node instances in active or incident state.';
+      return 'You can only move element instances in active or incident state.';
     }
     if (isWithinMultiInstance(businessObject)) {
       return 'Elements inside a multi instance element are not supported.';
@@ -132,16 +132,16 @@ const MoveAction: React.FC = observer(() => {
               This mode allows you to move multiple instances as a batch in a
               one operation
             </div>
-            <div>1. Click on the target flow node.</div>
+            <div>1. Click on the target element.</div>
             {currentTheme.theme === 'light' ? (
               <img
                 src={modalDiagramImageLight}
-                alt="A bpmn diagram with a selected flow node"
+                alt="A bpmn diagram with a selected element"
               />
             ) : (
               <img
                 src={modalDiagramImageDark}
-                alt="A bpmn diagram with a selected flow node"
+                alt="A bpmn diagram with a selected element"
               />
             )}
             <div>2. Apply</div>

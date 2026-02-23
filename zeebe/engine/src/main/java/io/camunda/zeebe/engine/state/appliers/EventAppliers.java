@@ -189,9 +189,9 @@ public final class EventAppliers implements EventApplier {
 
   private void registerGlobalListenersEventAppliers(final MutableProcessingState state) {
     register(GlobalListenerBatchIntent.CONFIGURED, new GlobalListenerBatchConfiguredApplier(state));
-    register(GlobalListenerIntent.CREATED, NOOP_EVENT_APPLIER);
-    register(GlobalListenerIntent.UPDATED, NOOP_EVENT_APPLIER);
-    register(GlobalListenerIntent.DELETED, NOOP_EVENT_APPLIER);
+    register(GlobalListenerIntent.CREATED, new GlobalListenerCreatedApplier(state));
+    register(GlobalListenerIntent.UPDATED, new GlobalListenerUpdatedApplier(state));
+    register(GlobalListenerIntent.DELETED, new GlobalListenerDeletedApplier(state));
   }
 
   private void registerClusterVariableEventAppliers(final MutableProcessingState state) {
@@ -286,6 +286,11 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementActivatingV2Applier(
             elementInstanceState, processState, eventScopeInstanceState));
     register(
+        ProcessInstanceIntent.ELEMENT_ACTIVATING,
+        3,
+        new ProcessInstanceElementActivatingV3Applier(
+            elementInstanceState, processState, eventScopeInstanceState));
+    register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(elementInstanceState));
     register(
@@ -293,7 +298,18 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementCompletingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_COMPLETED,
-        new ProcessInstanceElementCompletedApplier(
+        1,
+        new ProcessInstanceElementCompletedV1Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            variableState,
+            processState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier));
+    register(
+        ProcessInstanceIntent.ELEMENT_COMPLETED,
+        2,
+        new ProcessInstanceElementCompletedV2Applier(
             elementInstanceState,
             eventScopeInstanceState,
             variableState,
@@ -305,7 +321,16 @@ public final class EventAppliers implements EventApplier {
         new ProcessInstanceElementTerminatingApplier(elementInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_TERMINATED,
-        new ProcessInstanceElementTerminatedApplier(
+        1,
+        new ProcessInstanceElementTerminatedV1Applier(
+            elementInstanceState,
+            eventScopeInstanceState,
+            multiInstanceState,
+            bufferedStartMessageEventStateApplier));
+    register(
+        ProcessInstanceIntent.ELEMENT_TERMINATED,
+        2,
+        new ProcessInstanceElementTerminatedV2Applier(
             elementInstanceState,
             eventScopeInstanceState,
             multiInstanceState,
@@ -731,7 +756,12 @@ public final class EventAppliers implements EventApplier {
 
     register(
         BatchOperationChunkIntent.CREATED,
-        new BatchOperationChunkCreatedApplier(state.getBatchOperationState()));
+        1,
+        new BatchOperationChunkCreatedV1Applier(state.getBatchOperationState()));
+    register(
+        BatchOperationChunkIntent.CREATED,
+        2,
+        new BatchOperationChunkCreatedV2Applier(state.getBatchOperationState()));
     register(
         BatchOperationExecutionIntent.EXECUTING,
         new BatchOperationExecutingApplier(state.getBatchOperationState()));

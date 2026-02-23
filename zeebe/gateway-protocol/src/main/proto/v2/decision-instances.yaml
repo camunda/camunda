@@ -72,7 +72,7 @@ paths:
 
   /decision-instances/{decisionInstanceKey}/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Decision instance
       operationId: deleteDecisionInstance
@@ -92,12 +92,8 @@ paths:
             schema:
               $ref: '#/components/schemas/DeleteDecisionInstanceRequest'
       responses:
-        "200":
-          description: The operation to delete the decision instance was created.
-          content:
-            application/json:
-              schema:
-                $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
+        "204":
+          description: The decision instance is marked for deletion.
         "401":
           $ref: 'common-responses.yaml#/components/responses/Unauthorized'
         "403":
@@ -115,7 +111,7 @@ paths:
 
   /decision-instances/deletion:
     post:
-      x-eventually-consistent: true
+      x-eventually-consistent: false
       tags:
         - Decision instance
       operationId: deleteDecisionInstancesBatchOperation
@@ -261,6 +257,10 @@ components:
           description: The key of the root decision definition.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKeyFilterProperty'
+        decisionRequirementsKey:
+          description: The key of the decision requirements definition.
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/DecisionRequirementsKeyFilterProperty'
 
     DeleteDecisionInstanceRequest:
       type: object
@@ -272,6 +272,8 @@ components:
 
     DecisionInstanceSearchQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -283,6 +285,10 @@ components:
 
     DecisionInstanceResult:
       type: object
+      required:
+        - rootProcessInstanceKey
+        - evaluationFailure
+        - tenantId
       properties:
         decisionEvaluationInstanceKey:
           $ref: 'keys.yaml#/components/schemas/DecisionEvaluationInstanceKey'
@@ -294,6 +300,7 @@ components:
           description: The evaluation date of the decision instance.
         evaluationFailure:
           type: string
+          nullable: true
           description: The evaluation failure of the decision instance.
         decisionDefinitionId:
           allOf:
@@ -327,6 +334,14 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         decisionDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionDefinitionKey'
@@ -344,6 +359,9 @@ components:
       allOf:
         - $ref: '#/components/schemas/DecisionInstanceResult'
         - type: object
+          required:
+          - evaluatedInputs
+          - matchedRules
           properties:
             evaluatedInputs:
               type: array
@@ -364,28 +382,43 @@ components:
       properties:
         inputId:
           type: string
+          description: The identifier of the decision input.
         inputName:
           type: string
+          description: The name of the decision input.
         inputValue:
+          description: The description of the decision input.
           type: string
 
     EvaluatedDecisionOutputItem:
+      required:
+        - ruleId
+        - ruleIndex
       type: object
       description: The evaluated decision outputs.
       properties:
         outputId:
+          description: The ID of the evaluated decison output item.
           type: string
         outputName:
+          description: The name of the of the evaluated decison output item.
           type: string
         outputValue:
+          description: The value of the evaluated decison output item.
           type: string
         ruleId:
+          description: The ID of the matched rule.
+          nullable: true
           type: string
         ruleIndex:
+          description: The index of the matched rule.
+          nullable: true
           type: integer
           format: int32
 
     MatchedDecisionRuleItem:
+      required:
+        - evaluatedOutputs
       type: object
       description: A decision rule that matched within this decision evaluation.
       properties:
@@ -405,20 +438,22 @@ components:
     ## Enums
 
     DecisionDefinitionTypeEnum:
-      description: The type of the decision.
+      description: The type of the decision. UNSPECIFIED is deprecated and should not be used anymore, for removal in 8.10
       type: string
       enum:
         - DECISION_TABLE
         - LITERAL_EXPRESSION
+        - UNSPECIFIED
         - UNKNOWN
 
     DecisionInstanceStateEnum:
-      description: The state of the decision instance.
+      description: The state of the decision instance. UNSPECIFIED and UNKNOWN are deprecated and should not be used anymore, for removal in 8.10
       type: string
       enum:
         - EVALUATED
         - FAILED
         - UNSPECIFIED
+        - UNKNOWN
 
     ## Filters
 

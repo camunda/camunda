@@ -33,6 +33,7 @@ import io.camunda.zeebe.scheduler.ActorScheduler;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.test.util.asserts.grpc.ClientStatusExceptionAssert;
 import io.camunda.zeebe.test.util.socket.SocketUtil;
+import io.camunda.zeebe.transport.impl.AtomixServerTransport.TopicSupplier;
 import io.camunda.zeebe.util.micrometer.MicrometerUtil;
 import io.grpc.Status.Code;
 import io.micrometer.core.instrument.MeterRegistry;
@@ -91,7 +92,8 @@ class UnavailableBrokersTest {
             cluster.getEventService(),
             actorScheduler,
             topologyManager,
-            new BrokerClientRequestMetrics(REGISTRY));
+            new BrokerClientRequestMetrics(REGISTRY),
+            TopicSupplier.withLegacyTopicName());
     jobStreamClient =
         new JobStreamClientImpl(actorScheduler, cluster.getCommunicationService(), REGISTRY);
     jobStreamClient.start().join();

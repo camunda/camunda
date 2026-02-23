@@ -101,7 +101,10 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .decisionRequirementsKey("decisionRequirementsKey")
                     .decisionDefinitionId("decisionDefinitionId")
                     .decisionDefinitionKey("decisionDefinitionKey")
-                    .decisionEvaluationKey("decisionEvaluationKey"))
+                    .decisionEvaluationKey("decisionEvaluationKey")
+                    .relatedEntityKey("relatedEntityKey")
+                    .relatedEntityType(AuditLogEntityTypeEnum.USER)
+                    .entityDescription("entityDescription"))
         .send()
         .join();
 
@@ -134,6 +137,9 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
     assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
     assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
+    assertThat(filter.getRelatedEntityKey().get$Eq()).isEqualTo("relatedEntityKey");
+    assertThat(filter.getRelatedEntityType().get$Eq().getValue()).isEqualTo("USER");
+    assertThat(filter.getEntityDescription().get$Eq()).isEqualTo("entityDescription");
   }
 
   @Test
@@ -166,7 +172,10 @@ public class SearchAuditLogTest extends ClientRestTest {
                     .decisionRequirementsKey(f -> f.notIn("decisionRequirementsKey"))
                     .decisionDefinitionId(f -> f.eq("decisionDefinitionId"))
                     .decisionDefinitionKey(f -> f.eq("decisionDefinitionKey"))
-                    .decisionEvaluationKey(f -> f.eq("decisionEvaluationKey")))
+                    .decisionEvaluationKey(f -> f.eq("decisionEvaluationKey"))
+                    .relatedEntityKey(f -> f.eq("relatedEntityKey"))
+                    .relatedEntityType(f -> f.eq(AuditLogEntityTypeEnum.USER))
+                    .entityDescription(f -> f.eq("entityDescription")))
         .send()
         .join();
 
@@ -199,6 +208,9 @@ public class SearchAuditLogTest extends ClientRestTest {
     assertThat(filter.getDeploymentKey().get$Eq()).isEqualTo("deploymentKey");
     assertThat(filter.getFormKey().get$Eq()).isEqualTo("formKey");
     assertThat(filter.getResourceKey().get$Eq()).isEqualTo("resourceKey");
+    assertThat(filter.getRelatedEntityKey().get$Eq()).isEqualTo("relatedEntityKey");
+    assertThat(filter.getRelatedEntityType().get$Eq().getValue()).isEqualTo("USER");
+    assertThat(filter.getEntityDescription().get$Eq()).isEqualTo("entityDescription");
   }
 
   @Test

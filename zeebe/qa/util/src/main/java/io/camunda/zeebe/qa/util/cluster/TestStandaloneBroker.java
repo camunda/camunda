@@ -9,6 +9,7 @@ package io.camunda.zeebe.qa.util.cluster;
 
 import io.atomix.cluster.MemberId;
 import io.camunda.application.Profile;
+import io.camunda.application.StandaloneCamunda;
 import io.camunda.application.commons.CommonsModuleConfiguration;
 import io.camunda.application.commons.security.CamundaSecurityConfiguration.CamundaSecurityProperties;
 import io.camunda.authentication.config.AuthenticationProperties;
@@ -84,6 +85,18 @@ public final class TestStandaloneBroker extends TestSpringApplication<TestStanda
 
     // Initialize unified config with test-friendly defaults
     initializeUnifiedConfigDefaults();
+
+    StandaloneCamunda.getDefaultProperties(false)
+        .forEach(
+            (key, value) -> {
+              withProperty(key, value);
+            });
+
+    // this is required to prevent default spring boot 4.0 security setup to kick in
+    withProperty(
+        "spring.autoconfigure.exclude",
+        "org.springframework.boot.security.autoconfigure.web.servlet.ServletWebSecurityAutoConfiguration,"
+            + "org.springframework.boot.security.autoconfigure.actuate.web.servlet.ManagementWebSecurityAutoConfiguration");
 
     //noinspection resource
     withBean("camunda", unifiedConfig, Camunda.class).withAdditionalProfile(Profile.BROKER);

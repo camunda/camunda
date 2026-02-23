@@ -69,7 +69,7 @@ jobs:
       # Setup: read java version from pom
       - name: "Read Java / Version Info"
         id: pom-info
-        uses: YunaBraska/java-info-action@a596a660577bb33bbf6194cc39b691ad0693c28f # 2.1.93
+        uses: YunaBraska/java-info-action@9e90973c6c874b3b35811a4d141d117538b94698 # 2.1.95
         with:
           work-dir: ./optimize
 
@@ -104,19 +104,19 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml -pl backend -am install -T1
+          parameters: -f optimize/pom.xml -pl backend -am install -DskipITs -T1
 
       #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
+          parameters: -f optimize/pom.xml install -DskipITs -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
 
       #########################################################################
       # Build Docker image
       - name: Build and push Docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         env:
           DOCKER_BUILD_SUMMARY: false
           DOCKER_BUILD_RECORD_UPLOAD: false

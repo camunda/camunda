@@ -15,7 +15,6 @@
  */
 package io.camunda.client.api.response;
 
-import io.camunda.client.api.ExperimentalApi;
 import io.camunda.client.api.command.ClientException;
 import io.camunda.client.api.search.enums.JobKind;
 import io.camunda.client.api.search.enums.ListenerEventType;
@@ -134,7 +133,6 @@ public interface ActivatedJob {
   /**
    * @return the identifier of the tenant that owns the job
    */
-  @ExperimentalApi("https://github.com/camunda/camunda/issues/13560")
   String getTenantId();
 
   /**
@@ -149,4 +147,17 @@ public interface ActivatedJob {
    * @return the tags associated with the job inherited from the process instance on job creation.
    */
   Set<String> getTags();
+
+  /**
+   * The key of the root process instance. This is the key of the top-level process instance that
+   * started the process instance hierarchy containing this job. For jobs in top-level process
+   * instances, this is the same as {@link #getProcessInstanceKey()}.
+   *
+   * <p><b>Note:</b> This field is only available when using the REST API. When using the gRPC API,
+   * this method returns {@code null}.
+   *
+   * @return the key of the root process instance, or {@code null} if not available (gRPC API or
+   *     pre-8.9 data)
+   */
+  Long getRootProcessInstanceKey();
 }

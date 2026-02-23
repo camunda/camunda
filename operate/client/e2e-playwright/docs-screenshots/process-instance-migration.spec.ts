@@ -44,7 +44,7 @@ test.describe('process instance migration', () => {
         processDefinitions: mockOrderProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockOrderProcessInstances,
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'checkPayment',
@@ -114,7 +114,7 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'checkPayment',
@@ -218,7 +218,7 @@ test.describe('process instance migration', () => {
           page: {totalItems: 1},
         },
         processInstances: mockOrderProcessV2Instances,
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'checkPayment',
@@ -257,7 +257,7 @@ test.describe('process instance migration', () => {
         processDefinitions: mockAhspProcessDefinitions,
         batchOperations: {items: [], page: {totalItems: 0}},
         processInstances: mockAhspProcessInstances,
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'AD_HOC_SUBPROCESS',
@@ -310,7 +310,7 @@ test.describe('process instance migration', () => {
     await page.route(
       URL_API_PATTERN,
       mockProcessesResponses({
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'AD_HOC_SUBPROCESS',
@@ -418,7 +418,7 @@ test.describe('process instance migration', () => {
             processName: 'Ad Hoc Subprocess Target',
           })),
         },
-        statisticsV2: {
+        statistics: {
           items: [
             {
               elementId: 'AD_HOC_SUBPROCESS',

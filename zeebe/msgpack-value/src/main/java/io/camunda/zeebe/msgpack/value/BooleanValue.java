@@ -41,8 +41,8 @@ public final class BooleanValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeBoolean(val);
+  public int write(final MsgPackWriter writer) {
+    return writer.writeBoolean(val);
   }
 
   @Override

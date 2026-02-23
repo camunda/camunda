@@ -13,6 +13,7 @@ import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
+import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.schedule.Schedule;
@@ -91,6 +92,17 @@ public class BackupRetention extends Actor {
             return refTimestampOpt.orElse(null);
           },
           Comparator.nullsLast(Comparator.naturalOrder()));
+  private static final Comparator<BackupStatus> MAX_BACKUP_COMPARATOR =
+      Comparator.comparing(
+          status -> {
+            if (status.created().isPresent()) {
+              return status.created().get().toEpochMilli();
+            } else if (status.lastModified().isPresent()) {
+              return status.lastModified().get().toEpochMilli();
+            } else {
+              return status.id().checkpointId();
+            }
+          });
 
   private final BackupStore backupStore;
   private final Schedule retentionSchedule;
@@ -148,13 +160,11 @@ public class BackupRetention extends Actor {
   }
 
   private ActorFuture<Void> performRetention() {
-    final var now = ActorClock.currentTimeMillis();
-    final var window = now - retentionWindow.toMillis();
     final ActorFuture<Void> retentionFuture = createFuture();
     final var partitionFutures =
         topologyManager.getTopology().getPartitions().stream()
             .parallel()
-            .map(partitionId -> createRetentionContext(partitionId, window))
+            .map(this::createRetentionContext)
             .map(
                 future ->
                     future
@@ -186,10 +196,10 @@ public class BackupRetention extends Actor {
     return ctx;
   }
 
-  private ActorFuture<RetentionContext> createRetentionContext(
-      final int partitionId, final long window) {
+  private ActorFuture<RetentionContext> createRetentionContext(final int partitionId) {
     return retrieveBackups(partitionId)
-        .thenApply((statuses) -> filterBackups(statuses, window, partitionId), this)
+        .thenApply(this::excludeBackupsWithoutTimestamps)
+        .thenApply((statuses) -> processBackups(statuses, partitionId), this)
         .andThen(
             (context) ->
                 retrieveRangeMarkers(partitionId)
@@ -245,31 +255,63 @@ public class BackupRetention extends Actor {
     return retentionContext.withRangeMarkerContext(rangeStart, deletableRangeMarkers);
   }
 
-  private RetentionContext filterBackups(
-      final Collection<BackupStatus> backups, final long window, final int partitionId) {
-    final var deletableBackups = new ArrayList<BackupIdentifier>();
+  private RetentionContext processBackups(
+      final Collection<BackupStatus> backups, final int partitionId) {
+
+    final var latestCompletedBackup = latestCompletedBackup(backups);
+    if (latestCompletedBackup.isEmpty()) {
+      LOG.debug(
+          "Unable to determine retention window for partition {}. No completed backup found.",
+          partitionId);
+      // Returning a context with no deletable backups will not trigger any further actions
+      return RetentionContext.init(partitionId, List.of(), -1L, null);
+    }
+
     long firstAvailableBackupInNewRange = -1L;
+    final var deletableBackups = new ArrayList<BackupIdentifier>();
+
+    final Instant windowBound = calculateWindowBound(latestCompletedBackup.get());
 
     for (final var backup : backups) {
-      final var refTimestampOpt =
-          backup.descriptor().map(BackupDescriptor::checkpointTimestamp).or(backup::lastModified);
+      final var timestamp = backupTimestamp(backup);
 
-      if (refTimestampOpt.isEmpty()) {
-        LOG.debug(
-            "Unable to determine timestamp for backup {}. Skipping backup during retention.",
-            backup.id());
-        continue;
-      }
-
-      final var timestamp = refTimestampOpt.get().toEpochMilli();
-      if (timestamp < window) {
-        deletableBackups.add(backup.id());
+      if (timestamp.isBefore(windowBound)) {
+        if (backup.id().checkpointId() != latestCompletedBackup.get().id().checkpointId()) {
+          deletableBackups.add(backup.id());
+        } else {
+          // If the backup is the latest completed backup it should not be deleted and the marker
+          // should be moved to that backup id.
+          firstAvailableBackupInNewRange = backup.id().checkpointId();
+        }
       } else {
-        firstAvailableBackupInNewRange = backup.id().checkpointId();
+        // Only consider completed backups for the range change.
+        if (backup.statusCode() == BackupStatusCode.COMPLETED
+            && firstAvailableBackupInNewRange == -1L) {
+          firstAvailableBackupInNewRange = backup.id().checkpointId();
+        }
+        if (firstAvailableBackupInNewRange == -1L) {
+          continue;
+        }
         break;
       }
     }
-    return RetentionContext.init(partitionId, deletableBackups, firstAvailableBackupInNewRange);
+    return RetentionContext.init(
+        partitionId, deletableBackups, firstAvailableBackupInNewRange, windowBound);
+  }
+
+  private Optional<BackupStatus> latestCompletedBackup(final Collection<BackupStatus> backups) {
+    return backups.stream()
+        .filter(f -> f.statusCode() == BackupStatusCode.COMPLETED)
+        .max(MAX_BACKUP_COMPARATOR);
+  }
+
+  private Collection<BackupStatus> excludeBackupsWithoutTimestamps(
+      final Collection<BackupStatus> backups) {
+    return backups.stream().filter(backup -> backupTimestamp(backup) != null).toList();
+  }
+
+  private Instant calculateWindowBound(final BackupStatus latestCompletedBackup) {
+    return backupTimestamp(latestCompletedBackup).minusSeconds(retentionWindow.toSeconds());
   }
 
   private CompletableActorFuture<RetentionContext> resetRangeStart(final RetentionContext context) {
@@ -277,9 +319,9 @@ public class BackupRetention extends Actor {
     if (shouldResetMarker(context)) {
       final var marker = context.previousStartMarker.get();
       LOG.debug(
-          "Resetting range start marker {} for partition {} to checkpoint id {}",
-          context.previousStartMarker.get(),
+          "Advancing range start marker for partition {} from {} to {}",
           context.partitionId,
+          context.previousStartMarker.get(),
           context.earliestBackupInNewRange);
       backupStore
           .storeRangeMarker(
@@ -387,19 +429,39 @@ public class BackupRetention extends Actor {
     return future;
   }
 
+  private Instant backupTimestamp(final BackupStatus backup) {
+    return backup
+        .descriptor()
+        .map(BackupDescriptor::checkpointTimestamp)
+        .or(backup::created)
+        .or(backup::lastModified)
+        .orElseGet(
+            () -> {
+              LOG.debug("Unable to determine timestamp for backup {}.", backup.id());
+              return null;
+            });
+  }
+
   record RetentionContext(
       List<BackupIdentifier> deletableBackups,
       long earliestBackupInNewRange,
       Optional<BackupRangeMarker> previousStartMarker,
       List<BackupRangeMarker> deletableRangeMarkers,
-      int partitionId) {
+      int partitionId,
+      Instant windowBoundary) {
 
     static RetentionContext init(
         final int partitionId,
         final List<BackupIdentifier> deletableBackups,
-        final long earliestBackupInNewRange) {
+        final long earliestBackupInNewRange,
+        final Instant windowBoundary) {
       return new RetentionContext(
-          deletableBackups, earliestBackupInNewRange, Optional.empty(), null, partitionId);
+          deletableBackups,
+          earliestBackupInNewRange,
+          Optional.empty(),
+          null,
+          partitionId,
+          windowBoundary);
     }
 
     RetentionContext withRangeMarkerContext(
@@ -410,7 +472,8 @@ public class BackupRetention extends Actor {
           earliestBackupInNewRange,
           Optional.ofNullable(previousStartMarker),
           deletableRangeMarkers,
-          partitionId);
+          partitionId,
+          windowBoundary);
     }
   }
 }

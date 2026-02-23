@@ -250,6 +250,7 @@ test.describe('Process Instance', () => {
       await expect(
         diagram.getByText('fill form', {exact: false}),
       ).toBeVisible();
+      await operateProcessInstancePage.clickTreeItem(/fill form/i);
 
       await waitForAssertion({
         assertion: async () => {

@@ -13,6 +13,7 @@ import type {RequestError} from 'modules/request';
 
 type ResumeBatchOperationOptions = {
   onError?: (error: RequestError) => Promise<unknown> | unknown;
+  onSuccess?: () => Promise<unknown> | unknown;
 };
 
 function useResumeBatchOperation(options?: ResumeBatchOperationOptions) {
@@ -32,6 +33,7 @@ function useResumeBatchOperation(options?: ResumeBatchOperationOptions) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.batchOperations.get(batchOperationKey),
       });
+      options?.onSuccess?.();
     },
     onError: options?.onError,
   });

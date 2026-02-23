@@ -189,7 +189,7 @@ export class IdentityUsersPage {
   }
 
   async editUser(
-    currentUser: {username: string, email: string},
+    currentUser: {username: string; email: string},
     updatedUser: {name: string; email: string},
   ) {
     await waitForItemInList(this.page, this.userCell(currentUser.username), {

@@ -13,7 +13,7 @@ import {
   mockProcessDefinitions,
   mockProcessInstances,
   mockResponses,
-  mockStatisticsV2,
+  mockStatistics,
 } from '../mocks/processes.mocks';
 import {openFile} from '@/utils/openFile';
 import {URL_API_PATTERN} from '../constants';
@@ -49,7 +49,7 @@ test.describe('migration view', () => {
         batchOperations: mockBatchOperations,
         processInstances: mockProcessInstances,
         batchOperationItems: {items: [], page: {totalItems: 0}},
-        statisticsV2: mockStatisticsV2,
+        statistics: mockStatistics,
         processXml: openFile(
           './e2e-playwright/mocks/resources/LotsOfTasks.bpmn',
         ),

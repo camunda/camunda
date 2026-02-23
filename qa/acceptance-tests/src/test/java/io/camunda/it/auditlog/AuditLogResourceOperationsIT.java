@@ -95,7 +95,10 @@ public class AuditLogResourceOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(processDefinitionKey));
     assertResourceAuditLog(
-        auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(processDefinitionKey));
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(processDefinitionKey),
+        deployment.getProcesses().getFirst().getResourceName());
   }
 
   @Test
@@ -131,7 +134,10 @@ public class AuditLogResourceOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(processDefinitionKey));
     assertResourceAuditLog(
-        auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(processDefinitionKey));
+        auditLog,
+        AuditLogOperationTypeEnum.DELETE,
+        String.valueOf(processDefinitionKey),
+        deployment.getProcesses().getFirst().getResourceName());
   }
 
   // ========================================================================================
@@ -161,7 +167,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionKey));
-    assertDecisionAuditLog(auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(decisionKey));
+    assertDecisionAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(decisionKey),
+        deployment.getDecisions().getFirst().getDmnDecisionName());
   }
 
   @Test
@@ -198,7 +208,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionKey));
-    assertDecisionAuditLog(auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(decisionKey));
+    assertDecisionAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.DELETE,
+        String.valueOf(decisionKey),
+        deployment.getDecisions().getFirst().getDmnDecisionName());
   }
 
   // ========================================================================================
@@ -231,7 +245,10 @@ public class AuditLogResourceOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionRequirementsKey));
     assertResourceAuditLog(
-        auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(decisionRequirementsKey));
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(decisionRequirementsKey),
+        deployment.getDecisionRequirements().getFirst().getResourceName());
   }
 
   @Test
@@ -269,7 +286,10 @@ public class AuditLogResourceOperationsIT {
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(decisionRequirementsKey));
     assertResourceAuditLog(
-        auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(decisionRequirementsKey));
+        auditLog,
+        AuditLogOperationTypeEnum.DELETE,
+        String.valueOf(decisionRequirementsKey),
+        deployment.getDecisionRequirements().getFirst().getResourceName());
   }
 
   // ========================================================================================
@@ -299,7 +319,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(formKey));
-    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(formKey));
+    assertResourceAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(formKey),
+        deployment.getForm().getFirst().getResourceName());
   }
 
   @Test
@@ -334,7 +358,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(formKey));
-    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(formKey));
+    assertResourceAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.DELETE,
+        String.valueOf(formKey),
+        deployment.getForm().getFirst().getResourceName());
   }
 
   // ========================================================================================
@@ -364,7 +392,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(resourceKey));
-    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.CREATE, String.valueOf(resourceKey));
+    assertResourceAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.CREATE,
+        String.valueOf(resourceKey),
+        deployment.getResource().getFirst().getResourceName());
   }
 
   @Test
@@ -399,7 +431,11 @@ public class AuditLogResourceOperationsIT {
 
     assertThat(auditLogItems).isNotEmpty();
     final var auditLog = findByEntityKey(auditLogItems, String.valueOf(resourceKey));
-    assertResourceAuditLog(auditLog, AuditLogOperationTypeEnum.DELETE, String.valueOf(resourceKey));
+    assertResourceAuditLog(
+        auditLog,
+        AuditLogOperationTypeEnum.DELETE,
+        String.valueOf(resourceKey),
+        deployment.getResource().getFirst().getResourceName());
   }
 
   // ========================================================================================
@@ -438,9 +474,11 @@ public class AuditLogResourceOperationsIT {
   private void assertResourceAuditLog(
       final AuditLogResult auditLog,
       final AuditLogOperationTypeEnum operationType,
-      final String resourceKey) {
+      final String resourceKey,
+      final String resourceName) {
     assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.RESOURCE, operationType);
     assertThat(auditLog.getEntityKey()).isEqualTo(resourceKey);
+    assertThat(auditLog.getEntityDescription()).isEqualTo(resourceName);
   }
 
   /**
@@ -453,9 +491,26 @@ public class AuditLogResourceOperationsIT {
   private void assertDecisionAuditLog(
       final AuditLogResult auditLog,
       final AuditLogOperationTypeEnum operationType,
-      final String decisionKey) {
+      final String decisionKey,
+      final String decisionName) {
     assertCommonAuditLogFields(auditLog, AuditLogEntityTypeEnum.DECISION, operationType);
     assertThat(auditLog.getEntityKey()).isEqualTo(decisionKey);
+    assertThat(auditLog.getEntityDescription()).isEqualTo(decisionName);
+  }
+
+  /**
+   * Asserts the related entity information in the audit log.
+   *
+   * @param auditLog the audit log entry
+   * @param relatedEntityKey the expected related entity key
+   * @param relatedEntityType the expected related entity type
+   */
+  private void assertRelatedEntity(
+      final AuditLogResult auditLog,
+      final String relatedEntityKey,
+      final AuditLogEntityTypeEnum relatedEntityType) {
+    assertThat(auditLog.getRelatedEntityKey()).isEqualTo(relatedEntityKey);
+    assertThat(auditLog.getRelatedEntityType()).isEqualTo(relatedEntityType);
   }
 
   private List<AuditLogResult> awaitAuditLogEntry(

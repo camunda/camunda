@@ -25,6 +25,7 @@ import {
 } from "./components/styled";
 import {
   Button,
+  CodeSnippet,
   Column,
   DatePicker,
   DatePickerInput,
@@ -44,6 +45,8 @@ import {
 } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
 import { useForm } from "react-hook-form";
+import { CellProperty } from "src/pages/operations-log/CellProperty";
+import { User } from "@carbon/react/icons";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
 
@@ -113,7 +116,10 @@ const List: FC = () => {
     setPageNumber,
     setPageSize,
     setSort: setPaginationSort,
-  } = usePagination();
+  } = usePagination({
+    pageNumber: 1,
+    pageSize: 50,
+  });
 
   const transformedSort = useMemo((): AuditLogSort[] => {
     if (!pageParams.sort || pageParams.sort.length === 0) {
@@ -176,7 +182,7 @@ const List: FC = () => {
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
           <Section level={4}>
             <Stack gap={5}>
-              <Heading>{t("operation")}</Heading>
+              <Heading>{t("filter")}</Heading>
               <MultiSelect
                 id="operationType"
                 items={ALLOWED_OPERATION_TYPES}
@@ -245,7 +251,7 @@ const List: FC = () => {
                 }}
                 size="sm"
               />
-              <FormLabel>{t("time")}</FormLabel>
+              <FormLabel>{t("date")}</FormLabel>
               <DatePickerWrapper>
                 <DatePicker
                   datePickerType="range"
@@ -314,43 +320,49 @@ const List: FC = () => {
             data={
               auditLogs?.items.map((log) => ({
                 id: log.auditLogKey,
+                result:
+                  log.result === "SUCCESS" ? (
+                    <SuccessIcon size={20} />
+                  ) : (
+                    <ErrorIcon size={20} />
+                  ),
                 operationType: (
                   <OperationLogName>
-                    {spaceAndCapitalize(log.operationType)}{" "}
-                    {spaceAndCapitalize(log.entityType)}
+                    {spaceAndCapitalize(log.operationType)}
                   </OperationLogName>
                 ),
                 entityType: spaceAndCapitalize(log.entityType),
-                result: (
-                  <OperationLogName>
-                    {log.result === "SUCCESS" ? (
-                      <SuccessIcon size={20} />
-                    ) : (
-                      <ErrorIcon size={20} />
-                    )}
-                    {spaceAndCapitalize(log.result)}
-                  </OperationLogName>
+                reference: (
+                  <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
                 ),
-                appliedTo: log.entityKey,
-                actorId: log.actorId,
+                property: <CellProperty item={log} />,
+                actorId: log.actorId ? (
+                  <OperationLogName>
+                    <User /> {log.actorId}
+                  </OperationLogName>
+                ) : (
+                  "-"
+                ),
                 timestamp: new Date(log.timestamp).toLocaleString(),
               })) || []
             }
             headers={[
+              { header: "", key: "result" },
               {
-                header: t("operation"),
+                header: t("operationType"),
                 key: "operationType",
                 isSortable: true,
               },
-              { header: t("entity"), key: "entityType", isSortable: true },
-              { header: t("status"), key: "result" },
-              { header: t("appliedTo"), key: "appliedTo" },
+              { header: t("entityType"), key: "entityType", isSortable: true },
+              { header: t("reference"), key: "reference" },
+              { header: t("property"), key: "property" },
               { header: t("actor"), key: "actorId", isSortable: true },
-              { header: t("time"), key: "timestamp", isSortable: true },
+              { header: t("date"), key: "timestamp", isSortable: true },
             ]}
             loading={loading}
             setSort={handleSort}
             page={{ ...page, ...auditLogs?.page }}
+            pageSizes={[50, 100, 200]}
             setPageNumber={setPageNumber}
             setPageSize={setPageSize}
           />

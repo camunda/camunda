@@ -56,6 +56,11 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
     this.processDefinitionId = processDefinitionId;
     this.httpClient = httpClient;
     httpRequestConfig = httpClient.newRequestConfig();
+
+    request.setFilter(
+        provideSearchRequestProperty(
+            processDefinitionInstanceVersionStatisticsFilter(
+                f -> f.processDefinitionId(processDefinitionId))));
   }
 
   @Override
@@ -70,7 +75,7 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
     final HttpCamundaFuture<SearchResponse<ProcessDefinitionInstanceVersionStatistics>> result =
         new HttpCamundaFuture<>();
     httpClient.post(
-        String.format("/process-definitions/%s/statistics/process-instances", processDefinitionId),
+        "/process-definitions/statistics/process-instances-by-version",
         jsonMapper.toJson(request),
         httpRequestConfig.build(),
         ProcessDefinitionInstanceVersionStatisticsQueryResult.class,
@@ -96,6 +101,7 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
   public ProcessDefinitionInstanceVersionStatisticsRequest filter(
       final ProcessDefinitionInstanceVersionStatisticsFilter value) {
     request.setFilter(provideSearchRequestProperty(value));
+    ensureProcessDefinitionIdInFilter();
     return this;
   }
 
@@ -103,6 +109,10 @@ public class ProcessDefinitionInstanceVersionStatisticsRequestImpl
   public ProcessDefinitionInstanceVersionStatisticsRequest filter(
       final Consumer<ProcessDefinitionInstanceVersionStatisticsFilter> fn) {
     return filter(processDefinitionInstanceVersionStatisticsFilter(fn));
+  }
+
+  private void ensureProcessDefinitionIdInFilter() {
+    request.getFilter().setProcessDefinitionId(processDefinitionId);
   }
 
   @Override

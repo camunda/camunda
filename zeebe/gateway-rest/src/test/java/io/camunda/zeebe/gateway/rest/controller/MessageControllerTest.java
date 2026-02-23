@@ -27,15 +27,18 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mockito;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
 import org.springframework.test.web.reactive.server.WebTestClient.ResponseSpec;
 
+@ExtendWith(MockitoExtension.class)
 @WebMvcTest(MessageController.class)
 public class MessageControllerTest extends RestControllerTest {
 
@@ -275,7 +278,7 @@ public class MessageControllerTest extends RestControllerTest {
               "type": "about:blank",
               "status": 400,
               "title": "INVALID_ARGUMENT",
-              "detail": "Expected to handle request Correlate Message with tenant identifiers [], but no tenant identifier was provided.",
+              "detail": "Expected to handle request Correlate Message with multi-tenancy enabled, but no tenant identifier was provided.",
               "instance": "%s"
             }"""
                 .formatted(CORRELATION_ENDPOINT),

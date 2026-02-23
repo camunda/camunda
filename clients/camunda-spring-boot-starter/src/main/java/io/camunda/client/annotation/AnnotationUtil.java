@@ -18,6 +18,7 @@ package io.camunda.client.annotation;
 import static java.util.Optional.ofNullable;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import io.camunda.client.annotation.Deployment.Deployments;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
 import io.camunda.client.annotation.value.DocumentValue.ParameterType;
@@ -136,7 +137,9 @@ public class AnnotationUtil {
   }
 
   public static boolean isDeployment(final BeanInfo beanInfo) {
-    return beanInfo.hasClassAnnotation(Deployment.class) || isDeploymentLegacy(beanInfo);
+    return beanInfo.hasClassAnnotation(Deployments.class)
+        || beanInfo.hasClassAnnotation(Deployment.class)
+        || isDeploymentLegacy(beanInfo);
   }
 
   public static boolean isJobWorker(final BeanInfo beanInfo) {
@@ -215,7 +218,9 @@ public class AnnotationUtil {
                       : new FromAnnotation<>(annotation.maxRetries()),
                   annotation.retryBackoff() == -1
                       ? new Empty<>()
-                      : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff()))))
+                      : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff())),
+                  fromSingletonArray(
+                      annotation.TenantFilter(), "tenantFilterName", methodInfo.getMethodName())))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
@@ -223,6 +228,28 @@ public class AnnotationUtil {
               });
     }
     return Optional.empty();
+  }
+
+  private static <T> SourceAware<T> fromSingletonArray(
+      final T[] annotationProperty,
+      final Supplier<SourceAware<T>> defaultValue,
+      final String propertyName,
+      final String methodName) {
+    if (annotationProperty.length == 0) {
+      return defaultValue.get();
+    }
+    if (annotationProperty.length == 1) {
+      return new FromAnnotation<>(annotationProperty[0]);
+    }
+    throw new IllegalArgumentException(
+        String.format(
+            "Illegal configuration of property '%s' on @JobWorker method '%s'",
+            propertyName, methodName));
+  }
+
+  private static <T> SourceAware<T> fromSingletonArray(
+      final T[] annotationProperty, final String propertyName, final String methodName) {
+    return fromSingletonArray(annotationProperty, Empty::new, propertyName, methodName);
   }
 
   private static SourceAware<Boolean> fromSingletonBooleanArray(
@@ -341,6 +368,7 @@ public class AnnotationUtil {
                   annotation.maxRetries() == -1
                       ? new Empty<>()
                       : new FromAnnotation<>(annotation.maxRetries()),
+                  new Empty<>(),
                   new Empty<>()))
           .map(
               v -> {
@@ -391,11 +419,19 @@ public class AnnotationUtil {
   public static List<DeploymentValue> getDeploymentValues(final BeanInfo beanInfo) {
     if (isDeployment(beanInfo)) {
       final List<DeploymentValue> values = new ArrayList<>();
+      values.addAll(getDeploymentValuesFromRepeatable(beanInfo));
       values.addAll(getDeploymentValuesInternal(beanInfo));
       values.addAll(getDeploymentResourcesLegacy(beanInfo));
       return values;
     }
     return Collections.emptyList();
+  }
+
+  private static List<DeploymentValue> getDeploymentValuesFromRepeatable(final BeanInfo beanInfo) {
+    return beanInfo.getAnnotation(Deployments.class).stream()
+        .flatMap(d -> Arrays.stream(d.value()))
+        .map(AnnotationUtil::fromAnnotation)
+        .toList();
   }
 
   private static List<DeploymentValue> getDeploymentValuesInternal(final BeanInfo beanInfo) {

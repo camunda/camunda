@@ -21,7 +21,6 @@ import io.camunda.client.CamundaClientConfiguration;
 import io.camunda.client.CredentialsProvider.StatusCode;
 import io.camunda.client.api.CamundaFuture;
 import io.camunda.client.api.JsonMapper;
-import io.camunda.client.api.command.CommandWithTenantStep;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep2;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1.CreateProcessInstanceCommandStep3;
@@ -64,10 +63,11 @@ public final class CreateProcessInstanceCommandImpl
   private final JsonMapper jsonMapper;
   private Duration requestTimeout;
   private boolean useRest;
-  private HttpClient httpClient;
-  private RequestConfig.Builder httpRequestConfig;
+  private final HttpClient httpClient;
+  private final RequestConfig.Builder httpRequestConfig;
   private final ProcessInstanceCreationInstruction httpRequestObject =
       new ProcessInstanceCreationInstruction();
+  private final CamundaClientConfiguration config;
 
   public CreateProcessInstanceCommandImpl(
       final GatewayStub asyncStub,
@@ -77,6 +77,7 @@ public final class CreateProcessInstanceCommandImpl
       final HttpClient httpClient,
       final boolean preferRestOverGrpc) {
     super(jsonMapper);
+    this.config = config;
     this.asyncStub = asyncStub;
     requestTimeout = config.getDefaultRequestTimeout();
     this.retryPredicate = retryPredicate;
@@ -87,32 +88,6 @@ public final class CreateProcessInstanceCommandImpl
     httpRequestConfig = httpClient.newRequestConfig();
     requestTimeout(requestTimeout);
     useRest = preferRestOverGrpc;
-  }
-
-  /**
-   * A constructor that provides an instance with the <code><default></code> tenantId set.
-   *
-   * <p>From version 8.3.0, the java client supports multi-tenancy for this command, which requires
-   * the <code>tenantId</code> property to be defined. This constructor is only intended for
-   * backwards compatibility in tests.
-   *
-   * @deprecated since 8.3.0, use {@link
-   *     CreateProcessInstanceCommandImpl#CreateProcessInstanceCommandImpl(GatewayStub, JsonMapper,
-   *     CamundaClientConfiguration, Predicate, HttpClient, boolean)}
-   */
-  @Deprecated
-  public CreateProcessInstanceCommandImpl(
-      final GatewayStub asyncStub,
-      final JsonMapper jsonMapper,
-      final Duration requestTimeout,
-      final Predicate<StatusCode> retryPredicate) {
-    super(jsonMapper);
-    this.asyncStub = asyncStub;
-    this.requestTimeout = requestTimeout;
-    this.retryPredicate = retryPredicate;
-    this.jsonMapper = jsonMapper;
-    grpcRequestObjectBuilder = CreateProcessInstanceRequest.newBuilder();
-    tenantId(CommandWithTenantStep.DEFAULT_TENANT_IDENTIFIER);
   }
 
   @Override
@@ -164,7 +139,8 @@ public final class CreateProcessInstanceCommandImpl
         requestTimeout,
         httpClient,
         useRest,
-        httpRequestObject);
+        httpRequestObject,
+        config);
   }
 
   @Override
@@ -189,6 +165,13 @@ public final class CreateProcessInstanceCommandImpl
     TagUtil.ensureValidTags("tags", tags);
     grpcRequestObjectBuilder.addAllTags(tags);
     httpRequestObject.setTags(tags);
+    return this;
+  }
+
+  @Override
+  public CreateProcessInstanceCommandStep3 businessId(final String businessId) {
+    grpcRequestObjectBuilder.setBusinessId(businessId);
+    httpRequestObject.setBusinessId(businessId);
     return this;
   }
 

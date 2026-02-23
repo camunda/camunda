@@ -24,7 +24,6 @@ import io.camunda.client.api.response.DeleteProcessInstanceResponse;
 import io.camunda.client.impl.http.HttpCamundaFuture;
 import io.camunda.client.impl.http.HttpClient;
 import io.camunda.client.impl.response.DeleteProcessInstanceResponseImpl;
-import io.camunda.client.protocol.rest.BatchOperationCreatedResult;
 import io.camunda.client.protocol.rest.DeleteProcessInstanceRequest;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -72,7 +71,6 @@ public class DeleteProcessInstanceCommandImpl implements DeleteProcessInstanceCo
         "/process-instances/" + processInstanceKey + "/deletion",
         jsonMapper.toJson(httpRequestObject),
         httpRequestConfig.build(),
-        BatchOperationCreatedResult.class,
         DeleteProcessInstanceResponseImpl::new,
         result);
     return result;

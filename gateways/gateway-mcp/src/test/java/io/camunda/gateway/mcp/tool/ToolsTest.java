@@ -46,7 +46,8 @@ public abstract class ToolsTest {
 
   private McpSyncClient createMcpClient() {
     final HttpClientStreamableHttpTransport.Builder transportBuilder =
-        HttpClientStreamableHttpTransport.builder("http://localhost:%d/mcp".formatted(serverPort))
+        HttpClientStreamableHttpTransport.builder("http://localhost:%d".formatted(serverPort))
+            .endpoint("/mcp/cluster")
             .openConnectionOnStartup(false);
 
     return McpClient.sync(transportBuilder.build()).build();

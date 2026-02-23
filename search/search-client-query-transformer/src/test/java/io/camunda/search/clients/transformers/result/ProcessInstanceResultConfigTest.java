@@ -15,24 +15,24 @@ import org.junit.jupiter.api.Test;
 public class ProcessInstanceResultConfigTest extends AbstractResultConfigTest {
 
   @Test
-  public void shouldSourceConfigIncludeProcessKey() {
+  public void shouldSourceConfigIncludeProcessKeys() {
     // when
     final var source =
         transformRequest(
             SearchQueryBuilders.processInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.onlyKey(true))));
+                q -> q.resultConfig(r -> r.onlyKeys(true))));
 
     // then
-    assertThat(source.sourceFilter().includes()).containsExactly("key");
+    assertThat(source.sourceFilter().includes()).containsExactly("key", "rootProcessInstanceKey");
   }
 
   @Test
-  public void shouldSourceConfigExcludeProcessKey() {
+  public void shouldSourceConfigExcludeProcessKeys() {
     // when
     final var source =
         transformRequest(
             SearchQueryBuilders.processInstanceSearchQuery(
-                q -> q.resultConfig(r -> r.onlyKey(false))));
+                q -> q.resultConfig(r -> r.onlyKeys(false))));
 
     // then
     assertThat(source.sourceFilter().includes()).isNull();

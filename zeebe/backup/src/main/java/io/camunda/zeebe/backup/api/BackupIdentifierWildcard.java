@@ -13,11 +13,14 @@ import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
+import org.jspecify.annotations.NullMarked;
+import org.jspecify.annotations.Nullable;
 
 /**
  * Similar to {@link BackupIdentifier} but fields that are omitted should be interpreted as a
  * wildcard.
  */
+@NullMarked
 public interface BackupIdentifierWildcard {
   /**
    * @return id of the broker which took this backup.
@@ -109,7 +112,7 @@ public interface BackupIdentifierWildcard {
       return new Exact(checkpointId);
     }
 
-    static CheckpointPattern of(final String pattern) {
+    static CheckpointPattern of(@Nullable final String pattern) {
       if (pattern == null || pattern.isEmpty() || "*".equals(pattern)) {
         return new Any();
       } else if (pattern.endsWith("*")) {

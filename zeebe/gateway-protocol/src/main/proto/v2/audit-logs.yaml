@@ -72,6 +72,8 @@ components:
     AuditLogResult:
       description: Audit log item.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         auditLogKey:
           allOf:
@@ -100,6 +102,9 @@ components:
           description: The ID of the actor who performed the operation.
         actorType:
           $ref: '#/components/schemas/AuditLogActorTypeEnum'
+        agentElementId:
+          type: string
+          description: The element ID of the agent that performed the operation (e.g. ad-hoc subprocess element ID).
         tenantId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -123,6 +128,14 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
           description: The key of the process instance.
+        rootProcessInstanceKey:
+          description: |
+            The key of the root process instance. The root process instance is the top-level
+            ancestor in the process instance hierarchy. This field is only present for data
+            belonging to process instance hierarchies created in version 8.9 or later.
+          nullable: true
+          allOf:
+            - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         elementInstanceKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
@@ -166,7 +179,23 @@ components:
           allOf:
             - $ref: 'deployments.yaml#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource.
-
+        relatedEntityKey:
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityKey'
+          description: |
+            The key of the related entity. The content depends on the operation type and entity type.
+            For example, for authorization operations, this will contain the ID of the owner (e.g., user or group) the authorization belongs to.
+        relatedEntityType:
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityTypeEnum'
+          description: |
+            The type of the related entity. The content depends on the operation type and entity type.
+            For example, for authorization operations, this will contain the type of the owner (e.g., USER or GROUP) the authorization belongs to.
+        entityDescription:
+          type: string
+          description: |
+            Additional description of the entity affected by the operation.
+            For example, for variable operations, this will contain the variable name.
     AuditLogSearchQuerySortRequest:
       type: object
       additionalProperties: false
@@ -261,6 +290,10 @@ components:
           description: The actor type search filter.
           allOf:
             - $ref: '#/components/schemas/AuditLogActorTypeFilterProperty'
+        agentElementId:
+          description: The agent element ID search filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         entityKey:
           description: The entity key search filter.
           allOf:
@@ -325,10 +358,24 @@ components:
           description: The decision evaluation key search filter.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/DecisionEvaluationKeyFilterProperty'
+        relatedEntityKey:
+          description: The related entity key search filter.
+          allOf:
+            - $ref: '#/components/schemas/AuditLogEntityKeyFilterProperty'
+        relatedEntityType:
+          description: The related entity type search filter.
+          allOf:
+            - $ref: '#/components/schemas/EntityTypeFilterProperty'
+        entityDescription:
+          description: The entity description filter.
+          allOf:
+            - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
 
     AuditLogSearchQueryResult:
       description: Audit log search response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -364,6 +411,7 @@ components:
         - USER
         - USER_TASK
         - VARIABLE
+        - CLIENT
 
     AuditLogOperationTypeEnum:
       type: string

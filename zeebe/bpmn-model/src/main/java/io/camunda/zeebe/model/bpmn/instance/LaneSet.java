@@ -23,11 +23,7 @@ import java.util.Collection;
  *
  * @author Sebastian Menski
  */
-public interface LaneSet extends BaseElement {
-
-  String getName();
-
-  void setName(String name);
+public interface LaneSet extends BaseElement, NamedBpmnElement {
 
   Collection<Lane> getLanes();
 }

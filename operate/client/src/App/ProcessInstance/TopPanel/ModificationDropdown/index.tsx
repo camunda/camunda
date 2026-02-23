@@ -19,6 +19,7 @@ import {
   Title,
   Unsupported,
   SelectedInstanceCount,
+  InfoMessage,
   Button,
   InlineLoading,
 } from './styled';
@@ -60,7 +61,7 @@ const ModificationDropdown: React.FC<Props> = observer(
       clearSelection,
     } = useProcessInstanceElementSelection();
     const {data: businessObjects} = useBusinessObjects();
-    const {data: selectedElementRunningInstancesCount} =
+    const {data: totalRunningInstancesCount} =
       useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
     const {data: totalRunningInstancesVisible} =
       useTotalRunningInstancesVisibleForFlowNode(
@@ -69,12 +70,28 @@ const ModificationDropdown: React.FC<Props> = observer(
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
 
+    // true if an element instance is selected from the element history tree
+    const isSpecificElementInstanceSelected =
+      selectedElementInstanceKey !== null;
+
+    // true if an element is selected from diagram or element history tree,
+    // and a single specific element instance is resolved for the selection
+    const isElementInstanceResolved = resolvedElementInstance !== null;
+
+    let selectedElementRunningInstancesCount = totalRunningInstancesCount;
+    if (isElementInstanceResolved && !isSelectedInstanceMultiInstanceBody) {
+      selectedElementRunningInstancesCount = 1;
+    }
+
+    const resolvedElementInstanceKey =
+      resolvedElementInstance?.elementInstanceKey;
+
     const availableModifications = useAvailableModifications({
       runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
       elementId: selectedElementId ?? undefined,
-      elementInstanceKey: selectedElementInstanceKey ?? undefined,
+      isSpecificElementInstanceSelected,
       isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
-      isElementInstanceResolved: resolvedElementInstance !== null,
+      isElementInstanceKeyAvailable: isElementInstanceResolved,
     });
     const canBeModified = useCanBeModified(selectedElementId ?? undefined);
     const {data: processInstance} = useProcessInstance();
@@ -83,6 +100,10 @@ const ModificationDropdown: React.FC<Props> = observer(
     const {data: processDefinitionData} = useProcessInstanceXml({
       processDefinitionKey,
     });
+
+    const hasSelectedElementMultipleRunningInstances =
+      selectedElementRunningInstancesCount !== undefined &&
+      selectedElementRunningInstancesCount > 1;
 
     if (
       selectedElementId === null ||
@@ -126,6 +147,13 @@ const ModificationDropdown: React.FC<Props> = observer(
                       {`Selected running instances: ${selectedElementRunningInstancesCount ?? 0}`}
                     </SelectedInstanceCount>
                   )}
+                  {hasSelectedElementMultipleRunningInstances && (
+                    <InfoMessage>
+                      To modify a specific instance, select it in the Instance
+                      History below.
+                    </InfoMessage>
+                  )}
+
                   <Stack gap={2}>
                     {availableModifications.includes('add') &&
                       businessObjects && (
@@ -185,7 +213,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       )}
 
                     {availableModifications.includes('cancel-instance') &&
-                      !isNil(selectedElementInstanceKey) &&
+                      !isNil(resolvedElementInstanceKey) &&
                       businessObjects && (
                         <Button
                           kind="ghost"
@@ -200,7 +228,7 @@ const ModificationDropdown: React.FC<Props> = observer(
 
                             modificationsStore.cancelToken(
                               selectedElementId,
-                              selectedElementInstanceKey,
+                              resolvedElementInstanceKey,
                               businessObjects,
                             );
                             clearSelection();
@@ -237,7 +265,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                       )}
 
                     {availableModifications.includes('move-instance') &&
-                      !isNil(selectedElementInstanceKey) && (
+                      !isNil(resolvedElementInstanceKey) && (
                         <Button
                           kind="ghost"
                           title="Move selected instance in this flow node to another target"
@@ -247,7 +275,7 @@ const ModificationDropdown: React.FC<Props> = observer(
                           onClick={() => {
                             modificationsStore.startMovingToken(
                               selectedElementId,
-                              selectedElementInstanceKey,
+                              resolvedElementInstanceKey,
                             );
                             clearSelection();
                           }}

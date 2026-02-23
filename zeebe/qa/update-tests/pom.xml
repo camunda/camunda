@@ -72,7 +72,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-authentication</artifactId>
+      <artifactId>configuration</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -149,6 +149,38 @@
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-protocol</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Backup compatibility test dependencies -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-s3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-backup-store-gcs</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.google.cloud</groupId>
+      <artifactId>google-cloud-storage</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers-junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>software.amazon.awssdk</groupId>
+      <artifactId>s3</artifactId>
       <scope>test</scope>
     </dependency>
 

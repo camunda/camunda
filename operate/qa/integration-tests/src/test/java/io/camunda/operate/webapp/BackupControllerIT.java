@@ -32,8 +32,6 @@ import co.elastic.clients.json.JsonpMapper;
 import co.elastic.clients.json.jackson.JacksonJsonpMapper;
 import co.elastic.clients.transport.TransportException;
 import co.elastic.clients.util.ObjectBuilder;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.configuration.UnifiedConfiguration;
 import io.camunda.configuration.UnifiedConfigurationHelper;
 import io.camunda.management.backups.Error;
@@ -52,7 +50,6 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.jetbrains.annotations.NotNull;
@@ -62,9 +59,13 @@ import org.junit.runner.RunWith;
 import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.endpoint.web.WebEndpointResponse;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalManagementPort;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -75,6 +76,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 anymore, it will be done in a follow-up PR
 */
 @RunWith(SpringRunner.class)
+@AutoConfigureTestRestTemplate
 @SpringBootTest(
     classes = {
       TestApplication.class,
@@ -281,7 +283,7 @@ public class BackupControllerIT {
                 b.index("1")
                     .indexUuid("uuid")
                     .nodeId("someNodeId1")
-                    .shardId("someIndex1" + UUID.randomUUID() + 1)
+                    .shardId(1)
                     .status("FAILURE")
                     .reason("Shard 1 is not allocated"));
     final SnapshotShardFailure failure2 =
@@ -290,7 +292,7 @@ public class BackupControllerIT {
                 b.index("2")
                     .indexUuid("uuid2")
                     .nodeId("someNodeId2")
-                    .shardId("someIndex2" + UUID.randomUUID() + 2)
+                    .shardId(2)
                     .status("FAILURE")
                     .reason("Shard 2 is not allocated"));
     final List<SnapshotShardFailure> shardFailures = asList(failure1, failure2);
@@ -670,18 +672,14 @@ public class BackupControllerIT {
         GetSnapshotResponse.of(b -> b.snapshots(snapshotInfos).remaining(1).total(1)));
 
     final var res =
-        testRestTemplate.getForEntity(
-            "http://localhost:" + managementPort + "/actuator/backupHistory", String.class);
+        testRestTemplate.exchange(
+            "http://localhost:" + managementPort + "/actuator/backupHistory",
+            HttpMethod.GET,
+            HttpEntity.EMPTY,
+            new ParameterizedTypeReference<List<HistoryBackupInfo>>() {});
     assertThat(res.getStatusCode().is2xxSuccessful()).isTrue();
 
-    final ObjectMapper objectMapper = new ObjectMapper();
-    objectMapper.registerModule(new JavaTimeModule());
-    final List<HistoryBackupInfo> backups =
-        objectMapper.readValue(
-            res.getBody(),
-            objectMapper
-                .getTypeFactory()
-                .constructCollectionType(List.class, HistoryBackupInfo.class));
+    final List<HistoryBackupInfo> backups = res.getBody();
 
     assertThat(backups).hasSize(1);
 

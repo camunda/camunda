@@ -22,31 +22,26 @@ public class CheckpointSchedulerServiceStep extends AbstractBrokerStartupStep {
     final var backupCfg = brokerStartupContext.getBrokerConfiguration().getData().getBackup();
     final var scheduler = brokerStartupContext.getActorSchedulingService();
     final var meterRegistry = brokerStartupContext.getMeterRegistry();
-    final var partitionManager = brokerStartupContext.getPartitionManager();
 
-    if (backupCfg.isContinuous()) {
-      concurrencyControl.run(
-          () -> {
-            final CheckpointSchedulingService schedulingService =
-                new CheckpointSchedulingService(
-                    brokerStartupContext.getClusterServices().getMembershipService(),
-                    scheduler,
-                    backupCfg,
-                    brokerStartupContext.getBrokerClient(),
-                    meterRegistry);
+    concurrencyControl.run(
+        () -> {
+          final CheckpointSchedulingService schedulingService =
+              new CheckpointSchedulingService(
+                  brokerStartupContext.getClusterServices().getMembershipService(),
+                  scheduler,
+                  backupCfg,
+                  brokerStartupContext.getBrokerClient(),
+                  meterRegistry);
 
-            concurrencyControl.runOnCompletion(
-                scheduler.submitActor(schedulingService),
-                proceed(
-                    () -> {
-                      brokerStartupContext.setCheckpointSchedulingService(schedulingService);
-                      startupFuture.complete(brokerStartupContext);
-                    },
-                    startupFuture));
-          });
-    } else {
-      startupFuture.complete(brokerStartupContext);
-    }
+          concurrencyControl.runOnCompletion(
+              scheduler.submitActor(schedulingService),
+              proceed(
+                  () -> {
+                    brokerStartupContext.setCheckpointSchedulingService(schedulingService);
+                    startupFuture.complete(brokerStartupContext);
+                  },
+                  startupFuture));
+        });
   }
 
   @Override

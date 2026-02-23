@@ -109,7 +109,14 @@ public final class AuditLogFixtures extends CommonFixtures {
   public static void createAndSaveRandomAuditLogs(
       final RdbmsWriters rdbmsWriters,
       final Function<AuditLogDbModel.Builder, AuditLogDbModel.Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomAuditLogs(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomAuditLogs(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<AuditLogDbModel.Builder, AuditLogDbModel.Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getAuditLogWriter().create(AuditLogFixtures.createRandomized(builderFunction));
     }
 

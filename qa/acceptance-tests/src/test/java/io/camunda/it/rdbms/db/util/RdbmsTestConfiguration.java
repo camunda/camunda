@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db.util;
 
 import io.camunda.application.commons.rdbms.RdbmsConfiguration;
 import io.camunda.configuration.Camunda;
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import javax.sql.DataSource;
 import org.mockito.Mockito;
@@ -36,6 +37,10 @@ public class RdbmsTestConfiguration {
 
   @Bean
   public Camunda camunda() {
-    return Mockito.mock(Camunda.class, Mockito.RETURNS_DEEP_STUBS);
+    final var camundaConfig = Mockito.mock(Camunda.class, Mockito.RETURNS_DEEP_STUBS);
+    Mockito.when(
+            camundaConfig.getData().getSecondaryStorage().getRdbms().getQuery().toReaderConfig())
+        .thenReturn(RdbmsReaderConfig.builder().maxTotalHits(100).build());
+    return camundaConfig;
   }
 }

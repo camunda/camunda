@@ -64,8 +64,8 @@ public class BinaryValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeBinary(data);
+  public int write(final MsgPackWriter writer) {
+    return writer.writeBinary(data);
   }
 
   @Override

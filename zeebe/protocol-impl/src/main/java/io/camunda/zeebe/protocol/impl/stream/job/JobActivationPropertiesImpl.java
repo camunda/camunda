@@ -10,11 +10,13 @@ package io.camunda.zeebe.protocol.impl.stream.job;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
+import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Collection;
@@ -31,14 +33,17 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
       new ArrayProperty<>(
           "tenantIds", () -> new StringValue(TenantOwned.DEFAULT_TENANT_IDENTIFIER));
   private final DocumentProperty claimsProp = new DocumentProperty("claims");
+  private final EnumProperty<TenantFilter> tenantFilterProp =
+      new EnumProperty<>("tenantFilter", TenantFilter.class, TenantFilter.PROVIDED);
 
   public JobActivationPropertiesImpl() {
-    super(5);
+    super(6);
     declareProperty(workerProp)
         .declareProperty(timeoutProp)
         .declareProperty(fetchVariablesProp)
         .declareProperty(tenantIdsProp)
-        .declareProperty(claimsProp);
+        .declareProperty(claimsProp)
+        .declareProperty(tenantFilterProp);
   }
 
   public JobActivationPropertiesImpl setWorker(
@@ -85,8 +90,18 @@ public class JobActivationPropertiesImpl extends UnpackedObject implements JobAc
   }
 
   @Override
+  public TenantFilter tenantFilter() {
+    return tenantFilterProp.getValue();
+  }
+
+  @Override
   public Map<String, Object> claims() {
     return MsgPackConverter.convertToMap(claimsProp.getValue());
+  }
+
+  public JobActivationPropertiesImpl setTenantFilter(final TenantFilter tenantFilter) {
+    tenantFilterProp.setValue(tenantFilter);
+    return this;
   }
 
   public JobActivationPropertiesImpl setClaims(final Map<String, Object> authorizations) {

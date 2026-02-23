@@ -8,20 +8,16 @@
 package io.camunda.webapps.controllers;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import io.camunda.identity.webapp.controllers.IdentityIndexController;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ui.ExtendedModelMap;
 
 @ExtendWith(MockitoExtension.class)
 class IdentityIndexControllerTest {
@@ -34,33 +30,90 @@ class IdentityIndexControllerTest {
 
   @BeforeEach
   void setUp() {
-    controller = new IdentityIndexController(servletContext, webappsRequestForwardManager);
+    controller = new IdentityIndexController();
   }
 
   @Test
-  void shouldReturnIdentityIndexView() throws IOException {
+  void shouldRedirectIdentityRootToAdmin() {
     // Given
-    when(servletContext.getContextPath()).thenReturn("/camunda");
-    final var model = new ExtendedModelMap();
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity");
+    when(request.getQueryString()).thenReturn(null);
 
     // When
-    final var viewName = controller.identity(model);
+    final var result = controller.redirectIdentityRoot(request);
 
     // Then
-    assertThat(viewName).isEqualTo("identity/index");
-    assertThat(model.getAttribute("contextPath")).isEqualTo("/camunda/identity/");
+    assertThat(result).isEqualTo("redirect:/admin");
   }
 
   @Test
-  void shouldForwardToIdentityForRootPath() {
+  void shouldRedirectIdentityRootWithTrailingSlashToAdmin() {
     // Given
-    when(webappsRequestForwardManager.forward(any(HttpServletRequest.class), eq("identity")))
-        .thenReturn("forward:/identity/app");
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/");
+    when(request.getQueryString()).thenReturn(null);
 
     // When
-    final String result = controller.forwardToIdentity(request);
+    final var result = controller.redirectIdentityRoot(request);
 
     // Then
-    assertThat(result).isEqualTo("forward:/identity/app");
+    assertThat(result).isEqualTo("redirect:/admin/");
+  }
+
+  @Test
+  void shouldRedirectIdentityRoutesToAdmin() {
+    // Given
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/users");
+    when(request.getQueryString()).thenReturn(null);
+
+    // When
+    final var result = controller.redirectIdentityRoutes(request);
+
+    // Then
+    assertThat(result).isEqualTo("redirect:/admin/users");
+  }
+
+  @Test
+  void shouldRedirectIdentityRoutesWithQueryParams() {
+    // Given
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/users");
+    when(request.getQueryString()).thenReturn("filter=active");
+
+    // When
+    final var result = controller.redirectIdentityRoutes(request);
+
+    // Then
+    assertThat(result).isEqualTo("redirect:/admin/users?filter=active");
+  }
+
+  @Test
+  void shouldRedirectIdentityNestedRoutesToAdmin() {
+    // Given
+    when(request.getContextPath()).thenReturn("");
+    when(request.getRequestURI()).thenReturn("/identity/users/123");
+    when(request.getQueryString()).thenReturn(null);
+
+    // When
+    final var result = controller.redirectIdentityRoutes(request);
+
+    // Then
+    assertThat(result).isEqualTo("redirect:/admin/users/123");
+  }
+
+  @Test
+  void shouldRedirectWithContextPath() {
+    // Given
+    when(request.getContextPath()).thenReturn("/camunda");
+    when(request.getRequestURI()).thenReturn("/camunda/identity/users");
+    when(request.getQueryString()).thenReturn(null);
+
+    // When
+    final var result = controller.redirectIdentityRoutes(request);
+
+    // Then
+    assertThat(result).isEqualTo("redirect:/admin/users");
   }
 }

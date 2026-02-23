@@ -37,6 +37,7 @@ public class JobEntityTransformer
         .processDefinitionId(value.getBpmnProcessId())
         .processDefinitionKey(value.getProcessDefinitionKey())
         .processInstanceKey(value.getProcessInstanceKey())
+        .rootProcessInstanceKey(value.getRootProcessInstanceKey())
         .elementId(value.getFlowNodeId())
         .elementInstanceKey(value.getFlowNodeInstanceId())
         .tenantId(value.getTenantId())

@@ -111,6 +111,8 @@ public class AuditLogSearchClientIT {
         .isEqualTo(String.valueOf(processInstance.getProcessDefinitionKey()));
     assertThat(auditLog.getProcessInstanceKey())
         .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
+    assertThat(auditLog.getRootProcessInstanceKey())
+        .isEqualTo(String.valueOf(processInstance.getProcessInstanceKey()));
   }
 
   @Test
@@ -200,6 +202,7 @@ public class AuditLogSearchClientIT {
     // given
     final var userTask = utils.getUserTasks().getFirst();
     final long elementInstanceKey = userTask.getElementInstanceKey();
+    final long rootProcessInstanceKey = userTask.getRootProcessInstanceKey();
 
     // when
     final var auditLogItems =
@@ -213,6 +216,8 @@ public class AuditLogSearchClientIT {
             auditLogResult -> {
               assertThat(auditLogResult.getElementInstanceKey())
                   .isEqualTo(String.valueOf(elementInstanceKey));
+              assertThat(auditLogResult.getRootProcessInstanceKey())
+                  .isEqualTo(String.valueOf(rootProcessInstanceKey));
               assertCommonAuditLogFields(
                   auditLogResult,
                   AuditLogEntityTypeEnum.USER_TASK,
@@ -227,6 +232,7 @@ public class AuditLogSearchClientIT {
     // given
     final var userTask = utils.getUserTasks().getFirst();
     final long userTaskKey = userTask.getUserTaskKey();
+    final long rootProcessInstanceKey = userTask.getRootProcessInstanceKey();
 
     // when
     final var auditLogItems =
@@ -239,6 +245,8 @@ public class AuditLogSearchClientIT {
         .allSatisfy(
             auditLogResult -> {
               assertThat(auditLogResult.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+              assertThat(auditLogResult.getRootProcessInstanceKey())
+                  .isEqualTo(String.valueOf(rootProcessInstanceKey));
               assertCommonAuditLogFields(
                   auditLogResult,
                   AuditLogEntityTypeEnum.USER_TASK,
@@ -631,6 +639,7 @@ public class AuditLogSearchClientIT {
     // given
     final var userTask = utils.getUserTasks().getFirst();
     final long userTaskKey = userTask.getUserTaskKey();
+    final long rootProcessInstanceKey = userTask.getRootProcessInstanceKey();
 
     // when
     final var auditLogItems =
@@ -643,6 +652,8 @@ public class AuditLogSearchClientIT {
         .allSatisfy(
             auditLogResult -> {
               assertThat(auditLogResult.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+              assertThat(auditLogResult.getRootProcessInstanceKey())
+                  .isEqualTo(String.valueOf(rootProcessInstanceKey));
               assertThat(auditLogResult.getActorId()).isEqualTo(DEFAULT_USERNAME);
               assertCommonAuditLogFields(
                   auditLogResult,
@@ -656,10 +667,11 @@ public class AuditLogSearchClientIT {
   void shouldSearchUserTaskAuditLogByKey(
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
-    final long userTask = utils.getUserTasks().getFirst().getUserTaskKey();
+    final long userTaskKey = utils.getUserTasks().getFirst().getUserTaskKey();
+    final long rootProcessInstanceKey = utils.getUserTasks().getFirst().getRootProcessInstanceKey();
 
     // when
-    final var response = client.newUserTaskAuditLogSearchRequest(userTask).send().join();
+    final var response = client.newUserTaskAuditLogSearchRequest(userTaskKey).send().join();
 
     // then
     final var auditLogItems = response.items();
@@ -667,7 +679,9 @@ public class AuditLogSearchClientIT {
     assertThat(auditLogItems)
         .allSatisfy(
             auditLog -> {
-              assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
+              assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTaskKey));
+              assertThat(auditLog.getRootProcessInstanceKey())
+                  .isEqualTo(String.valueOf(rootProcessInstanceKey));
               assertCommonAuditLogFields(
                   auditLog,
                   AuditLogEntityTypeEnum.USER_TASK,
@@ -681,6 +695,7 @@ public class AuditLogSearchClientIT {
       @Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
     // given
     final long userTask = utils.getUserTasks().getFirst().getUserTaskKey();
+    final long rootProcessInstanceKey = utils.getUserTasks().getFirst().getRootProcessInstanceKey();
 
     // when
     final var response =
@@ -697,6 +712,8 @@ public class AuditLogSearchClientIT {
         .allSatisfy(
             auditLog -> {
               assertThat(auditLog.getUserTaskKey()).isEqualTo(String.valueOf(userTask));
+              assertThat(auditLog.getRootProcessInstanceKey())
+                  .isEqualTo(String.valueOf(rootProcessInstanceKey));
               assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
               assertCommonAuditLogFields(
                   auditLog,

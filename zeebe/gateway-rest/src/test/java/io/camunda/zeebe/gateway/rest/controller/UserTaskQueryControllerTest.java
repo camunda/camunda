@@ -46,7 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.json.JsonCompareMode;
@@ -65,6 +65,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "tenantId": "t",
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
+                        "rootProcessInstanceKey": "37",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",
@@ -105,6 +106,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "value":"value",
                     "scopeKey":"1",
                     "processInstanceKey":"2",
+                    "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
                     "isTruncated":false
                 },
@@ -114,6 +116,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                     "value":"value",
                     "scopeKey":"1",
                     "processInstanceKey":"2",
+                    "rootProcessInstanceKey":"3",
                     "tenantId":"<default>",
                     "isTruncated":true
                 }
@@ -137,6 +140,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "value":"value",
               "scopeKey":"1",
               "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
               "isTruncated":false
           },
@@ -146,6 +150,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
               "value":"valueLong",
               "scopeKey":"1",
               "processInstanceKey":"2",
+              "rootProcessInstanceKey":"3",
               "tenantId":"<default>",
               "isTruncated":false
           }
@@ -165,11 +170,71 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
         "items": [
           {
             "auditLogKey": "1",
-            "actorId": "1"
+            "actorId": "1",
+            "actorType": null,
+            "agentElementId": null,
+            "annotation": null,
+            "batchOperationKey": null,
+            "batchOperationType": null,
+            "category": null,
+            "decisionDefinitionId": null,
+            "decisionDefinitionKey": null,
+            "decisionEvaluationKey": null,
+            "decisionRequirementsId": null,
+            "decisionRequirementsKey": null,
+            "deploymentKey": null,
+            "elementInstanceKey": null,
+            "entityDescription": null,
+            "entityKey": null,
+            "entityType": null,
+            "formKey": null,
+            "jobKey": null,
+            "operationType": null,
+            "processDefinitionId": null,
+            "processDefinitionKey": null,
+            "processInstanceKey": null,
+            "relatedEntityKey": null,
+            "relatedEntityType": null,
+            "resourceKey": null,
+            "result": null,
+            "rootProcessInstanceKey": null,
+            "tenantId": null,
+            "timestamp": null,
+            "userTaskKey": null
           },
           {
             "auditLogKey": "2",
-            "actorId": "2"
+            "actorId": "2",
+            "actorType": null,
+            "agentElementId": null,
+            "annotation": null,
+            "batchOperationKey": null,
+            "batchOperationType": null,
+            "category": null,
+            "decisionDefinitionId": null,
+            "decisionDefinitionKey": null,
+            "decisionEvaluationKey": null,
+            "decisionRequirementsId": null,
+            "decisionRequirementsKey": null,
+            "deploymentKey": null,
+            "elementInstanceKey": null,
+            "entityDescription": null,
+            "entityKey": null,
+            "entityType": null,
+            "formKey": null,
+            "jobKey": null,
+            "operationType": null,
+            "processDefinitionId": null,
+            "processDefinitionKey": null,
+            "processInstanceKey": null,
+            "relatedEntityKey": null,
+            "relatedEntityType": null,
+            "resourceKey": null,
+            "result": null,
+            "rootProcessInstanceKey": null,
+            "tenantId": null,
+            "timestamp": null,
+            "userTaskKey": null
           }
         ],
         "page": {
@@ -187,6 +252,7 @@ public class UserTaskQueryControllerTest extends RestControllerTest {
                         "tenantId": "t",
                         "userTaskKey": "0",
                         "processInstanceKey": "1",
+                        "rootProcessInstanceKey": "37",
                         "processDefinitionKey": "2",
                         "processName": "ProcessName",
                         "elementInstanceKey": "3",

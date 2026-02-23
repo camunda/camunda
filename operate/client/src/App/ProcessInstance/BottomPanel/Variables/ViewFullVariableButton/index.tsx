@@ -9,7 +9,7 @@
 import {useState} from 'react';
 import {JSONEditorModal} from 'modules/components/JSONEditorModal';
 import {Button} from '@carbon/react';
-import {Popup} from '@carbon/react/icons';
+import {Maximize} from '@carbon/react/icons';
 import {Operations} from '../Operations';
 import {useVariable} from 'modules/queries/variables/useVariable';
 
@@ -34,7 +34,7 @@ const ViewFullVariableButton: React.FC<Props> = ({
         <Button
           kind="ghost"
           hasIconOnly
-          renderIcon={Popup}
+          renderIcon={Maximize}
           size="sm"
           aria-label={`View full value of ${variableName}`}
           iconDescription={`View full value of ${variableName}`}

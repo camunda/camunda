@@ -6,17 +6,28 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { FC } from "react";
+import { FC, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-import { Stack } from "@carbon/react";
+import { useNavigate } from "react-router-dom";
+import {
+  Button,
+  ContainedList,
+  ContainedListItem,
+  IconButton,
+  Link,
+  Stack,
+} from "@carbon/react";
+import { ArrowRight, InformationFilled } from "@carbon/react/icons";
 import { spacing06 } from "@carbon/elements";
+import { documentationHref } from "src/components/documentation";
 import TextField from "src/components/form/TextField";
+import Modal, { FormModal, UseModalProps } from "src/components/modal";
+import { docsUrl, isOIDC } from "src/configuration";
 import { useApiCall } from "src/utility/api";
-import useTranslate from "src/utility/localization";
-import { FormModal, UseModalProps } from "src/components/modal";
 import { createTenant } from "src/utility/api/tenants";
-import { useNotifications } from "src/components/notifications";
+import useTranslate from "src/utility/localization";
 import { isValidTenantId } from "src/utility/validate";
+import { InfoHint, RightAlignedButtonSet } from "src/pages/tenants/styled.ts";
 
 type FormData = {
   name: string;
@@ -24,9 +35,36 @@ type FormData = {
   description: string;
 };
 
+const ITEM_TO_TAB: Record<string, string> = {
+  assignUsers: "users",
+  assignGroups: "groups",
+  assignRoles: "roles",
+  assignMappingRules: "mapping-rules",
+  assignClients: "clients",
+};
+
+const BASE_ASSIGN_ENTITY_ITEMS = [
+  "assignUsers",
+  "assignGroups",
+  "assignRoles",
+] as const;
+
+const OIDC_ASSIGN_ENTITY_ITEMS = [
+  "assignMappingRules",
+  "assignClients",
+] as const;
+
+const ASSIGN_ENTITY_ITEMS = isOIDC
+  ? ([...BASE_ASSIGN_ENTITY_ITEMS, ...OIDC_ASSIGN_ENTITY_ITEMS] as const)
+  : BASE_ASSIGN_ENTITY_ITEMS;
+
 const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
-  const { t } = useTranslate("tenants");
-  const { enqueueNotification } = useNotifications();
+  const { t, Translate } = useTranslate("tenants");
+  const navigate = useNavigate();
+  const [createdTenant, setCreatedTenant] = useState<{
+    name: string;
+    tenantId: string;
+  } | null>(null);
   const [callAddTenant, { loading, error }] = useApiCall(createTenant, {
     suppressErrorNotification: true,
   });
@@ -48,16 +86,80 @@ const AddTenantModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     });
 
     if (success) {
-      enqueueNotification({
-        kind: "success",
-        title: t("tenantCreated"),
-        subtitle: t("createTenantSuccess", {
-          name: data.name,
-        }),
-      });
-      onSuccess();
+      setCreatedTenant({ name: data.name, tenantId: data.tenantId });
     }
   };
+
+  if (createdTenant) {
+    return (
+      <Modal
+        open={open}
+        headline={t("tenantCreatedSuccessfully", { name: createdTenant.name })}
+        passiveModal
+        onClose={onSuccess}
+        buttons={[
+          <RightAlignedButtonSet key="close">
+            <Button kind="primary" onClick={onSuccess} data-modal-primary-focus>
+              {t("gotIt")}
+            </Button>
+          </RightAlignedButtonSet>,
+        ]}
+      >
+        <ContainedList label={t("nextStepAssignEntities")}>
+          {ASSIGN_ENTITY_ITEMS.map((item) => (
+            <ContainedListItem
+              key={item}
+              action={
+                <IconButton
+                  label={t(item)}
+                  kind="ghost"
+                  align="left"
+                  onClick={() => {
+                    onClose?.();
+                    void navigate(
+                      `/tenants/${createdTenant.tenantId}/${ITEM_TO_TAB[item]}`,
+                    );
+                  }}
+                >
+                  <ArrowRight />
+                </IconButton>
+              }
+            >
+              {t(item)}
+              {item === "assignClients" && (
+                <InfoHint>
+                  <InformationFilled
+                    size={16}
+                    style={{ color: "var(--cds-support-info)", flexShrink: 0 }}
+                  />
+                  <div>
+                    <div>{t("assignConnectorRoleInfo")}</div>
+                    <div>
+                      <Translate i18nKey="dynamicAccessToAssignedTenantsInfoLink">
+                        Your clients can be configured to
+                        <Link
+                          href={documentationHref(
+                            docsUrl,
+                            "/docs/components/identity/tenant/",
+                          )}
+                          target="_blank"
+                          inline
+                          size="sm"
+                        >
+                          dynamically access assigned tenants
+                        </Link>
+                        .
+                      </Translate>
+                    </div>
+                  </div>
+                </InfoHint>
+              )}
+            </ContainedListItem>
+          ))}
+        </ContainedList>
+      </Modal>
+    );
+  }
 
   return (
     <FormModal
