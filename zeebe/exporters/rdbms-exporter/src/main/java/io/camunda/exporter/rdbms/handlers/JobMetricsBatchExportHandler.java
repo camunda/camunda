@@ -88,9 +88,18 @@ public class JobMetricsBatchExportHandler
                     .lastCreatedAt(
                         getLastUpdatedAtForStatus(jobMetrics, JobMetricsExportState.CREATED))
                     .jobType(encodedString.get(jobMetrics.getJobTypeIndex()))
-                    .worker(encodedString.get(jobMetrics.getWorkerNameIndex()))
+                    .worker(emptyToNull(encodedString.get(jobMetrics.getWorkerNameIndex())))
                     .build())
         .toList();
+  }
+
+  /**
+   * When a Job is activated, it has no worker name but the record contains an empty string. In that
+   * case, we want to store null in the database instead of an empty string, to be able to properly
+   * count distinct worker names.
+   */
+  private String emptyToNull(final String string) {
+    return string == null || string.isEmpty() ? null : string;
   }
 
   private OffsetDateTime getLastUpdatedAtForStatus(

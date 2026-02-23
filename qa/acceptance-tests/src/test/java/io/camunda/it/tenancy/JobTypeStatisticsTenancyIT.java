@@ -12,7 +12,7 @@ import static io.camunda.it.util.TestHelper.activateAndFailJobsForTenant;
 import static io.camunda.it.util.TestHelper.createTenant;
 import static io.camunda.it.util.TestHelper.deployResourceForTenant;
 import static io.camunda.it.util.TestHelper.startProcessInstanceForTenant;
-import static io.camunda.it.util.TestHelper.waitForJobStatistics;
+import static io.camunda.it.util.TestHelper.waitForJobTypeStatistics;
 import static io.camunda.it.util.TestHelper.waitForJobs;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -27,13 +27,14 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
-public class GlobalJobStatisticsTenancyIT {
+public class JobTypeStatisticsTenancyIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
   public static final Duration EXPORT_INTERVAL = Duration.ofSeconds(2);
@@ -55,6 +56,7 @@ public class GlobalJobStatisticsTenancyIT {
   private static final String TENANT_A = "tenantA";
   private static final String TENANT_B = "tenantB";
   private static final String JOB_TYPE_A = "taskA";
+  private static final String JOB_TYPE_B = "taskB";
   private static final String PROCESS_ID = "service_tasks_v1";
   private static final String WORKER_NAME = "testWorker";
 
@@ -110,169 +112,230 @@ public class GlobalJobStatisticsTenancyIT {
     waitForJobs(adminClient, f -> f.state(JobState.FAILED), 1);
 
     // Wait for metrics to be exported
-    waitForJobStatistics(
+    waitForJobTypeStatistics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         stats -> {
-          // 3 taskA (2 TENANT_A + 1 TENANT_B) + 1 taskB (created after completing taskA)
-          assertThat(stats.getCreated().getCount()).isEqualTo(4L);
-          assertThat(stats.getCompleted().getCount()).isEqualTo(1L);
-          assertThat(stats.getFailed().getCount()).isEqualTo(1L);
-          assertThat(stats.isIncomplete()).isFalse();
+          // Admin should see taskA from both tenants + taskB from TENANT_A
+          assertThat(stats.items()).hasSizeGreaterThanOrEqualTo(2);
         });
   }
 
   @Test
-  void shouldReturnGlobalStatisticsForAllTenants(
+  void shouldReturnJobTypeStatisticsForAllTenants(
       @Authenticated(ADMIN) final CamundaClient adminClient) {
     // when/then
     // Admin has access to all tenants, so should see:
-    // - CREATED: 3 taskA (2 from TENANT_A + 1 from TENANT_B) + 1 taskB (from completed taskA)
-    // - COMPLETED: 1 taskA
-    // - FAILED: 1 taskA
-    waitForJobStatistics(
+    // - taskA: 3 created (2 TENANT_A + 1 TENANT_B), 1 completed, 1 failed
+    // - taskB: 1 created (from TENANT_A after completing taskA)
+    waitForJobTypeStatistics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         stats -> {
-          assertThat(stats.getCreated().getCount()).isEqualTo(4L);
-          assertThat(stats.getCompleted().getCount()).isEqualTo(1L);
-          assertThat(stats.getFailed().getCount()).isEqualTo(1L);
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).hasSize(2);
+
+          // Results sorted by jobType ASC
+          final var taskAStats = stats.items().get(0);
+          assertThat(taskAStats.getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(3L);
+          assertThat(taskAStats.getCompleted().getCount()).isEqualTo(1L);
+          assertThat(taskAStats.getFailed().getCount()).isEqualTo(1L);
+          assertThat(taskAStats.getWorkers()).isEqualTo(1);
+
+          final var taskBStats = stats.items().get(1);
+          assertThat(taskBStats.getJobType()).isEqualTo(JOB_TYPE_B);
+          assertThat(taskBStats.getCreated().getCount()).isEqualTo(1L);
+          assertThat(taskBStats.getCompleted().getCount()).isZero();
+          assertThat(taskBStats.getFailed().getCount()).isZero();
         });
   }
 
   @Test
-  void shouldReturnOnlyTenantAStatisticsForUserTenantA(
+  void shouldReturnOnlyTenantAJobTypeStatistics(
       @Authenticated(USER_TENANT_A) final CamundaClient userTenantAClient) {
     // when/then
     // User assigned to TENANT_A should only see TENANT_A statistics:
-    // - CREATED: 2 taskA + 1 taskB (from completed taskA)
-    // - COMPLETED: 1 taskA
-    // - FAILED: 0 (failed job is in TENANT_B)
-    waitForJobStatistics(
+    // - taskA: 2 created, 1 completed, 0 failed
+    // - taskB: 1 created
+    waitForJobTypeStatistics(
         userTenantAClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        JOB_TYPE_A,
         stats -> {
-          assertThat(stats.getCreated().getCount()).isEqualTo(2L);
-          assertThat(stats.getCompleted().getCount()).isEqualTo(1L);
-          assertThat(stats.getFailed().getCount()).isZero();
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).hasSize(2);
+
+          final var taskAStats = stats.items().get(0);
+          assertThat(taskAStats.getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(2L);
+          assertThat(taskAStats.getCompleted().getCount()).isEqualTo(1L);
+          assertThat(taskAStats.getFailed().getCount()).isZero();
+
+          final var taskBStats = stats.items().get(1);
+          assertThat(taskBStats.getJobType()).isEqualTo(JOB_TYPE_B);
+          assertThat(taskBStats.getCreated().getCount()).isEqualTo(1L);
         });
   }
 
   @Test
-  void shouldReturnOnlyTenantBStatisticsForUserTenantB(
+  void shouldReturnOnlyTenantBJobTypeStatistics(
       @Authenticated(USER_TENANT_B) final CamundaClient userTenantBClient) {
     // when/then
     // User assigned to TENANT_B should only see TENANT_B statistics:
-    // - CREATED: 1 taskA
-    // - COMPLETED: 0 (completed job is in TENANT_A)
-    // - FAILED: 1 taskA
-    waitForJobStatistics(
+    // - taskA: 1 created, 0 completed, 1 failed
+    waitForJobTypeStatistics(
         userTenantBClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        JOB_TYPE_A,
         stats -> {
-          assertThat(stats.getCreated().getCount()).isEqualTo(1L);
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isEqualTo(1L);
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).hasSize(1);
+
+          final var taskAStats = stats.items().get(0);
+          assertThat(taskAStats.getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(taskAStats.getCreated().getCount()).isEqualTo(1L);
+          assertThat(taskAStats.getCompleted().getCount()).isZero();
+          assertThat(taskAStats.getFailed().getCount()).isEqualTo(1L);
         });
   }
 
   @Test
-  void shouldReturnZeroStatisticsForUserWithNoTenantAccess(
+  void shouldReturnEmptyForUserWithNoTenantAccess(
       @Authenticated(USER_NO_TENANT) final CamundaClient userNoTenantClient) {
     // when/then
-    // User not assigned to any tenant should see zero statistics
-    waitForJobStatistics(
+    // User not assigned to any tenant should see no statistics
+    waitForJobTypeStatistics(
         userNoTenantClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
         stats -> {
-          assertThat(stats.getCreated().getCount()).isZero();
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).isEmpty();
         });
   }
 
   @Test
-  void shouldFilterStatisticsByJobType(@Authenticated(ADMIN) final CamundaClient adminClient) {
-    // when/then
-    // For taskA only:
-    // - CREATED: 3 (2 from TENANT_A + 1 from TENANT_B)
-    // - COMPLETED: 1
-    // - FAILED: 1
-    waitForJobStatistics(
-        adminClient,
-        NOW.minusDays(1),
-        NOW.plusDays(1),
-        JOB_TYPE_A,
-        stats -> {
-          assertThat(stats.getCreated().getCount()).isEqualTo(3L);
-          assertThat(stats.getCompleted().getCount()).isEqualTo(1L);
-          assertThat(stats.getFailed().getCount()).isEqualTo(1L);
-          assertThat(stats.isIncomplete()).isFalse();
-        });
-  }
-
-  @Test
-  void shouldReturnTaskBStatisticsOnlyForTenantA(
+  void shouldFilterByJobTypeForTenantAUser(
       @Authenticated(USER_TENANT_A) final CamundaClient userTenantAClient) {
-    // when/then
-    // taskB was created in TENANT_A after completing taskA
-    // User in TENANT_A should see it
-    waitForJobStatistics(
+    // when/then - filter by taskA only
+    waitForJobTypeStatistics(
         userTenantAClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        "taskB",
+        f -> f.jobType(JOB_TYPE_A),
         stats -> {
-          assertThat(stats.getCreated().getCount()).isEqualTo(1L);
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).hasSize(1);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(stats.items().get(0).getCreated().getCount()).isEqualTo(2L);
         });
   }
 
   @Test
-  void shouldNotSeeTaskBForUserTenantB(
+  void shouldFilterByJobTypeForTenantBUser(
       @Authenticated(USER_TENANT_B) final CamundaClient userTenantBClient) {
-    // when/then
-    // taskB was created in TENANT_A, so TENANT_B user should not see it
-    waitForJobStatistics(
+    // when/then - filter by taskA only
+    waitForJobTypeStatistics(
         userTenantBClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        "taskB",
+        f -> f.jobType(JOB_TYPE_A),
         stats -> {
-          assertThat(stats.getCreated().getCount()).isZero();
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          assertThat(stats.isIncomplete()).isFalse();
+          assertThat(stats.items()).hasSize(1);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(stats.items().get(0).getCreated().getCount()).isEqualTo(1L);
         });
   }
 
   @Test
-  void shouldReturnZeroForNonExistentJobType(
-      @Authenticated(ADMIN) final CamundaClient adminClient) {
+  void shouldNotSeeTenantATaskBForTenantBUser(
+      @Authenticated(USER_TENANT_B) final CamundaClient userTenantBClient) {
     // when/then
-    waitForJobStatistics(
+    // taskB was created in TENANT_A, so TENANT_B user should not see it
+    waitForJobTypeStatistics(
+        userTenantBClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        f -> f.jobType(JOB_TYPE_B),
+        stats -> {
+          assertThat(stats.items()).isEmpty();
+        });
+  }
+
+  @Test
+  void shouldPaginateJobTypeStatisticsWithTenantFiltering(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    final var endCursor = new AtomicReference<>("");
+    // when - get first page with size 1
+    waitForJobTypeStatistics(
         adminClient,
         NOW.minusDays(1),
         NOW.plusDays(1),
-        "non-existent-job-type",
+        f -> {},
+        p -> p.limit(1),
         stats -> {
-          assertThat(stats.getCreated().getCount()).isZero();
-          assertThat(stats.getCompleted().getCount()).isZero();
-          assertThat(stats.getFailed().getCount()).isZero();
-          assertThat(stats.isIncomplete()).isFalse();
+          // First page should have 1 item (taskA due to ORDER BY jobType)
+          assertThat(stats.items()).hasSize(1);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_A);
+          endCursor.set(stats.page().endCursor());
+        });
+
+    // when - get second page
+    waitForJobTypeStatistics(
+        adminClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        f -> {},
+        p -> p.limit(1).after(endCursor.get()),
+        stats -> {
+          // Second page should have 1 item (taskB)
+          assertThat(stats.items()).hasSize(1);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_B);
+        });
+  }
+
+  @Test
+  void shouldFilterByJobTypeLikePatternWithTenancy(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // when/then - filter by pattern "task*"
+    waitForJobTypeStatistics(
+        adminClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        f -> f.jobType(jt -> jt.like("task*")),
+        stats -> {
+          // Should match both taskA and taskB across all tenants
+          assertThat(stats.items()).hasSize(2);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(stats.items().get(1).getJobType()).isEqualTo(JOB_TYPE_B);
+        });
+  }
+
+  @Test
+  void shouldReturnEmptyForNonExistentJobTypeWithTenancy(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // when/then
+    waitForJobTypeStatistics(
+        adminClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        f -> f.jobType("non-existent-job-type"),
+        stats -> {
+          assertThat(stats.items()).isEmpty();
+        });
+  }
+
+  @Test
+  void shouldVerifyResultsAreSortedByJobTypeAcrossTenants(
+      @Authenticated(ADMIN) final CamundaClient adminClient) {
+    // when/then
+    waitForJobTypeStatistics(
+        adminClient,
+        NOW.minusDays(1),
+        NOW.plusDays(1),
+        stats -> {
+          // Results should be sorted by jobType in ascending order
+          assertThat(stats.items()).hasSize(2);
+          assertThat(stats.items().get(0).getJobType()).isEqualTo(JOB_TYPE_A);
+          assertThat(stats.items().get(1).getJobType()).isEqualTo(JOB_TYPE_B);
         });
   }
 }
