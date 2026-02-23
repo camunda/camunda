@@ -7,13 +7,24 @@ on:
   workflow_call:
 
 jobs:
+  # Dynamically generate the Docker tag (e.g., SNAPSHOT or X.Y-SNAPSHOT) based on branch name
+  utils-get-snapshot-docker-tag:
+    uses: ./.github/workflows/generate-snapshot-docker-tag-and-concurrency-group.yml
+    secrets: inherit
+    permissions:
+      contents: read
+    with:
+      job_to_run: 'snapshot-tag'
+
   deploy-artifacts:
     name: Deploy Artifacts
+    needs: [ utils-get-snapshot-docker-tag ]
     runs-on: gcp-core-4-default
     timeout-minutes: 30
     env:
       DOCKER_IMAGE_TEAM: registry.camunda.cloud/team-optimize/optimize
       DOCKER_IMAGE_DOCKER_HUB: camunda/optimize
+      DOCKER_HUB_SNAPSHOT_TAG: ${{ needs.utils-get-snapshot-docker-tag.outputs.version_tag }}
     steps:
     - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
     - name: Install common tooling (buildx)  # required on self-hosted runners
@@ -42,6 +53,7 @@ jobs:
           echo "PUSH_LATEST_TAG=${{ steps.define-values.outputs.is_main_or_stable_branch }}"
           echo "IS_MAIN=${{ steps.define-values.outputs.is_main_branch }}"
           echo "REVISION=${{ steps.define-values.outputs.git_commit_hash }}"
+          echo "DOCKER_HUB_SNAPSHOT_TAG=${DOCKER_HUB_SNAPSHOT_TAG}"
         } >> "$GITHUB_ENV"
     # Generating a production build
     - name: Setup Maven
