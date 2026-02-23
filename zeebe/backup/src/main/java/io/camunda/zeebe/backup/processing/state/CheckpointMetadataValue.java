@@ -24,7 +24,7 @@ public final class CheckpointMetadataValue extends UnpackedObject implements DbV
   private final LongProperty checkpointTimestampProperty =
       new LongProperty("checkpointTimestamp", -1L);
   private final EnumProperty<CheckpointType> checkpointTypeProperty =
-      new EnumProperty<>("checkpointType", CheckpointType.class, CheckpointType.MARKER);
+      new EnumProperty<>("checkpointType", CheckpointType.class);
   private final LongProperty firstLogPositionProperty = new LongProperty("firstLogPosition", -1L);
 
   public CheckpointMetadataValue() {
