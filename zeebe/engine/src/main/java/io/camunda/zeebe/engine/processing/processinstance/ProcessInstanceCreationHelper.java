@@ -20,6 +20,7 @@ import io.camunda.zeebe.engine.processing.deployment.model.element.ExecutableSeq
 import io.camunda.zeebe.engine.processing.identity.authorization.AuthorizationCheckBehavior;
 import io.camunda.zeebe.engine.processing.identity.authorization.request.AuthorizationRequest;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.deployment.DeployedProcess;
 import io.camunda.zeebe.engine.state.immutable.BannedInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
@@ -207,6 +208,10 @@ public class ProcessInstanceCreationHelper {
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
+        .flatMap(
+            valid ->
+                VariableNameLengthValidator.validateVariableNameLength(
+                    command.getVariablesBuffer()))
         .flatMap(valid -> validateTags(tags))
         .flatMap(
             valid ->
