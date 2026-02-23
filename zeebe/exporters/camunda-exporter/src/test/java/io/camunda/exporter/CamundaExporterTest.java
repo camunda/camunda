@@ -24,6 +24,7 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.search.schema.SearchEngineClient;
 import io.camunda.search.test.utils.TestObjectMapper;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.usertask.TaskEntity.TaskImplementation;
 import io.camunda.zeebe.exporter.common.cache.batchoperation.CachedBatchOperationEntity;
@@ -66,7 +67,7 @@ final class CamundaExporterTest {
     mockedClientAdapterFactory
         .when(() -> ClientAdapter.of(configuration.getConnect()))
         .thenReturn(stubbedClientAdapterInUse);
-    doReturn(List.of(new HistoryDeletionIndex("", true)))
+    doReturn(List.of(new HistoryDeletionIndex("", true), new AuditLogCleanupIndex("", true)))
         .when(resourceProvider)
         .getIndexDescriptors();
     doReturn(emptyList()).when(resourceProvider).getIndexTemplateDescriptors();

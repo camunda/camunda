@@ -149,16 +149,7 @@ public class HistoryDeletionJob implements BackgroundTask {
               final var cleanupEntries = buildAuditLogCleanupEntries(batch, deletedResources);
               return deleterRepository
                   .createAuditLogCleanupEntries(cleanupEntries)
-                  .thenCompose(v -> deleteFromHistoryDeletionIndex(deletedResources))
-                  .exceptionally(
-                      ex -> {
-                        logger.warn(
-                            "Failed to create audit log cleanup entries for batch: {}. "
-                                + "Skipping deletion from history deletion index to allow retry.",
-                            batch,
-                            ex);
-                        return 0;
-                      });
+                  .thenCompose(v -> deleteFromHistoryDeletionIndex(deletedResources));
             });
   }
 
