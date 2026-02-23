@@ -399,6 +399,24 @@ runs:
           - '.github/workflows/docs-build-deploy.yml'
           - '.github/workflows/docs-preview.yml'
 
+  - uses: dorny/paths-filter@v3
+    id: filter-alwaysgreen
+    with:
+      base: ${{ github.event.merge_group.base_ref || '' }}
+      ref: ${{ github.event.merge_group.head_ref || github.ref }}
+      filters: |
+        docker-build-helm-integration:
+          - ".github/workflows/docker-build-helm-integration.yml"
+          # If you added AlwaysGreen jobs into ci.yml, changes to ci.yml should also trigger it:
+          - ".github/workflows/ci.yml"
+          - "camunda.Dockerfile"
+          - "dist/**"
+          - "zeebe/**"
+          - "operate/**"
+          - "tasklist/**"
+          - "identity/**"
+          - "optimize/**"
+
   # only works `on: push` and `on: pull_request` GitHub trigger events
   - id: filter-special-branch
     shell: bash
