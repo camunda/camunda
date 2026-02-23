@@ -289,7 +289,10 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.ELEMENT_ACTIVATING,
         3,
         new ProcessInstanceElementActivatingV3Applier(
-            elementInstanceState, processState, eventScopeInstanceState));
+            state.getHubMetricsState(),
+            elementInstanceState,
+            processState,
+            eventScopeInstanceState));
     register(
         ProcessInstanceIntent.ELEMENT_ACTIVATED,
         new ProcessInstanceElementActivatedApplier(elementInstanceState));
@@ -310,6 +313,7 @@ public final class EventAppliers implements EventApplier {
         ProcessInstanceIntent.ELEMENT_COMPLETED,
         2,
         new ProcessInstanceElementCompletedV2Applier(
+            state.getHubMetricsState(),
             elementInstanceState,
             eventScopeInstanceState,
             variableState,
