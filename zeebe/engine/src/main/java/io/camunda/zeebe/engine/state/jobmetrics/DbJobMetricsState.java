@@ -81,10 +81,10 @@ public class DbJobMetricsState implements MutableJobMetricsState {
       final EngineConfiguration engineConfiguration) {
     this.clock = clock;
 
-    maxJobTypeLength = engineConfiguration.getMaxJobTypeLength();
-    maxTenantIdLength = engineConfiguration.getMaxTenantIdLength();
-    maxWorkerNameLength = engineConfiguration.getMaxWorkerNameLength();
-    maxUniqueJobMetricsKeys = engineConfiguration.getMaxUniqueJobMetricsKeys();
+    maxJobTypeLength = engineConfiguration.getJobMetricsMaxTypeLength();
+    maxTenantIdLength = engineConfiguration.getJobMetricsMaxTenantIdLength();
+    maxWorkerNameLength = engineConfiguration.getJobMetricsMaxWorkerNameLength();
+    maxUniqueJobMetricsKeys = engineConfiguration.getJobMetricsMaxUniqueKeys();
 
     // Initialize metrics column family
     metricsKey = new MetricsKey();

@@ -13,10 +13,10 @@ import java.time.Duration;
 
 public class JobMetricsCfg implements ConfigurationEntry {
   private Duration exportInterval = EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_INTERVAL;
-  private int maxWorkerNameLength = EngineConfiguration.DEFAULT_MAX_WORKER_NAME_LENGTH;
-  private int maxJobTypeLength = EngineConfiguration.DEFAULT_MAX_JOB_TYPE_LENGTH;
-  private int maxTenantIdLength = EngineConfiguration.DEFAULT_MAX_TENANT_ID_LENGTH;
-  private int maxUniqueKeys = EngineConfiguration.DEFAULT_MAX_UNIQUE_JOB_METRICS_KEYS;
+  private int maxWorkerNameLength = EngineConfiguration.DEFAULT_JOB_METRICS_MAX_WORKER_NAME_LENGTH;
+  private int maxJobTypeLength = EngineConfiguration.DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH;
+  private int maxTenantIdLength = EngineConfiguration.DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH;
+  private int maxUniqueKeys = EngineConfiguration.DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS;
   private boolean enabled = EngineConfiguration.DEFAULT_JOB_METRICS_EXPORT_ENABLED;
 
   public Duration getExportInterval() {

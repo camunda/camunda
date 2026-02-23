@@ -31,6 +31,7 @@ public class ProcessValidationUtil {
 
   public static final int MAX_ID_FIELD_LENGTH = 1024;
   public static final int MAX_NAME_FIELD_LENGTH = 1024;
+  public static final int MAX_WORKER_TYPE_LENGTH = 1024;
 
   /**
    * Validate the provided {@link BpmnModelInstance}, asserting that is NOT a valid process
@@ -93,6 +94,7 @@ public class ProcessValidationUtil {
                         BpmnValidatorConfig.builder()
                             .withMaxIdFieldLength(MAX_ID_FIELD_LENGTH)
                             .withMaxNameFieldLength(MAX_NAME_FIELD_LENGTH)
+                            .withMaxWorkerTypeLength(MAX_WORKER_TYPE_LENGTH)
                             .build()))
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList()));
