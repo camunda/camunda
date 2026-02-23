@@ -148,7 +148,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
@@ -171,7 +170,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
@@ -204,7 +202,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
@@ -251,7 +248,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
@@ -280,7 +276,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
@@ -307,7 +302,6 @@ describe('<Incidents />', () => {
       <Incidents
         elementInstanceKey={ELEMENT_INSTANCE_KEY}
         elementName={ELEMENT_NAME}
-        elementId={ELEMENT_ID}
       />,
       {wrapper: Wrapper},
     );
