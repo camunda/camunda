@@ -20,8 +20,8 @@ const mockProcessInstance = {
   hasIncident: true,
   processDefinitionVersionTag: null,
   endDate: null,
-  parentProcessInstanceKey: '',
-  parentElementInstanceKey: '',
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
   rootProcessInstanceKey: null,
   tags: [],
 } satisfies ProcessInstance;
