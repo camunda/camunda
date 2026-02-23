@@ -34,7 +34,7 @@ public final class BpmnValidator {
         new ValidationVisitor(ZeebeDesignTimeValidators.VALIDATORS);
     final var runtimeAspectValidator =
         new ValidationVisitor(
-            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor));
+            ZeebeRuntimeValidators.getValidators(expressionLanguage, expressionProcessor, config));
     final var configurationAspectValidator =
         new ValidationVisitor(ZeebeConfigurationValidators.getValidators(config));
 
