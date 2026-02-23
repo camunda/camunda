@@ -72,7 +72,9 @@ public class AnnotationUtil {
               JobKey.class,
               ActivatedJob::getKey,
               ProcessDefinitionKey.class,
-              ActivatedJob::getProcessDefinitionKey);
+              ActivatedJob::getProcessDefinitionKey,
+              RootProcessInstanceKey.class,
+              ActivatedJob::getRootProcessInstanceKey);
 
   public static boolean isVariable(final ParameterInfo parameterInfo) {
     return parameterInfo.getParameter().isAnnotationPresent(Variable.class)

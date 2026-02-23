@@ -29,6 +29,7 @@ import io.camunda.client.annotation.ElementInstanceKey;
 import io.camunda.client.annotation.JobKey;
 import io.camunda.client.annotation.ProcessDefinitionKey;
 import io.camunda.client.annotation.ProcessInstanceKey;
+import io.camunda.client.annotation.RootProcessInstanceKey;
 import io.camunda.client.annotation.VariablesAsType;
 import io.camunda.client.annotation.value.DeploymentValue;
 import io.camunda.client.annotation.value.DocumentValue;
@@ -379,6 +380,19 @@ public class AnnotationUtilTest {
       assertThat(keyResolver.apply(job)).isEqualTo(123L);
     }
 
+    @Test
+    void shouldExtractRootProcessInstanceKeyResolver() {
+      // given
+      final ParameterInfo parameterInfo = parameterInfo(this, "testRootProcessInstanceKey");
+      final ActivatedJob job = mock(ActivatedJob.class);
+      when(job.getRootProcessInstanceKey()).thenReturn(123L);
+      // when
+      final Function<ActivatedJob, Long> keyResolver =
+          AnnotationUtil.getKeyResolver(parameterInfo).get();
+      // then
+      assertThat(keyResolver.apply(job)).isEqualTo(123L);
+    }
+
     public void testProcessInstanceKey(@ProcessInstanceKey final String key) {}
 
     public void testProcessDefinitionKey(@ProcessDefinitionKey final String key) {}
@@ -386,5 +400,7 @@ public class AnnotationUtilTest {
     public void testJobKey(@JobKey final String key) {}
 
     public void testElementInstanceKey(@ElementInstanceKey final String key) {}
+
+    public void testRootProcessInstanceKey(@RootProcessInstanceKey final String key) {}
   }
 }
