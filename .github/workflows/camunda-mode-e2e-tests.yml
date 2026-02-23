@@ -1,14 +1,7 @@
-name: Camunda Mode E2E Tests
+name: E2E Tests for Camunda Modes
 
 on:
-  pull_request
-    paths
-      - ".github/actions/**
-      - ".github/workflows/camunda-mode-*
-      - "camunda.Dockerfile
-      - "distro/**
-      - "parent/*
-      - "pom.xml
+  pull_request:
 
 jobs
   test-camunda-modes
