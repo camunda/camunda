@@ -10,13 +10,16 @@ package io.camunda.exporter.tasks.historydeletion;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.util.OpensearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
@@ -37,6 +40,7 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
     implements HistoryDeletionRepository {
 
   private final IndexDescriptor indexDescriptor;
+  private final IndexDescriptor auditLogCleanupIndex;
   private final int partitionId;
   private final HistoryDeletionConfiguration config;
 
@@ -54,6 +58,12 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
             .findFirst()
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
+    auditLogCleanupIndex =
+        resourceProvider.getIndexDescriptors().stream()
+            .filter(AuditLogCleanupIndex.class::isInstance)
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalStateException("No AuditLogCleanupIndex descriptor found"));
     this.partitionId = partitionId;
     this.config = config;
   }
@@ -153,6 +163,46 @@ public class OpenSearchHistoryDeletionRepository extends OpensearchRepository
                       }
                       final var deleted = response.items().size();
                       return CompletableFuture.completedFuture(deleted);
+                    },
+                    executor));
+  }
+
+  @Override
+  public CompletionStage<Void> createAuditLogCleanupEntries(
+      final List<HistoryDeletionEntity> historyDeletionEntities,
+      final Set<String> deletedResources) {
+    if (deletedResources.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var entries =
+        AuditLogCleanupTransformer.buildAuditLogCleanupEntries(
+            historyDeletionEntities, deletedResources);
+    final var targetIndexName = auditLogCleanupIndex.getFullQualifiedName();
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+
+    entries.forEach(
+        entry ->
+            bulkRequestBuilder.operations(
+                op -> op.index(i -> i.index(targetIndexName).id(entry.getId()).document(entry))));
+
+    return sendRequestAsync(
+        () ->
+            client
+                .bulk(bulkRequestBuilder.build())
+                .thenComposeAsync(
+                    response -> {
+                      if (response.errors()) {
+                        final var errorMessage =
+                            "Bulk indexing audit log cleanup entries to index '%s' failed with errors: %s"
+                                .formatted(targetIndexName, response.items());
+                        logger.error(errorMessage);
+                        return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+                      }
+                      logger.debug(
+                          "Indexed {} audit log cleanup entries to index '{}'",
+                          entries.size(),
+                          targetIndexName);
+                      return CompletableFuture.completedFuture(null);
                     },
                     executor));
   }
