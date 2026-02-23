@@ -61,7 +61,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
-
+  private static final int MAX_BUSINESS_ID_LENGTH = 256;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
@@ -208,6 +208,7 @@ public class ProcessInstanceCreationHelper {
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .flatMap(valid -> validateTags(tags))
+        .flatMap(valid -> validateBusinessIdFormat(businessId))
         .flatMap(
             valid ->
                 validateBusinessIdUniqueness(
@@ -390,6 +391,22 @@ public class ProcessInstanceCreationHelper {
     }
 
     return VALID;
+  }
+
+  private Either<Rejection, ?> validateBusinessIdFormat(final String businessId) {
+    if (businessId == null) {
+      return VALID;
+    }
+    if (businessId.length() <= MAX_BUSINESS_ID_LENGTH) {
+      return VALID;
+    }
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            """
+            Expected to create instance of process with a valid business id, \
+            but the business id exceeds the max length of %d."""
+                .formatted(MAX_BUSINESS_ID_LENGTH)));
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(
