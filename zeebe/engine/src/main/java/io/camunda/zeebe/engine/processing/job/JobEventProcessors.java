@@ -88,7 +88,12 @@ public final class JobEventProcessors {
             ValueType.JOB,
             JobIntent.TIME_OUT,
             new JobTimeOutProcessor(
-                processingState, writers, jobMetrics, bpmnBehaviors.jobActivationBehavior(), clock))
+                processingState,
+                writers,
+                jobMetrics,
+                bpmnBehaviors.jobActivationBehavior(),
+                clock,
+                new JobTimeoutPushTracker()))
         .onCommand(
             ValueType.JOB,
             JobIntent.UPDATE_RETRIES,

@@ -257,6 +257,86 @@ public class ActivatableJobsPushTest {
     assertActivatedJobsPushed(jobKey, activationCount);
   }
 
+  @Test
+  public void shouldNotTimeOutYieldedJob() {
+    // given - create and activate a job
+    final long jobKey = createJob(jobType, PROCESS_ID, variables);
+    assertActivatedJobsPushed(jobKey, 1);
+
+    // when - yield the job (state → ACTIVATABLE, deadline removed from index)
+    ENGINE.job().withKey(jobKey).yield();
+    jobRecords(JobIntent.YIELDED).withType(jobType).await();
+
+    // and - advance time past the original deadline
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+
+    // then - no timeout should occur because:
+    // 1. Yield removed the deadline from the deadline column family
+    // 2. Even if a stale TIME_OUT command existed, the state check (ACTIVATABLE != ACTIVATED)
+    //    would reject it
+    //
+    // Use a second job creation as a synchronization point to ensure the timeout check has run
+    createJob(jobType, PROCESS_ID, variables);
+    await("waiting for second job to be pushed")
+        .atMost(MAX_WAIT_TIME_FOR_ACTIVATED_JOBS)
+        .pollInterval(Duration.ofMillis(10))
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(2));
+
+    // Verify no TIMED_OUT event was generated for the yielded job
+    assertThat(jobRecords(TIMED_OUT).withType(jobType).exists()).isFalse();
+  }
+
+  @Test
+  public void shouldLimitTimeoutRepushAmplification() {
+    // given - create 1 job, which triggers 1 push
+    final long jobKey = createJob(jobType, PROCESS_ID, variables);
+    assertActivatedJobsPushed(jobKey, 1); // 1 push for 1 creation
+
+    // when - first timeout: gets one direct re-push
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withType(jobType).limit(1).await();
+    assertActivatedJobsPushed(jobKey, 2); // creation + 1 re-push
+
+    // when - second timeout occurs
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withType(jobType).limit(2).await();
+
+    // when - third timeout occurs
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withType(jobType).limit(3).await();
+
+    // then - amplification is capped: only 2 direct pushes (creation + 1 re-push)
+    // despite 3 timeouts. Without the tracker, this would be 4 pushes.
+    assertThat(jobStream.getActivatedJobs()).hasSize(2);
+  }
+
+  @Test
+  public void shouldStopDirectPushAfterFirstTimeoutRepush() {
+    // given - create a job (1 direct push on creation)
+    final long jobKey = createJob(jobType, PROCESS_ID, variables);
+    assertActivatedJobsPushed(jobKey, 1);
+
+    // when - first timeout: job gets one direct re-push
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withType(jobType).limit(1).await();
+    assertActivatedJobsPushed(jobKey, 2); // creation + 1 re-push
+
+    // when - second timeout: should NOT produce another direct push
+    // because the job was already re-pushed once after timeout
+    ENGINE.increaseTime(
+        Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
+    jobRecords(TIMED_OUT).withType(jobType).limit(2).await();
+
+    // then - push count stays at 2 (no new direct push)
+    // The job was notified via notifyJobAvailableAsSideEffect instead
+    assertThat(jobStream.getActivatedJobs()).hasSize(2);
+  }
+
   private List<Long> createJobs(final int amount) {
     return IntStream.range(0, amount)
         .mapToObj(i -> createJob(jobType, PROCESS_ID, variables))

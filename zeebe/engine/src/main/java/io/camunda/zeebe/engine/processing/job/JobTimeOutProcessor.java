@@ -34,19 +34,22 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
   private final JobProcessingMetrics jobMetrics;
   private final BpmnJobActivationBehavior jobActivationBehavior;
   private final InstantSource clock;
+  private final JobTimeoutPushTracker pushTracker;
 
   public JobTimeOutProcessor(
       final ProcessingState state,
       final Writers writers,
       final JobProcessingMetrics jobMetrics,
       final BpmnJobActivationBehavior jobActivationBehavior,
-      final InstantSource clock) {
+      final InstantSource clock,
+      final JobTimeoutPushTracker pushTracker) {
     jobState = state.getJobState();
     stateWriter = writers.state();
     rejectionWriter = writers.rejection();
     this.jobMetrics = jobMetrics;
     this.jobActivationBehavior = jobActivationBehavior;
     this.clock = clock;
+    this.pushTracker = pushTracker;
   }
 
   @Override
@@ -58,7 +61,13 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
     if (state == State.ACTIVATED && hasTimedOut(job)) {
       stateWriter.appendFollowUpEvent(jobKey, JobIntent.TIMED_OUT, job);
       jobMetrics.countJobEvent(JobAction.TIMED_OUT, job.getJobKind(), job.getType());
-      jobActivationBehavior.publishWork(jobKey, job);
+
+      if (pushTracker.shouldPush(jobKey)) {
+        jobActivationBehavior.publishWork(jobKey, job);
+        pushTracker.recordPush(jobKey);
+      } else {
+        jobActivationBehavior.notifyJobAvailableAsSideEffect(job);
+      }
     } else {
       final var reason =
           switch (state) {
@@ -71,6 +80,11 @@ public final class JobTimeOutProcessor implements TypedRecordProcessor<JobRecord
 
       final String errorMessage = String.format(NOT_ACTIVATED_JOB_MESSAGE, jobKey, reason);
       rejectionWriter.appendRejection(record, RejectionType.NOT_FOUND, errorMessage);
+
+      // Clean up tracking for jobs that are no longer activated
+      if (state != State.ACTIVATED) {
+        pushTracker.remove(jobKey);
+      }
     }
   }
 
