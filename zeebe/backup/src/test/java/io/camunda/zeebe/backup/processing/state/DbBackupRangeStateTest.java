@@ -229,7 +229,7 @@ final class DbBackupRangeStateTest {
     state.updateRangeEnd(1L, 5L);
 
     // when
-    state.updateRangeStart(1L, 2L, 5L);
+    state.updateRangeStart(1L, 2L);
 
     // then
     assertThat(state.getAllRanges()).containsExactly(new BackupRange(2L, 5L));
@@ -244,7 +244,7 @@ final class DbBackupRangeStateTest {
     state.updateRangeEnd(10L, 15L);
 
     // when
-    state.updateRangeStart(1L, 3L, 5L);
+    state.updateRangeStart(1L, 3L);
 
     // then
     assertThat(state.getAllRanges())

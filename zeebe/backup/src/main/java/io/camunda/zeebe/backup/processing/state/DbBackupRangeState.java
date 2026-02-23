@@ -118,11 +118,10 @@ public final class DbBackupRangeState {
    *
    * @param oldStart the current start key
    * @param newStart the new start key
-   * @param endCheckpointId the unchanged end of the range
    */
-  public void updateRangeStart(
-      final long oldStart, final long newStart, final long endCheckpointId) {
+  public void updateRangeStart(final long oldStart, final long newStart) {
     rangeStartKey.wrapLong(oldStart);
+    final var endCheckpointId = rangesColumnFamily.get(rangeStartKey).getValue();
     rangesColumnFamily.deleteExisting(rangeStartKey);
 
     rangeStartKey.wrapLong(newStart);
