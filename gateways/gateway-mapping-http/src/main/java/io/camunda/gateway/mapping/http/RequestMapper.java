@@ -361,7 +361,8 @@ public class RequestMapper {
               .reduce(
                   CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                   (acc, detail) -> {
-                    acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                    final String existing = acc.getDetail();
+                    acc.setDetail((existing == null ? "" : existing + ". ") + detail.getDetail());
                     return acc;
                   });
 
@@ -414,7 +415,8 @@ public class RequestMapper {
             .reduce(
                 CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                 (acc, detail) -> {
-                  acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                  final String existing = acc.getDetail();
+                  acc.setDetail((existing == null ? "" : existing + ". ") + detail.getDetail());
                   return acc;
                 });
 
