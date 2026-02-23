@@ -699,8 +699,8 @@ components:
         Instructions for creating a process instance. The process definition can be specified
         either by id or by key.
       oneOf:
-        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
         - $ref: '#/components/schemas/ProcessInstanceCreationInstructionByKey'
+        - $ref: '#/components/schemas/ProcessInstanceCreationInstructionById'
 
     ProcessInstanceCreationInstructionById:
       type: object
@@ -727,7 +727,10 @@ components:
           type: object
           additionalProperties: true
         tenantId:
-          description: The tenant id of the process definition.
+          description: |
+            The tenant id of the process definition.
+            If multi-tenancy is enabled, provide the tenant id of the process definition to start a
+            process instance of. If multi-tenancy is disabled, don't provide this parameter.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         operationReference:
@@ -752,9 +755,10 @@ components:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
         awaitCompletion:
           description: |
-            Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. This can lead to a 504
-            response status. Disabled by default.
+            Wait for the process instance to complete. If the process instance does not complete
+            within the request timeout limit, a 504 response status will be returned. The process
+            instance will continue to run in the background regardless of the timeout. Disabled by
+            default.
           type: boolean
           default: false
         fetchVariables:
@@ -799,8 +803,8 @@ components:
           default: -1
         variables:
           description: |
-            JSON object that will instantiate the variables for the root variable scope
-            of the process instance.
+            Set of variables as JSON object to instantiate in the root variable scope of the process
+            instance. Can include nested complex objects.
           type: object
           additionalProperties: true
         startInstructions:
@@ -822,16 +826,20 @@ components:
           items:
             $ref: '#/components/schemas/ProcessInstanceCreationRuntimeInstruction'
         tenantId:
-          description: The tenant id of the process definition.
+          description: |
+            The tenant id of the process definition.
+            If multi-tenancy is enabled, provide the tenant id of the process definition to start a
+            process instance of. If multi-tenancy is disabled, don't provide this parameter.
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/TenantId'
         operationReference:
           $ref: 'keys.yaml#/components/schemas/OperationReference'
         awaitCompletion:
           description: |
-            Wait for the process instance to complete. If the process instance completion does
-            not occur within the requestTimeout, the request will be closed. This can lead to a 504
-            response status. Disabled by default.
+            Wait for the process instance to complete. If the process instance does not complete
+            within the request timeout limit, a 504 response status will be returned. The process
+            instance will continue to run in the background regardless of the timeout. Disabled by
+            default.
           type: boolean
           default: false
         requestTimeout:

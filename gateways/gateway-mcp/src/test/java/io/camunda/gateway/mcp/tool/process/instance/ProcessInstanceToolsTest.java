@@ -295,6 +295,25 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldIgnoreTenantIdInFilter() {
+      // given
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+          .thenReturn(SEARCH_QUERY_RESULT);
+
+      // when (tenantId passed in arguments should be ignored by MCP filter schema)
+      mcpClient.callTool(
+          CallToolRequest.builder()
+              .name("searchProcessInstances")
+              .arguments(Map.of("filter", Map.of("tenantId", "tenantId")))
+              .build());
+
+      // then
+      verify(processInstanceServices).search(queryCaptor.capture());
+      final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
+      assertThat(capturedQuery.filter().tenantIdOperations()).isEmpty();
+    }
+
+    @Test
     void shouldFailSearchProcessInstancesOnException() {
       // given
       when(processInstanceServices.search(any(ProcessInstanceQuery.class)))

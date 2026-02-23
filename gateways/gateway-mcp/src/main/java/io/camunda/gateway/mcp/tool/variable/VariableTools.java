@@ -19,9 +19,9 @@ import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
-import io.camunda.gateway.mcp.model.McpVariableFilter;
 import io.camunda.gateway.protocol.model.VariableSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest;
+import io.camunda.gateway.protocol.model.simple.VariableFilter;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.VariableServices;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
@@ -51,12 +51,11 @@ public class VariableTools {
           "Search for variables. " + VARIABLE_VALUE_RETURN_FORMAT + " " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchVariables(
-      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final McpVariableFilter filter,
+      @McpToolParam(description = FILTER_DESCRIPTION, required = false) final VariableFilter filter,
       @McpToolParam(description = SORT_DESCRIPTION, required = false)
           final List<VariableSearchQuerySortRequest> sort,
       @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page,
+          final SearchQueryPageRequest page,
       @McpToolParam(description = TRUNCATE_VARIABLES_DESCRIPTION, required = false)
           final Boolean truncateValues) {
     try {

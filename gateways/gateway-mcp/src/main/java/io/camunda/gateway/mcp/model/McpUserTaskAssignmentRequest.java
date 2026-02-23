@@ -7,8 +7,7 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * MCP-specific user task assignment request that hides the assignee field from the MCP JSON schema.
@@ -17,11 +16,5 @@ import io.camunda.gateway.protocol.model.UserTaskAssignmentRequest;
  * class accepts only the options (allowOverride and action), allowing us to reuse the schema
  * descriptions from the API spec without duplication.
  */
-public class McpUserTaskAssignmentRequest extends UserTaskAssignmentRequest {
-
-  @Override
-  @JsonIgnore
-  public String getAssignee() {
-    return super.getAssignee();
-  }
-}
+@JsonIgnoreProperties("assignee")
+public interface McpUserTaskAssignmentRequest {}

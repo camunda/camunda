@@ -8,26 +8,22 @@
 package io.camunda.gateway.mcp.tool.process.definition;
 
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.EVENTUAL_CONSISTENCY_NOTE;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.FILTER_DESCRIPTION;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.PAGE_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_DESCRIPTION;
 import static io.camunda.gateway.mcp.tool.ToolDescriptions.PROCESS_DEFINITION_KEY_POSITIVE_MESSAGE;
-import static io.camunda.gateway.mcp.tool.ToolDescriptions.SORT_DESCRIPTION;
 
 import io.camunda.gateway.mapping.http.search.SearchQueryRequestMapper;
 import io.camunda.gateway.mapping.http.search.SearchQueryResponseMapper;
 import io.camunda.gateway.mcp.config.tool.CamundaMcpTool;
+import io.camunda.gateway.mcp.config.tool.McpToolParamsUnwrapped;
 import io.camunda.gateway.mcp.mapper.CallToolResultMapper;
-import io.camunda.gateway.mcp.model.McpProcessDefinitionFilter;
-import io.camunda.gateway.mcp.model.McpSearchQueryPageRequest;
-import io.camunda.gateway.protocol.model.ProcessDefinitionSearchQuerySortRequest;
+import io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.service.ProcessDefinitionServices;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import java.util.List;
 import org.springaicommunity.mcp.annotation.McpTool.McpAnnotations;
 import org.springaicommunity.mcp.annotation.McpToolParam;
 import org.springframework.stereotype.Component;
@@ -51,23 +47,18 @@ public class ProcessDefinitionTools {
       description = "Search for process definitions. " + EVENTUAL_CONSISTENCY_NOTE,
       annotations = @McpAnnotations(readOnlyHint = true))
   public CallToolResult searchProcessDefinitions(
-      @McpToolParam(description = FILTER_DESCRIPTION, required = false)
-          final McpProcessDefinitionFilter filter,
-      @McpToolParam(description = SORT_DESCRIPTION, required = false)
-          final List<ProcessDefinitionSearchQuerySortRequest> sort,
-      @McpToolParam(description = PAGE_DESCRIPTION, required = false)
-          final McpSearchQueryPageRequest page) {
+      @McpToolParamsUnwrapped @Valid final ProcessDefinitionSearchQuery query) {
     try {
-      final var query = SearchQueryRequestMapper.toProcessDefinitionQuery(filter, page, sort);
-      if (query.isLeft()) {
-        return CallToolResultMapper.mapProblemToResult(query.getLeft());
+      final var processDefinitionQuery = SearchQueryRequestMapper.toProcessDefinitionQuery(query);
+      if (processDefinitionQuery.isLeft()) {
+        return CallToolResultMapper.mapProblemToResult(processDefinitionQuery.getLeft());
       }
 
       return CallToolResultMapper.from(
           SearchQueryResponseMapper.toProcessDefinitionSearchQueryResponse(
               processDefinitionServices
                   .withAuthentication(authenticationProvider.getCamundaAuthentication())
-                  .search(query.get())));
+                  .search(processDefinitionQuery.get())));
     } catch (final Exception e) {
       return CallToolResultMapper.mapErrorToResult(e);
     }
