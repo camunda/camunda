@@ -24,12 +24,14 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.annotation.AnnotationUtil;
 import io.camunda.client.annotation.Deployment;
 import io.camunda.client.annotation.value.DeploymentValue;
+import io.camunda.client.annotation.value.SourceAware.Empty;
 import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
 import io.camunda.client.api.command.DeployResourceCommandStep1;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.response.Process;
 import io.camunda.client.bean.BeanInfo;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
+import io.camunda.client.spring.properties.CamundaClientDeploymentProperties;
 import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.io.IOException;
 import java.util.Collections;
@@ -63,16 +65,15 @@ public class DeploymentAnnotationProcessorTest {
 
   @Mock private Function<BeanInfo, List<DeploymentValue>> deploymentValueExtractor;
 
+  @Mock private CamundaClientProperties camundaClientProperties;
+
   @InjectMocks private DeploymentAnnotationProcessor deploymentAnnotationProcessor;
 
   @BeforeEach
   public void init() {
-    deploymentAnnotationProcessor =
-        new DeploymentAnnotationProcessor(
-            applicationEventPublisher,
-            deploymentValueExtractor,
-            resourcePatternResolver,
-            new CamundaClientProperties());
+    final CamundaClientDeploymentProperties deploymentProperties =
+        new CamundaClientDeploymentProperties();
+    when(camundaClientProperties.getDeployment()).thenReturn(deploymentProperties);
   }
 
   @Test
@@ -214,6 +215,35 @@ public class DeploymentAnnotationProcessorTest {
                     null,
                     new FromAnnotation<>(true),
                     CamundaClient.class)));
+    when(resourcePatternResolver.getResources("classpath*:/1.bpmn"))
+        .thenReturn(new Resource[] {resource});
+    assertThatExceptionOfType(IllegalArgumentException.class)
+        .isThrownBy(
+            () -> {
+
+              // when
+              deploymentAnnotationProcessor.configureFor(mock(BeanInfo.class));
+              deploymentAnnotationProcessor.start(client);
+            });
+  }
+
+  @Test
+  void shouldOverrideDefaultBehavior() throws IOException {
+    // given
+    final FileSystemResource resource = mock(FileSystemResource.class);
+    camundaClientProperties.getDeployment().setOwnJarOnly(true);
+    // the resource is from the spring boot starter while the bean from the java client
+    when(resource.getURL())
+        .thenReturn(
+            DeploymentAnnotationProcessor.class
+                .getProtectionDomain()
+                .getCodeSource()
+                .getLocation());
+    when(deploymentValueExtractor.apply(any()))
+        .thenReturn(
+            List.of(
+                new DeploymentValue(
+                    List.of("classpath*:/1.bpmn"), null, new Empty<>(), CamundaClient.class)));
     when(resourcePatternResolver.getResources("classpath*:/1.bpmn"))
         .thenReturn(new Resource[] {resource});
     assertThatExceptionOfType(IllegalArgumentException.class)
