@@ -146,6 +146,9 @@ public class ConfigurationServiceBuilder {
           if (file.startsWith("optional:")) {
             file = file.substring("optional:".length());
           }
+          if (file.startsWith("file:")) {
+            file = file.substring("file:".length());
+          }
           if (springConfigLocation == null || new java.io.File(file).isAbsolute()) {
             LOG.debug("Resolving config import file: {}", file);
             locations.add(file);
