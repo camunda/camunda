@@ -9,8 +9,6 @@ package io.camunda.zeebe.exporter.opensearch;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexAction;
-import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
-import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse.Error;
 import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -19,13 +17,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
-import org.apache.http.entity.EntityTemplate;
-import org.opensearch.client.Request;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch._types.ErrorCause;
 import org.opensearch.client.opensearch._types.ErrorResponse;
 import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch._types.Result;
@@ -33,7 +31,11 @@ import org.opensearch.client.opensearch.cluster.GetComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateResponse;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkResponseItem;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.PutIndexTemplateResponse;
 import org.opensearch.client.opensearch.ism.Action;
 import org.opensearch.client.opensearch.ism.ActionDelete;
 import org.opensearch.client.opensearch.ism.AddPolicyRequest;
@@ -109,7 +111,7 @@ public class OpensearchClient implements AutoCloseable {
   OpensearchClient(
       final OpensearchExporterConfiguration configuration,
       final BulkIndexRequest bulkIndexRequest,
-      final org.opensearch.client.opensearch.OpenSearchClient openSearchClient,
+      final OpenSearchClient openSearchClient,
       final RestClient client,
       final RecordIndexRouter indexRouter,
       final TemplateReader templateReader,
@@ -199,7 +201,7 @@ public class OpensearchClient implements AutoCloseable {
             indexRouter.aliasNameForValueType(valueType));
 
     try {
-      final org.opensearch.client.opensearch.indices.PutIndexTemplateResponse response =
+      final PutIndexTemplateResponse response =
           openSearchClient.indices().putIndexTemplate(request);
       return response.acknowledged();
     } catch (final OpenSearchException | IOException e) {
@@ -228,14 +230,12 @@ public class OpensearchClient implements AutoCloseable {
   }
 
   private void exportBulk() {
-    final BulkIndexResponse response;
+    final BulkResponse response;
     try {
-      final var request = new Request("POST", "/_bulk");
-      final var body = new EntityTemplate(bulkIndexRequest);
-      request.setJsonEntity(new String(body.getContent().readAllBytes()));
-
-      response = sendRequest(request, BulkIndexResponse.class);
-    } catch (final IOException e) {
+      final BulkRequest bulkRequest =
+          BulkRequest.of(b -> b.operations(bulkIndexRequest.bulkOperations()));
+      response = openSearchClient.bulk(bulkRequest);
+    } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to flush bulk", e);
     }
 
@@ -244,18 +244,27 @@ public class OpensearchClient implements AutoCloseable {
     }
   }
 
-  private void throwCollectedBulkError(final BulkIndexResponse bulkResponse) {
+  private void throwCollectedBulkError(final BulkResponse bulkResponse) {
     final var collectedErrors = new ArrayList<String>();
     bulkResponse.items().stream()
-        .flatMap(item -> Optional.ofNullable(item.index()).stream())
-        .flatMap(index -> Optional.ofNullable(index.error()).stream())
-        .collect(Collectors.groupingBy(Error::type))
+        .map(BulkResponseItem::error)
+        .filter(Objects::nonNull)
+        .collect(Collectors.groupingBy(ErrorCause::type))
         .forEach(
-            (errorType, errors) ->
-                collectedErrors.add(
-                    String.format(
-                        "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
-                        errors.size(), errorType, errors.get(0).reason())));
+            (errorType, errors) -> {
+              final String reason;
+              final ErrorCause errorCause = errors.getFirst();
+              if (errorCause.causedBy() != null) {
+                reason = errorCause.causedBy().reason();
+              } else {
+                reason = errorCause.reason();
+              }
+
+              collectedErrors.add(
+                  String.format(
+                      "Failed to flush %d item(s) of bulk request [type: %s, reason: %s]",
+                      errors.size(), errorType, reason));
+            });
 
     throw new OpensearchExporterException("Failed to flush bulk request: " + collectedErrors);
   }
@@ -335,14 +344,6 @@ public class OpensearchClient implements AutoCloseable {
     } catch (final OpenSearchException | IOException e) {
       throw new OpensearchExporterException("Failed to remove policy from indices", e);
     }
-  }
-
-  private <T> T sendRequest(final Request request, final Class<T> responseType) throws IOException {
-    final var response = client.performRequest(request);
-    // buffer the complete response in memory before parsing it; this will give us a better error
-    // message which contains the raw response should the deserialization fail
-    final var responseBody = response.getEntity().getContent().readAllBytes();
-    return MAPPER.readValue(responseBody, responseType);
   }
 
   private boolean putIndexStateManagementPolicy(final Integer seqNo, final Integer primaryTerm) {
