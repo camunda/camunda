@@ -19,6 +19,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedCommandWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
@@ -77,7 +78,12 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         .checkUserTaskExists(command)
         .flatMap(userTask -> enrichCommandForRejection(command, userTask))
         .flatMap(userTask -> checkAuthorization(command, userTask))
-        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask));
+        .flatMap(userTask -> commandChecker.checkLifecycleState(command, userTask))
+        .flatMap(
+            userTask ->
+                VariableNameLengthValidator.validateVariableNameLength(
+                        command.getValue().getVariablesBuffer())
+                    .map(ignored -> userTask));
   }
 
   @Override
