@@ -14,11 +14,14 @@ This page has information and answers questions around how the [C8 monorepo CI](
 Maven artifacts are available on [Artifactory](https://artifacts.camunda.com/) and Docker images are available on [DockerHub](https://hub.docker.com/u/camunda/):
 
 * Pushed commits to `main` branch produce:
-  * Maven artifacts with version `8.9.0-SNAPSHOT` for all C8 components
+  * Maven artifacts with version `8.10.0-SNAPSHOT` for all C8 components
   * Docker images with tag `SNAPSHOT` for [Operate](https://hub.docker.com/r/camunda/operate/tags?name=SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=SNAPSHOT)
   * Docker images with tag `8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8-SNAPSHOT)
+* Pushed commits to `stable/8.9` branch produce:
+  * Maven artifacts with version `8.9.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
+  * Docker images with tag `8.9-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.9-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.9-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.9-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.9-SNAPSHOT)
 * Pushed commits to `stable/8.8` branch produce:
-  * Maven artifacts with version `8.8.0-SNAPSHOT` for Operate, Tasklist, Zeebe
+  * Maven artifacts with version `8.8.0-SNAPSHOT` for Optimize, Operate, Tasklist, Zeebe
   * Docker images with tag `8.8-SNAPSHOT` for [Optimize](https://hub.docker.com/r/camunda/optimize/tags?name=8.8-SNAPSHOT), [Operate](https://hub.docker.com/r/camunda/operate/tags?name=8.8-SNAPSHOT), [Tasklist](https://hub.docker.com/r/camunda/tasklist/tags?name=8.8-SNAPSHOT), [Zeebe](https://hub.docker.com/r/camunda/zeebe/tags?name=8.8-SNAPSHOT)
 * Pushed commits to `stable/8.7` branch produce:
   * Maven artifacts with version `8.7.0-SNAPSHOT` for Operate, Tasklist, Zeebe
@@ -586,7 +589,7 @@ When touching `monorepo-docs/*` folders, use these guidelines:
 
 **DO backport:**
 - Critical error corrections in docs
-- Security-related documentation updates  
+- Security-related documentation updates
 - Fixes preventing user confusion about that specific version
 
 **DON'T backport:**
