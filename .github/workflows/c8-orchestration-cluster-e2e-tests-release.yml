@@ -285,6 +285,14 @@ jobs:
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: json-report-release-api
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -530,6 +538,14 @@ jobs:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
 
       - name: Observe build status
         if: always()

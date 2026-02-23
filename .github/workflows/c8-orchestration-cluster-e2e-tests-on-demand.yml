@@ -41,9 +41,9 @@ jobs:
         run: |
           branch="${{ github.event.inputs.branch }}"
           echo "Detecting base branch for input branch: $branch"
-          git fetch origin stable/8.6 stable/8.7 stable/8.8 main "$branch"
+          git fetch origin stable/8.6 stable/8.7 stable/8.8 stable/8.9 main "$branch"
           base="main"
-          for candidate in stable/8.6 stable/8.7 stable/8.8 main; do
+          for candidate in stable/8.6 stable/8.7 stable/8.8 stable/8.9 main; do
             if git merge-base --is-ancestor origin/$candidate origin/$branch; then
               base="$candidate"
               break
@@ -194,10 +194,10 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
           fi
-          
+
           echo "Running API tests"
           npm run test -- --project=api-tests
-          
+
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
       - name: Publish test results to TestRail
@@ -389,7 +389,7 @@ jobs:
             export CORE_APPLICATION_URL="http://localhost:8080"
             export ZEEBE_REST_ADDRESS="http://localhost:8080"
             TEST_ARGS=(--project=chromium)
-            
+
             if [[ "${{ matrix.tasklist_mode }}" == "v2" ]]; then
               echo "Running V2 mode tests"
               if [[ "${{ needs.validate-branch.outputs.base }}" == "stable/8.8" ]]; then
