@@ -23,11 +23,14 @@ const mockElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'process-def-1',
   processInstanceKey: '123',
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 const mockElementInstance2: ElementInstance = {
@@ -43,6 +46,8 @@ const mockElementInstance2: ElementInstance = {
   processDefinitionKey: '2',
   hasIncident: false,
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 const getWrapper = (initialSearchParams?: {[key: string]: string}) => {
@@ -83,7 +88,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should update URL with elementId only', () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(
@@ -116,7 +126,12 @@ describe('useProcessInstanceElementSelection', () => {
       );
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(
@@ -157,7 +172,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should update URL with isMultiInstanceBody when provided', () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(
@@ -190,7 +210,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should not include isMultiInstanceBody in URL when false', () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(
@@ -223,7 +248,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should fetch element instances when only elementId is provided', async () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
@@ -242,7 +272,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should not fetch element instance when isPlaceholder is true', async () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
@@ -264,7 +299,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should return null when search returns multiple element instances', async () => {
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance, mockElementInstance2],
-        page: {totalItems: 2},
+        page: {
+          totalItems: 2,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
@@ -279,7 +319,12 @@ describe('useProcessInstanceElementSelection', () => {
     it('should return null when search returns no element instances', async () => {
       mockSearchElementInstances().withSuccess({
         items: [],
-        page: {totalItems: 0},
+        page: {
+          totalItems: 0,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       const {result} = renderHook(() => useProcessInstanceElementSelection(), {
@@ -581,7 +626,12 @@ describe('useProcessInstanceElementSelection', () => {
 
       mockSearchElementInstances().withSuccess({
         items: [mockElementInstance2],
-        page: {totalItems: 1},
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
 
       act(() => {

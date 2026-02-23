@@ -13,13 +13,23 @@ import {
 } from './mockDecisionInstance';
 
 const mockDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody = {
-  page: {totalItems: 2},
+  page: {
+    totalItems: 2,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
   items: [invoiceClassification, assignApproverGroup],
 };
 
 const mockEmptyDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody =
   {
-    page: {totalItems: 0},
+    page: {
+      totalItems: 0,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
     items: [],
   };
 

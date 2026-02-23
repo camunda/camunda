@@ -36,6 +36,8 @@ const MULTI_INSTANCE_BODY_ELEMENT: ElementInstance = {
   incidentKey: null,
   tenantId: '<default>',
   startDate: '2020-08-18T12:07:34.205+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
 };
 
 const SUB_PROCESS_ELEMENT: ElementInstance = {
@@ -51,6 +53,8 @@ const SUB_PROCESS_ELEMENT: ElementInstance = {
   incidentKey: null,
   tenantId: '<default>',
   startDate: '2020-08-18T12:07:34.281+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
 };
 
 describe('ElementInstancesTree - Multi Instance Subprocess', () => {
@@ -76,6 +80,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );
@@ -167,6 +172,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.337+0000',
           endDate: '2020-08-18T12:07:34.445+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );
@@ -257,6 +263,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
         {
           elementInstanceKey: '2251799813686156',
@@ -272,6 +279,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.205+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );
