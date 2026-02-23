@@ -399,6 +399,41 @@ public class AuditLogProcessOperationsIT {
   //  }
 
   // ========================================================================================
+  // Job Tests
+  // ========================================================================================
+
+  @Test
+  void shouldTrackJobCompleted(@Authenticated(DEFAULT_USERNAME) final CamundaClient client) {
+    // given - start a process that creates a job
+    final var processInstance = createProcessInstance(client, SERVICE_TASKS_PROCESS_ID);
+    final var processInstanceKey = processInstance.getProcessInstanceKey();
+
+    waitForProcessInstancesToStart(
+        client, f -> f.processInstanceKey(processInstanceKey).tenantId(TENANT_A), 1);
+
+    // Get the job key
+    final var jobs = waitForJobs(client, List.of(processInstanceKey));
+
+    // when - complete the job
+    jobs.forEach(
+        job -> {
+          client.newCompleteCommand(job.getJobKey()).send().join();
+
+          // then - wait for audit log entry and verify
+          final var auditLogItems =
+              awaitAuditLogEntry(
+                  client,
+                  AuditLogEntityTypeEnum.JOB,
+                  AuditLogOperationTypeEnum.COMPLETE,
+                  String.valueOf(job.getJobKey()));
+          assertThat(auditLogItems)
+              .isNotEmpty()
+              .allMatch(
+                  auditLog -> assertJobAuditLog(auditLog, AuditLogOperationTypeEnum.COMPLETE, job));
+        });
+  }
+
+  // ========================================================================================
   // Incident Tests
   // ========================================================================================
 
