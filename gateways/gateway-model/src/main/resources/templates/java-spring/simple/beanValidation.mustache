@@ -1,7 +1,0 @@
-{{! Custom override of the upstream beanValidation.mustache template.
-  Diff: removes the @NotNull emission so that properties are never validated automatically as non-null.
-  Simple model consumers define this manually, e.g., through Jackson mixins.
-  The simple model creates merged properties for allOf/oneOf/anyOf, so the non-null validation is not always correct.
-  It is easier to let users add it manually when needed.
-}}
-{{#isContainer}}{{^isPrimitiveType}}{{^isEnum}}@Valid {{/isEnum}}{{/isPrimitiveType}}{{/isContainer}}{{^isContainer}}{{^isPrimitiveType}}@Valid {{/isPrimitiveType}}{{/isContainer}}{{^openApiNullable}}{{>beanValidationCore}}{{/openApiNullable}}{{#openApiNullable}}{{^useOptional}}{{>beanValidationCore}}{{/useOptional}}{{/openApiNullable}}{{#useOptional}}{{#openApiNullable}}{{#isContainer}}{{^required}}{{>beanValidationCore}}{{/required}}{{/isContainer}}{{/openApiNullable}}{{#openApiNullable}}{{#required}}{{>beanValidationCore}}{{/required}}{{/openApiNullable}}{{/useOptional}}
