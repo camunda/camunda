@@ -33,6 +33,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
         processInstanceKey: {$in: ['1', '2']},
       },
@@ -49,6 +50,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
         processInstanceKey: {$notIn: ['3', '4']},
       },
@@ -65,6 +67,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
         processInstanceKey: {$in: ['1', '2'], $notIn: ['3']},
       },
@@ -81,6 +84,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
         processInstanceKey: {$in: ['only'], $notIn: ['x']},
       },
@@ -97,6 +101,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
       },
     });
@@ -116,6 +121,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         $or: [{hasIncident: true}, {state: {$eq: 'ACTIVE'}}],
       },
     });
@@ -135,6 +141,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         hasIncident: true,
       },
     });
@@ -154,6 +161,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         state: {$eq: 'ACTIVE'},
       },
     });
@@ -177,6 +185,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         errorMessage: 'some error',
         tenantId: 'tenant-xyz',
         batchOperationKey: 'batch-123',
@@ -201,6 +210,7 @@ describe('buildMutationRequestBody', () => {
     expect(body).toEqual({
       filter: {
         elementId: 'taskA',
+        elementInstanceState: {$eq: 'ACTIVE'},
         processDefinitionKey: {$in: ['p1', 'p2']},
       },
     });
