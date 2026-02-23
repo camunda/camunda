@@ -62,7 +62,8 @@ jobs:
       - name: Run E2E tests
         shell: bash
         env:
-          CAMUNDA_MODE: ${{ matrix.camunda_mode }}   # optional
+          CAMUNDA_MODE: ${{ matrix.camunda_mode }}
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
         run: |
-          ./mvnw -Dcamunda.mode=${CAMUNDA_MODE} -DskipChecks verify
+          echo "Running E2E tests with CAMUNDA_MODE=${CAMUNDA_MODE}"
+          npm run test
