@@ -165,6 +165,12 @@ public final class MessageStreamProcessorTest {
     assertThat(rejection.getRejectionReason())
         .contains(
             "Expected message subscription with message name and correlation key not longer than");
+    assertThat(
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.CREATED)
+                .exists())
+        .isFalse();
   }
 
   @Test
@@ -187,6 +193,12 @@ public final class MessageStreamProcessorTest {
     assertThat(rejection.getRejectionReason())
         .contains(
             "Expected message subscription with message name and correlation key not longer than");
+    assertThat(
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .withIntent(MessageSubscriptionIntent.CREATED)
+                .exists())
+        .isFalse();
   }
 
   @Test
