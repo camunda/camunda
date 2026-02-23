@@ -70,6 +70,7 @@ public class ProcessInstanceCreationHelper {
   private final boolean businessIdUniquenessEnabled;
   private final ElementInstanceState elementInstanceState;
   private final BannedInstanceState bannedInstanceState;
+  private final int maxVariableNameLength;
 
   public ProcessInstanceCreationHelper(
       final ProcessState processState,
@@ -77,7 +78,8 @@ public class ProcessInstanceCreationHelper {
       final BannedInstanceState bannedInstanceState,
       final AuthorizationCheckBehavior authCheckBehavior,
       final BpmnBehaviors bpmnBehaviors,
-      final boolean businessIdUniquenessEnabled) {
+      final boolean businessIdUniquenessEnabled,
+      final int maxVariableNameLength) {
     this.processState = processState;
     this.elementInstanceState = elementInstanceState;
     this.bannedInstanceState = bannedInstanceState;
@@ -85,6 +87,7 @@ public class ProcessInstanceCreationHelper {
     variableBehavior = bpmnBehaviors.variableBehavior();
     elementActivationBehavior = bpmnBehaviors.elementActivationBehavior();
     this.businessIdUniquenessEnabled = businessIdUniquenessEnabled;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   public Either<Rejection, DeployedProcess> findRelevantProcess(
@@ -211,7 +214,7 @@ public class ProcessInstanceCreationHelper {
         .flatMap(
             valid ->
                 VariableNameLengthValidator.validateVariableNameLength(
-                    command.getVariablesBuffer()))
+                    command.getVariablesBuffer(), maxVariableNameLength))
         .flatMap(valid -> validateTags(tags))
         .flatMap(
             valid ->

@@ -9,7 +9,6 @@ package io.camunda.zeebe.engine.processing.variable;
 
 import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.msgpack.spec.MsgPackReader;
 import io.camunda.zeebe.msgpack.spec.MsgPackType;
@@ -20,16 +19,13 @@ import org.agrona.DirectBuffer;
 
 public final class VariableNameLengthValidator {
 
-  private static final int MAX_NAME_FIELD_LENGTH =
-      EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH;
-
   private static final String VARIABLE_NAME_LENGTH_EXCEEDED_ERROR_MESSAGE =
       "Expected variable names to be no longer than %d characters, but found one with length %d.";
 
   private VariableNameLengthValidator() {}
 
-  public static Either<Rejection, Object> validateVariableNameLength(
-      final DirectBuffer variablesBuffer) {
+  public static Either<Rejection, Void> validateVariableNameLength(
+      final DirectBuffer variablesBuffer, final int maxNameFieldLength) {
     if (variablesBuffer == null || variablesBuffer.capacity() == 0) {
       return Either.right(null);
     }
@@ -52,12 +48,12 @@ public final class VariableNameLengthValidator {
         }
 
         final String variableName = bufferAsString(nameToken.getValueBuffer());
-        if (variableName.length() > MAX_NAME_FIELD_LENGTH) {
+        if (variableName.length() > maxNameFieldLength) {
           return Either.left(
               new Rejection(
                   RejectionType.INVALID_ARGUMENT,
                   VARIABLE_NAME_LENGTH_EXCEEDED_ERROR_MESSAGE.formatted(
-                      MAX_NAME_FIELD_LENGTH, variableName.length())));
+                      maxNameFieldLength, variableName.length())));
         }
 
         reader.skipValue();

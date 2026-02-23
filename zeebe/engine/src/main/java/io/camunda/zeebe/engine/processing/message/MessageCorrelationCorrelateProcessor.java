@@ -51,6 +51,7 @@ public final class MessageCorrelationCorrelateProcessor
   private final StateWriter stateWriter;
   private final TypedResponseWriter responseWriter;
   private final TypedRejectionWriter rejectionWriter;
+  private final int maxVariableNameLength;
 
   public MessageCorrelationCorrelateProcessor(
       final Writers writers,
@@ -62,12 +63,14 @@ public final class MessageCorrelationCorrelateProcessor
       final MessageState messageState,
       final MessageSubscriptionState messageSubscriptionState,
       final SubscriptionCommandSender commandSender,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNameLength) {
     stateWriter = writers.state();
     responseWriter = writers.response();
     rejectionWriter = writers.rejection();
     this.keyGenerator = keyGenerator;
     this.authCheckBehavior = authCheckBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
