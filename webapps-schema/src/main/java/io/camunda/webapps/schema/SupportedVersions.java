@@ -21,7 +21,7 @@ public final class SupportedVersions {
    *
    * <p>To be used for client and server dependencies (e.g. in test container tests).
    */
-  public static final String SUPPORTED_OPENSEARCH_VERSION = "2.19.3";
+  public static final String SUPPORTED_OPENSEARCH_VERSION = "2.19.4";
 
   private SupportedVersions() {}
 }
