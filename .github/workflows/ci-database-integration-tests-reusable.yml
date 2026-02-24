@@ -15,7 +15,12 @@ on:
       database-type:
         required: true
         type: string
-        description: The name/type of the database. Should have a corresponding entry in the db/docker-compose.yml. Will be used in output descriptions.
+        description: The name/type of the database. If it does not have a corresponding entry in the db/docker-compose.yml then also specify "database-container". Will be used in output descriptions.
+      database-container:
+        required: false
+        type: string
+        default: ""
+        description: The name of the database container to run.  Should have a corresponding entry in the db/docker-compose.yml.  Can be left empty if "database-type" happens to be the right value.
       database-image-version:
         required: false
         type: string
@@ -29,21 +34,25 @@ on:
         type: string
         default: "multi-db-test"
         description: Comma-separated list of Maven profiles to activate during the test run (e.g., "multi-db-test", "history"). The profiles parallel-tests,extract-flaky-tests,skipFrontendBuild are always included.
+      test-type:
+        required: false
+        type: string
+        default: "database-integration-tests"
+        description: The test type used in artifact names and job descriptions (e.g., "database-integration-tests", "history-integration-tests").
       test-type-label:
         required: false
         type: string
         default: "Database"
         description: Label for the test type used in artifact names and job descriptions (e.g., "Database", "History").
-      job-name-suffix:
-        required: false
-        type: string
-        default: ""
-        description: Suffix for job_name (to help differentiate metrics for different jobs).
       notify-slack-on-failure:
         required: false
         type: boolean
         default: false
         description: Whether to send a Slack notification on failure or cancellation.
+      runs-on:
+        required: false
+        type: string
+        default: "gcp-perf-core-16-default"
     outputs:
       flakyTests:
         description: "Flaky tests detected during database integration tests"
@@ -57,27 +66,33 @@ env:
 
 jobs:
   integration-tests:
-    name: "${{inputs.database-type}}"
+    name: "${{ inputs.database-type }}"
     permissions: { }  # GITHUB_TOKEN unused in this job
     timeout-minutes: 20
-    runs-on: gcp-perf-core-16-default
+    runs-on: ${{ inputs.runs-on }}
     env:
       ZEEBE_TEST_DOCKER_IMAGE: localhost:5000/camunda/zeebe:current-test
       IMAGE_VERSION: ${{inputs.database-image-version}}
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
     steps:
+      - run: |
+          if [ -z "${{ inputs.database-container }}" ]; then
+            echo "DATABASE_CONTAINER=${{ inputs.database-type }}" >> "$GITHUB_ENV"
+          else
+            echo "DATABASE_CONTAINER=${{ inputs.database-container }}" >> "$GITHUB_ENV"
+          fi
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-build
         with:
-          maven-cache-key-modifier: it-database-${{inputs.database-type}}
+          maven-cache-key-modifier: "it-database-${{ inputs.database-type }}"
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       # start the required database service
       - name: Start Database service
         if: ${{ inputs.database-type != 'h2' }}
-        run: docker-compose -f db/docker-compose.yml up -d ${{ inputs.database-type }}
+        run: docker-compose -f db/docker-compose.yml up -d ${{ env.DATABASE_CONTAINER }}
       # Build the platform before running the integration tests; skipping frontend
       - uses: ./.github/actions/build-zeebe
         id: build-zeebe
@@ -88,7 +103,7 @@ jobs:
       # To communicate to the IT what database to expect and run against:
       # -Dcamunda.it.database.type=rdbms
       #
-      - name: Run database integration test with ${{inputs.database-type}}
+      - name: Run database integration test with ${{ inputs.database-type }}
         run: >
           ./mvnw -B -T 2 --no-snapshot-updates
           -D forkCount=6
@@ -116,12 +131,22 @@ jobs:
         if: ${{ failure() || cancelled() || steps.analyze-test-run.outputs.flakyTests != '' }}
         with:
           name: "[IT] ${{inputs.test-type-label}} - ${{inputs.database-name}}"
+      - name: Write matrix outputs for test analysis
+        uses: cloudposse/github-action-matrix-outputs-write@v1
+        continue-on-error: true
+        id: matrix-write
+        with:
+          matrix-step-name: "${{ inputs.test-type }}"
+          matrix-key: "${{ inputs.test-type }} - ${{ inputs.database-type }}"
+          outputs: |-
+            flakyTests: ${{ toJson(steps.analyze-test-run.outputs.flakyTests) }}
+            hasFlaky: ${{ steps.analyze-test-run.outputs.flakyTests != '' }}
       - name: Observe build status
         if: always()
         continue-on-error: true
         uses: ./.github/actions/observe-build-status
         with:
-          job_name: "database-integration-tests/${{ inputs.database-type }}${{ inputs.job-name-suffix }}"
+          job_name: "${{ inputs.test-type }}/${{ inputs.database-type }}"
           build_status: ${{ job.status }}
           user_reason: ${{ (steps.analyze-test-run.outputs.flakyTests != '') && 'flaky-tests' || '' }}
           user_description: "General"
