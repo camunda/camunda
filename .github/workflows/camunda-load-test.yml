@@ -361,6 +361,10 @@ jobs:
           git config user.name ${{ github.actor }}
           # Create the namespace for the load test
           ./newLoadTest.sh ${{ env.NAMESPACE }} ${{ inputs.secondary-storage-type }} ${{ inputs.ttl }} ${{ inputs.enable-optimize }}
+          # Annotate namespace with the workflow run URL for traceability
+          kubectl annotate namespace ${{ env.NAMESPACE }} \
+            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --overwrite
       - name: Install latest Camunda Platform
         run: |
           cd load-tests/setup/${{ env.NAMESPACE }}

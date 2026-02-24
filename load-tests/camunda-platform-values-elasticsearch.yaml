@@ -75,10 +75,10 @@ elasticsearch:
       accessModes: ["ReadWriteOnce"]
     resources:
       requests:
-        cpu: 3
+        cpu: 3000m
         memory: 3Gi
       limits:
-        cpu: 3
+        cpu: 3000m
         memory: 6Gi
     nodeSelector:
       cloud.google.com/gke-nodepool: n2-standard-4
