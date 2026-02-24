@@ -12,7 +12,6 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.webapp.rest.dto.ProcessGroupDto;
 import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -41,11 +40,6 @@ public class OperateAPICaller {
         statefulRestTemplateFactory.apply(
             testContext.getExternalOperateHost(), testContext.getExternalOperatePort());
     return restTemplate;
-  }
-
-  public ProcessGroupDto[] getGroupedProcesses() {
-    return restTemplate.getForObject(
-        restTemplate.getURL("/api/processes/grouped"), ProcessGroupDto[].class);
   }
 
   public ListViewResponseDto getProcessInstances() {
