@@ -7,18 +7,13 @@
  */
 package io.camunda.operate.webapp.rest;
 
-import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.DecisionReader;
 import io.camunda.operate.webapp.rest.dto.DecisionRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionGroupDto;
-import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -36,7 +31,6 @@ public class DecisionRestService extends InternalAPIErrorController {
 
   @Autowired private DecisionReader decisionReader;
   @Autowired private PermissionsService permissionsService;
-  @Autowired private BatchOperationWriter batchOperationWriter;
 
   @Operation(summary = "List decisions grouped by decisionId")
   @GetMapping(path = "/grouped")
@@ -53,23 +47,5 @@ public class DecisionRestService extends InternalAPIErrorController {
     final Map<String, List<DecisionDefinitionEntity>> decisionsGrouped =
         decisionReader.getDecisionsGrouped(request);
     return DecisionGroupDto.createFrom(decisionsGrouped, permissionsService);
-  }
-
-  @Operation(summary = "Delete decision definition and dependant resources")
-  @DeleteMapping(path = "/{id}")
-  public BatchOperationEntity deleteDecisionDefinition(
-      @ValidLongId @PathVariable("id") final String decisionDefinitionId) {
-    final DecisionDefinitionEntity decisionDefinitionEntity =
-        decisionReader.getDecision(Long.valueOf(decisionDefinitionId));
-    checkIdentityDeletePermission(decisionDefinitionEntity.getDecisionId());
-    return batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
-  }
-
-  private void checkIdentityDeletePermission(final String decisionId) {
-    if (!permissionsService.hasPermissionForDecision(
-        decisionId, PermissionType.DELETE_DECISION_INSTANCE)) {
-      throw new NotAuthorizedException(
-          String.format("No delete permission for decision %s", decisionId));
-    }
   }
 }

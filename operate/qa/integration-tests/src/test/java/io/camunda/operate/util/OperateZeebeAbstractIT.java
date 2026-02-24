@@ -21,7 +21,6 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.rest.DecisionRestService;
 import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
@@ -368,22 +367,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   protected BatchOperationEntity deleteProcessWithOkResponse(final String processId)
       throws Exception {
     final String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
-    final MockHttpServletRequestBuilder request =
-        delete(requestUrl).accept(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc.perform(request).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
-    searchTestRule.refreshSerchIndexes();
-
-    final BatchOperationEntity batchOperation =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
-    return batchOperation;
-  }
-
-  protected BatchOperationEntity deleteDecisionWithOkResponse(final String decisionDefinitionId)
-      throws Exception {
-    final String requestUrl = DecisionRestService.DECISION_URL + "/" + decisionDefinitionId;
     final MockHttpServletRequestBuilder request =
         delete(requestUrl).accept(mockMvcTestRule.getContentType());
 
