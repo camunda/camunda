@@ -1609,7 +1609,7 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
-    
+
   alwaysgreen-frontend-artifacts:
     name: "AlwaysGreen / Build Frontends (artifacts)"
     needs: [detect-changes]
@@ -1842,9 +1842,13 @@ jobs:
         secret/data/github.com/organizations/camunda NEXUS_USR | TEST_DOCKER_USERNAME_CAMUNDA_CLOUD;
         secret/data/github.com/organizations/camunda NEXUS_PSW | TEST_DOCKER_PASSWORD_CAMUNDA_CLOUD;
   alwaysgreen-trigger-saas-e2e:
-    name: Trigger SaaS E2E tests
+    name: "AlwaysGreen / Trigger SaaS E2E tests"
     runs-on: ubuntu-latest
     needs: [detect-changes, alwaysgreen-build-and-push]
+    if: >
+      needs.detect-changes.outputs.docker-build-helm-integration == 'true' &&
+      (github.event_name != 'pull_request' ||
+       !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     timeout-minutes: 30
     permissions: { }
     steps:
