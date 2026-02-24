@@ -113,6 +113,13 @@
       <artifactId>zeebe-gateway-grpc</artifactId>
     </dependency>
 
+    <!-- required to unpack OpenAPI specs at build time -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-gateway-protocol</artifactId>
+      <scope>provided</scope>
+    </dependency>
+
     <dependency>
       <groupId>io.camunda</groupId>
       <artifactId>zeebe-restore</artifactId>
@@ -983,7 +990,7 @@
               <outputDirectory>${project.build.directory}/camunda-zeebe/config/openapi/v2</outputDirectory>
               <resources>
                 <resource>
-                  <directory>${project.basedir}/../zeebe/gateway-protocol/src/main/proto/v2</directory>
+                  <directory>${project.build.directory}/v2</directory>
                   <includes>
                     <include>**/*.yaml</include>
                   </includes>
@@ -1068,6 +1075,25 @@
             <dep>io.camunda.optimize:optimize-webjar</dep>
           </ignoredUnusedDeclaredDependencies>
         </configuration>
+        <executions>
+          <execution>
+            <id>unpack-openapi-yaml</id>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <phase>initialize</phase>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>io.camunda</groupId>
+                  <artifactId>zeebe-gateway-protocol</artifactId>
+                  <includes>v2/**</includes>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
+              </artifactItems>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
 
       <plugin>
