@@ -132,7 +132,7 @@ const Details: React.FC<Props> = ({
                   });
                 }}
                 title={getAccordionItemTitle({
-                  processName: processDefinitionName || processName,
+                  processName: processDefinitionName ?? processName,
                   instancesCount: totalInstancesCount,
                   version: processDefinitionVersion,
                   ...(isMultiTenancyEnabled
@@ -147,7 +147,7 @@ const Details: React.FC<Props> = ({
                     type: 'process',
                     size: 'small',
                     text: getAccordionItemLabel({
-                      name: processDefinitionName || processName,
+                      name: processDefinitionName ?? processName,
                       instancesCount: totalInstancesCount,
                       version: processDefinitionVersion,
                       ...(isMultiTenancyEnabled
