@@ -24,11 +24,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 import org.apache.commons.codec.digest.MurmurHash3;
@@ -42,7 +40,7 @@ public class ElasticsearchBatchRequest implements BatchRequest {
   private static final Logger LOGGER = LoggerFactory.getLogger(ElasticsearchBatchRequest.class);
   private final ElasticsearchClient esClient;
   private final Map<IndexAndShard, BulkRequest.Builder> bulkRequestBuilders = new HashMap<>();
-  private final Set<String> indexes = new HashSet<>();
+  private final Map<String, Integer> indexes = new HashMap<>();
   private final ElasticsearchScriptBuilder scriptBuilder;
   private CamundaExporterMetrics metrics;
 
@@ -59,24 +57,30 @@ public class ElasticsearchBatchRequest implements BatchRequest {
       final String index, final String id, final String routing) {
     // System.out.println(index);
     final var indexId = routing != null ? routing : id;
-    indexes.add(index);
+    indexes.compute(index, (i, count) -> count == null ? 1 : count + 1);
 
-    /*if (true) {
+    if (false) {
       return bulkRequestBuilders.computeIfAbsent(
           new IndexAndShard("singleIndex", 0), idx -> new BulkRequest.Builder());
-    }*/
+    }
 
+    final int shards = 5;
     var indexKey = new IndexAndShard("default", -1);
     if (index.startsWith("operate-list-view-")) {
       indexKey =
           new IndexAndShard(
               "operate-list-view",
-              MurmurHash3.hash32x86(indexId.getBytes(StandardCharsets.UTF_8)) % 2);
+              MurmurHash3.hash32x86(indexId.getBytes(StandardCharsets.UTF_8)) % shards);
     } else if (index.startsWith("operate-flownode-instance")) {
       indexKey =
           new IndexAndShard(
               "operate-flownode-instance",
-              MurmurHash3.hash32x86(indexId.getBytes(StandardCharsets.UTF_8)) % 2);
+              MurmurHash3.hash32x86(indexId.getBytes(StandardCharsets.UTF_8)) % shards);
+    } else if (index.startsWith("operate-sequence-flow")) {
+      indexKey =
+          new IndexAndShard(
+              "operate-sequence-flow",
+              MurmurHash3.hash32x86(indexId.getBytes(StandardCharsets.UTF_8)) % shards);
     }
 
     return bulkRequestBuilders.computeIfAbsent(indexKey, idx -> new BulkRequest.Builder());
@@ -358,7 +362,9 @@ public class ElasticsearchBatchRequest implements BatchRequest {
           "Error when processing bulk request against Elasticsearch: " + ex.getMessage(), ex);
     }
 
-    return bulkRequest.operations().size();
+    final int ops = bulkRequest.operations().size();
+    // System.out.println("Bulk request executed with " + ops + " operations");
+    return ops;
   }
 
   private void validateNoErrors(
