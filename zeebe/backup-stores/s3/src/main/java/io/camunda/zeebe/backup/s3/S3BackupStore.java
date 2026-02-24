@@ -80,6 +80,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
+
   static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
@@ -88,6 +89,7 @@ public final class S3BackupStore implements BackupStore {
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
+  static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private final Pattern backupIdentifierPattern;
@@ -371,19 +373,11 @@ public final class S3BackupStore implements BackupStore {
   }
 
   private String backupMetadataKey(final int partitionId) {
-    return config.basePath().map(base -> base + "/").orElse("")
-        + "metadata/"
-        + partitionId
-        + "/metadata.json";
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
-    return listObjects(manifest, Directory.CONTENTS);
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
-      final Manifest manifest) {
-    return listObjects(manifest, Directory.MANIFESTS);
+    return "%smetadata/%d/%s"
+        .formatted(
+            config.basePath().map(base -> base + "/").orElse(""),
+            partitionId,
+            METADATA_OBJECT_NAME);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(

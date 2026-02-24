@@ -50,6 +50,7 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  public static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -310,7 +311,7 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   private String backupMetadataPath(final int partitionId) {
-    return "metadata/" + partitionId + "/metadata.json";
+    return "metadata/%d/%s".formatted(partitionId, METADATA_OBJECT_NAME);
   }
 
   private void assureContainerCreated() {
