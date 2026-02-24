@@ -81,6 +81,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private DataAggregator dataAggregator;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private ProcessReader processReader;
   @Autowired private DecisionReader decisionReader;
   @Autowired private BatchOperationWriter batchOperationWriter;
 
@@ -648,8 +649,9 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     // we call DELETE_PROCESS_DEFINITION operation on process
+    final var processEntity = processReader.getProcess(processDefinitionKey);
     final BatchOperationEntity batchOperationEntity =
-        deleteProcessWithOkResponse(String.valueOf(processDefinitionKey));
+        batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
 
     // and execute the operation
     executeOneBatch();
@@ -700,8 +702,9 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // when
     // we call DELETE_PROCESS_DEFINITION operation on process
+    final var processEntity = processReader.getProcess(processDefinitionKey);
     final BatchOperationEntity batchOperationEntity =
-        deleteProcessWithOkResponse(String.valueOf(processDefinitionKey));
+        batchOperationWriter.scheduleDeleteProcessDefinition(processEntity);
 
     // and execute the operation
     executeOneBatch();

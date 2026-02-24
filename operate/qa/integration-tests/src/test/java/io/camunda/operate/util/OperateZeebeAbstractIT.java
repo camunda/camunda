@@ -10,7 +10,6 @@ package io.camunda.operate.util;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -21,7 +20,6 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.rest.ProcessRestService;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
@@ -31,7 +29,6 @@ import io.camunda.operate.webapp.zeebe.operation.process.modify.AddTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.CancelTokenHandler;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessZeebeWrapper;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.MoveTokenHandler;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
@@ -362,22 +359,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
         mockMvc.perform(postOperationRequest).andExpect(status().is(expectedStatus)).andReturn();
     searchTestRule.refreshSerchIndexes();
     return mvcResult;
-  }
-
-  protected BatchOperationEntity deleteProcessWithOkResponse(final String processId)
-      throws Exception {
-    final String requestUrl = ProcessRestService.PROCESS_URL + "/" + processId;
-    final MockHttpServletRequestBuilder request =
-        delete(requestUrl).accept(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc.perform(request).andExpect(status().is(HttpStatus.SC_OK)).andReturn();
-    searchTestRule.refreshSerchIndexes();
-
-    final BatchOperationEntity batchOperation =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationEntity.class);
-    return batchOperation;
   }
 
   protected void clearMetrics() {
