@@ -217,9 +217,7 @@
 
   <update id="updateState" parameterType="io.camunda.db.rdbms.sql.IncidentMapper$IncidentStateDto">
     UPDATE ${prefix}INCIDENT
-    SET STATE         = #{state},
-        ERROR_MESSAGE = #{errorMessage},
-        ERROR_MESSAGE_HASH = #{errorMessageHash}
+    SET STATE = #{state}
     WHERE INCIDENT_KEY = #{incidentKey}
   </update>
 

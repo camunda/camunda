@@ -97,7 +97,26 @@ public class IncidentIT {
 
     assertThat(instance).isNotNull();
     assertThat(instance.state()).isEqualTo(IncidentEntity.IncidentState.RESOLVED);
-    assertThat(instance.errorMessage()).isNull();
+    assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
+  }
+
+  @TestTemplate
+  public void shouldSaveAndResolveIncidentInSingleFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final var original = IncidentFixtures.createRandomized(b -> b);
+    rdbmsWriters.getIncidentWriter().create(original);
+    rdbmsWriters.getIncidentWriter().resolve(original.incidentKey());
+    rdbmsWriters.flush();
+
+    final var instance = incidentReader.findOne(original.incidentKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.state()).isEqualTo(IncidentEntity.IncidentState.RESOLVED);
+    assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
   }
 
   @TestTemplate
