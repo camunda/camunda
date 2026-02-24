@@ -74,7 +74,6 @@ public class Metrics {
       TAG_KEY_ORGANIZATIONID = "organizationId";
   //  Values:
   public static final String TAG_VALUE_PROCESSINSTANCES = "processInstances",
-      TAG_VALUE_CORESTATISTICS = "corestatistics",
       TAG_VALUE_SUCCEEDED = "succeeded",
       TAG_VALUE_FAILED = "failed";
   private static final Logger LOGGER = LoggerFactory.getLogger(Metrics.class);

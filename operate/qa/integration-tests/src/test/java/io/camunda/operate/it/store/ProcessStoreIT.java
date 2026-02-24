@@ -357,14 +357,6 @@ public class ProcessStoreIT extends OperateSearchAbstractIT {
   }
 
   @Test
-  public void testGetCoreStatistics() {
-    final Map<String, Long> results = processStore.getCoreStatistics(Set.of("demoProcess-1"));
-    assertThat(results.size()).isEqualTo(2);
-    assertThat(results.get("running")).isEqualTo(1);
-    assertThat(results.get("incidents")).isEqualTo(1);
-  }
-
-  @Test
   public void testGetProcessInstanceTreePathById() {
     final String result = processStore.getProcessInstanceTreePathById(thirdProcessInstance.getId());
     assertThat(result).isEqualTo(thirdProcessInstance.getTreePath());

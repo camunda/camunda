@@ -18,7 +18,6 @@ import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
@@ -41,8 +40,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   public static final String CALL_ACTIVITY_ID = "callActivity";
   public static final String TASK_ID = "task";
   public static final String TASK_ID_2 = "task2";
-  private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
-      "/api/process-instances/core-statistics";
   private long calledProcessDefinitionKey;
   private long parentProcessDefinitionKey;
   private long incidentProcessInstanceKey;
@@ -101,19 +98,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
         .conditionIsMet(processInstancesAreStartedByProcessId, calledProcessDefinitionKey, 3)
         .flowNodesInAnyInstanceAreActive(TASK_ID, 3)
         .flowNodesInAnyInstanceAreActive(TASK_ID_2, 3);
-  }
-
-  /** Core statistics will count 2 as incidents and 4 as running. */
-  @Test
-  public void testIncidentPropagatedInCoreStatistics() throws Exception {
-    // when
-    final ProcessInstanceCoreStatisticsDto coreStatistics =
-        mockMvcTestRule.fromResponse(
-            getRequest(QUERY_PROCESS_CORE_STATISTICS_URL), ProcessInstanceCoreStatisticsDto.class);
-    // then return zero statistics
-    assertThat(coreStatistics.getRunning().longValue()).isEqualTo(6L);
-    assertThat(coreStatistics.getActive().longValue()).isEqualTo(4L);
-    assertThat(coreStatistics.getWithIncidents().longValue()).isEqualTo(2L);
   }
 
   @Test

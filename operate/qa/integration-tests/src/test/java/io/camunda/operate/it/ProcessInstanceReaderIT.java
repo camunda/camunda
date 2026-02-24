@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.util.j5templates.OperateSearchAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
-import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
@@ -154,44 +153,5 @@ public class ProcessInstanceReaderIT extends OperateSearchAbstractIT {
   public void testGetProcessInstanceWithOperationsWithInvalidKey() {
     assertThatExceptionOfType(NotFoundException.class)
         .isThrownBy(() -> processInstanceReader.getProcessInstanceWithOperationsByKey(1L));
-  }
-
-  @Test
-  public void testGetCoreStatisticsWithWildcardPermissions() {
-    // given
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-    // when
-    final ProcessInstanceCoreStatisticsDto result = processInstanceReader.getCoreStatistics();
-    assertThat(result.getRunning()).isEqualTo(2);
-    assertThat(result.getWithIncidents()).isOne();
-    assertThat(result.getActive()).isOne();
-  }
-
-  @Test
-  public void testGetCoreStatisticsWithSomePermissions() {
-    // given
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(
-            PermissionsService.ResourcesAllowed.withIds(
-                Set.of(processInstanceData.getBpmnProcessId())));
-    // when
-    final ProcessInstanceCoreStatisticsDto result = processInstanceReader.getCoreStatistics();
-    assertThat(result.getRunning()).isOne();
-    assertThat(result.getWithIncidents()).isOne();
-  }
-
-  @Test
-  public void testGetCoreStatisticsWithNoPermission() {
-    // given
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    // when
-    final ProcessInstanceCoreStatisticsDto result = processInstanceReader.getCoreStatistics();
-    assertThat(result.getRunning()).isZero();
-    assertThat(result.getWithIncidents()).isZero();
   }
 }

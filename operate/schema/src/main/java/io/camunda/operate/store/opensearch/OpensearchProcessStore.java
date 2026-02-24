@@ -9,7 +9,6 @@ package io.camunda.operate.store.opensearch;
 
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
 import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.cardinalityAggregation;
-import static io.camunda.operate.store.opensearch.dsl.AggregationDSL.filtersAggregation;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.*;
 import static io.camunda.operate.store.opensearch.dsl.QueryDSL.withTenantCheck;
 import static io.camunda.operate.store.opensearch.dsl.RequestDSL.QueryType.ALL;
@@ -38,7 +37,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.opensearch.client.opensearch._types.SortOrder;
-import org.opensearch.client.opensearch._types.aggregations.FiltersBucket;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
 import org.opensearch.client.opensearch.core.BulkRequest;
 import org.opensearch.client.opensearch.core.SearchRequest;
@@ -209,41 +207,6 @@ public class OpensearchProcessStore implements ProcessStore {
             searchRequestBuilder,
             ProcessInstanceForListViewEntity.class,
             String.valueOf(processInstanceKey));
-  }
-
-  @Override
-  public Map<String, Long> getCoreStatistics(final Set<String> allowedBPMNIds) {
-    final Query incidentsQuery =
-        and(term(INCIDENT, true), term(JOIN_RELATION, PROCESS_INSTANCE_JOIN_RELATION));
-    final Query runningQuery = term(ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.name());
-    final Query query =
-        allowedBPMNIds == null
-            ? matchAll()
-            : stringTerms(ListViewTemplate.BPMN_PROCESS_ID, allowedBPMNIds);
-    final var searchRequestBuilder =
-        searchRequestBuilder(listViewTemplate, ALL)
-            .query(withTenantCheck(query))
-            .aggregations(
-                "agg",
-                filtersAggregation(
-                        Map.of(
-                            "incidents", incidentsQuery,
-                            "running", runningQuery))
-                    .toAggregation());
-
-    final Map<String, FiltersBucket> buckets =
-        richOpenSearchClient
-            .doc()
-            .search(searchRequestBuilder, Void.class)
-            .aggregations()
-            .get("agg")
-            .filters()
-            .buckets()
-            .keyed();
-
-    return Map.of(
-        "running", buckets.get("running").docCount(),
-        "incidents", buckets.get("incidents").docCount());
   }
 
   @Override

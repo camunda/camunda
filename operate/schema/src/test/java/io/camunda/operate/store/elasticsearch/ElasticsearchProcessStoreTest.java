@@ -214,14 +214,6 @@ public class ElasticsearchProcessStoreTest {
   }
 
   @Test
-  public void testExceptionDuringGetCoreStatistics() throws IOException {
-    whenEsClientSearch().thenThrow(new IOException());
-
-    assertThatExceptionOfType(OperateRuntimeException.class)
-        .isThrownBy(() -> underTest.getCoreStatistics(Set.of("demoProcess")));
-  }
-
-  @Test
   public void testGetProcessInstanceTreePathByIdNoResults() throws IOException {
     final var mockRes = createMockSearchResponse(Collections.emptyList());
 
