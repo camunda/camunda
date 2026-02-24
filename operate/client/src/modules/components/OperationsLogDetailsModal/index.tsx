@@ -9,6 +9,7 @@
 import {
   CodeSnippet,
   Modal,
+  Stack,
   StructuredListBody,
   StructuredListCell,
   StructuredListWrapper,
@@ -141,19 +142,20 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               </IconText>
             </FirstColumn>
             <StructuredListCell>
-              {entityKeyData.link ? (
-                <Link
-                  to={entityKeyData.link}
-                  title={entityKeyData.linkLabel}
-                  aria-label={entityKeyData.linkLabel}
-                >
-                  {auditLog.entityKey}
-                </Link>
-              ) : (
-                auditLog.entityKey
-              )}
-              &nbsp;
-              {auditLog.entityDescription ?? entityKeyData.name}
+              <Stack orientation="vertical" gap={2}>
+                {entityKeyData.link ? (
+                  <Link
+                    to={entityKeyData.link}
+                    title={entityKeyData.linkLabel}
+                    aria-label={entityKeyData.linkLabel}
+                  >
+                    {auditLog.entityKey}
+                  </Link>
+                ) : (
+                  <span>{auditLog.entityKey}</span>
+                )}
+                <span>{auditLog.entityDescription ?? entityKeyData.name}</span>
+              </Stack>
             </StructuredListCell>
           </VerticallyAlignedRow>
           {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
@@ -167,14 +169,15 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 </IconText>
               </FirstColumn>
               <StructuredListCell>
-                <Link
-                  to={Paths.processInstance(auditLog.processInstanceKey)}
-                  aria-label={`View process instance ${auditLog.processInstanceKey}`}
-                >
-                  {auditLog.processInstanceKey}
-                </Link>
-                &nbsp;
-                <em>{auditLog.processDefinitionId}</em>
+                <Stack orientation="vertical" gap={2}>
+                  <Link
+                    to={Paths.processInstance(auditLog.processInstanceKey)}
+                    aria-label={`View process instance ${auditLog.processInstanceKey}`}
+                  >
+                    {auditLog.processInstanceKey}
+                  </Link>
+                  <em>{auditLog.processDefinitionId}</em>
+                </Stack>
               </StructuredListCell>
             </VerticallyAlignedRow>
           ) : undefined}
