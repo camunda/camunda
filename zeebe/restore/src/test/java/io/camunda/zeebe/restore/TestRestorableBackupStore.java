@@ -182,6 +182,16 @@ final class TestRestorableBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    throw new UnsupportedOperationException("Backup metadata is not yet supported");
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    throw new UnsupportedOperationException("Backup metadata is not yet supported");
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     waiters
         .values()

@@ -626,6 +626,17 @@ final class BackupRangeResolverTest {
     }
 
     @Override
+    public CompletableFuture<Void> storeBackupMetadata(
+        final int partitionId, final byte[] content) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
     public CompletableFuture<Void> closeAsync() {
       return CompletableFuture.completedFuture(null);
     }

@@ -27,6 +27,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -53,11 +54,14 @@ public final class FilesystemBackupStore implements BackupStore {
   private static final String CONTENTS_PATH = "contents";
   private static final String MANIFESTS_PATH = "manifests";
   private static final String RANGES_PATH = "ranges";
+  private static final String METADATA_PATH = "metadata";
+  private static final String METADATA_FILE = "metadata.json";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
   private final ManifestManager manifestManager;
   private final Path rangesDir;
+  private final Path metadataBaseDir;
 
   FilesystemBackupStore(final FilesystemBackupConfig config) {
     this(config, Executors.newVirtualThreadPerTaskExecutor());
@@ -71,10 +75,12 @@ public final class FilesystemBackupStore implements BackupStore {
     final var contentsDir = Path.of(config.basePath()).resolve(CONTENTS_PATH);
     final var manifestsDir = Path.of(config.basePath()).resolve(MANIFESTS_PATH);
     rangesDir = Path.of(config.basePath()).resolve(RANGES_PATH);
+    metadataBaseDir = Path.of(config.basePath()).resolve(METADATA_PATH);
     try {
       FileUtil.ensureDirectoryExists(contentsDir);
       FileUtil.ensureDirectoryExists(manifestsDir);
       FileUtil.ensureDirectoryExists(rangesDir);
+      FileUtil.ensureDirectoryExists(metadataBaseDir);
     } catch (final IOException e) {
       throw new UncheckedIOException(
           "Unable to create backup directory structure; do you have the right permissions or configuration?",
@@ -223,6 +229,41 @@ public final class FilesystemBackupStore implements BackupStore {
             if (Files.deleteIfExists(markerPath)) {
               FileUtil.flushDirectory(partitionDir);
             }
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
+          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          try {
+            FileUtil.ensureDirectoryExists(metadataDir);
+            Files.write(metadataPath, content);
+            FileUtil.flushDirectory(metadataDir);
+          } catch (final IOException e) {
+            throw new UncheckedIOException(e);
+          }
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
+          final var metadataPath = metadataDir.resolve(METADATA_FILE);
+          if (!Files.exists(metadataPath)) {
+            return Optional.empty();
+          }
+          try {
+            return Optional.of(Files.readAllBytes(metadataPath));
           } catch (final IOException e) {
             throw new UncheckedIOException(e);
           }

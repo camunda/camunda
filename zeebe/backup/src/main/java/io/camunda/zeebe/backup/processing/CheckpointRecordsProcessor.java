@@ -8,7 +8,9 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
@@ -50,16 +52,23 @@ public final class CheckpointRecordsProcessor
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
+  private final BackupMetadataSyncer syncer;
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
+  private DbCheckpointMetadataState checkpointMetadataState;
+  private DbBackupRangeState backupRangeState;
   private ProcessingScheduleService executor;
   private ScalingStatusSupplier scalingInProgressSupplier;
   private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
+      final BackupManager backupManager,
+      final int partitionId,
+      final BackupStore backupStore,
+      final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
+    syncer = new BackupMetadataSyncer(partitionId, backupStore);
   }
 
   public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
@@ -83,10 +92,10 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
-    final var checkpointMetadataState =
+    checkpointMetadataState =
         new DbCheckpointMetadataState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
-    final var backupRangeState =
+    backupRangeState =
         new DbBackupRangeState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
@@ -109,11 +118,11 @@ public final class CheckpointRecordsProcessor
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState, backupManager);
+            checkpointState, checkpointMetadataState, backupRangeState, backupManager, syncer);
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
-            checkpointMetadataState, backupRangeState, checkpointState, backupManager);
+            checkpointMetadataState, backupRangeState, checkpointState, backupManager, syncer);
 
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
