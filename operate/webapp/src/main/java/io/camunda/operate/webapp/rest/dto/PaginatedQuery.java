@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.rest.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.camunda.operate.webapp.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Arrays;
 import java.util.HashSet;

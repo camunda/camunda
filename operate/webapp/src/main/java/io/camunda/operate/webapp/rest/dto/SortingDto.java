@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.ArrayList;
 import java.util.List;

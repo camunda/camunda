@@ -12,8 +12,8 @@ import static io.camunda.operate.store.opensearch.dsl.RequestDSL.searchRequestBu
 
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
+import io.camunda.operate.webapp.exception.NotFoundException;
 import io.camunda.operate.webapp.reader.DecisionReader;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import org.springframework.beans.factory.annotation.Autowired;
