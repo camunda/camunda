@@ -24,6 +24,7 @@ public class BrokerDeleteHistoryRequest extends BrokerExecuteCommand<HistoryDele
   }
 
   public BrokerDeleteHistoryRequest setResourceKey(final long resourceKey) {
+    request.setKey(resourceKey);
     requestDto.setResourceKey(resourceKey);
     return this;
   }
