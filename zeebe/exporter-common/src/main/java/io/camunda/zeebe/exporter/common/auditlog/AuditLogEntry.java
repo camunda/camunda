@@ -426,6 +426,7 @@ public class AuditLogEntry {
             .setProcessDefinitionKey(getProcessDefinitionKey(record))
             .setElementInstanceKey(getElementInstanceKey(record))
             .setProcessDefinitionId(getProcessDefinitionId(record))
+            .setRootProcessInstanceKey(getRootProcessInstanceKey(record))
             .setEntityVersion(record.getRecordVersion())
             .setEntityValueType(record.getValueType().value())
             .setEntityOperationIntent(record.getIntent().value())
@@ -462,6 +463,15 @@ public class AuditLogEntry {
     final var value = record.getValue();
     if (value instanceof AuditLogProcessInstanceRelated) {
       return ((AuditLogProcessInstanceRelated) value).getElementInstanceKey();
+    }
+    return null;
+  }
+
+  private static <R extends RecordValue> Long getRootProcessInstanceKey(final Record<R> record) {
+    final var value = record.getValue();
+    if (value instanceof AuditLogProcessInstanceRelated
+        && ((AuditLogProcessInstanceRelated) value).getRootProcessInstanceKey() > 0) {
+      return ((AuditLogProcessInstanceRelated) value).getRootProcessInstanceKey();
     }
     return null;
   }

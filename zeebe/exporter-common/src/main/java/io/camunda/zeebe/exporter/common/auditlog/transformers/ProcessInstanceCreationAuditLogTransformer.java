@@ -22,9 +22,7 @@ public class ProcessInstanceCreationAuditLogTransformer
   @Override
   public void transform(
       final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntry log) {
-    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
+    final var value = record.getValue();
+    log.setEntityKey(String.valueOf(value.getProcessInstanceKey()));
   }
 }

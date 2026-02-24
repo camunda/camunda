@@ -25,6 +25,11 @@ public interface AuditLogProcessInstanceRelated {
   }
 
   /**
+   * @return the key of the related root process instance, or -1 if not applicable
+   */
+  long getRootProcessInstanceKey();
+
+  /**
    * @return the BPMN process id of the corresponding process definition
    */
   String getBpmnProcessId();
