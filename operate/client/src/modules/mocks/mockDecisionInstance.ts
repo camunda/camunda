@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {GetDecisionInstanceResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const invoiceClassification: GetDecisionInstanceResponseBody = {
   decisionEvaluationInstanceKey: '30945876576324-1',
@@ -23,6 +23,7 @@ const invoiceClassification: GetDecisionInstanceResponseBody = {
   elementInstanceKey: '37423847',
   evaluationFailure: '',
   rootDecisionDefinitionKey: '111',
+  rootProcessInstanceKey: null,
   evaluatedInputs: [
     {inputId: '0', inputName: 'Age', inputValue: '16'},
     {inputId: '1', inputName: 'Stateless Person', inputValue: 'false'},
@@ -87,6 +88,8 @@ const invoiceClassification: GetDecisionInstanceResponseBody = {
           outputId: '0',
           outputName: 'Age requirements satisfied',
           outputValue: '"missing data"',
+          ruleId: null,
+          ruleIndex: null,
         },
       ],
     },
@@ -98,6 +101,8 @@ const invoiceClassification: GetDecisionInstanceResponseBody = {
           outputId: '1',
           outputName: 'paragraph',
           outputValue: '"sbl §17"',
+          ruleId: null,
+          ruleIndex: null,
         },
       ],
     },
@@ -124,6 +129,7 @@ const assignApproverGroup: GetDecisionInstanceResponseBody = {
   elementInstanceKey: '2347238947239',
   evaluationFailure: 'An error occurred',
   rootDecisionDefinitionKey: '111',
+  rootProcessInstanceKey: null,
   evaluatedInputs: [
     {
       inputId: '0',
@@ -140,6 +146,8 @@ const assignApproverGroup: GetDecisionInstanceResponseBody = {
           outputId: '0',
           outputName: 'paragraph',
           outputValue: '"sbl §382"',
+          ruleId: null,
+          ruleIndex: null,
         },
       ],
     },
@@ -169,6 +177,7 @@ const literalExpression: GetDecisionInstanceResponseBody = {
   elementInstanceKey: '623426348231',
   evaluationFailure: '',
   rootDecisionDefinitionKey: '111',
+  rootProcessInstanceKey: null,
   evaluatedInputs: [],
   matchedRules: [],
   decisionDefinitionType: 'LITERAL_EXPRESSION',

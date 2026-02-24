@@ -40,7 +40,7 @@ describe('NoInstancesEmptyState', () => {
   it('should render modeler button when link is available', async () => {
     mockMe().withSuccess(
       createUser({
-        c8Links: [{name: 'modeler', link: 'https://link-to-modeler'}],
+        c8Links: {modeler: 'https://link-to-modeler'},
       }),
     );
 

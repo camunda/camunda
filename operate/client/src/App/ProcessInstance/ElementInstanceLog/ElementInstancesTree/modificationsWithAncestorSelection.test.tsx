@@ -38,7 +38,12 @@ describe.todo(
       mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
       mockQueryBatchOperationItems().withSuccess({
         items: [],
-        page: {totalItems: 0},
+        page: {
+          totalItems: 0,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
       });
       mockSearchElementInstances().withSuccess(
         multipleSubprocessesWithTwoRunningScopesMock.firstLevel,

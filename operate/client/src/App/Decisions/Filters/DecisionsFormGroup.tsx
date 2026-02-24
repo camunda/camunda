@@ -54,7 +54,7 @@ const DecisionsFormGroup: React.FC = observer(() => {
                   label:
                     isMultiTenancyEnabled && !specificTenantId
                       ? `${definition.name} - ${tenantsById[definition.tenantId]}`
-                      : definition.name,
+                      : (definition.name ?? definition.identifier),
                 }))}
                 onChange={({selectedItem}) => {
                   const matchingDecision = definitions.find(

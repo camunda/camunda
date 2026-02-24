@@ -54,7 +54,12 @@ describe('OperationsLog', () => {
     );
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

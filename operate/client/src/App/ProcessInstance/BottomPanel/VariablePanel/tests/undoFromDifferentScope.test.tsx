@@ -128,15 +128,36 @@ describe('Undo variable modifications from different scope', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockSearchVariables().withSuccess({
       items: [
         createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
         createVariable({name: 'test', value: '123', isTruncated: false}),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -165,7 +186,12 @@ describe('Undo variable modifications from different scope', () => {
 
     mockSearchVariables().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     mockFetchElementInstance('different_instance_id').withSuccess({
@@ -175,10 +201,13 @@ describe('Undo variable modifications from different scope', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -195,7 +224,12 @@ describe('Undo variable modifications from different scope', () => {
         createVariable({name: 'foo', value: '"bar"', isTruncated: false}),
         createVariable({name: 'test', value: '123', isTruncated: false}),
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(screen.getByRole('button', {name: /clear selection/i}));
@@ -209,13 +243,42 @@ describe('Undo variable modifications from different scope', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     mockSearchVariables().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -247,7 +310,12 @@ describe('Undo variable modifications from different scope', () => {
 
     mockSearchVariables().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     mockFetchElementInstance('different_instance_id').withSuccess({
@@ -257,10 +325,13 @@ describe('Undo variable modifications from different scope', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: mockProcessInstance.processInstanceKey,
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -274,7 +345,12 @@ describe('Undo variable modifications from different scope', () => {
 
     mockSearchVariables().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(screen.getByRole('button', {name: /clear selection/i}));

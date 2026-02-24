@@ -534,7 +534,12 @@ describe('<Filters />', () => {
     // Note: Reversed call order. Second one for name suggestions, first one for versions.
     mockSearchDecisionDefinitions().withSuccess({
       items: [firstDecision],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchDecisionDefinitions().withSuccess(mockDecisionDefinitions);
 

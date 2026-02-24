@@ -24,8 +24,24 @@ test.describe('self managed platform deployment', () => {
     await page.route(
       URL_API_PATTERN,
       mockDashboardResponses({
-        incidentsByError: {items: [], page: {totalItems: 0}},
-        processDefinitionStatistics: {items: [], page: {totalItems: 0}},
+        incidentsByError: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
+        processDefinitionStatistics: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
       }),
     );
 

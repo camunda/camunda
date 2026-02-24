@@ -14,7 +14,7 @@ import {open} from 'modules/mocks/diagrams';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Paths} from 'modules/Routes';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
@@ -113,12 +113,18 @@ describe('Modification Dropdown', () => {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionKey: '2',
       processDefinitionVersion: 1,
+      processDefinitionVersionTag: null,
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       processDefinitionName: 'someProcessName',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     };
 
     mockFetchFlownodeInstancesStatistics().withSuccess({
@@ -134,7 +140,12 @@ describe('Modification Dropdown', () => {
     );
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     modificationsStore.enableModificationMode();
   });
@@ -431,10 +442,13 @@ describe('Modification Dropdown', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: 'instance_id',
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -484,10 +498,13 @@ describe('Modification Dropdown', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionId: 'someKey',
       processInstanceKey: 'instance_id',
       processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     });
 
@@ -495,12 +512,18 @@ describe('Modification Dropdown', () => {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionKey: '2',
       processDefinitionVersion: 1,
+      processDefinitionVersionTag: null,
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       processDefinitionName: 'someProcessName',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     mockFetchProcessDefinitionXml().withSuccess(

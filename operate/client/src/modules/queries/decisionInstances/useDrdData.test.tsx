@@ -27,7 +27,12 @@ describe('useDrdData', () => {
   it('should map decision instances search results to drd data', async () => {
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification, assignApproverGroup],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {result} = renderHook(() => useDrdData('29283472932831'), {wrapper});
@@ -56,7 +61,12 @@ describe('useDrdData', () => {
         invoiceClassification,
         {...invoiceClassification, state: 'FAILED'},
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {result} = renderHook(() => useDrdData('29283472932831'), {wrapper});
@@ -76,11 +86,21 @@ describe('useDrdData', () => {
   it('should load remaining results items if more are available', async () => {
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification],
-      page: {totalItems: 3},
+      page: {
+        totalItems: 3,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchDecisionInstances().withSuccess({
       items: [assignApproverGroup, literalExpression],
-      page: {totalItems: 3},
+      page: {
+        totalItems: 3,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {result} = renderHook(() => useDrdData('29283472932831'), {wrapper});

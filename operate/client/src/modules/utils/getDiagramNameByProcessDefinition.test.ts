@@ -7,7 +7,7 @@
  */
 
 import {getDiagramNameByProcessDefinition} from './getDiagramNameByProcessDefinition';
-import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 
 describe('getDiagramNameByProcessDefinition', () => {
   it('returns formatted name with version', () => {
@@ -18,6 +18,8 @@ describe('getDiagramNameByProcessDefinition', () => {
       tenantId: '<default>',
       processDefinitionKey: 'order-process-key',
       hasStartForm: false,
+      resourceName: null,
+      versionTag: null,
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'order-process_v5',
@@ -26,12 +28,14 @@ describe('getDiagramNameByProcessDefinition', () => {
 
   it('uses processDefinitionId if name is missing', () => {
     const definition = {
-      name: undefined,
+      name: null,
       processDefinitionId: 'fallback-id',
       version: 2,
       tenantId: '<default>',
       processDefinitionKey: 'fallback-key',
       hasStartForm: false,
+      resourceName: null,
+      versionTag: null,
     } satisfies ProcessDefinition;
     expect(getDiagramNameByProcessDefinition(definition)).toBe(
       'fallback-id_v2',

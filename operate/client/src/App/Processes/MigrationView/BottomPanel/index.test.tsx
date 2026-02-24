@@ -90,6 +90,7 @@ describe('MigrationView/BottomPanel', () => {
           versionTag: '',
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
         },
         {
           processDefinitionId: 'orderProcess',
@@ -99,6 +100,7 @@ describe('MigrationView/BottomPanel', () => {
           versionTag: '',
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
         },
       ]),
     );

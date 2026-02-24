@@ -9,7 +9,7 @@
 import type {
   QueryProcessInstancesRequestBody,
   QueryProcessInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useQuery} from '@tanstack/react-query';
 import {searchProcessInstances} from 'modules/api/v2/processInstances/searchProcessInstances';
 import {queryKeys} from '../queryKeys';

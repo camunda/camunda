@@ -16,7 +16,7 @@ import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 type Props = {
   elementId: string;
   isPlaceholder?: boolean;
-  endDate?: string;
+  endDate: string | null;
   scopeKeyHierarchy: string[];
 };
 
@@ -51,7 +51,7 @@ const ModificationIcons: React.FC<Props> = observer(
             </Stack>
           )}
 
-          {hasCancelModification && !isPlaceholder && endDate === undefined && (
+          {hasCancelModification && !isPlaceholder && endDate === null && (
             <CancelIcon data-testid="cancel-icon">
               <title>This flow node instance is planned to be canceled</title>
             </CancelIcon>

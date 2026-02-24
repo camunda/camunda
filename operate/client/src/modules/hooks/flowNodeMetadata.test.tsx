@@ -137,6 +137,9 @@ describe('useHasMultipleInstances', () => {
       processDefinitionKey: '456',
       hasIncident: false,
       tenantId: '<default>',
+      endDate: null,
+      rootProcessInstanceKey: null,
+      incidentKey: null,
     });
 
     const {result} = renderHook(() => useHasMultipleInstances(), {

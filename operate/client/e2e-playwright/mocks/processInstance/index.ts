@@ -15,7 +15,7 @@ import type {
   ProcessInstance,
   QueryProcessInstanceIncidentsResponseBody,
   QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   ProcessInstanceEntity,
   MetaDataDto,
@@ -94,7 +94,12 @@ function mockResponses({
         );
         filteredInstancesResponse = {
           items: filteredItems,
-          page: {totalItems: filteredItems.length},
+          page: {
+            totalItems: filteredItems.length,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         };
       }
       return route.fulfill({

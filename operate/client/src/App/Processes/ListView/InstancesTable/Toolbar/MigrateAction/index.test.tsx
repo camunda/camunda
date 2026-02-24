@@ -13,7 +13,7 @@ import {MigrateAction} from '.';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {tracking} from 'modules/tracking';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   PROCESS_DEFINITION_ID,
   PROCESS_DEFINITION_KEY,
@@ -30,11 +30,16 @@ const mockCalledProcessInstancesV2: ProcessInstance[] = [
     processDefinitionKey: PROCESS_DEFINITION_KEY,
     processDefinitionName: 'Event Based Gateway Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'ACTIVE',
     startDate: '2023-01-01T00:00:00.000+0000',
+    endDate: null,
     hasIncident: false,
     tenantId: '<default>',
     parentProcessInstanceKey: '999',
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
 ];
 

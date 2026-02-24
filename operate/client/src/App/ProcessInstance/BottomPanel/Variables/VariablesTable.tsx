@@ -72,7 +72,8 @@ const VariablesTable: React.FC<Props> = ({
                 id={variableKey}
                 variableName={name}
                 variableValue={value}
-                isPreview={isTruncated}
+                // TODO #46571: Verify if it's really optional
+                isPreview={Boolean(isTruncated)}
               />
             ) : (
               <VariableValue $hasBackdrop={true}>

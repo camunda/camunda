@@ -13,7 +13,7 @@ import type {
   ElementInstance,
   Job,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {MemoryRouter} from 'react-router-dom';
 
@@ -30,6 +30,8 @@ const mockElementInstance: ElementInstance = {
   processDefinitionKey: '444555666',
   hasIncident: false,
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
+  incidentKey: null,
 };
 
 const mockJob: Job = {
@@ -54,9 +56,13 @@ const mockJob: Job = {
   errorCode: '',
   errorMessage: '',
   endTime: '',
+  rootProcessInstanceKey: null,
+  creationTime: null,
+  lastUpdateTime: null,
+  tags: [],
 };
 
-const mockCalledProcessInstance: ProcessInstance = {
+const mockCalledProcessInstance = {
   processInstanceKey: '987654321',
   processDefinitionId: 'called-process-def',
   processDefinitionKey: '888999000',
@@ -68,7 +74,11 @@ const mockCalledProcessInstance: ProcessInstance = {
   parentProcessInstanceKey: '111222333',
   parentElementInstanceKey: '123456789',
   hasIncident: false,
-};
+  rootProcessInstanceKey: null,
+  tags: [],
+  processDefinitionVersionTag: null,
+  endDate: null,
+} satisfies ProcessInstance;
 
 const mockBusinessObject: BusinessObject = {
   id: 'Task_1',

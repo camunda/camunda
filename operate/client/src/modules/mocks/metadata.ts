@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Job} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Job} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const FLOW_NODE_ID = 'StartEvent_1'; // this need to match the id from mockProcessXML
 const CALL_ACTIVITY_FLOW_NODE_ID = 'Activity_0zqism7'; // this need to match the id from mockCallActivityProcessXML
@@ -37,6 +37,10 @@ const jobMetadata: Job = {
   worker: '',
   isDenied: false,
   deniedReason: '',
+  rootProcessInstanceKey: null,
+  creationTime: '2025-07-22T10:14:48.597Z',
+  lastUpdateTime: null,
+  tags: [],
 };
 
 const calledDecisionInstanceMetadata = {
@@ -56,6 +60,7 @@ const calledDecisionInstanceMetadata = {
   tenantId: '<default>',
   result: '',
   rootDecisionDefinitionKey: '123456',
+  rootProcessInstanceKey: null,
 };
 
 export {

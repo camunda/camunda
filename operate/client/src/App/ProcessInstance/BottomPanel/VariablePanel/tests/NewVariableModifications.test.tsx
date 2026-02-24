@@ -28,7 +28,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -162,12 +162,18 @@ describe('New Variable Modifications', () => {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',
     startDate: '2018-06-21',
+    endDate: null,
     processDefinitionKey: '2',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     processDefinitionId: 'someKey',
     tenantId: '<default>',
     processDefinitionName: 'someProcessName',
     hasIncident: false,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   };
 
   beforeEach(async () => {
@@ -195,6 +201,9 @@ describe('New Variable Modifications', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -203,7 +212,15 @@ describe('New Variable Modifications', () => {
 
   it('should not create add variable modification if fields are empty', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
@@ -231,7 +248,15 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if name field is empty', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -264,23 +289,40 @@ describe('New Variable Modifications', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
+    mockSearchJobs().withSuccess({
+      items: [],
       page: {
-        totalItems: 1,
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -349,23 +391,40 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withSuccess({
+    mockSearchJobs().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -403,7 +462,15 @@ describe('New Variable Modifications', () => {
   });
 
   it('should create add variable modification on blur and update same modification if name or value is changed', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -591,7 +658,15 @@ describe('New Variable Modifications', () => {
   });
 
   it('should not apply modification if value is the same as the last modification', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
@@ -653,13 +728,40 @@ describe('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -694,19 +796,33 @@ describe('New Variable Modifications', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processInstanceKey: 'instance_id',
       processDefinitionKey: '2',
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       hasIncident: false,
+      rootProcessInstanceKey: null,
+      incidentKey: null,
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(
       screen.getByRole('button', {name: /select flow node instance/i}),
@@ -716,9 +832,20 @@ describe('New Variable Modifications', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     await user.click(screen.getByRole('button', {name: /clear selection/i}));
 
@@ -742,9 +869,33 @@ describe('New Variable Modifications', () => {
   });
 
   it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -765,12 +916,20 @@ describe('New Variable Modifications', () => {
 
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -802,23 +961,37 @@ describe('New Variable Modifications', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     await user.click(
