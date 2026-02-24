@@ -493,6 +493,13 @@ public class RestGatewayService {
         response);
   }
 
+  public void onJobWorkerStatisticsRequest(
+      final io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult response) {
+    register(
+        WireMock.post(WireMock.urlPathEqualTo(RestGatewayPaths.getJobWorkerStatisticsUrl())),
+        response);
+  }
+
   public void onStatusRequestHealthy() {
     onStatusRequest(204);
   }

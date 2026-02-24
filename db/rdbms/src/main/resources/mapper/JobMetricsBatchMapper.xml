@@ -121,6 +121,65 @@
     </if>
   </sql>
 
+<<<<<<< HEAD
+=======
+  <resultMap id="JobWorkerStatisticsResultMap"
+    type="io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbResult">
+    <constructor>
+      <arg column="WORKER" javaType="java.lang.String"/>
+      <arg column="CREATED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_CREATED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="COMPLETED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_COMPLETED_AT" javaType="java.time.OffsetDateTime"/>
+      <arg column="FAILED_COUNT" javaType="java.lang.Long"/>
+      <arg column="LAST_FAILED_AT" javaType="java.time.OffsetDateTime"/>
+    </constructor>
+  </resultMap>
+
+  <select id="jobWorkerStatistics"
+    parameterType="io.camunda.db.rdbms.read.domain.JobWorkerStatisticsDbQuery"
+    resultMap="JobWorkerStatisticsResultMap"
+    statementType="PREPARED">
+    SELECT
+      WORKER,
+      SUM(CREATED_COUNT) AS CREATED_COUNT,
+      MAX(LAST_CREATED_AT) AS LAST_CREATED_AT,
+      SUM(COMPLETED_COUNT) AS COMPLETED_COUNT,
+      MAX(LAST_COMPLETED_AT) AS LAST_COMPLETED_AT,
+      SUM(FAILED_COUNT) AS FAILED_COUNT,
+      MAX(LAST_FAILED_AT) AS LAST_FAILED_AT
+    FROM ${prefix}JOB_METRICS_BATCH
+    <trim prefix="WHERE" prefixOverrides="AND">
+      <include refid="io.camunda.db.rdbms.sql.JobMetricsBatchMapper.jobWorkerStatisticsFilter"/>
+      <trim prefix="AND" prefixOverrides="WHERE">
+        <include refid="io.camunda.db.rdbms.sql.Commons.keySetPageFilter"/>
+      </trim>
+    </trim>
+    GROUP BY WORKER
+    <include refid="io.camunda.db.rdbms.sql.Commons.orderBy"/>
+    <include refid="io.camunda.db.rdbms.sql.Commons.paging"/>
+  </select>
+
+  <sql id="jobWorkerStatisticsFilter">
+    <if test="authorizedTenantIds != null and !authorizedTenantIds.isEmpty()">
+      AND TENANT_ID IN
+      <foreach collection="authorizedTenantIds" item="tenantId" open="(" separator="," close=")">
+        #{tenantId}
+      </foreach>
+    </if>
+    <if test="filter.from != null">
+      AND START_TIME &gt;= #{filter.from}
+    </if>
+    <if test="filter.to != null">
+      AND END_TIME &lt;= #{filter.to}
+    </if>
+    <if test="filter.jobType != null">
+      AND JOB_TYPE = #{filter.jobType}
+    </if>
+    AND WORKER IS NOT NULL
+  </sql>
+
+>>>>>>> a51efb20 (feat: add JobWorker statistics client implementation and tests)
   <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.JobMetricsBatchDbModel">
     INSERT INTO ${prefix}JOB_METRICS_BATCH (JOB_METRICS_BATCH_KEY,
                                             PARTITION_ID,
