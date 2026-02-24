@@ -43,7 +43,10 @@ public class ExpressionController {
   public CompletableFuture<ResponseEntity<Object>> evaluateExpression(
       @RequestBody final ExpressionEvaluationRequest request) {
     return RequestMapper.toExpressionEvaluationRequest(
-            request.getExpression(), request.getTenantId(), multiTenancyCfg.isChecksEnabled())
+            request.getExpression(),
+            request.getTenantId(),
+            request.getContext(),
+            multiTenancyCfg.isChecksEnabled())
         .fold(RestErrorMapper::mapProblemToCompletedResponse, this::evaluateExpression);
   }
 
