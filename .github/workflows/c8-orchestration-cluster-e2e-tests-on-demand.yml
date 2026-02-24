@@ -226,6 +226,25 @@ jobs:
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
 
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ matrix.branch }}"
+          # Replace invalid artifact-name characters (at least '/')
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: json-report-will-be-remoeved-nightly-api-${{ steps.sanitize.outputs.safe_branch }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
+
+
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -439,6 +458,24 @@ jobs:
           name: C8 Orchestration Cluster E2E Test Result (Tasklist ${{ matrix.tasklist_mode }} mode)
           path: qa/c8-orchestration-cluster-e2e-test-suite/html-report
           retention-days: 10
+
+      - name: Sanitize branch name for artifact names
+        id: sanitize
+        if: always()
+        shell: bash
+        run: |
+          branch="${{ matrix.branch }}"
+          # Replace invalid artifact-name characters (at least '/')
+          safe_branch="${branch//\//-}"
+          echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
+
+      - name: Upload json report to GitHub Actions Artifacts
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: json-will-be-removed-report-nightly-e2e-${{ steps.sanitize.outputs.safe_branch }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
+          path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
+          retention-days: 60
 
       - name: Observe build status
         if: always()
