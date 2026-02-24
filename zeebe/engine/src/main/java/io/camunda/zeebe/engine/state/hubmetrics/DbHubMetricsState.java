@@ -146,6 +146,10 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     if (cachedValue != null) {
       cachedValue.decrementAbsolute();
       cachedValue.incrementCompleted();
+      final var duration = record.getEndTime() - record.getStartTime();
+      cachedValue.addDuration(duration);
+      cachedValue.setMaxDurationIfHigher(duration);
+      cachedValue.setMinDurationIfLower(duration);
       processByTenantIDAndVersionMetricsColumnFamily.upsert(
           tenantAwareProcessIdAndVersionKey, cachedValue);
       return;
@@ -154,6 +158,10 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     final var v = new ProcessMetricsValue();
     v.decrementAbsolute();
     v.incrementCompleted();
+    final var duration = record.getEndTime() - record.getStartTime();
+    v.addDuration(duration);
+    v.setMaxDurationIfHigher(duration);
+    v.setMinDurationIfLower(duration);
     processByTenantIDAndVersionMetricsColumnFamily.upsert(tenantAwareProcessIdAndVersionKey, v);
     processMetricsCache.put(key, new ProcessMetricsValue().wrap(v));
   }
@@ -204,6 +212,10 @@ public class DbHubMetricsState implements MutableHubMetricsState {
 
     if (cachedValue != null) {
       cachedValue.incrementCompleted();
+      final var duration = record.getEndTime() - record.getStartTime();
+      cachedValue.addDuration(duration);
+      cachedValue.setMaxDurationIfHigher(duration);
+      cachedValue.setMinDurationIfLower(duration);
       processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
           tenantAwareProcessIdVersionAndElementIdKey, cachedValue);
       return;
@@ -211,6 +223,10 @@ public class DbHubMetricsState implements MutableHubMetricsState {
 
     final var v = new ElementMetricsValue();
     v.incrementCompleted();
+    final var duration = record.getEndTime() - record.getStartTime();
+    v.addDuration(duration);
+    v.setMaxDurationIfHigher(duration);
+    v.setMinDurationIfLower(duration);
     processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
         tenantAwareProcessIdVersionAndElementIdKey, v);
     elementMetricsCache.put(key, new ElementMetricsValue().wrap(v));

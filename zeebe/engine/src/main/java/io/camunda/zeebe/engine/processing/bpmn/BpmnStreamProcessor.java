@@ -38,6 +38,7 @@ import io.camunda.zeebe.stream.api.records.ExceededBatchRecordSizeException;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BiFunction;
@@ -68,7 +69,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final MutableProcessingState processingState,
       final Writers writers,
       final ProcessEngineMetrics processEngineMetrics,
-      final EngineConfiguration config) {
+      final EngineConfiguration config,
+      final InstantSource clock) {
     processState = processingState.getProcessState();
 
     rejectionWriter = writers.rejection();
@@ -84,7 +86,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
             bpmnBehaviors.userTaskBehavior(),
             processEngineMetrics,
             this::getContainerProcessor,
-            writers);
+            writers,
+            clock);
     processors =
         new BpmnElementProcessors(
             bpmnBehaviors, stateTransitionBehavior, processingState.getAsyncRequestState(), config);

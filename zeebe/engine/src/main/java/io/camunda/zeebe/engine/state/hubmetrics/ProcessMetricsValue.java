@@ -17,10 +17,18 @@ public class ProcessMetricsValue extends UnpackedObject implements DbValue {
   private final LongProperty absoluteProp = new LongProperty("abs", 0);
   private final IntegerProperty createdProp = new IntegerProperty("created", 0);
   private final IntegerProperty completedProp = new IntegerProperty("completed", 0);
+  private final LongProperty sumDurationProp = new LongProperty("sumDuration", 0);
+  private final LongProperty maxDurationProp = new LongProperty("maxDuration", 0);
+  private final LongProperty minDurationProp = new LongProperty("minDuration", 0);
 
   public ProcessMetricsValue() {
-    super(3);
-    declareProperty(absoluteProp).declareProperty(createdProp).declareProperty(completedProp);
+    super(6);
+    declareProperty(absoluteProp)
+        .declareProperty(createdProp)
+        .declareProperty(completedProp)
+        .declareProperty(sumDurationProp)
+        .declareProperty(maxDurationProp)
+        .declareProperty(minDurationProp);
   }
 
   public ProcessMetricsValue wrap(final ProcessMetricsValue value) {
@@ -76,5 +84,47 @@ public class ProcessMetricsValue extends UnpackedObject implements DbValue {
   public void incrementCompleted() {
     final var currentCompletedCounter = getCompleted();
     setCompleted(currentCompletedCounter + 1);
+  }
+
+  public long getSumDuration() {
+    return sumDurationProp.getValue();
+  }
+
+  public ProcessMetricsValue setSumDuration(final long value) {
+    sumDurationProp.setValue(value);
+    return this;
+  }
+
+  public void addDuration(final long value) {
+    final var newValue = getSumDuration() + value;
+    setSumDuration(newValue);
+  }
+
+  public long getMaxDuration() {
+    return maxDurationProp.getValue();
+  }
+
+  public ProcessMetricsValue setMaxDuration(final long value) {
+    maxDurationProp.setValue(value);
+    return this;
+  }
+
+  public void setMaxDurationIfHigher(final long value) {
+    final var newValue = Math.max(getMaxDuration(), value);
+    setMaxDuration(newValue);
+  }
+
+  public long getMinDuration() {
+    return minDurationProp.getValue();
+  }
+
+  public ProcessMetricsValue setMinDuration(final long value) {
+    minDurationProp.setValue(value);
+    return this;
+  }
+
+  public void setMinDurationIfLower(final long value) {
+    final var newValue = Math.max(Math.min(getSumDuration(), value), 0);
+    setMinDuration(newValue);
   }
 }

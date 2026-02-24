@@ -10,15 +10,23 @@ package io.camunda.zeebe.engine.state.hubmetrics;
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
+import io.camunda.zeebe.msgpack.property.LongProperty;
 
 public class ElementMetricsValue extends UnpackedObject implements DbValue {
 
   private final IntegerProperty createdProp = new IntegerProperty("created", 0);
   private final IntegerProperty completedProp = new IntegerProperty("completed", 0);
+  private final LongProperty sumDurationProp = new LongProperty("sumDuration", 0);
+  private final LongProperty maxDurationProp = new LongProperty("maxDuration", 0);
+  private final LongProperty minDurationProp = new LongProperty("minDuration", 0);
 
   public ElementMetricsValue() {
-    super(2);
-    declareProperty(createdProp).declareProperty(completedProp);
+    super(5);
+    declareProperty(createdProp)
+        .declareProperty(completedProp)
+        .declareProperty(sumDurationProp)
+        .declareProperty(maxDurationProp)
+        .declareProperty(minDurationProp);
   }
 
   public ElementMetricsValue wrap(final ElementMetricsValue value) {
@@ -53,5 +61,47 @@ public class ElementMetricsValue extends UnpackedObject implements DbValue {
   public void incrementCompleted() {
     final var currentCompletedCounter = getCompleted();
     setCompleted(currentCompletedCounter + 1);
+  }
+
+  public long getSumDuration() {
+    return sumDurationProp.getValue();
+  }
+
+  public ElementMetricsValue setSumDuration(final long value) {
+    sumDurationProp.setValue(value);
+    return this;
+  }
+
+  public void addDuration(final long value) {
+    final var newValue = getSumDuration() + value;
+    setSumDuration(newValue);
+  }
+
+  public long getMaxDuration() {
+    return maxDurationProp.getValue();
+  }
+
+  public ElementMetricsValue setMaxDuration(final long value) {
+    maxDurationProp.setValue(value);
+    return this;
+  }
+
+  public void setMaxDurationIfHigher(final long value) {
+    final var newValue = Math.max(getMaxDuration(), value);
+    setMaxDuration(newValue);
+  }
+
+  public long getMinDuration() {
+    return minDurationProp.getValue();
+  }
+
+  public ElementMetricsValue setMinDuration(final long value) {
+    minDurationProp.setValue(value);
+    return this;
+  }
+
+  public void setMinDurationIfLower(final long value) {
+    final var newValue = Math.max(Math.min(getSumDuration(), value), 0);
+    setMinDuration(newValue);
   }
 }

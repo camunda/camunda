@@ -91,8 +91,11 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
   private final ArrayProperty<StringValue> tagsProp =
       new ArrayProperty<>(TAGS_KEY, StringValue::new);
 
+  private final LongProperty startTimeProp = new LongProperty("startTime", -1);
+  private final LongProperty endTimeProp = new LongProperty("endTime", -1);
+
   public ProcessInstanceRecord() {
-    super(15);
+    super(17);
     declareProperty(bpmnElementTypeProp)
         .declareProperty(elementIdProp)
         .declareProperty(bpmnProcessIdProp)
@@ -107,7 +110,9 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
         .declareProperty(elementInstancePathProp)
         .declareProperty(processDefinitionPathProp)
         .declareProperty(callingElementPathProp)
-        .declareProperty(tagsProp);
+        .declareProperty(tagsProp)
+        .declareProperty(startTimeProp)
+        .declareProperty(endTimeProp);
   }
 
   public void wrap(final ProcessInstanceRecord record) {
@@ -345,6 +350,24 @@ public final class ProcessInstanceRecord extends UnifiedRecordValue
 
   public ProcessInstanceRecord setTenantId(final String tenantId) {
     tenantIdProp.setValue(tenantId);
+    return this;
+  }
+
+  public long getStartTime() {
+    return startTimeProp.getValue();
+  }
+
+  public ProcessInstanceRecord setStartTime(final long value) {
+    startTimeProp.setValue(value);
+    return this;
+  }
+
+  public long getEndTime() {
+    return endTimeProp.getValue();
+  }
+
+  public ProcessInstanceRecord setEndTime(final long value) {
+    endTimeProp.setValue(value);
     return this;
   }
 }
