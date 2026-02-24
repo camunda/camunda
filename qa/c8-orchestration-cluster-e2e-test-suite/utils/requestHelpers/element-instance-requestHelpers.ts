@@ -12,6 +12,33 @@ import {assertStatusCode, buildUrl, jsonHeaders} from '../http';
 import {expect} from '@playwright/test';
 import {SearchElementInstancesResponse} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 
+export async function resolveAdHocSubProcessInstanceKey(
+  request: APIRequestContext,
+  processInstanceKey: string,
+): Promise<string> {
+  const result = await searchElementInstanceByFilter(request, {
+    processInstanceKey,
+    elementId: 'AdHoc_Subprocess',
+  });
+
+  return result.body.items[0].elementInstanceKey;
+}
+
+export function createFilter(
+  filterKey: string,
+  filterValue: string,
+  state: Record<string, unknown>,
+): {key: string; value: unknown} {
+  if (filterValue === '') {
+    if (filterKey === 'processDefinitionKey')
+      // Use value from state
+      return {key: filterKey, value: state.processDefinitionKey};
+    else if (filterKey === 'processInstanceKey')
+      return {key: filterKey, value: state.processInstanceKey};
+    else throw new Error('Unsupported filter key for empty value');
+  } else return {key: filterKey, value: filterValue};
+}
+
 export async function searchActiveElementInstance(
   request: APIRequestContext,
   processInstanceKey: string,
@@ -48,7 +75,7 @@ export async function searchElementInstanceByProcessInstance(
   });
 }
 
-export async function searchElementInstanceByFilter(
+async function searchElementInstanceByFilter(
   request: APIRequestContext,
   filter: Record<string, string>,
 ) {
@@ -69,16 +96,4 @@ export async function searchElementInstanceByFilter(
     result.body = body;
   }).toPass(defaultAssertionOptions);
   return result;
-}
-
-export async function resolveAdHocSubProcessInstanceKey(
-  request: APIRequestContext,
-  processInstanceKey: string,
-): Promise<string> {
-  const result = await searchElementInstanceByFilter(request, {
-    processInstanceKey,
-    elementId: 'AdHoc_Subprocess',
-  });
-
-  return result.body.items[0].elementInstanceKey;
 }
