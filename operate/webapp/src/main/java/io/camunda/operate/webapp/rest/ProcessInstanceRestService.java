@@ -9,18 +9,14 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
-import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
-import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -45,14 +41,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.permissionsService = permissionsService;
     this.processInstanceReader = processInstanceReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-  }
-
-  @Operation(summary = "Get flow node states by process instance id")
-  @GetMapping("/{processInstanceId}/flow-node-states")
-  public Map<String, FlowNodeStateDto> getFlowNodeStates(
-      @PathVariable @ValidLongId final String processInstanceId) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
   @ExceptionHandler(ConstraintViolationException.class)
