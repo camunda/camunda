@@ -78,10 +78,31 @@ public class UpgradePlanRegistry {
 
   /**
    * Auto-generates no-op upgrade plans for missing patch-to-patch transitions within the current
-   * minor version. For example, if the current version is {@code 8.9.3}, this method ensures that
-   * plans for {@code 8.9.0 -> 8.9.1}, {@code 8.9.1 -> 8.9.2}, and {@code 8.9.2 -> 8.9.3} exist.
-   * Plans already registered by explicit {@link UpgradePlanFactory} implementations are never
-   * overwritten — only missing gaps are filled with no-op plans.
+   * minor version, while respecting explicit version jumps.
+   *
+   * <p>The algorithm walks backwards from {@code currentPatch} down to {@code 1}. At each step it
+   * looks up whether an explicit plan already targets {@code major.minor.patch}. If one is found,
+   * the loop jumps directly to {@code fromVersion.patch}, skipping the entire covered range without
+   * generating any intermediate plans. If no plan is found, a no-op plan is inserted for that
+   * single step and the counter decrements by one.
+   *
+   * <p>For example, given an explicit jump plan {@code 8.8.2 -> 8.8.10} with current version {@code
+   * 8.8.12}, the backward walk proceeds as follows:
+   *
+   * <ul>
+   *   <li>patch 12 - no plan -> auto-generate {@code 8.8.11->8.8.12}, decrement to 11
+   *   <li>patch 11 - no plan -> auto-generate {@code 8.8.10->8.8.11}, decrement to 10
+   *   <li>patch 10 - explicit plan {@code 8.8.2->8.8.10} found → jump to patch 2
+   *   <li>patch 2 - no plan -> auto-generate {@code 8.8.1->8.8.2}, decrement to 1
+   *   <li>patch 1 - no plan -> auto-generate {@code 8.8.0->8.8.1}, decrement to 0
+   *   <li>patch 0 - loop ends
+   * </ul>
+   *
+   * <p>Patches {@code 8.8.3} through {@code 8.8.9} are never visited and no plans are generated for
+   * them.
+   *
+   * <p>Plans already registered by explicit {@link UpgradePlanFactory} implementations are never
+   * overwritten - only missing gaps are filled with no-op plans.
    *
    * <p>This eliminates the need to manually create boilerplate per-patch factory classes that
    * contain no real migration logic.
@@ -99,9 +120,23 @@ public class UpgradePlanRegistry {
       return;
     }
 
-    for (int patch = 1; patch <= currentPatch; patch++) {
+    int patch = currentPatch;
+    while (patch > 0) {
       final var toVersion = new Semver(major + "." + minor + "." + patch);
-      if (!upgradePlans.containsKey(toVersion)) {
+      final var plan = upgradePlans.get(toVersion);
+      if (plan != null) {
+        // Explicit plan found - jump to its fromVersion patch, skipping the covered range
+        LOG.debug(
+            "Explicit plan spans {}.{}.{} -> {}.{}.{}, skipping auto-generation for this range.",
+            major,
+            minor,
+            plan.getFromVersion().getPatch(),
+            major,
+            minor,
+            patch);
+        patch = plan.getFromVersion().getPatch();
+      } else {
+        // No plan for this patch - generate a no-op step and move one patch down
         final var from = major + "." + minor + "." + (patch - 1);
         final var to = major + "." + minor + "." + patch;
         final var noOpPlan =
@@ -111,6 +146,7 @@ public class UpgradePlanRegistry {
             "Auto-generated no-op patch upgrade plan from {} to {} (no explicit factory found).",
             from,
             to);
+        patch--;
       }
     }
   }
