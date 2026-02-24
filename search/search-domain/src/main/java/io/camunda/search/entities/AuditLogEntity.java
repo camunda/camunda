@@ -45,7 +45,8 @@ public record AuditLogEntity(
     Long resourceKey,
     AuditLogEntityType relatedEntityType,
     String relatedEntityKey,
-    String entityDescription)
+    String entityDescription,
+    OffsetDateTime historyCleanupDate)
     implements TenantOwnedEntity {
 
   @Override
@@ -87,6 +88,7 @@ public record AuditLogEntity(
     private AuditLogEntityType relatedEntityType;
     private String relatedEntityKey;
     private String entityDescription;
+    private OffsetDateTime historyCleanupDate;
 
     public Builder auditLogKey(final String auditLogKey) {
       this.auditLogKey = auditLogKey;
@@ -253,6 +255,11 @@ public record AuditLogEntity(
       return this;
     }
 
+    public Builder historyCleanupDate(final OffsetDateTime historyCleanupDate) {
+      this.historyCleanupDate = historyCleanupDate;
+      return this;
+    }
+
     @Override
     public AuditLogEntity build() {
       return new AuditLogEntity(
@@ -288,7 +295,8 @@ public record AuditLogEntity(
           resourceKey,
           relatedEntityType,
           relatedEntityKey,
-          entityDescription);
+          entityDescription,
+          historyCleanupDate);
     }
   }
 

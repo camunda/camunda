@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.sql;
 import io.camunda.db.rdbms.read.domain.AuditLogDbQuery;
 import io.camunda.db.rdbms.write.domain.AuditLogDbModel;
 import io.camunda.db.rdbms.write.domain.Copyable;
+import io.camunda.db.rdbms.write.domain.HistoryDeletionDbModel.HistoryDeletionTypeDbModel;
 import io.camunda.db.rdbms.write.queue.BatchInsertDto;
 import io.camunda.util.ObjectBuilder;
 import java.time.OffsetDateTime;
@@ -31,6 +32,12 @@ public interface AuditLogMapper extends ProcessInstanceDependantMapper, HistoryC
   int cleanupHistory(HistoryCleanupMapper.CleanupHistoryDto dto);
 
   int updateAuditLogEntityHistoryCleanupDate(UpdateHistoryCleanupDateDto dto);
+
+  int updateUnsetAuditLogEntityHistoryCleanupDates(
+      List<Long> keys,
+      HistoryDeletionTypeDbModel historyDeletionType,
+      OffsetDateTime historyCleanupDate,
+      int limit);
 
   record UpdateHistoryCleanupDateDto(
       List<String> entityKeys, String entityType, OffsetDateTime historyCleanupDate)

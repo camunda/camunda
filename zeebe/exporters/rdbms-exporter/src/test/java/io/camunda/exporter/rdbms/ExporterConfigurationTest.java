@@ -14,6 +14,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.config.VendorDatabaseProperties;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.junit.jupiter.api.Test;
 
 class ExporterConfigurationTest {
@@ -426,7 +427,8 @@ class ExporterConfigurationTest {
     when(vendorProps.supportsInsertBatching()).thenReturn(false);
 
     // when
-    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+    final var writerConfig =
+        configuration.createRdbmsWriterConfig(1, vendorProps, InstantSource.system());
 
     // then
     assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(1);
@@ -448,7 +450,8 @@ class ExporterConfigurationTest {
     when(vendorProps.supportsInsertBatching()).thenReturn(true);
 
     // when
-    final var writerConfig = configuration.createRdbmsWriterConfig(1, vendorProps);
+    final var writerConfig =
+        configuration.createRdbmsWriterConfig(1, vendorProps, InstantSource.system());
 
     // then
     assertThat(writerConfig.insertBatchingConfig().variableInsertBatchSize()).isEqualTo(25);
