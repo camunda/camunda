@@ -8,6 +8,7 @@
 package io.camunda.search.query;
 
 import io.camunda.search.aggregation.AggregationBase;
+import io.camunda.search.aggregation.JobWorkerStatisticsAggregation;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.JobWorkerStatisticsFilter;
 import io.camunda.search.page.SearchQueryPage;
@@ -37,9 +38,7 @@ public record JobWorkerStatisticsQuery(JobWorkerStatisticsFilter filter, SearchQ
 
   @Override
   public AggregationBase aggregation() {
-    // TODO enabled in a future PR, once the aggregation implementation is completed
-    // return new JobWorkerStatisticsAggregation(page);
-    return null;
+    return new JobWorkerStatisticsAggregation(page);
   }
 
   public static final class Builder
