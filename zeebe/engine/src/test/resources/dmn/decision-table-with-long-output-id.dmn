@@ -14,7 +14,7 @@
           <text>lightsaberColor</text>
         </inputExpression>
       </input>
-      <output id="this_is_an_extreme_and_very_long_id_for_a_decision_output" label="Jedi or Sith" name="jedi_or_sith" typeRef="string" biodi:width="192">
+      <output id="this_is_an_extremely_creative_and_very_long_id_for_a_decision_output_that_should_exceed_one_hundred_characters_for_testing" label="Jedi or Sith" name="jedi_or_sith" typeRef="string" biodi:width="192">
         <outputValues id="UnaryTests_0hj346a">
           <text>"Jedi","Sith"</text>
         </outputValues>

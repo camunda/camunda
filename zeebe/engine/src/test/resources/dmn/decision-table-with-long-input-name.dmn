@@ -9,7 +9,7 @@
 <definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:biodi="http://bpmn.io/schema/dmn/biodi/2.0" id="force_users" name="Force Users" namespace="http://camunda.org/schema/1.0/dmn" exporter="Camunda Modeler" exporterVersion="4.11.0">
   <decision id="jedi_or_sith" name="Jedi or Sith">
     <decisionTable id="DecisionTable_14n3bxx">
-      <input id="Input_1" label="This is an extreme and very long name for a decision input" biodi:width="192">
+      <input id="Input_1" label="This is an extremely beautiful and very long name for a decision input element that should exceed one hundred characters" biodi:width="192">
         <inputExpression id="InputExpression_1" typeRef="string">
           <text>lightsaberColor</text>
         </inputExpression>
