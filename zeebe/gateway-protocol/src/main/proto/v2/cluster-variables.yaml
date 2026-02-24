@@ -400,7 +400,8 @@ components:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
           type: string
-          description: Only provided if the cluster variable scope is TENANT.
+          nullable: true
+          description: Only provided if the cluster variable scope is TENANT. Null for global scope variables.
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
