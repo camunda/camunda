@@ -18,7 +18,7 @@ import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.exception.NotFoundException;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
+import io.camunda.operate.webapp.reader.dto.VariableDto;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;
 import java.io.IOException;

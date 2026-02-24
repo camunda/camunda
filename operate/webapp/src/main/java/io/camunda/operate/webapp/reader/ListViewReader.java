@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.util.Tuple;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import java.util.List;
 

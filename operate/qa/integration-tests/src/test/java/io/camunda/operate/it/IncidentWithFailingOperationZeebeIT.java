@@ -21,7 +21,7 @@ import io.camunda.operate.util.OperationsManager;
 import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.operation.dto.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
+import io.camunda.operate.webapp.reader.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.zeebe.operation.ResolveIncidentHandler;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.webapps.schema.entities.operation.OperationType;

@@ -11,7 +11,7 @@ import static io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceReque
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.zeebe.operation.process.modify.ModifyProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;

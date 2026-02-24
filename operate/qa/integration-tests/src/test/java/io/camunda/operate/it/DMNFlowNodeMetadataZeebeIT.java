@@ -10,8 +10,8 @@ package io.camunda.operate.it;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
-import io.camunda.operate.webapp.rest.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.reader.dto.metadata.BusinessRuleTaskInstanceMetadataDto;
+import io.camunda.operate.webapp.reader.dto.metadata.FlowNodeMetadataDto;
 import io.camunda.webapps.schema.entities.incident.ErrorType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;

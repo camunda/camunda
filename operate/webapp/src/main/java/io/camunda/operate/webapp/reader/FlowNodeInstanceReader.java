@@ -7,11 +7,11 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeInstanceRequestDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeInstanceResponseDto;
+import io.camunda.operate.webapp.reader.dto.activity.FlowNodeStateDto;
+import io.camunda.operate.webapp.reader.dto.metadata.FlowNodeMetadataDto;
+import io.camunda.operate.webapp.reader.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.List;

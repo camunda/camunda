@@ -7,8 +7,8 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewQueryDto;
+import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;

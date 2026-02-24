@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.webapp.rest.dto.VariableDto;
+import io.camunda.operate.webapp.reader.dto.VariableDto;
 
 public interface VariableReader {
   VariableDto getVariable(String id);

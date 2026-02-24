@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.operation.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
+import io.camunda.operate.webapp.reader.dto.listview.SortValuesWrapper;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
