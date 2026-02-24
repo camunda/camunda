@@ -23,7 +23,7 @@ const CellEntityKey: React.FC<Props> = ({
   decisionDefinitionName,
 }) => {
   const clientConfig = getClientConfig();
-  const {link, linkLabel, name} = mapToCellEntityKeyData(
+  const {link, linkLabel, label, name} = mapToCellEntityKeyData(
     item,
     processDefinitionName,
     decisionDefinitionName,
@@ -35,10 +35,10 @@ const CellEntityKey: React.FC<Props> = ({
       <div>
         {link ? (
           <Link to={link} title={linkLabel} aria-label={linkLabel}>
-            {item.entityKey}
+            {label}
           </Link>
         ) : (
-          item.entityKey
+          label
         )}
       </div>
       {item.entityDescription ?? <em>{name}</em>}
