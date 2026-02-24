@@ -56,8 +56,10 @@ public final class CheckpointBackupDeletedApplier {
       LOG.debug("Checkpoint {} is not in any range, skipping range maintenance", checkpointId);
     }
 
-    // Remove the checkpoint from latest checkpoint info
-    updateLatestCheckpointInfo(checkpointId);
+    if (checkpointState.getLatestBackupId() == checkpointId) {
+      // Remove the checkpoint from latest checkpoint info
+      updateLatestCheckpointInfo(checkpointId);
+    }
   }
 
   private void removeUncoveredMarkers() {
@@ -79,10 +81,6 @@ public final class CheckpointBackupDeletedApplier {
    * the predecessor backup if one exists or clears the latest backup info entirely.
    */
   private void updateLatestCheckpointInfo(final long checkpointId) {
-    if (checkpointState.getLatestBackupId() != checkpointId) {
-      return;
-    }
-
     final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
     if (predecessor.isPresent()) {
       final var predecessorMetadata = checkpointMetadataState.getCheckpoint(predecessor.get());
