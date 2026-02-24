@@ -151,10 +151,10 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                   title={entityKeyData.linkLabel}
                   aria-label={entityKeyData.linkLabel}
                 >
-                  {auditLog.entityKey}
+                  {entityKeyData.label}
                 </Link>
               ) : (
-                auditLog.entityKey
+                entityKeyData.label
               )}
               &nbsp;
               {auditLog.entityDescription ?? entityKeyData.name}
