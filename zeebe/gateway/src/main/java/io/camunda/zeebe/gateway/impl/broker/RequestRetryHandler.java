@@ -85,6 +85,17 @@ public final class RequestRetryHandler {
       return;
     }
 
+    // When the request specifies its own dispatch strategy (e.g., hash-based routing for business
+    // ID or correlation key), we must respect that strategy and send the request to that specific
+    // partition. Retrying on other partitions would violate the routing guarantee needed for
+    // per-partition uniqueness validation.
+    final var requestStrategy = request.requestDispatchStrategy();
+    if (requestStrategy.isPresent()) {
+      sendRequestToFixedPartition(
+          request, requestSender, requestStrategy.get(), responseConsumer, throwableConsumer);
+      return;
+    }
+
     sendRequestWithRetry(
         request,
         requestSender,
@@ -92,6 +103,38 @@ public final class RequestRetryHandler {
         responseConsumer,
         throwableConsumer,
         new ArrayList<>());
+  }
+
+  /**
+   * Sends a request to a fixed partition determined by the given dispatch strategy, without
+   * retrying on other partitions. This is used when the request must be routed to a specific
+   * partition (e.g., based on a business ID or correlation key hash) to preserve routing
+   * guarantees.
+   */
+  private <BrokerResponseT> void sendRequestToFixedPartition(
+      final BrokerRequest<BrokerResponseT> request,
+      final Function<
+              BrokerRequest<BrokerResponseT>, CompletableFuture<BrokerResponse<BrokerResponseT>>>
+          requestSender,
+      final RequestDispatchStrategy strategy,
+      final BrokerResponseConsumer<BrokerResponseT> responseConsumer,
+      final Consumer<Throwable> throwableConsumer) {
+    try {
+      request.setPartitionId(strategy.determinePartition(topologyManager));
+    } catch (final Exception e) {
+      throwableConsumer.accept(e);
+      return;
+    }
+    requestSender
+        .apply(request)
+        .whenComplete(
+            (response, error) -> {
+              if (error == null) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else {
+                throwableConsumer.accept(error);
+              }
+            });
   }
 
   private <BrokerResponseT> void sendRequestWithRetry(
