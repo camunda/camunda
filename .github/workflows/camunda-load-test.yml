@@ -68,6 +68,11 @@ on:
         type: boolean
         required: false
         default: false
+      build-frontend:
+        description: 'Build the frontend as part of the load test image build'
+        type: boolean
+        required: false
+        default: true
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         type: choice
@@ -131,6 +136,11 @@ on:
         type: boolean
         required: false
         default: false
+      build-frontend:
+        description: 'Build the frontend as part of the load test image build'
+        type: boolean
+        required: false
+        default: true
       secondary-storage-type:
         description: 'Specifies the type of the secondary database used by Camunda Platform, can be "elasticsearch", "opensearch" or "postgresql"'
         # type choice is invalid here
@@ -244,18 +254,21 @@ jobs:
       - uses: ./.github/actions/build-frontend
         name: Build Operate Frontend
         id: build-operate-fe
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./operate/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Tasklist Frontend
         id: build-tasklist-fe
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./tasklist/client
           package-manager: "npm"
       - uses: ./.github/actions/build-frontend
         name: Build Identity Frontend
         id: build-identity-fe
+        if: ${{ inputs.build-frontend }}
         with:
           directory: ./identity/client
           package-manager: "npm"
