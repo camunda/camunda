@@ -18,7 +18,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
 import io.camunda.operate.exceptions.OperateRuntimeException;
@@ -701,15 +700,12 @@ public class OperateTester {
       final FlowNodeType flowNodeType,
       final String flowNodeInstanceId)
       throws Exception {
-    final FlowNodeMetadataRequestDto request =
+    return flowNodeInstanceReader.getFlowNodeMetadata(
+        processInstanceId,
         new FlowNodeMetadataRequestDto()
             .setFlowNodeId(flowNodeId)
             .setFlowNodeType(flowNodeType)
-            .setFlowNodeInstanceId(flowNodeInstanceId);
-    final MvcResult mvcResult =
-        postRequest(
-            format(PROCESS_INSTANCE_URL + "/%s/flow-node-metadata", processInstanceId), request);
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+            .setFlowNodeInstanceId(flowNodeInstanceId));
   }
 
   public ListViewProcessInstanceDto getSingleProcessInstanceByBpmnProcessId(

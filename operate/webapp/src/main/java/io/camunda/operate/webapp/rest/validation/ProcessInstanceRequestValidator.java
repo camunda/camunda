@@ -8,7 +8,6 @@
 package io.camunda.operate.webapp.rest.validation;
 
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
@@ -24,19 +23,6 @@ public class ProcessInstanceRequestValidator {
   public ProcessInstanceRequestValidator(
       @NotNull final CreateRequestOperationValidator createRequestOperationValidator) {
     this.createRequestOperationValidator = createRequestOperationValidator;
-  }
-
-  public void validateFlowNodeMetadataRequest(final FlowNodeMetadataRequestDto request) {
-    if (request.getFlowNodeId() == null
-        && request.getFlowNodeType() == null
-        && request.getFlowNodeInstanceId() == null) {
-      throw new InvalidRequestException(
-          "At least flowNodeId or flowNodeInstanceId must be specified in the request.");
-    }
-    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
-      throw new InvalidRequestException(
-          "Only one of flowNodeId or flowNodeInstanceId must be specified in the request.");
-    }
   }
 
   public void validateListenerRequest(final ListenerRequestDto request) {
