@@ -369,8 +369,7 @@ public class OptimizeReportLoadTester {
       return responseBody;
     }
 
-    final ObjectNode objectNode =
-        (ObjectNode) rootNode;
+    final ObjectNode objectNode = (ObjectNode) rootNode;
 
     // Remove result object
     objectNode.remove("result");
@@ -386,8 +385,7 @@ public class OptimizeReportLoadTester {
    *
    * @param objectNode the root object node containing the data section
    */
-  private void transformDataSection(
-      final ObjectNode objectNode) {
+  private void transformDataSection(final ObjectNode objectNode) {
     if (!objectNode.has("data")) {
       return;
     }
@@ -397,8 +395,7 @@ public class OptimizeReportLoadTester {
       return;
     }
 
-    final ObjectNode dataObjectNode =
-        (ObjectNode) dataNode;
+    final ObjectNode dataObjectNode = (ObjectNode) dataNode;
 
     transformViewSection(dataObjectNode);
     transformGroupBySection(dataObjectNode);
@@ -409,8 +406,7 @@ public class OptimizeReportLoadTester {
    *
    * @param dataObjectNode the data object node containing the view section
    */
-  private void transformViewSection(
-      final ObjectNode dataObjectNode) {
+  private void transformViewSection(final ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("view")) {
       return;
     }
@@ -420,8 +416,7 @@ public class OptimizeReportLoadTester {
       return;
     }
 
-    final ObjectNode viewObjectNode =
-        (ObjectNode) viewNode;
+    final ObjectNode viewObjectNode = (ObjectNode) viewNode;
 
     // Remove entity field
     viewObjectNode.remove("entity");
@@ -429,8 +424,7 @@ public class OptimizeReportLoadTester {
     // Replace properties array with ["rawData"]
     if (viewObjectNode.has("properties")) {
       viewObjectNode.remove("properties");
-      final ArrayNode rawDataArray =
-          OBJECT_MAPPER.createArrayNode();
+      final ArrayNode rawDataArray = OBJECT_MAPPER.createArrayNode();
       rawDataArray.add("rawData");
       viewObjectNode.set("properties", rawDataArray);
     }
@@ -441,8 +435,7 @@ public class OptimizeReportLoadTester {
    *
    * @param dataObjectNode the data object node containing the groupBy section
    */
-  private void transformGroupBySection(
-      final ObjectNode dataObjectNode) {
+  private void transformGroupBySection(final ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("groupBy")) {
       return;
     }
@@ -452,8 +445,7 @@ public class OptimizeReportLoadTester {
       return;
     }
 
-    final ObjectNode groupByObjectNode =
-        (ObjectNode) groupByNode;
+    final ObjectNode groupByObjectNode = (ObjectNode) groupByNode;
     groupByObjectNode.put("type", "none");
     groupByObjectNode.remove("value");
   }
