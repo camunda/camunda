@@ -71,10 +71,10 @@ class CsrfRequireMatcherTest {
   @Test
   void shouldMatchForInternalAPIAccess() {
     when(request.getMethod()).thenReturn("POST");
-    when(request.getServletPath()).thenReturn("/api/processes/grouped");
+    when(request.getServletPath()).thenReturn("/api/process-instances");
     when(request.getHeader("Referer")).thenReturn(null);
     when(request.getRequestURL())
-        .thenReturn(new StringBuffer("http://localhost:8080//api/processes/grouped"));
+        .thenReturn(new StringBuffer("http://localhost:8080/api/process-instances"));
     assertThat(csrfRequireMatcher.matches(request)).isTrue();
   }
 }
