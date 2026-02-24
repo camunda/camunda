@@ -21,12 +21,7 @@ public class JobAuditLogTransformer implements AuditLogTransformer<JobRecordValu
   @Override
   public void transform(final Record<JobRecordValue> record, final AuditLogEntry log) {
     log.setJobKey(record.getKey());
-
     final var value = record.getValue();
     log.setEntityDescription(value.getType());
-    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 }
