@@ -126,6 +126,89 @@ public class UpgradePlanRegistryTest {
             plan882to883 -> assertNoOpPlan(plan882to883, "8.8.2", "8.8.3"));
   }
 
+  @Test
+  void versionJumpSkipsUnreleasedPatches() {
+    // given: jump from 8.8.2->8.8.10
+    final var targetVersion = "8.8.12";
+    final var jumpPlan = createUpgradePlan("8.8.2", "8.8.10");
+    final var existingPlans = new HashMap<Semver, UpgradePlan>();
+    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+    final var registry = new UpgradePlanRegistry(existingPlans);
+
+    // when
+    registry.generateMissingPatchUpgradePlans(targetVersion);
+
+    // then: no plans for 8.8.3 through 8.8.9
+    final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
+    assertThat(plans)
+        .as("Should generate chain with jump: auto 0->1->2, jump 2->10, auto 10->11->12")
+        .satisfiesExactly(
+            plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
+            plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
+            plan882to8810 -> {
+              assertThat(plan882to8810.getFromVersion().getOriginalValue()).isEqualTo("8.8.2");
+              assertThat(plan882to8810.getToVersion().getOriginalValue()).isEqualTo("8.8.10");
+              assertThat(plan882to8810).isSameAs(jumpPlan);
+            },
+            plan8810to8811 -> assertNoOpPlan(plan8810to8811, "8.8.10", "8.8.11"),
+            plan8811to8812 -> assertNoOpPlan(plan8811to8812, "8.8.11", "8.8.12"));
+  }
+
+  @Test
+  void jumpToCurrentVersionGeneratesNoPlansBeyondJump() {
+    // given: jump plan from 8.8.3->8.8.7
+    final var targetVersion = "8.8.7";
+    final var jumpPlan = createUpgradePlan("8.8.3", targetVersion);
+    final var existingPlans = new HashMap<Semver, UpgradePlan>();
+    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+
+    final var registry = new UpgradePlanRegistry(existingPlans);
+
+    // when
+    registry.generateMissingPatchUpgradePlans(targetVersion);
+
+    // then: auto 0->1->2->3, jump 3->7, no 8.8.4/5/6
+    final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
+    assertThat(plans)
+        .as("Should generate chain ending with jump: auto 0->1->2->3, then jump 3->7")
+        .satisfiesExactly(
+            plan880to881 -> assertNoOpPlan(plan880to881, "8.8.0", "8.8.1"),
+            plan881to882 -> assertNoOpPlan(plan881to882, "8.8.1", "8.8.2"),
+            plan882to883 -> assertNoOpPlan(plan882to883, "8.8.2", "8.8.3"),
+            plan883to887 -> {
+              assertThat(plan883to887.getFromVersion().getOriginalValue()).isEqualTo("8.8.3");
+              assertThat(plan883to887.getToVersion().getOriginalValue()).isEqualTo("8.8.7");
+              assertThat(plan883to887).isSameAs(jumpPlan);
+            });
+  }
+
+  @Test
+  void jumpFromPatchZeroGeneratesNoPlanBeforeJump() {
+    // given: jump plan from 8.8.0->8.8.5
+    final var targetVersion = "8.8.7";
+    final var jumpPlan = createUpgradePlan("8.8.0", "8.8.5");
+    final var existingPlans = new HashMap<Semver, UpgradePlan>();
+    existingPlans.put(jumpPlan.getToVersion(), jumpPlan);
+
+    final var registry = new UpgradePlanRegistry(existingPlans);
+
+    // when
+    registry.generateMissingPatchUpgradePlans(targetVersion);
+
+    // then: jump 0->5, auto 5->6->7, no 8.8.1/2/3/4
+    final var plans = registry.getSequentialUpgradePlansToTargetVersion(targetVersion);
+    assertThat(plans)
+        .as("Should generate chain starting with jump: jump 0->5, then auto 5->6->7")
+        .satisfiesExactly(
+            plan880to885 -> {
+              assertThat(plan880to885.getFromVersion().getOriginalValue()).isEqualTo("8.8.0");
+              assertThat(plan880to885.getToVersion().getOriginalValue()).isEqualTo("8.8.5");
+              assertThat(plan880to885).isSameAs(jumpPlan);
+            },
+            plan885to886 -> assertNoOpPlan(plan885to886, "8.8.5", "8.8.6"),
+            plan886to887 -> assertNoOpPlan(plan886to887, "8.8.6", "8.8.7"));
+  }
+
   private UpgradePlan createUpgradePlan(final String fromVersion, final String toVersion) {
     return UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(fromVersion)
