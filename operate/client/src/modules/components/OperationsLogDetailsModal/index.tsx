@@ -9,9 +9,7 @@
 import {
   CodeSnippet,
   Modal,
-  Stack,
   StructuredListBody,
-  StructuredListCell,
   StructuredListWrapper,
 } from '@carbon/react';
 import {Link} from 'modules/components/Link';
@@ -32,6 +30,7 @@ import {
   ParagraphWithIcon,
   VerticallyAlignedRow,
   IconTextWithTopMargin,
+  SecondColumn,
 } from './styled';
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
 import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
@@ -100,7 +99,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Status
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
+            <SecondColumn>
               <IconText>
                 <OperationsLogStateIcon
                   state={auditLog.result}
@@ -108,7 +107,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 />
                 {spaceAndCapitalize(auditLog.result.toString())}
               </IconText>
-            </StructuredListCell>
+            </SecondColumn>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn>
@@ -117,22 +116,26 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Actor
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
+            <SecondColumn>
               {!ActorIcon ? (
                 auditLog.actorId
               ) : (
                 <IconText>
                   <ActorIcon />
-                  <CodeSnippet wrapText>{auditLog.actorId}</CodeSnippet>
+                  <CodeSnippet type="inline" wrapText>
+                    {auditLog.actorId}
+                  </CodeSnippet>
                 </IconText>
               )}
               {auditLog.agentElementId && (
                 <IconTextWithTopMargin>
                   <AiAgentIcon />
-                  <CodeSnippet wrapText>{auditLog.agentElementId}</CodeSnippet>
+                  <CodeSnippet type="inline" wrapText>
+                    {auditLog.agentElementId}
+                  </CodeSnippet>
                 </IconTextWithTopMargin>
               )}
-            </StructuredListCell>
+            </SecondColumn>
           </VerticallyAlignedRow>
           <VerticallyAlignedRow>
             <FirstColumn noWrap>
@@ -141,22 +144,21 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Entity key
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
-              <Stack orientation="vertical" gap={2}>
-                {entityKeyData.link ? (
-                  <Link
-                    to={entityKeyData.link}
-                    title={entityKeyData.linkLabel}
-                    aria-label={entityKeyData.linkLabel}
-                  >
-                    {auditLog.entityKey}
-                  </Link>
-                ) : (
-                  <span>{auditLog.entityKey}</span>
-                )}
-                <span>{auditLog.entityDescription ?? entityKeyData.name}</span>
-              </Stack>
-            </StructuredListCell>
+            <SecondColumn>
+              {entityKeyData.link ? (
+                <Link
+                  to={entityKeyData.link}
+                  title={entityKeyData.linkLabel}
+                  aria-label={entityKeyData.linkLabel}
+                >
+                  {auditLog.entityKey}
+                </Link>
+              ) : (
+                auditLog.entityKey
+              )}
+              &nbsp;
+              {auditLog.entityDescription ?? entityKeyData.name}
+            </SecondColumn>
           </VerticallyAlignedRow>
           {['USER_TASK', 'INCIDENT', 'VARIABLE'].includes(
             auditLog.entityType,
@@ -168,17 +170,16 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                   Parent entity
                 </IconText>
               </FirstColumn>
-              <StructuredListCell>
-                <Stack orientation="vertical" gap={2}>
-                  <Link
-                    to={Paths.processInstance(auditLog.processInstanceKey)}
-                    aria-label={`View process instance ${auditLog.processInstanceKey}`}
-                  >
-                    {auditLog.processInstanceKey}
-                  </Link>
-                  <em>{auditLog.processDefinitionId}</em>
-                </Stack>
-              </StructuredListCell>
+              <SecondColumn>
+                <Link
+                  to={Paths.processInstance(auditLog.processInstanceKey)}
+                  aria-label={`View process instance ${auditLog.processInstanceKey}`}
+                >
+                  {auditLog.processInstanceKey}
+                </Link>
+                &nbsp;
+                <em>{auditLog.processDefinitionId}</em>
+              </SecondColumn>
             </VerticallyAlignedRow>
           ) : undefined}
           <VerticallyAlignedRow>
@@ -188,9 +189,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 Date
               </IconText>
             </FirstColumn>
-            <StructuredListCell>
-              {formatDate(auditLog.timestamp)}
-            </StructuredListCell>
+            <SecondColumn>{formatDate(auditLog.timestamp)}</SecondColumn>
           </VerticallyAlignedRow>
           {auditLog.entityType === 'BATCH' && (
             <>
@@ -208,7 +207,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                     </CodeSnippet>
                   </IconText>
                 </FirstColumn>
-                <StructuredListCell>
+                <SecondColumn>
                   <IconText>
                     <Link
                       to={Paths.batchOperation(
@@ -220,7 +219,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                       <ArrowRight />
                     </Link>
                   </IconText>
-                </StructuredListCell>
+                </SecondColumn>
               </VerticallyAlignedRow>
             </>
           )}
@@ -231,7 +230,7 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
               </VerticallyAlignedRow>
               <VerticallyAlignedRow>
                 <FirstColumn noWrap>{detailsData.property}</FirstColumn>
-                <StructuredListCell>{detailsData.value}</StructuredListCell>
+                <SecondColumn>{detailsData.value}</SecondColumn>
               </VerticallyAlignedRow>
             </>
           ) : undefined}
