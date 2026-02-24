@@ -223,6 +223,17 @@
   </insert>
 
 
+  <update id="completeBatchOperationItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsCompletionDto">
+    UPDATE ${prefix}BATCH_OPERATION_ITEM
+    SET STATE = 'COMPLETED',
+        PROCESSED_DATE = #{processedDate, jdbcType=TIMESTAMP}
+    WHERE
+    <foreach collection="items" item="item" separator=" OR " open="(" close=")">
+      (BATCH_OPERATION_KEY = #{item.batchOperationKey} AND ITEM_KEY = #{item.itemKey})
+    </foreach>
+  </update>
+
   <update id="updateItemsWithState"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM

@@ -51,7 +51,8 @@ public class ProcessInstanceHistoryDeletionBatchOperationExportHandler
 
   @Override
   boolean isCompleted(final Record<HistoryDeletionRecordValue> record) {
-    return record.getIntent().equals(HistoryDeletionIntent.DELETED);
+    // Completion is handled in the HistoryDeletionService.
+    return false;
   }
 
   @Override

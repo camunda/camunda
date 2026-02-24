@@ -12,7 +12,9 @@ import io.camunda.db.rdbms.read.service.BatchOperationDbReader;
 import io.camunda.db.rdbms.sql.BatchOperationMapper;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationActivateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationErrorsDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemStatusUpdateDto;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsCompletionDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemsDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateDto;
 import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationUpdateTotalCountDto;
@@ -132,6 +134,31 @@ public class BatchOperationWriter implements RdbmsWriter {
               item.batchOperationKey(),
               "io.camunda.db.rdbms.sql.BatchOperationMapper.incrementCompletedOperationsCount",
               item.batchOperationKey()));
+    }
+  }
+
+  /**
+   * Marks a batch of process instance batch operation items as completed in bulk, setting their
+   * state to COMPLETED and the processed date to the given end time. Items are split into blocks of
+   * {@code itemInsertBlockSize} to avoid generating excessively large SQL statements.
+   *
+   * @param items list of (batchOperationKey, itemKey) pairs identifying the items to complete
+   * @param processedDate the completion timestamp to set on each item
+   */
+  public void completeBatchOperationItems(
+      final List<BatchOperationItemCompletionDto> items, final OffsetDateTime processedDate) {
+    if (items.isEmpty()) {
+      return;
+    }
+    for (int i = 0; i < items.size(); i += itemInsertBlockSize) {
+      final var block = items.subList(i, Math.min(i + itemInsertBlockSize, items.size()));
+      executionQueue.executeInQueue(
+          new QueueItem(
+              ContextType.BATCH_OPERATION,
+              WriteStatementType.UPDATE,
+              null,
+              "io.camunda.db.rdbms.sql.BatchOperationMapper.completeBatchOperationItems",
+              new BatchOperationItemsCompletionDto(block, processedDate)));
     }
   }
 
