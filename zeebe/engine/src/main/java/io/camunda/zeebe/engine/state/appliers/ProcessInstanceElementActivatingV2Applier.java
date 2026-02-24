@@ -53,6 +53,11 @@ final class ProcessInstanceElementActivatingV2Applier
 
   @Override
   public void applyState(final long elementInstanceKey, final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      hubMetricsState.updateOnProcessInstanceCreated(value);
+    } else {
+      hubMetricsState.updateOnElementCreated(value);
+    }
 
     createEventScope(elementInstanceKey, value);
     final var numberOfTakenSequenceFlows =
@@ -89,12 +94,6 @@ final class ProcessInstanceElementActivatingV2Applier
     }
 
     manageMultiInstance(elementInstanceKey, flowScopeInstance, flowScopeElementType);
-
-    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      hubMetricsState.updateOnProcessInstanceCreated(value);
-    } else {
-      hubMetricsState.updateOnElementCreated(value);
-    }
   }
 
   private void cleanupSequenceFlowsTaken(final ProcessInstanceRecord value) {

@@ -37,6 +37,7 @@ import io.camunda.zeebe.protocol.record.value.RuntimeInstructionType;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.time.InstantSource;
 import java.util.Arrays;
 import java.util.function.Function;
 
@@ -62,6 +63,7 @@ public final class BpmnStateTransitionBehavior {
   private final TypedCommandWriter commandWriter;
   private final BpmnEventSubscriptionBehavior eventSubscriptionBehavior;
   private final BpmnIncidentBehavior incidentBehavior;
+  private final InstantSource clock;
 
   public BpmnStateTransitionBehavior(
       final KeyGenerator keyGenerator,
@@ -73,7 +75,8 @@ public final class BpmnStateTransitionBehavior {
       final ProcessEngineMetrics metrics,
       final Function<BpmnElementType, BpmnElementContainerProcessor<ExecutableFlowElement>>
           processorLookUp,
-      final Writers writers) {
+      final Writers writers,
+      final InstantSource clock) {
     this.keyGenerator = keyGenerator;
     this.stateBehavior = stateBehavior;
     jobBehavior = bpmnJobBehavior;
@@ -84,6 +87,7 @@ public final class BpmnStateTransitionBehavior {
     commandWriter = writers.command();
     this.eventSubscriptionBehavior = eventSubscriptionBehavior;
     this.incidentBehavior = incidentBehavior;
+    this.clock = clock;
   }
 
   /**
@@ -134,7 +138,8 @@ public final class BpmnStateTransitionBehavior {
         .getRecordValue()
         .setElementInstancePath(elementTreePath.elementInstancePath())
         .setProcessDefinitionPath(elementTreePath.processDefinitionPath())
-        .setCallingElementPath(elementTreePath.callingElementPath());
+        .setCallingElementPath(elementTreePath.callingElementPath())
+        .setStartTime(clock.millis());
 
     return transitionTo(transitionContext, ProcessInstanceIntent.ELEMENT_ACTIVATING);
   }
@@ -240,6 +245,7 @@ public final class BpmnStateTransitionBehavior {
       satisfiesCompletionConditionOrFailure = Either.right(null);
     }
 
+    context.getRecordValue().setEndTime(clock.millis());
     final var completed = transitionTo(context, ProcessInstanceIntent.ELEMENT_COMPLETED);
 
     metrics.elementInstanceCompleted(context, element.getEventType());

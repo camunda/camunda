@@ -52,6 +52,11 @@ final class ProcessInstanceElementCompletedApplier
 
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
+    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
+      hubMetricsState.updateOnProcessInstanceCompleted(value);
+    } else {
+      hubMetricsState.updateOnElementCompleted(value);
+    }
 
     final var parentElementInstanceKey = value.getParentElementInstanceKey();
 
@@ -67,12 +72,6 @@ final class ProcessInstanceElementCompletedApplier
 
     eventScopeInstanceState.deleteInstance(key);
     elementInstanceState.removeInstance(key);
-
-    if (value.getBpmnElementType() == BpmnElementType.PROCESS) {
-      hubMetricsState.updateOnProcessInstanceCompleted(value);
-    } else {
-      hubMetricsState.updateOnElementCompleted(value);
-    }
 
     final var flowScopeInstance = elementInstanceState.getInstance(value.getFlowScopeKey());
 
