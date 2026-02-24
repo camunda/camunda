@@ -87,7 +87,7 @@ const Details: React.FC<Props> = ({
         const normalizedTenantId = tenantId ?? DEFAULT_TENANT;
         const tenantName =
           tenantsById[normalizedTenantId] ?? normalizedTenantId;
-        const name = processDefinitionName || processDefinitionId;
+        const name = processDefinitionName ?? processDefinitionId;
 
         return (
           <Li key={`${processDefinitionKey}-${normalizedTenantId}`}>
