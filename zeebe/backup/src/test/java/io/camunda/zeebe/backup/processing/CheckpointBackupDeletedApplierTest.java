@@ -76,12 +76,15 @@ final class CheckpointBackupDeletedApplierTest {
     checkpointMetadataState.addBackupCheckpoint(
         1L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
     backupRangeState.startNewRange(1L);
+    assertThat(checkpointMetadataState.getCheckpoint(1L)).isNotNull();
 
     // when
     applier.apply(checkpointRecord(1L));
 
     // then — range is deleted
     assertThat(backupRangeState.getAllRanges()).isEmpty();
+    // then - checkpoint is removed
+    assertThat(checkpointMetadataState.getCheckpoint(1L)).isNull();
   }
 
   @Test
