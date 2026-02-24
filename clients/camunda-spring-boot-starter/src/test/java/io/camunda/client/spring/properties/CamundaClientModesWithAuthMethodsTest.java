@@ -38,7 +38,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeNone() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.none);
     }
   }
@@ -54,7 +54,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeNone() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.none);
     }
   }
@@ -70,7 +70,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeBasic() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.basic);
       assertThat(properties.getAuth().getUsername()).isEqualTo("basic");
       assertThat(properties.getAuth().getPassword()).isEqualTo("demo");
@@ -88,7 +88,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeBasic() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.basic);
       assertThat(properties.getAuth().getUsername()).isEqualTo("demo");
       assertThat(properties.getAuth().getPassword()).isEqualTo("demo");
@@ -106,7 +106,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeOidc() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getIssuerUrl())
           .isEqualTo(URI.create("http://localhost:18080/auth/realms/camunda-platform"));
@@ -126,7 +126,7 @@ public class CamundaClientModesWithAuthMethodsTest {
     void shouldBeOidc() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
       assertThat(properties.getAuth().getMethod()).isEqualTo(AuthMethod.oidc);
       assertThat(properties.getAuth().getIssuerUrl())
           .isEqualTo(URI.create("http://localhost:18080/auth/realms/camunda-platform"));

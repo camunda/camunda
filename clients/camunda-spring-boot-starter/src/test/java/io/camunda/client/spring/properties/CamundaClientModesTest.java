@@ -76,7 +76,7 @@ public class CamundaClientModesTest {
     void shouldLoadDefaultsSelfManaged() {
       assertThat(properties.getMode()).isEqualTo(ClientMode.selfManaged);
       assertThat(properties.getGrpcAddress().toString()).isEqualTo("http://localhost:26500");
-      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8088");
+      assertThat(properties.getRestAddress().toString()).isEqualTo("http://localhost:8080");
     }
   }
 }
