@@ -153,8 +153,10 @@ public final class DbCheckpointMetadataState {
         (checkpointId, checkpointMetadataValue) -> {
           if (checkpointMetadataValue.getFirstLogPosition() < firstLogPosition) {
             checkpointsColumnFamily.deleteExisting(checkpointId);
+            return true;
+          } else {
+            return false;
           }
-          return true;
         });
   }
 
