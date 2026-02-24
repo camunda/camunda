@@ -8,12 +8,14 @@
 package io.camunda.it.orchestration;
 
 import static io.camunda.it.util.TestHelper.startProcessInstance;
+import static io.camunda.it.util.TestHelper.waitForUserTask;
 import static io.camunda.qa.util.multidb.CamundaMultiDBExtension.TIMEOUT_DATA_AVAILABILITY;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.MigrationPlan;
+import io.camunda.client.api.search.enums.UserTaskState;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.cluster.TestRestTasklistClient;
@@ -162,6 +164,8 @@ public class UserTaskProcessInstanceMigrationIT {
     assertThat(migratedTask.getFormKey()).isEqualTo(expectedTask.formKey);
     assertThat(migratedTask.getExternalFormReference())
         .isEqualTo(expectedTask.externalFormReference);
+
+    verifyFormOperationsWork(migratedTask.getUserTaskKey());
   }
 
   static Stream<Arguments> migrationTestCases() {
@@ -269,6 +273,17 @@ public class UserTaskProcessInstanceMigrationIT {
               assertThat(tasks).hasSize(1);
               assertThat(tasks[0].getProcessInstanceKey()).isEqualTo(processInstanceKey.toString());
             });
+  }
+
+  private void verifyFormOperationsWork(final long userTaskKey) {
+    // verify assigning works
+    final String assignee = "newAssignee";
+    client.newAssignUserTaskCommand(userTaskKey).assignee(assignee).send().join();
+    waitForUserTask(client, t -> t.userTaskKey(userTaskKey).assignee(assignee));
+
+    // verify completing works
+    client.newCompleteUserTaskCommand(userTaskKey).send().join();
+    waitForUserTask(client, t -> t.userTaskKey(userTaskKey).state(UserTaskState.COMPLETED));
   }
 
   record ExpectedUserTask(
