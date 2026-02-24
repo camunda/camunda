@@ -8,12 +8,8 @@
 package io.camunda.operate.webapp.reader;
 
 import io.camunda.operate.util.Tuple;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 
 public interface DecisionInstanceReader {
-  DecisionInstanceListResponseDto queryDecisionInstances(DecisionInstanceListRequestDto request);
-
   Tuple<String, String> getCalledDecisionInstanceAndDefinitionByFlowNodeInstanceId(
       final String flowNodeInstanceId);
 }
