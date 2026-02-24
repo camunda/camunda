@@ -170,6 +170,35 @@ public class DeploymentPostProcessorTest {
             });
   }
 
+  @Test
+  public void shouldClearDeploymentValuesOnStop() {
+    // given
+    final BeanInfo classInfo = beanInfo(new WithSingleClassPathResource());
+
+    final Resource resource = mock(FileSystemResource.class);
+    when(resource.getFilename()).thenReturn("1.bpmn");
+    when(client.newDeployResourceCommand()).thenReturn(deployStep1);
+    when(deploymentPostProcessor.getResources(anyString())).thenReturn(new Resource[] {resource});
+    when(deployStep1.addResourceStream(any(), anyString())).thenReturn(deployStep2);
+    when(deployStep2.execute()).thenReturn(deploymentEvent);
+    when(deploymentEvent.getProcesses()).thenReturn(Collections.singletonList(getProcess()));
+
+    // when - simulate two lifecycle rounds (as with @RepeatedTest)
+    deploymentPostProcessor.configureFor(classInfo);
+    deploymentPostProcessor.start(client);
+
+    // stop should clear the deployment values
+    deploymentPostProcessor.stop(client);
+
+    // configure and start again (second test run)
+    deploymentPostProcessor.configureFor(classInfo);
+    deploymentPostProcessor.start(client);
+
+    // then - deploy should have been called exactly once per lifecycle round, not accumulating
+    verify(deployStep2, times(2)).execute();
+    verify(deployStep1, times(2)).addResourceStream(any(), eq("1.bpmn"));
+  }
+
   private Process getProcess() {
     return new Process() {
       @Override
