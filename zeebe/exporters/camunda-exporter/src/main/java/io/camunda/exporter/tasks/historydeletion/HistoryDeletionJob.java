@@ -187,16 +187,7 @@ public class HistoryDeletionJob implements BackgroundTask {
                   dependentSourceIdx, dependentIdFieldName, processInstanceKeys);
             })
         .thenCompose(
-            ignored -> {
-              final var operationIds =
-                  batch.getEntities(HistoryDeletionType.PROCESS_INSTANCE).stream()
-                      .map(
-                          entity ->
-                              AbstractOperationHandler.ID_PATTERN.formatted(
-                                  entity.getBatchOperationKey(), entity.getResourceKey()))
-                      .toList();
-              return deleterRepository.updateOperations(operationIds);
-            })
+            ignored -> markOperationAsCompleted(batch, HistoryDeletionType.PROCESS_INSTANCE))
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_INSTANCE));
   }
 
@@ -244,17 +235,27 @@ public class HistoryDeletionJob implements BackgroundTask {
             DecisionInstanceTemplate.KEY,
             decisionInstances)
         .thenCompose(
-            ignored -> {
-              final var operationIds =
-                  batch.getEntities(HistoryDeletionType.DECISION_INSTANCE).stream()
-                      .map(
-                          entity ->
-                              AbstractOperationHandler.ID_PATTERN.formatted(
-                                  entity.getBatchOperationKey(), entity.getResourceKey()))
-                      .toList();
-              return deleterRepository.updateOperations(operationIds);
-            })
+            ignored -> markOperationAsCompleted(batch, HistoryDeletionType.DECISION_INSTANCE))
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
+  }
+
+  /**
+   * Marks the individual operations in the batch operation as completed
+   *
+   * @param batch the batch of entities to delete
+   * @param historyDeletionType the type of entities to mark as completed
+   * @return a future that becomes successful when the request to secondary storage succeeded.
+   */
+  private CompletableFuture<List<String>> markOperationAsCompleted(
+      final HistoryDeletionBatch batch, final HistoryDeletionType historyDeletionType) {
+    final var operationIds =
+        batch.getEntities(historyDeletionType).stream()
+            .map(
+                entity ->
+                    AbstractOperationHandler.ID_PATTERN.formatted(
+                        entity.getBatchOperationKey(), entity.getResourceKey()))
+            .toList();
+    return deleterRepository.updateOperations(operationIds);
   }
 
   /**
