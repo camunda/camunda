@@ -16,7 +16,7 @@ public final class OptimizeCfg {
   private String username = getEnvOrDefault("OPTIMIZE_USERNAME", "demo");
   private String password = getEnvOrDefault("OPTIMIZE_PASSWORD", "demo");
   private String reportId;
-  private int evaluationIntervalSeconds = 600; // Default: 10 minutes
+  private int evaluationIntervalSeconds = 60; // Default: 10 minutes
   private int durationLimit = 0; // 0 means run forever
 
   private static String getEnvOrDefault(final String envVar, final String defaultValue) {

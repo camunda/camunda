@@ -5,11 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-
 package io.camunda.zeebe;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
@@ -17,6 +18,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -363,12 +365,12 @@ public class OptimizeReportLoadTester {
       throws Exception {
     final JsonNode rootNode = OBJECT_MAPPER.readTree(responseBody);
 
-    if (!(rootNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+    if (!(rootNode instanceof ObjectNode)) {
       return responseBody;
     }
 
-    final com.fasterxml.jackson.databind.node.ObjectNode objectNode =
-        (com.fasterxml.jackson.databind.node.ObjectNode) rootNode;
+    final ObjectNode objectNode =
+        (ObjectNode) rootNode;
 
     // Remove result object
     objectNode.remove("result");
@@ -385,18 +387,18 @@ public class OptimizeReportLoadTester {
    * @param objectNode the root object node containing the data section
    */
   private void transformDataSection(
-      final com.fasterxml.jackson.databind.node.ObjectNode objectNode) {
+      final ObjectNode objectNode) {
     if (!objectNode.has("data")) {
       return;
     }
 
     final JsonNode dataNode = objectNode.get("data");
-    if (!(dataNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+    if (!(dataNode instanceof ObjectNode)) {
       return;
     }
 
-    final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode =
-        (com.fasterxml.jackson.databind.node.ObjectNode) dataNode;
+    final ObjectNode dataObjectNode =
+        (ObjectNode) dataNode;
 
     transformViewSection(dataObjectNode);
     transformGroupBySection(dataObjectNode);
@@ -408,18 +410,18 @@ public class OptimizeReportLoadTester {
    * @param dataObjectNode the data object node containing the view section
    */
   private void transformViewSection(
-      final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+      final ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("view")) {
       return;
     }
 
     final JsonNode viewNode = dataObjectNode.get("view");
-    if (!(viewNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+    if (!(viewNode instanceof ObjectNode)) {
       return;
     }
 
-    final com.fasterxml.jackson.databind.node.ObjectNode viewObjectNode =
-        (com.fasterxml.jackson.databind.node.ObjectNode) viewNode;
+    final ObjectNode viewObjectNode =
+        (ObjectNode) viewNode;
 
     // Remove entity field
     viewObjectNode.remove("entity");
@@ -427,7 +429,7 @@ public class OptimizeReportLoadTester {
     // Replace properties array with ["rawData"]
     if (viewObjectNode.has("properties")) {
       viewObjectNode.remove("properties");
-      final com.fasterxml.jackson.databind.node.ArrayNode rawDataArray =
+      final ArrayNode rawDataArray =
           OBJECT_MAPPER.createArrayNode();
       rawDataArray.add("rawData");
       viewObjectNode.set("properties", rawDataArray);
@@ -440,18 +442,18 @@ public class OptimizeReportLoadTester {
    * @param dataObjectNode the data object node containing the groupBy section
    */
   private void transformGroupBySection(
-      final com.fasterxml.jackson.databind.node.ObjectNode dataObjectNode) {
+      final ObjectNode dataObjectNode) {
     if (!dataObjectNode.has("groupBy")) {
       return;
     }
 
     final JsonNode groupByNode = dataObjectNode.get("groupBy");
-    if (!(groupByNode instanceof com.fasterxml.jackson.databind.node.ObjectNode)) {
+    if (!(groupByNode instanceof ObjectNode)) {
       return;
     }
 
-    final com.fasterxml.jackson.databind.node.ObjectNode groupByObjectNode =
-        (com.fasterxml.jackson.databind.node.ObjectNode) groupByNode;
+    final ObjectNode groupByObjectNode =
+        (ObjectNode) groupByNode;
     groupByObjectNode.put("type", "none");
     groupByObjectNode.remove("value");
   }
@@ -529,7 +531,7 @@ public class OptimizeReportLoadTester {
    */
   public List<String> extractReportIdsFromDashboard(final String dashboardResponseBody)
       throws Exception {
-    final List<String> reportIds = new java.util.ArrayList<>();
+    final List<String> reportIds = new ArrayList<>();
     final JsonNode rootNode = OBJECT_MAPPER.readTree(dashboardResponseBody);
 
     // Check if tiles array exists
@@ -570,7 +572,7 @@ public class OptimizeReportLoadTester {
     final List<String> reportIds = extractReportIdsFromDashboard(dashboardResult.getResponseBody());
 
     // Step 3: Evaluate each report
-    final List<ReportEvaluationResult> reportResults = new java.util.ArrayList<>();
+    final List<ReportEvaluationResult> reportResults = new ArrayList<>();
     for (final String reportId : reportIds) {
       LOG.info("Evaluating report: {}", reportId);
       try {
@@ -614,7 +616,7 @@ public class OptimizeReportLoadTester {
     final List<String> reportIds = extractReportIdsFromDashboard(dashboardResult.getResponseBody());
 
     // Step 3: Evaluate each report using the standard evaluate API
-    final List<ReportEvaluationResult> reportEvaluationResults = new java.util.ArrayList<>();
+    final List<ReportEvaluationResult> reportEvaluationResults = new ArrayList<>();
     for (final String reportId : reportIds) {
       LOG.info("Evaluating report: {}", reportId);
       try {
@@ -633,7 +635,7 @@ public class OptimizeReportLoadTester {
     }
 
     // Step 4: Call detailed evaluate API for each report using the response body from Step 3
-    final List<ReportEvaluationResult> detailedEvaluationResults = new java.util.ArrayList<>();
+    final List<ReportEvaluationResult> detailedEvaluationResults = new ArrayList<>();
     for (final ReportEvaluationResult reportEvalResult : reportEvaluationResults) {
       if (reportEvalResult.isSuccess()) {
         LOG.info(
@@ -682,8 +684,8 @@ public class OptimizeReportLoadTester {
               "camunda-platform",
               "optimize",
               "demo",
-              "XjKoMcGtYIMfMZgs",
-              "1mpb492ddYNqJcxv");
+              "demo",
+              "demo-client-secret");
 
       tester.authenticateWithAuthorizationCodeFlow();
 
@@ -775,7 +777,7 @@ public class OptimizeReportLoadTester {
         final long responseTimeMs,
         final String responseBody) {
       this.reportId = reportId;
-      this.reportName = extractReportName(responseBody);
+      reportName = extractReportName(responseBody);
       this.statusCode = statusCode;
       this.responseTimeMs = responseTimeMs;
       this.responseBody = responseBody;
