@@ -84,7 +84,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@<PINNED_SHA>
       
       - name: Setup mock data
         run: |
