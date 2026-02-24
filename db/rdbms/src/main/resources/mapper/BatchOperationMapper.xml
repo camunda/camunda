@@ -262,6 +262,13 @@
     WHERE BATCH_OPERATION_KEY = #{id}
   </update>
 
+  <update id="bulkIncrementCompletedOperationsCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+  </update>
+
   <select id="count" resultType="java.lang.Long">
     SELECT COUNT(*) FROM (
       SELECT 1 as col
