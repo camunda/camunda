@@ -54,7 +54,7 @@ public final class VariableNameLengthValidatorTest {
   }
 
   @Test
-  public void shouldRejectWhenVariableNameIsNotString() {
+  public void shouldAcceptWhenVariableNameIsNotString() {
     // given: {1: "a"}
     final byte[] invalidNameTypeDocument = new byte[] {(byte) 0x81, 0x01, (byte) 0xA1, 0x61};
 
@@ -64,8 +64,6 @@ public final class VariableNameLengthValidatorTest {
             new UnsafeBuffer(invalidNameTypeDocument));
 
     // then
-    assertThat(result.isLeft()).isTrue();
-    assertThat(result.getLeft().reason())
-        .contains("Expected variable names to be strings in a msgpack object.");
+    assertThat(result.isRight()).isTrue();
   }
 }

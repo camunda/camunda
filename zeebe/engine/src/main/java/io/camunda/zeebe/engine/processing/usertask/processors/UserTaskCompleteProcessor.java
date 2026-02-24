@@ -48,13 +48,15 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
   private final UserTaskCommandPreconditionValidator commandChecker;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final int maxVariableNameLength;
 
   public UserTaskCompleteProcessor(
       final ProcessingState state,
       final EventHandle eventHandle,
       final Writers writers,
       final AsyncRequestBehavior asyncRequestBehavior,
-      final AuthorizationCheckBehavior authCheckBehavior) {
+      final AuthorizationCheckBehavior authCheckBehavior,
+      final int maxVariableNameLength) {
     elementInstanceState = state.getElementInstanceState();
     asyncRequestState = state.getAsyncRequestState();
     this.eventHandle = eventHandle;
@@ -69,6 +71,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
             authCheckBehavior);
     this.asyncRequestBehavior = asyncRequestBehavior;
     this.authCheckBehavior = authCheckBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -82,7 +85,7 @@ public final class UserTaskCompleteProcessor implements UserTaskCommandProcessor
         .flatMap(
             userTask ->
                 VariableNameLengthValidator.validateVariableNameLength(
-                        command.getValue().getVariablesBuffer())
+                        command.getValue().getVariablesBuffer(), maxVariableNameLength)
                     .map(ignored -> userTask));
   }
 

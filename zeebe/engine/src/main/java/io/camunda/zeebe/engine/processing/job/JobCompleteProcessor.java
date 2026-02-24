@@ -127,6 +127,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
   private final EventHandle eventHandle;
   private final ProcessingState processState;
   private final VariableBehavior variableBehavior;
+  private final int maxVariableNameLength;
 
   private final StateWriter stateWriter;
   private final TypedCommandWriter commandWriter;
@@ -139,7 +140,8 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
       final JobProcessingMetrics jobMetrics,
       final EventHandle eventHandle,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final VariableBehavior variableBehavior) {
+      final VariableBehavior variableBehavior,
+      final int maxVariableNameLength) {
     processState = state;
     userTaskState = state.getUserTaskState();
     jobState = state.getJobState();
@@ -167,6 +169,7 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     this.jobMetrics = jobMetrics;
     this.eventHandle = eventHandle;
     this.variableBehavior = variableBehavior;
+    this.maxVariableNameLength = maxVariableNameLength;
   }
 
   @Override
@@ -186,10 +189,10 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
             });
   }
 
-  private static Either<Rejection, JobRecord> validateVariableNames(
+  private Either<Rejection, JobRecord> validateVariableNames(
       final TypedRecord<JobRecord> command, final JobRecord job) {
     return VariableNameLengthValidator.validateVariableNameLength(
-            command.getValue().getVariablesBuffer())
+            command.getValue().getVariablesBuffer(), maxVariableNameLength)
         .map(ignored -> job);
   }
 

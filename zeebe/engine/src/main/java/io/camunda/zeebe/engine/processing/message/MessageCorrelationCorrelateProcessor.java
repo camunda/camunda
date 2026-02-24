@@ -107,7 +107,7 @@ public final class MessageCorrelationCorrelateProcessor
 
     final var variableNameLengthValidation =
         VariableNameLengthValidator.validateVariableNameLength(
-            messageCorrelationRecord.getVariablesBuffer());
+            messageCorrelationRecord.getVariablesBuffer(), maxVariableNameLength);
     if (variableNameLengthValidation.isLeft()) {
       final var rejection = variableNameLengthValidation.getLeft();
       rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());

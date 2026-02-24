@@ -144,7 +144,7 @@ public final class MessageEventProcessors {
                 subscriptionState,
                 subscriptionCommandSender,
                 authCheckBehavior,
-                EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH))
+                config.getMaxNameFieldLength()))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
