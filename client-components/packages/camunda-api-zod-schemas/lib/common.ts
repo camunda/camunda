@@ -94,7 +94,6 @@ type QueryPage = z.infer<typeof queryPageSchema>;
 
 const queryResponsePageSchema = z.object({
 	totalItems: z.number(),
-	hasMoreTotalItems: z.boolean().optional(),
 	startCursor: z.string().optional(),
 	endCursor: z.string().optional(),
 });
