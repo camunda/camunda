@@ -19,6 +19,10 @@ const FirstColumn = styled(StructuredListCell)`
   min-width: 200px;
 `;
 
+const SecondColumn = styled(StructuredListCell)`
+  width: 100%;
+`;
+
 const VerticallyAlignedRow = styled(StructuredListRow)`
   .cds--structured-list-td {
     vertical-align: middle;
@@ -42,6 +46,7 @@ const IconTextWithTopMargin = styled(IconText)`
 export {
   IconText,
   FirstColumn,
+  SecondColumn,
   VerticallyAlignedRow,
   ParagraphWithIcon,
   TitleListCell,
