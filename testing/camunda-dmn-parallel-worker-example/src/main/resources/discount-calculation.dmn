@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="https://www.omg.org/spec/DMN/20191111/MODEL/" xmlns:dmndi="https://www.omg.org/spec/DMN/20191111/DMNDI/" xmlns:dc="http://www.omg.org/spec/DMN/20180521/DC/" xmlns:di="http://www.omg.org/spec/DMN/20180521/DI/" id="order_discount" name="Order Discount" namespace="http://camunda.org/schema/1.0/dmn">
+  <decision id="calculate_discount" name="Calculate Discount">
+    <decisionTable id="DecisionTable_discount" hitPolicy="FIRST">
+      <input id="Input_amount" label="Order Amount">
+        <inputExpression id="InputExpression_amount" typeRef="number">
+          <text>orderAmount</text>
+        </inputExpression>
+      </input>
+      <input id="Input_customer_type" label="Customer Type">
+        <inputExpression id="InputExpression_customer_type" typeRef="string">
+          <text>customerType</text>
+        </inputExpression>
+      </input>
+      <output id="Output_discount" label="Discount Percentage" name="discountPercentage" typeRef="number" />
+      <rule id="DecisionRule_premium_high">
+        <inputEntry id="UnaryTests_amount_1">
+          <text>&gt;= 1000</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_customer_1">
+          <text>"PREMIUM"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_discount_1">
+          <text>20</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_premium_low">
+        <inputEntry id="UnaryTests_amount_2">
+          <text>&gt;= 500</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_customer_2">
+          <text>"PREMIUM"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_discount_2">
+          <text>15</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_regular_high">
+        <inputEntry id="UnaryTests_amount_3">
+          <text>&gt;= 1000</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_customer_3">
+          <text>"REGULAR"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_discount_3">
+          <text>10</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_regular_low">
+        <inputEntry id="UnaryTests_amount_4">
+          <text>&gt;= 500</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_customer_4">
+          <text>"REGULAR"</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_discount_4">
+          <text>5</text>
+        </outputEntry>
+      </rule>
+      <rule id="DecisionRule_default">
+        <inputEntry id="UnaryTests_amount_default">
+          <text>-</text>
+        </inputEntry>
+        <inputEntry id="UnaryTests_customer_default">
+          <text>-</text>
+        </inputEntry>
+        <outputEntry id="LiteralExpression_discount_default">
+          <text>0</text>
+        </outputEntry>
+      </rule>
+    </decisionTable>
+  </decision>
+</definitions>
