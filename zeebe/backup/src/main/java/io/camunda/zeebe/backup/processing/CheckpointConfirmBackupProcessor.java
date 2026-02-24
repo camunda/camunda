@@ -76,7 +76,7 @@ public class CheckpointConfirmBackupProcessor {
       final var ranges = backupRangeState.getAllRanges();
       resultBuilder.appendPostCommitTask(
           () -> {
-            syncer.store(checkpoints, ranges);
+            syncer.store(record.getPartitionId(), checkpoints, ranges);
             return true;
           });
     } else {

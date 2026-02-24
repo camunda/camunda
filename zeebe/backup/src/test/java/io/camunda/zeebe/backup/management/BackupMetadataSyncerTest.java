@@ -38,7 +38,7 @@ final class BackupMetadataSyncerTest {
 
   @BeforeEach
   void setUp() {
-    syncer = new BackupMetadataSyncer(1, backupStore);
+    syncer = new BackupMetadataSyncer(backupStore);
   }
 
   @Test
@@ -54,7 +54,7 @@ final class BackupMetadataSyncerTest {
         .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    syncer.store(List.of(checkpointEntry), List.of(range)).join();
+    syncer.store(1, List.of(checkpointEntry), List.of(range)).join();
 
     // then - verify the content is valid JSON that deserializes correctly
     final var manifest =

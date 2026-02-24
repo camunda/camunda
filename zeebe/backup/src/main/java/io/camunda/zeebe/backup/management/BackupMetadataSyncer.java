@@ -39,11 +39,9 @@ public final class BackupMetadataSyncer {
           .registerModule(new JavaTimeModule())
           .disable(WRITE_DATES_AS_TIMESTAMPS);
   private static final Logger LOG = LoggerFactory.getLogger(BackupMetadataSyncer.class);
-  private final int partitionId;
   private final BackupStore backupStore;
 
-  public BackupMetadataSyncer(final int partitionId, final BackupStore backupStore) {
-    this.partitionId = partitionId;
+  public BackupMetadataSyncer(final BackupStore backupStore) {
     this.backupStore = backupStore;
   }
 
@@ -52,11 +50,13 @@ public final class BackupMetadataSyncer {
    * partition. Reads all checkpoints and ranges, serializes them to JSON, and writes to the next
    * slot.
    *
+   * @param partitionId partition ID to sync metadata for
    * @param checkpoints source of checkpoint metadata
    * @param ranges source of backup ranges
    * @return a future that completes when the sync is done
    */
   public CompletableFuture<Void> store(
+      final int partitionId,
       final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
 
