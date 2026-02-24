@@ -24,12 +24,18 @@
   <input>
     <global>
       <!-- Match all common source/config file types recursively across modules.
-           Note: *.xml also covers pom.xml and SBE schema files. -->
-      <glob>{*.java,*.xml,*.properties,*.proto,*.factories,*.imports,*.json}</glob>
+           XML is restricted to src/main to avoid IDE (.idea/) and tool configs (spotbugs/).
+           pom.xml is matched separately at the module root.
+           YAML is intentionally excluded here; specific YAML directories (e.g. REST API specs)
+           are added via targeted <include> entries below. -->
+      <glob>{*.java,pom.xml,src/main/**/*.xml,*.properties,*.proto,*.factories,*.imports,*.json}</glob>
       <includes>
         <!-- Explicit include for the parent POM directory: changes to shared build config
              affect all modules but may not be detected via effective-POM checksumming alone. -->
         <include recursive="false" glob="pom.xml">parent</include>
+        <!-- Include OpenAPI/REST API YAML specs used for code generation. -->
+        <include glob="{*.yaml,*.yml}">zeebe/gateway-protocol/src/main/proto</include>
+        <include glob="{*.yaml,*.yml}">dist/src/main/resources/api</include>
       </includes>
       <!-- Exclude target/ entirely: unpacked proto/YAML files land there and would
            invalidate the cache on every clean since they don't exist before initialize. -->
