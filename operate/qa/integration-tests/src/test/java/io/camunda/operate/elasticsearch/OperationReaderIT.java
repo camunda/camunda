@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -40,6 +41,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -60,6 +62,7 @@ public class OperationReaderIT extends OperateAbstractIT {
   private static String processInstanceId3;
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean PermissionsService permissionsService;
+  @Autowired private IncidentReader incidentReader;
 
   @Override
   @Before
@@ -113,10 +116,8 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testQueryIncidentsByProcessInstanceId() throws Exception {
-
-    final MvcResult mvcResult = getRequest(queryIncidentsByProcessInstanceId(processInstanceId1));
     final IncidentResponseDto response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        incidentReader.getIncidentsByProcessInstanceId(processInstanceId1);
 
     final List<IncidentDto> incidents = response.getIncidents();
     assertThat(incidents).hasSize(3);
@@ -144,10 +145,6 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   private String queryProcessInstances() {
     return QUERY_LIST_VIEW_URL;
-  }
-
-  private String queryIncidentsByProcessInstanceId(final String processInstanceId) {
-    return String.format("%s/%s/incidents", PROCESS_INSTANCE_URL, processInstanceId);
   }
 
   private String queryProcessInstanceById(final String processInstanceId) {

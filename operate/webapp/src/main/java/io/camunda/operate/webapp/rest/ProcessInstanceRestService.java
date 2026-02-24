@@ -15,13 +15,11 @@ import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -63,7 +61,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private final ProcessInstanceReader processInstanceReader;
   private final ListenerReader listenerReader;
   private final ListViewReader listViewReader;
-  private final IncidentReader incidentReader;
   private final VariableReader variableReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final SequenceFlowStore sequenceFlowStore;
@@ -76,7 +73,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       final ProcessInstanceReader processInstanceReader,
       final ListenerReader listenerReader,
       final ListViewReader listViewReader,
-      final IncidentReader incidentReader,
       final VariableReader variableReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final SequenceFlowStore sequenceFlowStore) {
@@ -87,7 +83,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.processInstanceReader = processInstanceReader;
     this.listenerReader = listenerReader;
     this.listViewReader = listViewReader;
-    this.incidentReader = incidentReader;
     this.variableReader = variableReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
     this.sequenceFlowStore = sequenceFlowStore;
@@ -139,14 +134,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String id) {
     checkIdentityReadPermission(Long.parseLong(id));
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
-  }
-
-  @Operation(summary = "Get incidents by process instance id")
-  @GetMapping("/{id}/incidents")
-  public IncidentResponseDto queryIncidentsByProcessInstanceId(
-      @PathVariable @ValidLongId final String id) {
-    checkIdentityReadPermission(Long.parseLong(id));
-    return incidentReader.getIncidentsByProcessInstanceId(id);
   }
 
   @Operation(summary = "Get sequence flows by process instance id")
