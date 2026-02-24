@@ -838,7 +838,7 @@ final class CheckpointRecordsProcessorTest {
     assertThat(processingResult.records())
         .singleElement()
         .satisfies(
-            record -> assertThat(record).returns(CheckpointIntent.BACKUP_DELETED, Event::intent));
+            record -> assertThat(record).returns(CheckpointIntent.DELETED_BACKUP, Event::intent));
   }
 
   @Test
