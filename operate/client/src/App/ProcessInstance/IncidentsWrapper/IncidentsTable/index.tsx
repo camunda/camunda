@@ -167,7 +167,7 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
                     {`${incident.elementId} - ${incident.processDefinitionName} - ${incident.processInstanceKey}`}
                   </Link>
                 ),
-              jobKey: incident.jobKey ?? '--',
+              jobKey: incident.jobKey || '--',
               creationTime: formatDate(incident.creationTime),
               errorMessage: (
                 <FlexContainer>
