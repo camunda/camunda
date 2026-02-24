@@ -96,7 +96,9 @@ const mapToCellEntityKeyData = (
         label: item.entityKey,
       };
     default:
-      return {};
+      return {
+        label: item.entityKey,
+      };
   }
 };
 
