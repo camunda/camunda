@@ -20,6 +20,7 @@ import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
@@ -1502,5 +1503,326 @@ public class JobControllerTest extends RestControllerTest {
     assertThat(capturedRequest.tenantIds())
         .describedAs("Tenant IDs should be empty when ASSIGNED filter is used")
         .isEmpty();
+  }
+
+  @Test
+  void shouldGetJobWorkerStatistics() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var workerEntity1 =
+        new JobWorkerStatisticsEntity(
+            "worker-1",
+            new StatusMetric(400, lastUpdatedAt),
+            new StatusMetric(390, lastUpdatedAt),
+            new StatusMetric(2, lastUpdatedAt));
+    final var workerEntity2 =
+        new JobWorkerStatisticsEntity(
+            "worker-2",
+            new StatusMetric(350, lastUpdatedAt),
+            new StatusMetric(340, lastUpdatedAt),
+            new StatusMetric(5, lastUpdatedAt));
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobWorkerStatisticsEntity>()
+            .total(2L)
+            .items(List.of(workerEntity1, workerEntity2))
+            .build();
+
+    when(jobServices.getJobWorkerStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "worker": "worker-1",
+                  "created": {
+                    "count": 400,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 390,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 2,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  }
+                },
+                {
+                  "worker": "worker-2",
+                  "created": {
+                    "count": 350,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 340,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 5,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  }
+                }
+              ],
+              "page": {
+                "totalItems": 2
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldGetJobWorkerStatisticsWithPagination() {
+    // given
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var workerEntity =
+        new JobWorkerStatisticsEntity(
+            "worker-1",
+            new StatusMetric(400, lastUpdatedAt),
+            new StatusMetric(390, lastUpdatedAt),
+            new StatusMetric(2, lastUpdatedAt));
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobWorkerStatisticsEntity>()
+            .total(1L)
+            .items(List.of(workerEntity))
+            .build();
+
+    when(jobServices.getJobWorkerStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              },
+              "page": {
+                "limit": 1
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "worker": "worker-1",
+                  "created": {
+                    "count": 400,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "completed": {
+                    "count": 390,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  },
+                  "failed": {
+                    "count": 2,
+                    "lastUpdatedAt": "2024-07-29T15:51:28.071Z"
+                  }
+                }
+              ],
+              "page": {
+                "totalItems": 1
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.LENIENT);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithMissingBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/statistics/by-workers");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithMissingFilter() {
+    // given
+    final var request =
+        """
+            {
+              "page": {
+                "limit": 10
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithEmptyFilter() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {}
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithMissingFrom() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithMissingTo() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobWorkerStatisticsWithMissingJobType() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
   }
 }

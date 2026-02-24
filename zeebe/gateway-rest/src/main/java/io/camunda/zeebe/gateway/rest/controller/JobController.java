@@ -27,6 +27,8 @@ import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.search.query.JobQuery;
 import io.camunda.security.auth.CamundaAuthenticationProvider;
 import io.camunda.security.configuration.MultiTenancyConfiguration;
@@ -128,6 +130,14 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getTypeStatistics);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/by-workers")
+  public ResponseEntity<JobWorkerStatisticsQueryResult> getJobWorkerStatistics(
+      @RequestBody final JobWorkerStatisticsQuery request) {
+    return SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getWorkerStatistics);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -225,6 +235,19 @@ public class JobController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getJobTypeStatistics(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobTypeStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<JobWorkerStatisticsQueryResult> getWorkerStatistics(
+      final io.camunda.search.query.JobWorkerStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getJobWorkerStatistics(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toJobWorkerStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }

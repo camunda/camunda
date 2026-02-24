@@ -83,6 +83,37 @@ paths:
         "500":
           $ref: 'common-responses.yaml#/components/responses/InternalServerError'
 
+  /jobs/statistics/by-workers:
+    post:
+      x-eventually-consistent: true
+      tags:
+        - Job
+      operationId: getJobWorkerStatistics
+      summary: Get job statistics by worker
+      description: |
+        Returns aggregated metrics per worker for the given jobType.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/JobWorkerStatisticsQuery'
+      responses:
+        "200":
+          description: The job worker statistics result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JobWorkerStatisticsQueryResult'
+        "400":
+          $ref: 'common-responses.yaml#/components/responses/InvalidData'
+        "401":
+          $ref: 'common-responses.yaml#/components/responses/Unauthorized'
+        "403":
+          $ref: 'common-responses.yaml#/components/responses/Forbidden'
+        "500":
+          $ref: 'common-responses.yaml#/components/responses/InternalServerError'
+
 ## Schema definitions
 
 components:
@@ -205,3 +236,75 @@ components:
           format: int32
           example: 5
 
+    JobWorkerStatisticsQuery:
+      description: Job worker statistics query.
+      type: object
+      required:
+        - filter
+      properties:
+        filter:
+          $ref: '#/components/schemas/JobWorkerStatisticsFilter'
+        page:
+          description: Search cursor pagination.
+          allOf:
+            - $ref: 'search-models.yaml#/components/schemas/CursorForwardPagination'
+
+    JobWorkerStatisticsFilter:
+      description: Job worker statistics search filter.
+      type: object
+      required:
+        - from
+        - to
+        - jobType
+      properties:
+        from:
+          description: |
+            Start of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-28T15:51:28.071Z"
+        to:
+          description: |
+            End of the time window to filter metrics. ISO 8601 date-time format.
+          type: string
+          format: date-time
+          example: "2024-07-29T15:51:28.071Z"
+        jobType:
+          description: Job type to return worker metrics for.
+          type: string
+          example: "fetch-customer-data"
+
+    JobWorkerStatisticsQueryResult:
+      description: Job worker statistics query result.
+      type: object
+      required:
+        - items
+        - page
+      allOf:
+        - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
+      properties:
+        items:
+          description: The list of per-worker statistics items.
+          type: array
+          items:
+            $ref: '#/components/schemas/JobWorkerStatisticsItem'
+
+    JobWorkerStatisticsItem:
+      description: Statistics for a single worker within a job type.
+      type: object
+      required:
+        - worker
+        - created
+        - completed
+        - failed
+      properties:
+        worker:
+          description: The worker identifier.
+          type: string
+          example: "worker-1"
+        created:
+          $ref: '#/components/schemas/StatusMetric'
+        completed:
+          $ref: '#/components/schemas/StatusMetric'
+        failed:
+          $ref: '#/components/schemas/StatusMetric'
