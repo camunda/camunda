@@ -21,6 +21,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
@@ -63,6 +64,7 @@ public class OperationReaderIT extends OperateAbstractIT {
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean PermissionsService permissionsService;
   @Autowired private IncidentReader incidentReader;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Override
   @Before
@@ -134,10 +136,9 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   @Test
   public void testQueryProcessInstanceById() throws Exception {
-
-    final MvcResult mvcResult = getRequest(queryProcessInstanceById(processInstanceId3));
     final ListViewProcessInstanceDto processInstance =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        processInstanceReader.getProcessInstanceWithOperationsByKey(
+            Long.valueOf(processInstanceId3));
 
     assertThat(processInstance.getOperations()).hasSize(2);
     assertThat(processInstance.isHasActiveOperation()).isFalse();
@@ -145,10 +146,6 @@ public class OperationReaderIT extends OperateAbstractIT {
 
   private String queryProcessInstances() {
     return QUERY_LIST_VIEW_URL;
-  }
-
-  private String queryProcessInstanceById(final String processInstanceId) {
-    return String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
   }
 
   /** */

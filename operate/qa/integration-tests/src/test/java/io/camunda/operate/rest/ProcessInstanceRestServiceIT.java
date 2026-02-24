@@ -55,15 +55,6 @@ public class ProcessInstanceRestServiceIT {
   @MockitoBean ProcessInstanceReader mockProcessInstanceReader;
 
   @Test
-  public void testGetInstanceByIdWithInvalidId() throws Exception {
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/4503599627535750:";
-    final MvcResult mvcResult =
-        mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
-
-    assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
   public void testGetFlowNodeStatesByIdWithInvalidId() throws Exception {
     final var url =
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-states";
@@ -89,6 +80,6 @@ public class ProcessInstanceRestServiceIT {
   }
 
   private static Stream<Arguments> noPermissionGetParameters() {
-    return Stream.of(Arguments.of("/1"), Arguments.of("/1/flow-node-states"));
+    return Stream.of(Arguments.of("/1/flow-node-states"));
   }
 }
