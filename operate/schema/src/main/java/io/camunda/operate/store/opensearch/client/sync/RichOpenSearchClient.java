@@ -8,7 +8,6 @@
 package io.camunda.operate.store.opensearch.client.sync;
 
 import io.camunda.operate.conditions.OpensearchCondition;
-import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,8 +30,7 @@ public class RichOpenSearchClient {
 
   public RichOpenSearchClient(
       final BeanFactory beanFactory,
-      @Qualifier("operateOpenSearchClient") final OpenSearchClient openSearchClient,
-      final OpenSearchAsyncClient openSearchAsyncClient) {
+      @Qualifier("operateOpenSearchClient") final OpenSearchClient openSearchClient) {
     this.beanFactory = beanFactory;
     this.openSearchClient = openSearchClient;
     openSearchBatchOperations =

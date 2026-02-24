@@ -38,7 +38,7 @@ public class OpensearchExporterConfiguration implements FilterConfiguration {
   private final SecurityConfiguration security = new SecurityConfiguration();
   private boolean includeEnabledRecords = false;
   @JsonIgnore // ensure this doesn't get injected when creating the config during serialization
-  private ObjectMapper objectMapper = new ObjectMapper();
+  private ObjectMapper objectMapper = BulkIndexRequest.MAPPER;
 
   public String getUrl() {
     return url;
