@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -32,8 +33,10 @@ public final class CheckpointDeleteBackupProcessor {
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointDeleteBackupProcessor.class);
 
   private final DbCheckpointMetadataState checkpointMetadataState;
+  private final DbBackupRangeState backupRangeState;
   private final CheckpointBackupDeletedApplier backupDeletedApplier;
   private final BackupManager backupManager;
+  private final BackupMetadataSyncer syncer;
 
   /**
    * @param checkpointMetadataState the checkpoint metadata CF state
@@ -44,9 +47,12 @@ public final class CheckpointDeleteBackupProcessor {
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
       final CheckpointState checkpointState,
-      final BackupManager backupManager) {
+      final BackupManager backupManager,
+      final BackupMetadataSyncer syncer) {
     this.checkpointMetadataState = checkpointMetadataState;
+    this.backupRangeState = backupRangeState;
     this.backupManager = backupManager;
+    this.syncer = syncer;
     backupDeletedApplier =
         new CheckpointBackupDeletedApplier(
             checkpointMetadataState, backupRangeState, checkpointState);
@@ -70,6 +76,13 @@ public final class CheckpointDeleteBackupProcessor {
             .recordType(RecordType.EVENT)
             .valueType(ValueType.CHECKPOINT)
             .intent(CheckpointIntent.DELETED_BACKUP));
+    final var checkpoints = checkpointMetadataState.getAllCheckpoints();
+    final var ranges = backupRangeState.getAllRanges();
+    resultBuilder.appendPostCommitTask(
+        () -> {
+          syncer.store(checkpoints, ranges);
+          return true;
+        });
     resultBuilder.appendPostCommitTask(
         () -> {
           backupManager.deleteBackup(checkpointId);

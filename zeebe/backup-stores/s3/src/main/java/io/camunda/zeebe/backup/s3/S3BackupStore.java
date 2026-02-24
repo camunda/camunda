@@ -80,6 +80,7 @@ import software.amazon.awssdk.services.s3.model.S3Object;
  * </ol>
  */
 public final class S3BackupStore implements BackupStore {
+
   static final ObjectMapper MAPPER =
       new ObjectMapper()
           .registerModule(new Jdk8Module())
@@ -88,6 +89,7 @@ public final class S3BackupStore implements BackupStore {
   static final String SNAPSHOT_PREFIX = "snapshot/";
   static final String SEGMENTS_PREFIX = "segments/";
   static final String MANIFEST_OBJECT_KEY = "manifest.json";
+  static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(S3BackupStore.class);
   private static final int SCAN_PARALLELISM = 16;
   private final Pattern backupIdentifierPattern;
@@ -336,6 +338,31 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    final var key = backupMetadataKey(partitionId);
+    return client
+        .putObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.fromBytes(content))
+        .thenApply(resp -> null);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    final var key = backupMetadataKey(partitionId);
+    return client
+        .getObject(
+            req -> req.bucket(config.bucketName()).key(key), AsyncResponseTransformer.toBytes())
+        .thenApply(response -> Optional.of(response.asByteArray()))
+        .exceptionally(
+            throwable -> {
+              if (throwable.getCause() instanceof NoSuchKeyException) {
+                return Optional.empty();
+              }
+              throw new RuntimeException(throwable);
+            });
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
@@ -345,13 +372,12 @@ public final class S3BackupStore implements BackupStore {
     return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
   }
 
-  private CompletableFuture<List<ObjectIdentifier>> listBackupObjects(final Manifest manifest) {
-    return listObjects(manifest, Directory.CONTENTS);
-  }
-
-  private CompletableFuture<List<ObjectIdentifier>> listBackupManifestObjects(
-      final Manifest manifest) {
-    return listObjects(manifest, Directory.MANIFESTS);
+  private String backupMetadataKey(final int partitionId) {
+    return "%smetadata/%d/%s"
+        .formatted(
+            config.basePath().map(base -> base + "/").orElse(""),
+            partitionId,
+            METADATA_OBJECT_NAME);
   }
 
   private CompletableFuture<List<ObjectIdentifier>> listObjects(

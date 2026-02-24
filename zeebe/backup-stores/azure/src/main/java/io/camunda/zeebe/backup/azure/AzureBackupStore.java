@@ -29,6 +29,7 @@ import io.camunda.zeebe.backup.common.Manifest;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -49,6 +50,7 @@ public final class AzureBackupStore implements BackupStore {
       "Expected to restore from completed backup with id '%s', but was in state '%s'";
   public static final String SNAPSHOT_FILESET_NAME = "snapshot";
   public static final String SEGMENTS_FILESET_NAME = "segments";
+  public static final String METADATA_OBJECT_NAME = "metadata.json";
   private static final Logger LOG = LoggerFactory.getLogger(AzureBackupStore.class);
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -260,6 +262,33 @@ public final class AzureBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = backupMetadataPath(partitionId);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          blobClient.upload(BinaryData.fromBytes(content), true);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          assureContainerCreated();
+          final var blobName = backupMetadataPath(partitionId);
+          final var blobClient = blobContainerClient.getBlobClient(blobName);
+          if (!blobClient.exists()) {
+            return Optional.empty();
+          }
+          return Optional.of(blobClient.downloadContent().toBytes());
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -279,6 +308,10 @@ public final class AzureBackupStore implements BackupStore {
 
   private String rangeMarkersPrefix(final int partitionId) {
     return "ranges/" + partitionId + "/";
+  }
+
+  private String backupMetadataPath(final int partitionId) {
+    return "metadata/%d/%s".formatted(partitionId, METADATA_OBJECT_NAME);
   }
 
   private void assureContainerCreated() {
