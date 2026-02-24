@@ -13,11 +13,12 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
-import io.camunda.operate.webapp.rest.BatchOperationRestService;
+import io.camunda.operate.webapp.reader.BatchOperationReader;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -30,14 +31,16 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests retrieval of batch operation list taking into account BATCH READ permissions. */
 public class BatchOperationReaderIT extends OperateAbstractIT {
 
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean protected PermissionsService operatePermissionsService;
+  @Autowired private BatchOperationReader batchOperationReader;
+  @Autowired private DataAggregator dataAggregator;
   private final ArrayList<String> allOperationIds = new ArrayList<>();
 
   private final Comparator<BatchOperationDto> batchOperationEntityComparator =
@@ -82,31 +85,24 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   private BatchOperationDto assert3Pages() throws Exception {
     final List<BatchOperationDto> page1 =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, null, null)), BatchOperationDto.class);
+        queryBatchOperations(new BatchOperationRequestDto(2, null, null));
     assertThat(page1).hasSize(2);
     assertThat(page1).isSortedAccordingTo(batchOperationEntityComparator);
 
     final List<BatchOperationDto> page2 =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, page1.get(1).getSortValues(), null)),
-            BatchOperationDto.class);
+        queryBatchOperations(new BatchOperationRequestDto(2, page1.get(1).getSortValues(), null));
     assertThat(page2).hasSize(2);
     assertThat(page2).isSortedAccordingTo(batchOperationEntityComparator);
 
     // get again page1, but with searchBefore
     final List<BatchOperationDto> page1WithSearchBefore =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, null, page2.get(0).getSortValues())),
-            BatchOperationDto.class);
+        queryBatchOperations(new BatchOperationRequestDto(2, null, page2.get(0).getSortValues()));
     assertThat(page1WithSearchBefore).hasSize(2);
     assertThat(page1WithSearchBefore).isSortedAccordingTo(batchOperationEntityComparator);
     assertThat(page1WithSearchBefore).containsExactlyElementsOf(page1);
 
     final List<BatchOperationDto> page3 =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(2, page2.get(1).getSortValues(), null)),
-            BatchOperationDto.class);
+        queryBatchOperations(new BatchOperationRequestDto(2, page2.get(1).getSortValues(), null));
     assertThat(page3).hasSize(1);
 
     page1.addAll(page2);
@@ -121,8 +117,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
     when(operatePermissionsService.getBatchOperationsWithPermission(PermissionType.READ))
         .thenReturn(ResourcesAllowed.withIds(Set.of()));
     final List<BatchOperationDto> page1 =
-        mockMvcTestRule.listFromResponse(
-            postRequest(new BatchOperationRequestDto(10, null, null)), BatchOperationDto.class);
+        queryBatchOperations(new BatchOperationRequestDto(10, null, null));
     assertThat(page1).isEmpty();
   }
 
@@ -150,7 +145,8 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
     return batchOperationEntity;
   }
 
-  protected MvcResult postRequest(final Object query) throws Exception {
-    return postRequest(BatchOperationRestService.BATCH_OPERATIONS_URL, query);
+  private List<BatchOperationDto> queryBatchOperations(final BatchOperationRequestDto query) {
+    return dataAggregator.enrichBatchEntitiesWithMetadata(
+        batchOperationReader.getBatchOperations(query));
   }
 }

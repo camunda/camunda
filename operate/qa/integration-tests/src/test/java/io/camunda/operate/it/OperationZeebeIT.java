@@ -9,7 +9,6 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.BatchOperationRestService.BATCH_OPERATIONS_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -17,7 +16,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
@@ -32,6 +30,7 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
+import io.camunda.operate.webapp.transform.DataAggregator;
 import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -59,7 +58,6 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
-  private static final String QUERY_BATCH_OPERATIONS = BATCH_OPERATIONS_URL;
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -79,7 +77,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
   @Autowired private BatchOperationReader batchOperationReader;
 
-  @Autowired private ObjectMapper objectMapper;
+  @Autowired private DataAggregator dataAggregator;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
 
@@ -122,7 +120,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
+        queryBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
     final BatchOperationDto batchOperationDto = batchOperations[0];
@@ -168,7 +166,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // then
     final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
+        queryBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(1);
 
     final BatchOperationDto batchOperationDto = batchOperations[0];
@@ -416,7 +414,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
     // check batch operation progress
     final BatchOperationDto[] batchOperations =
-        postBatchOperationsRequestViaRest(new BatchOperationRequestDto().setPageSize(10));
+        queryBatchOperations(new BatchOperationRequestDto().setPageSize(10));
     assertThat(batchOperations).hasSize(2);
     BatchOperationDto batchOperationDto = batchOperations[0];
     assertThat(batchOperationDto.getType()).isEqualTo(OperationTypeDto.RESOLVE_INCIDENT);
@@ -820,10 +818,10 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     return QUERY_INSTANCES_URL;
   }
 
-  private BatchOperationDto[] postBatchOperationsRequestViaRest(
-      final BatchOperationRequestDto query) throws Exception {
-    final MvcResult mvcResult = postRequest(QUERY_BATCH_OPERATIONS, query);
-    return objectMapper.readValue(
-        mvcResult.getResponse().getContentAsString(), BatchOperationDto[].class);
+  private BatchOperationDto[] queryBatchOperations(final BatchOperationRequestDto query) {
+    final List<BatchOperationDto> batchOperations =
+        dataAggregator.enrichBatchEntitiesWithMetadata(
+            batchOperationReader.getBatchOperations(query));
+    return batchOperations.toArray(new BatchOperationDto[0]);
   }
 }
