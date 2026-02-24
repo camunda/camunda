@@ -22,14 +22,10 @@ import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.apps.nobeans.TestApplicationWithNoBeans;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.DecisionInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import java.util.List;
-import java.util.Map;
 import org.junit.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -71,20 +67,6 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
   }
 
   @Test
-  public void testGetDecisionInstanceDrdDataByWrongId() throws Exception {
-    // given
-    final String decisionInstanceId = "instanceId";
-    // when
-    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId)).thenReturn(null);
-    when(permissionsService.permissionsEnabled()).thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithException(
-            getDecisionInstanceDrdByIdUrl(decisionInstanceId), NotFoundException.class);
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Decision instance not found: " + decisionInstanceId);
-  }
-
-  @Test
   public void testDecisionInstanceFailsWhenNoPermissions() throws Exception {
     // given
     final String decisionInstanceId = "instanceId";
@@ -98,24 +80,6 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
         .thenReturn(false);
     final MvcResult mvcResult =
         getRequestShouldFailWithNoAuthorization(getDecisionInstanceByIdUrl(decisionInstanceId));
-    // then
-    assertErrorMessageContains(mvcResult, "No read permission for decision instance");
-  }
-
-  @Test
-  public void testDecisionInstanceDrdFailsWhenNoPermissions() throws Exception {
-    // given
-    final String decisionInstanceId = "instanceId";
-    final String bpmnDecisionId = "decisionId";
-    // when
-    when(decisionInstanceReader.getDecisionInstance(decisionInstanceId))
-        .thenReturn(new DecisionInstanceDto().setDecisionId(bpmnDecisionId));
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.hasPermissionForDecision(
-            bpmnDecisionId, PermissionType.READ_DECISION_INSTANCE))
-        .thenReturn(false);
-    final MvcResult mvcResult =
-        getRequestShouldFailWithNoAuthorization(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
     // then
     assertErrorMessageContains(mvcResult, "No read permission for decision instance");
   }
@@ -138,33 +102,7 @@ public class DecisionInstanceRestServiceIT extends OperateAbstractIT {
     assertThat(result.getDecisionId()).isEqualTo(bpmnDecisionId);
   }
 
-  @Test
-  public void testDecisionInstanceDrdSucceedsWhenPermissions() throws Exception {
-    // given
-    final String decisionInstanceId = "instanceId";
-    final String bpmnDecisionId = "decisionId";
-    // when
-    when(decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId))
-        .thenReturn(
-            Map.of(
-                bpmnDecisionId,
-                List.of(
-                    new DRDDataEntryDto(
-                        decisionInstanceId, bpmnDecisionId, DecisionInstanceState.EVALUATED))));
-    when(permissionsService.permissionsEnabled()).thenReturn(false);
-    final MvcResult mvcResult = getRequest(getDecisionInstanceDrdByIdUrl(decisionInstanceId));
-    final Map<String, List<DRDDataEntryDto>> result =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    // then
-    assertThat(result.get(bpmnDecisionId).getFirst().getDecisionInstanceId())
-        .isEqualTo(decisionInstanceId);
-  }
-
   public String getDecisionInstanceByIdUrl(final String id) {
     return DecisionInstanceRestService.DECISION_INSTANCE_URL + "/" + id;
-  }
-
-  public String getDecisionInstanceDrdByIdUrl(final String id) {
-    return DecisionInstanceRestService.DECISION_INSTANCE_URL + "/" + id + "/drd-data";
   }
 }
