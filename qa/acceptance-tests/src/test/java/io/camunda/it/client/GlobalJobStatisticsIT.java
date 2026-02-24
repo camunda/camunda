@@ -29,13 +29,9 @@ import java.time.OffsetDateTime;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 
 @MultiDbTest
 @CompatibilityTest
-@DisabledIfSystemProperty(
-    named = "test.integration.camunda.database.type",
-    matches = "AWS_OS") // test is flaky on AWS OS
 public class GlobalJobStatisticsIT {
 
   public static final OffsetDateTime NOW = OffsetDateTime.now();
