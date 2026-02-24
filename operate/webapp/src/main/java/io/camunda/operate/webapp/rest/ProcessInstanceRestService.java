@@ -198,16 +198,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
 
-  @Operation(summary = "Get process instance core statistics (aggregations)")
-  @GetMapping(path = "/core-statistics")
-  @Timed(
-      value = Metrics.TIMER_NAME_QUERY,
-      extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_CORESTATISTICS},
-      description = "How long does it take to retrieve the core statistics.")
-  public ProcessInstanceCoreStatisticsDto getCoreStatistics() {
-    return processInstanceReader.getCoreStatistics();
-  }
-
   @ExceptionHandler(ConstraintViolationException.class)
   public ResponseEntity<String> handleConstraintViolation(
       final ConstraintViolationException exception) {
