@@ -33,7 +33,14 @@ test.describe.parallel('Search User Task Tests', () => {
         data: {},
       });
       const json = await res.json();
-
+      validateResponseShape(
+        {
+          path: '/user-tasks/search',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       expect(json.page.totalItems).toBeGreaterThan(3);
     }).toPass(defaultAssertionOptions);
   });

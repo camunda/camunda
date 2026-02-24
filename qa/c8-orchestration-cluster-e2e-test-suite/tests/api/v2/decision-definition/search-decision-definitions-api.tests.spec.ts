@@ -21,6 +21,7 @@ import {
   deployDecisionAndStoreResponse,
 } from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
+import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Search Decision Definitions API Tests', () => {
@@ -59,6 +60,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 0,
         totalItemGreaterThan: 0,
@@ -93,6 +103,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -120,6 +139,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -144,6 +172,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           headers: jsonHeaders(),
           data: {filter},
         },
+      );
+
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
 
       await assertPaginatedRequest(res, {
@@ -181,6 +218,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -209,6 +255,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           headers: jsonHeaders(),
           data: {filter},
         },
+      );
+
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
 
       await assertPaginatedRequest(res, {
@@ -240,6 +295,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           data: {filter},
         },
       );
+      
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
@@ -265,6 +329,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           headers: jsonHeaders(),
           data: {filter},
         },
+      );
+
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
 
       await assertPaginatedRequest(res, {
@@ -303,6 +376,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -326,6 +408,16 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         data: {filter},
       },
     );
+
+    await validateResponse(
+      {
+        path: '/decision-definitions/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
+
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,
       totalItemsEqualTo: 0,
@@ -359,6 +451,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           headers: jsonHeaders(),
           data: {sort},
         },
+      );
+
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
 
       await assertPaginatedRequest(res, {
@@ -401,6 +502,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
           headers: jsonHeaders(),
           data: {sort},
         },
+      );
+
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
 
       await assertPaginatedRequest(res, {
@@ -465,6 +575,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 1,
         totalItemGreaterThan: 1,
@@ -519,6 +638,15 @@ test.describe.parallel('Search Decision Definitions API Tests', () => {
         },
       );
 
+      await validateResponse(
+        {
+          path: '/decision-definitions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+      
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 1,
         totalItemGreaterThan: 1,

@@ -17,6 +17,7 @@ import {
   assertUnsupportedMediaTypeRequest,
   assertNotFoundRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   EVALUATE_CONDITIONAL,
   EVALUATE_CONDITIONAL_WITH_TENANT,
@@ -55,6 +56,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(json.processInstances.length).toBeGreaterThan(0);
@@ -78,6 +87,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
@@ -100,6 +117,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
@@ -125,6 +150,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
@@ -139,6 +172,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
 
@@ -163,6 +204,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       },
     );
     await assertStatusCode(initialRes, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      initialRes,
+    );
     const initialJson = await initialRes.json();
     expect(initialJson.processInstances.length).toBeGreaterThan(0);
 
@@ -183,6 +232,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(json.processInstances.length).toBeGreaterThan(0);
@@ -272,6 +329,14 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: CONDITIONAL_EVALUATION_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
 
     expect(json).toHaveProperty('processInstances');

@@ -19,6 +19,7 @@ import {
   assertNotFoundRequest,
   assertForbiddenRequest,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {
   CREATE_DOC_INVALID_REQUEST,
   CREATE_DOCUMENT_LINK_REQUEST,
@@ -61,6 +62,14 @@ test.describe.parallel('Document API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/documents',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, documentRequiredFields);
       state[`documentId${nth}`] = json.documentId;
@@ -147,6 +156,14 @@ test.describe.parallel('Document API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
@@ -167,6 +184,14 @@ test.describe.parallel('Document API Tests', () => {
     );
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
@@ -194,6 +219,14 @@ test.describe.parallel('Document API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/documents',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
@@ -328,6 +361,14 @@ test.describe.parallel('Document API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/documents/batch',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       json = await res.json();
       assertRequiredFields(json, multipleDocumentsRequiredFields);
       expect(json['createdDocuments']).toHaveLength(2);

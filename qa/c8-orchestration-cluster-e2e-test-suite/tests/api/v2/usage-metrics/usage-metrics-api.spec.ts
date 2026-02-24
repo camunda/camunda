@@ -229,6 +229,14 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         },
       );
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/system/usage-metrics',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.activeTenants).toBe(0);
       expect(body.processInstances).toBe(0);

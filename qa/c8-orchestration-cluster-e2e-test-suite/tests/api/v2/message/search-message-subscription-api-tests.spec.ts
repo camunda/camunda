@@ -14,6 +14,7 @@ import {
   assertEqualsForKeys,
   paginatedResponseFields,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   expectedMessageSubscription1,
   expectedMessageSubscription2,
@@ -41,6 +42,14 @@ test.describe('Search Message Subscription API Tests', () => {
       },
     });
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/message-subscriptions/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
@@ -67,6 +76,14 @@ test.describe('Search Message Subscription API Tests', () => {
         );
 
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/message-subscriptions/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBeGreaterThan(1);
@@ -116,6 +133,14 @@ test.describe('Search Message Subscription API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -143,6 +168,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -170,6 +203,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       const matchingItem1 = json.items.find(
         (it: {processDefinitionId: string}) =>
@@ -208,6 +249,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       expect(json.page.totalItems).toBeGreaterThan(1);
       const matchingItem1 = json.items.find(
@@ -247,6 +296,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -274,6 +331,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -301,6 +366,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -328,6 +401,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -355,6 +436,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -385,6 +474,14 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);

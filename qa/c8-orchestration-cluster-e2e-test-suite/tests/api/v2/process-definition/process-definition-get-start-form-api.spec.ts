@@ -16,7 +16,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
-import {validateResponseShape} from '../../../../json-body-assertions';
+import {validateResponseShape, validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {readFileSync} from 'node:fs';
 
