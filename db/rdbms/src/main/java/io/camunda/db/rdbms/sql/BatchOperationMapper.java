@@ -42,6 +42,8 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void incrementCompletedOperationsCount(String batchOperationKey);
 
+  void bulkIncrementCompletedOperationsCount(BatchOperationUpdateTotalCountDto dto);
+
   Long count(BatchOperationDbQuery query);
 
   List<BatchOperationDbModel> search(BatchOperationDbQuery query);

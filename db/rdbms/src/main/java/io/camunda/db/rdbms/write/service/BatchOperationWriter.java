@@ -152,14 +152,19 @@ public class BatchOperationWriter implements RdbmsWriter {
     }
     for (int i = 0; i < items.size(); i += itemInsertBlockSize) {
       final var block = items.subList(i, Math.min(i + itemInsertBlockSize, items.size()));
-      executionQueue.executeInQueue(
-          new QueueItem(
-              ContextType.BATCH_OPERATION,
-              WriteStatementType.UPDATE,
-              null,
-              "io.camunda.db.rdbms.sql.BatchOperationMapper.completeBatchOperationItems",
-              new BatchOperationItemsCompletionDto(block, processedDate)));
+      mapper.completeBatchOperationItems(
+          new BatchOperationItemsCompletionDto(block, processedDate));
     }
+
+    items.stream()
+        .collect(
+            Collectors.groupingBy(
+                BatchOperationItemCompletionDto::batchOperationKey, Collectors.counting()))
+        .forEach(
+            (batchOperationKey, completedCount) ->
+                mapper.bulkIncrementCompletedOperationsCount(
+                    new BatchOperationUpdateTotalCountDto(
+                        batchOperationKey, completedCount.intValue())));
   }
 
   public void finish(final String batchOperationKey, final OffsetDateTime endDate) {
