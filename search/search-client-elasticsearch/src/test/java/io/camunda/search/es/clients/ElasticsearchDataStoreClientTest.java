@@ -15,6 +15,7 @@ import static org.mockito.Mockito.when;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.Result;
+import co.elastic.clients.elasticsearch._types.ShardFailure;
 import co.elastic.clients.elasticsearch.core.GetRequest;
 import co.elastic.clients.elasticsearch.core.GetResponse;
 import co.elastic.clients.elasticsearch.core.IndexRequest;
@@ -31,6 +32,7 @@ import io.camunda.search.clients.core.SearchWriteResponse;
 import io.camunda.search.es.transformers.ElasticsearchTransformers;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -170,6 +172,27 @@ public class ElasticsearchDataStoreClientTest {
   }
 
   @Test
+  public void shouldTransformIndexResponseWithShardFailures() throws IOException {
+    // given - an index response with shard failures where the "shard" field is null
+    final var indexRequestCaptor = ArgumentCaptor.forClass(IndexRequest.class);
+    final var indexResponse = createIndexResponseWithShardFailures();
+    when(client.index(indexRequestCaptor.capture())).thenReturn(indexResponse);
+
+    final var doc = new TestDocument("test");
+    final var searchIndexRequest =
+        SearchIndexRequest.of(b -> b.id("foo").index("bar").document(doc));
+
+    // when
+    final var response = searchClient.index(searchIndexRequest);
+
+    // then -- should succeed despite no shard field in shard failures response
+    assertThat(response).isNotNull();
+    assertThat(response.id()).isEqualTo("foo");
+    assertThat(response.index()).isEqualTo("bar");
+    assertThat(response.result()).isEqualTo(SearchWriteResponse.Result.CREATED);
+  }
+
+  @Test
   public void shouldHaveMoreTotalItemsFalse() throws IOException {
     // given
     final var searchRequestCaptor = ArgumentCaptor.forClass(SearchRequest.class);
@@ -208,7 +231,7 @@ public class ElasticsearchDataStoreClientTest {
   }
 
   private SearchResponse<TestDocument> createDefaultSearchResponse(
-      long totalHits, TotalHitsRelation totalHitsRelation) {
+      final long totalHits, final TotalHitsRelation totalHitsRelation) {
     return SearchResponse.of(
         (f) ->
             f.took(122)
@@ -236,6 +259,31 @@ public class ElasticsearchDataStoreClientTest {
                 .seqNo(1L)
                 .version(1L)
                 .shards(s -> s.total(1).successful(1).failed(0)));
+  }
+
+  private IndexResponse createIndexResponseWithShardFailures() {
+    return IndexResponse.of(
+        b ->
+            b.id("foo")
+                .index("bar")
+                .result(Result.Created)
+                .primaryTerm(1L)
+                .seqNo(1L)
+                .version(1L)
+                .shards(
+                    s ->
+                        s.total(2)
+                            .successful(1)
+                            .failed(1)
+                            .failures(
+                                List.of(
+                                    ShardFailure.of(
+                                        sf ->
+                                            sf.reason(
+                                                    r ->
+                                                        r.type("i_o_exception")
+                                                            .reason("No space left on device"))
+                                                .status("INTERNAL_SERVER_ERROR"))))));
   }
 
   record TestDocument(String id) {}
