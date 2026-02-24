@@ -10,7 +10,7 @@ import type {Route} from '@playwright/test';
 import {
   type QueryBatchOperationsResponseBody,
   type QueryBatchOperationItemsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 function mockResponses({
   batchOperations,
@@ -94,6 +94,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 3,
       state: 'COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
@@ -105,6 +107,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 3,
       state: 'COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'fb7cfeb0-abaa-4323-8910-9d44fe031c08',
@@ -116,6 +120,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 0,
       state: 'COMPLETED',
       actorId: 'admin',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'c1331a55-3f6f-4884-837f-dfa268f7ef0c',
@@ -127,6 +133,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 0,
       state: 'COMPLETED',
       actorId: 'admin',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'a74db3d1-4588-41a5-9e10-42cea80213a6',
@@ -138,6 +146,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 1,
       state: 'COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: '9961d35a-261f-4b29-b506-8b14cc6e7992',
@@ -149,6 +159,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 1,
       state: 'COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'b1454600-5f13-4365-bb45-960e8372136b',
@@ -160,6 +172,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 0,
       state: 'PARTIALLY_COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'f9ddd801-ff34-44da-8d7c-366036b6d8d8',
@@ -171,6 +185,8 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 1,
       state: 'COMPLETED',
       actorId: 'admin',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: 'c5e97ca8-bdf9-434f-934f-506a6960d1e3',
@@ -182,21 +198,28 @@ const mockBatchOperations: QueryBatchOperationsResponseBody = {
       operationsCompletedCount: 1,
       state: 'COMPLETED',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
     {
       batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8199',
       batchOperationType: 'MIGRATE_PROCESS_INSTANCE',
       startDate: '2023-10-01T10:00:00.000+0000',
-      endDate: undefined,
+      endDate: null,
       operationsTotalCount: 3,
       operationsFailedCount: 0,
       operationsCompletedCount: 0,
       state: 'ACTIVE',
       actorId: 'demo',
+      actorType: null,
+      errors: [],
     },
   ],
   page: {
     totalItems: 10,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
@@ -206,29 +229,38 @@ const mockBatchOperationItems: QueryBatchOperationItemsResponseBody = {
       batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
       itemKey: 'item-1',
       processInstanceKey: '6755399441062827',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-25T15:41:49.754+0300',
+      errorMessage: null,
       operationType: 'RESOLVE_INCIDENT',
     },
     {
       batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
       itemKey: 'item-2',
       processInstanceKey: '6755399441062826',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-25T15:41:48.500+0300',
+      errorMessage: null,
       operationType: 'RESOLVE_INCIDENT',
     },
     {
       batchOperationKey: '653ed5e6-49ed-4675-85bf-2c54a94d8180',
       itemKey: 'item-3',
       processInstanceKey: '6755399441062825',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-25T15:41:47.200+0300',
+      errorMessage: null,
       operationType: 'RESOLVE_INCIDENT',
     },
   ],
   page: {
     totalItems: 3,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
@@ -238,6 +270,7 @@ const mockBatchOperationItemsWithError: QueryBatchOperationItemsResponseBody = {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
       itemKey: 'error-item-1',
       processInstanceKey: '6755399441062834',
+      rootProcessInstanceKey: null,
       state: 'FAILED',
       processedDate: '2023-08-15T10:42:18.818+0300',
       errorMessage: 'Failed to modify process instance: Invalid element',
@@ -247,6 +280,7 @@ const mockBatchOperationItemsWithError: QueryBatchOperationItemsResponseBody = {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
       itemKey: 'error-item-2',
       processInstanceKey: '6755399441062833',
+      rootProcessInstanceKey: null,
       state: 'FAILED',
       processedDate: '2023-08-15T10:42:18.500+0300',
       errorMessage: 'Failed to modify process instance: Element not found',
@@ -256,29 +290,38 @@ const mockBatchOperationItemsWithError: QueryBatchOperationItemsResponseBody = {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
       itemKey: 'item-3',
       processInstanceKey: '6755399441062832',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-15T10:42:18.200+0300',
+      errorMessage: null,
       operationType: 'MODIFY_PROCESS_INSTANCE',
     },
     {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
       itemKey: 'item-4',
       processInstanceKey: '6755399441062831',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-15T10:42:17.900+0300',
+      errorMessage: null,
       operationType: 'MODIFY_PROCESS_INSTANCE',
     },
     {
       batchOperationKey: '35ccdcfc-aeac-4ec8-ac6c-db67e581b22e',
       itemKey: 'item-5',
       processInstanceKey: '6755399441062830',
+      rootProcessInstanceKey: null,
       state: 'COMPLETED',
       processedDate: '2023-08-15T10:42:17.600+0300',
+      errorMessage: null,
       operationType: 'MODIFY_PROCESS_INSTANCE',
     },
   ],
   page: {
     totalItems: 5,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 

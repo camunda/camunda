@@ -66,7 +66,7 @@ describe('getProcessDefinitionName', () => {
 
   it('should fall back to processDefinitionId when name is undefined', () => {
     const name = getProcessDefinitionName({
-      name: undefined,
+      name: null,
       processDefinitionId: 'testProcess',
     });
     expect(name).toBe('testProcess');

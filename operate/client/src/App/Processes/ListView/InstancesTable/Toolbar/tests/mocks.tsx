@@ -12,7 +12,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {processInstancesSelectionStore} from 'modules/stores/processInstancesSelection';
 import {batchModificationStore} from 'modules/stores/batchModification';
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {createProcessDefinition} from 'modules/testUtils';
 import {SelectedProcessDefinitionContext} from 'App/Processes/ListView/selectedProcessDefinitionContext';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
@@ -26,17 +26,23 @@ const selectedProcessDefinition = createProcessDefinition({
   processDefinitionKey: PROCESS_DEFINITION_KEY,
 });
 
-const mockProcessInstancesV2: ProcessInstance[] = [
+const mockProcessInstancesV2 = [
   {
     processInstanceKey: '1',
     processDefinitionKey: PROCESS_DEFINITION_KEY,
     processDefinitionId: PROCESS_DEFINITION_ID,
     processDefinitionName: 'Test Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'ACTIVE',
     startDate: '2023-01-01T00:00:00.000+0000',
+    endDate: null,
     hasIncident: false,
     tenantId: '<default>',
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   {
     processInstanceKey: '2',
@@ -44,10 +50,16 @@ const mockProcessInstancesV2: ProcessInstance[] = [
     processDefinitionId: PROCESS_DEFINITION_ID,
     processDefinitionName: 'Test Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'ACTIVE',
     startDate: '2023-01-01T00:00:00.000+0000',
+    endDate: null,
     hasIncident: true,
     tenantId: '<default>',
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   {
     processInstanceKey: '3',
@@ -55,11 +67,16 @@ const mockProcessInstancesV2: ProcessInstance[] = [
     processDefinitionId: PROCESS_DEFINITION_ID,
     processDefinitionName: 'Test Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'TERMINATED',
     startDate: '2023-01-01T00:00:00.000+0000',
     endDate: '2023-01-02T00:00:00.000+0000',
     hasIncident: false,
     tenantId: '<default>',
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
   {
     processInstanceKey: '4',
@@ -67,13 +84,18 @@ const mockProcessInstancesV2: ProcessInstance[] = [
     processDefinitionId: PROCESS_DEFINITION_ID,
     processDefinitionName: 'Test Process',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     state: 'COMPLETED',
     startDate: '2023-01-01T00:00:00.000+0000',
     endDate: '2023-01-02T00:00:00.000+0000',
     hasIncident: false,
     tenantId: '<default>',
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   },
-];
+] satisfies ProcessInstance[];
 
 const setupSelectionStoreWithInstances = (
   instances: ProcessInstance[],

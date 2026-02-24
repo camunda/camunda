@@ -18,7 +18,7 @@ import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fe
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {parseDiagramXML} from 'modules/utils/bpmn';
 import {businessObjectsParser} from 'modules/queries/processDefinitions/useBusinessObjects';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const diagramModel = await parseDiagramXML(multiInstanceProcess);
 const businessObjects = businessObjectsParser({diagramModel});
@@ -33,8 +33,11 @@ const MULTI_INSTANCE_BODY_ELEMENT: ElementInstance = {
   elementId: 'filterMapSubProcess',
   elementName: 'Filter-Map Sub Process',
   hasIncident: true,
+  incidentKey: null,
   tenantId: '<default>',
   startDate: '2020-08-18T12:07:34.205+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
 };
 
 const SUB_PROCESS_ELEMENT: ElementInstance = {
@@ -47,8 +50,11 @@ const SUB_PROCESS_ELEMENT: ElementInstance = {
   elementId: 'filterMapSubProcess',
   elementName: 'Filter-Map Sub Process',
   hasIncident: true,
+  incidentKey: null,
   tenantId: '<default>',
   startDate: '2020-08-18T12:07:34.281+0000',
+  endDate: null,
+  rootProcessInstanceKey: null,
 };
 
 describe('ElementInstancesTree - Multi Instance Subprocess', () => {
@@ -70,9 +76,11 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           elementId: 'peterFork',
           elementName: 'Peter Fork',
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );
@@ -160,9 +168,11 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           elementId: 'startFilterMap',
           elementName: 'Start Filter-Map',
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.337+0000',
           endDate: '2020-08-18T12:07:34.445+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );
@@ -249,9 +259,11 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           elementId: 'peterFork',
           elementName: 'Peter Fork',
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:33.953+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
         {
           elementInstanceKey: '2251799813686156',
@@ -263,9 +275,11 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
           elementId: 'filterMapSubProcess',
           elementName: 'Filter-Map Sub Process',
           hasIncident: false,
+          incidentKey: null,
           tenantId: '<default>',
           startDate: '2020-08-18T12:07:34.205+0000',
           endDate: '2020-08-18T12:07:34.034+0000',
+          rootProcessInstanceKey: null,
         },
       ]),
     );

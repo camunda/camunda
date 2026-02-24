@@ -25,7 +25,7 @@ import type {
   ElementInstance,
   UserTask,
   MessageSubscription,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {PROCESS_INSTANCE_ID} from 'modules/mocks/metadata';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
@@ -49,29 +49,69 @@ const mockSingleIncident: Incident = {
   creationTime: '2024-10-28T10:00:00.000Z',
   state: 'ACTIVE',
   tenantId: '<default>',
+  rootProcessInstanceKey: null,
 };
 
 describe('MetadataPopover <Details />', () => {
   beforeEach(() => {
     mockFetchProcessDefinitionXml().withSuccess('');
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchUserTasks().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchUserTasks().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchMessageSubscriptions().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchDecisionInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
   it('should render element instance details', () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(
       <Details
@@ -141,7 +181,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job retries when available', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(
       <Details
@@ -172,7 +220,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should show metadata dialog when "Show more metadata" is clicked', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     const {user} = render(
       <Details
@@ -196,10 +252,13 @@ describe('MetadataPopover <Details />', () => {
       type: 'SERVICE_TASK',
       state: 'ACTIVE',
       startDate: '',
+      endDate: null,
       processDefinitionId: 'test',
       processInstanceKey: '111',
       processDefinitionKey: '222',
+      rootProcessInstanceKey: null,
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
     };
 
@@ -236,7 +295,15 @@ describe('MetadataPopover <Details />', () => {
       type: 'USER_TASK',
     };
 
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(
       <Details
@@ -260,7 +327,15 @@ describe('MetadataPopover <Details />', () => {
       tasklistUrl,
     });
 
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(
       <Details
@@ -278,7 +353,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display execution duration info', () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(
       <Details
@@ -326,11 +409,20 @@ describe('MetadataPopover <Details />', () => {
       customHeaders: {custom1: 'value1', custom2: 2},
       priority: 10,
       processDefinitionVersion: 1,
+      processName: null,
+      rootProcessInstanceKey: null,
+      name: 'name',
+      tags: [],
     };
 
     mockSearchUserTasks().withSuccess({
       items: [userTask],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -417,11 +509,25 @@ describe('MetadataPopover <Details />', () => {
       candidateGroups: [],
       candidateUsers: [],
       priority: 0,
+      processName: null,
+      rootProcessInstanceKey: null,
+      name: 'name',
+      tags: [],
+      dueDate: null,
+      followUpDate: null,
+      completionDate: null,
+      customHeaders: null,
+      externalFormReference: null,
     };
 
     mockSearchUserTasks().withSuccess({
       items: [partialUserTask],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -442,7 +548,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display user task fields for non-user task types', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     const {user} = render(
       <Details
@@ -470,11 +584,17 @@ describe('MetadataPopover <Details />', () => {
     const incidentElementInstance: ElementInstance = {
       ...mockElementInstance,
       hasIncident: true,
+      rootProcessInstanceKey: null,
     };
 
     mockSearchIncidentsByElementInstance('123456789').withSuccess({
       items: [mockSingleIncident],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -505,7 +625,12 @@ describe('MetadataPopover <Details />', () => {
 
     mockSearchProcessInstances().withSuccess({
       items: [mockCalledProcessInstance],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -525,7 +650,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should display job data fields', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     const {user} = render(
       <Details
@@ -557,11 +690,17 @@ describe('MetadataPopover <Details />', () => {
       messageSubscriptionState: 'CREATED',
       lastUpdatedDate: '2023-01-15T10:00:00.000Z',
       tenantId: '<default>',
+      rootProcessInstanceKey: null,
     };
 
     mockSearchMessageSubscriptions().withSuccess({
       items: [messageSubscription],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -597,7 +736,15 @@ describe('MetadataPopover <Details />', () => {
   });
 
   it('should not display message subscriptions when no message subscriptions exist', async () => {
-    mockSearchJobs().withSuccess({items: [mockJob], page: {totalItems: 1}});
+    mockSearchJobs().withSuccess({
+      items: [mockJob],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     const {user} = render(
       <Details
@@ -632,11 +779,17 @@ describe('MetadataPopover <Details />', () => {
       messageSubscriptionState: 'CREATED',
       lastUpdatedDate: '2023-01-15T10:00:00.000Z',
       tenantId: '<default>',
+      rootProcessInstanceKey: null,
     };
 
     mockSearchMessageSubscriptions().withSuccess({
       items: [messageSubscription],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -684,6 +837,7 @@ describe('MetadataPopover <Details />', () => {
       messageSubscriptionState: 'CREATED',
       lastUpdatedDate: '2026-01-27T08:38:47.440Z',
       tenantId: '<default>',
+      rootProcessInstanceKey: null,
     };
 
     const messageSubscription2: MessageSubscription = {
@@ -698,11 +852,17 @@ describe('MetadataPopover <Details />', () => {
       messageSubscriptionState: 'CREATED',
       lastUpdatedDate: '2026-01-27T08:38:47.440Z',
       tenantId: '<default>',
+      rootProcessInstanceKey: null,
     };
 
     mockSearchMessageSubscriptions().withSuccess({
       items: [messageSubscription1, messageSubscription2],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(

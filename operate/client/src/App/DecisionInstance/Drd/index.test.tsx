@@ -29,7 +29,12 @@ describe('<Drd />', () => {
     mockFetchDecisionDefinitionXML().withSuccess(mockDmnXml);
     mockSearchDecisionInstances().withSuccess({
       items: [invoiceClassification],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

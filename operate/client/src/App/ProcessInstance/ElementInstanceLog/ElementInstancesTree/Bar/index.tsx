@@ -11,7 +11,7 @@ import {TimeStampLabel} from './TimeStampLabel';
 import {NodeName, Container, StateIcon} from './styled';
 import {Layer, Stack, Tag} from '@carbon/react';
 import {formatDate} from 'modules/utils/date';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {ModificationIcons} from './ModificationIcons';
 
 type Props = {
@@ -20,10 +20,10 @@ type Props = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate?: string;
+  endDate: string | null;
   isTimestampLabelVisible: boolean;
   isRoot: boolean;
-  latestMigrationDate: string | undefined;
+  latestMigrationDate: string | null;
   scopeKeyHierarchy: string[];
 };
 
@@ -52,10 +52,10 @@ const Bar = forwardRef<HTMLDivElement, Props>(
             <StateIcon state={elementInstanceState} size={16} />
           )}
           <NodeName>{elementName}</NodeName>
-          {isRoot && latestMigrationDate !== undefined && (
+          {isRoot && latestMigrationDate !== null && (
             <Tag type="green">{`Migrated ${formatDate(latestMigrationDate)}`}</Tag>
           )}
-          {isTimestampLabelVisible && endDate && (
+          {isTimestampLabelVisible && endDate !== null && (
             <Layer>
               <TimeStampLabel timeStamp={endDate} />
             </Layer>

@@ -37,7 +37,12 @@ describe('<MoveAction />', () => {
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockSearchProcessInstances().withSuccess({
       items: mockProcessInstancesV2,
-      page: {totalItems: mockProcessInstancesV2.length},
+      page: {
+        totalItems: mockProcessInstancesV2.length,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

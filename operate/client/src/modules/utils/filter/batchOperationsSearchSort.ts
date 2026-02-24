@@ -9,7 +9,7 @@
 import {
   queryBatchOperationsRequestBodySchema,
   type QueryBatchOperationsRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {parseSortParamsV2} from 'modules/utils/filter';
 
 type BatchOperationsSearchSort = NonNullable<

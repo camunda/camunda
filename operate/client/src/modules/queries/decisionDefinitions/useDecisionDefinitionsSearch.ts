@@ -12,7 +12,7 @@ import {searchDecisionDefinitions} from 'modules/api/v2/decisionDefinitions/sear
 import type {
   QueryDecisionDefinitionsRequestBody,
   QueryDecisionDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type QueryOptions<T> = {
   payload?: QueryDecisionDefinitionsRequestBody;

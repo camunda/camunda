@@ -24,7 +24,7 @@ import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {act} from 'react';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -73,21 +73,34 @@ const activityElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'someKey',
   processInstanceKey: '1',
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
 const emptyVariablesResponse = {
   items: [],
-  page: {totalItems: 0},
+  page: {
+    totalItems: 0,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
 };
 
 const emptyJobsResponse = {
   items: [],
-  page: {totalItems: 0},
+  page: {
+    totalItems: 0,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
 };
 
 const setupElementStateMocks = (statistics = defaultStatistics) => {
@@ -203,7 +216,12 @@ describe('VariablePanel element states', () => {
     setupElementStateMocks();
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     modificationsStore.enableModificationMode();
@@ -222,7 +240,12 @@ describe('VariablePanel element states', () => {
 
     mockSearchElementInstances().withSuccess({
       items: [activityElementInstance],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchVariables().withSuccess(emptyVariablesResponse);
@@ -334,7 +357,12 @@ describe('VariablePanel element states', () => {
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     modificationsStore.enableModificationMode();
@@ -350,7 +378,12 @@ describe('VariablePanel element states', () => {
 
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchJobs().withSuccess(emptyJobsResponse);
@@ -462,7 +495,12 @@ describe('VariablePanel element states', () => {
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     modificationsStore.enableModificationMode();
@@ -484,7 +522,12 @@ describe('VariablePanel element states', () => {
           state: 'COMPLETED',
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withSuccess(emptyVariablesResponse);
     mockSearchJobs().withSuccess(emptyJobsResponse);

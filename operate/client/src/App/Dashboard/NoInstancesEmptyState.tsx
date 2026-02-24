@@ -13,9 +13,7 @@ import {useCurrentUser} from 'modules/queries/useCurrentUser';
 
 const NoInstancesEmptyState: React.FC = () => {
   const {data: currentUser} = useCurrentUser();
-  const modelerLink = Array.isArray(currentUser?.c8Links)
-    ? currentUser?.c8Links.find((link) => link.name === 'modeler')?.link
-    : undefined;
+  const modelerLink = currentUser?.c8Links?.modeler;
 
   return (
     <EmptyState

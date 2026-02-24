@@ -6,11 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {
   endpoints,
+  type ProcessInstance,
   type DeleteProcessInstanceRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
+
 import {request} from 'modules/request';
 
 const deleteProcessInstance = async (

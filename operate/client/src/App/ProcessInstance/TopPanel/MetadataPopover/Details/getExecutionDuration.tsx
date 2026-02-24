@@ -13,10 +13,13 @@ import {
   parseISO,
 } from 'date-fns';
 
-function getExecutionDuration(startDate: string, endDate?: string): string {
+function getExecutionDuration(
+  startDate: string,
+  endDate: string | null,
+): string {
   const parsedStartDate = parseISO(startDate);
 
-  if (endDate === undefined) {
+  if (endDate === null) {
     return `${formatDistanceToNowStrict(parsedStartDate)} (running)`;
   }
 

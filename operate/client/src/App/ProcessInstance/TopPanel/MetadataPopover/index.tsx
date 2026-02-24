@@ -88,8 +88,9 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
             {resolvedElementInstance.hasIncident && (
               <Incidents
                 elementInstanceKey={resolvedElementInstance.elementInstanceKey}
-                elementName={resolvedElementInstance.elementName}
-                elementId={selectedElementId}
+                elementName={
+                  resolvedElementInstance.elementName ?? selectedElementId
+                }
               />
             )}
           </>

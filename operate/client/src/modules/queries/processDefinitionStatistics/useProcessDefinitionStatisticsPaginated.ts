@@ -11,7 +11,7 @@ import {fetchProcessDefinitionStatistics} from 'modules/api/v2/processDefinition
 import type {
   GetProcessDefinitionInstanceStatisticsRequestBody,
   GetProcessDefinitionInstanceStatisticsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {queryKeys} from '../queryKeys';
 
 const PAGE_LIMIT = 50;

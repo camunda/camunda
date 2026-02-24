@@ -19,66 +19,96 @@ import {LocationLog} from 'modules/utils/LocationLog';
 import {
   type ProcessInstance,
   type QueryElementInstancesResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockMultiInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2251799813686038',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'multiInstanceProcess',
   tenantId: '<default>',
   processDefinitionName: 'Multi-Instance Process',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockEventSubprocessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2251799813686038',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'eventSubprocessProcess',
   tenantId: '<default>',
   processDefinitionName: 'Event subprocess Process',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockNestedSubProcessesInstance: ProcessInstance = {
   processInstanceKey: '227539842356787',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '39480256723678',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'NestedSubProcesses',
   tenantId: '<default>',
   processDefinitionName: 'Nested Sub Processes',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockAdHocSubProcessesInstance: ProcessInstance = {
   processInstanceKey: '222734982389310',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '12517992348923884',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'AdHocProcess',
   tenantId: '<default>',
   processDefinitionName: 'Ad Hoc Process',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockNestedSubProcessInstance: ProcessInstance = {
   processInstanceKey: '2251799813686118',
   state: 'ACTIVE',
   startDate: '2022-09-23T10:59:43.096+0000',
+  endDate: null,
   processDefinitionKey: '123456789',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'nested_sub_process',
   tenantId: '<default>',
   processDefinitionName: 'nested_sub_process',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const multipleSubprocessesWithOneRunningScopeMock: Record<
@@ -100,6 +130,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2',
@@ -113,9 +145,17 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel1: {
     items: [
@@ -132,6 +172,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2',
@@ -146,6 +188,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_3',
@@ -160,9 +204,16 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel2: {
     items: [
@@ -179,6 +230,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2',
@@ -192,9 +245,17 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel1: {
     items: [
@@ -211,6 +272,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2_2',
@@ -225,6 +288,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2_3',
@@ -239,9 +304,16 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel2: {
     items: [
@@ -258,6 +330,8 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2_2',
@@ -271,9 +345,17 @@ const multipleSubprocessesWithOneRunningScopeMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 
@@ -296,6 +378,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2',
@@ -309,9 +393,17 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel1: {
     items: [
@@ -328,6 +420,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2',
@@ -342,6 +436,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_3',
@@ -356,9 +452,16 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel2: {
     items: [
@@ -375,6 +478,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2',
@@ -389,6 +494,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_3',
@@ -403,9 +510,16 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel1: {
     items: [
@@ -422,6 +536,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2_2',
@@ -436,6 +552,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2_3',
@@ -450,9 +568,16 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel2: {
     items: [
@@ -469,6 +594,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2_2',
@@ -483,6 +610,8 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2_3',
@@ -497,9 +626,16 @@ const multipleSubprocessesWithNoRunningScopeMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 
@@ -522,6 +658,8 @@ const adHocNodeElementInstances: Record<
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:33.953+0000',
         endDate: '2020-08-18T12:07:34.034+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1241799813612356',
@@ -536,6 +674,8 @@ const adHocNodeElementInstances: Record<
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:33.953+0000',
         endDate: '2020-08-18T12:07:34.034+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2251799813686156',
@@ -550,9 +690,16 @@ const adHocNodeElementInstances: Record<
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:33.953+0000',
         endDate: '2020-08-18T12:07:34.034+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   level2: {
     items: [
@@ -569,9 +716,16 @@ const adHocNodeElementInstances: Record<
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:33.953+0000',
         endDate: '2020-08-18T12:07:34.034+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
     ],
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 
@@ -594,6 +748,8 @@ const eventSubProcessElementInstances: Record<
         tenantId: '<default>',
         startDate: '2021-06-22T13:43:59.698+0000',
         endDate: '2021-06-22T13:43:59.701+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '6755399441057429',
@@ -608,6 +764,8 @@ const eventSubProcessElementInstances: Record<
         tenantId: '<default>',
         startDate: '2021-06-22T13:43:59.707+0000',
         endDate: '2021-06-22T13:46:59.705+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '6755399441063916',
@@ -621,9 +779,17 @@ const eventSubProcessElementInstances: Record<
         hasIncident: true,
         tenantId: '<default>',
         startDate: '2021-06-22T13:46:59.705+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   level2: {
     items: [
@@ -640,6 +806,8 @@ const eventSubProcessElementInstances: Record<
         tenantId: '<default>',
         startDate: '2021-06-22T13:46:59.714+0000',
         endDate: '2021-06-22T13:46:59.719+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '6755399441063920',
@@ -653,9 +821,17 @@ const eventSubProcessElementInstances: Record<
         hasIncident: true,
         tenantId: '<default>',
         startDate: '2021-06-22T13:46:59.722+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 
@@ -677,6 +853,9 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
       {
         elementInstanceKey: '2',
@@ -690,9 +869,17 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel1: {
     items: [
@@ -709,6 +896,8 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2',
@@ -722,6 +911,9 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
       {
         elementInstanceKey: '1_3',
@@ -735,9 +927,17 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   secondLevel2: {
     items: [
@@ -754,6 +954,8 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2',
@@ -767,6 +969,9 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
       {
         elementInstanceKey: '2_3',
@@ -780,9 +985,17 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel1: {
     items: [
@@ -799,6 +1012,8 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '1_2_2',
@@ -812,6 +1027,9 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
       {
         elementInstanceKey: '1_2_3',
@@ -825,9 +1043,17 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   thirdLevel2: {
     items: [
@@ -844,6 +1070,8 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.096+0000',
         endDate: '2022-09-23T11:00:42.508+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: '2_2_2',
@@ -857,6 +1085,9 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
       {
         elementInstanceKey: '2_2_3',
@@ -870,9 +1101,17 @@ const multipleSubprocessesWithTwoRunningScopesMock: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2022-09-23T10:59:43.822+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 
@@ -880,12 +1119,18 @@ const mockAdHocSubProcessInnerInstanceProcessInstance: ProcessInstance = {
   processInstanceKey: '111111111111111',
   state: 'COMPLETED',
   startDate: '2020-08-18T12:07:33.953+0000',
+  endDate: null,
   processDefinitionKey: '222222222222222',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'ad_hoc_inner_subprocess_test',
   tenantId: '<default>',
   processDefinitionName: 'Ad Hoc Inner Subprocess Test',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const adHocSubProcessInnerInstanceElementInstances: Record<
@@ -907,6 +1152,8 @@ const adHocSubProcessInnerInstanceElementInstances: Record<
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:33.953+0000',
         endDate: '2020-08-18T12:07:34.034+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
       },
       {
         elementInstanceKey: 'inner-1',
@@ -920,9 +1167,17 @@ const adHocSubProcessInnerInstanceElementInstances: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:34.100+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   level2: {
     items: [
@@ -938,13 +1193,26 @@ const adHocSubProcessInnerInstanceElementInstances: Record<
         hasIncident: false,
         tenantId: '<default>',
         startDate: '2020-08-18T12:07:34.200+0000',
+        rootProcessInstanceKey: null,
+        incidentKey: null,
+        endDate: null,
       },
     ],
-    page: {totalItems: 1},
+    page: {
+      totalItems: 1,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   emptyLevel: {
     items: [],
-    page: {totalItems: 0},
+    page: {
+      totalItems: 0,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 

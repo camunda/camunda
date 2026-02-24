@@ -45,8 +45,8 @@ describe('InstanceHeader', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );
@@ -86,8 +86,8 @@ describe('InstanceHeader', () => {
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );

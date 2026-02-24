@@ -6,20 +6,30 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryDecisionInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   assignApproverGroup,
   invoiceClassification,
 } from './mockDecisionInstance';
 
 const mockDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody = {
-  page: {totalItems: 2},
+  page: {
+    totalItems: 2,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
   items: [invoiceClassification, assignApproverGroup],
 };
 
 const mockEmptyDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody =
   {
-    page: {totalItems: 0},
+    page: {
+      totalItems: 0,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
     items: [],
   };
 

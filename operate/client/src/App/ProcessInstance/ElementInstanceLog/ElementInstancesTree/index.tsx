@@ -10,7 +10,7 @@ import {createContext, useContext, useEffect, useMemo, useRef} from 'react';
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {observer} from 'mobx-react-lite';
 import {elementInstancesTreeStore} from './elementInstancesTreeStore';
 import type {BusinessObjects, ElementType} from 'bpmn-js/lib/NavigatedViewer';
@@ -78,7 +78,7 @@ const ElementInstanceHistoryTree = createContext<{
   processInstance: ProcessInstance;
   scrollableContainerRef: React.RefObject<HTMLDivElement | null>;
   businessObjects: BusinessObjects;
-  latestMigrationDate: string | undefined;
+  latestMigrationDate: string | null;
 } | null>(null);
 
 const useElementInstanceHistoryTree = () => {
@@ -97,7 +97,7 @@ type NonFoldableElementInstancesNodeProps = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate: string | undefined;
+  endDate: string | null;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode | null;
   scopeKeyHierarchy: string[];
@@ -458,7 +458,7 @@ type FoldableElementInstancesNodeProps = {
   elementName: string;
   elementInstanceState: ElementInstance['state'];
   hasIncident: boolean;
-  endDate: string | undefined;
+  endDate: string | null;
   elementType: ElementInstance['type'];
   renderIcon: () => React.ReactNode;
   scopeKeyHierarchy: string[];
@@ -784,7 +784,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
     });
     const migrationItems = data?.pages[0].items ?? [];
     const latestMigrationDate =
-      migrationItems.length > 0 ? migrationItems[0].processedDate : undefined;
+      migrationItems.length > 0 ? migrationItems[0].processedDate : null;
     const rootElementInstance = useMemo<ElementInstance>(() => {
       const {
         processInstanceKey,
@@ -800,6 +800,7 @@ const ElementInstancesTree: React.FC<ElementInstancesTreeProps> = observer(
         elementInstanceKey: processInstanceKey,
         elementId: processDefinitionId,
         elementName: processDefinitionName ?? processDefinitionId,
+        incidentKey: null,
       };
     }, [processInstance]);
 
