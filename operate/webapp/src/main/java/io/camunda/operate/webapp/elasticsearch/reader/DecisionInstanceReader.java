@@ -43,13 +43,10 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.Tuple;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
@@ -77,46 +74,6 @@ public class DecisionInstanceReader extends AbstractReader
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
   @Autowired private DateTimeFormatter dateTimeFormatter;
   @Autowired private OperateProperties operateProperties;
-
-  @Override
-  public DecisionInstanceDto getDecisionInstance(final String decisionInstanceId) {
-    final var query = ElasticsearchUtil.idsQuery(String.valueOf(decisionInstanceId));
-
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
-
-    final var constantScoreQuery = ElasticsearchUtil.constantScoreQuery(tenantAwareQuery);
-
-    final var request =
-        new SearchRequest.Builder()
-            .index(whereToSearch(decisionInstanceTemplate, ALL))
-            .query(constantScoreQuery)
-            .build();
-
-    try {
-      final var response = esClient.search(request, DecisionInstanceEntity.class);
-      if (response.hits().total().value() == 1) {
-        final var decisionInstance = response.hits().hits().getFirst().source();
-
-        if (decisionInstance == null) {
-          throw new OperateRuntimeException(
-              String.format(
-                  "Elasticsearch document for decision instance with id '%s' has no source.",
-                  decisionInstanceId));
-        }
-
-        return DtoCreator.create(decisionInstance, DecisionInstanceDto.class);
-      } else if (response.hits().total().value() > 1) {
-        throw new NotFoundException(
-            String.format(
-                "Could not find unique decision instance with id '%s'.", decisionInstanceId));
-      } else {
-        throw new NotFoundException(
-            String.format("Could not find decision instance with id '%s'.", decisionInstanceId));
-      }
-    } catch (final IOException ex) {
-      throw new OperateRuntimeException(ex.getMessage(), ex);
-    }
-  }
 
   @Override
   public DecisionInstanceListResponseDto queryDecisionInstances(
