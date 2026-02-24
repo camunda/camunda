@@ -17,6 +17,7 @@ import {
   paginatedResponseFields,
   assertPaginatedRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertGroupsInResponse,
@@ -253,6 +254,14 @@ test.describe.parallel('Role Groups API Tests', () => {
         buildUrl('/roles/{roleId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 3,
         totalItemsEqualTo: 3,
@@ -275,6 +284,14 @@ test.describe.parallel('Role Groups API Tests', () => {
         buildUrl('/roles/{roleId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
@@ -296,6 +313,14 @@ test.describe.parallel('Role Groups API Tests', () => {
     const res = await request.post(
       buildUrl('/roles/{roleId}/groups/search', p),
       {headers: jsonHeaders(), data: {}},
+    );
+    await validateResponse(
+      {
+        path: '/roles/{roleId}/groups/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

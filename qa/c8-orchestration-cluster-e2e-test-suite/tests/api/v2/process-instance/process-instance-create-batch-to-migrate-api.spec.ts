@@ -23,6 +23,7 @@ import {defaultAssertionOptions} from '../../../../utils/constants';
 import {APIRequestContext} from 'playwright-core';
 import {JSONDoc} from '@camunda8/sdk/dist/zeebe/types.js';
 import {expectBatchState, findUserTask} from '@requestHelpers';
+import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
@@ -163,6 +164,14 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
@@ -224,6 +233,14 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');
@@ -297,6 +314,14 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/process-instances/migration',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         localState.batchOperationKey = json.batchOperationKey;
         expect(json.batchOperationType).toBe('MIGRATE_PROCESS_INSTANCE');

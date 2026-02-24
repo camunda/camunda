@@ -110,6 +110,14 @@ test.describe.parallel('Search Variables API Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -133,6 +141,14 @@ test.describe.parallel('Search Variables API Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
 
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
@@ -155,6 +171,14 @@ test.describe.parallel('Search Variables API Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/variables/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
 
       const names = body.items.map(

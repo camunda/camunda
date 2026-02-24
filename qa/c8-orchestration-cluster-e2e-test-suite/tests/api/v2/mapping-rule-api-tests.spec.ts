@@ -19,6 +19,7 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../utils/constants';
 import {
   CREATE_NEW_MAPPING_RULE,
@@ -49,6 +50,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/mapping-rules',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, mappingRuleRequiredFields);
       assertEqualsForKeys(json, requestBody, mappingRuleRequiredFields);
@@ -150,6 +159,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         {headers: jsonHeaders()},
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/mapping-rules/{mappingRuleId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, mappingRuleRequiredFields);
       assertEqualsForKeys(
@@ -192,6 +209,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: {},
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 2,
         totalItemGreaterThan: 2,
@@ -236,6 +261,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -264,6 +297,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -291,6 +332,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -319,6 +368,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -344,6 +401,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
+    await validateResponse(
+      {
+        path: '/mapping-rules/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,
       totalItemsEqualTo: 0,
@@ -367,6 +432,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -407,6 +480,14 @@ test.describe.parallel('Mapping Rules API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/mapping-rules/{mappingRuleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, mappingRuleRequiredFields);
       expect(json.claimName).toBe(updateBody.claimName);

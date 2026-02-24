@@ -17,6 +17,7 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   assignClientToGroup,
   clientIdFromState,
@@ -99,6 +100,14 @@ test.describe.parallel('Groups Clients API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/clients/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
@@ -131,6 +140,14 @@ test.describe.parallel('Groups Clients API Tests', () => {
     );
 
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/groups/{groupId}/clients/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
@@ -166,6 +183,14 @@ test.describe.parallel('Groups Clients API Tests', () => {
           },
         );
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/clients/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);

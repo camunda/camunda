@@ -13,6 +13,7 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {PUBLISH_NEW_MESSAGE} from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Publish Message API Tests', () => {
@@ -23,6 +24,14 @@ test.describe.parallel('Publish Message API Tests', () => {
       data: requestBody,
     });
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/messages/publication',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, ['tenantId', 'messageKey']);
     assertEqualsForKeys(json, {tenantId: '<default>'}, ['tenantId']);

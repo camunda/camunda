@@ -18,6 +18,7 @@ import {
   assertPaginatedRequest,
   assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertGroupsInResponse,
@@ -163,6 +164,14 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         );
 
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/tenants/{tenantId}/groups/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
