@@ -13,8 +13,8 @@ import io.camunda.zeebe.db.ZeebeDb;
 import io.camunda.zeebe.db.impl.DbLong;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import org.agrona.collections.MutableLong;
 
 /**
@@ -83,11 +83,25 @@ public final class DbBackupRangeState {
   }
 
   /** Returns all ranges, ordered by start checkpoint ID ascending. */
-  public List<BackupRange> getAllRanges() {
+  public SequencedCollection<BackupRange> getAllRanges() {
     final var result = new ArrayList<BackupRange>();
     rangesColumnFamily.forEach(
         (key, value) -> result.add(new BackupRange(key.getValue(), value.getValue())));
     return result;
+  }
+
+  public Optional<BackupRange> getFirstRange() {
+    final var startValue = new MutableLong(CheckpointState.NO_CHECKPOINT);
+    final var endValue = new MutableLong(CheckpointState.NO_CHECKPOINT);
+    rangesColumnFamily.whileTrue(
+        (start, end) -> {
+          startValue.set(start.getValue());
+          endValue.set(end.getValue());
+          return false;
+        });
+    return startValue.get() != CheckpointState.NO_CHECKPOINT
+        ? Optional.of(new BackupRange(startValue.get(), endValue.get()))
+        : Optional.empty();
   }
 
   /**

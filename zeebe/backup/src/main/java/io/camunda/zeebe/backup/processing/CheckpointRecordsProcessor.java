@@ -42,8 +42,10 @@ public final class CheckpointRecordsProcessor
   private final BackupManager backupManager;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
+  private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
+  private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
@@ -108,12 +110,20 @@ public final class CheckpointRecordsProcessor
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
             checkpointState, checkpointMetadataState, backupRangeState, backupManager);
+
+    checkpointDeleteBackupProcessor =
+        new CheckpointDeleteBackupProcessor(
+            checkpointMetadataState, backupRangeState, checkpointState, backupManager);
+
     checkpointCreatedEventApplier =
         new CheckpointCreatedEventApplier(
             checkpointState, checkpointMetadataState, checkpointListeners);
     checkpointBackupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);
+    checkpointBackupDeletedApplier =
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -137,6 +147,12 @@ public final class CheckpointRecordsProcessor
       // Should never reach here. StreamProcessor must choose the right processor always.
       throw new IllegalArgumentException("Unknown record");
     }
+    if (!record.getIntent().isEvent()) {
+      throw new IllegalArgumentException(
+          "Expected to replay event but got non-event with intent: %s"
+              .formatted(record.getIntent()));
+    }
+
     final CheckpointIntent intent = (CheckpointIntent) record.getIntent();
     switch (intent) {
       case CREATED ->
@@ -144,30 +160,39 @@ public final class CheckpointRecordsProcessor
               (CheckpointRecord) record.getValue(), record.getTimestamp());
       case CONFIRMED_BACKUP ->
           checkpointBackupConfirmedApplier.apply(
-              (CheckpointRecord) record.getValue(),
-              record.getTimestamp(),
-              record.getBrokerVersion());
-      default -> {
-        // Don't apply intents CREATE and IGNORED
-      }
+              (CheckpointRecord) record.getValue(), record.getTimestamp());
+      case DELETED_BACKUP ->
+          checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
+      case IGNORED -> {}
+      default ->
+          throw new IllegalStateException(
+              "Unknown checkpoint intent: %s".formatted(record.getIntent()));
     }
   }
 
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder resultBuilder) {
-    if (record.getValueType() == ValueType.CHECKPOINT
-        && record.getIntent() == CheckpointIntent.CREATE) {
-      return checkpointCreateProcessor.process(record, resultBuilder);
+    if (record.getValueType() != ValueType.CHECKPOINT) {
+      throw new IllegalArgumentException(
+          "Unknown value type %s for record %s".formatted(record.getValueType(), record));
     }
 
-    if (record.getValueType() == ValueType.CHECKPOINT
-        && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
-      return checkpointConfirmBackupProcessor.process(record, resultBuilder);
+    if (!(record.getIntent() instanceof final CheckpointIntent checkpointIntent)) {
+      throw new IllegalArgumentException(
+          "Unknown checkpoint intent %s".formatted(record.getIntent()));
     }
 
-    // Should never reach here. StreamProcessor must choose the right processor always.
-    throw new IllegalArgumentException("Unknown record");
+    return switch (checkpointIntent) {
+      case CheckpointIntent.CREATE -> checkpointCreateProcessor.process(record, resultBuilder);
+      case CheckpointIntent.CONFIRM_BACKUP ->
+          checkpointConfirmBackupProcessor.process(record, resultBuilder);
+      case CheckpointIntent.DELETE_BACKUP ->
+          checkpointDeleteBackupProcessor.process(record, resultBuilder);
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown checkpoint intent %s".formatted(record.getIntent()));
+    };
   }
 
   @Override

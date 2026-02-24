@@ -25,7 +25,6 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
 import io.camunda.zeebe.backup.api.BackupStatus;
@@ -364,61 +363,49 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldDeleteAllExistingBackupWithSameCheckpointId() {
+  void shouldWriteRequestBackupDeletionCommandToLog() {
     // given
-    final int partitionId = 1;
     final long checkpointId = 2L;
-    final BackupStatus backupNode1 = mock(BackupStatus.class);
-    when(backupNode1.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupNode1.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
-
-    final BackupStatus backupNode2 = mock(BackupStatus.class);
-    when(backupNode2.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backupNode2.id()).thenReturn(new BackupIdentifierImpl(2, partitionId, checkpointId));
-
-    when(backupStore.list(
-            new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
-        .thenReturn(CompletableFuture.completedFuture(List.of(backupNode1, backupNode2)));
-
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+    backupService.writeBackupDeletionCommand(checkpointId, concurrencyControl).join();
 
     // then
-    verify(backupStore).delete(backupNode1.id());
-    verify(backupStore).delete(backupNode2.id());
+    verify(logStreamWriter)
+        .tryWrite(
+            eq(WriteContext.internal()),
+            assertArg(
+                (final LogAppendEntry entry) -> {
+                  assertThat(entry.recordMetadata().getRecordType()).isEqualTo(RecordType.COMMAND);
+                  assertThat(entry.recordMetadata().getIntent())
+                      .isEqualTo(CheckpointIntent.DELETE_BACKUP);
+                  assertThat(entry.recordValue())
+                      .isInstanceOfSatisfying(
+                          CheckpointRecord.class,
+                          checkpointRecord ->
+                              assertThat(checkpointRecord.getCheckpointId())
+                                  .isEqualTo(checkpointId));
+                }));
+    // deleteBackup no longer calls backupStore directly — the stream processor handles that
+    verify(backupStore, never()).delete(any());
   }
 
   @Test
-  void shouldDeleteInProgressBackup() {
+  void shouldFailRequestBackupDeletionWhenLogWriteFails() {
     // given
-    final int partitionId = 1;
     final long checkpointId = 2L;
-    final BackupStatus backup = mock(BackupStatus.class);
-    when(backup.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
-    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
-
-    when(backupStore.list(
-            new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
-        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
-
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.markFailed(any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    when(logStreamWriter.tryWrite(any(), any(LogAppendEntry.class)))
+        .thenReturn(Either.left(WriteFailure.WRITE_LIMIT_EXHAUSTED));
 
     // when
-    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+    final var result = backupService.writeBackupDeletionCommand(checkpointId, concurrencyControl);
 
     // then
-    verify(backupStore).markFailed(eq(backup.id()), anyString());
-    verify(backupStore).delete(backup.id());
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("Failed to write DELETE_BACKUP command");
+    verify(backupStore, never()).delete(any());
   }
 
   @Test
@@ -504,60 +491,18 @@ class BackupServiceImplTest {
   }
 
   @Test
-  void shouldStoreDeletionMarkerWhenDeletingCompletedBackup() {
+  void shouldNotInteractWithBackupStoreOnRequestBackupDeletion() {
     // given
-    final int partitionId = 1;
     final long checkpointId = 5L;
-    final BackupStatus backup = mock(BackupStatus.class);
-    when(backup.statusCode()).thenReturn(BackupStatusCode.COMPLETED);
-    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
-
-    when(backupStore.list(
-            new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
-        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
-
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
 
     // when
-    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
+    backupService.writeBackupDeletionCommand(checkpointId, concurrencyControl).join();
 
-    // then - verify storeRangeMarker is called before delete
-    final var inOrder = inOrder(backupStore);
-    inOrder.verify(backupStore).storeRangeMarker(partitionId, new Deletion(checkpointId));
-    inOrder.verify(backupStore).delete(backup.id());
-  }
-
-  @Test
-  void shouldStoreDeletionMarkerBeforeDeletingInProgressBackup() {
-    // given
-    final int partitionId = 1;
-    final long checkpointId = 5L;
-    final BackupStatus backup = mock(BackupStatus.class);
-    when(backup.statusCode()).thenReturn(BackupStatusCode.IN_PROGRESS);
-    when(backup.id()).thenReturn(new BackupIdentifierImpl(1, partitionId, checkpointId));
-
-    when(backupStore.list(
-            new BackupIdentifierWildcardImpl(
-                Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId))))
-        .thenReturn(CompletableFuture.completedFuture(List.of(backup)));
-
-    when(backupStore.delete(any())).thenReturn(CompletableFuture.completedFuture(null));
-    when(backupStore.markFailed(any(), any()))
-        .thenReturn(CompletableFuture.completedFuture(BackupStatusCode.FAILED));
-    when(backupStore.storeRangeMarker(anyInt(), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
-
-    // when
-    backupService.deleteBackup(partitionId, checkpointId, concurrencyControl).join();
-
-    // then - verify markFailed is called first, then storeRangeMarker, then delete
-    final var inOrder = inOrder(backupStore);
-    inOrder.verify(backupStore).markFailed(eq(backup.id()), anyString());
-    inOrder.verify(backupStore).storeRangeMarker(partitionId, new Deletion(checkpointId));
-    inOrder.verify(backupStore).delete(backup.id());
+    // then — deleteBackup only writes to the log; the stream processor does the rest
+    verify(logStreamWriter).tryWrite(eq(WriteContext.internal()), any(LogAppendEntry.class));
+    verify(backupStore, never()).delete(any());
+    verify(backupStore, never()).storeRangeMarker(anyInt(), any());
+    verify(backupStore, never()).markFailed(any(), anyString());
   }
 
   @Test
