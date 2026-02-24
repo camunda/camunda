@@ -244,17 +244,17 @@ In addition to our release tests, we ran weekly load tests for all [endurance te
 As an example, we have the following tests running:
 
 * medic-y-2025-cw-22-a60d64da-test-latency
-* medic-y-2025-cw-22-a60d64da-test-mixed
+* medic-y-2025-cw-22-a60d64da-test-realistic
 * medic-y-2025-cw-22-a60d64da-test-typical
 * medic-y-2025-cw-23-a799b041-test-typical
 * medic-y-2025-cw-23-a799b041-test-latency
-* medic-y-2025-cw-23-a799b041-test-mixed
+* medic-y-2025-cw-23-a799b041-test-realistic
 * medic-y-2025-cw-24-0c3f2664-test-typical
 * medic-y-2025-cw-24-0c3f2664-test-latency
-* medic-y-2025-cw-24-0c3f2664-test-mixed
+* medic-y-2025-cw-24-0c3f2664-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-typical
 * medic-y-2025-cw-25-59a095c4-test-latency
-* medic-y-2025-cw-25-59a095c4-test-mixed
+* medic-y-2025-cw-25-59a095c4-test-realistic
 
 #### Daily load tests
 

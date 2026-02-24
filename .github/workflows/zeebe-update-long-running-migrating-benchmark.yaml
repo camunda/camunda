@@ -10,6 +10,7 @@ on:
 jobs:
   fetch-release:
     name: Fetch latest release
+    permissions: {}
     runs-on: ubuntu-latest
     outputs:
       release-tag: ${{ steps.fetch_release.outputs.release-tag }}
@@ -20,7 +21,8 @@ jobs:
           echo "release-tag=$(curl -s https://api.github.com/repos/camunda/camunda/releases/latest | jq -r '.tag_name')" >> "$GITHUB_OUTPUT"
 
   update-long-running-migrating-benchmark:
-    name: Update Long Running Migrating Benchmark with mixed load
+    name: Update Long Running Migrating Benchmark with realistic load
+    permissions: {}
     needs:
       - fetch-release
     uses: ./.github/workflows/camunda-load-test.yml

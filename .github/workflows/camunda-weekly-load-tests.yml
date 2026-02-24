@@ -74,7 +74,7 @@ jobs:
     needs:
       - test-data
     with:
-      name: ${{ needs.test-data.outputs.test }}-mixed
+      name: ${{ needs.test-data.outputs.test }}-realistic
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic

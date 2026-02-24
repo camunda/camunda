@@ -426,7 +426,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*(mixed|realistic)|release-rolling)\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -511,7 +511,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*(mixed|realistic)|release-rolling)\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -596,7 +596,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*(mixed|realistic)|release-rolling)\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
