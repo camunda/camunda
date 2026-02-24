@@ -15,6 +15,7 @@ import io.camunda.zeebe.exporter.api.ExporterException;
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogConfiguration;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.ArrayList;
 import java.util.List;
 import org.slf4j.Logger;
@@ -194,7 +195,9 @@ public class ExporterConfiguration {
   }
 
   public RdbmsWriterConfig createRdbmsWriterConfig(
-      final int partitionId, final VendorDatabaseProperties vendorDatabaseProperties) {
+      final int partitionId,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final InstantSource clock) {
     final var historyConfig =
         new HistoryConfig.Builder()
             .defaultHistoryTTL(history.getDefaultHistoryTTL())
@@ -226,6 +229,7 @@ public class ExporterConfiguration {
         .exportBatchOperationItemsOnCreation(exportBatchOperationItemsOnCreation)
         .history(historyConfig)
         .insertBatchingConfig(createInsertBatchingConfig(vendorDatabaseProperties))
+        .clock(clock)
         .build();
   }
 
