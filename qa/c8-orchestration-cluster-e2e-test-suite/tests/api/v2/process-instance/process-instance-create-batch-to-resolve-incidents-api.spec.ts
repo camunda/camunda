@@ -226,6 +226,14 @@ test.describe
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-instances/incident-resolution',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });
@@ -317,6 +325,14 @@ test.describe
         );
         await assertStatusCode(res, 200);
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/process-instances/incident-resolution',
+            method: 'POST',
+            status: '200',
+          },
+          json,
+        );
         expect(json.batchOperationType).toBe('RESOLVE_INCIDENT');
       }).toPass(defaultAssertionOptions);
     });

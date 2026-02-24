@@ -20,6 +20,7 @@ import {
   authorizationRequiredFieldsWithoutPermissionTypes,
   authorizedComponentRequiredFields,
 } from '../beans/requestBeans';
+import { validateResponse } from 'json-body-assertions';
 
 export interface Authorization {
   ownerId: string;
@@ -118,6 +119,14 @@ export async function expectAuthorizationCanBeFound(
       },
     );
     await assertStatusCode(statusRes, 200);
+    await validateResponse(
+      {
+        path: '/authorizations/{authorizationKey}',
+        method: 'GET',
+        status: '200',
+      },
+      statusRes,
+    );
   }).toPass({
     intervals: [5_000, 10_000, 15_000, 25_000, 35_000],
     timeout: 120_000,

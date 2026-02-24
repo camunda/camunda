@@ -25,6 +25,7 @@ import {
   deleteTenantClusterVariable,
   createTenantAndStoreResponseFields,
 } from '@requestHelpers';
+import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
@@ -68,6 +69,14 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/cluster-variables/tenants/{tenantId}',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
@@ -152,6 +161,14 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/cluster-variables/tenants/{tenantId}/{name}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);

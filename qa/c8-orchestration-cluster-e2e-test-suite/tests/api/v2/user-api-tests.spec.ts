@@ -18,6 +18,7 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {
   defaultAssertionOptions,
   generateUniqueId,
@@ -61,6 +62,14 @@ test.describe.parallel('Users API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/users',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, user, userRequiredFields);
@@ -92,6 +101,14 @@ test.describe.parallel('Users API Tests', () => {
         });
 
         expect(res.status()).toBe(201);
+        await validateResponse(
+          {
+            path: '/users',
+            method: 'POST',
+            status: '201',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, userRequiredFields);
         assertEqualsForKeys(
@@ -118,6 +135,14 @@ test.describe.parallel('Users API Tests', () => {
           data: body,
         });
 
+        await validateResponse(
+          {
+            path: '/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         await assertPaginatedRequest(res, {
           itemsLengthEqualTo: 2,
           totalItemsEqualTo: 2,
@@ -189,6 +214,14 @@ test.describe.parallel('Users API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/users',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -213,6 +246,14 @@ test.describe.parallel('Users API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/users',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -238,6 +279,14 @@ test.describe.parallel('Users API Tests', () => {
     });
 
     expect(res.status()).toBe(201);
+    await validateResponse(
+      {
+        path: '/users',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -295,6 +344,14 @@ test.describe.parallel('Users API Tests', () => {
         headers: jsonHeaders(),
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/users/{username}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -334,6 +391,14 @@ test.describe.parallel('Users API Tests', () => {
         data: requestBody,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -357,6 +422,14 @@ test.describe.parallel('Users API Tests', () => {
         data: requestBody,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -380,6 +453,14 @@ test.describe.parallel('Users API Tests', () => {
         data: requestBody,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
@@ -406,6 +487,14 @@ test.describe.parallel('Users API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/users/{username}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedResponseBody, userRequiredFields);
@@ -496,6 +585,14 @@ test.describe.parallel('Users API Tests', () => {
         data: {},
       });
 
+      await validateResponse(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemLengthGreaterThan: 2,
         totalItemGreaterThan: 2,
@@ -533,6 +630,14 @@ test.describe.parallel('Users API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -560,6 +665,14 @@ test.describe.parallel('Users API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -587,6 +700,14 @@ test.describe.parallel('Users API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -614,6 +735,14 @@ test.describe.parallel('Users API Tests', () => {
         data: requestBody,
       });
 
+      await validateResponse(
+        {
+          path: '/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -635,6 +764,14 @@ test.describe.parallel('Users API Tests', () => {
       data: body,
     });
 
+    await validateResponse(
+      {
+        path: '/users/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,
       totalItemsEqualTo: 0,
