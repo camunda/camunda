@@ -69,6 +69,7 @@ class AuditLogEntryTest {
     assertThat(entry.getProcessInstanceKey()).isEqualTo(value.getProcessInstanceKey());
     assertThat(entry.getProcessDefinitionId()).isEqualTo(value.getBpmnProcessId());
     assertThat(entry.getProcessDefinitionKey()).isEqualTo(value.getProcessDefinitionKey());
+    assertThat(entry.getRootProcessInstanceKey()).isEqualTo(value.getRootProcessInstanceKey());
     assertThat(entry.getEntityVersion()).isEqualTo(record.getRecordVersion());
     assertThat(entry.getEntityValueType())
         .isEqualTo(ValueType.PROCESS_INSTANCE_MODIFICATION.value());
@@ -93,7 +94,6 @@ class AuditLogEntryTest {
     assertThat(entry.getDeploymentKey()).isNull();
     assertThat(entry.getFormKey()).isNull();
     assertThat(entry.getResourceKey()).isNull();
-    assertThat(entry.getRootProcessInstanceKey()).isNull();
   }
 
   @Test

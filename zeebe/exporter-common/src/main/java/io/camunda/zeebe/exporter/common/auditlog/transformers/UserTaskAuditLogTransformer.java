@@ -24,10 +24,6 @@ public class UserTaskAuditLogTransformer implements AuditLogTransformer<UserTask
   public void transform(final Record<UserTaskRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setUserTaskKey(value.getUserTaskKey()).setEntityKey(String.valueOf(value.getUserTaskKey()));
-    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
     if (record.getIntent() == UserTaskIntent.ASSIGNED) {
       log.setRelatedEntityKey(value.getAssignee());
       log.setRelatedEntityType(AuditLogEntityType.USER);

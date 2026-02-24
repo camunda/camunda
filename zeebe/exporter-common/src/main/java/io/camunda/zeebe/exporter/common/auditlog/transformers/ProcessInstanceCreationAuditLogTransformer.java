@@ -24,9 +24,5 @@ public class ProcessInstanceCreationAuditLogTransformer
       final Record<ProcessInstanceCreationRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(String.valueOf(value.getProcessInstanceKey()));
-    final long rootProcessInstanceKey = value.getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 }
