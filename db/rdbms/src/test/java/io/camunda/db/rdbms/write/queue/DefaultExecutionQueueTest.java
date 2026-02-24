@@ -412,6 +412,7 @@ class DefaultExecutionQueueTest {
     "foo.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.updateHistoryCleanupDate,true",
     "io.camunda.db.rdbms.sql.SequenceFlowMapper.createIfNotExists,true",
+    "io.camunda.db.rdbms.sql.BatchOperationMapper.activate,true",
     "some.other.Statement,false"
   })
   void shouldIgnoreWhenNoRowsAffectedMatchesPatterns(
