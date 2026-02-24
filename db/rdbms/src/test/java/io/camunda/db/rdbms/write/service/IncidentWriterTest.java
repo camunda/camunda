@@ -94,7 +94,6 @@ class IncidentWriterTest {
                     WriteStatementType.UPDATE,
                     123L,
                     "io.camunda.db.rdbms.sql.IncidentMapper.updateState",
-                    new IncidentMapper.IncidentStateDto(
-                        123L, IncidentState.RESOLVED, null, null))));
+                    new IncidentMapper.IncidentStateDto(123L, IncidentState.RESOLVED))));
   }
 }
