@@ -20,17 +20,14 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
-import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
-import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,7 +47,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
 
   private final PermissionsService permissionsService;
-  private final ProcessInstanceRequestValidator processInstanceRequestValidator;
   private final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
   private final BatchOperationWriter batchOperationWriter;
   private final ProcessInstanceReader processInstanceReader;
@@ -59,14 +55,12 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   public ProcessInstanceRestService(
       final PermissionsService permissionsService,
-      final ProcessInstanceRequestValidator processInstanceRequestValidator,
       final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator,
       final BatchOperationWriter batchOperationWriter,
       final ProcessInstanceReader processInstanceReader,
       final ListViewReader listViewReader,
       final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.permissionsService = permissionsService;
-    this.processInstanceRequestValidator = processInstanceRequestValidator;
     this.modifyProcessInstanceRequestValidator = modifyProcessInstanceRequestValidator;
     this.batchOperationWriter = batchOperationWriter;
     this.processInstanceReader = processInstanceReader;
@@ -91,16 +85,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
           "BpmnProcessId must be provided in request, when process version is not null.");
     }
     return listViewReader.queryProcessInstances(processInstanceRequest);
-  }
-
-  @Operation(summary = "Perform single operation on an instance (async)")
-  @PostMapping("/{id}/operation")
-  public BatchOperationEntity operation(
-      @PathVariable @ValidLongId final String id,
-      @RequestBody final CreateOperationRequestDto operationRequest) {
-    validateOperationPermissions(Long.parseLong(id), operationRequest.getOperationType());
-    processInstanceRequestValidator.validateCreateOperationRequest(operationRequest, id);
-    return batchOperationWriter.scheduleSingleOperation(Long.parseLong(id), operationRequest);
   }
 
   @Operation(summary = "Perform modify process instance operation")
@@ -148,23 +132,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       throw new NotAuthorizedException(
           String.format(
               "No %s permission for process instance %s", permission, processInstanceKey));
-    }
-  }
-
-  private void validateOperationPermissions(final long id, final OperationType operationType) {
-    switch (operationType) {
-      case DELETE_PROCESS_INSTANCE ->
-          checkIdentityPermission(id, PermissionType.DELETE_PROCESS_INSTANCE);
-      case CANCEL_PROCESS_INSTANCE ->
-          checkIdentityPermission(id, PermissionType.CANCEL_PROCESS_INSTANCE);
-      case MODIFY_PROCESS_INSTANCE ->
-          checkIdentityPermission(id, PermissionType.MODIFY_PROCESS_INSTANCE);
-      case RESOLVE_INCIDENT, ADD_VARIABLE, UPDATE_VARIABLE, MIGRATE_PROCESS_INSTANCE ->
-          checkIdentityPermission(id, PermissionType.UPDATE_PROCESS_INSTANCE);
-      default ->
-          throw new InvalidRequestException(
-              "Operation type '%s' is not supported by this endpoint."
-                  .formatted(operationType.toString()));
     }
   }
 }
