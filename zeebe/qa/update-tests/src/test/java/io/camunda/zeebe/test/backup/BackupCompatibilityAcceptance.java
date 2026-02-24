@@ -106,6 +106,32 @@ public interface BackupCompatibilityAcceptance {
     verifyRestoredJobCanBeCompleted(restoredDataDir);
   }
 
+  @Test
+  default void shouldDeleteBackupFromPreviousVersion() {
+    // given
+    final var backupId = 1L;
+    try (final var broker = createOldBroker()) {
+      broker.start();
+      createProcessInstanceWithJob(broker);
+      takeBackup(broker, backupId);
+    }
+
+    try (final var broker =
+        new TestStandaloneBroker().withUnifiedConfig(this::configureCurrentBackupStore)) {
+      broker.start();
+      final var backupActuator = BackupActuator.of(broker);
+      assertThat(backupActuator.list()).singleElement().returns(backupId, BackupInfo::getBackupId);
+
+      // when -- delete backup from previous version
+      backupActuator.delete(backupId);
+
+      // then
+      Awaitility.await("until backup is deleted")
+          .atMost(Duration.ofSeconds(30))
+          .untilAsserted(() -> assertThat(backupActuator.list()).isEmpty());
+    }
+  }
+
   /**
    * Starts a current-version broker on the restored data directory and verifies that the service
    * task job created before the backup can be activated and completed.
