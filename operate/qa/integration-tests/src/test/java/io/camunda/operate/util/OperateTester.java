@@ -9,7 +9,6 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.CollectionUtil.filter;
-import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -690,9 +689,8 @@ public class OperateTester {
   public List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       final FlowNodeInstanceQueryDto query) throws Exception {
     final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        flowNodeInstanceReader.getFlowNodeInstances(request);
     assertThat(response).hasSize(1);
     return response.values().iterator().next().getChildren();
   }

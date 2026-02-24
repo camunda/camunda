@@ -8,7 +8,6 @@
 package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
-import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.ACTIVE;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
@@ -22,8 +21,6 @@ import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ProcessInstanceCoreStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
@@ -166,7 +163,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
     String processInstanceId = String.valueOf(incidentProcessInstanceKey);
     FlowNodeInstanceQueryDto request =
         new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    List<FlowNodeInstanceDto> instances = getFlowNodeInstanceOneListFromRest(request);
+    List<FlowNodeInstanceDto> instances = tester.getFlowNodeInstanceOneListFromRest(request);
     assertThat(instances)
         .filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
         .extracting("state")
@@ -174,7 +171,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
     processInstanceId = String.valueOf(activeProcessInstanceKey);
     request = new FlowNodeInstanceQueryDto(processInstanceId, processInstanceId);
-    instances = getFlowNodeInstanceOneListFromRest(request);
+    instances = tester.getFlowNodeInstanceOneListFromRest(request);
     assertThat(instances)
         .filteredOn(i -> i.getFlowNodeId().equals(CALL_ACTIVITY_ID))
         .extracting("state")
@@ -210,15 +207,5 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
     final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
     final MvcResult result = getRequest(url);
     return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
-  }
-
-  private List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
-      final FlowNodeInstanceQueryDto query) throws Exception {
-    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
-    final Map<String, FlowNodeInstanceResponseDto> response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-    assertThat(response).hasSize(1);
-    return response.values().iterator().next().getChildren();
   }
 }

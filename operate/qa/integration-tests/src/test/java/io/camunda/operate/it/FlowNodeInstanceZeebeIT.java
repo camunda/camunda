@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -21,7 +20,6 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.listview.SortValuesWrapper;
 import io.camunda.operate.webapp.zeebe.operation.CancelProcessInstanceHandler;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -582,98 +580,15 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
         .allMatch(ai -> !ai.getState().equals(FlowNodeStateDto.INCIDENT));
   }
 
-  @Test
-  public void testFlowNodeInstanceTreeFailsWithAbsentQueries() throws Exception {
-    final FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto();
-
-    final MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
-
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "At least one query must be provided when requesting for flow node instance tree.");
-  }
-
-  @Test
-  public void testFlowNodeInstanceTreeFailsWithEmptyProcessInstanceIdOrTreePath() throws Exception {
-    FlowNodeInstanceRequestDto treeRequest =
-        new FlowNodeInstanceRequestDto(new FlowNodeInstanceQueryDto());
-    MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Process instance id and tree path must be provided when requesting for flow node instance tree.");
-
-    treeRequest =
-        new FlowNodeInstanceRequestDto(new FlowNodeInstanceQueryDto().setProcessInstanceId("some"));
-    mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Process instance id and tree path must be provided when requesting for flow node instance tree.");
-
-    treeRequest =
-        new FlowNodeInstanceRequestDto(new FlowNodeInstanceQueryDto().setTreePath("some"));
-    mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Process instance id and tree path must be provided when requesting for flow node instance tree.");
-  }
-
-  @Test
-  public void testFlowNodeInstanceTreeFailsWithWrongSearchAfter() throws Exception {
-    FlowNodeInstanceQueryDto treeQuery =
-        new FlowNodeInstanceQueryDto()
-            .setProcessInstanceId("123")
-            .setTreePath("123")
-            .setSearchAfter(new SortValuesWrapper[] {})
-            .setSearchBeforeOrEqual(new SortValuesWrapper[] {});
-    final FlowNodeInstanceRequestDto treeRequest = new FlowNodeInstanceRequestDto(treeQuery);
-
-    MvcResult mvcResult = postRequestThatShouldFail(FLOW_NODE_INSTANCE_URL, treeRequest);
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
-
-    treeQuery =
-        new FlowNodeInstanceQueryDto()
-            .setProcessInstanceId("123")
-            .setTreePath("123")
-            .setSearchBefore(new SortValuesWrapper[] {})
-            .setSearchBeforeOrEqual(new SortValuesWrapper[] {});
-
-    mvcResult =
-        postRequestThatShouldFail(
-            FLOW_NODE_INSTANCE_URL, new FlowNodeInstanceRequestDto(treeQuery));
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
-
-    treeQuery =
-        new FlowNodeInstanceQueryDto()
-            .setProcessInstanceId("123")
-            .setTreePath("123")
-            .setSearchAfter(new SortValuesWrapper[] {})
-            .setSearchAfterOrEqual(new SortValuesWrapper[] {});
-
-    mvcResult =
-        postRequestThatShouldFail(
-            FLOW_NODE_INSTANCE_URL, new FlowNodeInstanceRequestDto(treeQuery));
-    assertErrorMessageIsEqualTo(
-        mvcResult,
-        "Only one of [searchAfter, searchAfterOrEqual, searchBefore, searchBeforeOrEqual] must be present in request.");
-  }
-
   protected Map<String, FlowNodeInstanceResponseDto> getFlowNodeInstanceListsFromRest(
       final FlowNodeInstanceQueryDto... queries) throws Exception {
-    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(queries);
-    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    return flowNodeInstanceReader.getFlowNodeInstances(new FlowNodeInstanceRequestDto(queries));
   }
 
   protected List<FlowNodeInstanceDto> getFlowNodeInstanceOneListFromRest(
       final FlowNodeInstanceQueryDto query) throws Exception {
-    final FlowNodeInstanceRequestDto request = new FlowNodeInstanceRequestDto(query);
-    final MvcResult mvcResult = postRequest(FLOW_NODE_INSTANCE_URL, request);
     final Map<String, FlowNodeInstanceResponseDto> response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        flowNodeInstanceReader.getFlowNodeInstances(new FlowNodeInstanceRequestDto(query));
     assertThat(response).hasSize(1);
     return response.values().iterator().next().getChildren();
   }
