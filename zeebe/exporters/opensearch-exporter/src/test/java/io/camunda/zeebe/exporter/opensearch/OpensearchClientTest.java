@@ -16,17 +16,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.camunda.zeebe.exporter.opensearch.dto.BulkIndexResponse;
-import io.camunda.zeebe.protocol.jackson.ZeebeProtocolModule;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.List;
-import org.apache.http.entity.BasicHttpEntity;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,24 +30,21 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
-import org.opensearch.client.Request;
-import org.opensearch.client.Response;
-import org.opensearch.client.RestClient;
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch.cluster.OpenSearchClusterClient;
 import org.opensearch.client.opensearch.cluster.PutComponentTemplateRequest;
+import org.opensearch.client.opensearch.core.BulkRequest;
+import org.opensearch.client.opensearch.core.BulkResponse;
+import org.opensearch.client.opensearch.core.bulk.BulkOperation;
 import org.opensearch.client.opensearch.indices.OpenSearchIndicesClient;
 import org.opensearch.client.opensearch.indices.PutIndexTemplateRequest;
 
 @Execution(ExecutionMode.CONCURRENT)
 final class OpensearchClientTest {
-  private static final ObjectMapper MAPPER =
-      new ObjectMapper().registerModule(new ZeebeProtocolModule());
 
   private static final int PARTITION_ID = 1;
 
   private final OpenSearchClient openSearchClient = mock(OpenSearchClient.class);
-  private final RestClient restClient = mock(RestClient.class);
   private final ProtocolFactory factory = new ProtocolFactory();
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
   private final BulkIndexRequest bulkRequest = new BulkIndexRequest();
@@ -64,7 +56,6 @@ final class OpensearchClientTest {
           config,
           bulkRequest,
           openSearchClient,
-          restClient,
           indexRouter,
           templateReader,
           new OpensearchMetrics(new SimpleMeterRegistry()));
@@ -121,22 +112,6 @@ final class OpensearchClientTest {
             String.format("%s-%s", config.index.prefix, VersionUtil.getVersionLowerCase()));
 
     assertThat(requestCaptor.getValue()).isEqualTo(expectedRequest);
-  }
-
-  private <T> ArgumentCaptor<Request> mockClientResponse(final T content) throws IOException {
-    final var httpEntity = new BasicHttpEntity();
-    final var serializedContent = MAPPER.writeValueAsBytes(content);
-    final var requestCaptor = ArgumentCaptor.forClass(Request.class);
-    final var response = mock(Response.class);
-
-    httpEntity.setContent(new ByteArrayInputStream(serializedContent));
-    httpEntity.setContentLength(serializedContent.length);
-    httpEntity.setContentType("application/json");
-
-    when(response.getEntity()).thenReturn(httpEntity);
-    when(restClient.performRequest(requestCaptor.capture())).thenReturn(response);
-
-    return requestCaptor;
   }
 
   @Nested
@@ -196,15 +171,17 @@ final class OpensearchClientTest {
       client.flush();
 
       // then
-      verify(restClient, never()).performRequest(any(Request.class));
+      verify(openSearchClient, never()).bulk(any(BulkRequest.class));
     }
 
     @Test
     void shouldFlushBulk() throws IOException {
       // given
       config.bulk.size = 1;
-      final ArgumentCaptor<Request> requestCaptor =
-          mockClientResponse(new BulkIndexResponse(false, List.of()));
+      final ArgumentCaptor<BulkRequest> requestCaptor = ArgumentCaptor.forClass(BulkRequest.class);
+
+      final BulkResponse response = mock(BulkResponse.class);
+      when(openSearchClient.bulk(requestCaptor.capture())).thenReturn(response);
 
       // when
       client.index(
@@ -214,19 +191,23 @@ final class OpensearchClientTest {
 
       // then
       assertThat(bulkRequest.isEmpty()).isTrue();
+
       assertThat(requestCaptor.getAllValues())
           .as("sent a bulk request only once")
           .hasSize(1)
-          .first()
-          .extracting(Request::getEndpoint)
-          .isEqualTo("/_bulk");
+          .asInstanceOf(InstanceOfAssertFactories.list(BulkRequest.class))
+          .extracting(BulkRequest::operations)
+          .asInstanceOf(InstanceOfAssertFactories.list(BulkOperation.class))
+          .hasSize(1);
     }
 
     @Test
     void shouldClearBulkOnSuccess() throws IOException {
       // given
       config.bulk.size = 1;
-      mockClientResponse(new BulkIndexResponse(false, List.of()));
+      //      mockClientResponse(new BulkIndexResponse(false, List.of()));
+      final BulkResponse response = mock(BulkResponse.class);
+      when(openSearchClient.bulk(any(BulkRequest.class))).thenReturn(response);
 
       // when
       client.index(
@@ -243,7 +224,7 @@ final class OpensearchClientTest {
       // given
       config.bulk.size = 1;
       final var failure = new OpensearchExporterException("Injected failure");
-      doThrow(failure).when(restClient).performRequest(any());
+      doThrow(failure).when(openSearchClient).bulk(any(BulkRequest.class));
 
       // when
       client.index(

@@ -10,19 +10,20 @@ package io.camunda.zeebe.exporter.opensearch;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockedStatic;
-import org.opensearch.client.Request;
+import org.opensearch.client.opensearch.OpenSearchClient;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateRequest;
+import org.opensearch.client.opensearch.indices.GetIndexTemplateRequest;
+import org.opensearch.client.opensearch.indices.IndexTemplate;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -42,17 +43,17 @@ public class SchemaManagerIT {
   private static final OpensearchExporterConfiguration CONFIG =
       new OpensearchExporterConfiguration();
 
-  private static final ObjectMapper MAPPER = new ObjectMapper();
+  private static OpenSearchClient openSearchClient;
 
   @BeforeAll
   static void setup() {
     CONFIG.url = CONTAINER.getHttpHostAddress();
+    openSearchClient = OpensearchConnector.of(CONFIG).createClient();
   }
 
   @Test
   public void shouldUseVersionedComponentTemplateForIndexTemplates() throws IOException {
     // given
-    final var restClient = RestClientFactory.of(CONFIG);
     final var osClient = new OpensearchClient(CONFIG, new SimpleMeterRegistry());
 
     // when
@@ -78,38 +79,37 @@ public class SchemaManagerIT {
 
     // then
     // 8.6.0 component template exists
-    final var request = new Request("GET", "/_component_template/" + CONFIG.index.prefix + "*");
-    final var response = restClient.performRequest(request);
-    final var componentTemplateInElasticsearch =
-        MAPPER.readValue(response.getEntity().getContent().readAllBytes(), JsonNode.class);
+    final List<ComponentTemplate> componentTemplates =
+        getComponentTemplates(CONFIG.index.prefix + "*");
 
-    assertThat(componentTemplateInElasticsearch.at("/component_templates"))
-        .anySatisfy(
-            node ->
-                assertThat(node.at("/name").asText()).isEqualTo("zeebe-record-" + upgradedVersion));
+    assertThat(componentTemplates)
+        .hasSize(2)
+        .extracting(ComponentTemplate::name)
+        .contains("zeebe-record-" + upgradedVersion);
 
     // all 8.6.0 index templates are composed of the new index template
-    final var templateReq = new Request("GET", "/_index_template/*" + upgradedVersion + "*");
-    final var templateRes = restClient.performRequest(templateReq);
-    final var indexTemplates =
-        MAPPER.readValue(templateRes.getEntity().getContent().readAllBytes(), JsonNode.class);
+    final List<IndexTemplateItem> indexTemplates =
+        getIndexTemplateItems("*" + upgradedVersion + "*");
+    assertThat(indexTemplates)
+        .hasSizeGreaterThan(0)
+        .extracting(IndexTemplateItem::indexTemplate)
+        .extracting(IndexTemplate::composedOf)
+        .containsOnly(List.of("zeebe-record-" + upgradedVersion));
+  }
 
-    assertThat(indexTemplates.at("/index_templates").size()).isGreaterThan(0);
-    assertThat(indexTemplates.at("/index_templates"))
-        .allSatisfy(
-            node -> {
-              final JsonNode composedOfNode = node.at("/index_template/composed_of");
-              assertThat(composedOfNode.isArray()).isTrue();
+  private List<ComponentTemplate> getComponentTemplates(final String templateName)
+      throws IOException {
+    return openSearchClient
+        .cluster()
+        .getComponentTemplate(GetComponentTemplateRequest.builder().name(templateName).build())
+        .componentTemplates();
+  }
 
-              // Convert ArrayNode to List<String> for easier assertion
-              final List<String> stringList = new ArrayList<>();
-              final ArrayNode arrayNode = (ArrayNode) composedOfNode;
-              for (final JsonNode element : arrayNode) {
-                if (element.isTextual()) {
-                  stringList.add(element.asText());
-                }
-              }
-              assertThat(stringList).contains("zeebe-record-" + upgradedVersion);
-            });
+  private List<IndexTemplateItem> getIndexTemplateItems(final String templateName)
+      throws IOException {
+    return openSearchClient
+        .indices()
+        .getIndexTemplate(GetIndexTemplateRequest.builder().name(templateName).build())
+        .indexTemplates();
   }
 }

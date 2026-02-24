@@ -66,7 +66,9 @@ public class OpensearchClientIT {
     assertThatThrownBy(SEARCH_DB.client()::flush)
         .isInstanceOf(OpensearchExporterException.class)
         .hasMessageContaining(
-            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request [type: mapper_parsing_exception, reason: failed to parse field [timestamp]");
+            "Failed to flush bulk request: [Failed to flush 1 item(s) of bulk request "
+                + "[type: mapper_parsing_exception, reason: failed to parse date "
+                + "field [-9223372036854775808] with format [strict_date_optional_time||epoch_millis]]]");
   }
 
   @Test
@@ -165,7 +167,6 @@ public class OpensearchClientIT {
             SEARCH_DB.config(),
             SEARCH_DB.bulkRequest(),
             OpensearchConnector.of(SEARCH_DB.config()).createClient(),
-            RestClientFactory.of(SEARCH_DB.config(), true),
             SEARCH_DB.indexRouter(),
             SEARCH_DB.templateReader(),
             new OpensearchMetrics(new SimpleMeterRegistry()));
