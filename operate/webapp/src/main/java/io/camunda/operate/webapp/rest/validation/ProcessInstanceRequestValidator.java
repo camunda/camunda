@@ -7,11 +7,8 @@
  */
 package io.camunda.operate.webapp.rest.validation;
 
-import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.entities.listener.ListenerType;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Component;
 
@@ -23,30 +20,6 @@ public class ProcessInstanceRequestValidator {
   public ProcessInstanceRequestValidator(
       @NotNull final CreateRequestOperationValidator createRequestOperationValidator) {
     this.createRequestOperationValidator = createRequestOperationValidator;
-  }
-
-  public void validateListenerRequest(final ListenerRequestDto request) {
-    if (request.getPageSize() == null
-        || (request.getFlowNodeId() == null && request.getFlowNodeInstanceId() == null)) {
-      throw new InvalidRequestException(
-          "'pageSize' and either 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
-    }
-    if (request.getFlowNodeId() != null && request.getFlowNodeInstanceId() != null) {
-      throw new InvalidRequestException(
-          "Only one of 'flowNodeId' or 'flowNodeInstanceId' must be specified in the request.");
-    }
-    final ListenerType listenerTypeFilter = request.getListenerTypeFilter();
-    if (listenerTypeFilter != null
-        && listenerTypeFilter != ListenerType.EXECUTION_LISTENER
-        && listenerTypeFilter != ListenerType.TASK_LISTENER) {
-      throw new InvalidRequestException(
-          "'listenerTypeFilter' only allows for values: ["
-              + "null, "
-              + ListenerType.EXECUTION_LISTENER
-              + ", "
-              + ListenerType.TASK_LISTENER
-              + "]");
-    }
   }
 
   public void validateCreateOperationRequest(
