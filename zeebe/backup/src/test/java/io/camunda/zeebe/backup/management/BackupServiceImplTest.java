@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.InstanceOfAssertFactories.collection;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -27,6 +28,8 @@ import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.End;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Start;
+import io.camunda.zeebe.backup.api.BackupRangeStatus;
+import io.camunda.zeebe.backup.api.BackupRangeStatus.CheckpointInfo;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -34,6 +37,10 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -77,7 +84,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore, logStreamWriter);
+    backupService = new BackupServiceImpl(backupStore, logStreamWriter, null, null);
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
@@ -597,6 +604,269 @@ class BackupServiceImplTest {
 
   private void mockSaveBackup() {
     when(backupStore.save(any())).thenReturn(CompletableFuture.completedFuture(null));
+  }
+
+  @Test
+  void shouldReturnEmptyCollectionWhenNoRangesExist() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+    when(backupRangeState.getAllRanges()).thenReturn(List.of());
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldReturnCompleteRangeStatus() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
+
+    final var firstMeta = mockCheckpointMeta(100L, 1000L, CheckpointType.MANUAL_BACKUP, 50L);
+    final var lastMeta = mockCheckpointMeta(500L, 5000L, CheckpointType.SCHEDULED_BACKUP, 400L);
+
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(firstMeta);
+    when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(lastMeta);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .singleElement()
+        .isInstanceOf(BackupRangeStatus.Complete.class)
+        .satisfies(
+            status -> {
+              final var complete = (BackupRangeStatus.Complete) status;
+              assertThat(complete.first())
+                  .isEqualTo(
+                      new CheckpointInfo(1L, 100L, 1000L, CheckpointType.MANUAL_BACKUP, 50L));
+              assertThat(complete.last())
+                  .isEqualTo(
+                      new CheckpointInfo(5L, 500L, 5000L, CheckpointType.SCHEDULED_BACKUP, 400L));
+            });
+  }
+
+  @Test
+  void shouldReturnMultipleRangeStatuses() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges())
+        .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
+
+    final var meta1 = mockCheckpointMeta(100L, 1000L, CheckpointType.MANUAL_BACKUP, 50L);
+    final var meta3 = mockCheckpointMeta(300L, 3000L, CheckpointType.SCHEDULED_BACKUP, 200L);
+    final var meta5 = mockCheckpointMeta(500L, 5000L, CheckpointType.MANUAL_BACKUP, 400L);
+    final var meta8 = mockCheckpointMeta(800L, 8000L, CheckpointType.SCHEDULED_BACKUP, 700L);
+
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(meta1);
+    when(checkpointMetadataState.getCheckpoint(3L)).thenReturn(meta3);
+    when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(meta5);
+    when(checkpointMetadataState.getCheckpoint(8L)).thenReturn(meta8);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .hasSize(2)
+        .allSatisfy(status -> assertThat(status).isInstanceOf(BackupRangeStatus.Complete.class));
+  }
+
+  @Test
+  void shouldSkipRangeWhenFirstMetadataIsMissing() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldSkipRangeWhenLastMetadataIsMissing() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
+    final var firstMeta = mock(CheckpointMetadataValue.class);
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(firstMeta);
+    when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(null);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldSkipRangeWhenBothMetadataAreMissing() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
+    when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(null);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .isEmpty();
+  }
+
+  @Test
+  void shouldIncludeOnlyRangesWithValidMetadata() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges())
+        .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
+
+    // First range has missing metadata
+    when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
+    when(checkpointMetadataState.getCheckpoint(3L)).thenReturn(null);
+
+    // Second range has valid metadata
+    final var meta5 = mockCheckpointMeta(500L, 5000L, CheckpointType.MANUAL_BACKUP, 400L);
+    final var meta8 = mockCheckpointMeta(800L, 8000L, CheckpointType.SCHEDULED_BACKUP, 700L);
+    when(checkpointMetadataState.getCheckpoint(5L)).thenReturn(meta5);
+    when(checkpointMetadataState.getCheckpoint(8L)).thenReturn(meta8);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .singleElement()
+        .isInstanceOf(BackupRangeStatus.Complete.class)
+        .satisfies(
+            status -> {
+              final var complete = (BackupRangeStatus.Complete) status;
+              assertThat(complete.first().checkpointId()).isEqualTo(5L);
+              assertThat(complete.last().checkpointId()).isEqualTo(8L);
+            });
+  }
+
+  @Test
+  void shouldCompleteExceptionallyWhenGetAllRangesThrows() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenThrow(new RuntimeException("DB error"));
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .failsWithin(Duration.ofMillis(100))
+        .withThrowableOfType(ExecutionException.class)
+        .withMessageContaining("DB error");
+  }
+
+  @Test
+  void shouldReturnSinglePointRangeWhenStartEqualsEnd() {
+    // given
+    final var backupRangeState = mock(DbBackupRangeState.class);
+    final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
+    final var service =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+
+    when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(3L, 3L)));
+
+    final var meta = mockCheckpointMeta(300L, 3000L, CheckpointType.MANUAL_BACKUP, 200L);
+    when(checkpointMetadataState.getCheckpoint(3L)).thenReturn(meta);
+
+    // when
+    final var result = service.getBackupRangeStatus(concurrencyControl);
+
+    // then
+    assertThat(result)
+        .succeedsWithin(Duration.ofMillis(100))
+        .asInstanceOf(collection(BackupRangeStatus.class))
+        .singleElement()
+        .satisfies(
+            status -> {
+              final var complete = (BackupRangeStatus.Complete) status;
+              assertThat(complete.first()).isEqualTo(complete.last());
+              assertThat(complete.first().checkpointId()).isEqualTo(3L);
+            });
+  }
+
+  private CheckpointMetadataValue mockCheckpointMeta(
+      final long position,
+      final long timestamp,
+      final CheckpointType type,
+      final long firstLogPosition) {
+    final var meta = mock(CheckpointMetadataValue.class);
+    when(meta.getCheckpointPosition()).thenReturn(position);
+    when(meta.getCheckpointTimestamp()).thenReturn(timestamp);
+    when(meta.getCheckpointType()).thenReturn(type);
+    when(meta.getFirstLogPosition()).thenReturn(firstLogPosition);
+    return meta;
   }
 
   class ControllableInProgressBackup implements InProgressBackup {
