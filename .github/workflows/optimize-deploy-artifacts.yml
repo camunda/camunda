@@ -92,7 +92,7 @@ jobs:
       if: startsWith(github.ref_name, 'stable/')
       run: |
         {
-          echo "ZEEBE_VERSION=${{ steps.pom-info.outputs.x_zeebe_version }}"
+          echo "ZEEBE_VERSION=${{ steps.pom-info.outputs.x_zeebe_docker_version }}-SNAPSHOT"
           echo "IDENTITY_VERSION=${{ steps.pom-info.outputs.x_identity_version }}"
         } >> "$GITHUB_ENV"
     - name: Start Smoketest
