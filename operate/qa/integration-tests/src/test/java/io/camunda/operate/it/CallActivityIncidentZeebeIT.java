@@ -8,7 +8,6 @@
 package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.ACTIVE;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +17,7 @@ import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -47,6 +47,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   private long incidentProcessInstanceKey;
   private long activeProcessInstanceKey;
   @Autowired private ProcessInstanceReader processInstanceReader;
+  @Autowired private ListViewReader listViewReader;
 
   /*
    * parentProcess instance 1 -> process instance 1 has incident
@@ -175,8 +176,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewResponseDto getProcessInstanceList(final ListViewRequestDto request)
       throws Exception {
-    return mockMvcTestRule.fromResponse(
-        postRequest(PROCESS_INSTANCE_URL, request), new TypeReference<>() {});
+    return listViewReader.queryProcessInstances(request);
   }
 
   private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(final String processInstanceId)

@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
@@ -30,7 +29,6 @@ public class ProcessInstanceRestServiceTest {
 
   @Mock private PermissionsService permissionsService;
   @Mock private ProcessInstanceReader processInstanceReader;
-  @Mock private ListViewReader listViewReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
 
   private ProcessInstanceRestService underTest;
@@ -39,7 +37,7 @@ public class ProcessInstanceRestServiceTest {
   public void setup() {
     underTest =
         new ProcessInstanceRestService(
-            permissionsService, processInstanceReader, listViewReader, flowNodeInstanceReader);
+            permissionsService, processInstanceReader, flowNodeInstanceReader);
 
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);

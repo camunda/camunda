@@ -9,11 +9,7 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesQuery;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.*;
@@ -54,11 +50,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public class OperationZeebeIT extends OperateZeebeAbstractIT {
-
-  private static final String QUERY_INSTANCES_URL = PROCESS_INSTANCE_URL;
 
   @Autowired private CancelProcessInstanceHandler cancelProcessInstanceHandler;
 
@@ -73,6 +66,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Autowired private IncidentReader incidentReader;
+
+  @Autowired private ListViewReader listViewReader;
 
   @Autowired private OperationReader operationReader;
 
@@ -807,23 +802,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   private ListViewResponseDto getProcessInstances(final ListViewQueryDto query) throws Exception {
     final ListViewRequestDto request = new ListViewRequestDto(query);
     request.setPageSize(100);
-    final MockHttpServletRequestBuilder getProcessInstancesRequest =
-        post(query())
-            .content(mockMvcTestRule.json(request))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc
-            .perform(getProcessInstancesRequest)
-            .andExpect(status().isOk())
-            .andExpect(content().contentType(mockMvcTestRule.getContentType()))
-            .andReturn();
-
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
-  }
-
-  private String query() {
-    return QUERY_INSTANCES_URL;
+    return listViewReader.queryProcessInstances(request);
   }
 
   private BatchOperationDto[] queryBatchOperations(final BatchOperationRequestDto query) {
