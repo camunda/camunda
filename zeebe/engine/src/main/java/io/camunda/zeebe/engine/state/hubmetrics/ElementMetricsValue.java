@@ -21,6 +21,12 @@ public class ElementMetricsValue extends UnpackedObject implements DbValue {
     declareProperty(createdProp).declareProperty(completedProp);
   }
 
+  public ElementMetricsValue wrap(final ElementMetricsValue value) {
+    setCompleted(value.getCompleted());
+    setCreated(value.getCreated());
+    return this;
+  }
+
   public int getCreated() {
     return createdProp.getValue();
   }
