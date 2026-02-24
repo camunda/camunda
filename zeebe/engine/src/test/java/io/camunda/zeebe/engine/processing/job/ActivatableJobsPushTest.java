@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.agrona.DirectBuffer;
+import org.awaitility.Awaitility;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -176,6 +177,9 @@ public class ActivatableJobsPushTest {
     // given
     final long jobKey = createJob(jobType, PROCESS_ID, variables);
     jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).await();
+    // initial push to the stream
+    Awaitility.await("Job is pushed")
+        .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
 
     // when - job times out
     ENGINE.increaseTime(
