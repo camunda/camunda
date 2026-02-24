@@ -17,13 +17,10 @@ import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILE
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
-import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
@@ -82,28 +79,6 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     this.operateProperties = operateProperties;
     this.permissionsService = permissionsService;
     this.richOpenSearchClient = richOpenSearchClient;
-  }
-
-  @Override
-  public DecisionInstanceDto getDecisionInstance(final String decisionInstanceId) {
-    final var searchRequest =
-        searchRequestBuilder(decisionInstanceTemplate)
-            .query(
-                withTenantCheck(
-                    constantScore(
-                        and(
-                            ids(decisionInstanceId),
-                            term(DecisionInstanceTemplate.ID, decisionInstanceId)))));
-
-    try {
-      return DtoCreator.create(
-          richOpenSearchClient
-              .doc()
-              .searchUnique(searchRequest, DecisionInstanceEntity.class, decisionInstanceId),
-          DecisionInstanceDto.class);
-    } catch (final NotFoundException e) {
-      throw new io.camunda.operate.webapp.rest.exception.NotFoundException(e.getMessage());
-    }
   }
 
   @Override
