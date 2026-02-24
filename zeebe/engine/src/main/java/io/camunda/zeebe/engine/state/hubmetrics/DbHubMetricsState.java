@@ -18,8 +18,13 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import java.util.HashMap;
+import java.util.Map;
 
 public class DbHubMetricsState implements MutableHubMetricsState {
+
+  private final Map<ProcessMetricsKey, ProcessMetricsValue> processMetricsCache;
+  private final Map<ElementMetricsKey, ElementMetricsValue> elementMetricsCache;
 
   private final DbString tenantIdKey;
   private final DbString processId;
@@ -73,6 +78,34 @@ public class DbHubMetricsState implements MutableHubMetricsState {
             transactionContext,
             tenantAwareProcessIdVersionAndElementIdKey,
             elementMetricsValue);
+
+    processMetricsCache = new HashMap<>();
+    populateProcessMetricsCache();
+    elementMetricsCache = new HashMap<>();
+    populateElementMetricsCache();
+  }
+
+  private void populateProcessMetricsCache() {
+    processByTenantIDAndVersionMetricsColumnFamily.forEach(
+        (key, value) ->
+            processMetricsCache.put(
+                new ProcessMetricsKey(
+                    key.tenantKey().toString(),
+                    key.wrappedKey().first().toString(),
+                    key.wrappedKey().second().getValue()),
+                new ProcessMetricsValue().wrap(value)));
+  }
+
+  private void populateElementMetricsCache() {
+    processByTenantIDVersionAndElementMetricsColumnFamily.forEach(
+        (key, value) ->
+            elementMetricsCache.put(
+                new ElementMetricsKey(
+                    key.tenantKey().toString(),
+                    key.wrappedKey().first().toString(),
+                    key.wrappedKey().second().first().getValue(),
+                    key.wrappedKey().second().second().toString()),
+                new ElementMetricsValue().wrap(value)));
   }
 
   @Override
@@ -81,19 +114,23 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     processId.wrapBuffer(record.getBpmnProcessIdBuffer());
     processVersion.wrapInt(record.getVersion());
 
-    final var value =
-        processByTenantIDAndVersionMetricsColumnFamily.get(tenantAwareProcessIdAndVersionKey);
-    if (value != null) {
-      value.incrementAbsolute();
-      value.incrementCreated();
-      processByTenantIDAndVersionMetricsColumnFamily.update(
-          tenantAwareProcessIdAndVersionKey, value);
-    } else {
-      final var v = new ProcessMetricsValue();
-      v.incrementAbsolute();
-      v.incrementCreated();
-      processByTenantIDAndVersionMetricsColumnFamily.insert(tenantAwareProcessIdAndVersionKey, v);
+    final var key =
+        new ProcessMetricsKey(record.getTenantId(), record.getBpmnProcessId(), record.getVersion());
+    final var cachedValue = processMetricsCache.get(key);
+
+    if (cachedValue != null) {
+      cachedValue.incrementAbsolute();
+      cachedValue.incrementCreated();
+      processByTenantIDAndVersionMetricsColumnFamily.upsert(
+          tenantAwareProcessIdAndVersionKey, cachedValue);
+      return;
     }
+
+    final var v = new ProcessMetricsValue();
+    v.incrementAbsolute();
+    v.incrementCreated();
+    processByTenantIDAndVersionMetricsColumnFamily.upsert(tenantAwareProcessIdAndVersionKey, v);
+    processMetricsCache.put(key, new ProcessMetricsValue().wrap(v));
   }
 
   @Override
@@ -102,19 +139,23 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     processId.wrapBuffer(record.getBpmnProcessIdBuffer());
     processVersion.wrapInt(record.getVersion());
 
-    final var value =
-        processByTenantIDAndVersionMetricsColumnFamily.get(tenantAwareProcessIdAndVersionKey);
-    if (value != null) {
-      value.decrementAbsolute();
-      value.incrementCompleted();
-      processByTenantIDAndVersionMetricsColumnFamily.update(
-          tenantAwareProcessIdAndVersionKey, value);
-    } else {
-      final var v = new ProcessMetricsValue();
-      v.decrementAbsolute();
-      v.incrementCompleted();
-      processByTenantIDAndVersionMetricsColumnFamily.insert(tenantAwareProcessIdAndVersionKey, v);
+    final var key =
+        new ProcessMetricsKey(record.getTenantId(), record.getBpmnProcessId(), record.getVersion());
+    final var cachedValue = processMetricsCache.get(key);
+
+    if (cachedValue != null) {
+      cachedValue.decrementAbsolute();
+      cachedValue.incrementCompleted();
+      processByTenantIDAndVersionMetricsColumnFamily.upsert(
+          tenantAwareProcessIdAndVersionKey, cachedValue);
+      return;
     }
+
+    final var v = new ProcessMetricsValue();
+    v.decrementAbsolute();
+    v.incrementCompleted();
+    processByTenantIDAndVersionMetricsColumnFamily.upsert(tenantAwareProcessIdAndVersionKey, v);
+    processMetricsCache.put(key, new ProcessMetricsValue().wrap(v));
   }
 
   @Override
@@ -124,20 +165,26 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     processVersion.wrapInt(record.getVersion());
     elementId.wrapBuffer(record.getElementIdBuffer());
 
-    final var value =
-        processByTenantIDVersionAndElementMetricsColumnFamily.get(
-            tenantAwareProcessIdVersionAndElementIdKey);
-    if (value != null) {
-      value.incrementCreated();
-      processByTenantIDVersionAndElementMetricsColumnFamily.update(
-          tenantAwareProcessIdVersionAndElementIdKey, value);
+    final var key =
+        new ElementMetricsKey(
+            record.getTenantId(),
+            record.getBpmnProcessId(),
+            record.getVersion(),
+            record.getElementId());
+    final var cachedValue = elementMetricsCache.get(key);
 
-    } else {
-      final var v = new ElementMetricsValue();
-      v.incrementCreated();
-      processByTenantIDVersionAndElementMetricsColumnFamily.insert(
-          tenantAwareProcessIdVersionAndElementIdKey, v);
+    if (cachedValue != null) {
+      cachedValue.incrementCreated();
+      processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
+          tenantAwareProcessIdVersionAndElementIdKey, cachedValue);
+      return;
     }
+
+    final var v = new ElementMetricsValue();
+    v.incrementCreated();
+    processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
+        tenantAwareProcessIdVersionAndElementIdKey, v);
+    elementMetricsCache.put(key, new ElementMetricsValue().wrap(v));
   }
 
   @Override
@@ -147,35 +194,54 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     processVersion.wrapInt(record.getVersion());
     elementId.wrapBuffer(record.getElementIdBuffer());
 
-    final var value =
-        processByTenantIDVersionAndElementMetricsColumnFamily.get(
-            tenantAwareProcessIdVersionAndElementIdKey);
-    if (value != null) {
-      value.incrementCompleted();
-      processByTenantIDVersionAndElementMetricsColumnFamily.update(
-          tenantAwareProcessIdVersionAndElementIdKey, value);
+    final var key =
+        new ElementMetricsKey(
+            record.getTenantId(),
+            record.getBpmnProcessId(),
+            record.getVersion(),
+            record.getElementId());
+    final var cachedValue = elementMetricsCache.get(key);
 
-    } else {
-      final var v = new ElementMetricsValue();
-      v.incrementCompleted();
-      processByTenantIDVersionAndElementMetricsColumnFamily.insert(
-          tenantAwareProcessIdVersionAndElementIdKey, v);
+    if (cachedValue != null) {
+      cachedValue.incrementCompleted();
+      processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
+          tenantAwareProcessIdVersionAndElementIdKey, cachedValue);
+      return;
     }
+
+    final var v = new ElementMetricsValue();
+    v.incrementCompleted();
+    processByTenantIDVersionAndElementMetricsColumnFamily.upsert(
+        tenantAwareProcessIdVersionAndElementIdKey, v);
+    elementMetricsCache.put(key, new ElementMetricsValue().wrap(v));
   }
 
   @Override
   public void reset() {
-    processByTenantIDAndVersionMetricsColumnFamily.whileTrue(
+    processMetricsCache.forEach(
         (k, v) -> {
           v.setCompleted(0);
           v.setCreated(0);
-          processByTenantIDAndVersionMetricsColumnFamily.upsert(k, v);
-          return true;
+          tenantIdKey.wrapString(k.tenantId());
+          processId.wrapString(k.processId());
+          processVersion.wrapInt(k.version());
+          processByTenantIDAndVersionMetricsColumnFamily.upsert(
+              tenantAwareProcessIdAndVersionKey, v);
         });
-    processByTenantIDVersionAndElementMetricsColumnFamily.whileTrue(
+
+    elementMetricsCache.forEach(
         (k, v) -> {
-          processByTenantIDVersionAndElementMetricsColumnFamily.deleteExisting(k);
-          return true;
+          tenantIdKey.wrapString(k.tenantId());
+          processId.wrapString(k.processId());
+          processVersion.wrapInt(k.version());
+          elementId.wrapString(k.elementId());
+          processByTenantIDVersionAndElementMetricsColumnFamily.deleteIfExists(
+              tenantAwareProcessIdVersionAndElementIdKey);
         });
+    elementMetricsCache.clear();
   }
+
+  record ProcessMetricsKey(String tenantId, String processId, int version) {}
+
+  record ElementMetricsKey(String tenantId, String processId, int version, String elementId) {}
 }
