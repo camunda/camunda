@@ -47,9 +47,12 @@ describe('IncidentOperation', () => {
 
   it('should display an notification when retrying an incident fails', async () => {
     mockResolveIncident().withServerError(500);
-    const {user} = render(<IncidentOperation incidentKey="123" />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentOperation incidentKey="123" jobKey={null} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await user.click(retryButton());
 
@@ -64,9 +67,12 @@ describe('IncidentOperation', () => {
   it('should track successful retry operations', async () => {
     mockResolveIncident().withSuccess(null);
     const spy = vi.spyOn(tracking, 'track').mockReturnValue();
-    const {user} = render(<IncidentOperation incidentKey="123" />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentOperation incidentKey="123" jobKey={null} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await user.click(retryButton());
 
@@ -114,9 +120,12 @@ describe('IncidentOperation', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     mockUpdateJob().withDelay(null);
     mockResolveIncident().withDelay(null);
-    const {user} = render(<IncidentOperation incidentKey="123" />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentOperation incidentKey="123" jobKey={null} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     expect(screen.queryByTestId('operation-spinner')).not.toBeInTheDocument();
 
@@ -146,9 +155,12 @@ describe('IncidentOperation', () => {
     mockGetIncident().withSuccess(createIncident({state: 'ACTIVE'}), {
       mockResolverFn: getSpy,
     });
-    const {user} = render(<IncidentOperation incidentKey="123" />, {
-      wrapper: Wrapper,
-    });
+    const {user} = render(
+      <IncidentOperation incidentKey="123" jobKey={null} />,
+      {
+        wrapper: Wrapper,
+      },
+    );
 
     await user.click(retryButton());
     vi.runOnlyPendingTimers();

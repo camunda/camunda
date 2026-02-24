@@ -17,7 +17,7 @@ import {useResolveIncident} from 'modules/mutations/incidents/useResolveIncident
 
 type IncidentOperationProps = {
   incidentKey: string;
-  jobKey?: string;
+  jobKey: string | null;
 };
 
 const IncidentOperation: React.FC<IncidentOperationProps> = (props) => {
