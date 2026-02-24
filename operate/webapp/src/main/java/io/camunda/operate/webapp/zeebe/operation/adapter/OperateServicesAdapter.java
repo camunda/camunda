@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.zeebe.operation.adapter;
 
 import io.camunda.client.api.command.MigrationPlan;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import java.util.List;
 import java.util.Map;
 

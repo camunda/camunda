@@ -13,9 +13,9 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationRequestDto;
 import io.camunda.operate.webapp.reader.BatchOperationReader;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.security.permission.PermissionsService.ResourcesAllowed;
 import io.camunda.operate.webapp.transform.DataAggregator;

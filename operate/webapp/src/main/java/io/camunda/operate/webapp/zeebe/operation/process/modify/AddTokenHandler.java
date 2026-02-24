@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import java.util.List;
 import java.util.Map;
 import org.slf4j.Logger;

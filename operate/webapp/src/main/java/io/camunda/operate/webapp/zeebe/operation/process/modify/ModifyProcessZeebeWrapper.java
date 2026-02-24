@@ -13,7 +13,7 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1.ModifyProcessInstanceCommandStep2;
 import io.camunda.operate.util.ConditionalOnOperateCompatibility;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

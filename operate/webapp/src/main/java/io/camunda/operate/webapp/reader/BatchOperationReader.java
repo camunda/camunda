@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.reader;
 
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationRequestDto;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import java.util.List;
 

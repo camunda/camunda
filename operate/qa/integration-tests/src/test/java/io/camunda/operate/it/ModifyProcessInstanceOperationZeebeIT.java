@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.it;
 
-import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.*;
+import static io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.*;
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 
 import io.camunda.operate.util.OperateZeebeAbstractIT;
