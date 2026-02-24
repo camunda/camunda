@@ -92,9 +92,9 @@ const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
 
     return decisionInstance.matchedRules.flatMap((rule) => {
       return rule.evaluatedOutputs.map<RowProps>((output) => ({
-        key: `${output.outputId}--${rule.ruleId}`,
+        key: `${output.outputId}--${rule.ruleId ?? 'no-rule-id'}`,
         columns: [
-          {cellContent: rule.ruleIndex},
+          {cellContent: rule.ruleIndex ?? '--'},
           {cellContent: output.outputName},
           {cellContent: output.outputValue},
         ],
