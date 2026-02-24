@@ -20,7 +20,7 @@ const Paths = {
   processes() {
     return '/processes';
   },
-  processInstance(processInstanceId: string = ':processInstanceId') {
+  processInstance(processInstanceId: string | null = ':processInstanceId') {
     return `/processes/${processInstanceId}`;
   },
   decisions() {
@@ -38,7 +38,7 @@ const Paths = {
   batchOperations() {
     return '/batch-operations';
   },
-  batchOperation(batchOperationKey: string = ':batchOperationKey') {
+  batchOperation(batchOperationKey: string | null = ':batchOperationKey') {
     return `/batch-operations/${batchOperationKey}`;
   },
 } as const;

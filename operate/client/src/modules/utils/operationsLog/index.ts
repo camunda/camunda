@@ -55,14 +55,14 @@ const getActorIcon = (auditLog: AuditLog) => {
 
 const mapToCellEntityKeyData = (
   item: AuditLog,
-  processDefinitionName?: string,
-  decisionDefinitionName?: string,
+  processDefinitionName?: string | null,
+  decisionDefinitionName?: string | null,
   tasklistUrl?: string,
 ): {
-  name?: string;
+  name?: string | null;
   link?: string;
   linkLabel?: string;
-  label?: string;
+  label?: string | null;
 } => {
   switch (item.entityType) {
     case 'BATCH':
@@ -107,7 +107,7 @@ const userTaskOperations: Set<AuditLogOperationType> = new Set([
 
 const mapToCellDetailsData = (
   item: AuditLog,
-): {property?: string; value?: string} => {
+): {property?: string; value?: string | null} => {
   if (item.entityType === 'BATCH' && item.batchOperationType) {
     return {
       property: 'Batch operation type',
