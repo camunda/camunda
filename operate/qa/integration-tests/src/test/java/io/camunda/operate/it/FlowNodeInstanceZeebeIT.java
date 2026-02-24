@@ -9,12 +9,10 @@ package io.camunda.operate.it;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
 import io.camunda.operate.util.ZeebeTestUtil;
 import io.camunda.operate.webapp.reader.IncidentReader;
-import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
@@ -31,7 +29,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
 
 public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
@@ -595,12 +592,7 @@ public class FlowNodeInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   protected Map<String, FlowNodeStateDto> getFlowNodeStateDtosFromRest(
       final String processInstanceId) throws Exception {
-    final MvcResult mvcResult =
-        getRequest(
-            String.format(
-                ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
-                processInstanceId));
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
   @Deprecated // this endpoint is not used anymore from frontend.

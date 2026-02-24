@@ -42,25 +42,4 @@ public class ProcessInstanceRestServiceTest {
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);
   }
-
-  @Test
-  public void testProcessInstanceFlowNodeStatesFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(() -> underTest.getFlowNodeStates(processInstanceId))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
-  }
 }

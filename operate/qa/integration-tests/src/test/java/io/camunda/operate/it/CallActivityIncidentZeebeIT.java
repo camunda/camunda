@@ -181,12 +181,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(final String processInstanceId)
       throws Exception {
-    final MvcResult mvcResult =
-        getRequest(
-            String.format(
-                ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/%s/flow-node-states",
-                processInstanceId));
-    return mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+    return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
   }
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
