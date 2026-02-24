@@ -666,49 +666,6 @@ public class OptimizeReportLoadTester {
         dashboardResult, reportEvaluationResults, detailedEvaluationResults);
   }
 
-  /** Example usage. */
-  public static void main(final String[] args) {
-    try {
-      final OptimizeReportLoadTester tester =
-          new OptimizeReportLoadTester(
-              "http://localhost:8083",
-              "http://localhost:18080",
-              "camunda-platform",
-              "optimize",
-              "demo",
-              "demo",
-              "demo-client-secret");
-
-      tester.authenticateWithAuthorizationCodeFlow();
-
-      // Evaluate dashboard and all its reports
-      final DashboardWithReportsResult result = tester.evaluateDashboardWithReports();
-
-      System.out.println(
-          "Dashboard load time: " + result.getDashboardResult().getResponseTimeMs() + "ms");
-      for (final ReportEvaluationResult report : result.getReportResults()) {
-        System.out.println(
-            "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
-      }
-      System.out.println("Total time: " + result.getTotalResponseTimeMs() + "ms");
-
-      final InstantBenchmarkResult instantBenchmarkResult = tester.evaluateInstantBenchmark();
-      System.out.println(
-          "Instant benchmark dashboard load time: "
-              + instantBenchmarkResult.getDashboardResult().getResponseTimeMs()
-              + "ms");
-      for (final ReportEvaluationResult report :
-          instantBenchmarkResult.getReportEvaluationResults()) {
-        System.out.println(
-            "Report " + report.getReportId() + ": " + report.getResponseTimeMs() + "ms");
-      }
-      System.out.println("Total time: " + instantBenchmarkResult.getTotalResponseTimeMs() + "ms");
-
-    } catch (final Exception e) {
-      LOG.error("Load test failed", e);
-    }
-  }
-
   /** Result object containing dashboard evaluation metrics. */
   public static class DashboardEvaluationResult {
     private final String dashboardType;

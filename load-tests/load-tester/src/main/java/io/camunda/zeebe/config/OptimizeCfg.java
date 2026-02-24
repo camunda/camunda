@@ -16,6 +16,7 @@ public final class OptimizeCfg {
   private String username = getEnvOrDefault("OPTIMIZE_USERNAME", "demo");
   private String password = getEnvOrDefault("OPTIMIZE_PASSWORD", "demo");
   private String reportId;
+  private boolean enableOptimize = false;
   private int evaluationIntervalSeconds = 60; // Default: 10 minutes
   private int durationLimit = 0; // 0 means run forever
 
@@ -102,5 +103,13 @@ public final class OptimizeCfg {
 
   public void setDurationLimit(final int durationLimit) {
     this.durationLimit = durationLimit;
+  }
+
+  public boolean isEnableOptimize() {
+    return enableOptimize;
+  }
+
+  public void setEnableOptimize(final boolean enableOptimize) {
+    this.enableOptimize = enableOptimize;
   }
 }
