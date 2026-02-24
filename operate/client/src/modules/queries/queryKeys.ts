@@ -8,9 +8,12 @@
 
 import type {
   ElementInstance,
+  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
+  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
   GetProcessDefinitionInstanceStatisticsRequestBody,
   GetProcessDefinitionInstanceVersionStatisticsRequestBody,
   ProcessInstance,
+  QueryAuditLogsRequestBody,
   QueryBatchOperationItemsRequestBody,
   QueryBatchOperationsRequestBody,
   QueryDecisionInstancesRequestBody,
@@ -21,11 +24,6 @@ import type {
   QueryProcessInstanceIncidentsRequestBody,
   QueryProcessInstancesRequestBody,
   Variable,
-} from '@camunda/camunda-api-zod-schemas/8.8';
-import type {
-  QueryAuditLogsRequestBody,
-  GetIncidentProcessInstanceStatisticsByErrorRequestBody,
-  GetIncidentProcessInstanceStatisticsByDefinitionRequestBody,
 } from '@camunda/camunda-api-zod-schemas/8.9';
 
 const queryKeys = {

@@ -11,7 +11,7 @@ import {searchElementInstances} from 'modules/api/v2/elementInstances/searchElem
 import type {
   QueryElementInstancesRequestBody,
   ElementInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {queryKeys} from '../queryKeys';
 
 type UseElementInstancesSearchParams = {

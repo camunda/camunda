@@ -43,17 +43,6 @@ const TileLabel = styled.span`
   color: var(--cds-text-weak);
 `;
 
-const SubtileLabel = styled.span`
-  display: block;
-  font-size: var(--cds-heading-02-font-size);
-  font-weight: var(--cds-heading-02-font-weight);
-  padding-left: var(--cds-spacing-05);
-  padding-right: var(--cds-spacing-05);
-  margin-top: var(--cds-spacing-04);
-  margin-bottom: var(--cds-spacing-04);
-  color: var(--cds-text-primary);
-`;
-
 const ActionsContainer = styled(Stack)`
   align-items: center;
 `;
@@ -77,7 +66,6 @@ export {
   TilesContainer,
   Tile,
   TileLabel,
-  SubtileLabel,
   ActionsContainer,
   Header,
   HeaderTitleContainer,

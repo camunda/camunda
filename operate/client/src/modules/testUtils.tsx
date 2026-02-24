@@ -14,7 +14,8 @@ import type {
   Incident,
   ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+  QueryProcessInstancesResponseBody,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   ProcessInstanceEntity,
   OperationEntity,
@@ -35,7 +36,15 @@ const randomJobIdIterator = createRandomId('jobId');
 const randomFlowNodeInstanceIdIterator = createRandomId('flowNodeInstance');
 
 function searchResult<T>(items: T[], totalItems = items.length) {
-  return {items, page: {totalItems}};
+  return {
+    items,
+    page: {
+      totalItems,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
+  };
 }
 
 const createIncident = (options: Partial<Incident> = {}): Incident => {
@@ -52,6 +61,7 @@ const createIncident = (options: Partial<Incident> = {}): Incident => {
     processDefinitionKey: '2223894723423800',
     tenantId: '<default>',
     state: 'ACTIVE',
+    rootProcessInstanceKey: null,
     ...options,
   };
 };
@@ -145,7 +155,12 @@ const createProcessInstance = (
     processDefinitionKey: '2223894723423800',
     tenantId: '<default>',
     startDate: '2018-06-21',
+    endDate: null,
     hasIncident: false,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
     ...options,
   };
 };
@@ -159,7 +174,7 @@ const createProcessDefinition = (
     processDefinitionKey: '2223894723423800',
     resourceName: 'processes/process.bpmn',
     version: 1,
-    versionTag: undefined,
+    versionTag: null,
     tenantId: '<default>',
     hasStartForm: false,
     ...options,
@@ -176,6 +191,7 @@ const createVariable = (options: Partial<Variable> = {}): Variable => {
     tenantId: '<default>',
     processInstanceKey: '2251799813725337',
     scopeKey: '2251799813725337',
+    rootProcessInstanceKey: null,
     ...options,
   };
 };
@@ -189,9 +205,8 @@ const createUser = (options: Partial<CurrentUser> = {}): CurrentUser => ({
   groups: [],
   roles: [],
   salesPlanType: null,
-  c8Links: [],
+  c8Links: {},
   canLogout: true,
-  apiUser: false,
   ...options,
 });
 
@@ -203,6 +218,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: 'demoProcess3',
       resourceName: 'processes/process.bpmn',
       version: 3,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
@@ -212,6 +228,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: 'demoProcess2',
       resourceName: 'processes/process.bpmn',
       version: 2,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
@@ -221,15 +238,17 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: 'demoProcess1',
       resourceName: 'processes/process.bpmn',
       version: 1,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
     {
-      name: undefined,
+      name: null,
       processDefinitionId: 'eventBasedGatewayProcess',
       processDefinitionKey: '2251799813696866',
       resourceName: 'processes/process.bpmn',
       version: 2,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
@@ -239,6 +258,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: '2251799813685911',
       resourceName: 'processes/process.bpmn',
       version: 1,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
@@ -258,6 +278,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: '2251799813685893',
       resourceName: 'processes/process.bpmn',
       version: 2,
+      versionTag: null,
       tenantId: '<tenant-A>',
       hasStartForm: false,
     },
@@ -267,6 +288,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: '2251799813685894',
       resourceName: 'processes/process.bpmn',
       version: 1,
+      versionTag: null,
       tenantId: '<tenant-A>',
       hasStartForm: false,
     },
@@ -276,6 +298,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody =
       processDefinitionKey: 'orderProcess1',
       resourceName: 'processes/process.bpmn',
       version: 1,
+      versionTag: null,
       tenantId: '<default>',
       hasStartForm: false,
     },
@@ -924,7 +947,7 @@ const adHocSubProcessInnerInstance = `<?xml version="1.0" encoding="UTF-8"?>
 </bpmn:definitions>
 `;
 
-const mockProcessInstancesV2 = {
+const mockProcessInstancesV2: QueryProcessInstancesResponseBody = {
   items: [
     createProcessInstance({
       processInstanceKey: '2251799813685594',
@@ -952,6 +975,9 @@ const mockProcessInstancesV2 = {
   ],
   page: {
     totalItems: 912,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 

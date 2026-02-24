@@ -34,9 +34,19 @@ test.describe('variables and incidents', () => {
             processDefinitionKey: '2251799813686456',
             tenantId: '<default>',
             hasStartForm: false,
+            resourceName: null,
+            versionTag: null,
           },
         ],
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         processInstances: {
           items: [
             {
@@ -45,14 +55,24 @@ test.describe('variables and incidents', () => {
               processDefinitionName: 'order-process',
               processDefinitionVersion: 2,
               startDate: '2023-09-29T07:16:22.701+0000',
-              endDate: undefined,
+              endDate: null,
               state: 'ACTIVE',
               processDefinitionId: 'order-process',
               tenantId: '<default>',
               hasIncident: true,
+              processDefinitionVersionTag: null,
+              rootProcessInstanceKey: null,
+              tags: [],
+              parentProcessInstanceKey: null,
+              parentElementInstanceKey: null,
             },
           ],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         statistics: {
           items: [

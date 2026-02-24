@@ -21,7 +21,7 @@ import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariable
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {Paths} from 'modules/Routes';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const selectedElementInstance: ElementInstance = {
   elementInstanceKey: '2',
@@ -30,10 +30,13 @@ const selectedElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'someKey',
   processInstanceKey: '1',
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -71,14 +74,27 @@ describe('VariablePanel readonly', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should be readonly if root node is selected and no add/move modification is created yet', async () => {
     modificationsStore.enableModificationMode();
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
@@ -104,7 +120,12 @@ describe('VariablePanel readonly', () => {
     modificationsStore.cancelToken('some-element-id', 'some-instance-key', {});
     mockSearchVariables().withSuccess({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
@@ -130,9 +151,22 @@ describe('VariablePanel readonly', () => {
     mockFetchElementInstance('2').withSuccess(selectedElementInstance);
     mockSearchVariables().withSuccess({
       items: [createVariable({scopeKey: '2'})],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
       wrapper: getWrapper([

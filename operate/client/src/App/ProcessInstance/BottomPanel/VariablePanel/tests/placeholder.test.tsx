@@ -76,10 +76,13 @@ const selectedElementInstance = {
   type: 'SERVICE_TASK' as const,
   state: 'ACTIVE' as const,
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'someKey',
   processInstanceKey: '1',
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -118,8 +121,24 @@ describe('VariablePanel placeholders', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it.each([true, false])(
@@ -137,18 +156,29 @@ describe('VariablePanel placeholders', () => {
             elementInstanceKey: '3',
           },
         ],
-        page: {totalItems: 2},
-      });
-      mockSearchVariables().withSuccess({
-        items: [createVariable()],
         page: {
-          totalItems: 1,
+          totalItems: 2,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
       mockSearchVariables().withSuccess({
         items: [createVariable()],
         page: {
           totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
+        },
+      });
+      mockSearchVariables().withSuccess({
+        items: [createVariable()],
+        page: {
+          totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
 
@@ -187,6 +217,9 @@ describe('VariablePanel placeholders', () => {
         items: [createVariable()],
         page: {
           totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
 
@@ -226,6 +259,9 @@ describe('VariablePanel placeholders', () => {
         items: [createVariable()],
         page: {
           totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
 
@@ -265,6 +301,9 @@ describe('VariablePanel placeholders', () => {
         items: [createVariable()],
         page: {
           totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
 
@@ -282,6 +321,9 @@ describe('VariablePanel placeholders', () => {
         items: [createVariable()],
         page: {
           totalItems: 1,
+          startCursor: null,
+          endCursor: null,
+          hasMoreTotalItems: false,
         },
       });
 

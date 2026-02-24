@@ -18,11 +18,11 @@ import {
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {labels, renderPopover} from './mocks';
-import {
-  type ProcessInstance,
-  type ElementInstance,
-  type Incident,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  ProcessInstance,
+  ElementInstance,
+  Incident,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
@@ -49,33 +49,42 @@ vi.mock('date-fns', async () => {
   };
 });
 
-const mockProcessInstance: ProcessInstance = {
+const mockProcessInstance = {
   processInstanceKey: PROCESS_INSTANCE_ID,
   state: 'ACTIVE',
   startDate: '2018-06-21',
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
-};
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+  endDate: null,
+} satisfies ProcessInstance;
 
-const mockElementInstance: ElementInstance = {
+const mockElementInstance = {
   elementInstanceKey: '2251799813699889',
   elementId: 'Activity_0zqism7',
   elementName: 'Service Task',
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'process-def-1',
   processInstanceKey: PROCESS_INSTANCE_ID,
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
-};
+} satisfies ElementInstance;
 
-const mockSingleIncident: Incident = {
+const mockSingleIncident = {
   incidentKey: '1',
   processInstanceKey: PROCESS_INSTANCE_ID,
   processDefinitionKey: '2222222222222222',
@@ -88,7 +97,8 @@ const mockSingleIncident: Incident = {
   creationTime: '2024-10-28T10:00:00.000Z',
   state: 'ACTIVE',
   tenantId: '<default>',
-};
+  rootProcessInstanceKey: null,
+} satisfies Incident;
 
 describe('MetadataPopover', () => {
   beforeEach(() => {
@@ -146,6 +156,8 @@ describe('MetadataPopover', () => {
       version: 1,
       decisionRequirementsKey: '456789',
       decisionRequirementsId: 'approval-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
     });
   });
@@ -322,6 +334,7 @@ describe('MetadataPopover', () => {
           processInstanceKey: PROCESS_INSTANCE_ID,
           elementInstanceKey: '2251799813699880',
           jobKey: '2251799814080731',
+          rootProcessInstanceKey: null,
         },
         {
           processDefinitionId: 'invoice',
@@ -336,6 +349,7 @@ describe('MetadataPopover', () => {
           processInstanceKey: PROCESS_INSTANCE_ID,
           elementInstanceKey: '2251799813699881',
           jobKey: '2251799814080732',
+          rootProcessInstanceKey: null,
         },
         {
           processDefinitionId: 'invoice',
@@ -350,6 +364,7 @@ describe('MetadataPopover', () => {
           processInstanceKey: PROCESS_INSTANCE_ID,
           elementInstanceKey: '2251799813699882',
           jobKey: '2251799814080733',
+          rootProcessInstanceKey: null,
         },
       ]),
     );

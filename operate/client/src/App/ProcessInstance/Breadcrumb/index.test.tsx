@@ -14,7 +14,7 @@ import {Paths} from 'modules/Routes';
 import {
   type CallHierarchy,
   type ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const createWrapper = (initialPath: string = Paths.processInstance('123')) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -34,11 +34,17 @@ const processInstance: ProcessInstance = {
   processDefinitionName: 'Base instance name',
   state: 'ACTIVE',
   processDefinitionVersion: 0,
+  processDefinitionVersionTag: null,
   processDefinitionId: '',
   processDefinitionKey: '',
   tenantId: '',
   startDate: '',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+  endDate: null,
 };
 
 const callHierarchy: CallHierarchy[] = [

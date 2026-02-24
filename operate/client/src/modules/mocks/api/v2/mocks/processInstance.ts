@@ -6,9 +6,9 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
-const mockProcessInstance: ProcessInstance = {
+const mockProcessInstance = {
   processInstanceKey: '4294980768',
   state: 'ACTIVE',
   startDate: '2018-06-21',
@@ -18,6 +18,12 @@ const mockProcessInstance: ProcessInstance = {
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
-};
+  processDefinitionVersionTag: null,
+  endDate: null,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+} satisfies ProcessInstance;
 
 export {mockProcessInstance};

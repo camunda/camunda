@@ -34,6 +34,7 @@ const singleVersionSelection: ProcessDefinitionSelection = {
     versionTag: 'MyVersionTag',
     hasStartForm: false,
     tenantId: '<default>',
+    resourceName: null,
   },
 };
 
@@ -73,7 +74,7 @@ describe('DiagramHeader', () => {
           ...singleVersionSelection,
           definition: {
             ...singleVersionSelection.definition,
-            versionTag: undefined,
+            versionTag: null,
           },
         }}
       />,
@@ -111,7 +112,12 @@ describe('DiagramHeader', () => {
   it('should disable delete button when running instances count is greater than 0', async () => {
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 5},
+      page: {
+        totalItems: 5,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(

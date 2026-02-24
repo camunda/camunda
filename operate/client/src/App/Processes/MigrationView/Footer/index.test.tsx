@@ -75,12 +75,20 @@ describe('Footer', () => {
           startDate: '2021-02-20T18:31:18.625+0100',
           endDate: '2023-11-22T09:03:29.564+0100',
           state: 'COMPLETED',
+          actorType: '',
+          actorId: null,
+          errors: [],
           operationsTotalCount: 2,
           operationsCompletedCount: 2,
           operationsFailedCount: 0,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

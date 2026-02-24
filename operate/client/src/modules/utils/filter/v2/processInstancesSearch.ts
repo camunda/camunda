@@ -11,7 +11,7 @@ import {
   queryProcessInstancesRequestBodySchema,
   type ProcessInstanceState,
   type QueryProcessInstancesRequestBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {formatToISO} from 'modules/utils/date/formatDate';
 import {parseIds, parseSortParamsV2, updateFiltersSearchString} from '../index';
 

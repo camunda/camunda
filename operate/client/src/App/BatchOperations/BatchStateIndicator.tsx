@@ -6,7 +6,10 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {BatchOperationState} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {
+  BatchOperationItemState,
+  BatchOperationState,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   CheckmarkFilled,
   CircleDash,
@@ -15,13 +18,14 @@ import {
   InProgress,
   MisuseOutline,
   PauseOutlineFilled,
+  SkipForwardFilled,
   UnknownFilled,
   type CarbonIconType,
 } from '@carbon/react/icons';
 import {BatchStateIndicatorContainer} from './styled';
 
 type BatchStateIndicatorProps = {
-  status: BatchOperationState;
+  status: BatchOperationState | BatchOperationItemState;
 };
 
 type StatusConfig = {
@@ -30,7 +34,9 @@ type StatusConfig = {
   label: string;
 };
 
-const getStatusConfig = (status: BatchOperationState): StatusConfig => {
+const getStatusConfig = (
+  status: BatchOperationState | BatchOperationItemState,
+): StatusConfig => {
   switch (status) {
     case 'COMPLETED':
       return {
@@ -73,6 +79,12 @@ const getStatusConfig = (status: BatchOperationState): StatusConfig => {
         Icon: Incomplete,
         color: 'var(--cds-status-blue)',
         label: 'Partially completed',
+      };
+    case 'SKIPPED':
+      return {
+        Icon: SkipForwardFilled,
+        color: 'var(--cds-status-gray)',
+        label: 'Skipped',
       };
     default:
       return {

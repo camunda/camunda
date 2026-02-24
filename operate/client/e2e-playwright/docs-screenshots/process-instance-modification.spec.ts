@@ -269,6 +269,7 @@ test.describe('process instance modification', () => {
             tenantId: '',
             processInstanceKey: '2251799813888430',
             scopeKey: '2251799813888430',
+            rootProcessInstanceKey: null,
           },
         ],
         incidents: eventBasedGatewayProcessInstance.incidents,

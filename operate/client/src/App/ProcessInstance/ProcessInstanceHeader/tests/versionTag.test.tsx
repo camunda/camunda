@@ -24,7 +24,12 @@ describe('InstanceHeader', () => {
   beforeEach(() => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(createUser());
@@ -52,7 +57,7 @@ describe('InstanceHeader', () => {
       <ProcessInstanceHeader
         processInstance={{
           ...mockInstance,
-          processDefinitionVersionTag: undefined,
+          processDefinitionVersionTag: null,
         }}
       />,
       {
@@ -75,7 +80,7 @@ describe('InstanceHeader', () => {
       <ProcessInstanceHeader
         processInstance={{
           ...mockInstance,
-          processDefinitionVersionTag: undefined,
+          processDefinitionVersionTag: null,
         }}
       />,
       {

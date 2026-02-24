@@ -17,7 +17,7 @@ import {
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {Paths} from 'modules/Routes';
-import type {BatchOperation as BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {BatchOperation as BatchOperationType} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {mockGetBatchOperation} from 'modules/mocks/api/v2/batchOperations/getBatchOperation';
 import {notificationsStore} from 'modules/stores/notifications';
@@ -31,6 +31,9 @@ const operation: BatchOperationType = {
   operationsTotalCount: 2,
   operationsCompletedCount: 2,
   operationsFailedCount: 0,
+  actorType: null,
+  actorId: null,
+  errors: [],
 };
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
@@ -61,7 +64,12 @@ describe('<BatchOperation />', () => {
     mockGetBatchOperation().withSuccess(operation);
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 

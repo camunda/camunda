@@ -14,7 +14,7 @@ import {
 import type {
   CreateIncidentResolutionBatchOperationRequestBody,
   CreateIncidentResolutionBatchOperationResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {resolveProcessInstancesIncidentsBatchOperation} from 'modules/api/v2/processes/resolveProcessInstancesIncidentsBatchOperation';
 import type {RequestError} from 'modules/request';
 import {queryKeys} from 'modules/queries/queryKeys';

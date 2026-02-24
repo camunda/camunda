@@ -37,7 +37,8 @@ const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
               item.batchOperationKey
             )}
           </div>
-          <em>Multiple {formatBatchTitle(item.batchOperationType)}</em>
+          {/* TODO #46571: Verify optional type */}
+          <em>Multiple {formatBatchTitle(item.batchOperationType!)}</em>
         </>
       );
     case 'RESOURCE':
@@ -54,7 +55,8 @@ const CellReference: React.FC<Props> = ({item, processDefinitionName}) => {
         <div>
           <div>
             <Link
-              to={Paths.processInstance(item.processInstanceKey)}
+              /* TODO #46571: Verify optional type */
+              to={Paths.processInstance(item.processInstanceKey!)}
               aria-label={`View process instance ${item.processInstanceKey}`}
             >
               {item.processInstanceKey}

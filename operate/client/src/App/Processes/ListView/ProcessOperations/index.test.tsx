@@ -54,7 +54,12 @@ describe('<ProcessOperations />', () => {
   it('should open modal and show content', async () => {
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -116,7 +121,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -155,7 +165,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withServerError(500);
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -194,7 +209,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withServerError(403);
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -234,7 +254,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -271,7 +296,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withNetworkError();
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -318,7 +348,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(
@@ -359,7 +394,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -384,7 +424,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(
@@ -431,7 +476,12 @@ describe('<ProcessOperations />', () => {
     mockDeleteResource().withSuccess({});
     mockSearchProcessInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(

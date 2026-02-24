@@ -140,7 +140,8 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 <FirstColumn noWrap>
                   <IconText>
                     <BatchJob />
-                    Multiple {formatBatchTitle(auditLog.batchOperationType)}
+                    Multiple{' '}
+                    {formatBatchTitle(auditLog.batchOperationType ?? undefined)}
                     <CodeSnippet type="inline">
                       {auditLog.batchOperationKey}
                     </CodeSnippet>
@@ -149,7 +150,9 @@ const DetailsModal: React.FC<Props> = ({isOpen, onClose, auditLog}) => {
                 <StructuredListCell>
                   <IconText>
                     <Link
-                      to={Paths.batchOperation(auditLog.batchOperationKey)}
+                      to={Paths.batchOperation(
+                        auditLog.batchOperationKey ?? undefined,
+                      )}
                       aria-label={`View batch operation ${auditLog.batchOperationKey}`}
                     >
                       View batch operation details

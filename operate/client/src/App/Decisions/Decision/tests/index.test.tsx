@@ -19,7 +19,12 @@ describe('<Decision />', () => {
     const selectedDecisionDefinition = mockDecisionDefinitions.items[5];
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
@@ -99,7 +104,12 @@ describe('<Decision />', () => {
     const selectedDecisionDefinition = mockDecisionDefinitions.items[6];
     mockSearchDecisionDefinitions().withSuccess({
       items: [selectedDecisionDefinition],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<Decision />, {

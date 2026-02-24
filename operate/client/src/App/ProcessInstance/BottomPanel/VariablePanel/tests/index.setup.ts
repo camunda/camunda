@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {QueryVariablesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockVariables: QueryVariablesResponseBody = {
   items: [
@@ -18,6 +18,7 @@ const mockVariables: QueryVariablesResponseBody = {
       variableKey: '2251799813686037-clientNo',
       scopeKey: '2251799813696123',
       processInstanceKey: '2251799813696123',
+      rootProcessInstanceKey: null,
     },
     {
       value: '124.26',
@@ -27,6 +28,7 @@ const mockVariables: QueryVariablesResponseBody = {
       variableKey: '2251799813686037-mwst',
       scopeKey: '2251799813696123',
       processInstanceKey: '2251799813696123',
+      rootProcessInstanceKey: null,
     },
     {
       value: '1',
@@ -36,10 +38,14 @@ const mockVariables: QueryVariablesResponseBody = {
       variableKey: '2251799813686037-mwst',
       scopeKey: '2251799813696123',
       processInstanceKey: '2251799813696123',
+      rootProcessInstanceKey: null,
     },
   ],
   page: {
     totalItems: 3,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 

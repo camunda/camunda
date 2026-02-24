@@ -44,6 +44,8 @@ describe('OperationsLog Filters', () => {
           version: 1,
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
+          versionTag: null,
         },
         {
           processDefinitionKey: '456',
@@ -52,9 +54,16 @@ describe('OperationsLog Filters', () => {
           version: 1,
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
+          versionTag: null,
         },
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
@@ -174,6 +183,8 @@ describe('OperationsLog Filters', () => {
           version: 1,
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
+          versionTag: null,
         },
         {
           processDefinitionKey: '456',
@@ -182,9 +193,16 @@ describe('OperationsLog Filters', () => {
           version: 1,
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
+          versionTag: null,
         },
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     render(<Filters />, {
       wrapper: getWrapper('/operations-log?process=process1&version=1'),
