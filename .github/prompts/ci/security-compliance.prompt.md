@@ -84,7 +84,7 @@ permissions:
 ```yaml
 - name: Import Secrets
   id: secrets
-  uses: hashicorp/vault-action@v3
+  uses: hashicorp/vault-action@<PINNED_SHA>
   with:
     url: ${{ secrets.VAULT_ADDR }}
     method: approle

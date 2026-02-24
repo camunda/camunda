@@ -5,7 +5,7 @@ description: 'GitHub Actions CI specialist for this monorepo. Creates, refactors
 tools: ['edit', 'search', 'new', 'runCommands', 'runTasks', 'usages', 'vscodeAPI', 'problems', 'changes', 'fetch', 'githubRepo', 'todos']
 model: GPT-5.3-Codex (copilot)
 target: vscode
----
+--------------
 
 # CI Agent
 
