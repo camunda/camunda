@@ -22,11 +22,17 @@ inputs:
     elasticsearch9-tests-flaky:
         description: 'Flaky tests from the Elasticsearch 9 integration tests job'
         required: true
-    opensearch-tests-result:
-        description: 'Result of the OpenSearch integration tests job'
+    opensearch2-tests-result:
+        description: 'Result of the OpenSearch 2 integration tests job'
         required: true
-    opensearch-tests-flaky:
-        description: 'Flaky tests from the OpenSearch integration tests job'
+    opensearch2-tests-flaky:
+        description: 'Flaky tests from the OpenSearch 2 integration tests job'
+        required: true
+    opensearch3-tests-result:
+        description: 'Result of the OpenSearch 3 integration tests job'
+        required: true
+    opensearch3-tests-flaky:
+        description: 'Flaky tests from the OpenSearch 3 integration tests job'
         required: true
     rdbms-h2-tests-result:
         description: 'Result of the RDBMS H2 integration tests job'
@@ -84,7 +90,8 @@ runs:
         collect_from_single_job "general-unit-tests" "${{ inputs.general-unit-tests-result }}" "${{ inputs.general-unit-tests-flaky }}"
         collect_from_single_job "elasticsearch8-integration-tests" "${{ inputs.elasticsearch8-tests-result }}" "${{ inputs.elasticsearch8-tests-flaky }}"
         collect_from_single_job "elasticsearch9-integration-tests" "${{ inputs.elasticsearch9-tests-result }}" "${{ inputs.elasticsearch9-tests-flaky }}"
-        collect_from_single_job "opensearch-integration-tests" "${{ inputs.opensearch-tests-result }}" "${{ inputs.opensearch-tests-flaky }}"
+        collect_from_single_job "opensearch2-integration-tests" "${{ inputs.opensearch2-tests-result }}" "${{ inputs.opensearch2-tests-flaky }}"
+        collect_from_single_job "opensearch3-integration-tests" "${{ inputs.opensearch3-tests-result }}" "${{ inputs.opensearch3-tests-flaky }}"
         collect_from_single_job "rdbms-h2-integration-tests" "${{ inputs.rdbms-h2-tests-result }}" "${{ inputs.rdbms-h2-tests-flaky }}"
         collect_from_single_job "rdbms-integration-tests" "${{ inputs.rdbms-tests-result }}" "${{ inputs.rdbms-tests-flaky }}"
         collect_from_single_job "docker-checks" "${{ inputs.docker-checks-result }}" "${{ inputs.docker-checks-flaky }}"

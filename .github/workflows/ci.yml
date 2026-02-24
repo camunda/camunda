@@ -494,14 +494,14 @@ jobs:
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
   elasticsearch8-integration-tests:
-    name: "Database Integration Tests / Elasticsearch"
+    name: "Database Integration Tests / Elasticsearch 8"
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
       database-type: "elasticsearch"
-      database-image-version: "8.18.4"
+      database-image-version: "8.19.11"
       database-name: "Elasticsearch 8"
       it-database-type: "es"
 
@@ -513,22 +513,36 @@ jobs:
     secrets: inherit
     with:
       database-type: "elasticsearch"
-      database-image-version: "9.2.4"
+      database-image-version: "9.2.5"
       database-name: "Elasticsearch 9"
       it-database-type: "es"
       job-name-suffix: "9"
 
-  opensearch-integration-tests:
-    name: "Database Integration Tests / Opensearch"
+  opensearch2-integration-tests:
+    name: "Database Integration Tests / Opensearch 2"
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     needs: [ detect-changes ]
     secrets: inherit
     with:
       database-type: "opensearch"
-      database-image-version: "2.17.0"
+      database-image-version: "2.19.4"
       database-name: "OpenSearch 2"
       it-database-type: "os"
+      job-name-suffix: "2"
+
+  opensearch3-integration-tests:
+    name: "Database Integration Tests / Opensearch 3"
+    uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    needs: [ detect-changes ]
+    secrets: inherit
+    with:
+      database-type: "opensearch"
+      database-image-version: "3.4.0"
+      database-name: "OpenSearch 3"
+      it-database-type: "os"
+      job-name-suffix: "3"
 
   rdbms-h2-integration-tests:
     name: "Database Integration Tests / RDBMS H2"
@@ -549,7 +563,7 @@ jobs:
     secrets: inherit
     with:
       database-type: "elasticsearch"
-      database-image-version: "8.18.4"
+      database-image-version: "8.19.11"
       database-name: "Elasticsearch 8"
       it-database-type: "es"
       maven-profiles: "history"
@@ -564,7 +578,7 @@ jobs:
     secrets: inherit
     with:
       database-type: "opensearch"
-      database-image-version: "2.17.0"
+      database-image-version: "2.19.4"
       database-name: "OpenSearch 2"
       it-database-type: "os"
       maven-profiles: "history"
@@ -979,7 +993,7 @@ jobs:
           - 5000:5000
     env:
       LOCAL_DOCKER_IMAGE: localhost:5000/camunda/camunda
-      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.16.4
+      TEST_ELASTICSEARCH_IMAGE: docker.elastic.co/elasticsearch/elasticsearch:8.19.11
       DOCKER_PLATFORMS: "linux/arm64,linux/amd64" # build AMD64 last so it gets picked up by the test
     steps:
       - uses: actions/checkout@v6
@@ -1091,7 +1105,8 @@ jobs:
       - elasticsearch9-integration-tests
       - general-unit-tests
       - integration-tests
-      - opensearch-integration-tests
+      - opensearch2-integration-tests
+      - opensearch3-integration-tests
       - rdbms-h2-integration-tests
       - rdbms-integration-tests
       - zeebe-unit-tests
@@ -1122,8 +1137,10 @@ jobs:
           elasticsearch8-tests-flaky: ${{ needs.elasticsearch8-integration-tests.outputs.flakyTests }}
           elasticsearch9-tests-result: ${{ needs.elasticsearch9-integration-tests.result }}
           elasticsearch9-tests-flaky: ${{ needs.elasticsearch9-integration-tests.outputs.flakyTests }}
-          opensearch-tests-result: ${{ needs.opensearch-integration-tests.result }}
-          opensearch-tests-flaky: ${{ needs.opensearch-integration-tests.outputs.flakyTests }}
+          opensearch2-tests-result: ${{ needs.opensearch2-integration-tests.result }}
+          opensearch2-tests-flaky: ${{ needs.opensearch2-integration-tests.outputs.flakyTests }}
+          opensearch3-tests-result: ${{ needs.opensearch3-integration-tests.result }}
+          opensearch3-tests-flaky: ${{ needs.opensearch3-integration-tests.outputs.flakyTests }}
           rdbms-h2-tests-result: ${{ needs.rdbms-h2-integration-tests.result }}
           rdbms-h2-tests-flaky: ${{ needs.rdbms-h2-integration-tests.outputs.flakyTests }}
           rdbms-tests-result: ${{ needs.rdbms-integration-tests.result }}
@@ -1393,7 +1410,8 @@ jobs:
       - maven-spotless-linter
       - openapi-lint
       - opensearch-history-tests
-      - opensearch-integration-tests
+      - opensearch2-integration-tests
+      - opensearch3-integration-tests
       - operate-ci
       - optimize-ci
       - protobuf-checks
