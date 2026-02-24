@@ -7,8 +7,6 @@
  */
 package io.camunda.operate.qa.util;
 
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
-import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import java.util.List;
@@ -84,37 +82,6 @@ public class RestAPITestUtil {
 
   public static ListViewRequestDto createGetAllProcessInstancesRequest() {
     return new ListViewRequestDto(createGetAllProcessInstancesQuery());
-  }
-
-  public static DecisionInstanceListQueryDto createDecisionInstanceQuery(
-      Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
-    final DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
-    filtersSupplier.accept(query);
-    return query;
-  }
-
-  public static DecisionInstanceListRequestDto createDecisionInstanceRequest(
-      Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
-    final DecisionInstanceListRequestDto request = new DecisionInstanceListRequestDto();
-    final DecisionInstanceListQueryDto query = new DecisionInstanceListQueryDto();
-    filtersSupplier.accept(query);
-    request.setQuery(query);
-    return request;
-  }
-
-  public static DecisionInstanceListQueryDto createGetAllDecisionInstancesQuery() {
-    return createDecisionInstanceQuery(q -> q.setFailed(true).setEvaluated(true));
-  }
-
-  public static DecisionInstanceListRequestDto createGetAllDecisionInstancesRequest() {
-    return new DecisionInstanceListRequestDto(createGetAllDecisionInstancesQuery());
-  }
-
-  public static DecisionInstanceListRequestDto createGetAllDecisionInstancesRequest(
-      Consumer<DecisionInstanceListQueryDto> filtersSupplier) {
-    final DecisionInstanceListQueryDto decisionInstanceQuery = createGetAllDecisionInstancesQuery();
-    filtersSupplier.accept(decisionInstanceQuery);
-    return new DecisionInstanceListRequestDto(decisionInstanceQuery);
   }
 
   public static ListViewRequestDto createGetAllProcessInstancesRequest(
