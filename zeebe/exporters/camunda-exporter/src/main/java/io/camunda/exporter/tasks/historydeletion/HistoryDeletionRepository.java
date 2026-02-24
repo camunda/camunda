@@ -71,7 +71,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
    * @param ids the list of ids to mark as completed
    * @return a {@link CompletableFuture} containing the list of ids that were marked as completed
    */
-  CompletableFuture<List<String>> updateOperations(final List<String> ids);
+  CompletableFuture<List<String>> completeOperations(final List<String> ids);
 
   class NoopHistoryDeletionRepository implements HistoryDeletionRepository {
     @Override
@@ -99,7 +99,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
     }
 
     @Override
-    public CompletableFuture<List<String>> updateOperations(final List<String> ids) {
+    public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
       return CompletableFuture.completedFuture(List.of());
     }
 

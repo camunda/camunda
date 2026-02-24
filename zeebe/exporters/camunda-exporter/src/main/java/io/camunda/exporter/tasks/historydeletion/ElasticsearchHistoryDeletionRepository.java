@@ -212,7 +212,7 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
   }
 
   @Override
-  public CompletableFuture<List<String>> updateOperations(final List<String> ids) {
+  public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
     final var bulkRequestBuilder = new BulkRequest.Builder();
 
     final var fieldsToUpdate =

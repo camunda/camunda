@@ -255,7 +255,7 @@ public class HistoryDeletionJob implements BackgroundTask {
                     AbstractOperationHandler.ID_PATTERN.formatted(
                         entity.getBatchOperationKey(), entity.getResourceKey()))
             .toList();
-    return deleterRepository.updateOperations(operationIds);
+    return deleterRepository.completeOperations(operationIds);
   }
 
   /**
