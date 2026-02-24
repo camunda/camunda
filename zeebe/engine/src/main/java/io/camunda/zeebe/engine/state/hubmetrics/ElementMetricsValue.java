@@ -9,8 +9,11 @@ package io.camunda.zeebe.engine.state.hubmetrics;
 
 import io.camunda.zeebe.db.DbValue;
 import io.camunda.zeebe.msgpack.UnpackedObject;
+import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.IntegerProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ElementMetricsValue extends UnpackedObject implements DbValue {
 
@@ -19,19 +22,25 @@ public class ElementMetricsValue extends UnpackedObject implements DbValue {
   private final LongProperty sumDurationProp = new LongProperty("sumDuration", 0);
   private final LongProperty maxDurationProp = new LongProperty("maxDuration", 0);
   private final LongProperty minDurationProp = new LongProperty("minDuration", 0);
+  private final BinaryProperty digestProp = new BinaryProperty("digest", new UnsafeBuffer());
 
   public ElementMetricsValue() {
-    super(5);
+    super(6);
     declareProperty(createdProp)
         .declareProperty(completedProp)
         .declareProperty(sumDurationProp)
         .declareProperty(maxDurationProp)
-        .declareProperty(minDurationProp);
+        .declareProperty(minDurationProp)
+        .declareProperty(digestProp);
   }
 
   public ElementMetricsValue wrap(final ElementMetricsValue value) {
     setCompleted(value.getCompleted());
     setCreated(value.getCreated());
+    setSumDuration(value.getSumDuration());
+    setMaxDuration(value.getMaxDuration());
+    setMinDuration(value.getMinDuration());
+    setDigest(value.getDigest());
     return this;
   }
 
@@ -103,5 +112,14 @@ public class ElementMetricsValue extends UnpackedObject implements DbValue {
   public void setMinDurationIfLower(final long value) {
     final var newValue = Math.max(Math.min(getSumDuration(), value), 0);
     setMinDuration(newValue);
+  }
+
+  public DirectBuffer getDigest() {
+    return digestProp.getValue();
+  }
+
+  public ElementMetricsValue setDigest(final DirectBuffer buffer) {
+    digestProp.setValue(buffer);
+    return this;
   }
 }

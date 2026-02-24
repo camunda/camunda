@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.state.hubmetrics;
 
+import com.tdunning.math.stats.MergingDigest;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -18,13 +19,17 @@ import io.camunda.zeebe.db.impl.DbTenantAwareKey.PlacementType;
 import io.camunda.zeebe.engine.state.mutable.MutableHubMetricsState;
 import io.camunda.zeebe.protocol.ZbColumnFamilies;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class DbHubMetricsState implements MutableHubMetricsState {
 
   private final Map<ProcessMetricsKey, ProcessMetricsValue> processMetricsCache;
   private final Map<ElementMetricsKey, ElementMetricsValue> elementMetricsCache;
+  private final Map<ProcessMetricsKey, MergingDigest> processDigestCache;
+  private final Map<ElementMetricsKey, MergingDigest> elementDigestCache;
 
   private final DbString tenantIdKey;
   private final DbString processId;
@@ -80,32 +85,46 @@ public class DbHubMetricsState implements MutableHubMetricsState {
             elementMetricsValue);
 
     processMetricsCache = new HashMap<>();
+    processDigestCache = new HashMap<>();
     populateProcessMetricsCache();
     elementMetricsCache = new HashMap<>();
+    elementDigestCache = new HashMap<>();
     populateElementMetricsCache();
   }
 
   private void populateProcessMetricsCache() {
     processByTenantIDAndVersionMetricsColumnFamily.forEach(
-        (key, value) ->
-            processMetricsCache.put(
-                new ProcessMetricsKey(
-                    key.tenantKey().toString(),
-                    key.wrappedKey().first().toString(),
-                    key.wrappedKey().second().getValue()),
-                new ProcessMetricsValue().wrap(value)));
+        (key, value) -> {
+          final var metricsKey =
+              new ProcessMetricsKey(
+                  key.tenantKey().toString(),
+                  key.wrappedKey().first().toString(),
+                  key.wrappedKey().second().getValue());
+          processMetricsCache.put(metricsKey, new ProcessMetricsValue().wrap(value));
+          final var digestBuffer = value.getDigest().byteBuffer();
+          if (digestBuffer != null) {
+            final var digest = MergingDigest.fromBytes(digestBuffer);
+            processDigestCache.put(metricsKey, digest);
+          }
+        });
   }
 
   private void populateElementMetricsCache() {
     processByTenantIDVersionAndElementMetricsColumnFamily.forEach(
-        (key, value) ->
-            elementMetricsCache.put(
-                new ElementMetricsKey(
-                    key.tenantKey().toString(),
-                    key.wrappedKey().first().toString(),
-                    key.wrappedKey().second().first().getValue(),
-                    key.wrappedKey().second().second().toString()),
-                new ElementMetricsValue().wrap(value)));
+        (key, value) -> {
+          final var metricsKey =
+              new ElementMetricsKey(
+                  key.tenantKey().toString(),
+                  key.wrappedKey().first().toString(),
+                  key.wrappedKey().second().first().getValue(),
+                  key.wrappedKey().second().second().toString());
+          elementMetricsCache.put(metricsKey, new ElementMetricsValue().wrap(value));
+          final var digestBuffer = value.getDigest().byteBuffer();
+          if (digestBuffer != null) {
+            final var digest = MergingDigest.fromBytes(digestBuffer);
+            elementDigestCache.put(metricsKey, digest);
+          }
+        });
   }
 
   @Override
@@ -147,6 +166,13 @@ public class DbHubMetricsState implements MutableHubMetricsState {
       cachedValue.decrementAbsolute();
       cachedValue.incrementCompleted();
       final var duration = record.getEndTime() - record.getStartTime();
+
+      final var digest = processDigestCache.computeIfAbsent(key, k -> new MergingDigest(100));
+      digest.add(duration);
+      final var buffer = ByteBuffer.allocate(digest.byteSize());
+      digest.asBytes(buffer);
+      cachedValue.setDigest(new UnsafeBuffer(buffer));
+
       cachedValue.addDuration(duration);
       cachedValue.setMaxDurationIfHigher(duration);
       cachedValue.setMinDurationIfLower(duration);
@@ -159,6 +185,13 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     v.decrementAbsolute();
     v.incrementCompleted();
     final var duration = record.getEndTime() - record.getStartTime();
+
+    final var digest = processDigestCache.computeIfAbsent(key, k -> new MergingDigest(100));
+    digest.add(duration);
+    final var buffer = ByteBuffer.allocate(digest.byteSize());
+    digest.asBytes(buffer);
+    v.setDigest(new UnsafeBuffer(buffer));
+
     v.addDuration(duration);
     v.setMaxDurationIfHigher(duration);
     v.setMinDurationIfLower(duration);
@@ -213,6 +246,13 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     if (cachedValue != null) {
       cachedValue.incrementCompleted();
       final var duration = record.getEndTime() - record.getStartTime();
+
+      final var digest = elementDigestCache.computeIfAbsent(key, k -> new MergingDigest(100));
+      digest.add(duration);
+      final var buffer = ByteBuffer.allocate(digest.byteSize());
+      digest.asBytes(buffer);
+      cachedValue.setDigest(new UnsafeBuffer(buffer));
+
       cachedValue.addDuration(duration);
       cachedValue.setMaxDurationIfHigher(duration);
       cachedValue.setMinDurationIfLower(duration);
@@ -224,6 +264,13 @@ public class DbHubMetricsState implements MutableHubMetricsState {
     final var v = new ElementMetricsValue();
     v.incrementCompleted();
     final var duration = record.getEndTime() - record.getStartTime();
+
+    final var digest = elementDigestCache.computeIfAbsent(key, k -> new MergingDigest(100));
+    digest.add(duration);
+    final var buffer = ByteBuffer.allocate(digest.byteSize());
+    digest.asBytes(buffer);
+    v.setDigest(new UnsafeBuffer(buffer));
+
     v.addDuration(duration);
     v.setMaxDurationIfHigher(duration);
     v.setMinDurationIfLower(duration);
@@ -238,12 +285,14 @@ public class DbHubMetricsState implements MutableHubMetricsState {
         (k, v) -> {
           v.setCompleted(0);
           v.setCreated(0);
+          v.setDigest(new UnsafeBuffer(0, 0));
           tenantIdKey.wrapString(k.tenantId());
           processId.wrapString(k.processId());
           processVersion.wrapInt(k.version());
           processByTenantIDAndVersionMetricsColumnFamily.upsert(
               tenantAwareProcessIdAndVersionKey, v);
         });
+    processDigestCache.clear();
 
     elementMetricsCache.forEach(
         (k, v) -> {
@@ -255,6 +304,7 @@ public class DbHubMetricsState implements MutableHubMetricsState {
               tenantAwareProcessIdVersionAndElementIdKey);
         });
     elementMetricsCache.clear();
+    elementDigestCache.clear();
   }
 
   record ProcessMetricsKey(String tenantId, String processId, int version) {}
