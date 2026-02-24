@@ -15,7 +15,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
@@ -40,7 +39,6 @@ public class ProcessInstanceRestServiceTest {
   @Mock private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
   @Mock private BatchOperationWriter batchOperationWriter;
   @Mock private ProcessInstanceReader processInstanceReader;
-  @Mock private ListenerReader listenerReader;
   @Mock private ListViewReader listViewReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
 
@@ -55,7 +53,6 @@ public class ProcessInstanceRestServiceTest {
             modifyProcessInstanceRequestValidator,
             batchOperationWriter,
             processInstanceReader,
-            listenerReader,
             listViewReader,
             flowNodeInstanceReader);
 

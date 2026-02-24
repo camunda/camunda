@@ -22,14 +22,12 @@ import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.webapps.schema.entities.listener.ListenerType;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
@@ -83,46 +81,6 @@ public class ProcessInstanceRestServiceIT {
     final MvcResult mvcResult =
         mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
-  public void testGetListenersWithInvalidId() throws Exception {
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/listeners";
-    final MvcResult mvcResult =
-        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
-    assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
-  public void testListenersRequestWithFlowNodeIdAndFlowNodeInstanceIdInvalid() throws Exception {
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/listeners";
-    final ListenerRequestDto request =
-        new ListenerRequestDto()
-            .setPageSize(20)
-            .setFlowNodeId("testid")
-            .setFlowNodeInstanceId(123L);
-    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("Only one of 'flowNodeId' or 'flowNodeInstanceId'");
-  }
-
-  @Test
-  public void testListenersRequestWithListenerFilterInvalid() throws Exception {
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/1/listeners";
-    final ListenerRequestDto request =
-        new ListenerRequestDto()
-            .setPageSize(20)
-            .setFlowNodeId("testid")
-            .setListenerTypeFilter(ListenerType.UNKNOWN);
-    final MvcResult mvcResult = mockMvcManager.postRequest(url, request, 400);
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains(
-            "'listenerTypeFilter' only allows for values: ["
-                + "null, "
-                + ListenerType.EXECUTION_LISTENER
-                + ", "
-                + ListenerType.TASK_LISTENER
-                + "]");
   }
 
   @Test
@@ -235,10 +193,6 @@ public class ProcessInstanceRestServiceIT {
                 .setModifications(
                     List.of(
                         new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("fid"))),
-            PermissionType.MODIFY_PROCESS_INSTANCE),
-        Arguments.of(
-            "/1/listeners",
-            new ListenerRequestDto().setPageSize(5).setFlowNodeId("fid"),
-            PermissionType.READ_PROCESS_INSTANCE));
+            PermissionType.MODIFY_PROCESS_INSTANCE));
   }
 }
