@@ -70,8 +70,8 @@ public final class DmnDeploymentTest {
   private static final String DECISION_RULE_ID_LENGTH_EXCEEDED =
       "/dmn/decision-table-with-long-rule-id.dmn";
 
-  private static final int MAX_ID_FIELD_LENGTH = 50;
-  private static final int MAX_NAME_FIELD_LENGTH = 50;
+  private static final int MAX_ID_FIELD_LENGTH = 100;
+  private static final int MAX_NAME_FIELD_LENGTH = 100;
 
   @Rule
   public final EngineRule engine =
@@ -654,7 +654,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_requirements_graph' in resource '%s'",
+                "The ID of a DRG must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_but_it_is_worth_it_because_we_need_it_for_a_test' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DRG_ID_LENGTH_EXCEEDED));
   }
 
@@ -677,7 +677,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was 'This is a very long name for a decision requirements graph' in DRG '%s'",
+                "The name of a DRG must not be longer than the configured max-name-length of %s characters, but was 'This is an extremely beautiful and very long name for a decision table but it's worth it because we need it for a test' in DRG '%s'",
                 MAX_NAME_FIELD_LENGTH, DRG_NAME_LENGTH_EXCEEDED));
   }
 
@@ -700,7 +700,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision1' in resource '%s'",
+                "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_but_it_is_worth_it_because_we_need_it_for_a_test' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DECISION_ID_LENGTH_EXCEEDED));
   }
 
@@ -723,7 +723,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a decision must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision table' in resource '%s'",
+                "The name of a decision must not be longer than the configured max-name-length of %s characters, but was 'This is an extremely beautiful and very long name for a decision table but it's worth it because we need it for a test' in resource '%s'",
                 MAX_NAME_FIELD_LENGTH, DECISION_NAME_LENGTH_EXCEEDED));
   }
 
@@ -746,7 +746,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a decision input must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_input' in resource '%s'",
+                "The ID of a decision input must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_input_that_should_exceed_one_hundred_characters_for_testing' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DECISION_INPUT_ID_LENGTH_EXCEEDED));
   }
 
@@ -769,7 +769,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a decision input must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision input' in resource '%s'",
+                "The name of a decision input must not be longer than the configured max-name-length of %s characters, but was 'This is an extremely beautiful and very long name for a decision input element that should exceed one hundred characters' in resource '%s'",
                 MAX_NAME_FIELD_LENGTH, DECISION_INPUT_NAME_LENGTH_EXCEEDED));
   }
 
@@ -792,7 +792,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a decision output must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_output' in resource '%s'",
+                "The ID of a decision output must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_output_that_should_exceed_one_hundred_characters_for_testing' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DECISION_OUTPUT_ID_LENGTH_EXCEEDED));
   }
 
@@ -815,7 +815,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The name of a decision output must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision output' in resource '%s'",
+                "The name of a decision output must not be longer than the configured max-name-length of %s characters, but was 'This is an extremely beautiful and very long name for a decision output element that should exceed one hundred characters' in resource '%s'",
                 MAX_NAME_FIELD_LENGTH, DECISION_OUTPUT_NAME_LENGTH_EXCEEDED));
   }
 
@@ -838,7 +838,7 @@ public final class DmnDeploymentTest {
     assertThat(deploymentEvent.getRejectionReason())
         .contains(
             String.format(
-                "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_rule' in resource '%s'",
+                "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extremely_creative_and_very_long_id_for_a_decision_rule_that_should_exceed_one_hundred_characters_for_testing' in resource '%s'",
                 MAX_ID_FIELD_LENGTH, DECISION_RULE_ID_LENGTH_EXCEEDED));
   }
 

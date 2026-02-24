@@ -14,7 +14,7 @@
           <text>lightsaberColor</text>
         </inputExpression>
       </input>
-      <output id="Output_1" label="Jedi or Sith" name="This is an extreme and very long name for a decision output" typeRef="string" biodi:width="192">
+      <output id="Output_1" label="Jedi or Sith" name="This is an extremely beautiful and very long name for a decision output element that should exceed one hundred characters" typeRef="string" biodi:width="192">
         <outputValues id="UnaryTests_0hj346a">
           <text>"Jedi","Sith"</text>
         </outputValues>
