@@ -378,7 +378,7 @@ GRAFANA_TOKEN=your-token
 For Camunda team members, we maintain internal Grafana instances for monitoring our production and development environments:
 
 - **Internal SaaS Dashboard**: https://grafana-central.internal.camunda.io/
-- **Internal Dev Dashboard**: https://grafana.dev.zeebe.io/
+- **Internal Dev Dashboard**: https://dashboard.benchmark.camunda.cloud/
 
 ### Dashboard Synchronization
 

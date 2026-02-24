@@ -1,7 +1,7 @@
 # description: This workflow deploys a load test with a camunda cluster under test.
 # We use this workflow to start ad-hoc load tests or weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
-# https://grafana.dev.zeebe.io/login
+# https://dashboard.benchmark.camunda.cloud/
 # called by: camunda-weekly-load-tests.yml, camunda-pr-load-test.yaml
 # type: CI
 # owner: camunda/orchestration-cluster-team
