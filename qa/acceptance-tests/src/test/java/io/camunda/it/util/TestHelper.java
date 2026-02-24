@@ -49,6 +49,7 @@ import io.camunda.client.api.search.response.Tenant;
 import io.camunda.client.api.search.response.UserTask;
 import io.camunda.client.api.statistics.response.GlobalJobStatistics;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
+import io.camunda.client.api.statistics.response.JobWorkerStatistics;
 import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.zeebe.model.bpmn.Bpmn;
@@ -967,6 +968,56 @@ public final class TestHelper {
                   camundaClient
                       .newJobTypeStatisticsRequest(startTime, endTime)
                       .filter(filterFn)
+                      .page(pageFn);
+
+              assertThat(request.send().join()).satisfies(fnRequirements);
+            });
+  }
+
+  /**
+   * Waits for job worker statistics to be exported and match the given requirements.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query worker statistics for
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobWorkerStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<JobWorkerStatistics> fnRequirements) {
+    waitForJobWorkerStatistics(camundaClient, startTime, endTime, jobType, p -> {}, fnRequirements);
+  }
+
+  /**
+   * Waits for job worker statistics to be exported and match the given requirements, with
+   * pagination.
+   *
+   * @param camundaClient the Camunda client
+   * @param startTime the start time for the statistics query
+   * @param endTime the end time for the statistics query
+   * @param jobType the job type to query worker statistics for
+   * @param pageFn the page consumer to apply
+   * @param fnRequirements the assertions to apply to the statistics
+   */
+  public static void waitForJobWorkerStatistics(
+      final CamundaClient camundaClient,
+      final OffsetDateTime startTime,
+      final OffsetDateTime endTime,
+      final String jobType,
+      final Consumer<SearchRequestPage> pageFn,
+      final Consumer<JobWorkerStatistics> fnRequirements) {
+    Awaitility.await("should export job worker metrics to secondary storage")
+        .atMost(TIMEOUT_DATA_AVAILABILITY)
+        .ignoreExceptions()
+        .untilAsserted(
+            () -> {
+              final var request =
+                  camundaClient
+                      .newJobWorkerStatisticsRequest(startTime, endTime, jobType)
                       .page(pageFn);
 
               assertThat(request.send().join()).satisfies(fnRequirements);
