@@ -66,7 +66,8 @@ const DecisionPanel: React.FC<DecisionPanelProps> = (props) => {
     >
       {decisionInstance?.state === 'FAILED' && (
         <IncidentBanner data-testid="incident-banner">
-          {decisionInstance.evaluationFailure}
+          {decisionInstance.evaluationFailure ??
+            'Evaluation failed with unknown error'}
         </IncidentBanner>
       )}
       <DiagramShell status={getStatus()}>
