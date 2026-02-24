@@ -38,6 +38,7 @@ public final class DeploymentTransformer {
   private static final Logger LOG = Loggers.PROCESS_PROCESSOR_LOGGER;
   private static final DeploymentResourceTransformer UNKNOWN_RESOURCE =
       new UnknownResourceTransformer();
+  private final EngineConfiguration config;
   private final Map<String, DeploymentResourceTransformer> resourceTransformers;
   private final ChecksumGenerator checksumGenerator = new ChecksumGenerator();
   // internal changes during processing
@@ -53,6 +54,7 @@ public final class DeploymentTransformer {
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
+    this.config = config;
 
     final var bpmnResourceTransformer =
         new BpmnResourceTransformer(
@@ -171,6 +173,14 @@ public final class DeploymentTransformer {
       final StringBuilder errors) {
     final var resourceName = deploymentResource.getResourceName();
     final var transformer = getResourceTransformer(resourceName);
+
+    if (resourceName.length() > config.getMaxNameFieldLength()) {
+      errors.append(
+          String.format(
+              "\n- Resource name '%s' exceeds maximum length of %d characters",
+              resourceName, config.getMaxNameFieldLength()));
+      return false;
+    }
 
     try {
       final var result = transformer.createMetadata(deploymentResource, deploymentEvent, context);
