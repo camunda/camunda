@@ -13,11 +13,12 @@ import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchO
 import {BatchStateIndicator} from 'App/BatchOperations/BatchStateIndicator';
 import {formatDate} from 'modules/utils/date';
 import {Paths} from 'modules/Routes';
+import {PanelHeader as BasePanelHeader} from 'modules/components/PanelHeader';
 
 const TABLE_HEADERS = [
-  {key: 'processInstanceKey', header: 'Process Instance Key', isDisabled: true},
+  {key: 'processInstanceKey', header: 'Process instance key', isDisabled: true},
   {key: 'state', header: 'Batch state', isDisabled: true},
-  {key: 'processedDate', header: 'Time', sortKey: 'processedDate'},
+  {key: 'processedDate', header: 'Date', sortKey: 'processedDate'},
 ];
 
 type Props = {
@@ -101,9 +102,10 @@ export const BatchItemsTable: React.FC<Props> = ({
   };
 
   return (
-    <>
-      {totalItems > 0 && <strong>{totalItems} Items</strong>}
+    <div>
+      <BasePanelHeader count={totalItems} title="Items" />
       <PaginatedSortableTable
+        size="md"
         batchOperationId={batchOperationKey}
         state={getTableState()}
         rows={rows}
@@ -120,6 +122,6 @@ export const BatchItemsTable: React.FC<Props> = ({
           fetchNextPage,
         }}
       />
-    </>
+    </div>
   );
 };
