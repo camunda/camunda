@@ -118,64 +118,76 @@ public final class CheckpointBackupDeletedApplier {
       backupRangeState.deleteRange(range.start());
       LOG.debug("Deleted single-entry range [{}, {}]", range.start(), range.end());
     } else if (isStart) {
-      // Deleting from the start — advance start to successor
-      final var successor = checkpointMetadataState.findSuccessorBackupCheckpoint(checkpointId);
-      if (successor.isPresent()) {
-        backupRangeState.updateRangeStart(range.start(), successor.get());
-        LOG.debug(
-            "Advanced range start from {} to {} (range end: {})",
-            range.start(),
-            successor.get(),
-            range.end());
-      } else {
-        // No successor found — should not happen for a range with start != end
-        LOG.warn(
-            "No successor found for start checkpoint {} in range [{}, {}], deleting range",
-            checkpointId,
-            range.start(),
-            range.end());
-        backupRangeState.deleteRange(range.start());
-      }
+      updateRangeStart(checkpointId, range);
     } else if (isEnd) {
-      // Deleting from the end — shrink end to predecessor
-      final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
-      if (predecessor.isPresent()) {
-        backupRangeState.updateRangeEnd(range.start(), predecessor.get());
-        LOG.debug(
-            "Shrunk range end from {} to {} (range start: {})",
-            range.end(),
-            predecessor.get(),
-            range.start());
-      } else {
-        // No predecessor found — should not happen for a range with start != end
-        LOG.warn(
-            "No predecessor found for end checkpoint {} in range [{}, {}], deleting range",
-            checkpointId,
-            range.start(),
-            range.end());
-        backupRangeState.deleteRange(range.start());
-      }
+      updateRangeEnd(checkpointId, range);
     } else {
-      // Deleting from the middle — split the range
-      final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
-      final var successor = checkpointMetadataState.findSuccessorBackupCheckpoint(checkpointId);
-      if (predecessor.isPresent() && successor.isPresent()) {
-        backupRangeState.splitRange(range.start(), range.end(), predecessor.get(), successor.get());
-        LOG.debug(
-            "Split range [{}, {}] into [{}, {}] and [{}, {}]",
-            range.start(),
-            range.end(),
-            range.start(),
-            predecessor.get(),
-            successor.get(),
-            range.end());
-      } else {
-        LOG.warn(
-            "Could not find predecessor/successor for interior checkpoint {} in range [{}, {}]",
-            checkpointId,
-            range.start(),
-            range.end());
-      }
+      splitRange(checkpointId, range);
+    }
+  }
+
+  private void updateRangeStart(final long checkpointId, final BackupRange range) {
+    // Deleting from the start — advance start to successor
+    final var successor = checkpointMetadataState.findSuccessorBackupCheckpoint(checkpointId);
+    if (successor.isPresent()) {
+      backupRangeState.updateRangeStart(range.start(), successor.get());
+      LOG.debug(
+          "Advanced range start from {} to {} (range end: {})",
+          range.start(),
+          successor.get(),
+          range.end());
+    } else {
+      // No successor found — should not happen for a range with start != end
+      LOG.warn(
+          "No successor found for start checkpoint {} in range [{}, {}], deleting range",
+          checkpointId,
+          range.start(),
+          range.end());
+      backupRangeState.deleteRange(range.start());
+    }
+  }
+
+  private void updateRangeEnd(final long checkpointId, final BackupRange range) {
+    // Deleting from the end — shrink end to predecessor
+    final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
+    if (predecessor.isPresent()) {
+      backupRangeState.updateRangeEnd(range.start(), predecessor.get());
+      LOG.debug(
+          "Shrunk range end from {} to {} (range start: {})",
+          range.end(),
+          predecessor.get(),
+          range.start());
+    } else {
+      // No predecessor found — should not happen for a range with start != end
+      LOG.warn(
+          "No predecessor found for end checkpoint {} in range [{}, {}], deleting range",
+          checkpointId,
+          range.start(),
+          range.end());
+      backupRangeState.deleteRange(range.start());
+    }
+  }
+
+  private void splitRange(final long checkpointId, final BackupRange range) {
+    // Deleting from the middle — split the range
+    final var predecessor = checkpointMetadataState.findPredecessorBackupCheckpoint(checkpointId);
+    final var successor = checkpointMetadataState.findSuccessorBackupCheckpoint(checkpointId);
+    if (predecessor.isPresent() && successor.isPresent()) {
+      backupRangeState.splitRange(range.start(), range.end(), predecessor.get(), successor.get());
+      LOG.debug(
+          "Split range [{}, {}] into [{}, {}] and [{}, {}]",
+          range.start(),
+          range.end(),
+          range.start(),
+          predecessor.get(),
+          successor.get(),
+          range.end());
+    } else {
+      LOG.warn(
+          "Could not find predecessor/successor for interior checkpoint {} in range [{}, {}]",
+          checkpointId,
+          range.start(),
+          range.end());
     }
   }
 }
