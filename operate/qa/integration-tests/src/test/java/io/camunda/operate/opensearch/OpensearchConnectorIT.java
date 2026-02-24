@@ -62,7 +62,7 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 public class OpensearchConnectorIT extends OperateAbstractIT {
 
   private static final OpenSearchContainer<?> OPENSEARCH_CONTAINER =
-      new OpenSearchContainer<>("opensearchproject/opensearch:2.17.0")
+      new OpenSearchContainer<>("opensearchproject/opensearch:2.19.4")
           .withEnv(Map.of())
           .withExposedPorts(9200, 9205);
 
