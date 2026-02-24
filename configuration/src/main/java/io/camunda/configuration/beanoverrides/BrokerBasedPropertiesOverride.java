@@ -878,6 +878,23 @@ public class BrokerBasedPropertiesOverride {
 
     final Rdbms database = secondaryStorage.getRdbms();
 
+    /* Limit */
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setMaxIdFieldLength(database.getMaxVarcharFieldLength());
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setMaxNameFieldLength(database.getMaxVarcharFieldLength());
+    override
+        .getExperimental()
+        .getEngine()
+        .getValidators()
+        .setMaxWorkerTypeLength(database.getMaxVarcharFieldLength());
+
     /* Load exporter config map */
 
     var exporter = override.getRdbmsExporter();
