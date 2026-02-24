@@ -62,8 +62,7 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
   }
 
   public void resolve(final Long incidentKey) {
-    final boolean wasMerged =
-        mergeToQueue(incidentKey, b -> b.state(IncidentState.RESOLVED));
+    final boolean wasMerged = mergeToQueue(incidentKey, b -> b.state(IncidentState.RESOLVED));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
