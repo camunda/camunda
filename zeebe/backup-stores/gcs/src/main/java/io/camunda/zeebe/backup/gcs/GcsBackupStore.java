@@ -46,6 +46,7 @@ public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
+  private static final String METADATA_OBJECT_NAME = "metadata.json";
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
@@ -297,7 +298,8 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   private BlobInfo backupMetadataBlobInfo(final int partitionId) {
-    return BlobInfo.newBuilder(bucketInfo, basePath + "metadata/" + partitionId + "/metadata.json")
+    return BlobInfo.newBuilder(
+            bucketInfo, "%smetadata/%d/%s".formatted(basePath, partitionId, METADATA_OBJECT_NAME))
         .build();
   }
 

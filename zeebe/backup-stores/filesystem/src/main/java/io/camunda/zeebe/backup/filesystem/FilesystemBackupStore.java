@@ -55,6 +55,7 @@ public final class FilesystemBackupStore implements BackupStore {
   private static final String MANIFESTS_PATH = "manifests";
   private static final String RANGES_PATH = "ranges";
   private static final String METADATA_PATH = "metadata";
+  private static final String METADATA_FILE = "metadata.json";
 
   private final ExecutorService executor;
   private final FileSetManager fileSetManager;
@@ -240,7 +241,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.runAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve("metadata.json");
+          final var metadataPath = metadataDir.resolve(METADATA_FILE);
           try {
             FileUtil.ensureDirectoryExists(metadataDir);
             Files.write(metadataPath, content);
@@ -257,7 +258,7 @@ public final class FilesystemBackupStore implements BackupStore {
     return CompletableFuture.supplyAsync(
         () -> {
           final var metadataDir = metadataBaseDir.resolve(String.valueOf(partitionId));
-          final var metadataPath = metadataDir.resolve("metadata.json");
+          final var metadataPath = metadataDir.resolve(METADATA_FILE);
           if (!Files.exists(metadataPath)) {
             return Optional.empty();
           }
