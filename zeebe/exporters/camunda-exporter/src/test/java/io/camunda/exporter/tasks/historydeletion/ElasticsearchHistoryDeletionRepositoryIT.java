@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import java.time.InstantSource;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,8 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
         Runnable::run,
         LOGGER,
         partitionId,
-        config.getHistoryDeletion());
+        config.getHistoryDeletion(),
+        InstantSource.system());
   }
 
   @Override

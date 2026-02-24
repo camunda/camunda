@@ -31,4 +31,10 @@ public record HistoryDeletionBatch(List<HistoryDeletionEntity> historyDeletionEn
         .map(HistoryDeletionEntity::getId)
         .toList();
   }
+
+  List<HistoryDeletionEntity> getEntities(final HistoryDeletionType historyDeletionType) {
+    return historyDeletionEntities.stream()
+        .filter(entity -> entity.getResourceType().equals(historyDeletionType))
+        .toList();
+  }
 }
