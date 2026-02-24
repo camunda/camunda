@@ -628,6 +628,35 @@ public class DeploymentRejectionTest {
   }
 
   @Test
+  public void shouldRejectDeploymentResourceNameExceedsLengthLimit() {
+    final var resourceName = "a".repeat(MAX_NAME_FIELD_LENGTH - 4) + ".bpmn";
+
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("startEvent")
+            .serviceTask("serviceTask", t -> t.zeebeJobType("workerType"))
+            .endEvent()
+            .done();
+
+    // when
+    final var rejectedDeployment =
+        ENGINE.deployment().withXmlResource(resourceName, process).expectRejection().deploy();
+
+    // then
+    Assertions.assertThat(rejectedDeployment)
+        .hasKey(ExecuteCommandResponseDecoder.keyNullValue())
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedDeployment.getRejectionReason())
+        .startsWith("Expected to deploy new resources, but encountered the following errors:")
+        .contains(
+            "- Resource name '%s' exceeds maximum length of %d characters"
+                .formatted(resourceName, MAX_WORKER_TYPE_LENGTH));
+  }
+
+  @Test
   public void shouldNotRejectDeploymentForBindingTypeDeploymentIfTargetIdIsExpression() {
     // given
     final var process =
