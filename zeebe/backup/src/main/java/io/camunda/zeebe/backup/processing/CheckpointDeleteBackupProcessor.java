@@ -14,7 +14,6 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
-import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.stream.api.ProcessingResult;
@@ -57,24 +56,6 @@ public final class CheckpointDeleteBackupProcessor {
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
     final var checkpointRecord = record.getValue();
     final var checkpointId = checkpointRecord.getCheckpointId();
-
-    // Validate that the checkpoint exists
-    final var metadata = checkpointMetadataState.getCheckpoint(checkpointId);
-    if (metadata == null) {
-      LOG.debug(
-          "Rejecting DELETE_BACKUP for checkpoint {} — checkpoint not found in state",
-          checkpointId);
-      return resultBuilder
-          .appendRecord(
-              record.getKey(),
-              checkpointRecord,
-              new RecordMetadata()
-                  .recordType(RecordType.COMMAND_REJECTION)
-                  .rejectionType(RejectionType.NOT_FOUND)
-                  .valueType(ValueType.CHECKPOINT)
-                  .intent(record.getIntent()))
-          .build();
-    }
 
     LOG.debug("Deleting backup for checkpoint {}", checkpointId);
 

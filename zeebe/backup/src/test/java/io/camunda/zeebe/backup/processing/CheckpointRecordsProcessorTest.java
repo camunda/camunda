@@ -821,6 +821,27 @@ final class CheckpointRecordsProcessorTest {
   }
 
   @Test
+  void shouldDeleteNonExistingBackup() {
+    // when
+    final MockProcessingResult processingResult =
+        (MockProcessingResult)
+            processor.process(
+                new MockTypedCheckpointRecord(
+                    60,
+                    0,
+                    CheckpointIntent.DELETE_BACKUP,
+                    RecordType.COMMAND,
+                    new CheckpointRecord().setCheckpointId(100)),
+                resultBuilder);
+
+    // then - processing is successful
+    assertThat(processingResult.records())
+        .singleElement()
+        .satisfies(
+            record -> assertThat(record).returns(CheckpointIntent.BACKUP_DELETED, Event::intent));
+  }
+
+  @Test
   void shouldRollBackToPredecessorOnDeletionOfLatestBackup() {
     // given — two backups: 5 (older) and 10 (latest)
     final var firstId = 5L;
