@@ -64,7 +64,7 @@ public class InternalAPIErrorControllerIT {
 
   @Before
   public void setup() {
-    mockGetRequest = get("/api/process-instances/123");
+    mockGetRequest = get("/api/process-instances/123/flow-node-states");
     when(mockProfileService.getMessageByProfileFor(any())).thenReturn(EXCEPTION_MESSAGE);
   }
 

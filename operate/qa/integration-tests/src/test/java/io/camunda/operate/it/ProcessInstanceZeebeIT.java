@@ -9,10 +9,8 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInstancesRequest;
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.ConversionUtils;
@@ -45,7 +43,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
 
 public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
 
@@ -821,9 +818,8 @@ public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
-    final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
-    final MvcResult result = getRequest(url);
-    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
+    return processInstanceReader.getProcessInstanceWithOperationsByKey(
+        Long.valueOf(processInstanceId));
   }
 
   @Test

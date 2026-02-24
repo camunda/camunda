@@ -17,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.qa.util.RestAPITestUtil;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.OperateZeebeAbstractIT;
+import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
@@ -31,6 +32,7 @@ import java.util.List;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MvcResult;
 
 public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
@@ -44,6 +46,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   private long parentProcessDefinitionKey;
   private long incidentProcessInstanceKey;
   private long activeProcessInstanceKey;
+  @Autowired private ProcessInstanceReader processInstanceReader;
 
   /*
    * parentProcess instance 1 -> process instance 1 has incident
@@ -188,8 +191,7 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
 
   private ListViewProcessInstanceDto getProcessInstanceById(final String processInstanceId)
       throws Exception {
-    final String url = String.format("%s/%s", PROCESS_INSTANCE_URL, processInstanceId);
-    final MvcResult result = getRequest(url);
-    return mockMvcTestRule.fromResponse(result, new TypeReference<>() {});
+    return processInstanceReader.getProcessInstanceWithOperationsByKey(
+        Long.valueOf(processInstanceId));
   }
 }

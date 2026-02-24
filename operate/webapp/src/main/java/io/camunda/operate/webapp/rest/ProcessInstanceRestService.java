@@ -17,7 +17,6 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -75,14 +74,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
           "BpmnProcessId must be provided in request, when process version is not null.");
     }
     return listViewReader.queryProcessInstances(processInstanceRequest);
-  }
-
-  @Operation(summary = "Get process instance by id")
-  @GetMapping("/{id}")
-  public ListViewProcessInstanceDto queryProcessInstanceById(
-      @PathVariable @ValidLongId final String id) {
-    checkIdentityReadPermission(Long.parseLong(id));
-    return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
   }
 
   @Operation(summary = "Get flow node states by process instance id")
