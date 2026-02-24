@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.write.service;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
 import io.camunda.db.rdbms.write.domain.HistoryDeletionBatch;
@@ -21,6 +22,8 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
@@ -109,10 +112,31 @@ public class HistoryDeletionService {
       rdbmsWriters.getProcessInstanceWriter().deleteByKeys(processInstanceKeys);
       scheduleAuditLogDataForDeletion(
           processInstanceKeys, HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
+      markBatchOperationItemsAsCompleted(
+          batch, processInstanceKeys, HistoryDeletionTypeDbModel.PROCESS_INSTANCE);
       return processInstanceKeys;
     }
 
     return List.of();
+  }
+
+  private void markBatchOperationItemsAsCompleted(
+      final HistoryDeletionBatch batch,
+      final List<Long> deletedKeys,
+      final HistoryDeletionTypeDbModel historyDeletionType) {
+    final var completionItems =
+        batch.getModels(historyDeletionType, deletedKeys).stream()
+            .map(
+                model ->
+                    new BatchOperationItemCompletionDto(
+                        String.valueOf(model.batchOperationKey()), model.resourceKey()))
+            .toList();
+
+    if (!completionItems.isEmpty()) {
+      rdbmsWriters
+          .getBatchOperationWriter()
+          .completeBatchOperationItems(completionItems, OffsetDateTime.now(ZoneOffset.UTC));
+    }
   }
 
   private List<Long> deleteProcessDefinitions(final HistoryDeletionBatch batch) {
@@ -142,7 +166,8 @@ public class HistoryDeletionService {
     rdbmsWriters.getDecisionInstanceWriter().deleteByKeys(decisionInstanceKeys);
     scheduleAuditLogDataForDeletion(
         decisionInstanceKeys, HistoryDeletionTypeDbModel.DECISION_INSTANCE);
-
+    markBatchOperationItemsAsCompleted(
+        batch, decisionInstanceKeys, HistoryDeletionTypeDbModel.DECISION_INSTANCE);
     return decisionInstanceKeys;
   }
 
