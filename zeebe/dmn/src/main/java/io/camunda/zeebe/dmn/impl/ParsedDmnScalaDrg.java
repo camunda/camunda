@@ -8,12 +8,16 @@
 package io.camunda.zeebe.dmn.impl;
 
 import io.camunda.zeebe.dmn.ParsedDecision;
+import io.camunda.zeebe.dmn.ParsedDecisionInput;
+import io.camunda.zeebe.dmn.ParsedDecisionOutput;
 import io.camunda.zeebe.dmn.ParsedDecisionRequirementsGraph;
+import io.camunda.zeebe.dmn.ParsedDecisionRule;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.bpm.model.dmn.instance.Definitions;
+import org.camunda.dmn.parser.ParsedDecisionTable;
 import org.camunda.dmn.parser.ParsedDmn;
 
 public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph {
@@ -38,16 +42,6 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   }
 
   @Override
-  public boolean isValid() {
-    return true;
-  }
-
-  @Override
-  public String getFailureMessage() {
-    return null;
-  }
-
-  @Override
   public String getId() {
     return decisionRequirementsId;
   }
@@ -65,6 +59,16 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
   @Override
   public Collection<ParsedDecision> getDecisions() {
     return decisions;
+  }
+
+  @Override
+  public boolean isValid() {
+    return true;
+  }
+
+  @Override
+  public String getFailureMessage() {
+    return null;
   }
 
   public ParsedDmn getParsedDmn() {
@@ -90,10 +94,29 @@ public final class ParsedDmnScalaDrg implements ParsedDecisionRequirementsGraph 
         .decisions()
         .foreach(
             decision -> {
-              final var parsedDecision = new ParsedDmnScalaDecision(decision.id(), decision.name());
+              final var parsedDecision =
+                  new ParsedDmnScalaDecision(
+                      decision.id(), decision.name(), getParsedDecisionTable(decision));
               return decisions.add(parsedDecision);
             });
 
     return decisions;
+  }
+
+  private static ParsedDmnScalaDecisionTable getParsedDecisionTable(
+      final org.camunda.dmn.parser.ParsedDecision parsedDecision) {
+    if (!(parsedDecision.logic() instanceof final ParsedDecisionTable table)) {
+      return null;
+    }
+
+    final List<ParsedDecisionInput> inputs = new ArrayList<>();
+    final List<ParsedDecisionOutput> outputs = new ArrayList<>();
+    final List<ParsedDecisionRule> rules = new ArrayList<>();
+
+    table.inputs().foreach(i -> inputs.add(new ParsedDmnScalaDecisionInput(i.id(), i.name())));
+    table.outputs().foreach(i -> outputs.add(new ParsedDmnScalaDecisionOutput(i.id(), i.name())));
+    table.rules().foreach(i -> rules.add(new ParsedDmnScalaDecisionRule(i.id())));
+
+    return new ParsedDmnScalaDecisionTable(inputs, outputs, rules);
   }
 }
