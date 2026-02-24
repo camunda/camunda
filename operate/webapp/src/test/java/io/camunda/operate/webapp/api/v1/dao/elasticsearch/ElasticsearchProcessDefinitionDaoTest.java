@@ -10,6 +10,7 @@ package io.camunda.operate.webapp.api.v1.dao.elasticsearch;
 import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -52,7 +53,7 @@ public class ElasticsearchProcessDefinitionDaoTest {
     ReflectionTestUtils.setField(processDefinitionDao, "tenantAwareClient", tenantAwareClient);
     ReflectionTestUtils.setField(processDefinitionDao, "objectMapper", objectMapper);
     ReflectionTestUtils.setField(processDefinitionDao, "processIndex", processIndex);
-    when(processIndex.getAlias()).thenReturn("process-index");
+    lenient().when(processIndex.getAlias()).thenReturn("process-index");
   }
 
   @Test
