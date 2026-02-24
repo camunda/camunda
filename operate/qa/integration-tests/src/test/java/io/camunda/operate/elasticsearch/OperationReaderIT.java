@@ -11,18 +11,17 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningRequ
 import static io.camunda.operate.util.TestUtil.createIncident;
 import static io.camunda.operate.util.TestUtil.createProcessInstance;
 import static io.camunda.operate.util.TestUtil.createVariable;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.OperateAbstractIT;
 import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.IncidentReader;
+import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -44,12 +43,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MvcResult;
 
 /** Tests retrieval of operation taking into account BATCH READ permissions. */
 public class OperationReaderIT extends OperateAbstractIT {
-
-  private static final String QUERY_LIST_VIEW_URL = PROCESS_INSTANCE_URL;
 
   private static final Long PROCESS_KEY_DEMO_PROCESS = 42L;
   private static final String VARNAME_1 = "var1";
@@ -64,6 +60,7 @@ public class OperationReaderIT extends OperateAbstractIT {
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean PermissionsService permissionsService;
   @Autowired private IncidentReader incidentReader;
+  @Autowired private ListViewReader listViewReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
 
   @Override
@@ -84,9 +81,8 @@ public class OperationReaderIT extends OperateAbstractIT {
   public void testProcessInstanceQuery() throws Exception {
 
     final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
-    final MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
     final ListViewResponseDto response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        listViewReader.queryProcessInstances(processInstanceQueryDto);
 
     final List<ListViewProcessInstanceDto> processInstances = response.getProcessInstances();
     assertThat(processInstances).hasSize(3);
@@ -106,9 +102,8 @@ public class OperationReaderIT extends OperateAbstractIT {
     when(permissionsService.getBatchOperationsWithPermission(PermissionType.READ))
         .thenReturn(ResourcesAllowed.withIds(Set.of()));
     final ListViewRequestDto processInstanceQueryDto = createGetAllRunningRequest();
-    final MvcResult mvcResult = postRequest(queryProcessInstances(), processInstanceQueryDto);
     final ListViewResponseDto response =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
+        listViewReader.queryProcessInstances(processInstanceQueryDto);
 
     final List<ListViewProcessInstanceDto> processInstances = response.getProcessInstances();
     assertThat(processInstances).hasSize(3);
@@ -142,10 +137,6 @@ public class OperationReaderIT extends OperateAbstractIT {
 
     assertThat(processInstance.getOperations()).hasSize(2);
     assertThat(processInstance.isHasActiveOperation()).isFalse();
-  }
-
-  private String queryProcessInstances() {
-    return QUERY_LIST_VIEW_URL;
   }
 
   /** */

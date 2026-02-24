@@ -9,22 +9,15 @@ package io.camunda.operate.webapp.rest;
 
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
-import io.camunda.operate.Metrics;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.reader.ListViewReader;
-import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
-import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
-import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.Map;
@@ -43,37 +36,15 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
 
   private final PermissionsService permissionsService;
   private final ProcessInstanceReader processInstanceReader;
-  private final ListViewReader listViewReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
 
   public ProcessInstanceRestService(
       final PermissionsService permissionsService,
       final ProcessInstanceReader processInstanceReader,
-      final ListViewReader listViewReader,
       final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.permissionsService = permissionsService;
     this.processInstanceReader = processInstanceReader;
-    this.listViewReader = listViewReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-  }
-
-  @Operation(summary = "Query process instances by different parameters")
-  @PostMapping
-  @Timed(
-      value = Metrics.TIMER_NAME_QUERY,
-      extraTags = {Metrics.TAG_KEY_NAME, Metrics.TAG_VALUE_PROCESSINSTANCES},
-      description = "How long does it take to retrieve the processinstances by query.")
-  public ListViewResponseDto queryProcessInstances(
-      @RequestBody final ListViewRequestDto processInstanceRequest) {
-    if (processInstanceRequest.getQuery() == null) {
-      throw new InvalidRequestException("Query must be provided.");
-    }
-    if (processInstanceRequest.getQuery().getProcessVersion() != null
-        && processInstanceRequest.getQuery().getBpmnProcessId() == null) {
-      throw new InvalidRequestException(
-          "BpmnProcessId must be provided in request, when process version is not null.");
-    }
-    return listViewReader.queryProcessInstances(processInstanceRequest);
   }
 
   @Operation(summary = "Get flow node states by process instance id")
