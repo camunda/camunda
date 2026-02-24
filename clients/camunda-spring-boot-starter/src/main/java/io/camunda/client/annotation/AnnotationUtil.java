@@ -222,7 +222,7 @@ public class AnnotationUtil {
                       ? new Empty<>()
                       : new FromAnnotation<>(Duration.ofMillis(annotation.retryBackoff())),
                   fromSingletonArray(
-                      annotation.tenantFilter(), "tenantFilterName", methodInfo.getMethodName())))
+                      annotation.tenantFilter(), "tenantFilter", methodInfo.getMethodName())))
           .map(
               v -> {
                 v.setMethodInfo(methodInfo);
