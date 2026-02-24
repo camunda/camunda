@@ -28,7 +28,6 @@ import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.*;
-import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
@@ -71,8 +70,6 @@ public class ElasticsearchChecks {
 
   @Autowired private ProcessReader processReader;
   @Autowired private ProcessInstanceReader processInstanceReader;
-
-  @Autowired private ListenerReader listenerReader;
 
   @Autowired private FlowNodeInstanceTemplate flowNodeInstanceTemplate;
 
@@ -1226,22 +1223,6 @@ public class ElasticsearchChecks {
       } catch (final NotFoundException ex) {
         return false;
       }
-    };
-  }
-
-  @Bean(name = "listenerJobIsCreated")
-  public Predicate<Object[]> getListenerJobIsCreatedCheck() {
-    return objects -> {
-      assertThat(objects).hasSize(2);
-      assertThat(objects[0]).isInstanceOf(Long.class);
-      assertThat(objects[1]).isInstanceOf(String.class);
-      final long processInstanceId = (long) objects[0];
-      final String flowNodeId = (String) objects[1];
-      final ListenerRequestDto dto = new ListenerRequestDto().setFlowNodeId(flowNodeId);
-      return listenerReader
-              .getListenerExecutions(Long.toString(processInstanceId), dto)
-              .getTotalCount()
-          > 0;
     };
   }
 }

@@ -102,20 +102,6 @@ public class ProcessInstanceZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void processInstanceCreatedIfJobRecordProcessedFirst() {
-    final String processId = "Process_Start_Listener";
-    final Long processDefinitionKey = deployProcess("process-start-listener.bpmn");
-
-    // when
-    final Long processInstanceKey =
-        ZeebeTestUtil.startProcessInstance(camundaClient, processId, null);
-    searchTestRule.waitFor(listenerJobIsCreated, processInstanceKey, processId);
-    searchTestRule.waitFor(processInstanceIsCreatedCheck, processInstanceKey);
-    final ListViewProcessInstanceDto dto = getSingleProcessInstanceForListView();
-    assertThat(dto.getBpmnProcessId()).isEqualTo(processId);
-  }
-
-  @Test
   public void testVariablesAreLoaded() {
     // having
     final String processId = "demoProcess";

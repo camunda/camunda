@@ -7,7 +7,6 @@
  */
 package io.camunda.operate.util;
 
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,7 +49,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 
 public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
-  protected static final String POST_OPERATION_URL = PROCESS_INSTANCE_URL + "/%s/operation";
+  protected static final String POST_OPERATION_URL = "/api/process-instances/%s/operation";
   @Rule public final OperateZeebeRule zeebeRule;
 
   // test rule
@@ -147,10 +146,6 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired
   @Qualifier("processInstancesAreStartedByProcessIdCheck")
   protected Predicate<Object[]> processInstancesAreStartedByProcessId;
-
-  @Autowired
-  @Qualifier("listenerJobIsCreated")
-  protected Predicate<Object[]> listenerJobIsCreated;
 
   @Autowired protected OperateProperties operateProperties;
   @Autowired protected OperationExecutor operationExecutor;
