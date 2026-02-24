@@ -1271,8 +1271,8 @@ class RdbmsExporterIT {
     final var resourceKey = 1153L;
     final var deletionRecord =
         withBatchOperationReference(
-            FIXTURES.getHistoryDeletionRecord(
-                HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.PROCESS_INSTANCE),
+            FIXTURES.getRejectedHistoryDeletionRecord(
+                HistoryDeletionIntent.DELETE, resourceKey, HistoryDeletionType.PROCESS_INSTANCE),
             batchOperationKey);
 
     // when
@@ -1287,7 +1287,7 @@ class RdbmsExporterIT {
     assertThat(item.processInstanceKey()).isEqualTo(resourceKey);
     assertThat(item.rootProcessInstanceKey()).isNull();
     assertThat(item.operationType()).isEqualTo(BatchOperationType.DELETE_PROCESS_INSTANCE);
-    assertThat(item.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(item.state()).isEqualTo(BatchOperationItemState.FAILED);
   }
 
   @Test
@@ -1301,8 +1301,8 @@ class RdbmsExporterIT {
     final var resourceKey = 1154L;
     final var deletionRecord =
         withBatchOperationReference(
-            FIXTURES.getHistoryDeletionRecord(
-                HistoryDeletionIntent.DELETED, resourceKey, HistoryDeletionType.DECISION_INSTANCE),
+            FIXTURES.getRejectedHistoryDeletionRecord(
+                HistoryDeletionIntent.DELETE, resourceKey, HistoryDeletionType.DECISION_INSTANCE),
             batchOperationKey);
 
     // when
@@ -1317,7 +1317,7 @@ class RdbmsExporterIT {
     assertThat(item.processInstanceKey()).isNull();
     assertThat(item.rootProcessInstanceKey()).isNull();
     assertThat(item.operationType()).isEqualTo(BatchOperationType.DELETE_DECISION_INSTANCE);
-    assertThat(item.state()).isEqualTo(BatchOperationItemState.COMPLETED);
+    assertThat(item.state()).isEqualTo(BatchOperationItemState.FAILED);
   }
 
   @Test
