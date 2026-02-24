@@ -693,6 +693,51 @@ The scan is performed by a GitHub Actions workflows for:
 * each commit pushed to `main` and `stable*` (8.6+) branches
 * each Pull Request opened against the above branches
 
+## AI Developer Tooling (MCP Servers)
+
+[Model Context Protocol (MCP)](https://modelcontextprotocol.io/) servers extend Copilot agent mode with additional tools — for example, fetching up-to-date library docs, interacting with GitHub, or querying the Camunda API.
+
+### Setup
+
+Run the following once after cloning (requires `jq`):
+
+```bash
+make vscode-sync-all
+```
+
+This merges the repository-recommended MCP servers and terminal auto-approve rules into your local `.vscode/mcp.json` and `.vscode/settings.json`. Your existing config is preserved. See [`scripts/vscode-config-sync/README.md`](../../scripts/vscode-config-sync/README.md) for details.
+
+Current baseline is intentionally minimal: **GitHub MCP + Context7 MCP**.
+
+### Recommended MCP Servers
+
+| Server | Status | Purpose |
+|--------|--------|---------|
+| [GitHub MCP](https://github.com/github/github-mcp-server) | ✅ Active | Issues, PRs, code search — via `https://api.githubcopilot.com/mcp/` (no token needed with Copilot) |
+| [Context7 MCP](https://github.com/upstash/context7) | ✅ Active | Up-to-date library and framework documentation for Copilot |
+| [Camunda MCP](https://github.com/camunda/camunda/issues/43560) | 🔜 Pending | Camunda Orchestration Cluster API tools — tracked in [#43560](https://github.com/camunda/camunda/issues/43560), not yet available |
+
+### Optional MCP Servers (self-managed)
+
+The servers above are pre-configured. Additional tools are available but **not installed by default** — opt in as needed.
+
+#### Browser automation (Playwright MCP)
+
+Gives Copilot the ability to navigate pages, take snapshots, click and fill forms. Two options:
+
+- **Remote HTTP** (simplest, no install): add `{ "type": "http", "url": "https://playwright.microsoft.com/mcp" }` to `.vscode/mcp.json`
+- **Docker stdio** (isolated, custom config): `docker pull mcp/playwright`, then add `{ "type": "stdio", "command": "docker", "args": ["run", "-i", "--rm", "mcp/playwright"] }`. Works with Docker Engine only — no Docker Desktop needed.
+
+To verify, ask Copilot in agent mode: _"Navigate to https://github.com/camunda/camunda and take a snapshot of the page"_.
+
+#### Docker MCP Toolkit
+
+The [Docker MCP Toolkit](https://docs.docker.com/ai/mcp-catalog-and-toolkit/) is worth exploring when you need to run a containerised MCP server with custom environment variables, volume mounts, or secrets injection. For plain HTTP servers (GitHub, Context7) it adds no value. The CLI plugin works standalone on Docker Engine without Docker Desktop.
+
+### Copilot Agent Tool Restrictions
+
+The `chat.tools.terminal.autoApprove` setting in `.vscode/settings.json` controls which terminal commands Copilot agent mode can run without prompting. The repository template (`.github/settings.json.template`) pre-configures safe read-only commands (e.g. `git status`, `./mvnw spotless:apply`, `actionlint`) and explicitly denies destructive ones (e.g. `rm`, `curl` to external hosts).
+
 ## Troubleshooting
 
 ### How to deal with CI alerts that fire?
