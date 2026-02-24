@@ -7,7 +7,7 @@ Tasklist is an graphical and API application to manage user tasks in Zeebe.
 > By default, all Makefile commands run against Elasticsearch.
 > Passing `DATABASE=opensearch` argument targets OpenSearch.
 
-To build and run the project with all the dependencies, run the below command:
+To build and run the project with all the dependencies, run the below command: testfosaa
 
 ```sh
 make env-up
