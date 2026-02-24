@@ -180,6 +180,7 @@ public class ActivatableJobsPushTest {
     // initial push to the stream
     Awaitility.await("Job is pushed")
         .untilAsserted(() -> assertThat(jobStream.getActivatedJobs()).hasSize(1));
+    assertThat(JOB_STREAMER.notificationsForJob(jobType)).isEqualTo(0);
 
     // when - job times out
     ENGINE.increaseTime(
@@ -191,6 +192,8 @@ public class ActivatableJobsPushTest {
     assertThat(jobStream.getActivatedJobs()).hasSize(1);
 
     // and the job is still available for activation via polling
+    Awaitility.await("job is being notified")
+        .untilAsserted(() -> assertThat(JOB_STREAMER.notificationsForJob(jobType)).isEqualTo(1));
     final var activateResponse = ENGINE.jobs().withType(jobType).activate();
     assertThat(activateResponse.getValue().getJobKeys()).contains(jobKey);
   }
