@@ -13,8 +13,8 @@ import {mapToCellEntityKeyData} from 'modules/utils/operationsLog';
 
 type Props = {
   item: AuditLog;
-  processDefinitionName?: string;
-  decisionDefinitionName?: string;
+  processDefinitionName?: string | null;
+  decisionDefinitionName?: string | null;
 };
 
 const CellEntityKey: React.FC<Props> = ({
