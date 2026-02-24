@@ -8,6 +8,7 @@
 package io.camunda.exporter.tasks.historydeletion;
 
 import io.camunda.exporter.ExporterResourceProvider;
+import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
 import io.camunda.exporter.tasks.BackgroundTask;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -184,6 +185,17 @@ public class HistoryDeletionJob implements BackgroundTask {
               final var dependentIdFieldName = ListViewTemplate.PROCESS_INSTANCE_KEY;
               return deleterRepository.deleteDocumentsByField(
                   dependentSourceIdx, dependentIdFieldName, processInstanceKeys);
+            })
+        .thenCompose(
+            ignored -> {
+              final var operationIds =
+                  batch.getEntities(HistoryDeletionType.PROCESS_INSTANCE).stream()
+                      .map(
+                          entity ->
+                              AbstractOperationHandler.ID_PATTERN.formatted(
+                                  entity.getBatchOperationKey(), entity.getResourceKey()))
+                      .toList();
+              return deleterRepository.updateOperations(operationIds);
             })
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.PROCESS_INSTANCE));
   }
