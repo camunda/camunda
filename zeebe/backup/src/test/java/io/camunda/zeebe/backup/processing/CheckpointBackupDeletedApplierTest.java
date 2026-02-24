@@ -24,7 +24,7 @@ import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.io.TempDir;
 final class CheckpointBackupDeletedApplierTest {
 
   @TempDir Path database;
-  private ZeebeDb<ZbColumnFamilies> zeebedb;
+  @AutoClose private ZeebeDb<ZbColumnFamilies> zeebedb;
   private DbCheckpointMetadataState checkpointMetadataState;
   private DbBackupRangeState backupRangeState;
   private CheckpointBackupDeletedApplier applier;
@@ -54,11 +54,6 @@ final class CheckpointBackupDeletedApplierTest {
     applier =
         new CheckpointBackupDeletedApplier(
             checkpointMetadataState, backupRangeState, checkpointState);
-  }
-
-  @AfterEach
-  void closeDb() throws Exception {
-    zeebedb.close();
   }
 
   @Test
