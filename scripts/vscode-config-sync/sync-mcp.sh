@@ -13,7 +13,7 @@ echo "🛠️  VSCode MCP Sync"
 
 # Cleanup temp files on exit
 cleanup() {
-    rm -f "${USER_MCP}."{pre,post}"-merge"
+    rm -f "${USER_MCP}.post-merge"
 }
 trap cleanup EXIT
 
