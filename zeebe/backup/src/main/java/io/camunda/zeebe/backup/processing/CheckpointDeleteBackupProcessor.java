@@ -69,8 +69,7 @@ public final class CheckpointDeleteBackupProcessor {
         new RecordMetadata()
             .recordType(RecordType.EVENT)
             .valueType(ValueType.CHECKPOINT)
-            .intent(CheckpointIntent.BACKUP_DELETED));
-
+            .intent(CheckpointIntent.DELETED_BACKUP));
     resultBuilder.appendPostCommitTask(
         () -> {
           backupManager.deleteBackup(checkpointId);

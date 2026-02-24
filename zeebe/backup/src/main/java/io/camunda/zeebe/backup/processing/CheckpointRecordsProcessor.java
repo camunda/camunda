@@ -161,7 +161,7 @@ public final class CheckpointRecordsProcessor
       case CONFIRMED_BACKUP ->
           checkpointBackupConfirmedApplier.apply(
               (CheckpointRecord) record.getValue(), record.getTimestamp());
-      case BACKUP_DELETED ->
+      case DELETED_BACKUP ->
           checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
       case IGNORED -> {}
       default ->
