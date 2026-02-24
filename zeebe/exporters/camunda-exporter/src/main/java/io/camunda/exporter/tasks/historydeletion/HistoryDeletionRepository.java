@@ -66,7 +66,7 @@ public interface HistoryDeletionRepository extends AutoCloseable {
   /**
    * Marks the individual operations of the batch operation as completed. The list of ids here
    * should adhere to the pattern defined in {@link
-   * io.camunda.webapps.schema.descriptors.template.OperationTemplate}.
+   * io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler#ID_PATTERN}.
    *
    * @param ids the list of ids to mark as completed
    * @return a {@link CompletableFuture} containing the list of ids that were marked as completed
