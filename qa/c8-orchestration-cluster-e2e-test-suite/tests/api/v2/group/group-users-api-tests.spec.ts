@@ -17,6 +17,7 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
 import {
   assignUsersToGroup,
@@ -114,6 +115,14 @@ test.describe.parallel('Group Users API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
@@ -141,6 +150,14 @@ test.describe.parallel('Group Users API Tests', () => {
     );
 
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/groups/{groupId}/users/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
@@ -177,6 +194,14 @@ test.describe.parallel('Group Users API Tests', () => {
           },
         );
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);

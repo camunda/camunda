@@ -18,6 +18,7 @@ import {
   assertBadRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_NEW_ROLE,
   roleRequiredFields,
@@ -58,6 +59,14 @@ test.describe.parallel('Roles API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/roles',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, role, roleRequiredFields);
@@ -128,6 +137,14 @@ test.describe.parallel('Roles API Tests', () => {
         headers: jsonHeaders(),
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);
@@ -164,6 +181,14 @@ test.describe.parallel('Roles API Tests', () => {
         data: requestBody,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);
@@ -208,6 +233,14 @@ test.describe.parallel('Roles API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/roles/{roleId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, roleRequiredFields);
       assertEqualsForKeys(json, expectedBody, roleRequiredFields);

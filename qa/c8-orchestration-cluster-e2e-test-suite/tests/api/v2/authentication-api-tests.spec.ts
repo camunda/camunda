@@ -15,6 +15,7 @@ import {
   assertEqualsForKeys,
   encode,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../utils/constants';
 import {
   createComponentAuthorization,
@@ -185,6 +186,14 @@ test.describe.parallel('Authentication API Tests', () => {
         });
 
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/authentication/me',
+            method: 'GET',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, authenticationRequiredFields);
         assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
@@ -209,6 +218,14 @@ test.describe.parallel('Authentication API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/authentication/me',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);

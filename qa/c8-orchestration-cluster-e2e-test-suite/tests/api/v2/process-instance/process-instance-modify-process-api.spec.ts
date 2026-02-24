@@ -16,6 +16,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 
 /* eslint-disable playwright/expect-expect */
@@ -37,6 +38,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body).toHaveProperty('processInstanceKey');
       localStorage['processInstanceKey'] = body.processInstanceKey;
@@ -53,6 +62,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         expect(body).toHaveProperty('items');
         expect(body.items.length).toBe(1);
@@ -95,6 +112,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           },
         });
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/user-tasks/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const body = await res.json();
         expect(body).toHaveProperty('items');
         expect(body.items.length).toBe(2);
@@ -121,6 +146,14 @@ test.describe.parallel('Process Instance Modify Process API', () => {
         },
       });
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body).toHaveProperty('processInstanceKey');
       localStorage['processInstanceKey'] = body.processInstanceKey;

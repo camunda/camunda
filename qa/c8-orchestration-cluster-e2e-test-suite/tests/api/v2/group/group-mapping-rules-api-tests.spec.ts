@@ -17,6 +17,7 @@ import {
   assertUnauthorizedRequest,
   assertConflictRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   MAPPING_RULE_EXPECTED_BODY_USING_STATE,
   mappingRuleRequiredFields,
@@ -105,6 +106,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
@@ -139,6 +148,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
       },
     );
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/groups/{groupId}/mapping-rules/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
@@ -174,6 +191,14 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/groups/{groupId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(0);

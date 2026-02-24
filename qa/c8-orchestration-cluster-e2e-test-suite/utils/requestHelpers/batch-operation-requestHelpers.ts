@@ -10,6 +10,7 @@ import {APIRequestContext, APIResponse, expect} from '@playwright/test';
 import {assertStatusCode, buildUrl, jsonHeaders} from 'utils/http';
 import {createCancellationBatch} from '@requestHelpers';
 import {defaultAssertionOptions} from 'utils/constants';
+import {validateResponse} from 'json-body-assertions';
 
 export async function cancelBatchOperation(
   request: APIRequestContext,
@@ -71,6 +72,14 @@ export async function createCompletedBatchOperation(
       headers: jsonHeaders(),
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/{batchOperationKey}',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.state).toBe('COMPLETED');
   }).toPass({
@@ -94,6 +103,14 @@ export async function expectBatchState(
       },
     );
     await assertStatusCode(statusRes, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/{batchOperationKey}',
+        method: 'GET',
+        status: '200',
+      },
+      statusRes,
+    );
     const body = await statusRes.json();
     expect(body.state).toBe(expectedState);
   }).toPass({

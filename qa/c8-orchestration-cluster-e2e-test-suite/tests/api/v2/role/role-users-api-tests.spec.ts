@@ -16,6 +16,7 @@ import {
   assertPaginatedRequest,
   assertStatusCode,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assertUserNameInResponse,
@@ -150,6 +151,14 @@ test.describe.parallel('Role Users API Tests', () => {
         buildUrl('/roles/{roleId}/users/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/users/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         totalItemsEqualTo: 3,
         itemsLengthEqualTo: 3,
@@ -178,6 +187,14 @@ test.describe.parallel('Role Users API Tests', () => {
       {headers: jsonHeaders(), data: {}},
     );
 
+    await validateResponse(
+      {
+        path: '/roles/{roleId}/users/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await assertPaginatedRequest(res, {
       totalItemsEqualTo: 0,
       itemsLengthEqualTo: 0,
@@ -207,6 +224,14 @@ test.describe.parallel('Role Users API Tests', () => {
         const res = await request.post(
           buildUrl('/roles/{roleId}/users/search', p),
           {headers: jsonHeaders(), data: {}},
+        );
+        await validateResponse(
+          {
+            path: '/roles/{roleId}/users/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
         );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,

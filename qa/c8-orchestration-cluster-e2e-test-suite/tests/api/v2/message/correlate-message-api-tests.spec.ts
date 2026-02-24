@@ -14,6 +14,7 @@ import {
   assertEqualsForKeys,
   paginatedResponseFields,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CORRELATE_MESSAGE4,
   correlateMessageRequiredFields,
@@ -99,6 +100,14 @@ test.describe('Correlate Message API Tests', () => {
         data: CORRELATE_MESSAGE4,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/messages/correlation',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, correlateMessageRequiredFields);
       assertEqualsForKeys(
@@ -125,6 +134,14 @@ test.describe('Correlate Message API Tests', () => {
           },
         );
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/message-subscriptions/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(1);

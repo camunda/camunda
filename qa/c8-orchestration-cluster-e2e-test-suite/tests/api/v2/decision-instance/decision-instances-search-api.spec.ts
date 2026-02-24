@@ -49,15 +49,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       for (const element of body.items) {
@@ -84,15 +83,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       for (const element of body.items) {
@@ -126,15 +124,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       for (const element of body.items) {
@@ -168,15 +165,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.items.length).toEqual(3);
@@ -209,15 +205,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.items.length).toBeGreaterThanOrEqual(1);
@@ -253,15 +248,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       for (const element of body.items) {
@@ -292,15 +286,14 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       await assertStatusCode(res, 200);
-      // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-      // await validateResponse(
-      //   {
-      //     path: DECISION_INSTANCES_SEARCH_ENDPOINT,
-      //     method: 'POST',
-      //     status: '200',
-      //   },
-      //   res,
-      // );
+      await validateResponse(
+        {
+          path: DECISION_INSTANCES_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
       const body = await res.json();
       expect(body.items.length).toEqual(0);

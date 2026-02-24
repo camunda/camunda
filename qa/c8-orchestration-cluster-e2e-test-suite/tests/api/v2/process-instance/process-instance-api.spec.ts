@@ -60,6 +60,14 @@ test.describe.parallel('Process instance Tests', () => {
     });
     await assertStatusCode(res, 200);
     const json = await res.json();
+    validateResponseShape(
+      {
+        path: PROCESS_INSTANCE_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      json,
+    );
     expect(json.variables).toEqual(variables);
   });
 
@@ -74,6 +82,14 @@ test.describe.parallel('Process instance Tests', () => {
     });
     await assertStatusCode(res, 200);
     const json = await res.json();
+    validateResponseShape(
+      {
+        path: PROCESS_INSTANCE_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      json,
+    );
     expect(json.tags).toEqual(tags);
     await cancelProcessInstance(json.processInstanceKey);
   });
@@ -91,6 +107,14 @@ test.describe.parallel('Process instance Tests', () => {
       });
       await assertStatusCode(res, 200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: PROCESS_INSTANCE_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       localState['processDefinitionKey'] = json.processDefinitionKey;
       await cancelProcessInstance(json.processInstanceKey);
     });
@@ -140,6 +164,14 @@ test.describe.parallel('Process instance Tests', () => {
       });
       await assertStatusCode(res, 200);
       const json = await res.json();
+      validateResponseShape(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        json,
+      );
       localState['processDefinitionKey'] = json.processDefinitionKey;
     });
 
@@ -155,6 +187,14 @@ test.describe.parallel('Process instance Tests', () => {
       });
       await assertStatusCode(resByKey, 200);
       const jsonByKey = await resByKey.json();
+      validateResponseShape(
+        {
+          path: PROCESS_INSTANCE_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        jsonByKey,
+      );
       expect(jsonByKey.variables).toEqual(variables);
     });
   });
@@ -180,6 +220,14 @@ test.describe.parallel('Process instance Tests', () => {
       });
       await assertStatusCode(resByKey, 200);
       const jsonByKey = await resByKey.json();
+      validateResponseShape(
+        {
+          path: PROCESS_INSTANCE_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        jsonByKey,
+      );
       expect(jsonByKey.tags).toEqual(['tag1', 'tag2']);
 
       await cancelProcessInstance(jsonByKey.processInstanceKey);
@@ -202,6 +250,14 @@ test.describe.parallel('Process instance Tests', () => {
 
     await assertStatusCode(res, 200);
     const json = await res.json();
+    validateResponseShape(
+      {
+        path: PROCESS_INSTANCE_ENDPOINT,
+        method: 'POST',
+        status: '200',
+      },
+      json,
+    );
     await cancelProcessInstance(json.processInstanceKey);
   });
 

@@ -15,6 +15,7 @@ import {
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cancel Process instance Tests', () => {
@@ -29,6 +30,14 @@ test.describe.parallel('Cancel Process instance Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -103,6 +112,14 @@ test.describe.parallel('Cancel Process instance Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });

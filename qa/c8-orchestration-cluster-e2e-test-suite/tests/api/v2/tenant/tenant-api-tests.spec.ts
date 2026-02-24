@@ -18,6 +18,7 @@ import {
   assertBadRequest,
   assertPaginatedRequest,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_NEW_TENANT,
   tenantRequiredFields,
@@ -46,6 +47,14 @@ test.describe.parallel('Tenants API Tests', () => {
       });
 
       expect(res.status()).toBe(201);
+      await validateResponse(
+        {
+          path: '/tenants',
+          method: 'POST',
+          status: '201',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, tenant, tenantRequiredFields);
@@ -118,6 +127,14 @@ test.describe.parallel('Tenants API Tests', () => {
         headers: jsonHeaders(),
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
@@ -157,6 +174,14 @@ test.describe.parallel('Tenants API Tests', () => {
         data: requestBody,
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
@@ -201,6 +226,14 @@ test.describe.parallel('Tenants API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}',
+          method: 'PUT',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);

@@ -95,6 +95,14 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/process-instances/{processInstanceKey}/sequence-flows',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.items.length).toBe(0);
   });

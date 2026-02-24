@@ -83,6 +83,14 @@ test.describe.parallel('Search Batch Operation Tests', () => {
       });
 
       await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/batch-operations/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThan(0);
       expect(body.items.length).toBe(body.page.totalItems);
@@ -103,6 +111,14 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       );
       await assertStatusCode(firstRes, 200);
+      await validateResponse(
+        {
+          path: '/batch-operations/search',
+          method: 'POST',
+          status: '200',
+        },
+        firstRes,
+      );
       const firstJson = await firstRes.json();
       expect(firstJson.items.length).toBeGreaterThan(0);
       expect(firstJson.page.totalItems).toBeGreaterThan(2);
@@ -116,6 +132,14 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       );
       await assertStatusCode(secondRes, 200);
+      await validateResponse(
+        {
+          path: '/batch-operations/search',
+          method: 'POST',
+          status: '200',
+        },
+        secondRes,
+      );
       const secondJson = await secondRes.json();
       expect(secondJson.items.length).toBeGreaterThan(0);
       expect(secondJson.items.length).toBeLessThanOrEqual(2);
@@ -145,6 +169,14 @@ test.describe.parallel('Search Batch Operation Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/batch-operations/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const body = await res.json();
     expect(body.page.totalItems).toBe(0);
     expect(body.items.length).toBe(0);

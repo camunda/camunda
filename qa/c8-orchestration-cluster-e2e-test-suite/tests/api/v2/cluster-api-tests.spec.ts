@@ -13,6 +13,7 @@ import {
   buildUrl,
   defaultHeaders,
 } from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {
   brokerResponseFields,
   clusterTopologyResponseFields,
@@ -25,6 +26,14 @@ test.describe('Cluster API Tests', () => {
       headers: defaultHeaders(),
     });
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/topology',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const result = await res.json();
     assertRequiredFields(result, clusterTopologyResponseFields);
     expect(result.brokers).toHaveLength(1);

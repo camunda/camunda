@@ -8,6 +8,7 @@
 
 import {expect, test} from '@playwright/test';
 import {assertRequiredFields, buildUrl, jsonHeaders} from '../../../utils/http';
+import {validateResponse} from '../../../json-body-assertions';
 import {licenseRequiredFields} from '../../../utils/beans/requestBeans';
 
 test.describe.parallel('License API Tests', () => {
@@ -17,6 +18,14 @@ test.describe.parallel('License API Tests', () => {
         headers: jsonHeaders(),
       });
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/license',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, licenseRequiredFields);
       expect(json.validLicense).toBeFalsy();
@@ -29,6 +38,14 @@ test.describe.parallel('License API Tests', () => {
     const res = await request.get(buildUrl('/license'), {headers: {}});
 
     expect(res.status()).toBe(200);
+    await validateResponse(
+      {
+        path: '/license',
+        method: 'GET',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     assertRequiredFields(json, licenseRequiredFields);
     expect(json.validLicense).toBeFalsy();

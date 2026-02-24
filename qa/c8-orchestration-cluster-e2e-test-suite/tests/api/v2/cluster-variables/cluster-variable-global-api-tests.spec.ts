@@ -24,6 +24,7 @@ import {
   createGlobalClusterVariable,
   deleteGlobalClusterVariable,
 } from '@requestHelpers';
+import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
@@ -54,6 +55,14 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
       });
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/cluster-variables/global',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
@@ -105,6 +114,14 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/cluster-variables/global/{name}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);

@@ -17,6 +17,7 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
 } from '../../../../utils/http';
+import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   assignRolesToMappingRules,
@@ -166,6 +167,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
           buildUrl('/roles/{roleId}/mapping-rules/search', p),
           {headers: jsonHeaders(), data: {}},
         );
+        await validateResponse(
+          {
+            path: '/roles/{roleId}/mapping-rules/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         await assertPaginatedRequest(res, {
           totalItemsEqualTo: 0,
           itemsLengthEqualTo: 0,
@@ -234,6 +243,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 2,
         totalItemsEqualTo: 2,
@@ -279,6 +296,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -306,6 +331,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       const res = await request.post(
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
+      );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
@@ -338,6 +371,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: filterBody},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -368,6 +409,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: body},
       );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
@@ -386,6 +435,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       const res = await request.post(
         buildUrl('/roles/{roleId}/mapping-rules/search', p),
         {headers: jsonHeaders(), data: {}},
+      );
+      await validateResponse(
+        {
+          path: '/roles/{roleId}/mapping-rules/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
       );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
@@ -408,6 +465,14 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
     const res = await request.post(
       buildUrl('/roles/{roleId}/mapping-rules/search', p),
       {headers: jsonHeaders(), data: {}},
+    );
+    await validateResponse(
+      {
+        path: '/roles/{roleId}/mapping-rules/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

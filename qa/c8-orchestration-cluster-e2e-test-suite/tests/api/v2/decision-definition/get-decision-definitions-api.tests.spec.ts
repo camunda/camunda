@@ -25,6 +25,7 @@ import {
 } from '@requestHelpers';
 import {DecisionDeployment} from '@camunda8/sdk/dist/c8/lib/C8Dto';
 import fs from 'fs';
+import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Get Decision Definitions API Tests', () => {
@@ -59,6 +60,14 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/decision-definitions/{decisionDefinitionKey}',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, decisionDefinitionRequiredFields);
       assertEqualsForKeys(

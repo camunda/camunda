@@ -491,6 +491,14 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       );
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/correlated-message-subscriptions/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       assertRequiredFields(json, paginatedResponseFields);
       expect(json.items).toHaveLength(0);

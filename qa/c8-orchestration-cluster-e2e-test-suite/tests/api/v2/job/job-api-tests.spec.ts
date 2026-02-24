@@ -23,6 +23,7 @@ import {
   jsonHeaders,
   paginatedResponseFields,
 } from '../../../../utils/http';
+import {validateResponse, validateResponseShape} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   jobResponseFields,
@@ -79,6 +80,14 @@ test.describe.parallel('Job API Tests', () => {
     });
 
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/jobs/activation',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.jobs.length).toBe(1);
     assertRequiredFields(json.jobs[0], jobResponseFields);
@@ -160,6 +169,14 @@ test.describe.parallel('Job API Tests', () => {
         });
 
         const json = await res.json();
+        validateResponseShape(
+          {
+            path: '/jobs/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         assertRequiredFields(json, paginatedResponseFields);
         assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
         assertRequiredFields(json.items[0], jobSearchItemResponseFields);
@@ -185,6 +202,14 @@ test.describe.parallel('Job API Tests', () => {
         });
 
         await assertStatusCode(res, 200);
+        await validateResponse(
+          {
+            path: '/jobs/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
         assertRequiredFields(json, paginatedResponseFields);
         assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
