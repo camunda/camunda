@@ -9,13 +9,11 @@ package io.camunda.operate.webapp.elasticsearch.reader;
 
 import static io.camunda.operate.util.ElasticsearchUtil.MAP_CLASS;
 import static io.camunda.operate.util.ElasticsearchUtil.QueryType.ALL;
-import static io.camunda.operate.util.ElasticsearchUtil.scrollAllStream;
 import static io.camunda.operate.util.ElasticsearchUtil.searchAfterToFieldValues;
 import static io.camunda.operate.util.ElasticsearchUtil.whereToSearch;
 import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto.SORT_BY_PROCESS_INSTANCE_ID;
 import static io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor.TENANT_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_DEFINITION_ID;
-import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_ID;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.DECISION_NAME;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.ELEMENT_INSTANCE_KEY;
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.EVALUATED_INPUTS;
@@ -32,7 +30,6 @@ import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTem
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.STATE;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILED;
-import static java.util.stream.Collectors.groupingBy;
 
 import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.SortOrder;
@@ -43,12 +40,10 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.property.OperateProperties;
-import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
@@ -59,7 +54,6 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
 import java.time.format.DateTimeFormatter;
@@ -134,41 +128,6 @@ public class DecisionInstanceReader extends AbstractReader
     result.setDecisionInstances(DecisionInstanceForListDto.createFrom(entities, objectMapper));
 
     return result;
-  }
-
-  @Override
-  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(
-      final String decisionInstanceId) {
-    // we need to find all decision instances with the same key, which we extract from
-    // decisionInstanceId
-    final var decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
-    final var query = ElasticsearchUtil.termsQuery(KEY, decisionInstanceKey);
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(query);
-    final var searchRequestBuilder =
-        new SearchRequest.Builder()
-            .index(whereToSearch(decisionInstanceTemplate, ALL))
-            .query(tenantAwareQuery)
-            .source(s -> s.filter(f -> f.includes(DECISION_ID, STATE)))
-            .sort(ElasticsearchUtil.sortOrder(EVALUATION_DATE, SortOrder.Asc));
-
-    try {
-      final var entries =
-          scrollAllStream(esClient, searchRequestBuilder, MAP_CLASS)
-              .flatMap(res -> res.hits().hits().stream())
-              .map(
-                  hit ->
-                      new DRDDataEntryDto(
-                          hit.id(),
-                          hit.source().get(DECISION_ID).toString(),
-                          DecisionInstanceState.valueOf(hit.source().get(STATE).toString())))
-              .toList();
-
-      return entries.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
-    } catch (final ScrollException e) {
-      throw new OperateRuntimeException(
-          "Exception occurred while querying DRD data for decision instance id: "
-              + decisionInstanceId);
-    }
   }
 
   @Override

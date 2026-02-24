@@ -11,20 +11,16 @@ import static io.camunda.operate.webapp.rest.DecisionInstanceRestService.DECISIO
 
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
-import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRequestDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListResponseDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import java.util.List;
-import java.util.Map;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -64,25 +60,6 @@ public class DecisionInstanceRestService extends InternalAPIErrorController {
         decisionInstanceReader.getDecisionInstance(decisionInstanceId);
     checkIdentityReadPermission(decisionInstanceDto);
     return decisionInstanceDto;
-  }
-
-  @Operation(summary = "Get DRD data for decision instance")
-  @GetMapping("/{decisionInstanceId}/drd-data")
-  public Map<String, List<DRDDataEntryDto>> queryDecisionInstanceDRDData(
-      @PathVariable final String decisionInstanceId) {
-    checkIdentityReadPermission(decisionInstanceId);
-    final Map<String, List<DRDDataEntryDto>> result =
-        decisionInstanceReader.getDecisionInstanceDRDData(decisionInstanceId);
-    if (result.isEmpty()) {
-      throw new NotFoundException("Decision instance not found: " + decisionInstanceId);
-    }
-    return result;
-  }
-
-  private void checkIdentityReadPermission(final String decisionInstanceId) {
-    if (permissionsService.permissionsEnabled()) {
-      checkIdentityReadPermission(decisionInstanceReader.getDecisionInstance(decisionInstanceId));
-    }
   }
 
   private void checkIdentityReadPermission(final DecisionInstanceDto decisionInstance) {

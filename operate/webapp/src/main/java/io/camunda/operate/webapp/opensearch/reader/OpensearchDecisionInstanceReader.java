@@ -13,7 +13,6 @@ import static io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListRe
 import static io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate.*;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.EVALUATED;
 import static io.camunda.webapps.schema.entities.dmn.DecisionInstanceState.FAILED;
-import static java.util.stream.Collectors.groupingBy;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.conditions.OpensearchCondition;
@@ -24,7 +23,6 @@ import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.util.Tuple;
 import io.camunda.operate.webapp.reader.DecisionInstanceReader;
 import io.camunda.operate.webapp.rest.dto.DtoCreator;
-import io.camunda.operate.webapp.rest.dto.dmn.DRDDataEntryDto;
 import io.camunda.operate.webapp.rest.dto.dmn.DecisionInstanceDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceForListDto;
 import io.camunda.operate.webapp.rest.dto.dmn.list.DecisionInstanceListQueryDto;
@@ -34,13 +32,11 @@ import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.entities.dmn.DecisionInstanceEntity;
-import io.camunda.webapps.schema.entities.dmn.DecisionInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.function.Consumer;
 import org.opensearch.client.json.JsonData;
 import org.opensearch.client.opensearch._types.SortOptions;
@@ -117,39 +113,6 @@ public class OpensearchDecisionInstanceReader implements DecisionInstanceReader 
     final List<DecisionInstanceEntity> entities = queryDecisionInstancesEntities(request, result);
     result.setDecisionInstances(DecisionInstanceForListDto.createFrom(entities, objectMapper));
     return result;
-  }
-
-  @Override
-  public Map<String, List<DRDDataEntryDto>> getDecisionInstanceDRDData(
-      final String decisionInstanceId) {
-    // we need to find all decision instances with the same key, which we extract from
-    // decisionInstanceId
-    final Long decisionInstanceKey = DecisionInstanceEntity.extractKey(decisionInstanceId);
-
-    final var searchRequest =
-        searchRequestBuilder(decisionInstanceTemplate)
-            .query(withTenantCheck(term(DecisionInstanceTemplate.KEY, decisionInstanceKey)))
-            .source(sourceInclude(DECISION_ID, STATE));
-
-    final List<DRDDataEntryDto> results = new ArrayList<>();
-    richOpenSearchClient
-        .doc()
-        .scrollWith(
-            searchRequest,
-            Map.class,
-            hits ->
-                hits.stream()
-                    .filter(hit -> hit.source() != null)
-                    .forEach(
-                        hit -> {
-                          final var map = hit.source();
-                          results.add(
-                              new DRDDataEntryDto(
-                                  hit.id(),
-                                  (String) map.get(DECISION_ID),
-                                  DecisionInstanceState.valueOf((String) map.get(STATE))));
-                        }));
-    return results.stream().collect(groupingBy(DRDDataEntryDto::getDecisionId));
   }
 
   @Override
