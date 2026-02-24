@@ -15,11 +15,13 @@ import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverr
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.configuration.beans.BrokerBasedProperties;
 import io.camunda.configuration.beans.SearchEngineConnectProperties;
+import io.camunda.db.rdbms.write.RdbmsWriterConfig;
 import io.camunda.exporter.rdbms.ExporterConfiguration;
 import io.camunda.operate.property.OperateProperties;
 import io.camunda.search.connect.configuration.DatabaseType;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -103,6 +105,7 @@ public class SecondaryStorageRdbmsTest {
         "camunda.data.secondary-storage.rdbms.exportBatchOperationItemsOnCreation=false",
         "camunda.data.secondary-storage.rdbms.batchOperationItemInsertBlockSize=1234",
         "camunda.data.secondary-storage.rdbms.insert-batching.max-audit-log-insert-batch-size=50",
+        "camunda.data.secondary-storage.rdbms.max-varchar-field-length=200",
       })
   class WithOnlyUnifiedConfigSet {
     final OperateProperties operateProperties;
@@ -184,6 +187,15 @@ public class SecondaryStorageRdbmsTest {
     }
 
     @Test
+    void testEngineValidatorsDefaults() {
+      final ValidatorsCfg validators =
+          brokerBasedProperties.getExperimental().getEngine().getValidators();
+      assertThat(validators.getMaxIdFieldLength()).isEqualTo(200);
+      assertThat(validators.getMaxNameFieldLength()).isEqualTo(200);
+      assertThat(validators.getMaxWorkerTypeLength()).isEqualTo(200);
+    }
+
+    @Test
     void testCamundaSearchEngineConnectProperties() {
       assertThat(searchEngineConnectProperties.getTypeEnum()).isEqualTo(DatabaseType.RDBMS);
       assertThat(searchEngineConnectProperties.getUrl()).isEqualTo("http://expected-url:4321");
@@ -213,6 +225,18 @@ public class SecondaryStorageRdbmsTest {
       assertThat(args.get("flushInterval")).isEqualTo(Duration.ofMillis(500));
       assertThat(args.get("exportBatchOperationItemsOnCreation")).isEqualTo(true);
       assertThat(args.get("batchOperationItemInsertBlockSize")).isEqualTo(10000);
+    }
+
+    @Test
+    void testEngineValidatorsDefaults() {
+      final ValidatorsCfg validators =
+          brokerBasedProperties.getExperimental().getEngine().getValidators();
+      assertThat(validators.getMaxIdFieldLength())
+          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
+      assertThat(validators.getMaxNameFieldLength())
+          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
+      assertThat(validators.getMaxWorkerTypeLength())
+          .isEqualTo(RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH);
     }
   }
 

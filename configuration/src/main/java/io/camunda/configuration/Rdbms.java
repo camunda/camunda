@@ -32,6 +32,12 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
    */
   private Integer queueMemoryLimit = RdbmsWriterConfig.DEFAULT_QUEUE_MEMORY_LIMIT;
 
+  /**
+   * The maximum length of varchar fields in the database. This is relevant for user defined string
+   * fields like ids and names.
+   */
+  private Integer maxVarcharFieldLength = RdbmsWriterConfig.DEFAULT_MAX_VARCHAR_FIELD_LENGTH;
+
   /** Process definition cache configuration. Defines the size of the process definition cache. */
   private RdbmsCache processCache = new RdbmsCache();
 
@@ -175,5 +181,13 @@ public class Rdbms extends SecondaryStorageDatabase<RdbmsHistory> {
 
   public void setQuery(final RdbmsQuery query) {
     this.query = query;
+  }
+
+  public Integer getMaxVarcharFieldLength() {
+    return maxVarcharFieldLength;
+  }
+
+  public void setMaxVarcharFieldLength(final Integer maxVarcharFieldLength) {
+    this.maxVarcharFieldLength = maxVarcharFieldLength;
   }
 }
