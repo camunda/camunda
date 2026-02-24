@@ -17,24 +17,18 @@ import co.elastic.clients.elasticsearch._types.query_dsl.Query;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.util.ConversionUtils;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.util.ElasticsearchUtil.QueryType;
 import io.camunda.operate.webapp.reader.ProcessReader;
-import io.camunda.operate.webapp.rest.dto.ProcessRequestDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.descriptors.index.ProcessIndex;
 import io.camunda.webapps.schema.descriptors.template.IncidentTemplate;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
 import io.camunda.webapps.schema.entities.ProcessEntity;
-import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -56,22 +50,11 @@ public class IncidentStatisticsReader extends AbstractReader
 
   private static final Logger LOGGER = LoggerFactory.getLogger(IncidentStatisticsReader.class);
 
-  @Autowired private ListViewTemplate listViewTemplate;
-
   @Autowired private IncidentTemplate incidentTemplate;
 
   @Autowired private ProcessReader processReader;
 
   @Autowired private PermissionsService permissionsService;
-
-  @Override
-  public Set<IncidentsByProcessGroupStatisticsDto> getProcessAndIncidentsStatistics() {
-    final Query pisWithReadPermissionQuery = createQueryForProcessInstancesWithReadPermission();
-    final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap =
-        updateActiveInstances(
-            getIncidentsByProcess(pisWithReadPermissionQuery), pisWithReadPermissionQuery);
-    return collectStatisticsForProcessGroups(incidentsByProcessMap);
-  }
 
   @Override
   public Set<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
@@ -156,161 +139,6 @@ public class IncidentStatisticsReader extends AbstractReader
     return result;
   }
 
-  private Map<Long, IncidentByProcessStatisticsDto> getIncidentsByProcess(
-      final Query permittedProcessInstancesQuery) {
-    final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>();
-
-    final var incidentsQuery =
-        joinWithAnd(
-            ElasticsearchUtil.termsQuery(
-                ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
-            ElasticsearchUtil.termsQuery(
-                ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            ElasticsearchUtil.termsQuery(ListViewTemplate.INCIDENT, true),
-            permittedProcessInstancesQuery);
-
-    final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(incidentsQuery);
-
-    final var searchRequest =
-        new SearchRequest.Builder()
-            .index(listViewTemplate.getFullQualifiedName())
-            .query(tenantAwareQuery)
-            .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
-            .size(0)
-            .build();
-
-    try {
-      final var searchResponse = esClient.search(searchRequest, Void.class);
-
-      final var buckets =
-          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
-
-      for (final var bucket : buckets) {
-        final Long processDefinitionKey = bucket.key();
-        final long incidentCount = bucket.docCount();
-        results.put(
-            processDefinitionKey,
-            new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), incidentCount, 0));
-      }
-      return results;
-    } catch (final IOException e) {
-      final String message =
-          String.format(
-              "Exception occurred, while obtaining incidents by process: %s", e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private Map<Long, IncidentByProcessStatisticsDto> updateActiveInstances(
-      final Map<Long, IncidentByProcessStatisticsDto> statistics,
-      final Query processInstancePermissionQuery) {
-    final Query runningInstanceQuery =
-        joinWithAnd(
-            ElasticsearchUtil.termsQuery(
-                ListViewTemplate.STATE, ProcessInstanceState.ACTIVE.toString()),
-            ElasticsearchUtil.termsQuery(
-                ListViewTemplate.JOIN_RELATION, ListViewTemplate.PROCESS_INSTANCE_JOIN_RELATION),
-            processInstancePermissionQuery);
-
-    final Map<Long, IncidentByProcessStatisticsDto> results = new HashMap<>(statistics);
-
-    try {
-      final var tenantAwareQuery = tenantHelper.makeQueryTenantAware(runningInstanceQuery);
-      final var searchRequest =
-          new SearchRequest.Builder()
-              .index(listViewTemplate.getFullQualifiedName())
-              .query(tenantAwareQuery)
-              .aggregations(PROCESS_KEYS, COUNT_PROCESS_KEYS)
-              .size(0)
-              .build();
-
-      final var searchResponse = esClient.search(searchRequest, Void.class);
-
-      final var buckets =
-          searchResponse.aggregations().get(PROCESS_KEYS).lterms().buckets().array();
-
-      for (final var bucket : buckets) {
-        final Long processDefinitionKey = bucket.key();
-        final long runningCount = bucket.docCount();
-        IncidentByProcessStatisticsDto statistic = results.get(processDefinitionKey);
-        if (statistic != null) {
-          statistic.setActiveInstancesCount(
-              runningCount - statistic.getInstancesWithActiveIncidentsCount());
-        } else {
-          statistic =
-              new IncidentByProcessStatisticsDto(processDefinitionKey.toString(), 0, runningCount);
-        }
-        results.put(processDefinitionKey, statistic);
-      }
-      return results;
-    } catch (final IOException e) {
-      final String message =
-          String.format("Exception occurred, while obtaining active processes: %s", e.getMessage());
-      LOGGER.error(message, e);
-      throw new OperateRuntimeException(message, e);
-    }
-  }
-
-  private Set<IncidentsByProcessGroupStatisticsDto> collectStatisticsForProcessGroups(
-      final Map<Long, IncidentByProcessStatisticsDto> incidentsByProcessMap) {
-
-    final Set<IncidentsByProcessGroupStatisticsDto> result =
-        new TreeSet<>(IncidentsByProcessGroupStatisticsDto.COMPARATOR);
-
-    final var processGroups = processReader.getProcessesGrouped(new ProcessRequestDto());
-
-    // iterate over process groups (bpmnProcessId)
-    for (final List<ProcessEntity> processes : processGroups.values()) {
-      final IncidentsByProcessGroupStatisticsDto stat = new IncidentsByProcessGroupStatisticsDto();
-      stat.setBpmnProcessId(processes.get(0).getBpmnProcessId());
-      stat.setTenantId(processes.get(0).getTenantId());
-
-      // accumulate stat for process group
-      long activeInstancesCount = 0;
-      long instancesWithActiveIncidentsCount = 0;
-
-      // max version to find out latest process name
-      long maxVersion = 0;
-
-      // iterate over process versions
-      for (final ProcessEntity processEntity : processes) {
-        IncidentByProcessStatisticsDto statForProcess =
-            incidentsByProcessMap.get(processEntity.getKey());
-        if (statForProcess != null) {
-          activeInstancesCount += statForProcess.getActiveInstancesCount();
-          instancesWithActiveIncidentsCount +=
-              statForProcess.getInstancesWithActiveIncidentsCount();
-        } else {
-          statForProcess =
-              new IncidentByProcessStatisticsDto(
-                  ConversionUtils.toStringOrNull(processEntity.getKey()), 0, 0);
-        }
-        statForProcess.setName(processEntity.getName());
-        statForProcess.setBpmnProcessId(processEntity.getBpmnProcessId());
-        statForProcess.setTenantId(processEntity.getTenantId());
-        statForProcess.setVersion(processEntity.getVersion());
-        stat.getProcesses().add(statForProcess);
-
-        // set the latest name
-        if (processEntity.getVersion() > maxVersion) {
-          stat.setProcessName(processEntity.getName());
-          maxVersion = processEntity.getVersion();
-        }
-      }
-
-      stat.setActiveInstancesCount(activeInstancesCount);
-      stat.setInstancesWithActiveIncidentsCount(instancesWithActiveIncidentsCount);
-      result.add(stat);
-    }
-    return result;
-  }
-
-  /**
-   * createQueryForProcessesByPermission
-   *
-   * @return query that matches the processes for which the user has the given permission
-   */
   private Query createQueryForProcessInstancesWithReadPermission() {
     final PermissionsService.ResourcesAllowed allowed =
         permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE);

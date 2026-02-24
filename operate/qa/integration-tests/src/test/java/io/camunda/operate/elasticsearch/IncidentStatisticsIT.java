@@ -19,7 +19,6 @@ import io.camunda.operate.util.SearchTestRule;
 import io.camunda.operate.util.TestUtil;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentByProcessStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.ExporterEntity;
 import io.camunda.webapps.schema.entities.ProcessEntity;
@@ -31,7 +30,6 @@ import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEnt
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
@@ -51,11 +49,8 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
   public static final String DEMO_PROCESS_NAME = "Demo process";
   public static final String ORDER_BPMN_PROCESS_ID = "orderProcess";
   public static final String ORDER_PROCESS_NAME = "Order process";
-  public static final String NO_INSTANCES_PROCESS_ID = "noInstancesProcess";
-  public static final String NO_INSTANCES_PROCESS_NAME = "No Instances Process";
   public static final String ERRMSG_OTHER = "Other error message";
   public static final Integer ERRMSG_OTHER_HASH_CODE = ERRMSG_OTHER.hashCode();
-  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   @Rule public SearchTestRule searchTestRule = new SearchTestRule();
   @MockitoBean private PermissionsService permissionsService;
@@ -138,139 +133,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
                     && s.getTenantId().equals(tenantId1)
                     && s.getInstancesWithActiveIncidentsCount() == 1L
                     && (s.getVersion() == 1 || s.getVersion() == 2));
-  }
-
-  @Test
-  public void testProcessAndIncidentStatistics() throws Exception {
-    createData();
-
-    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
-
-    assertThat(processGroups).hasSize(3);
-    assertDemoProcess(processGroups.get(0));
-    assertOrderProcess(processGroups.get(1));
-    assertLoanProcess(processGroups.get(2));
-  }
-
-  @Test
-  public void testProcessWithoutInstancesIsSortedByVersionAscending() throws Exception {
-    createNoInstancesProcessData(3);
-
-    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
-
-    assertThat(processGroups).hasSize(1);
-    final Collection<IncidentByProcessStatisticsDto> processes =
-        processGroups.get(0).getProcesses();
-    assertThat(processes).hasSize(3);
-
-    final Iterator<IncidentByProcessStatisticsDto> processIterator = processes.iterator();
-    assertNoInstancesProcess(processIterator.next(), 1);
-    assertNoInstancesProcess(processIterator.next(), 2);
-    assertNoInstancesProcess(processIterator.next(), 3);
-  }
-
-  @Test
-  public void testIncidentsByProcessWithPermissionWhenAllowed() throws Exception {
-
-    // given
-    createData();
-
-    // when
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).hasSize(3);
-    final var responseMap =
-        response.stream()
-            .collect(
-                Collectors.toMap(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId, i -> i));
-    assertThat(responseMap)
-        .containsKey(DEMO_BPMN_PROCESS_ID)
-        .containsKey(ORDER_BPMN_PROCESS_ID)
-        .containsKey(LOAN_BPMN_PROCESS_ID);
-    assertThat(responseMap.get(DEMO_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isEqualTo(4);
-    assertThat(responseMap.get(DEMO_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(9);
-    assertThat(responseMap.get(ORDER_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isOne();
-    assertThat(responseMap.get(ORDER_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(8);
-    assertThat(responseMap.get(LOAN_BPMN_PROCESS_ID).getInstancesWithActiveIncidentsCount())
-        .isZero();
-    assertThat(responseMap.get(LOAN_BPMN_PROCESS_ID).getActiveInstancesCount()).isEqualTo(5);
-  }
-
-  @Test
-  public void
-      testIncidentsByProcessWithProcessDefinitionPermissionWhenNoProcessInstancePermissions()
-          throws Exception {
-
-    // given
-    createData();
-
-    // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.wildcard());
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).hasSize(3);
-    assertThat(
-            response.stream()
-                .map(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId)
-                .collect(Collectors.toList()))
-        .containsExactlyInAnyOrder(
-            DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID, LOAN_BPMN_PROCESS_ID);
-    response.forEach(
-        r -> {
-          assertThat(r.getActiveInstancesCount()).isZero();
-          assertThat(r.getInstancesWithActiveIncidentsCount()).isZero();
-        });
-  }
-
-  @Test
-  public void testIncidentsByProcessWithPermissionWhenPartiallyAllowed() throws Exception {
-
-    // given
-    createData();
-
-    // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(
-            PermissionsService.ResourcesAllowed.withIds(
-                Set.of(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID)));
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).hasSize(2);
-    assertThat(
-            response.stream()
-                .map(IncidentsByProcessGroupStatisticsDto::getBpmnProcessId)
-                .collect(Collectors.toList()))
-        .containsExactlyInAnyOrder(DEMO_BPMN_PROCESS_ID, ORDER_BPMN_PROCESS_ID);
-  }
-
-  @Test
-  public void testIncidentsByProcessWithPermissionWhenNotAllowed() throws Exception {
-
-    // given
-    createData();
-
-    // when
-    when(permissionsService.permissionsEnabled()).thenReturn(true);
-    when(permissionsService.getProcessesWithPermission(PermissionType.READ_PROCESS_DEFINITION))
-        .thenReturn(PermissionsService.ResourcesAllowed.withIds(Set.of()));
-
-    // then
-    final List<IncidentsByProcessGroupStatisticsDto> response = requestIncidentsByProcess();
-
-    assertThat(response).isEmpty();
   }
 
   @Test
@@ -412,83 +274,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
         .containsExactly(ORDER_BPMN_PROCESS_ID);
   }
 
-  private void assertNoInstancesProcess(
-      final IncidentByProcessStatisticsDto process, final int version) {
-    assertThat(process.getVersion()).isEqualTo(version);
-    assertThat(process.getActiveInstancesCount()).isEqualTo(0);
-    assertThat(process.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
-    assertThat(process.getBpmnProcessId()).isEqualTo(NO_INSTANCES_PROCESS_ID);
-    assertThat(process.getTenantId()).isEqualTo(tenantId2);
-    assertThat(process.getName()).isEqualTo(NO_INSTANCES_PROCESS_NAME + version);
-  }
-
-  private void assertLoanProcess(final IncidentsByProcessGroupStatisticsDto loanProcessGroup) {
-    assertThat(loanProcessGroup.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
-    assertThat(loanProcessGroup.getTenantId()).isEqualTo(tenantId1);
-    assertThat(loanProcessGroup.getProcessName()).isEqualTo(LOAN_PROCESS_NAME + "1");
-    assertThat(loanProcessGroup.getActiveInstancesCount()).isEqualTo(5);
-    assertThat(loanProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
-    assertThat(loanProcessGroup.getProcesses()).hasSize(1);
-
-    // assert Loan process version 1
-    assertThat(loanProcessGroup.getProcesses()).hasSize(1);
-    final IncidentByProcessStatisticsDto loanProcessProcessStatistic =
-        loanProcessGroup.getProcesses().iterator().next();
-    assertThat(loanProcessProcessStatistic.getName()).isEqualTo(LOAN_PROCESS_NAME + "1");
-    assertThat(loanProcessProcessStatistic.getBpmnProcessId()).isEqualTo(LOAN_BPMN_PROCESS_ID);
-    assertThat(loanProcessProcessStatistic.getTenantId()).isEqualTo(tenantId1);
-    assertThat(loanProcessProcessStatistic.getVersion()).isEqualTo(1);
-    assertThat(loanProcessProcessStatistic.getActiveInstancesCount()).isEqualTo(5);
-    assertThat(loanProcessProcessStatistic.getInstancesWithActiveIncidentsCount()).isEqualTo(0);
-  }
-
-  private void assertOrderProcess(final IncidentsByProcessGroupStatisticsDto orderProcessGroup) {
-    // assert Order process group
-    assertThat(orderProcessGroup.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
-    assertThat(orderProcessGroup.getTenantId()).isEqualTo(tenantId2);
-    assertThat(orderProcessGroup.getProcessName()).isEqualTo(ORDER_PROCESS_NAME + "2");
-    assertThat(orderProcessGroup.getActiveInstancesCount()).isEqualTo(8);
-    assertThat(orderProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-    assertThat(orderProcessGroup.getProcesses()).hasSize(2);
-    // assert Order process version 2
-    final IncidentByProcessStatisticsDto orderProcess =
-        orderProcessGroup.getProcesses().iterator().next();
-    assertThat(orderProcess.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");
-    assertThat(orderProcess.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
-    assertThat(orderProcess.getTenantId()).isEqualTo(tenantId2);
-    assertThat(orderProcess.getVersion()).isEqualTo(2);
-    assertThat(orderProcess.getActiveInstancesCount()).isEqualTo(3);
-    assertThat(orderProcess.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-  }
-
-  private void assertDemoProcess(final IncidentsByProcessGroupStatisticsDto demoProcessGroup) {
-    // assert Demo process group
-    assertThat(demoProcessGroup.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
-    assertThat(demoProcessGroup.getTenantId()).isEqualTo(tenantId1);
-    assertThat(demoProcessGroup.getProcessName()).isEqualTo(DEMO_PROCESS_NAME + "2");
-    assertThat(demoProcessGroup.getActiveInstancesCount()).isEqualTo(9);
-    assertThat(demoProcessGroup.getInstancesWithActiveIncidentsCount()).isEqualTo(4);
-    assertThat(demoProcessGroup.getProcesses()).hasSize(2);
-    // assert Demo process version 1
-    final Iterator<IncidentByProcessStatisticsDto> processes =
-        demoProcessGroup.getProcesses().iterator();
-    final IncidentByProcessStatisticsDto process1 = processes.next();
-    assertThat(process1.getName()).isEqualTo(DEMO_PROCESS_NAME + "1");
-    assertThat(process1.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
-    assertThat(process1.getTenantId()).isEqualTo(tenantId1);
-    assertThat(process1.getVersion()).isEqualTo(1);
-    assertThat(process1.getActiveInstancesCount()).isEqualTo(3);
-    assertThat(process1.getInstancesWithActiveIncidentsCount()).isEqualTo(3);
-    // assert Demo process version 2
-    final IncidentByProcessStatisticsDto process2 = processes.next();
-    assertThat(process2.getName()).isEqualTo(DEMO_PROCESS_NAME + "2");
-    assertThat(process2.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
-    assertThat(process2.getTenantId()).isEqualTo(tenantId1);
-    assertThat(process2.getVersion()).isEqualTo(2);
-    assertThat(process2.getActiveInstancesCount()).isEqualTo(6);
-    assertThat(process2.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-  }
-
   private void createDemoProcessData() {
     final List<ProcessEntity> processVersions =
         createProcessVersions(DEMO_BPMN_PROCESS_ID, DEMO_PROCESS_NAME, 2, tenantId1);
@@ -610,17 +395,6 @@ public class IncidentStatisticsIT extends OperateAbstractIT {
     }
 
     searchTestRule.persistNew(entities.toArray(new ExporterEntity[entities.size()]));
-  }
-
-  private void createNoInstancesProcessData(final int versionCount) {
-    createProcessVersions(
-            NO_INSTANCES_PROCESS_ID, NO_INSTANCES_PROCESS_NAME, versionCount, tenantId2)
-        .forEach(processVersion -> searchTestRule.persistNew(processVersion));
-  }
-
-  private List<IncidentsByProcessGroupStatisticsDto> requestIncidentsByProcess() throws Exception {
-    return mockMvcTestRule.listFromResponse(
-        getRequest(QUERY_INCIDENTS_BY_PROCESS_URL), IncidentsByProcessGroupStatisticsDto.class);
   }
 
   private List<IncidentsByErrorMsgStatisticsDto> requestIncidentsByError() throws Exception {

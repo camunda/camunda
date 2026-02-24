@@ -9,7 +9,6 @@ package io.camunda.operate.it;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllRunningQuery;
 import static io.camunda.operate.webapp.rest.FlowNodeInstanceRestService.FLOW_NODE_INSTANCE_URL;
-import static io.camunda.operate.webapp.rest.IncidentRestService.INCIDENT_URL;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.ACTIVE;
 import static io.camunda.operate.webapp.rest.dto.listview.ProcessInstanceStateDto.INCIDENT;
@@ -26,7 +25,6 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceQueryDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeInstanceResponseDto;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
-import io.camunda.operate.webapp.rest.dto.incidents.IncidentsByProcessGroupStatisticsDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewQueryDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
@@ -46,7 +44,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   public static final String CALL_ACTIVITY_ID = "callActivity";
   public static final String TASK_ID = "task";
   public static final String TASK_ID_2 = "task2";
-  private static final String QUERY_INCIDENTS_BY_PROCESS_URL = INCIDENT_URL + "/byProcess";
   private static final String QUERY_PROCESS_CORE_STATISTICS_URL =
       "/api/process-instances/core-statistics";
   private long calledProcessDefinitionKey;
@@ -123,16 +120,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
   }
 
   @Test
-  public void testIncidentPropagatedInIncidentsByProcess() throws Exception {
-    final List<IncidentsByProcessGroupStatisticsDto> processGroups = requestIncidentsByProcess();
-    assertThat(processGroups).hasSize(2);
-    for (final IncidentsByProcessGroupStatisticsDto stat : processGroups) {
-      assertThat(stat.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
-      assertThat(stat.getActiveInstancesCount()).isEqualTo(2);
-    }
-  }
-
-  @Test
   public void testQueryByIncident() throws Exception {
     ListViewQueryDto queryRequest = createGetAllRunningQuery().setActive(false);
     ListViewResponseDto instanceList = getProcessInstanceList(new ListViewRequestDto(queryRequest));
@@ -206,11 +193,6 @@ public class CallActivityIncidentZeebeIT extends OperateZeebeAbstractIT {
       throws Exception {
     return mockMvcTestRule.fromResponse(
         postRequest(PROCESS_INSTANCE_URL, request), new TypeReference<>() {});
-  }
-
-  private List<IncidentsByProcessGroupStatisticsDto> requestIncidentsByProcess() throws Exception {
-    return mockMvcTestRule.listFromResponse(
-        getRequest(QUERY_INCIDENTS_BY_PROCESS_URL), IncidentsByProcessGroupStatisticsDto.class);
   }
 
   private Map<String, FlowNodeStateDto> getFlowNodeStateDtos(final String processInstanceId)
