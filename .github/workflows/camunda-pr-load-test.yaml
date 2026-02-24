@@ -23,8 +23,7 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
-      namespace: c8-${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
@@ -84,7 +83,7 @@ jobs:
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
-      name: ${{ needs.sanitize-branch-name.outputs.namespace }}
+      name: ${{ needs.sanitize-branch-name.outputs.sanitized-name }}
       pod: ''
 
   comment-pr:
@@ -182,7 +181,7 @@ jobs:
           location: europe-west1-b
       - name: Delete benchmarks
         run: |
-          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.namespace }}"
+          kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
