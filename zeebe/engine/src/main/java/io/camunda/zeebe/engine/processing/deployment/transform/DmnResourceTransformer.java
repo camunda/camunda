@@ -321,24 +321,6 @@ public final class DmnResourceTransformer implements DeploymentResourceTransform
     return NO_VALIDATION_ERROR;
   }
 
-  private Either<Failure, ?> checkDecisionIdLength(
-      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
-    return checkFieldLength(
-        parsedDrg.getDecisions().stream().map(ParsedDecision::getId),
-        engineConfiguration.getMaxIdFieldLength(),
-        "The ID of a decision must not be longer than the configured max-id-length of %s characters, but was '%s' in resource '%s'",
-        resource);
-  }
-
-  private Either<Failure, ?> checkDecisionNameLength(
-      final DeploymentResource resource, final ParsedDecisionRequirementsGraph parsedDrg) {
-    return checkFieldLength(
-        parsedDrg.getDecisions().stream().map(ParsedDecision::getName),
-        engineConfiguration.getMaxNameFieldLength(),
-        "The name of a decision must not be longer than the configured max-name-length of %s characters, but was '%s' in resource '%s'",
-        resource);
-  }
-
   private static Either<Failure, ?> checkFieldLength(
       final String value,
       final int maxLength,
