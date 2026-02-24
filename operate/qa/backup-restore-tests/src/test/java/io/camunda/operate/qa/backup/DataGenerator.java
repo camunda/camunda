@@ -22,7 +22,6 @@ import io.camunda.operate.qa.util.ZeebeTestUtil;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.RetryOperation;
 import io.camunda.operate.util.ThreadUtil;
-import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.schema.descriptors.template.ListViewTemplate;
@@ -315,7 +314,7 @@ public class DataGenerator {
     // check sequence flows from random process instances
     int count = 0;
     while (count <= 10) {
-      final SequenceFlowDto[] sequenceFlows =
+      final String[] sequenceFlows =
           operateAPICaller.getSequenceFlows(
               processInstances
                   .getProcessInstances()

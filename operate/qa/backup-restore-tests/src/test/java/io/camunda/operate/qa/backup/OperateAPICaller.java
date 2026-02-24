@@ -12,7 +12,6 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
 import io.camunda.operate.util.CollectionUtil;
-import io.camunda.operate.webapp.rest.dto.SequenceFlowDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -66,10 +65,10 @@ public class OperateAPICaller {
         ListViewResponseDto.class);
   }
 
-  public SequenceFlowDto[] getSequenceFlows(final String processInstanceId) {
+  public String[] getSequenceFlows(final String processInstanceId) {
     return restTemplate.getForObject(
-        restTemplate.getURL("/api/process-instances/" + processInstanceId + "/sequence-flows"),
-        SequenceFlowDto[].class);
+        restTemplate.getURL("/v1/process-instances/" + processInstanceId + "/sequence-flows"),
+        String[].class);
   }
 
   public TakeBackupResponseDto backup(final Long backupId) {

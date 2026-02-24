@@ -10,7 +10,6 @@ package io.camunda.operate.webapp.rest;
 import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 
 import io.camunda.operate.Metrics;
-import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.util.rest.ValidLongId;
 import io.camunda.operate.webapp.InternalAPIErrorController;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -31,14 +30,12 @@ import io.camunda.operate.webapp.rest.validation.ProcessInstanceRequestValidator
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.entities.SequenceFlowEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.ConstraintViolationException;
-import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -61,7 +58,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private final ListenerReader listenerReader;
   private final ListViewReader listViewReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
-  private final SequenceFlowStore sequenceFlowStore;
 
   public ProcessInstanceRestService(
       final PermissionsService permissionsService,
@@ -71,8 +67,7 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       final ProcessInstanceReader processInstanceReader,
       final ListenerReader listenerReader,
       final ListViewReader listViewReader,
-      final FlowNodeInstanceReader flowNodeInstanceReader,
-      final SequenceFlowStore sequenceFlowStore) {
+      final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.permissionsService = permissionsService;
     this.processInstanceRequestValidator = processInstanceRequestValidator;
     this.modifyProcessInstanceRequestValidator = modifyProcessInstanceRequestValidator;
@@ -81,7 +76,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.listenerReader = listenerReader;
     this.listViewReader = listViewReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
-    this.sequenceFlowStore = sequenceFlowStore;
   }
 
   @Operation(summary = "Query process instances by different parameters")
@@ -130,16 +124,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String id) {
     checkIdentityReadPermission(Long.parseLong(id));
     return processInstanceReader.getProcessInstanceWithOperationsByKey(Long.valueOf(id));
-  }
-
-  @Operation(summary = "Get sequence flows by process instance id")
-  @GetMapping("/{id}/sequence-flows")
-  public List<SequenceFlowDto> querySequenceFlowsByProcessInstanceId(
-      @PathVariable @ValidLongId final String id) {
-    checkIdentityReadPermission(Long.parseLong(id));
-    final List<SequenceFlowEntity> sequenceFlows =
-        sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
-    return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
   }
 
   @Operation(summary = "Get listeners by process instance id")

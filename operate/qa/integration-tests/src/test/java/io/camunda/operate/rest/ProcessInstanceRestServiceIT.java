@@ -191,8 +191,7 @@ public class ProcessInstanceRestServiceIT {
   }
 
   private static Stream<Arguments> noPermissionGetParameters() {
-    return Stream.of(
-        Arguments.of("/1"), Arguments.of("/1/sequence-flows"), Arguments.of("/1/flow-node-states"));
+    return Stream.of(Arguments.of("/1"), Arguments.of("/1/flow-node-states"));
   }
 
   private static Stream<Arguments> noPermissionPostParameters() {
