@@ -16,7 +16,7 @@ import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.exception.NotFoundException;
 import io.camunda.operate.webapp.reader.VariableReader;
-import io.camunda.operate.webapp.rest.dto.VariableDto;
+import io.camunda.operate.webapp.reader.dto.VariableDto;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.template.VariableTemplate;
 import io.camunda.webapps.schema.entities.VariableEntity;

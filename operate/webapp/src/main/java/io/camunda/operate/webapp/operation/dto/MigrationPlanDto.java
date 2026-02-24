@@ -8,7 +8,7 @@
 package io.camunda.operate.webapp.operation.dto;
 
 import io.camunda.operate.webapp.exception.InvalidRequestException;
-import io.camunda.operate.webapp.rest.dto.RequestValidator;
+import io.camunda.operate.webapp.reader.dto.RequestValidator;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.List;
 import java.util.Objects;
