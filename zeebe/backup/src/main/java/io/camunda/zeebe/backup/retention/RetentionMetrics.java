@@ -19,7 +19,6 @@ public class RetentionMetrics implements CloseableSilently {
   static final String RETENTION_LAST_EXECUTION = NAMESPACE + ".last.execution.millis";
   static final String RETENTION_NEXT_EXECUTION = NAMESPACE + ".next.execution.millis";
   static final String BACKUPS_DELETED_ROUND = NAMESPACE + ".backups.deleted.round";
-  static final String RANGES_DELETED_ROUND = NAMESPACE + ".ranges.deleted.round";
   static final String EARLIEST_BACKUP_ID = NAMESPACE + ".earliest.backup.id";
   static final String PARTITION_TAG = "partition";
 
@@ -68,11 +67,6 @@ public class RetentionMetrics implements CloseableSilently {
         .description("Number of backups deleted in the last retention round")
         .tag(PARTITION_TAG, partition)
         .register(meterRegistry);
-
-    Gauge.builder(RANGES_DELETED_ROUND, () -> metrics.rangesDeleted)
-        .description("Number of ranges deleted in the last retention round")
-        .tag(PARTITION_TAG, partition)
-        .register(meterRegistry);
   }
 
   @Override
@@ -81,7 +75,6 @@ public class RetentionMetrics implements CloseableSilently {
     meterRegistry.remove(nextExecutionGauge);
     meterRegistry.find(EARLIEST_BACKUP_ID).gauges().forEach(meterRegistry::remove);
     meterRegistry.find(BACKUPS_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
-    meterRegistry.find(RANGES_DELETED_ROUND).gauges().forEach(meterRegistry::remove);
     partitionMetrics.clear();
   }
 
@@ -96,7 +89,6 @@ public class RetentionMetrics implements CloseableSilently {
   static class PartitionMetrics {
     private long earliestBackupId = 0L;
     private long backupsDeleted = 0L;
-    private long rangesDeleted = 0L;
 
     void setEarliestBackupId(final long id) {
       earliestBackupId = id;
@@ -104,10 +96,6 @@ public class RetentionMetrics implements CloseableSilently {
 
     void setBackupsDeleted(final long count) {
       backupsDeleted = count;
-    }
-
-    void setRangesDeleted(final long count) {
-      rangesDeleted = count;
     }
   }
 }
