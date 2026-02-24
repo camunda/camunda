@@ -22,7 +22,9 @@ import io.camunda.db.rdbms.write.queue.QueueItem;
 import io.camunda.db.rdbms.write.queue.WriteStatementType;
 import io.camunda.search.entities.AuditLogEntity.AuditLogEntityType;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
 
 public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWriter {
@@ -31,17 +33,28 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
   private final AuditLogMapper mapper;
   private final VendorDatabaseProperties vendorDatabaseProperties;
   private final RdbmsWriterConfig config;
+  private final InstantSource clock;
 
   public AuditLogWriter(
       final ExecutionQueue executionQueue,
       final AuditLogMapper mapper,
       final VendorDatabaseProperties vendorDatabaseProperties,
       final RdbmsWriterConfig config) {
+    this(executionQueue, mapper, vendorDatabaseProperties, config, config.clock());
+  }
+
+  public AuditLogWriter(
+      final ExecutionQueue executionQueue,
+      final AuditLogMapper mapper,
+      final VendorDatabaseProperties vendorDatabaseProperties,
+      final RdbmsWriterConfig config,
+      final InstantSource clock) {
     super(mapper);
     this.executionQueue = executionQueue;
     this.mapper = mapper;
     this.vendorDatabaseProperties = vendorDatabaseProperties;
     this.config = config;
+    this.clock = clock;
   }
 
   public void create(final AuditLogDbModel auditLog) {
@@ -99,7 +112,8 @@ public class AuditLogWriter extends ProcessInstanceDependant implements RdbmsWri
       final HistoryDeletionTypeDbModel historyDeletionType,
       final int limit) {
     final OffsetDateTime historyCleanupDate =
-        OffsetDateTime.now().plus(resolveRetentionTime(historyDeletionType));
+        OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC)
+            .plus(resolveRetentionTime(historyDeletionType));
     return mapper.updateUnsetAuditLogEntityHistoryCleanupDates(
         keys, historyDeletionType, historyCleanupDate, limit);
   }
