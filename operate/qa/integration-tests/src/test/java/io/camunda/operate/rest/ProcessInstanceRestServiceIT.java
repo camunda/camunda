@@ -23,7 +23,6 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
 import io.camunda.operate.webapp.rest.dto.ListenerRequestDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
@@ -91,15 +90,6 @@ public class ProcessInstanceRestServiceIT {
         ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-states";
     final MvcResult mvcResult =
         mockMvcManager.getRequestShouldFailWithException(url, ConstraintViolationException.class);
-    assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
-  }
-
-  @Test
-  public void testGetFlowNodeMetadataByIdWithInvalidId() throws Exception {
-    final var url =
-        ProcessInstanceRestService.PROCESS_INSTANCE_URL + "/not-valid-id-123/flow-node-metadata";
-    final MvcResult mvcResult =
-        mockMvcManager.postRequestShouldFailWithException(url, ConstraintViolationException.class);
     assertThat(mvcResult.getResolvedException().getMessage()).contains("Specified ID is not valid");
   }
 
@@ -263,10 +253,6 @@ public class ProcessInstanceRestServiceIT {
         Arguments.of(
             "/1/listeners",
             new ListenerRequestDto().setPageSize(5).setFlowNodeId("fid"),
-            PermissionType.READ_PROCESS_INSTANCE),
-        Arguments.of(
-            "/1/flow-node-metadata",
-            new FlowNodeMetadataRequestDto().setFlowNodeId("fid"),
             PermissionType.READ_PROCESS_INSTANCE));
   }
 }

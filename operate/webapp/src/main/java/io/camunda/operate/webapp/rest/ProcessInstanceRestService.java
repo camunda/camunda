@@ -25,8 +25,6 @@ import io.camunda.operate.webapp.rest.dto.incidents.IncidentResponseDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
@@ -186,16 +184,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       @PathVariable @ValidLongId final String processInstanceId) {
     checkIdentityReadPermission(Long.parseLong(processInstanceId));
     return flowNodeInstanceReader.getFlowNodeStates(processInstanceId);
-  }
-
-  @Operation(summary = "Get flow node metadata.")
-  @PostMapping("/{processInstanceId}/flow-node-metadata")
-  public FlowNodeMetadataDto getFlowNodeMetadata(
-      @PathVariable @ValidLongId final String processInstanceId,
-      @RequestBody final FlowNodeMetadataRequestDto request) {
-    processInstanceRequestValidator.validateFlowNodeMetadataRequest(request);
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return flowNodeInstanceReader.getFlowNodeMetadata(processInstanceId, request);
   }
 
   @ExceptionHandler(ConstraintViolationException.class)

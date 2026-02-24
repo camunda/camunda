@@ -20,7 +20,6 @@ import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
 import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
-import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
@@ -164,30 +163,6 @@ public class ProcessInstanceRestServiceTest {
     final NotAuthorizedException exception =
         assertThatExceptionOfType(NotAuthorizedException.class)
             .isThrownBy(() -> underTest.getFlowNodeStates(processInstanceId))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
-  }
-
-  @Test
-  public void testProcessInstanceFlowNodeMetadataFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(
-                () ->
-                    underTest.getFlowNodeMetadata(
-                        processInstanceId, new FlowNodeMetadataRequestDto()))
             .actual();
 
     assertThat(exception.getMessage())
