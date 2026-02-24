@@ -55,8 +55,7 @@ public class CheckpointConfirmBackupProcessor {
       } else {
         backupManager.startNewRange(checkpointId);
       }
-      backupConfirmedApplier.apply(
-          checkpointRecord, record.getTimestamp(), record.getBrokerVersion());
+      backupConfirmedApplier.apply(checkpointRecord, record.getTimestamp());
       resultBuilder.appendRecord(
           record.getKey(),
           checkpointRecord,

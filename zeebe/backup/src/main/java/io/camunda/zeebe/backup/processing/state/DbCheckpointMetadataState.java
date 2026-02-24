@@ -148,6 +148,18 @@ public final class DbCheckpointMetadataState {
         : Optional.empty();
   }
 
+  public void removeCheckpointsUntil(final long firstLogPosition) {
+    checkpointsColumnFamily.whileTrue(
+        (checkpointId, checkpointMetadataValue) -> {
+          if (checkpointMetadataValue.getFirstLogPosition() < firstLogPosition) {
+            checkpointsColumnFamily.deleteExisting(checkpointId);
+            return true;
+          } else {
+            return false;
+          }
+        });
+  }
+
   /** Immutable snapshot of a checkpoint entry for external consumption. */
   public record CheckpointEntry(
       long checkpointId,
