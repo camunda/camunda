@@ -172,24 +172,23 @@ public class ActivatableJobsPushTest {
   }
 
   @Test
-  public void shouldPushWhenJobTimesOut() {
+  public void shouldNotifyInsteadOfPushWhenJobTimesOut() {
     // given
-    final int activationCount = 2;
     final long jobKey = createJob(jobType, PROCESS_ID, variables);
+    jobBatchRecords(JobBatchIntent.ACTIVATED).withType(jobType).await();
+
+    // when - job times out
     ENGINE.increaseTime(
         Duration.ofMillis(timeout).plus(EngineConfiguration.DEFAULT_JOBS_TIMEOUT_POLLING_INTERVAL));
-
-    // when
-    // job times out
     jobRecords(TIMED_OUT).withType(jobType).await();
 
-    // then
-    assertEventOrder(
-        "Expect that the job is re-activated after job was timed out",
-        JOB_AND_JOB_BATCH_TYPES,
-        JobIntent.TIMED_OUT,
-        JobBatchIntent.ACTIVATED);
-    assertActivatedJobsPushed(jobKey, activationCount);
+    // then - the job was NOT re-pushed to the stream after timeout
+    // only the initial push from job creation should exist
+    assertThat(jobStream.getActivatedJobs()).hasSize(1);
+
+    // and the job is still available for activation via polling
+    final var activateResponse = ENGINE.jobs().withType(jobType).activate();
+    assertThat(activateResponse.getValue().getJobKeys()).contains(jobKey);
   }
 
   @Test
