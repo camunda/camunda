@@ -12,7 +12,6 @@ import static org.assertj.core.api.AssertionsForClassTypes.assertThatExceptionOf
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-import io.camunda.operate.store.SequenceFlowStore;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
@@ -44,7 +43,6 @@ public class ProcessInstanceRestServiceTest {
   @Mock private ListenerReader listenerReader;
   @Mock private ListViewReader listViewReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
-  @Mock private SequenceFlowStore sequenceFlowStore;
 
   private ProcessInstanceRestService underTest;
 
@@ -59,8 +57,7 @@ public class ProcessInstanceRestServiceTest {
             processInstanceReader,
             listenerReader,
             listViewReader,
-            flowNodeInstanceReader,
-            sequenceFlowStore);
+            flowNodeInstanceReader);
 
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);
@@ -94,27 +91,6 @@ public class ProcessInstanceRestServiceTest {
     final NotAuthorizedException exception =
         assertThatExceptionOfType(NotAuthorizedException.class)
             .isThrownBy(() -> underTest.queryProcessInstanceById(processInstanceId))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
-  }
-
-  @Test
-  public void testProcessInstanceSequenceFlowsFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(() -> underTest.querySequenceFlowsByProcessInstanceId(processInstanceId))
             .actual();
 
     assertThat(exception.getMessage())
