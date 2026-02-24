@@ -16,7 +16,7 @@ import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.util.BatchOperationTestDataHelper;
 import io.camunda.operate.util.OpensearchMocks;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;

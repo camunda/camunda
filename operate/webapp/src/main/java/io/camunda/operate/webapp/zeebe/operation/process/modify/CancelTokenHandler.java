@@ -9,8 +9,8 @@ package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
 import io.camunda.client.api.command.ModifyProcessInstanceCommandStep1;
 import io.camunda.operate.exceptions.OperateRuntimeException;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
 import java.util.Iterator;

@@ -12,7 +12,7 @@ import co.elastic.clients.elasticsearch._types.aggregations.Buckets;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.util.ElasticsearchUtil;
 import io.camunda.operate.webapp.elasticsearch.reader.OperationReader;
-import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
+import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
 import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;

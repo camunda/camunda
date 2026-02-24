@@ -7,14 +7,14 @@
  */
 package io.camunda.operate.webapp.zeebe.operation.process.modify;
 
-import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import static io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type.*;
+import static io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification;
+import static io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto.Modification.Type.*;
 import static java.util.function.Predicate.not;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.operate.exceptions.PersistenceException;
 import io.camunda.operate.util.OperationsManager;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.zeebe.operation.AbstractOperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.OperationHandler;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;

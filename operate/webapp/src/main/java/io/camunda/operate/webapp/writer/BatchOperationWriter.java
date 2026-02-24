@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.writer;
 
 import io.camunda.operate.exceptions.PersistenceException;
-import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.operation.dto.CreateOperationRequestDto;
+import io.camunda.operate.webapp.operation.dto.ModifyProcessInstanceRequestDto;
 import io.camunda.webapps.schema.entities.ProcessEntity;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
