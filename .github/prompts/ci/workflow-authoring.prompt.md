@@ -20,18 +20,29 @@ search "workflow inclusion criteria" path:docs/monorepo-docs/ci.md
 1. **Top-level metadata:**
 
    ```yaml
-   # owner: <github-team-handle>
-   name: <workflow-name>
-   description: "<short description>"
-   type: ci  # or: release, scheduled, etc.
    ```
+
+# description: <Description of what the GHA is running and what is being tested>
+
+# test location: <The filepath of the tests being run>
+
+# type: <ci, release, scheduled, etc.>
+
+# owner: <github-team-handle>
+
+---
+
+name: <workflow-name>
+
+```
 2. **Default shell:**
 
-   ```yaml
-   defaults:
-     run:
-       shell: bash
-   ```
+```yaml
+defaults:
+  run:
+    shell: bash
+```
+
 3. **Permissions:** Start with `permissions: {}`, add only what's needed
 4. **Timeout:** Always specify `timeout-minutes` on jobs (max 10 for Unified CI)
 5. **Pinned SHAs:** No floating tags like `@v4` - use exact commit SHAs
@@ -52,10 +63,12 @@ search "workflow inclusion criteria" path:docs/monorepo-docs/ci.md
 ## Minimal Workflow Template
 
 ```yaml
+# description: <Description of what the GHA is running and what is being tested>
+# test location: <The filepath of the tests being run>
+# type: ci
 # owner: <github-team-handle>
+---
 name: <workflow-name>
-description: "<short description>"
-type: ci
 
 on:
   pull_request:

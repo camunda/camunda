@@ -618,7 +618,7 @@ job-with-notification:
 
     - name: Import Secrets
       id: secrets
-      uses: hashicorp/vault-action@v3
+      uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
       with:
         url: ${{ secrets.VAULT_ADDR }}
         method: approle
@@ -708,16 +708,16 @@ Run the following once after cloning (requires `jq`):
 make vscode-sync-all
 ```
 
-This merges the repository-recommended MCP servers and terminal auto-approve rules into your local `.vscode/mcp.json` and `.vscode/settings.json`. Your existing config is preserved. See [`scripts/vscode-config-sync/README.md`](../../scripts/vscode-config-sync/README.md) for details.
+This merges the repository-recommended MCP servers and terminal auto-approve rules into your local `.vscode/mcp.json` and `.vscode/settings.json`. Your existing config is preserved. See [scripts/vscode-config-sync/README.md](https://github.com/camunda/camunda/blob/main/scripts/vscode-config-sync/README.md) for details.
 
 Current baseline is intentionally minimal: **GitHub MCP + Context7 MCP**.
 
 ### Recommended MCP Servers
 
-| Server | Status | Purpose |
-|--------|--------|---------|
-| [GitHub MCP](https://github.com/github/github-mcp-server) | ✅ Active | Issues, PRs, code search — via `https://api.githubcopilot.com/mcp/` (no token needed with Copilot) |
-| [Context7 MCP](https://github.com/upstash/context7) | ✅ Active | Up-to-date library and framework documentation for Copilot |
+|                             Server                             |   Status   |                                                              Purpose                                                              |
+|----------------------------------------------------------------|------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| [GitHub MCP](https://github.com/github/github-mcp-server)      | ✅ Active   | Issues, PRs, code search — via `https://api.githubcopilot.com/mcp/` (no token needed with Copilot)                                |
+| [Context7 MCP](https://github.com/upstash/context7)            | ✅ Active   | Up-to-date library and framework documentation for Copilot                                                                        |
 | [Camunda MCP](https://github.com/camunda/camunda/issues/43560) | 🔜 Pending | Camunda Orchestration Cluster API tools — tracked in [#43560](https://github.com/camunda/camunda/issues/43560), not yet available |
 
 ### Optional MCP Servers (self-managed)
