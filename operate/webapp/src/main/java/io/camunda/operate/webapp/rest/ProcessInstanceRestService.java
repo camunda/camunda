@@ -20,14 +20,10 @@ import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.spring.utils.ConditionalOnRdbmsDisabled;
-import io.camunda.webapps.schema.entities.operation.BatchOperationEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.micrometer.core.annotation.Timed;
 import io.swagger.v3.oas.annotations.Operation;
@@ -47,22 +43,16 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   public static final String PROCESS_INSTANCE_URL = "/api/process-instances";
 
   private final PermissionsService permissionsService;
-  private final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
-  private final BatchOperationWriter batchOperationWriter;
   private final ProcessInstanceReader processInstanceReader;
   private final ListViewReader listViewReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
 
   public ProcessInstanceRestService(
       final PermissionsService permissionsService,
-      final ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator,
-      final BatchOperationWriter batchOperationWriter,
       final ProcessInstanceReader processInstanceReader,
       final ListViewReader listViewReader,
       final FlowNodeInstanceReader flowNodeInstanceReader) {
     this.permissionsService = permissionsService;
-    this.modifyProcessInstanceRequestValidator = modifyProcessInstanceRequestValidator;
-    this.batchOperationWriter = batchOperationWriter;
     this.processInstanceReader = processInstanceReader;
     this.listViewReader = listViewReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
@@ -85,17 +75,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
           "BpmnProcessId must be provided in request, when process version is not null.");
     }
     return listViewReader.queryProcessInstances(processInstanceRequest);
-  }
-
-  @Operation(summary = "Perform modify process instance operation")
-  @PostMapping("/{id}/modify")
-  public BatchOperationEntity modify(
-      @PathVariable @ValidLongId final String id,
-      @RequestBody final ModifyProcessInstanceRequestDto modifyRequest) {
-    modifyRequest.setProcessInstanceKey(id);
-    modifyProcessInstanceRequestValidator.validate(modifyRequest);
-    checkIdentityPermission(Long.valueOf(id), PermissionType.MODIFY_PROCESS_INSTANCE);
-    return batchOperationWriter.scheduleModifyProcessInstance(modifyRequest);
   }
 
   @Operation(summary = "Get process instance by id")
