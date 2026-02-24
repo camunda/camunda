@@ -7,7 +7,7 @@
  */
 package io.camunda.operate.webapp.rest.dto;
 
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
+import io.camunda.operate.webapp.exception.InvalidRequestException;
 
 public interface RequestValidator {
 

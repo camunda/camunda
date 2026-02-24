@@ -8,8 +8,8 @@
 package io.camunda.operate.webapp.rest.dto.listview;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.camunda.operate.webapp.exception.InvalidRequestException;
 import io.camunda.operate.webapp.rest.dto.PaginatedQuery;
-import io.camunda.operate.webapp.rest.exception.InvalidRequestException;
 import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashSet;
 import java.util.Objects;

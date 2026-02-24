@@ -11,7 +11,7 @@ import co.elastic.clients.elasticsearch.core.SearchRequest;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.util.ElasticsearchUtil;
-import io.camunda.operate.webapp.rest.exception.NotFoundException;
+import io.camunda.operate.webapp.exception.NotFoundException;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.entities.dmn.definition.DecisionDefinitionEntity;
 import java.io.IOException;
