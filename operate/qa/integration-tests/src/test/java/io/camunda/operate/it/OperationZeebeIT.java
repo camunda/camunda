@@ -31,6 +31,7 @@ import io.camunda.operate.webapp.rest.dto.operation.BatchOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.OperationTypeDto;
 import io.camunda.operate.webapp.transform.DataAggregator;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.*;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
@@ -80,6 +81,8 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
   @Autowired private DataAggregator dataAggregator;
 
   @Autowired private DecisionInstanceTemplate decisionInstanceTemplate;
+  @Autowired private DecisionReader decisionReader;
+  @Autowired private BatchOperationWriter batchOperationWriter;
 
   private Long initialBatchOperationMaxSize;
 
@@ -733,11 +736,13 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     List<DecisionInstanceEntity> decisionInstanceEntities =
         searchAllDocuments(decisionInstanceTemplate.getAlias(), DecisionInstanceEntity.class);
     final String decisionDefinitionId = decisionInstanceEntities.get(0).getDecisionDefinitionId();
+    final var decisionDefinitionEntity =
+        decisionReader.getDecision(Long.valueOf(decisionDefinitionId));
 
     // when
     // we call DELETE_DECISION_DEFINITION operation
     final BatchOperationEntity batchOperationEntity =
-        deleteDecisionWithOkResponse(String.valueOf(decisionDefinitionId));
+        batchOperationWriter.scheduleDeleteDecisionDefinition(decisionDefinitionEntity);
 
     // and execute the operation
     executeOneBatch();
