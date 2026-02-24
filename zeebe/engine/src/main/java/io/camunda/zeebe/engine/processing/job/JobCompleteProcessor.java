@@ -22,6 +22,7 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedRejection
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseWriter;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.processing.variable.VariableBehavior;
+import io.camunda.zeebe.engine.processing.variable.VariableNameLengthValidator;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
 import io.camunda.zeebe.engine.state.immutable.JobState;
 import io.camunda.zeebe.engine.state.immutable.JobState.State;
@@ -176,12 +177,20 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
     preconditionChecker
         .check(state, record)
         .flatMap(job -> checkAuthorization(record, job))
+        .flatMap(job -> validateVariableNames(record, job))
         .ifRightOrLeft(
             job -> completeJob(record, job, session),
             rejection -> {
               rejectionWriter.appendRejection(record, rejection.type(), rejection.reason());
               responseWriter.writeRejectionOnCommand(record, rejection.type(), rejection.reason());
             });
+  }
+
+  private static Either<Rejection, JobRecord> validateVariableNames(
+      final TypedRecord<JobRecord> command, final JobRecord job) {
+    return VariableNameLengthValidator.validateVariableNameLength(
+            command.getValue().getVariablesBuffer())
+        .map(ignored -> job);
   }
 
   private void completeJob(

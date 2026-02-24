@@ -7,10 +7,12 @@
  */
 package io.camunda.zeebe.engine.processing.job;
 
+import static io.camunda.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.ThrowableAssert.catchThrowable;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -175,6 +177,33 @@ public final class CompleteJobTest {
         .hasRecordType(RecordType.EVENT)
         .hasIntent(JobIntent.COMPLETED);
     assertThat(completedRecord.getValue().getVariables()).containsExactly(entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldRejectCompletionIfVariableNameExceedsDefaultMaxLength() {
+    // given
+    ENGINE.createJob(jobType, PROCESS_ID);
+    final Record<JobBatchRecordValue> batchRecord =
+        ENGINE.jobs().withType(jobType).activate(username);
+    final String variableName = "x".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    final Record<JobRecordValue> rejectedRecord =
+        ENGINE
+            .job()
+            .withKey(batchRecord.getValue().getJobKeys().get(0))
+            .withVariables(asMsgPack(variableName, "bar"))
+            .expectRejection()
+            .complete();
+
+    // then
+    Assertions.assertThat(rejectedRecord).hasRejectionType(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedRecord.getRejectionReason())
+        .contains(
+            "Expected variable names to be no longer than "
+                + EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH
+                + " characters")
+        .contains("length " + (EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1));
   }
 
   @Test
