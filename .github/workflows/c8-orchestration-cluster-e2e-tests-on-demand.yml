@@ -231,7 +231,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          branch="${{ matrix.branch }}"
+          branch="${{ github.event.inputs.branch }}"
           # Replace invalid artifact-name characters (at least '/')
           safe_branch="${branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
@@ -464,7 +464,7 @@ jobs:
         if: always()
         shell: bash
         run: |
-          branch="${{ matrix.branch }}"
+          branch="${{ github.event.inputs.branch }}"
           # Replace invalid artifact-name characters (at least '/')
           safe_branch="${branch//\//-}"
           echo "safe_branch=$safe_branch" >> "$GITHUB_OUTPUT"
