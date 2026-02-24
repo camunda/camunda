@@ -13,6 +13,7 @@ import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerExpressionEvaluationRequest;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class ExpressionServices extends ApiServices<ExpressionServices> {
@@ -49,5 +50,6 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
             .setTenantId(request.tenantId()));
   }
 
-  public record ExpressionEvaluationRequest(String expression, String tenantId) {}
+  public record ExpressionEvaluationRequest(
+      String expression, String tenantId, Map<String, Object> context) {}
 }
