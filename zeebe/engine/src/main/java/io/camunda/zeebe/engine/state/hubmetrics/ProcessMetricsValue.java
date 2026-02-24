@@ -23,6 +23,13 @@ public class ProcessMetricsValue extends UnpackedObject implements DbValue {
     declareProperty(absoluteProp).declareProperty(createdProp).declareProperty(completedProp);
   }
 
+  public ProcessMetricsValue wrap(final ProcessMetricsValue value) {
+    setAbsolute(value.getAbsolute());
+    setCreated(value.getCreated());
+    setCompleted(value.getCompleted());
+    return this;
+  }
+
   public long getAbsolute() {
     return absoluteProp.getValue();
   }
