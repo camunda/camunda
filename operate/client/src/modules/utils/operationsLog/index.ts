@@ -58,18 +58,25 @@ const mapToCellEntityKeyData = (
   processDefinitionName?: string,
   decisionDefinitionName?: string,
   tasklistUrl?: string,
-): {name?: string; link?: string; linkLabel?: string} => {
+): {
+  name?: string;
+  link?: string;
+  linkLabel?: string;
+  label?: string;
+} => {
   switch (item.entityType) {
     case 'BATCH':
       return {
         link: Paths.batchOperation(item.batchOperationKey),
         linkLabel: `View batch operation ${item.batchOperationKey}`,
+        label: item.batchOperationKey,
       };
     case 'PROCESS_INSTANCE':
       return {
         name: processDefinitionName,
         link: Paths.processInstance(item.entityKey),
         linkLabel: `View process instance ${item.entityKey}`,
+        label: item.entityKey,
       };
     case 'DECISION':
       if (item.operationType === 'EVALUATE') {
@@ -77,14 +84,16 @@ const mapToCellEntityKeyData = (
           name: decisionDefinitionName,
           link: Paths.decisionInstance(item.entityKey),
           linkLabel: `View decision instance ${item.entityKey}`,
+          label: item.entityKey,
         };
       } else {
-        return {name: decisionDefinitionName};
+        return {name: decisionDefinitionName, label: item.entityKey};
       }
     case 'USER_TASK':
       return {
         link: tasklistUrl ? `${tasklistUrl}/${item.entityKey}` : undefined,
         linkLabel: `View user task ${item.entityKey}`,
+        label: item.entityKey,
       };
     default:
       return {};
