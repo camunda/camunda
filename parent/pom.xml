@@ -109,7 +109,7 @@
     <version.rest-assured>6.0.0</version.rest-assured>
     <version.spring>7.0.5</version.spring>
     <version.spring-security>7.0.3</version.spring-security>
-    <version.spring-boot>4.0.2</version.spring-boot>
+    <version.spring-boot>4.0.3</version.spring-boot>
     <version.spring-ai>2.0.0-M2</version.spring-ai>
     <version.spring-ai-community.mcp-annotations>0.8.0</version.spring-ai-community.mcp-annotations>
     <version.mcp-sdk>0.17.2</version.mcp-sdk>
