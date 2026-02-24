@@ -499,7 +499,7 @@ jobs:
     needs: [ detect-changes ]
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &database-matrix
         include:
           - name: "Elasticsearch 8"
             database-type: "elasticsearch"
@@ -543,35 +543,7 @@ jobs:
     needs: [ detect-changes ]
     strategy:
       fail-fast: false
-      matrix:
-        include:
-          - name: "Elasticsearch 8"
-            database-type: "elasticsearch"
-            database-image-version: "8.19.11"
-            database-name: "Elasticsearch 8"
-            it-database-type: "es"
-          - name: "Elasticsearch 9"
-            database-type: "elasticsearch9"
-            database-container: "elasticsearch"
-            database-image-version: "9.2.5"
-            database-name: "Elasticsearch 9"
-            it-database-type: "es"
-          - name: "Opensearch 2"
-            database-type: "opensearch2"
-            database-container: "opensearch"
-            database-image-version: "2.19.4"
-            database-name: "OpenSearch 2"
-            it-database-type: "os"
-          - name: "Opensearch 3"
-            database-type: "opensearch3"
-            database-container: "opensearch"
-            database-image-version: "3.4.0"
-            database-name: "OpenSearch 3"
-            it-database-type: "os"
-          - name: "RDBMS H2"
-            database-type: "h2"
-            database-name: "H2"
-            it-database-type: "rdbms_h2"
+      matrix: *database-matrix
     uses: ./.github/workflows/ci-database-integration-tests-reusable.yml
     secrets: inherit
     with:
