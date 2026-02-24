@@ -39,9 +39,5 @@ public interface IncidentMapper extends ProcessInstanceDependantMapper {
   List<IncidentProcessInstanceStatisticsByDefinitionEntity> processInstanceStatisticsByDefinition(
       IncidentProcessInstanceStatisticsByDefinitionDbQuery query);
 
-  record IncidentStateDto(
-      Long incidentKey,
-      IncidentEntity.IncidentState state,
-      String errorMessage,
-      Integer errorMessageHash) {}
+  record IncidentStateDto(Long incidentKey, IncidentEntity.IncidentState state) {}
 }
