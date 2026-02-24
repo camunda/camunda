@@ -59,6 +59,16 @@ public final class DmnDeploymentTest {
   private static final String DECISION_ID_LENGTH_EXCEEDED = "/dmn/decision-table-with-long-ids.dmn";
   private static final String DECISION_NAME_LENGTH_EXCEEDED =
       "/dmn/decision-table-with-long-name.dmn";
+  private static final String DECISION_INPUT_ID_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-input-id.dmn";
+  private static final String DECISION_INPUT_NAME_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-input-name.dmn";
+  private static final String DECISION_OUTPUT_ID_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-output-id.dmn";
+  private static final String DECISION_OUTPUT_NAME_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-output-name.dmn";
+  private static final String DECISION_RULE_ID_LENGTH_EXCEEDED =
+      "/dmn/decision-table-with-long-rule-id.dmn";
 
   private static final int MAX_ID_FIELD_LENGTH = 50;
   private static final int MAX_NAME_FIELD_LENGTH = 50;
@@ -715,6 +725,121 @@ public final class DmnDeploymentTest {
             String.format(
                 "The name of a decision must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision table' in resource '%s'",
                 MAX_NAME_FIELD_LENGTH, DECISION_NAME_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionInputIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_INPUT_ID_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a decision input must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_input' in resource '%s'",
+                MAX_ID_FIELD_LENGTH, DECISION_INPUT_ID_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionInputNameExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_INPUT_NAME_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The name of a decision input must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision input' in resource '%s'",
+                MAX_NAME_FIELD_LENGTH, DECISION_INPUT_NAME_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionOutputIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_OUTPUT_ID_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a decision output must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_output' in resource '%s'",
+                MAX_ID_FIELD_LENGTH, DECISION_OUTPUT_ID_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionOutputNameExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_OUTPUT_NAME_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The name of a decision output must not be longer than the configured max-name-length of %s characters, but was 'This is an extreme and very long name for a decision output' in resource '%s'",
+                MAX_NAME_FIELD_LENGTH, DECISION_OUTPUT_NAME_LENGTH_EXCEEDED));
+  }
+
+  @Test
+  public void shouldRejectIfDecisionRuleIdExceedsSize() {
+    // when
+    final var deploymentEvent =
+        engine
+            .deployment()
+            .withXmlClasspathResource(DECISION_RULE_ID_LENGTH_EXCEEDED)
+            .expectRejection()
+            .deploy();
+
+    // then
+    Assertions.assertThat(deploymentEvent)
+        .hasIntent(DeploymentIntent.CREATE)
+        .hasRecordType(RecordType.COMMAND_REJECTION)
+        .hasRejectionType(RejectionType.INVALID_ARGUMENT);
+
+    assertThat(deploymentEvent.getRejectionReason())
+        .contains(
+            String.format(
+                "The ID of a decision rule must not be longer than the configured max-id-length of %s characters, but was 'this_is_an_extreme_and_very_long_id_for_a_decision_rule' in resource '%s'",
+                MAX_ID_FIELD_LENGTH, DECISION_RULE_ID_LENGTH_EXCEEDED));
   }
 
   private byte[] getChecksum(final String resourceName) {
