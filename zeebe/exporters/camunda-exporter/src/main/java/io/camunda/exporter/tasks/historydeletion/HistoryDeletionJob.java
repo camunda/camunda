@@ -243,6 +243,17 @@ public class HistoryDeletionJob implements BackgroundTask {
             decisionInstanceTemplate.getIndexPattern(),
             DecisionInstanceTemplate.KEY,
             decisionInstances)
+        .thenCompose(
+            ignored -> {
+              final var operationIds =
+                  batch.getEntities(HistoryDeletionType.DECISION_INSTANCE).stream()
+                      .map(
+                          entity ->
+                              AbstractOperationHandler.ID_PATTERN.formatted(
+                                  entity.getBatchOperationKey(), entity.getResourceKey()))
+                      .toList();
+              return deleterRepository.updateOperations(operationIds);
+            })
         .thenApply(ignored -> batch.getHistoryDeletionIds(HistoryDeletionType.DECISION_INSTANCE));
   }
 
