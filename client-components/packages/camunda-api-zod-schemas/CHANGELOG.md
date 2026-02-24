@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.45
+
+### 🩹 Fixes
+
+- make jobKey nullable in incident schema ([#46640](https://github.com/camunda/camunda/issues/46640))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
 ## v0.0.44
 
 ### 🩹 Fixes
