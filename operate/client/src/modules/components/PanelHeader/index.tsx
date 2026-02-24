@@ -23,7 +23,14 @@ type Props = {
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
   (
-    {title, count = 0, hasMoreTotalItems, children, className, size = 'md'},
+    {
+      title,
+      count = 0,
+      hasMoreTotalItems = false,
+      children,
+      className,
+      size = 'md',
+    },
     ref,
   ) => {
     return (

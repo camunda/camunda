@@ -100,6 +100,7 @@ describe('<InstancesTable />', () => {
           state="content"
           processInstances={mockProcessInstances}
           totalProcessInstancesCount={mockProcessInstances.length}
+          hasMoreTotalItems={false}
         />,
         {
           wrapper: getWrapper(
@@ -127,6 +128,7 @@ describe('<InstancesTable />', () => {
         state="content"
         processInstances={mockProcessInstances}
         totalProcessInstancesCount={mockProcessInstances.length}
+        hasMoreTotalItems={false}
       />,
       {
         wrapper: getWrapper(
@@ -146,6 +148,7 @@ describe('<InstancesTable />', () => {
         state="content"
         processInstances={mockProcessInstances}
         totalProcessInstancesCount={mockProcessInstances.length}
+        hasMoreTotalItems={false}
       />,
       {
         wrapper: getWrapper(
@@ -165,6 +168,7 @@ describe('<InstancesTable />', () => {
         state="content"
         processInstances={mockProcessInstances}
         totalProcessInstancesCount={mockProcessInstances.length}
+        hasMoreTotalItems={false}
       />,
       {wrapper: getWrapper()},
     );
@@ -199,6 +203,7 @@ describe('<InstancesTable />', () => {
         state="empty"
         processInstances={[]}
         totalProcessInstancesCount={0}
+        hasMoreTotalItems={false}
       />,
       {wrapper: getWrapper()},
     );

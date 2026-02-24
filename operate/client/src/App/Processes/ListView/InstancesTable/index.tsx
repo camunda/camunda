@@ -39,7 +39,7 @@ type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   processInstances: ProcessInstance[];
   totalProcessInstancesCount: number;
-  hasMoreTotalItems?: boolean;
+  hasMoreTotalItems: boolean;
   onVerticalScrollStartReach?: (scrollDown: (offset: number) => void) => void;
   onVerticalScrollEndReach?: () => void;
 };
