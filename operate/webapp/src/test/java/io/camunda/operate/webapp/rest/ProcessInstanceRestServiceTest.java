@@ -17,9 +17,7 @@ import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
-import io.camunda.operate.webapp.rest.validation.ModifyProcessInstanceRequestValidator;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
-import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import org.junit.jupiter.api.BeforeEach;
@@ -32,8 +30,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 public class ProcessInstanceRestServiceTest {
 
   @Mock private PermissionsService permissionsService;
-  @Mock private ModifyProcessInstanceRequestValidator modifyProcessInstanceRequestValidator;
-  @Mock private BatchOperationWriter batchOperationWriter;
   @Mock private ProcessInstanceReader processInstanceReader;
   @Mock private ListViewReader listViewReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
@@ -44,12 +40,7 @@ public class ProcessInstanceRestServiceTest {
   public void setup() {
     underTest =
         new ProcessInstanceRestService(
-            permissionsService,
-            modifyProcessInstanceRequestValidator,
-            batchOperationWriter,
-            processInstanceReader,
-            listViewReader,
-            flowNodeInstanceReader);
+            permissionsService, processInstanceReader, listViewReader, flowNodeInstanceReader);
 
     when(permissionsService.hasPermissionForProcess(any(), any(PermissionType.class)))
         .thenReturn(true);

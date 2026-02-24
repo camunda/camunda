@@ -9,7 +9,6 @@ package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
 import static io.camunda.operate.util.CollectionUtil.filter;
-import static io.camunda.operate.webapp.rest.ProcessInstanceRestService.PROCESS_INSTANCE_URL;
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
@@ -35,6 +34,7 @@ import io.camunda.operate.webapp.rest.dto.metadata.FlowNodeMetadataRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.BatchOperationDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeInstanceEntity;
 import io.camunda.webapps.schema.entities.flownode.FlowNodeState;
@@ -184,6 +184,7 @@ public class OperateTester {
   private Predicate<Object[]> userTasksAreCreated;
 
   @Autowired private OperationReader operationReader;
+  @Autowired private BatchOperationWriter batchOperationWriter;
 
   @Autowired private ObjectMapper objectMapper;
 
@@ -494,7 +495,9 @@ public class OperateTester {
             .setProcessInstanceKey(processInstanceKey + "")
             .setModifications(modifications);
 
-    postOperation(op);
+    operation =
+        BatchOperationDto.createFrom(
+            batchOperationWriter.scheduleModifyProcessInstance(op), objectMapper);
     searchTestRule.refreshSerchIndexes();
     return this;
   }
@@ -510,23 +513,6 @@ public class OperateTester {
         mockMvcTestRule
             .getMockMvc()
             .perform(postOperationRequest)
-            .andExpect(status().is(HttpStatus.SC_OK))
-            .andReturn();
-    operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);
-    return mvcResult;
-  }
-
-  private MvcResult postOperation(final ModifyProcessInstanceRequestDto operationRequest)
-      throws Exception {
-    final MockHttpServletRequestBuilder ope =
-        post(format(PROCESS_INSTANCE_URL + "/%s/modify", processInstanceKey))
-            .content(mockMvcTestRule.json(operationRequest))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvcTestRule
-            .getMockMvc()
-            .perform(ope)
             .andExpect(status().is(HttpStatus.SC_OK))
             .andReturn();
     operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);

@@ -19,15 +19,11 @@ import io.camunda.operate.util.TestApplication;
 import io.camunda.operate.util.j5templates.MockMvcManager;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.rest.ProcessInstanceRestService;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
 import io.camunda.operate.webapp.security.permission.PermissionsService;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceForListViewEntity;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import jakarta.validation.ConstraintViolationException;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -77,23 +73,6 @@ public class ProcessInstanceRestServiceIT {
   }
 
   @ParameterizedTest
-  @MethodSource("noPermissionPostParameters")
-  public void testPostWithNoPermission(
-      final String urlFragment, final Object requestObject, final PermissionType permissionType)
-      throws Exception {
-    // given
-    when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId("p1"));
-    when(mockPermissionsService.hasPermissionForProcess("p1", permissionType)).thenReturn(false);
-    final var url = ProcessInstanceRestService.PROCESS_INSTANCE_URL + urlFragment;
-
-    // when - then
-    final MvcResult mvcResult = mockMvcManager.postRequest(url, requestObject, 403);
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .contains("No %s permission for process instance".formatted(permissionType));
-  }
-
-  @ParameterizedTest
   @MethodSource("noPermissionGetParameters")
   public void testGetWithNoPermission(final String urlFragment) throws Exception {
     when(mockProcessInstanceReader.getProcessInstanceByKey(1L))
@@ -111,16 +90,5 @@ public class ProcessInstanceRestServiceIT {
 
   private static Stream<Arguments> noPermissionGetParameters() {
     return Stream.of(Arguments.of("/1"), Arguments.of("/1/flow-node-states"));
-  }
-
-  private static Stream<Arguments> noPermissionPostParameters() {
-    return Stream.of(
-        Arguments.of(
-            "/1/modify",
-            new ModifyProcessInstanceRequestDto()
-                .setModifications(
-                    List.of(
-                        new Modification().setModification(Type.ADD_TOKEN).setToFlowNodeId("fid"))),
-            PermissionType.MODIFY_PROCESS_INSTANCE));
   }
 }
