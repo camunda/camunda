@@ -17,7 +17,6 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
-import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.*;
 import io.camunda.operate.webapp.rest.dto.activity.FlowNodeStateDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
@@ -61,7 +60,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
   private final ProcessInstanceReader processInstanceReader;
   private final ListenerReader listenerReader;
   private final ListViewReader listViewReader;
-  private final VariableReader variableReader;
   private final FlowNodeInstanceReader flowNodeInstanceReader;
   private final SequenceFlowStore sequenceFlowStore;
 
@@ -73,7 +71,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
       final ProcessInstanceReader processInstanceReader,
       final ListenerReader listenerReader,
       final ListViewReader listViewReader,
-      final VariableReader variableReader,
       final FlowNodeInstanceReader flowNodeInstanceReader,
       final SequenceFlowStore sequenceFlowStore) {
     this.permissionsService = permissionsService;
@@ -83,7 +80,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     this.processInstanceReader = processInstanceReader;
     this.listenerReader = listenerReader;
     this.listViewReader = listViewReader;
-    this.variableReader = variableReader;
     this.flowNodeInstanceReader = flowNodeInstanceReader;
     this.sequenceFlowStore = sequenceFlowStore;
   }
@@ -144,15 +140,6 @@ public class ProcessInstanceRestService extends InternalAPIErrorController {
     final List<SequenceFlowEntity> sequenceFlows =
         sequenceFlowStore.getSequenceFlowsByProcessInstanceKey(Long.valueOf(id));
     return DtoCreator.create(sequenceFlows, SequenceFlowDto.class);
-  }
-
-  @Operation(summary = "Get full variable by id")
-  @GetMapping("/{processInstanceId}/variables/{variableId}")
-  public VariableDto getVariable(
-      @PathVariable @ValidLongId final String processInstanceId,
-      @PathVariable final String variableId) {
-    checkIdentityReadPermission(Long.parseLong(processInstanceId));
-    return variableReader.getVariable(variableId);
   }
 
   @Operation(summary = "Get listeners by process instance id")

@@ -17,7 +17,6 @@ import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
 import io.camunda.operate.webapp.reader.ListViewReader;
 import io.camunda.operate.webapp.reader.ListenerReader;
-import io.camunda.operate.webapp.reader.VariableReader;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.operation.CreateOperationRequestDto;
 import io.camunda.operate.webapp.rest.exception.NotAuthorizedException;
@@ -44,7 +43,6 @@ public class ProcessInstanceRestServiceTest {
   @Mock private ProcessInstanceReader processInstanceReader;
   @Mock private ListenerReader listenerReader;
   @Mock private ListViewReader listViewReader;
-  @Mock private VariableReader variableReader;
   @Mock private FlowNodeInstanceReader flowNodeInstanceReader;
   @Mock private SequenceFlowStore sequenceFlowStore;
 
@@ -61,7 +59,6 @@ public class ProcessInstanceRestServiceTest {
             processInstanceReader,
             listenerReader,
             listViewReader,
-            variableReader,
             flowNodeInstanceReader,
             sequenceFlowStore);
 
@@ -221,26 +218,5 @@ public class ProcessInstanceRestServiceTest {
 
     assertThat(exception.getMessage())
         .contains("No UPDATE_PROCESS_INSTANCE permission for process instance");
-  }
-
-  @Test
-  public void testProcessInstanceSingleVariableFailsWhenNoPermissions() {
-    // given
-    final String processInstanceId = "123";
-    final String bpmnProcessId = "processId";
-    // when
-    when(processInstanceReader.getProcessInstanceByKey(Long.valueOf(processInstanceId)))
-        .thenReturn(new ProcessInstanceForListViewEntity().setBpmnProcessId(bpmnProcessId));
-    when(permissionsService.hasPermissionForProcess(
-            bpmnProcessId, PermissionType.READ_PROCESS_INSTANCE))
-        .thenReturn(false);
-
-    final NotAuthorizedException exception =
-        assertThatExceptionOfType(NotAuthorizedException.class)
-            .isThrownBy(() -> underTest.getVariable(processInstanceId, "var1"))
-            .actual();
-
-    assertThat(exception.getMessage())
-        .contains("No READ_PROCESS_INSTANCE permission for process instance");
   }
 }
