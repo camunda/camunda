@@ -108,7 +108,7 @@ public class RdbmsExporterWrapper implements Exporter {
 
     final int partitionId = context.getPartitionId();
     final var rdbmsWriterConfig =
-        config.createRdbmsWriterConfig(partitionId, vendorDatabaseProperties);
+        config.createRdbmsWriterConfig(partitionId, vendorDatabaseProperties, context.clock());
     final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(rdbmsWriterConfig);
 
     final var builder =

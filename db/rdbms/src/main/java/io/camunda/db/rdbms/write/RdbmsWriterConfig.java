@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.write;
 
 import io.camunda.util.ObjectBuilder;
 import java.time.Duration;
+import java.time.InstantSource;
 
 public record RdbmsWriterConfig(
     int partitionId,
@@ -29,7 +30,8 @@ public record RdbmsWriterConfig(
      */
     boolean exportBatchOperationItemsOnCreation,
     HistoryConfig history,
-    InsertBatchingConfig insertBatchingConfig) {
+    InsertBatchingConfig insertBatchingConfig,
+    InstantSource clock) {
 
   public static final int DEFAULT_QUEUE_SIZE = 1000;
   // Default memory limit: 20MB - aligned with CamundaExporter's default
@@ -51,6 +53,7 @@ public record RdbmsWriterConfig(
         DEFAULT_EXPORT_BATCH_OPERATION_ITEMS_ON_CREATION;
     private HistoryConfig history = new HistoryConfig.Builder().build();
     private InsertBatchingConfig insertBatchingConfig = new InsertBatchingConfig.Builder().build();
+    private InstantSource clock = InstantSource.system();
 
     public Builder partitionId(final int partitionId) {
       this.partitionId = partitionId;
@@ -88,6 +91,11 @@ public record RdbmsWriterConfig(
       return this;
     }
 
+    public Builder clock(final InstantSource clock) {
+      this.clock = clock;
+      return this;
+    }
+
     @Override
     public RdbmsWriterConfig build() {
       return new RdbmsWriterConfig(
@@ -97,7 +105,8 @@ public record RdbmsWriterConfig(
           batchOperationItemInsertBlockSize,
           exportBatchOperationItemsOnCreation,
           history,
-          insertBatchingConfig);
+          insertBatchingConfig,
+          clock);
     }
   }
 
