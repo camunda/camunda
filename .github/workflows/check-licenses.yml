@@ -6,6 +6,7 @@
 name: Check Licenses
 
 on:
+  workflow_dispatch: {}
   push:
     branches:
     - main
