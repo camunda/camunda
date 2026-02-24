@@ -457,7 +457,6 @@ const instanceWithIncident: InstanceMock = {
         tenantId: '<default>',
         state: 'ACTIVE',
         rootProcessInstanceKey: null,
-        // @ts-expect-error - TODO
         jobKey: null,
       },
     ],
