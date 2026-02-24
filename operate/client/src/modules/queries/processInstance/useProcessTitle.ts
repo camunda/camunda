@@ -15,7 +15,7 @@ const processTitleParser = (processInstance: ProcessInstance): string => {
 
   return PAGE_TITLE.INSTANCE(
     processInstance.processInstanceKey,
-    processDefinitionName || processDefinitionId || '',
+    processDefinitionName ?? processDefinitionId ?? '',
   );
 };
 
