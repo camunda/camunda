@@ -23,6 +23,7 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import {
   mockDecisionInstancesSearchResult,
   mockEmptyDecisionInstancesSearchResult,
+  mockLargeDecisionInstancesSearchResult,
 } from 'modules/mocks/mockDecisionInstanceSearch';
 import {
   assignApproverGroup,
@@ -324,5 +325,19 @@ describe('<InstancesTable />', () => {
     expect(
       screen.queryByRole('columnheader', {name: /Tenant/}),
     ).not.toBeInTheDocument();
+  });
+
+  it('should display "10000+ results" when there are more than 10000 results', async () => {
+    mockSearchDecisionInstances().withSuccess(
+      mockLargeDecisionInstancesSearchResult,
+    );
+
+    render(<InstancesTable />, {wrapper: createWrapper()});
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /decision instances - 10000\+ results/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

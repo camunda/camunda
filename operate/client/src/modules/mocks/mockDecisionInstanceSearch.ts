@@ -33,7 +33,19 @@ const mockEmptyDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody
     items: [],
   };
 
+const mockLargeDecisionInstancesSearchResult: QueryDecisionInstancesResponseBody =
+  {
+    page: {
+      totalItems: 10000,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: true,
+    },
+    items: [invoiceClassification, assignApproverGroup],
+  };
+
 export {
   mockDecisionInstancesSearchResult,
   mockEmptyDecisionInstancesSearchResult,
+  mockLargeDecisionInstancesSearchResult,
 };

@@ -48,12 +48,14 @@ const InstancesTable: React.FC = observer(() => {
       return {
         decisionInstances: data.pages.flatMap((page) => page.items),
         totalCount: data.pages.at(0)?.page.totalItems ?? 0,
+        hasMoreTotalItems: data.pages.at(0)?.page.hasMoreTotalItems ?? false,
       };
     },
   });
   const decisionInstances = data?.decisionInstances ?? [];
   const filteredDecisionInstancesCount = data?.totalCount ?? 0;
   const clientConfig = getClientConfig();
+  const hasMoreTotalItems = data?.hasMoreTotalItems ?? false;
 
   const getTableState = () => {
     switch (true) {
@@ -91,6 +93,7 @@ const InstancesTable: React.FC = observer(() => {
       <PanelHeader
         title="Decision Instances"
         count={filteredDecisionInstancesCount}
+        hasMoreTotalItems={hasMoreTotalItems}
       />
       <PaginatedSortableTable
         state={getTableState()}
