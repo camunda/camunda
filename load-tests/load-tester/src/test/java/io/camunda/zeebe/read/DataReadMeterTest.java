@@ -41,7 +41,6 @@ final class DataReadMeterTest {
   void setUp() {
     meterRegistry = new SimpleMeterRegistry();
     executor = new TestScheduledExecutor();
-    meter = new DataReadMeter(meterRegistry, executor);
   }
 
   @AfterEach
@@ -57,9 +56,11 @@ final class DataReadMeterTest {
     final var commandStep = mock(FinalCommandStep.class);
     when(commandStep.send()).thenReturn(TestCamundaFuture.completed(null));
 
-    final ReadQuery query = new ReadQuery("readSuccess", Duration.ofMillis(5), c -> commandStep);
+    final ReadQuery query =
+        new ReadQuery("readSuccess", Duration.ofMillis(5), (client, context) -> commandStep);
 
-    meter.start(mock(CamundaClient.class), List.of(query));
+    meter = new DataReadMeter(meterRegistry, executor, mock(CamundaClient.class), List.of(query));
+    meter.start();
 
     await()
         .atMost(Duration.ofSeconds(1))
@@ -89,10 +90,15 @@ final class DataReadMeterTest {
     final var commandStep = mock(FinalCommandStep.class);
     when(commandStep.send()).thenReturn(TestCamundaFuture.completed(null));
 
-    final ReadQuery first = new ReadQuery("first", Duration.ofMillis(5), c -> commandStep);
-    final ReadQuery second = new ReadQuery("second", Duration.ofMillis(5), c -> commandStep);
+    final ReadQuery first =
+        new ReadQuery("first", Duration.ofMillis(5), (client, context) -> commandStep);
+    final ReadQuery second =
+        new ReadQuery("second", Duration.ofMillis(5), (client, context) -> commandStep);
 
-    meter.start(mock(CamundaClient.class), List.of(first, second));
+    meter =
+        new DataReadMeter(
+            meterRegistry, executor, mock(CamundaClient.class), List.of(first, second));
+    meter.start();
 
     meter.close();
 

@@ -44,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BooleanSupplier;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,6 @@ public class Starter extends App {
   private final AtomicLong lastProcessInstanceKey = new AtomicLong(0);
   private final AtomicReference<Instant> lastProcessInstanceKeyTimestamp =
       new AtomicReference<>(Instant.now());
-  private long benchmarkProcessDefinitionKey;
 
   Starter(final AppCfg config) {
     super(config);
@@ -81,7 +81,6 @@ public class Starter extends App {
 
     // init - check for topology and deploy process
     printTopology(client);
-    deployProcess(client, starterCfg);
 
     if (config.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter(client);
@@ -89,6 +88,12 @@ public class Starter extends App {
 
     if (config.isPerformReadBenchmarks()) {
       setupDataReadMeter(client);
+    }
+
+    deployProcess(client, starterCfg);
+
+    if (config.isPerformReadBenchmarks()) {
+      dataReadMeter.start();
     }
 
     // setup to start instances on given rate
@@ -164,12 +169,15 @@ public class Starter extends App {
 
   private void setupDataReadMeter(final CamundaClient client) {
     LOG.info("Starting read benchmark queries");
-    dataReadMeter = new DataReadMeter(registry, Executors.newScheduledThreadPool(2));
-
-    dataReadMeter.start(
-        client,
-        DataReadMeterQueryProvider.getDefaultQueries(
-            starterCfg, businessKey, benchmarkProcessDefinitionKey, lastProcessInstanceKey));
+    dataReadMeter =
+        new DataReadMeter(
+            registry,
+            Executors.newScheduledThreadPool(2),
+            client,
+            DataReadMeterQueryProvider.getDefaultQueries());
+    dataReadMeter.setContextProcessDefinitionId(starterCfg.getProcessId());
+    dataReadMeter.setContextBusinessKeySupplier(
+        () -> Pair.of(starterCfg.getBusinessKey(), businessKey.get() - starterCfg.getRate() * 60L));
   }
 
   private ScheduledFuture<?> scheduleProcessInstanceCreation(
@@ -259,7 +267,10 @@ public class Starter extends App {
                       .plus(1, ChronoUnit.MINUTES)
                       .isBefore(Instant.now())) {
                 lastProcessInstanceKeyTimestamp.set(Instant.now());
-                lastProcessInstanceKey.set(response.getProcessInstanceKey());
+                final var oldValue =
+                    lastProcessInstanceKey.getAndSet(response.getProcessInstanceKey());
+                dataReadMeter.setContextProcessInstanceKey(
+                    oldValue == 0 ? response.getProcessInstanceKey() : oldValue);
               }
               return response;
             });
@@ -309,12 +320,15 @@ public class Starter extends App {
     while (true) {
       try {
         final var result = deployCmd.send().join();
-        benchmarkProcessDefinitionKey =
+        final var benchmarkProcessDefinitionKey =
             result.getProcesses().stream()
                 .filter(p -> p.getBpmnProcessId().equals(starterCfg.getProcessId()))
                 .findFirst()
                 .map(Process::getProcessDefinitionKey)
                 .orElse(0L);
+        if (config.isPerformReadBenchmarks()) {
+          dataReadMeter.setContextProcessDefinitionKey(benchmarkProcessDefinitionKey);
+        }
         break;
       } catch (final Exception e) {
         THROTTLED_LOGGER.warn("Failed to deploy process, retrying", e);

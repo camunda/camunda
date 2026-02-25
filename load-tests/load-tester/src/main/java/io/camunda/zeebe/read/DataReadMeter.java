@@ -20,7 +20,9 @@ import java.util.List;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
+import java.util.function.BiFunction;
+import java.util.function.Supplier;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,16 +32,25 @@ public class DataReadMeter implements AutoCloseable {
   private final ScheduledExecutorService executorService;
   private final List<ScheduledFuture<?>> scheduledTasks;
   private final MeterRegistry registry;
+  private final CamundaClient client;
+  private final List<ReadQuery> queries;
+  private ReadQueryContext queryContext =
+      new ReadQueryContext(0L, "", 0L, () -> Pair.of("foo", 0L));
 
   public DataReadMeter(
-      final MeterRegistry meterRegistry, final ScheduledExecutorService scheduledExecutorService) {
+      final MeterRegistry meterRegistry,
+      final ScheduledExecutorService scheduledExecutorService,
+      final CamundaClient client,
+      final List<ReadQuery> queries) {
     registry = meterRegistry;
     executorService = scheduledExecutorService;
     scheduledTasks = new ArrayList<>();
+    this.client = client;
+    this.queries = queries;
   }
 
   /** Starts the periodic execution of configured read queries. */
-  public void start(final CamundaClient client, final List<ReadQuery> queries) {
+  public void start() {
     for (final ReadQuery query : queries) {
       final Timer timer =
           MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.READ_BENCHMARK)
@@ -70,7 +81,7 @@ public class DataReadMeter implements AutoCloseable {
       // to limit parallel executions, we limit the scheduling frequency and execute synchronously
       // this might lead to less data points if a query execution takes longer than the scheduling
       // interval, but it prevents piling up of executions and thus influencing the actual load-test
-      query.queryFunction().apply(client).send().join();
+      query.queryFunction().apply(client, queryContext).send().join();
       final long durationNanos = System.nanoTime() - startTime;
       timer.record(durationNanos, TimeUnit.NANOSECONDS);
       LOG.debug(
@@ -92,6 +103,23 @@ public class DataReadMeter implements AutoCloseable {
     executorService.shutdownNow();
   }
 
+  public void setContextProcessInstanceKey(final long processInstanceKey) {
+    queryContext = queryContext.withProcessInstanceKey(processInstanceKey);
+  }
+
+  public void setContextProcessDefinitionId(final String processDefinitionId) {
+    queryContext = queryContext.withBenchmarkProcessDefinitionId(processDefinitionId);
+  }
+
+  public void setContextProcessDefinitionKey(final long processDefinitionKey) {
+    queryContext = queryContext.withBenchmarkProcessDefinitionKey(processDefinitionKey);
+  }
+
+  public void setContextBusinessKeySupplier(
+      final Supplier<Pair<String, Object>> businessKeySupplier) {
+    queryContext = queryContext.withBusinessKey(businessKeySupplier);
+  }
+
   /**
    * Represents a read query to be executed periodically.
    *
@@ -100,5 +128,47 @@ public class DataReadMeter implements AutoCloseable {
    * @param queryFunction a function that takes a CamundaClient and returns a CompletionStage
    */
   public record ReadQuery(
-      String name, Duration interval, Function<CamundaClient, FinalCommandStep<?>> queryFunction) {}
+      String name,
+      Duration interval,
+      BiFunction<CamundaClient, ReadQueryContext, FinalCommandStep<?>> queryFunction) {}
+
+  public record ReadQueryContext(
+      long processInstanceKey,
+      String benchmarkProcessDefinitionId,
+      long benchmarkProcessDefinitionKey,
+      Supplier<Pair<String, Object>> businessKeySupplier) {
+    public ReadQueryContext withProcessInstanceKey(final long processInstanceKey) {
+      return new ReadQueryContext(
+          processInstanceKey,
+          benchmarkProcessDefinitionId,
+          benchmarkProcessDefinitionKey,
+          businessKeySupplier);
+    }
+
+    public ReadQueryContext withBenchmarkProcessDefinitionId(
+        final String benchmarkProcessDefinitionId) {
+      return new ReadQueryContext(
+          processInstanceKey,
+          benchmarkProcessDefinitionId,
+          benchmarkProcessDefinitionKey,
+          businessKeySupplier);
+    }
+
+    public ReadQueryContext withBenchmarkProcessDefinitionKey(final long processDefinitionKey) {
+      return new ReadQueryContext(
+          processInstanceKey,
+          benchmarkProcessDefinitionId,
+          processDefinitionKey,
+          businessKeySupplier);
+    }
+
+    public ReadQueryContext withBusinessKey(
+        final Supplier<Pair<String, Object>> businessKeySupplier) {
+      return new ReadQueryContext(
+          processInstanceKey,
+          benchmarkProcessDefinitionId,
+          benchmarkProcessDefinitionKey,
+          businessKeySupplier);
+    }
+  }
 }
