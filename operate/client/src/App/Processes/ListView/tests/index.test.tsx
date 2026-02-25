@@ -477,4 +477,36 @@ describe('Instances', () => {
 
     expect(withinRow.getByText('FAILED')).toBeInTheDocument();
   });
+
+  it('should display "10000+ results" when there are more than 10000 results', async () => {
+    const mockLargeProcessInstancesResult: QueryProcessInstancesResponseBody = {
+      items: [
+        createProcessInstance({
+          processInstanceKey: '2251799813685594',
+          processDefinitionKey: '2251799813685592',
+          processDefinitionId: 'someKey',
+          processDefinitionName: 'someProcessName',
+          state: 'ACTIVE',
+        }),
+      ],
+      page: {
+        totalItems: 10000,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: true,
+      },
+    };
+
+    mockSearchProcessInstances().withSuccess(mockLargeProcessInstancesResult);
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}?active=true`),
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /process instances - 10000\+ results/i,
+      }),
+    ).toBeInTheDocument();
+  });
 });
