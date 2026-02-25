@@ -471,6 +471,10 @@ public final class ProcessInstanceModificationModifyProcessor
     // iterate over all active element instances, including child instances
     // use a queue to iterate over the descendants, recursion might lead to StackOverflow
     if (!moveInstructions.isEmpty() || !terminateInstructionIds.isEmpty()) {
+      // track MI body + resolved ancestor scope pairs that have already generated an activate
+      // instruction, to avoid creating one activate per child when moving out of an MI sub-process
+      // while still allowing one activate per source scope when moving inside it
+      final var activatedMiBodyAncestorAndScopeKeys = new HashSet<String>();
       final var elementInstances =
           new ArrayDeque<>(elementInstanceState.getChildren(processInstanceKey));
       while (!elementInstances.isEmpty()) {
@@ -482,17 +486,26 @@ public final class ProcessInstanceModificationModifyProcessor
           final var moveInstruction = moveInstructions.get(elementId);
           final var ancestorScopeKey =
               determineAncestorScopeKey(moveInstruction, elementInstance.getParentKey(), process);
-          final var activateInstruction =
-              new ProcessInstanceModificationActivateInstruction()
-                  .setElementId(moveInstruction.getTargetElementId())
-                  .setAncestorScopeKey(ancestorScopeKey);
-          moveInstruction
-              .getVariableInstructions()
-              .forEach(
-                  vi ->
-                      activateInstruction.addVariableInstruction(
-                          (ProcessInstanceModificationVariableInstruction) vi));
-          finalActivateInstructions.add(activateInstruction);
+          // Check whether this element instance is inside a multi-instance body. If so, deduplicate
+          // only when the resolved target ancestor scope is identical.
+          final var miBodyAncestorKey = findMiBodyAncestorKey(elementInstance.getParentKey());
+          final boolean shouldActivate =
+              miBodyAncestorKey < 0
+                  || activatedMiBodyAncestorAndScopeKeys.add(
+                      miBodyAncestorKey + ":" + ancestorScopeKey);
+          if (shouldActivate) {
+            final var activateInstruction =
+                new ProcessInstanceModificationActivateInstruction()
+                    .setElementId(moveInstruction.getTargetElementId())
+                    .setAncestorScopeKey(ancestorScopeKey);
+            moveInstruction
+                .getVariableInstructions()
+                .forEach(
+                    vi ->
+                        activateInstruction.addVariableInstruction(
+                            (ProcessInstanceModificationVariableInstruction) vi));
+            finalActivateInstructions.add(activateInstruction);
+          }
           // terminate source element instance
           finalTerminateInstructions.add(
               new ProcessInstanceModificationTerminateInstruction()
@@ -647,6 +660,29 @@ public final class ProcessInstanceModificationModifyProcessor
     // No matching ancestor found - return -1 to let the activation logic handle it
     // (it will create new flow scope instances as needed)
     return ElementActivationBehavior.NO_ANCESTOR_SCOPE_KEY;
+  }
+
+  /**
+   * Walks up the ancestor chain from the given key and returns the key of the first ancestor whose
+   * element type is {@link BpmnElementType#MULTI_INSTANCE_BODY}, or {@code -1} if none is found.
+   *
+   * <p>This is used to deduplicate activate instructions when a source element lives inside a
+   * multi-instance sub-process: all sibling instances share the same MI body ancestor, so only one
+   * activate instruction should be produced for the whole group.
+   */
+  private long findMiBodyAncestorKey(final long startKey) {
+    var currentKey = startKey;
+    while (currentKey > 0) {
+      final var instance = elementInstanceState.getInstance(currentKey);
+      if (instance == null) {
+        break;
+      }
+      if (instance.getValue().getBpmnElementType() == BpmnElementType.MULTI_INSTANCE_BODY) {
+        return currentKey;
+      }
+      currentKey = instance.getParentKey();
+    }
+    return -1;
   }
 
   private Either<Rejection, ?> validateCommand(
