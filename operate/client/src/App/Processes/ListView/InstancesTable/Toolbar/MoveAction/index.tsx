@@ -18,8 +18,6 @@ import {isWithinMultiInstance} from 'modules/bpmn-js/utils/isWithinMultiInstance
 import {isAttachedToAnEventBasedGateway} from 'modules/bpmn-js/utils/isAttachedToAnEventBasedGateway';
 import isNil from 'lodash/isNil';
 import {ModalStateManager} from 'modules/components/ModalStateManager';
-import modalButtonsImageLight from './images/modal-buttons-image-light.png';
-import modalButtonsImageDark from './images/modal-buttons-image-dark.png';
 import modalDiagramImageLight from './images/modal-diagram-image-light.png';
 import modalDiagramImageDark from './images/modal-diagram-image-dark.png';
 import {currentTheme} from 'modules/stores/currentTheme';
@@ -144,18 +142,7 @@ const MoveAction: React.FC = observer(() => {
                 alt="A bpmn diagram with a selected element"
               />
             )}
-            <div>2. Apply</div>
-            {currentTheme.theme === 'light' ? (
-              <img
-                src={modalButtonsImageLight}
-                alt="A button with the label Apply Modifications"
-              />
-            ) : (
-              <img
-                src={modalButtonsImageDark}
-                alt="A button with the label Apply Modifications"
-              />
-            )}
+            <div>2. Click “Review Modification”.</div>
           </Stack>
         </HelperModal>
       )}
