@@ -89,7 +89,7 @@ test.describe('Process Instance Batch Modification', () => {
     // Select target flow node
     await processesPage.diagram.clickFlowNode('Ship Articles');
 
-    const notificationText = `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Apply Modification” button to confirm.`;
+    const notificationText = `Modification scheduled: Move ${NUM_SELECTED_PROCESS_INSTANCES} instances from “Check payment” to “Ship Articles”. Press “Review Modification” button to confirm.`;
     await expect(page.getByText(notificationText)).toBeVisible();
 
     // Check that Undo button is working
@@ -101,7 +101,7 @@ test.describe('Process Instance Batch Modification', () => {
 
     await expect(page.getByText(notificationText)).toBeVisible();
 
-    await page.getByRole('button', {name: /apply modification/i}).click();
+    await page.getByRole('button', {name: /review modification/i}).click();
 
     // Expect that modal is open with "apply modifications" title
     await expect(
