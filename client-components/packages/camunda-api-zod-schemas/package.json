@@ -378,6 +378,18 @@
 				"default": "./dist/8.9/incident.js"
 			}
 		},
+		"./8.9/cluster-variable": {
+			"import": {
+				"types": "./dist/8.9/cluster-variable.d.ts",
+				"default": "./dist/8.9/cluster-variable.js"
+			}
+		},
+		"./8.9/global-task-listener": {
+			"import": {
+				"types": "./dist/8.9/global-task-listener.d.ts",
+				"default": "./dist/8.9/global-task-listener.js"
+			}
+		},
 		"./package.json": "./package.json"
 	},
 	"publishConfig": {
