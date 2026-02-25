@@ -239,7 +239,7 @@ test.describe('modifications', () => {
 
     await page
       .getByRole('button', {
-        name: /apply modifications/i,
+        name: /review modifications/i,
       })
       .click();
 
