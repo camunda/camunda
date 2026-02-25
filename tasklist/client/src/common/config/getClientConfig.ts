@@ -18,7 +18,6 @@ const ClientConfigSchema = z.object({
   clusterId: z.string().min(1).nullable().optional().default(null),
   mixpanelToken: z.string().nullable().optional().default(null),
   mixpanelAPIHost: z.string().nullable().optional().default(null),
-  isResourcePermissionsEnabled: z.boolean().nullable().optional().default(null),
   isMultiTenancyEnabled: z.boolean().optional().default(false),
   maxRequestSize: z
     .number()
