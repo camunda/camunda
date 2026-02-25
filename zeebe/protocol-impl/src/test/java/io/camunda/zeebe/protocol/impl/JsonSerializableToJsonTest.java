@@ -652,7 +652,8 @@ final class JsonSerializableToJsonTest {
                   .setExpression("=10 + 5")
                   .setResultValue(wrapString("15"))
                   .setTenantId("test-tenant")
-                  .setWarnings(List.of("warning1", "warning2"));
+                  .setWarnings(List.of("warning1", "warning2"))
+                  .setContext(Map.of("foo", "bar"));
               return record;
             },
         """
@@ -660,7 +661,10 @@ final class JsonSerializableToJsonTest {
                   "tenantId":"test-tenant",
                   "expression":"=10 + 5",
                   "resultValue":49,
-                  "warnings":["warning1","warning2"]
+                  "warnings":["warning1","warning2"],
+                  "context":{
+                    "foo":"bar"
+                  }
                 }
                 """
       },

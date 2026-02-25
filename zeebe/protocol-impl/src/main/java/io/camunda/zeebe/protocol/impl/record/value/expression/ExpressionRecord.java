@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -27,6 +28,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue RESULT_VALUE_KEY = new StringValue("resultValue");
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue CONTEXT_KEY = new StringValue("context");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -37,12 +39,17 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
       new ArrayProperty<>(WARNINGS_KEY, StringValue::new);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
+  private final BinaryProperty contextProp =
+      new BinaryProperty(
+          CONTEXT_KEY, new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of())));
+
   public ExpressionRecord() {
-    super(4);
+    super(5);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(contextProp);
   }
 
   @Override
@@ -52,6 +59,16 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setExpression(final String expression) {
     expressionProp.setValue(expression);
+    return this;
+  }
+
+  @Override
+  public Map<String, Object> getContext() {
+    return MsgPackConverter.convertToMap(contextProp.getValue());
+  }
+
+  public ExpressionRecord setContext(final Map<String, Object> context) {
+    contextProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(context)));
     return this;
   }
 
