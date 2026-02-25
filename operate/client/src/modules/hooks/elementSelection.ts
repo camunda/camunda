@@ -8,8 +8,8 @@
 
 import {modificationsStore} from 'modules/stores/modifications';
 import {
-  useModificationsByFlowNode,
-  useWillAllFlowNodesBeCanceled,
+  useModificationsByElement,
+  useWillAllElementsBeCanceled,
 } from './modifications';
 import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
 import {TOKEN_OPERATIONS} from 'modules/constants';
@@ -22,16 +22,16 @@ import {useEffect} from 'react';
 import {reaction} from 'mobx';
 
 const useHasPendingCancelOrMoveModification = () => {
-  const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
-  const modificationsByFlowNode = useModificationsByFlowNode();
+  const willAllElementsBeCanceled = useWillAllElementsBeCanceled();
+  const modificationsByElement = useModificationsByElement();
   const {hasSelection, selectedElementInstanceKey, selectedElementId} =
     useProcessInstanceElementSelection();
 
   if (!hasSelection || selectedElementId === null) {
-    return willAllFlowNodesBeCanceled;
+    return willAllElementsBeCanceled;
   }
 
-  if (modificationsByFlowNode[selectedElementId]?.areAllTokensCanceled) {
+  if (modificationsByElement[selectedElementId]?.areAllTokensCanceled) {
     return true;
   }
 
@@ -40,7 +40,7 @@ const useHasPendingCancelOrMoveModification = () => {
     hasPendingCancelOrMoveModification({
       flowNodeId: selectedElementId,
       flowNodeInstanceKey: selectedElementInstanceKey,
-      modificationsByFlowNode,
+      modificationsByFlowNode: modificationsByElement,
     })
   );
 };
@@ -129,7 +129,7 @@ const useHasRunningOrFinishedTokens = () => {
 };
 
 const useNewTokenCountForSelectedNode = () => {
-  const modificationsByFlowNode = useModificationsByFlowNode();
+  const modificationsByElement = useModificationsByElement();
   const {selectedElementId} = useProcessInstanceElementSelection();
 
   if (!selectedElementId) {
@@ -137,7 +137,7 @@ const useNewTokenCountForSelectedNode = () => {
   }
 
   return (
-    (modificationsByFlowNode[selectedElementId]?.newTokens ?? 0) +
+    (modificationsByElement[selectedElementId]?.newTokens ?? 0) +
     modificationsStore.flowNodeModifications.filter(
       (modification) =>
         modification.operation !== TOKEN_OPERATIONS.CANCEL_TOKEN &&
@@ -157,7 +157,7 @@ const useIsPlaceholderSelected = () => {
   );
 };
 
-const useSelectedFlowNodeName = () => {
+const useSelectedElementName = () => {
   const {data: processInstance} = useProcessInstance();
   const {data: businessObjects} = useBusinessObjects();
   const {hasSelection, selectedElementId} =
@@ -178,6 +178,6 @@ export {
   useHasRunningOrFinishedTokens,
   useIsPlaceholderSelected,
   useNewTokenCountForSelectedNode,
-  useSelectedFlowNodeName,
+  useSelectedElementName,
   useClearSelectionOnModificationUndo,
 };

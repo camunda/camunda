@@ -21,9 +21,9 @@ import {
 } from 'modules/stores/modifications';
 import {useMemo} from 'react';
 import {
-  useAppendableFlowNodes,
-  useCancellableFlowNodes,
-  useNonModifiableFlowNodes,
+  useAppendableElements,
+  useCancellableElements,
+  useNonModifiableElements,
 } from './processInstanceDetailsDiagram';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
 import {useHasPendingCancelOrMoveModification} from './elementSelection';
@@ -35,9 +35,9 @@ type ModificationOption =
   | 'move-all'
   | 'move-instance';
 
-const useWillAllFlowNodesBeCanceled = () => {
+const useWillAllElementsBeCanceled = () => {
   const {data: statistics} = useElementInstancesStatistics();
-  const modificationsByFlowNode = useModificationsByFlowNode();
+  const modificationsByElement = useModificationsByElement();
 
   if (
     modificationsStore.flowNodeModifications.some(
@@ -53,12 +53,12 @@ const useWillAllFlowNodesBeCanceled = () => {
     statistics?.items.every(
       ({elementId, active, incidents}) =>
         (active === 0 && incidents === 0) ||
-        modificationsByFlowNode[elementId]?.areAllTokensCanceled,
+        modificationsByElement[elementId]?.areAllTokensCanceled,
     ) || false
   );
 };
 
-const useModificationsByFlowNode = () => {
+const useModificationsByElement = () => {
   const flowNodeIds = modificationsStore.flowNodeModifications.map(
     (modification) => modification.flowNode.id,
   );
@@ -109,11 +109,11 @@ const useModificationsByFlowNode = () => {
       visibleCancelledTokens: number;
       areAllTokensCanceled: boolean;
     };
-  }>((modificationsByFlowNode, payload) => {
+  }>((modificationsByElement, payload) => {
     const {flowNode, operation, affectedTokenCount, visibleAffectedTokenCount} =
       payload;
 
-    const sourceFlowNode = modificationsByFlowNode[flowNode.id] ?? {
+    const sourceFlowNode = modificationsByElement[flowNode.id] ?? {
       ...EMPTY_MODIFICATION,
     };
 
@@ -121,12 +121,12 @@ const useModificationsByFlowNode = () => {
 
     if (operation === TOKEN_OPERATIONS.ADD_TOKEN) {
       sourceFlowNode.newTokens += affectedTokenCount;
-      modificationsByFlowNode[flowNode.id] = sourceFlowNode;
-      return modificationsByFlowNode;
+      modificationsByElement[flowNode.id] = sourceFlowNode;
+      return modificationsByElement;
     }
 
     if (sourceFlowNode.areAllTokensCanceled) {
-      return modificationsByFlowNode;
+      return modificationsByElement;
     }
 
     if (payload.flowNodeInstanceKey === undefined) {
@@ -141,7 +141,7 @@ const useModificationsByFlowNode = () => {
       sourceFlowNode.cancelledTokens === totalRunningInstancesCount;
 
     if (operation === TOKEN_OPERATIONS.MOVE_TOKEN) {
-      const targetFlowNode = modificationsByFlowNode[
+      const targetFlowNode = modificationsByElement[
         payload.targetFlowNode.id
       ] ?? {
         ...EMPTY_MODIFICATION,
@@ -153,7 +153,7 @@ const useModificationsByFlowNode = () => {
         ? 1
         : affectedTokenCount;
 
-      modificationsByFlowNode[payload.targetFlowNode.id] = targetFlowNode;
+      modificationsByElement[payload.targetFlowNode.id] = targetFlowNode;
     }
 
     if (operation === TOKEN_OPERATIONS.CANCEL_TOKEN) {
@@ -163,7 +163,7 @@ const useModificationsByFlowNode = () => {
 
         let affectedChildTokenCount = 0;
         elementIds.forEach((elementId) => {
-          const childFlowNode = modificationsByFlowNode[elementId] ?? {
+          const childFlowNode = modificationsByElement[elementId] ?? {
             ...EMPTY_MODIFICATION,
           };
 
@@ -181,24 +181,24 @@ const useModificationsByFlowNode = () => {
 
           affectedChildTokenCount += childFlowNode.visibleCancelledTokens;
 
-          modificationsByFlowNode[elementId] = childFlowNode;
+          modificationsByElement[elementId] = childFlowNode;
         });
 
         sourceFlowNode.cancelledChildTokens = affectedChildTokenCount;
       }
     }
 
-    modificationsByFlowNode[flowNode.id] = sourceFlowNode;
-    return modificationsByFlowNode;
+    modificationsByElement[flowNode.id] = sourceFlowNode;
+    return modificationsByElement;
   }, {});
 };
 
 const useNewScopeKeyForElement = (elementId: string | null) => {
-  const modificationsByFlowNode = useModificationsByFlowNode();
+  const modificationsByElement = useModificationsByElement();
 
   if (
     elementId === null ||
-    (modificationsByFlowNode[elementId]?.newTokens ?? 0) !== 1
+    (modificationsByElement[elementId]?.newTokens ?? 0) !== 1
   ) {
     return null;
   }
@@ -233,7 +233,7 @@ const useCanBeCanceled = (
   runningElementInstanceCount: number,
   elementId?: string,
 ) => {
-  const cancellableFlowNodes = useCancellableFlowNodes();
+  const cancellableFlowNodes = useCancellableElements();
   const canBeModified = useCanBeModified(elementId);
   const hasPendingCancelOrMoveModification =
     useHasPendingCancelOrMoveModification();
@@ -250,7 +250,7 @@ const useCanBeCanceled = (
 };
 
 const useCanBeModified = (elementId?: string) => {
-  const nonModifiableFlowNodes = useNonModifiableFlowNodes();
+  const nonModifiableFlowNodes = useNonModifiableElements();
 
   if (elementId === undefined) {
     return false;
@@ -275,7 +275,7 @@ const useAvailableModifications = ({
   isElementInstanceKeyAvailable,
 }: UseAvailableModificationsParams) => {
   const options: ModificationOption[] = [];
-  const appendableFlowNodes = useAppendableFlowNodes();
+  const appendableFlowNodes = useAppendableElements();
   const {data: businessObjects} = useBusinessObjects();
   const canBeCanceled = useCanBeCanceled(
     runningElementInstanceCount,
@@ -326,7 +326,7 @@ const useAvailableModifications = ({
 export {
   useAvailableModifications,
   useCanBeModified,
-  useModificationsByFlowNode,
+  useModificationsByElement,
   useNewScopeKeyForElement,
-  useWillAllFlowNodesBeCanceled,
+  useWillAllElementsBeCanceled,
 };
