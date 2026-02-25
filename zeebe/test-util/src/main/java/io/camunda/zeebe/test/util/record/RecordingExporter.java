@@ -144,7 +144,7 @@ public final class RecordingExporter implements Exporter {
   private static final Condition IS_EMPTY = LOCK.newCondition();
   private static long maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
   private static volatile boolean autoAcknowledge = true;
-  private static boolean overrideShortCircuitingCheck = false;
+  private static boolean disableShortCircuitingCheck = false;
   private Controller controller;
 
   static long getMaximumWaitTime() {
@@ -206,7 +206,7 @@ public final class RecordingExporter implements Exporter {
       maximumWaitTime = DEFAULT_MAX_WAIT_TIME;
       RECORDS.clear();
       autoAcknowledge = true;
-      overrideShortCircuitingCheck = false;
+      disableShortCircuitingCheck = false;
     } finally {
       LOCK.unlock();
     }
@@ -766,12 +766,12 @@ public final class RecordingExporter implements Exporter {
   public static <T> T expectNoMatchingRecords(final Function<RecordStream, T> consumer) {
     final var previousMaximumWaitTime = maximumWaitTime;
     maximumWaitTime = DEFAULT_NON_EXISTENCE_MAX_WAIT_TIME;
-    overrideShortCircuitingCheck = true;
+    disableShortCircuitingCheck = true;
     try {
       return consumer.apply(records());
     } finally {
       maximumWaitTime = previousMaximumWaitTime;
-      overrideShortCircuitingCheck = false;
+      disableShortCircuitingCheck = false;
     }
   }
 
@@ -781,20 +781,20 @@ public final class RecordingExporter implements Exporter {
       final var previousMaximumWaitTime = maximumWaitTime;
       try {
         maximumWaitTime = DEFAULT_AWAITILITY_MAX_WAIT_TIME;
-        overrideShortCircuitingCheck = true;
+        disableShortCircuitingCheck = true;
         conditionFactory.untilAsserted(throwingRunnable);
       } finally {
         maximumWaitTime = previousMaximumWaitTime;
-        overrideShortCircuitingCheck = false;
+        disableShortCircuitingCheck = false;
       }
     }
 
     public void until(final Callable<Boolean> callable) {
       try {
-        overrideShortCircuitingCheck = true;
+        disableShortCircuitingCheck = true;
         conditionFactory.until(callable);
       } finally {
-        overrideShortCircuitingCheck = false;
+        disableShortCircuitingCheck = false;
       }
     }
   }
@@ -817,7 +817,7 @@ public final class RecordingExporter implements Exporter {
           final long waitTime = endTime - now;
           try {
             final var isConditionMetInTime = IS_EMPTY.await(waitTime, TimeUnit.MILLISECONDS);
-            if (!isConditionMetInTime && !overrideShortCircuitingCheck) {
+            if (!isConditionMetInTime && !disableShortCircuitingCheck) {
               throw new IllegalStateException(
                   """
                   Timed out waiting for records to be exported. Please ensure your test is short-circuiting properly.
