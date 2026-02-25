@@ -360,7 +360,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
         businessObjects,
       });
       const isExpanded =
-        instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
+        instanceHistoryModificationStore.state.expandedElementInstanceIds.includes(
           scopeKey,
         );
 
@@ -417,11 +417,11 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
           key={scopeKey}
           onToggle={() => {
             if (isExpanded) {
-              instanceHistoryModificationStore.removeFromExpandedFlowNodeInstanceIds(
+              instanceHistoryModificationStore.removeFromExpandedElementInstanceIds(
                 scopeKey,
               );
             } else {
-              instanceHistoryModificationStore.addExpandedFlowNodeInstanceIds(
+              instanceHistoryModificationStore.addExpandedElementInstanceIds(
                 scopeKey,
               );
             }

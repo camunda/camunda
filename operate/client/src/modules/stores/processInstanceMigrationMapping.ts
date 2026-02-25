@@ -55,28 +55,28 @@ class ProcessInstanceMigrationMappingStore {
   }
 
   /**
-   * Returns an array of source flow nodes which each contains an array of mappable target flow nodes.
+   * Returns an array of source elements which each contains an array of mappable target elements.
    */
-  getMappableFlowNodes(
-    selectableSourceFlowNodes?: BusinessObject[],
-    selectableTargetFlowNodes?: BusinessObject[],
+  getMappableElements(
+    selectableSourceElements?: BusinessObject[],
+    selectableTargetElements?: BusinessObject[],
   ) {
-    if (!selectableTargetFlowNodes) {
+    if (!selectableTargetElements) {
       return [];
     }
 
-    const sourceFlowNodeMappings = selectableSourceFlowNodes?.map(
-      (sourceFlowNode) => {
+    const sourceElementMappings = selectableSourceElements?.map(
+      (sourceElement) => {
         return {
-          sourceElement: {id: sourceFlowNode.id, name: sourceFlowNode.name},
-          selectableTargetElement: selectableTargetFlowNodes
-            .filter((targetFlowNode) => {
+          sourceElement: {id: sourceElement.id, name: sourceElement.name},
+          selectableTargetElement: selectableTargetElements
+            .filter((targetElement) => {
               /**
-               * For events allow only target flow nodes with the same event type
+               * For events allow only target elements with the same event type
                */
               if (
                 hasType({
-                  businessObject: sourceFlowNode,
+                  businessObject: sourceElement,
                   types: [
                     'bpmn:StartEvent',
                     'bpmn:IntermediateCatchEvent',
@@ -85,18 +85,18 @@ class ProcessInstanceMigrationMappingStore {
                 })
               ) {
                 return (
-                  sourceFlowNode.$type === targetFlowNode.$type &&
-                  getEventType(sourceFlowNode) === getEventType(targetFlowNode)
+                  sourceElement.$type === targetElement.$type &&
+                  getEventType(sourceElement) === getEventType(targetElement)
                 );
               }
 
               /**
                * For event sub processes allow only mapping with the same event type (message, timer or error)
                */
-              if (isEventSubProcess({businessObject: sourceFlowNode})) {
+              if (isEventSubProcess({businessObject: sourceElement})) {
                 return (
-                  getEventSubProcessType({businessObject: sourceFlowNode}) ===
-                  getEventSubProcessType({businessObject: targetFlowNode})
+                  getEventSubProcessType({businessObject: sourceElement}) ===
+                  getEventSubProcessType({businessObject: targetElement})
                 );
               }
 
@@ -104,10 +104,10 @@ class ProcessInstanceMigrationMappingStore {
                * Prevent mapping between event and non-event sub processes
                */
               if (
-                (isEventSubProcess({businessObject: sourceFlowNode}) &&
-                  !isEventSubProcess({businessObject: targetFlowNode})) ||
-                (!isEventSubProcess({businessObject: sourceFlowNode}) &&
-                  isEventSubProcess({businessObject: targetFlowNode}))
+                (isEventSubProcess({businessObject: sourceElement}) &&
+                  !isEventSubProcess({businessObject: targetElement})) ||
+                (!isEventSubProcess({businessObject: sourceElement}) &&
+                  isEventSubProcess({businessObject: targetElement}))
               ) {
                 return false;
               }
@@ -117,20 +117,20 @@ class ProcessInstanceMigrationMappingStore {
                * e.g. sequential multi instance task -> sequential multi instance task
                */
               if (
-                isMultiInstance(sourceFlowNode) ||
-                isMultiInstance(targetFlowNode)
+                isMultiInstance(sourceElement) ||
+                isMultiInstance(targetElement)
               ) {
                 return (
-                  sourceFlowNode.$type === targetFlowNode.$type &&
-                  getMultiInstanceType(sourceFlowNode) ===
-                    getMultiInstanceType(targetFlowNode)
+                  sourceElement.$type === targetElement.$type &&
+                  getMultiInstanceType(sourceElement) ===
+                    getMultiInstanceType(targetElement)
                 );
               }
 
               /**
-               * For all other flow nodes allow target flow nodes with the same element type
+               * For all other elements allow target elements with the same element type
                */
-              return sourceFlowNode.$type === targetFlowNode.$type;
+              return sourceElement.$type === targetElement.$type;
             })
             .map(({id, name}) => ({
               id,
@@ -140,7 +140,7 @@ class ProcessInstanceMigrationMappingStore {
       },
     );
 
-    return sourceFlowNodeMappings ?? [];
+    return sourceElementMappings ?? [];
   }
 
   toggleMappedFilter = () => {

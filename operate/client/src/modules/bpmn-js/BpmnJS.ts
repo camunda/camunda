@@ -242,11 +242,11 @@ class BpmnJS {
       this.#overlaysData = overlaysData;
 
       overlaysData.forEach(
-        ({payload, flowNodeId, position, type, isZoomFixed}) => {
+        ({payload, elementId, position, type, isZoomFixed}) => {
           const container = document.createElement('div');
 
           this.#attachOverlay({
-            elementId: flowNodeId,
+            elementId: elementId,
             children: container,
             position,
             type,
@@ -256,7 +256,7 @@ class BpmnJS {
           diagramOverlaysStore.addOverlay({
             container,
             payload,
-            flowNodeId,
+            elementId: elementId,
             type,
           });
         },

@@ -503,7 +503,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
@@ -525,7 +525,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test2',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test2',
@@ -547,7 +547,7 @@ describe('stores/modifications', () => {
       ),
     ).toEqual({
       operation: 'EDIT_VARIABLE',
-      elementName: 'flow-node-name',
+      elementName: 'element-name',
       id: 'test',
       scopeId: ELEMENT_INSTANCE_ID,
       name: 'test',
@@ -1200,7 +1200,7 @@ describe('stores/modifications', () => {
     expect(errorSpy).toHaveBeenCalledExactlyOnceWith(400);
   });
 
-  it('should add tokens to flow nodes that has multiple running scopes', async () => {
+  it('should add tokens to elements that has multiple running scopes', async () => {
     expect(modificationsStore.state.sourceElementIdForAddOperation).toBeNull();
 
     modificationsStore.startAddingToken('subprocess-service-task');

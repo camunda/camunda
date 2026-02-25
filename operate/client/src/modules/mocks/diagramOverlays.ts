@@ -10,7 +10,7 @@ const createStartEventOverlay = (container: HTMLElement, type: string) => {
   return {
     payload: {data: {foo: 'example start event data'}},
     container,
-    flowNodeId: 'startEvent_1',
+    elementId: 'startEvent_1',
     type,
   };
 };
@@ -19,7 +19,7 @@ const createTaskOverlay = (container: HTMLElement, type: string) => {
   return {
     payload: {data: {foo: 'example task data'}},
     container,
-    flowNodeId: 'task_1',
+    elementId: 'task_1',
     type,
   };
 };

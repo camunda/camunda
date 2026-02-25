@@ -36,7 +36,7 @@ function batchModificationOverlayParser(params: {
           cancelledTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
         },
         type: 'batchModificationsBadge',
-        flowNodeId: sourceFlowNodeId,
+        elementId: sourceFlowNodeId,
         position: MODIFICATIONS,
       },
       {
@@ -44,7 +44,7 @@ function batchModificationOverlayParser(params: {
           newTokenCount: getInstancesCount(data.items, sourceFlowNodeId),
         },
         type: 'batchModificationsBadge',
-        flowNodeId: targetFlowNodeId,
+        elementId: targetFlowNodeId,
         position: MODIFICATIONS,
       },
     ];

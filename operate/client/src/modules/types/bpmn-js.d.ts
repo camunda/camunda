@@ -128,7 +128,7 @@ declare module 'bpmn-js/lib/NavigatedViewer' {
       flowNodeState: string;
     };
     type: string;
-    flowNodeId: string;
+    elementId: string;
     position: OverlayPosition;
   };
 

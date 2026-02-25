@@ -11,7 +11,7 @@ import {makeAutoObservable} from 'mobx';
 type Overlay = {
   payload?: unknown;
   container: HTMLElement;
-  flowNodeId: string;
+  elementId: string;
   type: string;
 };
 
