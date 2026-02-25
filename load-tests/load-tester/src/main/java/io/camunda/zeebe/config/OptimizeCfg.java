@@ -8,22 +8,17 @@
 package io.camunda.zeebe.config;
 
 public final class OptimizeCfg {
-  private String baseUrl = getEnvOrDefault("OPTIMIZE_BASE_URL", "http://localhost:8083");
-  private String keycloakUrl = getEnvOrDefault("OPTIMIZE_KEYCLOAK_URL", "http://localhost:18080");
-  private String realm = getEnvOrDefault("OPTIMIZE_REALM", "camunda-platform");
-  private String clientId = getEnvOrDefault("OPTIMIZE_CLIENT_ID", "optimize");
-  private String clientSecret = getEnvOrDefault("OPTIMIZE_CLIENT_SECRET", "demo-optimize-secret");
-  private String username = getEnvOrDefault("OPTIMIZE_USERNAME", "demo");
-  private String password = getEnvOrDefault("OPTIMIZE_PASSWORD", "demo");
+  private String baseUrl;
+  private String keycloakUrl;
+  private String realm;
+  private String clientId;
+  private String clientSecret;
+  private String username;
+  private String password;
   private String reportId;
   private boolean enableOptimize = false;
   private int evaluationIntervalSeconds = 60; // Default: 10 minutes
   private int durationLimit = 0; // 0 means run forever
-
-  private static String getEnvOrDefault(final String envVar, final String defaultValue) {
-    final String value = System.getenv(envVar);
-    return value != null && !value.isEmpty() ? value : defaultValue;
-  }
 
   public String getBaseUrl() {
     return baseUrl;
