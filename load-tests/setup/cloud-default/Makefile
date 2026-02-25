@@ -40,7 +40,7 @@ install-load-test:
 		--set saas.credentials.authServer="$(ZEEBE_AUTHORIZATION_SERVER_URL)" \
 		--set saas.credentials.authType="OAUTH" \
 		--set saas.credentials.zeebeGrpcAddress="$(ZEEBE_GRPC_ADDRESS)" \
-		--set saas.credentials.authorizationAudience="$(ZEEBE_TOKEN_AUDIENCE)"
+		--set saas.credentials.authorizationAudience="$(ZEEBE_TOKEN_AUDIENCE)" \
 		$(additional_load_test_configuration)
 
 .PHONY: clean
