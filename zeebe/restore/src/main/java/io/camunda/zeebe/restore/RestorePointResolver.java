@@ -154,14 +154,14 @@ public class RestorePointResolver {
   /** Finds all checkpoints that fit within the given range. */
   private static @NonNull List<CheckpointEntry> findRestorableCheckpoints(
       final BackupMetadata metadata, final RestorableRange restorableRange) {
-    final var usableCheckpoints = new ArrayList<CheckpointEntry>();
-    for (final var checkpointEntry : metadata.checkpoints()) {
-      if (checkpointEntry.checkpointPosition() >= restorableRange.start().firstLogPosition()
-          && checkpointEntry.checkpointPosition() <= restorableRange.end().checkpointPosition()) {
-        usableCheckpoints.add(checkpointEntry);
-      }
-    }
-    return usableCheckpoints;
+    return metadata.checkpoints().stream()
+        .filter(
+            checkpointEntry -> {
+              final var checkpointPosition = checkpointEntry.checkpointPosition();
+              return (checkpointPosition >= restorableRange.start().firstLogPosition())
+                  && (checkpointPosition <= restorableRange.end().checkpointPosition());
+            })
+        .collect(Collectors.toCollection(ArrayList::new));
   }
 
   /** Finds a range that fits the given {@code from} and {@code exportedPosition} criteria. */
