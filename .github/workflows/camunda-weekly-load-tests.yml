@@ -93,7 +93,6 @@ jobs:
     name: Optimize realistic load test
     uses: ./.github/workflows/camunda-load-test.yml
     secrets: inherit
-    permissions: {}
     needs:
       - test-data
     with:
