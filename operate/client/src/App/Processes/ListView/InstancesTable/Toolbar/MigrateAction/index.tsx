@@ -58,8 +58,12 @@ const MigrateAction: React.FC = observer(() => {
   };
 
   const handleSubmit = () => {
-    processInstanceMigrationStore.setSourceProcessDefinitionKey(
-      selectedProcessDefinition?.processDefinitionKey,
+    if (!selectedProcessDefinition) {
+      return;
+    }
+
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      selectedProcessDefinition,
     );
 
     processInstanceMigrationStore.setSelectedInstancesCount(

@@ -12,10 +12,8 @@ import {DiagramWrapper} from '../styled';
 import {observer} from 'mobx-react';
 import {TargetProcessField} from '../TargetProcessField';
 import {TargetVersionField} from '../TargetVersionField';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {DiagramShell} from 'modules/components/DiagramShell';
 import {Diagram} from 'modules/components/Diagram';
-import {useEffect} from 'react';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
 import {ModificationBadgeOverlay} from 'App/ProcessInstance/TopPanel/ModificationBadgeOverlay';
 import {useProcessInstancesElementStates} from 'modules/queries/processInstancesStatistics/useElementStates';
@@ -26,13 +24,8 @@ const OVERLAY_TYPE = 'migrationTargetSummary';
 
 const TargetDiagram: React.FC = observer(() => {
   const {
-    migrationState: {selectedTargetVersion},
-    selectedTargetProcessId,
-  } = processesStore;
-  const isVersionSelected = selectedTargetVersion !== null;
-  const {
     isSummaryStep,
-    state: {sourceProcessDefinitionKey},
+    state: {sourceProcessDefinition, targetProcessDefinition},
   } = processInstanceMigrationStore;
   const stateOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type === OVERLAY_TYPE,
@@ -43,14 +36,9 @@ const TargetDiagram: React.FC = observer(() => {
     isLoading: isMigrationTargetXmlLoading,
     isError: isMigrationTargetXmlError,
   } = useMigrationTargetXml({
-    processDefinitionKey: selectedTargetProcessId,
+    processDefinitionKey: targetProcessDefinition?.processDefinitionKey,
+    processDefinitionId: targetProcessDefinition?.processDefinitionId,
   });
-
-  useEffect(() => {
-    processInstanceMigrationStore.setTargetProcessDefinitionKey(
-      selectedTargetProcessId ?? null,
-    );
-  }, [selectedTargetProcessId]);
 
   const {data: flowNodeData} = useProcessInstancesElementStates(
     {
@@ -58,7 +46,7 @@ const TargetDiagram: React.FC = observer(() => {
         processInstanceKey: getMigrationProcessInstancesFilter(),
       },
     },
-    sourceProcessDefinitionKey!,
+    sourceProcessDefinition?.processDefinitionKey,
     processInstanceMigrationStore.state.selectedInstancesCount > 0,
   );
 
@@ -69,7 +57,7 @@ const TargetDiagram: React.FC = observer(() => {
     if (isMigrationTargetXmlError) {
       return 'error';
     }
-    if (!isVersionSelected) {
+    if (!targetProcessDefinition) {
       return 'empty';
     }
     return 'content';
@@ -121,7 +109,7 @@ const TargetDiagram: React.FC = observer(() => {
         {data?.xml !== undefined && (
           <Diagram
             xml={data.xml}
-            processDefinitionKey={selectedTargetProcessId}
+            processDefinitionKey={targetProcessDefinition?.processDefinitionKey}
             selectableFlowNodes={[
               ...data.selectableFlowNodes,
               ...data.selectableSequenceFlows,

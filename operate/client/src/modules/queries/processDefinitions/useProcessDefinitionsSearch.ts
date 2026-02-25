@@ -21,7 +21,9 @@ type QueryOptions<T> = {
   staleTime?: number;
 };
 
-function useProcessDefinitionsSearch<T>(options?: QueryOptions<T>) {
+function useProcessDefinitionsSearch<
+  T = QueryProcessDefinitionsResponseBody['items'],
+>(options?: QueryOptions<T>) {
   return useQuery({
     queryKey: queryKeys.processDefinitions.search(options?.payload),
     enabled: options?.enabled,

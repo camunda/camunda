@@ -6,7 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Header} from '../Header';
 import {DiagramWrapper} from '../styled';
 import {observer} from 'mobx-react';
@@ -19,13 +18,18 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
 import type {ElementState} from 'modules/types/operate';
+import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const SourceDiagram: React.FC = observer(() => {
-  const {processName, version} = processesStore.getSelectedProcessDetails();
   const {
     selectedSourceElementIds,
-    state: {sourceProcessDefinitionKey},
+    state: {sourceProcessDefinition},
   } = processInstanceMigrationStore;
+
+  const processVersion = sourceProcessDefinition?.version?.toString() ?? '';
+  const processName = sourceProcessDefinition
+    ? getProcessDefinitionName(sourceProcessDefinition)
+    : 'Process';
 
   const statisticsOverlays = diagramOverlaysStore.state.overlays.filter(
     ({type}) => type.match(/^statistics/) !== null,
@@ -36,8 +40,8 @@ const SourceDiagram: React.FC = observer(() => {
     isLoading: isMigrationSourceXmlLoading,
     isError: isMigrationSourceXmlError,
   } = useMigrationSourceXml({
-    processDefinitionKey: sourceProcessDefinitionKey ?? undefined,
-    bpmnProcessId: processesStore.getSelectedProcessDetails().bpmnProcessId,
+    processDefinitionKey: sourceProcessDefinition?.processDefinitionKey,
+    processDefinitionId: sourceProcessDefinition?.processDefinitionId,
   });
 
   const getStatus = () => {
@@ -56,7 +60,7 @@ const SourceDiagram: React.FC = observer(() => {
         processInstanceKey: getMigrationProcessInstancesFilter(),
       },
     },
-    sourceProcessDefinitionKey ?? undefined,
+    sourceProcessDefinition?.processDefinitionKey,
     processInstanceMigrationStore.state.selectedInstancesCount > 0,
   );
 
@@ -67,14 +71,14 @@ const SourceDiagram: React.FC = observer(() => {
           mode="view"
           label="Source"
           processName={processName}
-          processVersion={version ?? ''}
+          processVersion={processVersion}
         />
       )}
       <DiagramShell status={getStatus()}>
         {migrationSourceData?.xml !== undefined && (
           <Diagram
             xml={migrationSourceData.xml}
-            processDefinitionKey={sourceProcessDefinitionKey ?? undefined}
+            processDefinitionKey={sourceProcessDefinition?.processDefinitionKey}
             selectableFlowNodes={[
               ...migrationSourceData.selectableFlowNodes,
               ...migrationSourceData.selectableSequenceFlows,

@@ -7,17 +7,21 @@
  */
 
 import {FieldContainer, Label} from './styled';
+import {useMemo} from 'react';
 import {observer} from 'mobx-react';
-import isNil from 'lodash/isNil';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Dropdown} from '@carbon/react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {useAvailableMigrationTargetProcessDefinitionVersions} from 'modules/hooks/migrationTargetProcessDefinitions';
 
 const TargetVersionField: React.FC = observer(() => {
-  const {
-    migrationState: {selectedTargetVersion},
-    targetProcessVersions,
-  } = processesStore;
+  const {targetProcessDefinition} = processInstanceMigrationStore.state;
+  const {data: availableDefinitions} =
+    useAvailableMigrationTargetProcessDefinitionVersions();
+
+  const selectedVersion = targetProcessDefinition?.version ?? null;
+  const versions = useMemo(() => {
+    return availableDefinitions?.map((d) => d.version) ?? [];
+  }, [availableDefinitions]);
 
   return (
     <FieldContainer>
@@ -28,18 +32,23 @@ const TargetVersionField: React.FC = observer(() => {
         titleText="Target Version"
         hideLabel
         type="inline"
-        onChange={async ({selectedItem}) => {
-          if (!isNil(selectedItem)) {
-            processInstanceMigrationStore.resetElementMapping();
-            processesStore.setSelectedTargetVersion(selectedItem);
-          }
+        onChange={({selectedItem}) => {
+          const matchingDefinition =
+            selectedItem === null
+              ? null
+              : (availableDefinitions?.find(
+                  (d) => d.version === selectedItem,
+                ) ?? null);
+
+          processInstanceMigrationStore.resetElementMapping();
+          processInstanceMigrationStore.setTargetProcessDefinition(
+            matchingDefinition,
+          );
         }}
-        disabled={
-          selectedTargetVersion === null && targetProcessVersions.length === 0
-        }
-        items={targetProcessVersions}
+        disabled={selectedVersion === null && versions.length === 0}
+        items={versions}
         size="sm"
-        selectedItem={selectedTargetVersion}
+        selectedItem={selectedVersion}
       />
     </FieldContainer>
   );
