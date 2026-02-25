@@ -111,6 +111,9 @@ public class OptimizeTomcatConfig {
                   configureHttpConnector(this);
                 }
               });
+        } else {
+          LOG.info(
+              "HTTP port is not configured. HTTP connector will not be started. Only HTTPS will be available.");
         }
       }
     };
