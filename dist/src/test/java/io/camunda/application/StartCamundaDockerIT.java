@@ -64,6 +64,7 @@ public class StartCamundaDockerIT extends AbstractCamundaDockerIT {
                   "nodeIdProvider":{"status":"UP"},
                   "nodeIdProviderReady":{"status":"UP"},
                   "readinessState": {"status": "UP"},
+                  "schemaReadinessCheck":{"status":"UP"},
                   "searchEngineCheck": {"status": "UP"}
                 },
                 "groups": ["liveness", "readiness", "startup", "status"]
