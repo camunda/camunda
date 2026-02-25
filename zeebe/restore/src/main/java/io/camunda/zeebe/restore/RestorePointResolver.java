@@ -21,8 +21,12 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class RestorePointResolver {
+
+  private static final Logger LOG = LoggerFactory.getLogger(RestorePointResolver.class);
 
   /**
    * Figures out which backups are required for a globally consistent restore that fits the given
@@ -43,16 +47,29 @@ public class RestorePointResolver {
       @Nullable final Instant from,
       @Nullable final Instant to,
       @Nullable final Map<Integer, Long> exportedPositions) {
+    LOG.atDebug().log(
+        "Resolving restore point with from={}, to={}, exportedPositions={}",
+        from,
+        to,
+        exportedPositions);
     final var restorableCheckpoints =
         findRestorableCheckpoints(metadataByPartition, from, exportedPositions);
     final var commonCheckpoint = findCommonCheckpoint(restorableCheckpoints, exportedPositions, to);
-    return findRestorableBackups(restorableCheckpoints, commonCheckpoint);
+    final var restorableBackups = findRestorableBackups(restorableCheckpoints, commonCheckpoint);
+    LOG.atDebug().log(
+        "Resolved restore point with globalCheckpointId={}",
+        restorableBackups.globalCheckpointId());
+    return restorableBackups;
   }
 
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRestorableBackups(
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
       final long commonCheckpoint) {
+    LOG.atDebug().log(
+        "Finding restorable backups with commonCheckpoint={}, partitionCount={}",
+        commonCheckpoint,
+        allRestorableCheckpoints.size());
     final var backupsByPartitionId = new HashMap<Integer, List<CheckpointEntry>>();
     for (final var restorableCheckpoints : allRestorableCheckpoints) {
       final var backups = new ArrayList<CheckpointEntry>();
@@ -62,10 +79,16 @@ public class RestorePointResolver {
           backups.add(checkpoint);
           if (checkpoint.checkpointId() >= commonCheckpoint) {
             // Found the last required backup that contains the common checkpoint
+            LOG.atTrace()
+                .addKeyValue("partition", restorableCheckpoints.partitionId())
+                .log("Reached commonCheckpoint at checkpointId={}", checkpoint.checkpointId());
             break;
           }
         }
       }
+      LOG.atDebug()
+          .addKeyValue("partition", restorableCheckpoints.partitionId())
+          .log("Found required backups: requiredBackups={}", backups.size());
       backupsByPartitionId.put(restorableCheckpoints.partitionId(), backups);
     }
     return new RestorableBackups(commonCheckpoint, backupsByPartitionId);
@@ -135,6 +158,10 @@ public class RestorePointResolver {
       @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
       @Nullable final Map<Integer, Long> exportedPositions,
       @Nullable final Instant to) {
+    LOG.atDebug().log(
+        "Finding common checkpoint closest to {} which covers exported positions {}",
+        to,
+        exportedPositions);
     final Queue<CheckpointEntry> candidates;
     if (to == null) {
       candidates =
@@ -146,13 +173,18 @@ public class RestorePointResolver {
                   Comparator.comparing(o -> Duration.between(to, o.checkpointTimestamp()).abs()))
               .collect(Collectors.toCollection(LinkedBlockingDeque::new));
     }
+    LOG.atTrace().log("Evaluating {} candidates", candidates.size());
     CheckpointEntry candidate;
     while ((candidate = candidates.poll()) != null) {
+      LOG.atTrace().log("Evaluating common checkpoint candidate {}", candidate.checkpointId());
       boolean missing = false;
       for (final var restorableCheckpoints : allRestorableCheckpoints) {
         final var checkpointInfo =
             findCheckpointInfo(restorableCheckpoints.checkpoints(), candidate.checkpointId());
         if (checkpointInfo == null) {
+          LOG.atTrace()
+              .addKeyValue("partition", restorableCheckpoints.partitionId())
+              .log("Candidate checkpoint {} not found", candidate.checkpointId());
           missing = true;
           break;
         }
@@ -161,11 +193,19 @@ public class RestorePointResolver {
                 ? exportedPositions.get(restorableCheckpoints.partitionId())
                 : null;
         if (exportedPosition != null && checkpointInfo.checkpointPosition() < exportedPosition) {
+          LOG.atTrace()
+              .addKeyValue("partition", restorableCheckpoints.partitionId())
+              .log(
+                  "Candidate checkpoint {} has checkpoint position {}, below the required exported position {}",
+                  candidate.checkpointId(),
+                  checkpointInfo.checkpointPosition(),
+                  exportedPosition);
           missing = true;
           break;
         }
       }
       if (!missing) {
+        LOG.atDebug().log("Found common checkpoint {}", candidate.checkpointId());
         return candidate.checkpointId();
       }
     }
@@ -196,6 +236,13 @@ public class RestorePointResolver {
       @Nullable final Instant from,
       @Nullable final Long exportedPosition,
       @NonNull final BackupMetadata metadata) {
+    LOG.atDebug()
+        .addKeyValue("partition", metadata.partitionId())
+        .log(
+            "Finding restorable range covering {} and exported position {} in {} available ranges",
+            from,
+            exportedPosition,
+            metadata.ranges().size());
     return metadata.ranges().stream()
         .<RestorableRange>mapMulti(
             (range, consumer) -> {
@@ -207,14 +254,41 @@ public class RestorePointResolver {
                         .formatted(range, metadata.partitionId(), metadata.checkpoints().size()));
               }
               if (from != null && startInfo.checkpointTimestamp().isAfter(from)) {
+                LOG.atTrace()
+                    .addKeyValue("partition", metadata.partitionId())
+                    .log(
+                        "Skipping range [{}, {}] because it starts at {}, after requested time {}",
+                        range.start(),
+                        range.end(),
+                        startInfo.checkpointTimestamp(),
+                        from);
                 return;
               }
               if (exportedPosition != null && startInfo.firstLogPosition() > exportedPosition) {
+                LOG.atTrace()
+                    .addKeyValue("partition", metadata.partitionId())
+                    .log(
+                        "Skipping range [{}, {}] because the first log position {} is after required exported position {}",
+                        range.start(),
+                        range.end(),
+                        startInfo.firstLogPosition(),
+                        exportedPosition);
                 return;
               }
               if (exportedPosition != null && endInfo.checkpointPosition() < exportedPosition) {
+                LOG.atTrace()
+                    .addKeyValue("partition", metadata.partitionId())
+                    .log(
+                        "Skipping range [{}, {}] because the last log position {} is before the required exported position {}",
+                        range.start(),
+                        range.end(),
+                        endInfo.checkpointPosition(),
+                        exportedPosition);
                 return;
               }
+              LOG.atDebug()
+                  .addKeyValue("partition", metadata.partitionId())
+                  .log("Found restorable range [{}, {}]", range.start(), range.end());
               consumer.accept(new RestorableRange(startInfo, endInfo));
             })
         .findAny()
