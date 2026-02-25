@@ -115,6 +115,9 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -137,6 +140,9 @@ public final class AuthorizationCheckBehavior {
    * @return Either containing a rejection if ALL requests failed, or Void if any succeeded
    */
   public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
     }
@@ -177,6 +183,9 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAnyAuthorizedOrInternalCommand(
       final AuthorizationRequest... requests) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
     }
@@ -224,6 +233,10 @@ public final class AuthorizationCheckBehavior {
   }
 
   // Helper methods
+  private boolean shouldSkipAllChecks() {
+    return !authorizationsEnabled && !multiTenancyEnabled;
+  }
+
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
         || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
@@ -472,6 +485,9 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
+    if (!multiTenancyEnabled) {
+      return true;
+    }
     return tenantResolver.isAssignedToTenant(command.getAuthorizations(), tenantId);
   }
 
@@ -484,6 +500,9 @@ public final class AuthorizationCheckBehavior {
    *     authorized to access
    */
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (shouldSkipAllChecks()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
     return getAuthorizedTenantIds(command.getAuthorizations());
   }
 
