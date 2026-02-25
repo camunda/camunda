@@ -114,7 +114,7 @@ public class ResourceEventsClaimsTest {
             .withIntent(DecisionRequirementsIntent.CREATED)
             .findFirst();
     final var decisionRecords =
-        RecordingExporter.decisionRecords().withIntent(DecisionIntent.CREATED).limit(3L);
+        RecordingExporter.decisionRecords().withIntent(DecisionIntent.CREATED).limit(2);
     assertAuthorizationClaims(record);
     decisionRecords.forEach(decisionRecord -> assertAuthorizationClaims(decisionRecord));
   }
@@ -143,7 +143,7 @@ public class ResourceEventsClaimsTest {
             .withDecisionRequirementsKey(drgKey)
             .findFirst();
     final var decisionRecords =
-        RecordingExporter.decisionRecords().withIntent(DecisionIntent.DELETED).limit(3L);
+        RecordingExporter.decisionRecords().withIntent(DecisionIntent.DELETED).limit(2);
     assertAuthorizationClaims(record);
     decisionRecords.forEach(decisionRecord -> assertAuthorizationClaims(decisionRecord));
   }
