@@ -321,8 +321,8 @@ message CreateProcessInstanceResponse {
   string tenantId = 5;
   // tags attached to a process instance
   repeated string tags = 6;
-  // the business id of the created process instance, or empty if not set
-  string businessId = 7;
+  // the business id of the created process instance
+  optional string businessId = 7;
 }
 
 message CreateProcessInstanceWithResultRequest {
@@ -354,8 +354,8 @@ message CreateProcessInstanceWithResultResponse {
   string tenantId = 6;
   // tags attached to a process instance
   repeated string tags = 7;
-  // the business id of the created process instance, or empty if not set
-  string businessId = 8;
+  // the business id of the created process instance
+  optional string businessId = 8;
 }
 
 message EvaluateDecisionRequest {
