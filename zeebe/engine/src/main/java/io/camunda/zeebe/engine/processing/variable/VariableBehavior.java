@@ -15,6 +15,7 @@ import io.camunda.zeebe.engine.state.variable.DocumentEntry;
 import io.camunda.zeebe.engine.state.variable.IndexedDocument;
 import io.camunda.zeebe.engine.state.variable.VariableInstance;
 import io.camunda.zeebe.protocol.impl.record.value.variable.VariableRecord;
+import io.camunda.zeebe.protocol.impl.record.value.variable.VariableSourceRecord;
 import io.camunda.zeebe.protocol.record.intent.VariableIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import java.util.ArrayList;
@@ -39,6 +40,7 @@ public final class VariableBehavior {
 
   private final IndexedDocument indexedDocument = new IndexedDocument();
   private final VariableRecord variableRecord = new VariableRecord();
+  private final VariableSourceRecord variableSourceRecord;
 
   public VariableBehavior(
       final VariableState variableState,
@@ -49,6 +51,25 @@ public final class VariableBehavior {
     this.stateWriter = stateWriter;
     this.conditionalBehavior = conditionalBehavior;
     this.keyGenerator = keyGenerator;
+    variableSourceRecord = VariableSourceRecord.none();
+  }
+
+  public VariableBehavior(
+      final VariableState variableState,
+      final StateWriter stateWriter,
+      final BpmnConditionalBehavior conditionalBehavior,
+      final KeyGenerator keyGenerator,
+      final VariableSourceRecord variableSourceRecord) {
+    this.variableState = variableState;
+    this.stateWriter = stateWriter;
+    this.conditionalBehavior = conditionalBehavior;
+    this.keyGenerator = keyGenerator;
+    this.variableSourceRecord = variableSourceRecord;
+  }
+
+  public VariableBehavior withVariableSource(final VariableSourceRecord source) {
+    return new VariableBehavior(
+        variableState, stateWriter, conditionalBehavior, keyGenerator, source);
   }
 
   /**
@@ -84,7 +105,8 @@ public final class VariableBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setSource(variableSourceRecord);
     final List<VariableEvent> variableEvents = new ArrayList<>();
     for (final DocumentEntry entry : indexedDocument) {
       applyEntryToRecord(entry);
@@ -139,7 +161,8 @@ public final class VariableBehavior {
         .setProcessInstanceKey(processInstanceKey)
         .setRootProcessInstanceKey(rootProcessInstanceKey)
         .setBpmnProcessId(bpmnProcessId)
-        .setTenantId(tenantId);
+        .setTenantId(tenantId)
+        .setSource(variableSourceRecord);
     while ((parentScope = variableState.getParentScopeKey(currentScope)) > 0) {
       final Iterator<DocumentEntry> entryIterator = indexedDocument.iterator();
 
