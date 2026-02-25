@@ -428,7 +428,7 @@ public class OperateTester {
   private BatchOperationDto scheduleOperation(final CreateOperationRequestDto operationRequest) {
     operation =
         BatchOperationDto.createFrom(
-            batchOperationWriter.scheduleBatchOperation(processInstanceKey, operationRequest),
+            batchOperationWriter.scheduleSingleOperation(processInstanceKey, operationRequest),
             objectMapper);
     return operation;
   }
