@@ -8,6 +8,7 @@
 package io.camunda.application.initializers;
 
 import io.camunda.application.Profile;
+import io.camunda.application.commons.search.SchemaReadinessCheck;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -27,6 +28,8 @@ import org.springframework.core.env.Environment;
 public class HealthConfigurationInitializer
     implements ApplicationContextInitializer<ConfigurableApplicationContext> {
 
+  private static final String INDICATOR_BROKER_READY = "brokerReady";
+  private static final String INDICATOR_NODE_ID_PROVIDER_READY = "nodeIdProviderReady";
   private static final String INDICATOR_GATEWAY_STARTED = "gatewayStarted";
   private static final String INDICATOR_SPRING_READINESS_STATE = "readinessState";
 
@@ -118,8 +121,8 @@ public class HealthConfigurationInitializer
     final var healthIndicators = new ArrayList<String>();
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
-      healthIndicators.add("brokerReady");
-      healthIndicators.add("nodeIdProviderReady");
+      healthIndicators.add(INDICATOR_BROKER_READY);
+      healthIndicators.add(INDICATOR_NODE_ID_PROVIDER_READY);
     }
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
@@ -138,8 +141,8 @@ public class HealthConfigurationInitializer
     final boolean secondaryStorageEnabled = DatabaseTypeUtils.isSecondaryStorageEnabled(env);
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
-      healthIndicators.add("brokerReady");
-      healthIndicators.add("nodeIdProviderReady");
+      healthIndicators.add(INDICATOR_BROKER_READY);
+      healthIndicators.add(INDICATOR_NODE_ID_PROVIDER_READY);
     }
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
@@ -147,12 +150,18 @@ public class HealthConfigurationInitializer
     }
 
     if (secondaryStorageEnabled) {
-      if (Profile.getWebappProfiles().stream()
-          .map(Profile::getId)
-          .anyMatch(activeProfiles::contains)) {
+      final boolean isWebappProfile =
+          Profile.getWebappProfiles().stream().anyMatch(p -> activeProfiles.contains(p.getId()));
+      if (isWebappProfile) {
         healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
       }
       if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
+        if (isAnyHttpGatewayEnabled(env)
+            && (isWebappProfile
+                || activeProfiles.contains(Profile.GATEWAY.getId())
+                || activeProfiles.contains(Profile.BROKER.getId()))) {
+          healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
+        }
         if (activeProfiles.contains(Profile.OPERATE.getId())) {
           healthIndicators.add("indicesCheck");
         }
@@ -163,5 +172,15 @@ public class HealthConfigurationInitializer
     }
 
     return healthIndicators;
+  }
+
+  /**
+   * Same condition as {@link
+   * io.camunda.application.commons.condition.ConditionalOnAnyHttpGatewayEnabled}
+   */
+  private boolean isAnyHttpGatewayEnabled(final Environment env) {
+    return env.getProperty("zeebe.broker.gateway.enable", Boolean.class, true)
+        && (env.getProperty("camunda.rest.enabled", Boolean.class, true)
+            || env.getProperty("camunda.mcp.enabled", Boolean.class, false));
   }
 }

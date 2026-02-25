@@ -45,6 +45,17 @@ class HealthConfigurationInitializerTest {
     when(environment.getProperty("camunda.data.secondary-storage.type")).thenReturn("none");
   }
 
+  private void withEmbeddedGateway(final boolean enabled) {
+    when(environment.getProperty("zeebe.broker.gateway.enable", Boolean.class, true))
+        .thenReturn(enabled);
+  }
+
+  private void withHttpGatewayEnabled() {
+    withEmbeddedGateway(true);
+    when(environment.getProperty("camunda.rest.enabled", Boolean.class, true)).thenReturn(true);
+    when(environment.getProperty("camunda.mcp.enabled", Boolean.class, false)).thenReturn(false);
+  }
+
   @Nested
   class LivenessGroup {
 
@@ -153,6 +164,7 @@ class HealthConfigurationInitializerTest {
     void shouldIncludeReadinessStateForAnyWebappProfile(final String profile) {
       // given — Identity is a webapp profile, should get readinessState
       withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = List.of(profile);
 
       // when
@@ -160,13 +172,14 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("readinessState");
+      assertThat(indicators).contains("readinessState", "schemaReadinessCheck");
     }
 
     @Test
     void shouldNotDuplicateReadinessStateForMultipleWebappProfiles() {
       // given
       withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = Profile.getWebappProfiles().stream().map(Profile::getId).toList();
 
       // when
@@ -175,12 +188,15 @@ class HealthConfigurationInitializerTest {
 
       // then — readinessState should appear exactly once
       assertThat(indicators.stream().filter("readinessState"::equals)).hasSize(1);
+      // then — schemaReadinessCheck should appear exactly once
+      assertThat(indicators.stream().filter("schemaReadinessCheck"::equals)).hasSize(1);
     }
 
     @Test
     void shouldIncludeIndicesCheckForOperateWithES() {
       // given
       withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = List.of(Profile.OPERATE.getId());
 
       // when
@@ -188,13 +204,14 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("readinessState", "indicesCheck");
+      assertThat(indicators).contains("readinessState", "indicesCheck", "schemaReadinessCheck");
     }
 
     @Test
     void shouldIncludeSearchEngineCheckForTasklistWithES() {
       // given
       withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
       final var profiles = List.of(Profile.TASKLIST.getId());
 
       // when
@@ -202,7 +219,8 @@ class HealthConfigurationInitializerTest {
           initializer.collectReadinessGroupHealthIndicators(profiles, environment);
 
       // then
-      assertThat(indicators).contains("readinessState", "searchEngineCheck");
+      assertThat(indicators)
+          .contains("readinessState", "searchEngineCheck", "schemaReadinessCheck");
     }
 
     @Test
@@ -218,7 +236,7 @@ class HealthConfigurationInitializerTest {
       // then
       assertThat(indicators)
           .contains("readinessState")
-          .doesNotContain("indicesCheck", "searchEngineCheck");
+          .doesNotContain("indicesCheck", "searchEngineCheck", "schemaReadinessCheck");
     }
 
     @Test
@@ -233,6 +251,131 @@ class HealthConfigurationInitializerTest {
 
       // then
       assertThat(indicators).isEmpty();
+    }
+
+    @Test
+    void shouldIncludeSchemaReadinessCheckForGatewayWithES() {
+      // given
+      withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.GATEWAY.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators).contains("gatewayStarted", "schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldIncludeSchemaReadinessCheckForBrokerWithEmbeddedGatewayEnabled() {
+      // given
+      withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.BROKER.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators).contains("brokerReady", "nodeIdProviderReady", "schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckForBrokerWithEmbeddedGatewayDisabled() {
+      // given
+      withElasticsearchSecondaryStorage();
+      withEmbeddedGateway(false);
+      final var profiles = List.of(Profile.BROKER.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators)
+          .contains("brokerReady", "nodeIdProviderReady")
+          .doesNotContain("schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckWithNoSecondaryStorage() {
+      // given
+      withNoSecondaryStorage();
+      final var profiles = List.of(Profile.GATEWAY.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators).contains("gatewayStarted").doesNotContain("schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckWithRdbms() {
+      // given
+      withRdbmsSecondaryStorage();
+      final var profiles = List.of(Profile.GATEWAY.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then
+      assertThat(indicators).contains("gatewayStarted").doesNotContain("schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldIncludeSchemaReadinessCheckForBrokerWithGatewayProfileAndES() {
+      // given — broker + gateway profiles with ES secondary storage and gateway enabled
+      withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.BROKER.getId(), Profile.GATEWAY.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then — schemaReadinessCheck should be included because gateway is enabled
+      assertThat(indicators)
+          .contains("brokerReady", "nodeIdProviderReady", "gatewayStarted", "schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldIncludeSchemaReadinessCheckForBrokerWithGatewayProfileAndEmbeddedGatewayDisabled() {
+      // given — broker + gateway profiles, embedded gateway disabled but gateway profile active
+      withElasticsearchSecondaryStorage();
+      withEmbeddedGateway(false);
+      when(environment.getProperty("camunda.rest.enabled", Boolean.class, true)).thenReturn(true);
+      when(environment.getProperty("camunda.mcp.enabled", Boolean.class, false)).thenReturn(false);
+      final var profiles = List.of(Profile.BROKER.getId(), Profile.GATEWAY.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then — schemaReadinessCheck NOT included because isAnyHttpGatewayEnabled is false
+      assertThat(indicators)
+          .contains("brokerReady", "nodeIdProviderReady", "gatewayStarted")
+          .doesNotContain("schemaReadinessCheck");
+    }
+
+    @Test
+    void shouldNotIncludeSchemaReadinessCheckWithoutRelevantProfile() {
+      // given — ES storage and gateway enabled, but no broker/gateway/webapp profile
+      withElasticsearchSecondaryStorage();
+      withHttpGatewayEnabled();
+      final var profiles = List.of(Profile.RESTORE.getId());
+
+      // when
+      final var indicators =
+          initializer.collectReadinessGroupHealthIndicators(profiles, environment);
+
+      // then — no schemaReadinessCheck because no relevant profile is active
+      assertThat(indicators).doesNotContain("schemaReadinessCheck");
     }
   }
 }
