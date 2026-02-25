@@ -92,8 +92,6 @@ const resourcePermissions: ResourcePermissionsType = {
   MESSAGE: [PermissionType.CREATE, PermissionType.READ],
   PROCESS_DEFINITION: [
     PermissionType.CANCEL_PROCESS_INSTANCE,
-    PermissionType.CLAIM_USER_TASK,
-    PermissionType.COMPLETE_USER_TASK,
     PermissionType.CREATE_PROCESS_INSTANCE,
     PermissionType.DELETE_PROCESS_INSTANCE,
     PermissionType.MODIFY_PROCESS_INSTANCE,
@@ -254,7 +252,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                   field.onChange(item.selectedItem);
                 }}
                 itemToString={(item: Authorization["ownerType"]) =>
-                  item ? t(OwnerType[item]) : ""
+                  item ? t(item) : ""
                 }
                 selectedItem={field.value}
               />
@@ -331,7 +329,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               rules={{
                 required: t("resourceIdRequired"),
                 validate: (value) =>
-                  isValidResourceId(value) ||
+                  isValidResourceId(value ?? "") ||
                   t("pleaseEnterValidResourceId", {
                     pattern: getIdPattern(),
                   }),
@@ -339,6 +337,7 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
               render={({ field, fieldState }) => (
                 <TextField
                   {...field}
+                  value={field.value ?? ""}
                   label={t("resourceId")}
                   placeholder={t("enterId")}
                   errors={fieldState.error?.message}
@@ -406,6 +405,7 @@ function createEmptyAuthorization(
       ownerType: OwnerType.USER,
       ownerId: "",
       resourceType: ResourceType.USER_TASK,
+      resourceId: null,
       resourcePropertyName: ResourcePropertyName.assignee,
       permissionTypes: [],
     };
@@ -415,6 +415,7 @@ function createEmptyAuthorization(
       ownerId: "",
       resourceType: ResourceType.USER,
       resourceId: "",
+      resourcePropertyName: null,
       permissionTypes: [],
     };
   }

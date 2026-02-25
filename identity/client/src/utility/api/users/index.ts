@@ -6,19 +6,16 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { User } from "@camunda/camunda-api-zod-schemas/8.9";
 import { PageSearchParams } from "../hooks/usePagination";
 import { ApiDefinition, apiDelete, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 
+export type { User };
+
+export type UserKeys = keyof User;
+
 export const USERS_ENDPOINT = "/users";
-
-export type UserKeys = "name" | "username" | "email";
-
-export type User = {
-  name: string;
-  username: string;
-  email: string;
-};
 
 type SearchUserParams = {
   usernames: string[];

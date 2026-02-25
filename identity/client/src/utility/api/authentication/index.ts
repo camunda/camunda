@@ -27,7 +27,7 @@ export interface CamundaUser {
   tenants: readonly TenantInfo[];
   groups: readonly string[];
   roles: readonly string[];
-  salesPlanType: string;
+  salesPlanType: string | null;
   c8Links: readonly C8Link[];
   canLogout: boolean;
   apiUser: boolean;

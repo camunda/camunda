@@ -6,21 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { Group } from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiDelete, apiGet, apiPost, apiPut } from "../request";
 import { SearchResponse } from "src/utility/api";
 import { Role, ROLES_ENDPOINT } from "src/utility/api/roles";
 import { MappingRule } from "src/utility/api/mapping-rules";
 import { PageSearchParams } from "../hooks/usePagination";
 
+export type { Group };
+
+export type GroupKeys = keyof Group;
+
 export const GROUPS_ENDPOINT = "/groups";
-
-export type GroupKeys = "groupId" | "name" | "description";
-
-export type Group = {
-  groupId: string;
-  name: string;
-  description?: string;
-};
 
 export type MemberGroup = Pick<Group, "groupId">;
 

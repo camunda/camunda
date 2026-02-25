@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { AuthorizationResult } from "@camunda/camunda-api-zod-schemas/8.9";
 import { ApiDefinition, apiDelete, apiPost } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 
@@ -50,14 +51,13 @@ export enum PermissionType {
   READ_USAGE_METRIC = "READ_USAGE_METRIC",
   READ_JOB_METRIC = "READ_JOB_METRIC",
   COMPLETE = "COMPLETE",
-  COMPLETE_USER_TASK = "COMPLETE_USER_TASK",
   CLAIM = "CLAIM",
-  CLAIM_USER_TASK = "CLAIM_USER_TASK",
 }
 
 export type PermissionTypes = keyof typeof PermissionType;
 
 export enum OwnerType {
+  "UNSPECIFIED" = "UNSPECIFIED",
   "USER" = "USER",
   "ROLE" = "ROLE",
   "GROUP" = "GROUP",
@@ -88,34 +88,15 @@ export enum ResourceType {
   USER = "USER",
 }
 
-type BaseAuthorization = {
-  authorizationKey: string;
-  ownerId: string;
-  ownerType: OwnerType;
-  permissionTypes: readonly PermissionTypes[];
-};
-
 export enum ResourcePropertyName {
   assignee = "assignee",
   candidateGroups = "candidateGroups",
   candidateUsers = "candidateUsers",
 }
 
-export type TaskAuthorization = BaseAuthorization & {
-  resourceType: ResourceType.USER_TASK;
-  resourcePropertyName: ResourcePropertyName;
-};
+export type Authorization = AuthorizationResult;
 
-export type GeneralAuthorization = BaseAuthorization & {
-  resourceType: Exclude<ResourceType, ResourceType.USER_TASK>;
-  resourceId: string;
-};
-
-export type Authorization = TaskAuthorization | GeneralAuthorization;
-
-export type NewAuthorization =
-  | Omit<TaskAuthorization, "authorizationKey">
-  | Omit<GeneralAuthorization, "authorizationKey">;
+export type NewAuthorization = Omit<Authorization, "authorizationKey">;
 
 export enum PatchAuthorizationAction {
   ADD = "ADD",

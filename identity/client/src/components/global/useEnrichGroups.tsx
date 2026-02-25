@@ -72,6 +72,7 @@ export function useEnrichedGroups<P>(
         return {
           groupId: member.groupId,
           name: group?.name || "",
+          description: group?.description || "",
         };
       });
 

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { Tenant as BaseTenant } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiPost,
@@ -14,7 +15,6 @@ import {
   apiPut,
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList";
 import { Group } from "src/utility/api/groups";
 import { Role } from "src/utility/api/roles";
 import { MappingRule } from "src/utility/api/mapping-rules";
@@ -22,12 +22,7 @@ import { PageSearchParams } from "../hooks/usePagination";
 
 export const TENANTS_ENDPOINT = "/tenants";
 
-export type Tenant = EntityData & {
-  tenantKey: string;
-  tenantId: string;
-  name: string;
-  description: string;
-};
+export type Tenant = BaseTenant & { tenantKey: string };
 
 export const searchTenant: ApiDefinition<
   SearchResponse<Tenant>,
@@ -55,7 +50,7 @@ export const createTenant: ApiDefinition<undefined, CreateTenantParams> = (
 export type UpdateTenantParams = {
   tenantId: string;
   name: string;
-  description: string;
+  description: string | null;
 };
 export const updateTenant: ApiDefinition<undefined, UpdateTenantParams> = ({
   tenantId,
