@@ -97,5 +97,6 @@ public class JobWorkerAnnotationProcessor extends AbstractCamundaAnnotationProce
   @Override
   public void stop(final CamundaClient camundaClient) {
     jobWorkerManager.closeAllOpenWorkers();
+    jobWorkerValues.clear();
   }
 }
