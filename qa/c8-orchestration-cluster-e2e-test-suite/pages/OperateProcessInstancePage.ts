@@ -8,6 +8,7 @@
 
 import {Page, Locator, expect} from '@playwright/test';
 import {sleep} from 'utils/sleep';
+import {waitForAssertion} from 'utils/waitForAssertion';
 
 class OperateProcessInstancePage {
   private page: Page;
@@ -77,6 +78,13 @@ class OperateProcessInstancePage {
   readonly viewParentInstanceLink: Locator;
   readonly incidentIconsInHistory: Locator;
   readonly modifyDialog: Locator;
+  readonly metadataPopover: Locator;
+  readonly incidentSection: Locator;
+  readonly rootCauseProcessName: Locator;
+  readonly rootCauseProcessId: Locator;
+  readonly incidentErrorType: Locator;
+  readonly incidentErrorIndicators: Locator;
+  readonly incidentErrorMessage: Locator;
   readonly modifyDialogContinueButton: Locator;
   private variableValueCellLocator: (name: string) => Locator;
   private variableButtonsCellLocator: (name: string) => Locator;
@@ -278,6 +286,17 @@ class OperateProcessInstancePage {
         },
       },
     });
+    this.incidentErrorIndicators = page.getByTestId('incident-error-indicator');
+    this.metadataPopover = page.getByTestId('popover');
+    this.incidentErrorType = this.metadataPopover
+      .getByText('Type')
+      .locator('xpath=following-sibling::*[1]');
+    this.incidentErrorMessage = this.metadataPopover.locator('text=/error/i');
+    this.incidentSection = page.getByText(/incident\s*view/i);
+    this.rootCauseProcessName = this.metadataPopover.getByText(
+      /root cause process name/i,
+    );
+    this.rootCauseProcessId = this.metadataPopover.getByRole('link').first();
   }
 
   async checkExistingVariableErrorMessageText(
@@ -699,8 +718,8 @@ class OperateProcessInstancePage {
     await this.getDiagramElement(elementId).click();
   }
 
-  async getDiagramElementBadge(elementId: string) {
-    return this.page.$(`[data-element-id="${elementId}"] .badge`);
+  async getDiagramElementBadge(elementId: string): Promise<Locator> {
+    return this.getDiagramElement(elementId).locator('.badge');
   }
 
   async verifyExecutionCountBadgesNotVisible(
@@ -708,7 +727,7 @@ class OperateProcessInstancePage {
   ): Promise<void> {
     for (const elementId of elementIds) {
       const badge = await this.getDiagramElementBadge(elementId);
-      expect(badge).toBeNull();
+      await expect(badge).toHaveCount(0);
     }
   }
 
@@ -729,6 +748,7 @@ class OperateProcessInstancePage {
   async clickViewParentInstance(): Promise<void> {
     await this.viewParentInstanceLink.click();
   }
+
   async getAllIncidentIconsAmountInHistory(): Promise<number> {
     return await this.incidentIconsInHistory.count();
   }
@@ -869,6 +889,63 @@ class OperateProcessInstancePage {
     for (let i = 0; i < filteredElementsData.length; i++) {
       expect(filteredElementsData[i].icon).toBe(expectedStatus[i]);
     }
+  }
+
+  async countIncidentErrorIndicators(): Promise<number> {
+    return await this.incidentErrorIndicators.count();
+  }
+
+  async clickOnElementInDiagram(elementId: string): Promise<void> {
+    await this.clickDiagramElement(elementId);
+  }
+
+  async closeIncidentsPanel(): Promise<void> {
+    await expect(this.incidentsBanner).toContainText(/hide/i, {
+      timeout: 10000,
+    });
+
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.incidentsBanner).toContainText(/view/i, {
+          timeout: 3000,
+        });
+      },
+      onFailure: async () => {
+        await this.incidentsBanner.scrollIntoViewIfNeeded();
+        await this.incidentsBanner.click();
+      },
+      maxRetries: 3,
+    });
+  }
+
+  async getIncidentCount(): Promise<number> {
+    const headingText = await this.incidentsViewHeader.textContent();
+    if (!headingText) {
+      return 0;
+    }
+
+    const match = headingText.match(/(\d+)\s+results?/i);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  async verifyIncidentCount(expectedCount: number): Promise<void> {
+    const actualCount = await this.getIncidentCount();
+    expect(actualCount).toBe(expectedCount);
+  }
+  getCalledProcessLink(processName: string): Locator {
+    return this.page.getByRole('link', {name: processName});
+  }
+  async clickOnRootCauseProcessName(): Promise<void> {
+    await expect(this.rootCauseProcessName).toBeVisible();
+    await this.rootCauseProcessId.click();
+  }
+
+  async clickCalledProcessLink(processName: string): Promise<void> {
+    await this.getCalledProcessLink(processName).click();
+  }
+
+  getIncidentErrorMessageByText(errorText: string): Locator {
+    return this.metadataPopover.getByText(errorText);
   }
 }
 
