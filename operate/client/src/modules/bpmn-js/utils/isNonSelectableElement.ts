@@ -11,11 +11,11 @@ import {isFlowNode} from 'modules/utils/elements';
 
 function isNonSelectableElement(
   bpmnElement: BpmnElement,
-  selectableFlowNodes?: string[],
+  selectableElements?: string[],
 ) {
   return (
-    selectableFlowNodes !== undefined &&
-    !selectableFlowNodes.includes(bpmnElement.businessObject.id) &&
+    selectableElements !== undefined &&
+    !selectableElements.includes(bpmnElement.businessObject.id) &&
     bpmnElement.type !== 'label' &&
     isFlowNode(bpmnElement.businessObject)
   );
