@@ -15,6 +15,7 @@ import {
 } from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {CREATE_CLUSTER_VARIABLE} from '../beans/requestBeans';
+import {validateResponse} from 'json-body-assertions';
 
 /**
  * Creates a global cluster variable and stores the response fields in state
@@ -33,6 +34,14 @@ export async function createGlobalClusterVariable(
       data,
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/cluster-variables/global',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;
@@ -62,6 +71,14 @@ export async function createTenantClusterVariable(
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {
+        path: '/cluster-variables/tenants/{tenantId}',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;

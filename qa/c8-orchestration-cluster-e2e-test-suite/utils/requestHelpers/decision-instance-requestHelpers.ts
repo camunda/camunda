@@ -65,15 +65,14 @@ export async function searchDecisionInstancesByProcessInstanceKey(
         });
 
         await assertStatusCode(res, 200);
-        // this assertion is commented as response shape isn't correct yet. As soon as it's fixed, uncomment it.
-        // await validateResponse(
-        //   {
-        //     path: '/decision-instances/search',
-        //     method: 'POST',
-        //     status: '200',
-        //   },
-        //   res,
-        // );
+        await validateResponse(
+          {
+            path: '/decision-instances/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
 
         const body = await res.json();
         body.items.forEach((item: Record<string, unknown>) => {

@@ -21,6 +21,7 @@ import {CREATE_NEW_TENANT, tenantRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
 import {createUser} from './user-requestHelpers';
+import { validateResponse } from 'json-body-assertions';
 
 export async function assignUsersToTenant(
   request: APIRequestContext,
@@ -77,6 +78,14 @@ export async function createTenant(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/tenants',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, tenantRequiredFields);
   if (state && key) {

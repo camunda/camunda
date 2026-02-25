@@ -17,6 +17,7 @@ import {
 } from '../http';
 import {userTaskSearchPageResponseRequiredFields} from '../beans/requestBeans';
 import {defaultAssertionOptions} from '../constants';
+import {validateResponse} from 'json-body-assertions';
 
 export async function findUserTask(
   request: APIRequestContext,
@@ -31,6 +32,14 @@ export async function findUserTask(
       data: {filter: {processInstanceKey: procKey}},
     });
     await assertStatusCode(searchRes, 200);
+    await validateResponse(
+      {
+        path: '/user-tasks/search',
+        method: 'POST',
+        status: '200',
+      },
+      searchRes,
+    );
     const searchJson = await searchRes.json();
 
     assertRequiredFields(searchJson, paginatedResponseFields);
