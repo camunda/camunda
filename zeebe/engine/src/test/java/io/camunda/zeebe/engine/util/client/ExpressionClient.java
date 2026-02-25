@@ -12,6 +12,7 @@ import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
+import java.util.Map;
 import java.util.Random;
 import java.util.function.LongFunction;
 
@@ -46,6 +47,11 @@ public final class ExpressionClient {
 
   public ExpressionClient withExpression(final String expression) {
     expressionRecord.setExpression(expression);
+    return this;
+  }
+
+  public ExpressionClient withContext(final Map<String, Object> context) {
+    expressionRecord.setContext(context);
     return this;
   }
 
