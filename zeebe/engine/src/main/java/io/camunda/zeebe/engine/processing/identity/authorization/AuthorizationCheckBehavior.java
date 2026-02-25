@@ -52,6 +52,7 @@ public final class AuthorizationCheckBehavior {
       "Expected to %s with key '%s', but no %s was found";
   public static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
+  private static final Either<Rejection, Void> AUTHORIZED = Either.right(null);
   private final MappingRuleState mappingRuleState;
   private final ClaimsExtractor claimsExtractor;
   private final TenantResolver tenantResolver;
@@ -110,6 +111,9 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
+    }
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -124,11 +128,11 @@ public final class AuthorizationCheckBehavior {
     if (request.isTriggeredByInternalCommand()) {
       return Either.right(null);
     }
-    return isAuthorized(request);
+
+    return isAuthorized(requests);
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
-
     if (shouldSkipAuthorization(request)) {
       return Either.right(null);
     }
@@ -139,20 +143,24 @@ public final class AuthorizationCheckBehavior {
         checkPrimaryAuthorization(request, aggregatedRejections);
 
     if (primaryResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
 
     if (mappingRuleResult.hasBothAccess()) {
-      return Either.right(null);
+      return AUTHORIZED;
     }
 
     return getRejection(aggregatedRejections);
   }
 
   // Helper methods
+  private boolean shouldSkipAllChecks() {
+    return !authorizationsEnabled && !multiTenancyEnabled;
+  }
+
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
     return (!authorizationsEnabled && !multiTenancyEnabled)
         || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
@@ -389,6 +397,9 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned or multi-tenancy is disabled, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
+    if (!multiTenancyEnabled) {
+      return true;
+    }
     return tenantResolver.isAssignedToTenant(
         AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
   }
@@ -402,6 +413,10 @@ public final class AuthorizationCheckBehavior {
    *     authorized to access
    */
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (shouldSkipAllChecks()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
+
     return tenantResolver.getAuthorizedTenants(command.getAuthorizations());
   }
 
