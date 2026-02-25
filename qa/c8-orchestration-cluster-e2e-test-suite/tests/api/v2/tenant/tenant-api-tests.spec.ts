@@ -10,13 +10,13 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
   assertEqualsForKeys,
   assertBadRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -56,7 +56,6 @@ test.describe.parallel('Tenants API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, tenant, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -136,7 +135,6 @@ test.describe.parallel('Tenants API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -183,7 +181,6 @@ test.describe.parallel('Tenants API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -235,7 +232,6 @@ test.describe.parallel('Tenants API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, tenantRequiredFields);
       assertEqualsForKeys(json, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -361,6 +357,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -368,7 +373,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -392,6 +396,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: body,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -399,7 +412,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -422,6 +434,15 @@ test.describe.parallel('Tenants API Tests', () => {
         data: requestBody,
       });
 
+      await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
+
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 1,
         totalItemsEqualTo: 1,
@@ -429,7 +450,6 @@ test.describe.parallel('Tenants API Tests', () => {
       const json = await res.json();
       const item = json.items[0];
       expect(item).toBeDefined();
-      assertRequiredFields(item, tenantRequiredFields);
       assertEqualsForKeys(item, expectedBody, tenantRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -445,6 +465,15 @@ test.describe.parallel('Tenants API Tests', () => {
       headers: jsonHeaders(),
       data: body,
     });
+
+    await validateResponse(
+        {
+          path: '/tenants/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
 
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

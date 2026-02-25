@@ -14,7 +14,6 @@ import {
   assertBadRequest,
   assertStatusCode,
   assertEqualsForKeys,
-  assertRequiredFields,
   assertNotFoundRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -56,7 +55,6 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
         res,
       );
       const body = await res.json();
-      assertRequiredFields(body, decisionRequirementRequiredFields);
       assertEqualsForKeys(
         decisionRequirementToGet,
         body,

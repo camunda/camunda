@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertEqualsForKeys,
   encode,
@@ -74,8 +73,15 @@ test.describe.parallel('Authentication API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
+      await validateResponse(
+        {
+          path: '/authentication/me',
+          method: 'GET',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
-      assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -185,7 +191,6 @@ test.describe.parallel('Authentication API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, authenticationRequiredFields);
         assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
       }).toPass(defaultAssertionOptions);
     });
@@ -217,7 +222,6 @@ test.describe.parallel('Authentication API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, authenticationRequiredFields);
       assertEqualsForKeys(json, expectedBody, authenticationRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
