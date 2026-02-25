@@ -58,6 +58,7 @@ public class RestorePointResolver {
       final var backups = new ArrayList<CheckpointEntry>();
       for (final var checkpoint : restorableCheckpoints.checkpoints()) {
         if (checkpoint.checkpointType().shouldCreateBackup()) {
+          verifyBackupContiguity(checkpoint, backups);
           backups.add(checkpoint);
           if (checkpoint.checkpointId() >= commonCheckpoint) {
             // Found the last required backup that contains the common checkpoint
@@ -68,6 +69,31 @@ public class RestorePointResolver {
       backupsByPartitionId.put(restorableCheckpoints.partitionId(), backups);
     }
     return new RestorableBackups(commonCheckpoint, backupsByPartitionId);
+  }
+
+  /**
+   * Sanity check that the backups are actually contiguous. This should already be the case because
+   * they are all from the same range, but it doesn't hurt to double-check.
+   */
+  private static void verifyBackupContiguity(
+      @NonNull final CheckpointEntry checkpoint,
+      @NonNull final List<CheckpointEntry> previousBackups) {
+    if (previousBackups.isEmpty()) {
+      return;
+    }
+
+    final var firstLogPosition = checkpoint.firstLogPosition();
+    final var previousBackup = previousBackups.getLast();
+    final var previousBackupPosition = previousBackup.checkpointPosition();
+    if (firstLogPosition > previousBackupPosition + 1) {
+      throw new IllegalStateException(
+          String.format(
+              "Unexpected data gaps between backup %s with first log position %d and backup %s with checkpoint position %d",
+              checkpoint.checkpointId(),
+              checkpoint.checkpointPosition(),
+              previousBackup.checkpointId(),
+              previousBackupPosition));
+    }
   }
 
   /**
