@@ -80,7 +80,7 @@ const BatchModificationFooter: React.FC = observer(() => {
               disabled={isButtonDisabled}
               onClick={() => setOpen(true)}
             >
-              Apply Modification
+              Review Modification
             </Button>
           )}
         >
