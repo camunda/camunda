@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -34,7 +33,14 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });
@@ -50,7 +56,6 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
           },
         );
 
-        await assertStatusCode(getResponse, 200);
         await validateResponse(
           {
             path: '/process-instances/{processInstanceKey}/sequence-flows',
@@ -94,7 +99,6 @@ test.describe.parallel('Get Process instance Sequence Flows Tests', () => {
         headers: jsonHeaders(),
       },
     );
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/process-instances/{processInstanceKey}/sequence-flows',

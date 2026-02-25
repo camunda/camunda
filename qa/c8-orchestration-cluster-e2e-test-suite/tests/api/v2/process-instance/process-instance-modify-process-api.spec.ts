@@ -37,7 +37,6 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           processDefinitionId: 'process_with_two_user_tasks',
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',
@@ -61,7 +60,6 @@ test.describe.parallel('Process Instance Modify Process API', () => {
             },
           },
         });
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',
@@ -111,7 +109,6 @@ test.describe.parallel('Process Instance Modify Process API', () => {
             },
           },
         });
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',
@@ -145,7 +142,6 @@ test.describe.parallel('Process Instance Modify Process API', () => {
           processDefinitionId: 'process_with_task_listener',
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',

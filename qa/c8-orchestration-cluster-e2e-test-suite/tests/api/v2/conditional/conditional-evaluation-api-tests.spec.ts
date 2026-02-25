@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertStatusCode,
   assertBadRequest,
   assertUnauthorizedRequest,
   assertUnsupportedMediaTypeRequest,
@@ -52,7 +51,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -78,7 +76,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -103,7 +100,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -131,7 +127,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -152,7 +147,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -178,7 +172,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
         data: EVALUATE_CONDITIONAL(),
       },
     );
-    await assertStatusCode(initialRes, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -206,7 +199,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,
@@ -298,7 +290,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       data: requestBody,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: CONDITIONAL_EVALUATION_ENDPOINT,

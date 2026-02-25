@@ -14,7 +14,6 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -56,7 +55,6 @@ test.describe('Element Instance Search API', () => {
         headers: jsonHeaders(),
         data: {}, // No filter find all
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       await validateResponse(
         {
@@ -81,7 +79,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -110,7 +107,6 @@ test.describe('Element Instance Search API', () => {
           ],
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -142,7 +138,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -174,7 +169,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -204,7 +198,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -236,7 +229,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -268,7 +260,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',
@@ -297,7 +288,6 @@ test.describe('Element Instance Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/element-instances/search',

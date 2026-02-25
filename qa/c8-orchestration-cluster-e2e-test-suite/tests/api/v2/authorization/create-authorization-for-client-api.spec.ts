@@ -15,7 +15,6 @@ import {
   assertUnauthorizedRequest,
   assertConflictRequest,
   encode,
-  assertStatusCode,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {
@@ -63,7 +62,6 @@ test.describe
           data: authorizationBody,
         },
       );
-      await assertStatusCode(authRes, 201);
 
       await validateResponse(
         {
@@ -101,7 +99,6 @@ test.describe
           data: authorizationBody,
         },
       );
-      await assertStatusCode(authRes, 201);
 
       await validateResponse(
         {

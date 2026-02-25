@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -53,7 +52,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         data: {},
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -85,7 +83,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         data: {},
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -120,7 +117,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -154,7 +150,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -182,7 +177,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -220,7 +214,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
           },
         });
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: INCIDENT_SEARCH_ENDPOINT,
@@ -251,7 +244,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
           },
         });
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: INCIDENT_SEARCH_ENDPOINT,
@@ -317,7 +309,6 @@ test.describe.parallel('Search Incidents API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: INCIDENT_SEARCH_ENDPOINT,
@@ -344,7 +335,14 @@ test.describe.parallel('Search Incidents API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: INCIDENT_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(11);
       expect(body.items.length).toBe(1);

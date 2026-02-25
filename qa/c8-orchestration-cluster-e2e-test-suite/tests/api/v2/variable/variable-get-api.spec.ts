@@ -11,7 +11,6 @@ import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -38,7 +37,6 @@ test.describe.parallel('Get Variable API Tests', () => {
           headers: jsonHeaders(),
         });
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/variables/{variableKey}',

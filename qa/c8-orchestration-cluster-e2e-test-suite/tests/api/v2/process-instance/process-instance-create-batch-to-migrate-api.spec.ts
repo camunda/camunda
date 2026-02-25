@@ -14,7 +14,6 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -163,7 +162,6 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/migration',
@@ -232,7 +230,6 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/migration',
@@ -313,7 +310,6 @@ test.describe.serial('Create Process Instance Batch to Migrate Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/migration',

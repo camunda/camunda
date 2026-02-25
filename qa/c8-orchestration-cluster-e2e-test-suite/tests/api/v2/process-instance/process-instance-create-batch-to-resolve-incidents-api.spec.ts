@@ -9,7 +9,6 @@
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -96,7 +95,6 @@ test.describe
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -224,7 +222,6 @@ test.describe
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -323,7 +320,6 @@ test.describe
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {

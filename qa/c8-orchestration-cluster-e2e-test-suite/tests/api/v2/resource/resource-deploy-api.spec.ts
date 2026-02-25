@@ -37,7 +37,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',
@@ -65,7 +64,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',
@@ -89,7 +87,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',
@@ -123,7 +120,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',
@@ -153,7 +149,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',
@@ -193,7 +188,6 @@ test.describe.parallel('Resource Deploy API', () => {
       multipart: formData,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/deployments',

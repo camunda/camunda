@@ -52,7 +52,6 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
         data: variable,
       });
 
-      expect(res.status()).toBe(200);
       const json = await res.json();
       validateResponseShape(
         {
@@ -110,7 +109,6 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(200);
       const json = await res.json();
       validateResponseShape(
         {

@@ -60,7 +60,6 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        await assertStatusCode(statusRes, 200);
         await validateResponse(
           {
             path: '/batch-operations/{batchOperationKey}',

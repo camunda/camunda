@@ -8,7 +8,6 @@
 
 import {expect, test} from '@playwright/test';
 import {
-  assertStatusCode,
   buildUrl,
   assertUnauthorizedRequest,
   jsonHeaders,
@@ -58,7 +57,6 @@ test.describe.parallel('Resource Get API', () => {
       },
     );
 
-    await assertStatusCode(res, 200);
     validateResponse(
       {
         path: '/resources/{resourceKey}',

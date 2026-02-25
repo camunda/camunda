@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -45,7 +44,6 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/batch-operations/search',
@@ -83,7 +81,6 @@ test.describe.parallel('Search Batch Operation Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/batch-operations/search',
@@ -111,7 +108,6 @@ test.describe.parallel('Search Batch Operation Tests', () => {
           data: {page: {limit: 2}},
         },
       );
-      await assertStatusCode(firstRes, 200);
       await validateResponse(
         {
           path: '/batch-operations/search',
@@ -132,7 +128,6 @@ test.describe.parallel('Search Batch Operation Tests', () => {
           data: {page: {after: firstJson.page.endCursor, limit: 2}},
         },
       );
-      await assertStatusCode(secondRes, 200);
       await validateResponse(
         {
           path: '/batch-operations/search',
@@ -169,7 +164,6 @@ test.describe.parallel('Search Batch Operation Tests', () => {
       },
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/batch-operations/search',

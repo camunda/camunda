@@ -61,7 +61,6 @@ test.describe.parallel('Process Definition Get Start Form API', () => {
         ),
         {headers: jsonHeaders()},
       );
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {

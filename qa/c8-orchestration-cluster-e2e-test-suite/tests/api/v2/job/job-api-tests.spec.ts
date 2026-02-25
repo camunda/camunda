@@ -16,7 +16,6 @@ import {
   assertBadRequest,
   assertEqualsForKeys,
   assertPaginatedRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -76,7 +75,6 @@ test.describe.parallel('Job API Tests', () => {
       },
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/jobs/activation',
@@ -194,7 +192,6 @@ test.describe.parallel('Job API Tests', () => {
           },
         });
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/jobs/search',

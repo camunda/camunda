@@ -12,7 +12,6 @@ import {
   jsonHeaders,
   assertUnauthorizedRequest,
   assertBadRequest,
-  assertStatusCode,
   assertEqualsForKeys,
   assertNotFoundRequest,
 } from '../../../../utils/http';
@@ -45,7 +44,6 @@ test.describe.parallel('Get JSON Decision Requirements API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-requirements/{decisionRequirementsKey}',

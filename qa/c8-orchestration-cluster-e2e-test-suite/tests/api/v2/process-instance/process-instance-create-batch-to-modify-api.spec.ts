@@ -14,15 +14,12 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-
 import {findUserTask} from '@requestHelpers';
-import path from 'path';
 import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
@@ -190,7 +187,6 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/modification',
@@ -221,7 +217,6 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
             },
           },
         });
-        await assertStatusCode(res2, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',
@@ -317,7 +312,6 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/modification',
@@ -341,7 +335,6 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
             },
           },
         });
-        await assertStatusCode(res1, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',
@@ -374,7 +367,6 @@ test.describe.parallel('Create Process Instance Batch to Modify Tests', () => {
             },
           },
         });
-        await assertStatusCode(res2, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',

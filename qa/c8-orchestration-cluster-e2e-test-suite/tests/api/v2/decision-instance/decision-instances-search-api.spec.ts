@@ -12,7 +12,6 @@ import {
   jsonHeaders,
   assertUnauthorizedRequest,
   assertBadRequest,
-  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -46,7 +45,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -77,7 +75,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -115,7 +112,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -153,7 +149,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -190,7 +185,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -230,7 +224,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,
@@ -265,7 +258,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_INSTANCES_SEARCH_ENDPOINT,

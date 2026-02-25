@@ -8,7 +8,6 @@
 
 import {test} from '@playwright/test';
 import {
-  assertStatusCode,
   buildUrl,
   defaultHeaders,
   assertUnauthorizedRequest,
@@ -38,7 +37,6 @@ test.describe.parallel('Resource Delete API', () => {
       },
     );
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/resources/{resourceKey}/deletion',

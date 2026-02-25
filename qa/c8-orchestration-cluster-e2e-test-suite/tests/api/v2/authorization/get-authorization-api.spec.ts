@@ -13,7 +13,6 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   encode,
-  assertStatusCode,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -81,7 +80,6 @@ test.describe.parallel('Get Authorization API', () => {
             headers: jsonHeaders(),
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/authorizations/{authorizationKey}',

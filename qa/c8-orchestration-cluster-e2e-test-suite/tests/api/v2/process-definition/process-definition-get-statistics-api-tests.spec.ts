@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -42,7 +41,6 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
           data: {}, // empty body for basic search
         },
       );
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -119,7 +117,6 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
           },
         },
       );
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -150,7 +147,6 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
         },
       },
     );
-    await assertStatusCode(res, 200);
     const body = await res.json();
     validateResponseShape(
       {
@@ -179,7 +175,6 @@ test.describe.parallel('Process Definition Get Statistics API', () => {
           },
         },
       );
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
       {

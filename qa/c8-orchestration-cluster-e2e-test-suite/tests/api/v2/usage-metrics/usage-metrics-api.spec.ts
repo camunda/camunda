@@ -7,9 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {waitForAssertion} from '../../../../utils/waitForAssertion';
 import {
-  assertNotFoundRequest,
   assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,
@@ -70,7 +68,6 @@ test.describe.serial('Get usage metrics API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      await assertStatusCode(res, 200);
 
       await validateResponse(
         {
@@ -246,7 +243,6 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
           headers: jsonHeaders(token), // overrides default demo:demo
         },
       );
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/system/usage-metrics',

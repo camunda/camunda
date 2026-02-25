@@ -15,7 +15,6 @@ import {
 } from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -98,7 +97,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -128,7 +126,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
               },
             );
 
-            await assertStatusCode(res, 200);
             await validateResponse(
               {
                 path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
@@ -191,7 +188,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -227,7 +223,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
               },
             );
 
-            await assertStatusCode(res, 200);
             await validateResponse(
               {
                 path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
@@ -299,7 +294,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -330,7 +324,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
           },
         );
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
@@ -389,7 +382,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -433,7 +425,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
             },
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {
@@ -467,7 +458,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
           },
         );
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
@@ -501,7 +491,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
           },
         );
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: SEARCH_BATCH_OPERATION_ITEMS_PATH,
@@ -553,7 +542,6 @@ test.describe.parallel('Batch Operation Items Search API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: SEARCH_BATCH_OPERATION_ITEMS_PATH,

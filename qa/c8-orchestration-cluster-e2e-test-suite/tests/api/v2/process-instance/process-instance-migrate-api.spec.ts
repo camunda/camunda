@@ -96,7 +96,6 @@ test.describe.serial('Test process instance migrate API', () => {
             },
           },
         });
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/user-tasks/search',

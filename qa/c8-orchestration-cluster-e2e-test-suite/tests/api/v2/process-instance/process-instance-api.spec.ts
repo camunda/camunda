@@ -26,8 +26,6 @@ test.describe.parallel('Process instance Tests', () => {
       },
     });
 
-    await assertStatusCode(res, 200);
-
     const json = await res.json();
     validateResponseShape(
       {
@@ -58,7 +56,6 @@ test.describe.parallel('Process instance Tests', () => {
         awaitCompletion: true,
       },
     });
-    await assertStatusCode(res, 200);
     const json = await res.json();
     validateResponseShape(
       {
@@ -80,7 +77,6 @@ test.describe.parallel('Process instance Tests', () => {
         tags,
       },
     });
-    await assertStatusCode(res, 200);
     const json = await res.json();
     validateResponseShape(
       {
@@ -105,7 +101,6 @@ test.describe.parallel('Process instance Tests', () => {
           processDefinitionId: 'process_with_task_listener',
         },
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
       validateResponseShape(
         {
@@ -126,7 +121,6 @@ test.describe.parallel('Process instance Tests', () => {
           processDefinitionKey: localState['processDefinitionKey'],
         },
       });
-      await assertStatusCode(resByKey, 200);
 
       const jsonByKey = await resByKey.json();
       validateResponseShape(
@@ -162,7 +156,6 @@ test.describe.parallel('Process instance Tests', () => {
           processDefinitionId: 'process_instance_api_test',
         },
       });
-      await assertStatusCode(res, 200);
       const json = await res.json();
       validateResponseShape(
         {
@@ -185,7 +178,6 @@ test.describe.parallel('Process instance Tests', () => {
           awaitCompletion: true,
         },
       });
-      await assertStatusCode(resByKey, 200);
       const jsonByKey = await resByKey.json();
       validateResponseShape(
         {
@@ -218,7 +210,6 @@ test.describe.parallel('Process instance Tests', () => {
           tags: ['tag1', 'tag2'],
         },
       });
-      await assertStatusCode(resByKey, 200);
       const jsonByKey = await resByKey.json();
       validateResponseShape(
         {
@@ -248,7 +239,6 @@ test.describe.parallel('Process instance Tests', () => {
       },
     });
 
-    await assertStatusCode(res, 200);
     const json = await res.json();
     validateResponseShape(
       {

@@ -11,7 +11,6 @@ import {deploy, createInstances} from '../../../../utils/zeebeClient';
 import {
   buildUrl,
   jsonHeaders,
-  assertStatusCode,
   assertUnauthorizedRequest,
   assertBadRequest,
 } from '../../../../utils/http';
@@ -52,7 +51,6 @@ test.describe.parallel('Signal Broadcast API', () => {
       data: body,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/signals/broadcast',
@@ -81,7 +79,6 @@ test.describe.parallel('Signal Broadcast API', () => {
       data: body,
     });
 
-    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/signals/broadcast',

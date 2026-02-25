@@ -12,7 +12,6 @@ import {
   jsonHeaders,
   assertUnauthorizedRequest,
   assertBadRequest,
-  assertStatusCode,
   assertEqualsForKeys,
   assertNotFoundRequest,
 } from '../../../../utils/http';
@@ -50,7 +49,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-instances/{decisionEvaluationInstanceKey}',

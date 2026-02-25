@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {deploy} from '../../../../utils/zeebeClient';
 import {
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -43,7 +42,6 @@ test.describe('Get Batch Operation Tests', () => {
           },
         );
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/batch-operations/{batchOperationKey}',

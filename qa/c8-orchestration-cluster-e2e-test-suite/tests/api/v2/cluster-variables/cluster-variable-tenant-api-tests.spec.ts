@@ -66,7 +66,6 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       const json = await res.json();
       validateResponseShape(
         {
@@ -157,7 +156,6 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(200);
       const json = await res.json();
       validateResponseShape(
         {

@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -42,7 +41,6 @@ test.describe.parallel('Search Variables API Tests', () => {
         data: {},
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/variables/search',
@@ -74,7 +72,6 @@ test.describe.parallel('Search Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/variables/search',
@@ -109,7 +106,6 @@ test.describe.parallel('Search Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/variables/search',
@@ -140,7 +136,6 @@ test.describe.parallel('Search Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/variables/search',
@@ -170,7 +165,6 @@ test.describe.parallel('Search Variables API Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/variables/search',

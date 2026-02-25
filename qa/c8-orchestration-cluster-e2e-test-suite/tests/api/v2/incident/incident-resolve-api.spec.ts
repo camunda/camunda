@@ -64,7 +64,6 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
           },
         );
 
-        await assertStatusCode(searchRes, 200);
         await validateResponse(
           {
             path: INCIDENT_SEARCH_ENDPOINT,
@@ -122,7 +121,6 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
           },
         );
 
-        await assertStatusCode(searchRes, 200);
         await validateResponse(
           {
             path: INCIDENT_SEARCH_ENDPOINT,
@@ -229,7 +227,6 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
               },
             );
 
-            await assertStatusCode(searchRes, 200);
             await validateResponse(
               {
                 path: INCIDENT_SEARCH_ENDPOINT,
@@ -291,7 +288,6 @@ test.describe.parallel('Resolve Incidents API Tests', () => {
               },
             );
 
-            await assertStatusCode(searchRes, 200);
             await validateResponse(
               {
                 path: INCIDENT_SEARCH_ENDPOINT,

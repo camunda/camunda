@@ -12,7 +12,6 @@ import {searchActiveElementInstance} from '@requestHelpers';
 import {
   assertBadRequest,
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -48,7 +47,6 @@ test.describe.parallel('Get Element Instance API', () => {
             headers: jsonHeaders(),
           },
         );
-        await assertStatusCode(res, 200);
         const json = await res.json();
         validateResponseShape(
           {

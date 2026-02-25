@@ -11,7 +11,6 @@ import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -35,7 +34,6 @@ test.describe.parallel('Get Process instance Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',
@@ -58,7 +56,6 @@ test.describe.parallel('Get Process instance Tests', () => {
           },
         );
 
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/{processInstanceKey}',
@@ -117,7 +114,14 @@ test.describe.parallel('Get Process instance Tests', () => {
           processDefinitionId: 'process_with_task_listener',
         },
       });
-      await assertStatusCode(res, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState['processInstanceKey'] = json.processInstanceKey;
     });

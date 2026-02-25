@@ -10,7 +10,6 @@ import {expect, test} from '@playwright/test';
 import {cancelProcessInstance, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -36,7 +35,15 @@ test.describe.parallel('Get Process instance Tests', () => {
           processDefinitionId: 'process_with_task_listener',
         },
       });
-      await assertStatusCode(res, 200);
+
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState.processInstanceKey = json.processInstanceKey;
     });
@@ -46,7 +53,6 @@ test.describe.parallel('Get Process instance Tests', () => {
           headers: jsonHeaders(),
           data: {},
         });
-        await assertStatusCode(res, 200);
         const json = await res.json();
         await validateResponse(
           {
@@ -71,7 +77,15 @@ test.describe.parallel('Get Process instance Tests', () => {
           processDefinitionId: 'process_with_task_listener',
         },
       });
-      await assertStatusCode(res, 200);
+
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       const json = await res.json();
       localState.processInstanceKey = json.processInstanceKey;
     });
@@ -86,7 +100,6 @@ test.describe.parallel('Get Process instance Tests', () => {
             },
           },
         });
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/process-instances/search',
@@ -125,7 +138,6 @@ test.describe.parallel('Get Process instance Tests', () => {
           tags: ['example'],
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',
@@ -148,7 +160,6 @@ test.describe.parallel('Get Process instance Tests', () => {
           tags: ['example'],
         },
       });
-      await assertStatusCode(res2, 200);
       await validateResponse(
         {
           path: '/process-instances',
@@ -179,7 +190,6 @@ test.describe.parallel('Get Process instance Tests', () => {
             },
           },
         });
-        await assertStatusCode(res, 200);
         await validateResponse(
         {
           path: '/process-instances/search',
@@ -237,7 +247,15 @@ test.describe.parallel('Get Process instance Tests', () => {
         },
       },
     });
-    await assertStatusCode(res, 200);
+
+    await validateResponse(
+      {
+        path: '/process-instances/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
+    );
     const json = await res.json();
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);

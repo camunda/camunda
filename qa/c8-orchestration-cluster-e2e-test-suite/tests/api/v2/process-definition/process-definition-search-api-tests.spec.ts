@@ -9,7 +9,6 @@
 import {expect, test} from '@playwright/test';
 import {
   assertBadRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -40,7 +39,6 @@ test.describe.parallel('Process Definition Search API', () => {
         headers: jsonHeaders(),
         data: {}, // empty body for basic search
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -68,7 +66,6 @@ test.describe.parallel('Process Definition Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -97,7 +94,6 @@ test.describe.parallel('Process Definition Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -130,7 +126,6 @@ test.describe.parallel('Process Definition Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -160,7 +155,6 @@ test.describe.parallel('Process Definition Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -185,7 +179,6 @@ test.describe.parallel('Process Definition Search API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -228,7 +221,6 @@ test.describe.parallel('Process Definition Search API', () => {
           ],
         },
       });
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {

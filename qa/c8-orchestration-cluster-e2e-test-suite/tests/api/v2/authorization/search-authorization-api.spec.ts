@@ -13,7 +13,6 @@ import {
   assertBadRequest,
   assertUnauthorizedRequest,
   encode,
-  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {cleanupUsers} from '../../../../utils/usersCleanup';
@@ -175,7 +174,6 @@ test.describe.parallel('Search Authorization API', () => {
       const res = await request.post(buildUrl(AUTHORIZATION_SEARCH_ENDPOINT), {
         headers: jsonHeaders(),
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -210,7 +208,6 @@ test.describe.parallel('Search Authorization API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -246,7 +243,6 @@ test.describe.parallel('Search Authorization API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -278,7 +274,6 @@ test.describe.parallel('Search Authorization API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -305,7 +300,6 @@ test.describe.parallel('Search Authorization API', () => {
           },
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -425,7 +419,6 @@ test.describe.parallel('Search Authorization API', () => {
             data: {},
           },
         );
-        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: AUTHORIZATION_SEARCH_ENDPOINT,
@@ -464,7 +457,6 @@ test.describe.parallel('Search Authorization API', () => {
           page: {from: 0, limit: 0},
         },
       });
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: AUTHORIZATION_SEARCH_ENDPOINT,

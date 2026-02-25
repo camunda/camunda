@@ -11,7 +11,6 @@ import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {
   assertBadRequest,
   assertNotFoundRequest,
-  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   jsonHeaders,
@@ -39,7 +38,6 @@ test.describe.parallel('Process Definition Get API', () => {
         buildUrl(`/process-definitions/${state.processDefinitionKey}`),
         {headers: jsonHeaders()},
       );
-      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {

@@ -29,7 +29,6 @@ test.describe.parallel('Cancel Process instance Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',
@@ -111,7 +110,6 @@ test.describe.parallel('Cancel Process instance Tests', () => {
         },
       });
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/process-instances',

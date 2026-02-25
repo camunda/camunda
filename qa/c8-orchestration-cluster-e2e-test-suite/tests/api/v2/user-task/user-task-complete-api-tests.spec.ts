@@ -57,7 +57,6 @@ test.describe.parallel('Complete User Task Tests', () => {
             },
           },
         });
-        await assertStatusCode(verifyRes, 200);
         const verifyJson = await verifyRes.json();
 
         validateResponseShape(

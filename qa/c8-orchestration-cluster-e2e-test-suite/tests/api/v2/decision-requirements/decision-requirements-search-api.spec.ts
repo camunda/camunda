@@ -12,7 +12,6 @@ import {
   jsonHeaders,
   assertUnauthorizedRequest,
   assertBadRequest,
-  assertStatusCode,
   assertEqualsForKeys,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -46,7 +45,6 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
         },
       );
 
-      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: DECISION_REQUIREMENTS_SEARCH_ENDPOINT,
@@ -76,8 +74,6 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
           },
         },
       );
-
-      await assertStatusCode(res, 200);
 
       await validateResponse(
         {
@@ -111,8 +107,6 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
           },
         },
       );
-
-      await assertStatusCode(res, 200);
 
       await validateResponse(
         {
@@ -167,8 +161,6 @@ test.describe.parallel('Search Decision Requirements API Tests', () => {
           },
         },
       );
-
-      await assertStatusCode(res, 200);
 
       await validateResponse(
         {

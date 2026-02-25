@@ -16,7 +16,6 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   encode,
-  assertStatusCode,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -71,7 +70,6 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
           data: authorizationBody,
         },
       );
-      await assertStatusCode(authRes, 201);
 
       await validateResponse(
         {
@@ -103,7 +101,6 @@ test.describe.serial('Create Authorization API - Success and Conflict', () => {
           data: authorizationBody,
         },
       );
-      await assertStatusCode(authRes, 201);
 
       await validateResponse(
         {
