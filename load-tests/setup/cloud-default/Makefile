@@ -13,6 +13,14 @@ all: install
 .PHONY: install
 install: credentials install-load-test
 
+.PHONY: realistic
+realistic: additional_load_test_configuration = -f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml
+realistic: credentials install-load-test
+
+.PHONY: typical
+typical: additional_load_test_configuration = --set starter.rate=50 --set workers.worker.replicas=6 --set starter.bpmnXmlPath=bpmn/typical_process.bpmn
+typical: credentials install-load-test
+
 .PHONY: credentials
 credentials:
 	. 'credentials.txt'
