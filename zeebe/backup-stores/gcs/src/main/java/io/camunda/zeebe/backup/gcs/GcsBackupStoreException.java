@@ -24,13 +24,6 @@ public abstract class GcsBackupStoreException extends RuntimeException {
     public ConfigurationException(final String message, final Exception cause) {
       super(message, cause);
     }
-
-    public static final class CouldNotAccessBucketException extends ConfigurationException {
-
-      public CouldNotAccessBucketException(final String bucketName, final Exception cause) {
-        super("Bucket %s does not exist".formatted(bucketName), cause);
-      }
-    }
   }
 
   public static class UploadException extends GcsBackupStoreException {

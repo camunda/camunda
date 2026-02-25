@@ -18,19 +18,9 @@ public interface BackupStatus extends Comparable<BackupStatus> {
 
   BackupStatusCode statusCode();
 
-  default boolean isCompleted() {
-    return statusCode() == BackupStatusCode.COMPLETED;
-  }
-
   Optional<String> failureReason();
 
   Optional<Instant> created();
-
-  default Instant createdOrThrow() {
-    return created()
-        .orElseThrow(
-            () -> new IllegalStateException("Backup %s missing created field".formatted(this)));
-  }
 
   Optional<Instant> lastModified();
 
