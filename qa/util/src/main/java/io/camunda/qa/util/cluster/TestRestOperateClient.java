@@ -15,7 +15,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.camunda.client.CredentialsProvider;
 import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 import java.net.CookieManager;
@@ -73,24 +72,6 @@ public class TestRestOperateClient implements AutoCloseable {
       return sendRequestCatchingException(builder);
     } catch (final URISyntaxException e) {
       return Either.left(e);
-    }
-  }
-
-  public Either<Exception, HttpResponse<String>> modifyProcessInstance(
-      final long processInstanceKey, final ModifyProcessInstanceRequestDto modificationsBody) {
-    try {
-      final var path =
-          String.format("%sapi/process-instances/%s/modify", endpoint, processInstanceKey);
-      final var request =
-          createBuilder(path)
-              .POST(
-                  HttpRequest.BodyPublishers.ofString(
-                      OBJECT_MAPPER.writeValueAsString(modificationsBody)));
-      return sendRequestCatchingException(request);
-    } catch (final URISyntaxException e) {
-      return Either.left(e);
-    } catch (final JsonProcessingException e) {
-      throw new RuntimeException(e);
     }
   }
 

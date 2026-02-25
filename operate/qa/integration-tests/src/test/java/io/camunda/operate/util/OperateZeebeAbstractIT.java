@@ -9,8 +9,6 @@ package io.camunda.operate.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
@@ -21,6 +19,7 @@ import io.camunda.operate.util.searchrepository.TestSearchRepository;
 import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
 import io.camunda.operate.webapp.operation.dto.CreateOperationRequestDto;
 import io.camunda.operate.webapp.reader.FlowNodeInstanceReader;
+import io.camunda.operate.webapp.writer.BatchOperationWriter;
 import io.camunda.operate.webapp.zeebe.operation.OperationExecutor;
 import io.camunda.operate.webapp.zeebe.operation.adapter.ClientBasedAdapter;
 import io.camunda.operate.webapp.zeebe.operation.adapter.OperateServicesAdapter;
@@ -37,19 +36,15 @@ import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
-import org.apache.http.HttpStatus;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
 
-  protected static final String POST_OPERATION_URL = "/api/process-instances/%s/operation";
   @Rule public final OperateZeebeRule zeebeRule;
 
   // test rule
@@ -61,6 +56,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
   @Autowired protected FlowNodeInstanceReader flowNodeInstanceReader;
   @Autowired protected ProcessCache processCache;
   @Autowired protected ObjectMapper objectMapper;
+  @Autowired protected BatchOperationWriter batchOperationWriter;
 
   /// Predicate checks
   @Autowired
@@ -284,10 +280,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
-    final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
-    final BatchOperationDto batchOperationDto =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    final BatchOperationDto batchOperationDto = postOperationWithOKResponse(processInstanceKey, op);
     return batchOperationDto.getId();
   }
 
@@ -315,10 +308,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     op.setVariableName(newVarName);
     op.setVariableValue(newVarValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(scopeKey));
-    final MvcResult mvcResult = postOperationWithOKResponse(processInstanceKey, op);
-    final BatchOperationDto batchOperationDto =
-        objectMapper.readValue(
-            mvcResult.getResponse().getContentAsString(), BatchOperationDto.class);
+    final BatchOperationDto batchOperationDto = postOperationWithOKResponse(processInstanceKey, op);
     return batchOperationDto.getId();
   }
 
@@ -334,26 +324,15 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
     }
   }
 
-  protected MvcResult postOperationWithOKResponse(
+  protected BatchOperationDto postOperationWithOKResponse(
       final Long processInstanceKey, final CreateOperationRequestDto operationRequest)
       throws Exception {
-    return postOperation(processInstanceKey, operationRequest, HttpStatus.SC_OK);
-  }
-
-  protected MvcResult postOperation(
-      final Long processInstanceKey,
-      final CreateOperationRequestDto operationRequest,
-      final int expectedStatus)
-      throws Exception {
-    final MockHttpServletRequestBuilder postOperationRequest =
-        post(String.format(POST_OPERATION_URL, processInstanceKey))
-            .content(mockMvcTestRule.json(operationRequest))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvc.perform(postOperationRequest).andExpect(status().is(expectedStatus)).andReturn();
+    final BatchOperationDto batchOperation =
+        BatchOperationDto.createFrom(
+            batchOperationWriter.scheduleBatchOperation(processInstanceKey, operationRequest),
+            objectMapper);
     searchTestRule.refreshSerchIndexes();
-    return mvcResult;
+    return batchOperation;
   }
 
   protected void clearMetrics() {

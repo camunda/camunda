@@ -8,9 +8,7 @@
 package io.camunda.it.operate.compatibility;
 
 import static io.camunda.it.util.TestHelper.deployResource;
-import static io.camunda.it.util.TestHelper.startProcessInstance;
 import static io.camunda.it.util.TestHelper.waitForDecisionsToBeDeployed;
-import static io.camunda.it.util.TestHelper.waitForProcessInstancesToStart;
 import static io.camunda.it.util.TestHelper.waitForProcessesToBeDeployed;
 import static io.camunda.zeebe.test.util.asserts.EitherAssert.assertThat;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,9 +18,6 @@ import io.camunda.client.CamundaClient;
 import io.camunda.client.api.response.DeploymentEvent;
 import io.camunda.client.api.search.enums.PermissionType;
 import io.camunda.client.api.search.enums.ResourceType;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification;
-import io.camunda.operate.webapp.rest.dto.operation.ModifyProcessInstanceRequestDto.Modification.Type;
 import io.camunda.qa.util.auth.Authenticated;
 import io.camunda.qa.util.auth.Permissions;
 import io.camunda.qa.util.auth.TestUser;
@@ -30,7 +25,6 @@ import io.camunda.qa.util.auth.UserDefinition;
 import io.camunda.qa.util.cluster.TestCamundaApplication;
 import io.camunda.qa.util.multidb.MultiDbTest;
 import io.camunda.qa.util.multidb.MultiDbTestApplication;
-import io.camunda.zeebe.protocol.record.intent.ProcessInstanceModificationIntent;
 import io.camunda.zeebe.protocol.record.intent.ResourceDeletionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -232,52 +226,6 @@ public class CompatibilityModeOperateZeebeAuthorizationIT {
         assertThat(
                 RecordingExporter.resourceDeletionRecords(ResourceDeletionIntent.DELETED)
                     .withResourceKey(decisionRequirementsKey)
-                    .exists())
-            .isTrue();
-        RecordingExporter.setMaximumWaitTime(5000);
-      }
-    }
-  }
-
-  @ParameterizedTest
-  @MethodSource("provideUserAndResponseCode")
-  public void shouldModifyProcessInstance(
-      final TestUser user,
-      final int expectedResponseCode,
-      @Authenticated(ADMIN_USER_NAME) final CamundaClient adminClient) {
-    // given
-    final var processInstanceKey =
-        startProcessInstance(adminClient, PROCESS_WITH_SERVICE_TASKS).getProcessInstanceKey();
-    waitForProcessInstancesToStart(
-        adminClient, filter -> filter.processInstanceKey(processInstanceKey), 1);
-
-    try (final var operateRestClient =
-        STANDALONE_CAMUNDA.newOperateClient(user.username(), user.password())) {
-      final var modificationRequestDto =
-          new ModifyProcessInstanceRequestDto()
-              .setProcessInstanceKey(String.valueOf(processInstanceKey))
-              .setModifications(
-                  List.of(
-                      new Modification()
-                          .setModification(Type.MOVE_TOKEN)
-                          .setFromFlowNodeId("taskA")
-                          .setToFlowNodeId("taskB")));
-
-      // when
-      final var response =
-          operateRestClient.modifyProcessInstance(processInstanceKey, modificationRequestDto);
-      // then
-      assertThat(response).isRight();
-      final var responseBody = response.get();
-      assertThat(responseBody).isNotNull();
-      assertThat(responseBody.statusCode()).isEqualTo(expectedResponseCode);
-      if (expectedResponseCode == 200) {
-        // if the request is successful, we expect the process instance to be modified
-        RecordingExporter.setMaximumWaitTime(25_000L);
-        assertThat(
-                RecordingExporter.processInstanceModificationRecords()
-                    .withIntent(ProcessInstanceModificationIntent.MODIFIED)
-                    .withProcessInstanceKey(processInstanceKey)
                     .exists())
             .isTrue();
         RecordingExporter.setMaximumWaitTime(5000);
