@@ -14,6 +14,7 @@ import static org.instancio.Select.field;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -45,24 +46,40 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.BrokerErrorException;
+import io.camunda.zeebe.broker.client.api.dto.BrokerError;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
+import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerDeleteHistoryRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.history.HistoryDeletionRecord;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceModificationMoveInstruction;
+import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
+import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.BatchOperationType;
 import io.camunda.zeebe.protocol.record.value.HistoryDeletionType;
+import java.net.ConnectException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Stream;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Named;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.ArgumentCaptor;
 
 public final class ProcessInstanceServiceTest {
@@ -708,5 +725,261 @@ public final class ProcessInstanceServiceTest {
                     .BrokerCreateProcessInstanceWithResultRequest.class));
     verify(brokerClient, org.mockito.Mockito.never())
         .sendRequest(any(), any(java.time.Duration.class));
+  }
+
+  @Nested
+  @DisplayName("Retry on different partitions")
+  class RetryPartitionsTest {
+
+    private static Stream<Named<Throwable>> retryableErrors() {
+      return Stream.of(
+          Named.of(
+              "PARTITION_LEADER_MISMATCH",
+              new BrokerErrorException(
+                  new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "leader mismatch"))),
+          Named.of(
+              "RESOURCE_EXHAUSTED",
+              new BrokerErrorException(
+                  new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "resource exhausted"))),
+          Named.of("ConnectException", new ConnectException("connection refused")));
+    }
+
+    @ParameterizedTest
+    @MethodSource("retryableErrors")
+    void shouldRetryCreateProcessInstanceOnRetryableError(final Throwable retryableError) {
+      // given
+      final var request = createProcessInstanceRequest(null);
+      final var mockResponse = new ProcessInstanceCreationRecord();
+      final var triedPartitions = new ArrayList<Integer>();
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                if (triedPartitions.size() == 1) {
+                  return CompletableFuture.failedFuture(retryableError);
+                }
+                return CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse));
+              });
+
+      // when
+      final var result = services.createProcessInstance(request).join();
+
+      // then - retried on a different partition and succeeded
+      assertThat(result).isNotNull();
+      assertThat(triedPartitions).hasSize(2);
+      assertThat(triedPartitions.get(0)).isNotEqualTo(triedPartitions.get(1));
+    }
+
+    @ParameterizedTest
+    @MethodSource("retryableErrors")
+    void shouldRetryCreateProcessInstanceWithResultOnRetryableError(
+        final Throwable retryableError) {
+      // given
+      final var request = createProcessInstanceWithResultRequest(null, null);
+      final var mockResponse = new ProcessInstanceResultRecord();
+      final var triedPartitions = new ArrayList<Integer>();
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceWithResultRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                if (triedPartitions.size() == 1) {
+                  return CompletableFuture.failedFuture(retryableError);
+                }
+                return CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse));
+              });
+
+      // when
+      final var result = services.createProcessInstanceWithResult(request).join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(triedPartitions).hasSize(2);
+      assertThat(triedPartitions.get(0)).isNotEqualTo(triedPartitions.get(1));
+    }
+
+    @Test
+    void shouldExhaustRetriesForCreateProcessInstanceWhenAllPartitionsFail() {
+      // given - topology has 3 partitions, all fail with retryable errors
+      final var request = createProcessInstanceRequest(null);
+      final var triedPartitions = new ArrayList<Integer>();
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                return CompletableFuture.failedFuture(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "leader mismatch")));
+              });
+
+      // when / then - all 3 partitions tried with distinct IDs, then RESOURCE_EXHAUSTED error
+      assertThatThrownBy(() -> services.createProcessInstance(request).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(ServiceException.class)
+          .extracting(Throwable::getCause)
+          .satisfies(
+              cause -> {
+                final var serviceException = (ServiceException) cause;
+                assertThat(serviceException.getStatus()).isEqualTo(Status.RESOURCE_EXHAUSTED);
+              });
+      assertThat(triedPartitions).hasSize(3);
+      assertThat(triedPartitions).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void shouldExhaustRetriesForCreateProcessInstanceWithResultWhenAllPartitionsFail() {
+      // given
+      final var request = createProcessInstanceWithResultRequest(null, null);
+      final var triedPartitions = new ArrayList<Integer>();
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class)))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceWithResultRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                return CompletableFuture.failedFuture(
+                    new BrokerErrorException(
+                        new BrokerError(ErrorCode.RESOURCE_EXHAUSTED, "resource exhausted")));
+              });
+
+      // when / then
+      assertThatThrownBy(() -> services.createProcessInstanceWithResult(request).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(ServiceException.class)
+          .extracting(Throwable::getCause)
+          .satisfies(
+              cause -> {
+                final var serviceException = (ServiceException) cause;
+                assertThat(serviceException.getStatus()).isEqualTo(Status.RESOURCE_EXHAUSTED);
+              });
+      assertThat(triedPartitions).hasSize(3);
+      assertThat(triedPartitions).doesNotHaveDuplicates();
+    }
+
+    @Test
+    void shouldNotRetryCreateProcessInstanceOnNonRetryableError() {
+      // given - a non-retryable error like PROCESS_NOT_FOUND
+      final var request = createProcessInstanceRequest(null);
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenReturn(
+              CompletableFuture.failedFuture(
+                  new BrokerErrorException(
+                      new BrokerError(ErrorCode.PROCESS_NOT_FOUND, "process not found"))));
+
+      // when / then - only tried once, no retry
+      assertThatThrownBy(() -> services.createProcessInstance(request).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(ServiceException.class);
+      verify(brokerClient, times(1)).sendRequest(any(BrokerCreateProcessInstanceRequest.class));
+    }
+
+    @Test
+    void shouldNotRetryCreateProcessInstanceWhenBusinessIdIsSet() {
+      // given - businessId is set, so a fixed dispatch strategy is used (no retry across
+      // partitions)
+      final var request = createProcessInstanceRequest("my-business-id");
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceRequest.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("connection refused")));
+
+      // when / then - only one attempt, error propagated directly without retrying other
+      // partitions
+      assertThatThrownBy(() -> services.createProcessInstance(request).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(ServiceException.class);
+      verify(brokerClient, times(1)).sendRequest(any(BrokerCreateProcessInstanceRequest.class));
+    }
+
+    @Test
+    void shouldRetryCreateProcessInstanceWithResultUsingCustomTimeout() {
+      // given
+      final var request = createProcessInstanceWithResultRequest(600_000L, null);
+      final var mockResponse = new ProcessInstanceResultRecord();
+      final var triedPartitions = new ArrayList<Integer>();
+      when(brokerClient.sendRequest(
+              any(BrokerCreateProcessInstanceWithResultRequest.class),
+              eq(java.time.Duration.ofMillis(600_000L))))
+          .thenAnswer(
+              invocation -> {
+                final var brokerRequest =
+                    invocation.getArgument(0, BrokerCreateProcessInstanceWithResultRequest.class);
+                triedPartitions.add(brokerRequest.getPartitionId());
+                if (triedPartitions.size() == 1) {
+                  return CompletableFuture.failedFuture(
+                      new BrokerErrorException(
+                          new BrokerError(ErrorCode.PARTITION_LEADER_MISMATCH, "leader mismatch")));
+                }
+                return CompletableFuture.completedFuture(new BrokerResponse<>(mockResponse));
+              });
+
+      // when
+      final var result = services.createProcessInstanceWithResult(request).join();
+
+      // then
+      assertThat(result).isNotNull();
+      assertThat(triedPartitions).hasSize(2);
+      assertThat(triedPartitions.get(0)).isNotEqualTo(triedPartitions.get(1));
+      verify(brokerClient, times(2))
+          .sendRequest(
+              any(BrokerCreateProcessInstanceWithResultRequest.class),
+              eq(java.time.Duration.ofMillis(600_000L)));
+    }
+
+    @Test
+    void shouldNotRetryCreateProcessInstanceWithResultWhenBusinessIdIsSet() {
+      // given - businessId is set, so a fixed dispatch strategy is used
+      final var request = createProcessInstanceWithResultRequest(null, "my-business-id");
+      when(brokerClient.sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class)))
+          .thenReturn(CompletableFuture.failedFuture(new ConnectException("connection refused")));
+
+      // when / then - only one attempt
+      assertThatThrownBy(() -> services.createProcessInstanceWithResult(request).join())
+          .isInstanceOf(CompletionException.class)
+          .hasCauseInstanceOf(ServiceException.class);
+      verify(brokerClient, times(1))
+          .sendRequest(any(BrokerCreateProcessInstanceWithResultRequest.class));
+    }
+
+    private ProcessInstanceServices.ProcessInstanceCreateRequest createProcessInstanceRequest(
+        final String businessId) {
+      return new ProcessInstanceServices.ProcessInstanceCreateRequest(
+          123L, // processDefinitionKey
+          "test-process", // bpmnProcessId
+          -1, // version
+          null, // variables
+          "<default>", // tenantId
+          false, // awaitCompletion
+          null, // requestTimeout
+          null, // operationReference
+          List.of(), // startInstructions
+          List.of(), // runtimeInstructions
+          List.of(), // fetchVariables
+          null, // tags
+          businessId // businessId
+          );
+    }
+
+    private ProcessInstanceServices.ProcessInstanceCreateRequest
+        createProcessInstanceWithResultRequest(final Long requestTimeout, final String businessId) {
+      return new ProcessInstanceServices.ProcessInstanceCreateRequest(
+          123L, // processDefinitionKey
+          "test-process", // bpmnProcessId
+          -1, // version
+          null, // variables
+          "<default>", // tenantId
+          true, // awaitCompletion
+          requestTimeout, // requestTimeout
+          null, // operationReference
+          List.of(), // startInstructions
+          List.of(), // runtimeInstructions
+          List.of(), // fetchVariables
+          null, // tags
+          businessId // businessId
+          );
+    }
   }
 }
