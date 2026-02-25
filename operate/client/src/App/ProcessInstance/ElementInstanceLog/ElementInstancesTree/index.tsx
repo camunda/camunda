@@ -34,7 +34,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {ElementInstance as FlowNodeInstance} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 

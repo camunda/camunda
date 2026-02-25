@@ -55,7 +55,7 @@ import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAss
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/elements';
-import type {FlowNodeState} from 'modules/types/operate';
+import type {ElementState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
@@ -398,7 +398,7 @@ const TopPanel: React.FC = observer(() => {
               >
                 {stateOverlays.map((overlay) => {
                   const payload = overlay.payload as {
-                    flowNodeState: FlowNodeState | 'completedEndEvents';
+                    flowNodeState: ElementState | 'completedEndEvents';
                     count: number;
                   };
 

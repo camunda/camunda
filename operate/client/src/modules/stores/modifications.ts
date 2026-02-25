@@ -86,7 +86,7 @@ type VariableModificationPayload = {
   newValue: string;
 };
 
-type FlowNodeModification = {
+type ElementModification = {
   type: 'token';
   payload: FlowNodeModificationPayload;
 };
@@ -96,7 +96,7 @@ type VariableModification = {
   payload: VariableModificationPayload;
 };
 
-type Modification = FlowNodeModification | VariableModification;
+type Modification = ElementModification | VariableModification;
 type RemovedModificationSource = 'variables' | 'summaryModal' | 'footer';
 
 type State = {
@@ -367,7 +367,7 @@ class Modifications {
   get flowNodeModifications() {
     function isFlowNodeModification(
       modification: Modification,
-    ): modification is FlowNodeModification {
+    ): modification is ElementModification {
       const {type} = modification;
 
       return type === 'token';
@@ -753,6 +753,6 @@ class Modifications {
   };
 }
 
-export type {FlowNodeModification, AncestorScopeType};
+export type {ElementModification, AncestorScopeType};
 export const modificationsStore = new Modifications();
 export {EMPTY_MODIFICATION};
