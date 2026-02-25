@@ -167,7 +167,7 @@ public record VariableDbModel(
         case LONG -> getLongModel();
         case DOUBLE -> getDoubleModel();
         case BOOLEAN -> getModel(ValueTypeEnum.BOOLEAN, mapBoolean(value));
-        case NULL -> getModel(ValueTypeEnum.NULL, null);
+        case NULL -> getModel(ValueTypeEnum.NULL, value);
         default -> getModel(ValueTypeEnum.STRING, value);
       };
     }
