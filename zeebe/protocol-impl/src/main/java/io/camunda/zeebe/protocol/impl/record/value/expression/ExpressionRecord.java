@@ -68,7 +68,8 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   }
 
   public ExpressionRecord setContext(final Map<String, Object> context) {
-    contextProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(context)));
+    final Map<String, Object> contextToEncode = context != null ? context : Map.of();
+    contextProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(contextToEncode)));
     return this;
   }
 
