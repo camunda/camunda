@@ -26,11 +26,14 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.SequenceFlowQuery;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
+import io.camunda.service.exception.ErrorMapper;
 import io.camunda.service.search.core.SearchQueryService;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.service.util.TreePathParser;
 import io.camunda.util.ObjectBuilder;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import io.camunda.zeebe.broker.client.api.dto.BrokerRequest;
+import io.camunda.zeebe.gateway.impl.broker.RequestRetryHandler;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCancelProcessInstanceRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateProcessInstanceRequest;
@@ -58,6 +61,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -68,6 +72,8 @@ public final class ProcessInstanceServices
   private final ProcessInstanceSearchClient processInstanceSearchClient;
   private final SequenceFlowSearchClient sequenceFlowSearchClient;
   private final IncidentServices incidentServices;
+  private final RequestRetryHandler requestRetryHandler;
+  private final ExecutorService executor;
 
   public ProcessInstanceServices(
       final BrokerClient brokerClient,
@@ -87,6 +93,8 @@ public final class ProcessInstanceServices
     this.processInstanceSearchClient = processInstanceSearchClient;
     this.sequenceFlowSearchClient = sequenceFlowSearchClient;
     this.incidentServices = incidentServices;
+    requestRetryHandler = new RequestRetryHandler(brokerClient, brokerClient.getTopologyManager());
+    executor = executorProvider.getExecutor();
   }
 
   @Override
@@ -213,7 +221,7 @@ public final class ProcessInstanceServices
     if (request.operationReference() != null) {
       brokerRequest.setOperationReference(request.operationReference());
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendRequestWithRetryPartitions(brokerRequest);
   }
 
   public CompletableFuture<ProcessInstanceResultRecord> createProcessInstanceWithResult(
@@ -235,9 +243,10 @@ public final class ProcessInstanceServices
 
     // Use custom request timeout if provided, otherwise use default
     if (request.requestTimeout() != null && request.requestTimeout() > 0) {
-      return sendBrokerRequest(brokerRequest, Duration.ofMillis(request.requestTimeout()));
+      return sendRequestWithRetryPartitions(
+          brokerRequest, Duration.ofMillis(request.requestTimeout()));
     }
-    return sendBrokerRequest(brokerRequest);
+    return sendRequestWithRetryPartitions(brokerRequest);
   }
 
   public CompletableFuture<ProcessInstanceRecord> cancelProcessInstance(
@@ -350,6 +359,39 @@ public final class ProcessInstanceServices
                     b.filter(f -> f.treePathOperations(Operation.like("*" + treePath + "*")))
                         .page(query.page())
                         .sort(query.sort())));
+  }
+
+  private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
+      final BrokerRequest<R> brokerRequest) {
+    return sendRequestWithRetryPartitions(brokerRequest, null);
+  }
+
+  private <R> CompletableFuture<R> sendRequestWithRetryPartitions(
+      final BrokerRequest<R> brokerRequest, final Duration requestTimeout) {
+    final var brokerRequestAuthorization =
+        brokerRequestAuthorizationConverter.convert(authentication);
+    brokerRequest.setAuthorization(brokerRequestAuthorization);
+    final CompletableFuture<R> responseFuture = new CompletableFuture<>();
+    if (requestTimeout != null) {
+      requestRetryHandler.sendRequest(
+          brokerRequest,
+          (key, response) -> responseFuture.complete(response),
+          responseFuture::completeExceptionally,
+          requestTimeout);
+    } else {
+      requestRetryHandler.sendRequest(
+          brokerRequest,
+          (key, response) -> responseFuture.complete(response),
+          responseFuture::completeExceptionally);
+    }
+    return responseFuture.handleAsync(
+        (response, error) -> {
+          if (error != null) {
+            throw ErrorMapper.mapError(error);
+          }
+          return response;
+        },
+        executor);
   }
 
   public record ProcessInstanceCreateRequest(

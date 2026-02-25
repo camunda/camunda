@@ -42,6 +42,7 @@ import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
+import io.camunda.zeebe.gateway.api.util.StubbedTopologyManager;
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerCreateBatchOperationRequest;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.batchoperation.BatchOperationCreationRecord;
@@ -81,6 +82,7 @@ public final class ProcessInstanceServiceTest {
         .thenReturn(incidentServices);
     securityContextProvider = mock(SecurityContextProvider.class);
     brokerClient = mock(BrokerClient.class);
+    when(brokerClient.getTopologyManager()).thenReturn(new StubbedTopologyManager(3));
     executorProvider = mock(ApiServicesExecutorProvider.class);
     when(executorProvider.getExecutor()).thenReturn(ForkJoinPool.commonPool());
     brokerRequestAuthorizationConverter = mock(BrokerRequestAuthorizationConverter.class);
