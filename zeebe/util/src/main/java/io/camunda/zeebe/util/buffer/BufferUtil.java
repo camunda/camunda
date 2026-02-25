@@ -10,11 +10,13 @@ package io.camunda.zeebe.util.buffer;
 import static io.camunda.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.camunda.zeebe.util.StringUtil.getBytes;
 
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.sbe.MessageEncoderFlyweight;
 
 public final class BufferUtil {
   public static final int NO_WRAP = 1;
@@ -206,6 +208,27 @@ public final class BufferUtil {
 
   public static MutableDirectBuffer wrapArray(final byte[] array) {
     return new UnsafeBuffer(array);
+  }
+
+  /**
+   * Writes a {@link BufferWriter} into an SBE encoder as a variable-length field. The content
+   * length is written at `encoder.limit()` and the content itself is written at `encoder.limit() +
+   * headerLength`. Then, the `encoder.limit` is increased by the written bytes
+   *
+   * @param writer the writer whose content to encode
+   * @param encoder the SBE encoder to write into
+   * @param headerLength the byte width of the length prefix field (typically 4)
+   * @param byteOrder the byte order for the length header
+   */
+  public static void writeLengthPrefixed(
+      final BufferWriter writer,
+      final MessageEncoderFlyweight encoder,
+      final int headerLength,
+      final ByteOrder byteOrder) {
+    final var offset = encoder.limit();
+    final var length = writer.write(encoder.buffer(), offset + headerLength);
+    encoder.buffer().putInt(offset, length, byteOrder);
+    encoder.limit(offset + headerLength + length);
   }
 
   /**
