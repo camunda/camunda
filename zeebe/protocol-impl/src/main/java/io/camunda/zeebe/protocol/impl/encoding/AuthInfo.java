@@ -15,6 +15,7 @@ import io.camunda.zeebe.msgpack.property.EnumProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.DocumentValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Collections;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,6 +32,7 @@ public class AuthInfo extends UnpackedObject {
 
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
+  private transient Map<String, Object> cachedClaims;
 
   public AuthInfo() {
     super(3);
@@ -100,8 +102,16 @@ public class AuthInfo extends UnpackedObject {
     return BufferUtil.bufferAsString(authDataProp.getValue());
   }
 
+  /**
+   * Returns an unmodifiable view of the claims map, lazily deserialized from msgpack on first
+   * access. The returned map and its contents must not be mutated.
+   */
   public Map<String, Object> getClaims() {
-    return MsgPackConverter.convertToMap(claimsProp.getValue());
+    if (cachedClaims == null) {
+      cachedClaims =
+          Collections.unmodifiableMap(MsgPackConverter.convertToMap(claimsProp.getValue()));
+    }
+    return cachedClaims;
   }
 
   @Override
@@ -109,6 +119,7 @@ public class AuthInfo extends UnpackedObject {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
+    cachedClaims = null;
   }
 
   @Override
