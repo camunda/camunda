@@ -171,7 +171,7 @@ test.describe.parallel('Job API Tests', () => {
             method: 'POST',
             status: '200',
           },
-          res,
+          json,
         );
       }).toPass(defaultAssertionOptions);
     });
