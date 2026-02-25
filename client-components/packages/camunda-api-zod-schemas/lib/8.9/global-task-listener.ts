@@ -34,9 +34,9 @@ const globalTaskListenerSchema = z.object({
 	id: z.string(),
 	type: z.string(),
 	eventTypes: z.array(globalTaskListenerEventTypeSchema),
-	retries: z.number().int().optional(),
-	afterNonGlobal: z.boolean().optional(),
-	priority: z.number().int().optional(),
+	retries: z.number().int().nullable(),
+	afterNonGlobal: z.boolean().nullable(),
+	priority: z.number().int().nullable(),
 	source: globalListenerSourceSchema.optional(),
 });
 type GlobalTaskListener = z.infer<typeof globalTaskListenerSchema>;
@@ -62,16 +62,15 @@ type UpdateGlobalTaskListenerRequestBody = z.infer<typeof updateGlobalTaskListen
 
 const queryGlobalTaskListenersRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['id', 'type', 'afterNonGlobal', 'priority', 'source'] as const,
-	filter: z
-		.object({
-			id: advancedStringFilterSchema.optional(),
-			type: advancedStringFilterSchema.optional(),
-			retries: advancedIntegerFilterSchema.optional(),
-			eventTypes: z.array(getEnumFilterSchema(globalTaskListenerEventTypeSchema)).optional(),
-			afterNonGlobal: z.boolean().optional(),
-			priority: advancedIntegerFilterSchema.optional(),
-			source: getEnumFilterSchema(globalListenerSourceSchema).optional(),
-		}),
+	filter: z.object({
+		id: advancedStringFilterSchema.optional(),
+		type: advancedStringFilterSchema.optional(),
+		retries: advancedIntegerFilterSchema.optional(),
+		eventTypes: z.array(getEnumFilterSchema(globalTaskListenerEventTypeSchema)).optional(),
+		afterNonGlobal: z.boolean().optional(),
+		priority: advancedIntegerFilterSchema.optional(),
+		source: getEnumFilterSchema(globalListenerSourceSchema).optional(),
+	}),
 });
 type QueryGlobalTaskListenersRequestBody = z.infer<typeof queryGlobalTaskListenersRequestBodySchema>;
 
