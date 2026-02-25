@@ -378,10 +378,10 @@ jobs:
                       "source_sha": "${{ github.sha }}",
                       "c8Version": "8.9",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
-                      "operateVersion": "SNAPSHOT",
-                      "tasklistVersion": "SNAPSHOT",
-                      "connectorsVersion": "SNAPSHOT",
-                      "optimizeVersion": "8-SNAPSHOT"
+                      "operateVersion": "8.9-SNAPSHOT",
+                      "tasklistVersion": "8.9-SNAPSHOT",
+                      "connectorsVersion": "8.9-SNAPSHOT",
+                      "optimizeVersion": "8.9-SNAPSHOT"
                   }
                 }'
 
