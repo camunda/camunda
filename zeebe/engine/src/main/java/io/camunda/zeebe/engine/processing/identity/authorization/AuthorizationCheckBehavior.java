@@ -129,7 +129,7 @@ public final class AuthorizationCheckBehavior {
       return Either.right(null);
     }
 
-    return isAuthorized(requests);
+    return isAuthorized(request);
   }
 
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequest request) {
@@ -156,14 +156,18 @@ public final class AuthorizationCheckBehavior {
     return getRejection(aggregatedRejections);
   }
 
-  // Helper methods
-  private boolean shouldSkipAllChecks() {
+  /**
+   * Returns {@code true} when both authorization and multi-tenancy are disabled, meaning no
+   * authorization or tenant check will ever reject a request. Callers can use this to avoid
+   * constructing an {@link AuthorizationRequest} (and the associated allocations) when the result
+   * would always be authorized.
+   */
+  public boolean shouldSkipAllChecks() {
     return !authorizationsEnabled && !multiTenancyEnabled;
   }
 
   private boolean shouldSkipAuthorization(final AuthorizationRequest request) {
-    return (!authorizationsEnabled && !multiTenancyEnabled)
-        || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
+    return shouldSkipAllChecks() || claimsExtractor.isAuthorizedAnonymousUser(request.claims());
   }
 
   private AuthorizationResult checkPrimaryAuthorization(
