@@ -45,14 +45,13 @@ type UpdateClusterVariableRequestBody = z.infer<typeof updateClusterVariableRequ
 
 const queryClusterVariablesRequestBodySchema = getQueryRequestBodySchema({
 	sortFields: ['name', 'value', 'tenantId', 'scope'] as const,
-	filter: z
-		.object({
-			name: advancedStringFilterSchema.optional(),
-			value: advancedStringFilterSchema.optional(),
-			scope: getEnumFilterSchema(clusterVariableScopeSchema).optional(),
-			tenantId: advancedStringFilterSchema.optional(),
-			isTruncated: z.boolean().optional(),
-		}),
+	filter: z.object({
+		name: advancedStringFilterSchema.optional(),
+		value: advancedStringFilterSchema.optional(),
+		scope: getEnumFilterSchema(clusterVariableScopeSchema).optional(),
+		tenantId: advancedStringFilterSchema.optional(),
+		isTruncated: z.boolean().optional(),
+	}),
 });
 type QueryClusterVariablesRequestBody = z.infer<typeof queryClusterVariablesRequestBodySchema>;
 
