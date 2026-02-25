@@ -38,11 +38,11 @@ public class RestorePointResolver {
    *     null} if no specific position is required
    * @return a {@link RestorableBackups} object containing the required backups for restoration
    */
-  public static RestorableBackups resolve(
-      final List<BackupMetadata> metadataByPartition,
+  public static @NonNull RestorableBackups resolve(
+      @NonNull final List<BackupMetadata> metadataByPartition,
       @Nullable final Instant from,
       @Nullable final Instant to,
-      final Map<Integer, Long> exportedPositions) {
+      @Nullable final Map<Integer, Long> exportedPositions) {
     final var restorableCheckpoints =
         findRestorableCheckpoints(metadataByPartition, from, exportedPositions);
     final var commonCheckpoint = findCommonCheckpoint(restorableCheckpoints, exportedPositions, to);
@@ -51,7 +51,8 @@ public class RestorePointResolver {
 
   /** Finds all backup-type checkpoints that are required to cover the common checkpoint. */
   private static @NonNull RestorableBackups findRestorableBackups(
-      final List<RestorableCheckpoints> allRestorableCheckpoints, final long commonCheckpoint) {
+      @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
+      final long commonCheckpoint) {
     final var backupsByPartitionId = new HashMap<Integer, List<CheckpointEntry>>();
     for (final var restorableCheckpoints : allRestorableCheckpoints) {
       final var backups = new ArrayList<CheckpointEntry>();
@@ -74,9 +75,9 @@ public class RestorePointResolver {
    * position.
    */
   private static @NonNull List<RestorableCheckpoints> findRestorableCheckpoints(
-      final List<BackupMetadata> metadataByPartition,
-      final @Nullable Instant from,
-      final Map<Integer, Long> exportedPositions) {
+      @NonNull final List<BackupMetadata> metadataByPartition,
+      @Nullable final Instant from,
+      @Nullable final Map<Integer, Long> exportedPositions) {
     return metadataByPartition.stream()
         .map(
             entry -> {
@@ -94,7 +95,7 @@ public class RestorePointResolver {
   private static @NonNull RestorableCheckpoints findRestorableCheckpoints(
       @Nullable final Instant from,
       @Nullable final Long exportedPosition,
-      final BackupMetadata metadata) {
+      @NonNull final BackupMetadata metadata) {
     final var restorableRange = findRestorableRange(from, exportedPosition, metadata);
     final var restorableCheckpoints = findRestorableCheckpoints(metadata, restorableRange);
     return new RestorableCheckpoints(metadata.partitionId(), restorableCheckpoints);
@@ -105,9 +106,9 @@ public class RestorePointResolver {
    * is provided, uses the latest common checkpoint.
    */
   private static long findCommonCheckpoint(
-      final List<RestorableCheckpoints> allRestorableCheckpoints,
-      final Map<Integer, Long> exportedPositions,
-      final Instant to) {
+      @NonNull final List<RestorableCheckpoints> allRestorableCheckpoints,
+      @Nullable final Map<Integer, Long> exportedPositions,
+      @Nullable final Instant to) {
     final Queue<CheckpointEntry> candidates;
     if (to == null) {
       candidates =
@@ -153,7 +154,7 @@ public class RestorePointResolver {
 
   /** Finds all checkpoints that fit within the given range. */
   private static @NonNull List<CheckpointEntry> findRestorableCheckpoints(
-      final BackupMetadata metadata, final RestorableRange restorableRange) {
+      @NonNull final BackupMetadata metadata, @NonNull final RestorableRange restorableRange) {
     return metadata.checkpoints().stream()
         .filter(
             checkpointEntry -> {
@@ -166,9 +167,9 @@ public class RestorePointResolver {
 
   /** Finds a range that fits the given {@code from} and {@code exportedPosition} criteria. */
   private static @NonNull RestorableRange findRestorableRange(
-      final @Nullable Instant from,
-      final @Nullable Long exportedPosition,
-      final BackupMetadata metadata) {
+      @Nullable final Instant from,
+      @Nullable final Long exportedPosition,
+      @NonNull final BackupMetadata metadata) {
     return metadata.ranges().stream()
         .<RestorableRange>mapMulti(
             (range, consumer) -> {
@@ -201,7 +202,7 @@ public class RestorePointResolver {
 
   /** Binary search for a checkpoint entry in a sorted list of checkpoint entries. */
   private static @Nullable CheckpointEntry findCheckpointInfo(
-      final List<CheckpointEntry> list, final long checkpointId) {
+      @NonNull final List<CheckpointEntry> list, final long checkpointId) {
     int low = 0;
     int high = list.size() - 1;
 
@@ -221,10 +222,12 @@ public class RestorePointResolver {
     return null; // key not found
   }
 
-  public record RestorableRange(CheckpointEntry start, CheckpointEntry end) {}
+  public record RestorableRange(@NonNull CheckpointEntry start, @NonNull CheckpointEntry end) {}
 
-  public record RestorableCheckpoints(int partitionId, List<CheckpointEntry> checkpoints) {}
+  public record RestorableCheckpoints(
+      int partitionId, @NonNull List<CheckpointEntry> checkpoints) {}
 
   public record RestorableBackups(
-      long globalCheckpointId, Map<Integer, List<CheckpointEntry>> backupsByPartitionId) {}
+      long globalCheckpointId,
+      @NonNull Map<Integer, @NonNull List<CheckpointEntry>> backupsByPartitionId) {}
 }
