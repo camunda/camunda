@@ -10,6 +10,7 @@ package io.camunda.optimize.rest.security.ccsm;
 import static io.camunda.optimize.OptimizeTomcatConfig.EXTERNAL_SUB_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.AUTHENTICATION_PATH;
 import static io.camunda.optimize.rest.AuthenticationRestService.CALLBACK;
+import static io.camunda.optimize.rest.AuthenticationRestService.LOGOUT;
 import static io.camunda.optimize.rest.HealthRestService.READYZ_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.INGESTION_PATH;
 import static io.camunda.optimize.rest.IngestionRestService.VARIABLE_SUB_PATH;
@@ -45,7 +46,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -128,9 +128,6 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
     try {
       final var httpSecurity =
           super.configureGenericSecurityOptions(http)
-              // Disable anonymous auth so requests with no cookie and no bearer token are
-              // rejected at the AuthorizationFilter rather than proceeding as anonymous.
-              .anonymous(AbstractHttpConfigurer::disable)
               // Then we configure the specific web security for CCSM
               .authorizeHttpRequests(
                   requests ->
@@ -140,10 +137,13 @@ public class CCSMSecurityConfigurerAdapter extends AbstractSecurityConfigurerAda
                               PathPatternRequestMatcher.withDefaults()
                                   .matcher(createApiPath(READYZ_PATH)))
                           .permitAll()
-                          // Identity callback request handling is public
+                          // Identity callback and logout are public — logout must work even
+                          // when the session token has already expired
                           .requestMatchers(
                               PathPatternRequestMatcher.withDefaults()
-                                  .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)))
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + CALLBACK)),
+                              PathPatternRequestMatcher.withDefaults()
+                                  .matcher(createApiPath(AUTHENTICATION_PATH + LOGOUT)))
                           .permitAll()
                           // Static resources
                           .requestMatchers(

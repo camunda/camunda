@@ -64,6 +64,11 @@ public abstract class AbstractSecurityConfigurerAdapter {
           // AuthCookieService#createNewOptimizeAuthCookie
           .csrf(AbstractHttpConfigurer::disable)
           .httpBasic(AbstractHttpConfigurer::disable)
+          // Disable anonymous auth: unauthenticated requests must never reach controllers as
+          // "anonymous". Without this, AnonymousAuthenticationFilter injects an anonymous token
+          // which satisfies anyRequest().authenticated() in Spring Security 6+, effectively
+          // bypassing all auth checks when no cookie or bearer token is present.
+          .anonymous(AbstractHttpConfigurer::disable)
           // disable frame options so embed links work, it's not a risk disabling this globally as
           // clickjacking
           // is prevented by the same-site flag being set to `strict` on the authentication cookie
