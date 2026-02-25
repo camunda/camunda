@@ -92,6 +92,7 @@
     SET STATE      = 'ACTIVE',
         START_DATE = #{startDate, jdbcType=TIMESTAMP}
     WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
+      AND STATE != 'COMPLETED'
   </update>
 
   <update id="updateCompleted"
