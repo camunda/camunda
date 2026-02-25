@@ -24,8 +24,8 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.boot.tomcat.TomcatConnectorCustomizer;
-import org.springframework.boot.tomcat.servlet.TomcatServletWebServerFactory;
+import org.springframework.boot.web.embedded.tomcat.TomcatConnectorCustomizer;
+import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.core.env.Environment;
 
 @ExtendWith(MockitoExtension.class)
@@ -61,7 +61,7 @@ public class OptimizeTomcatConfigTest {
     assertThat(httpsConnector.getSecure()).isTrue();
 
     // verify HTTP connector is added with correct port
-    verify(factory).addAdditionalConnectors(connectorCaptor.capture());
+    verify(factory).addAdditionalTomcatConnectors(connectorCaptor.capture());
     final Connector httpConnector = connectorCaptor.getValue();
     assertThat(httpConnector.getPort()).isEqualTo(8090);
     assertThat(httpConnector.getScheme()).isEqualTo("http");
@@ -80,7 +80,7 @@ public class OptimizeTomcatConfigTest {
     optimizeTomcatConfig.tomcatFactoryCustomizer().customize(factory);
 
     // verify additional HTTP connector is not added
-    verify(factory, never()).addAdditionalConnectors(any());
+    verify(factory, never()).addAdditionalTomcatConnectors(any());
     // verify HTTPS connector customizer is added with correct port
     verify(factory).addConnectorCustomizers(connectorCustomizerCaptor.capture());
     final Connector httpsConnector = new Connector();
