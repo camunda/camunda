@@ -21,6 +21,7 @@ import {
   Grid,
   ColumnRightPadding,
   CenteredRow,
+  StickySection,
 } from "./components/styled";
 import {
   Button,
@@ -29,7 +30,6 @@ import {
   Dropdown,
   Heading,
   MultiSelect,
-  Section,
   Stack,
   TextInput,
 } from "@carbon/react";
@@ -180,7 +180,7 @@ const List: FC = () => {
       />
       <Grid condensed fullWidth>
         <ColumnRightPadding sm={4} md={3} lg={4} xlg={3}>
-          <Section level={4}>
+          <StickySection level={4}>
             <Stack gap={5}>
               <Heading>{t("filter")}</Heading>
               <MultiSelect
@@ -296,7 +296,7 @@ const List: FC = () => {
                 </Button>
               </CenteredRow>
             </Stack>
-          </Section>
+          </StickySection>
         </ColumnRightPadding>
         <Column sm={4} md={5} lg={12} xlg={13}>
           <EntityList

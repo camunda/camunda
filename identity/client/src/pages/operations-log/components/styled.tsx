@@ -11,7 +11,7 @@ import {
   CheckmarkOutline as BaseCheckmarkOutline,
   ErrorOutline as BaseErrorOutline,
 } from "@carbon/react/icons";
-import { Column, Grid as CarbonGrid } from "@carbon/react";
+import { Column, Grid as CarbonGrid, Section } from "@carbon/react";
 import { styles } from "@carbon/elements";
 
 const OperationLogName = styled.div`
@@ -50,6 +50,11 @@ const OwnerInfo = styled.div`
   white-space: nowrap;
 `;
 
+const StickySection = styled(Section)`
+  position: sticky;
+  top: 0;
+`;
+
 export {
   OperationLogName,
   SuccessIcon,
@@ -59,4 +64,5 @@ export {
   CenteredRow,
   PropertyText,
   OwnerInfo,
+  StickySection,
 };
