@@ -25,11 +25,11 @@ Requests without a `Bearer` header are unaffected and continue to use the cookie
 
 ## Prerequisites
 
-| Requirement | Details |
-|---|---|
-| Keycloak running | Default local URL: `http://localhost:18080` |
-| Optimize running | Default local URL: `http://localhost:8090` |
-| `jq` installed | Used to parse JSON responses in the shell examples |
+|         Requirement         |                                     Details                                      |
+|-----------------------------|----------------------------------------------------------------------------------|
+| Keycloak running            | Default local URL: `http://localhost:18080`                                      |
+| Optimize running            | Default local URL: `http://localhost:8090`                                       |
+| `jq` installed              | Used to parse JSON responses in the shell examples                               |
 | Optimize client in Keycloak | Pre-configured by Identity (`client_id=optimize`, `secret=demo-optimize-secret`) |
 
 ---
@@ -76,11 +76,11 @@ or Java system properties.
 
 ### Required properties
 
-| Property | Description |
-|---|---|
-| `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED` | Enables JWT bearer auth for `/api/**`. Default: `false` |
-| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | Keycloak JWK Set URI used to validate token signatures |
-| `CAMUNDA_OPTIMIZE_API_AUDIENCE` | Must match the `aud` claim in the token. Default: `optimize`. For this setup use `optimize-api` |
+|                        Property                         |                                           Description                                           |
+|---------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED`                 | Enables JWT bearer auth for `/api/**`. Default: `false`                                         |
+| `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | Keycloak JWK Set URI used to validate token signatures                                          |
+| `CAMUNDA_OPTIMIZE_API_AUDIENCE`                         | Must match the `aud` claim in the token. Default: `optimize`. For this setup use `optimize-api` |
 
 ### Option A — Environment variables (recommended for containers / local run)
 
@@ -217,42 +217,43 @@ curl -s -X PUT \
 
 ### Configuration properties summary
 
-| YAML key | Environment variable | Default | Description |
-|---|---|---|---|
-| `api.jwtAuthForApiEnabled` | `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED` | `false` | Enable JWT bearer auth for `/api/**` |
-| `api.jwtSetUri` | `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | `null` | Keycloak JWK Set URI. **Required** when flag is `true` |
-| `api.audience` | `CAMUNDA_OPTIMIZE_API_AUDIENCE` | `optimize` | Expected `aud` claim in the token. Must be `optimize-api` for this setup |
+|          YAML key          |                  Environment variable                   |  Default   |                               Description                                |
+|----------------------------|---------------------------------------------------------|------------|--------------------------------------------------------------------------|
+| `api.jwtAuthForApiEnabled` | `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED`                 | `false`    | Enable JWT bearer auth for `/api/**`                                     |
+| `api.jwtSetUri`            | `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` | `null`     | Keycloak JWK Set URI. **Required** when flag is `true`                   |
+| `api.audience`             | `CAMUNDA_OPTIMIZE_API_AUDIENCE`                         | `optimize` | Expected `aud` claim in the token. Must be `optimize-api` for this setup |
 
 ### Default local Keycloak endpoints
 
-| Purpose | URL |
-|---|---|
-| Token endpoint | `http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token` |
+|     Purpose     |                                         URL                                         |
+|-----------------|-------------------------------------------------------------------------------------|
+| Token endpoint  | `http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/token` |
 | JWK Set (certs) | `http://localhost:18080/auth/realms/camunda-platform/protocol/openid-connect/certs` |
-| Admin API | `http://localhost:18080/auth/admin/realms/camunda-platform` |
+| Admin API       | `http://localhost:18080/auth/admin/realms/camunda-platform`                         |
 
 ### Endpoints that remain public (no auth required)
 
 These endpoints are always accessible regardless of the flag:
 
-| Endpoint | Description |
-|---|---|
-| `GET /api/readyz` | Health / readiness probe |
-| `GET /api/authentication/callback` | Identity OIDC redirect callback |
-| `GET /api/authentication/logout` | Session logout (must work with expired tokens) |
-| `GET /api/ui-configuration` | UI bootstrap configuration |
-| `GET /api/localization` | Locale files |
-| `/api/external/**` | Public share API (dashboards / reports shared publicly) |
-| `/external/**` | Public share UI resources |
-| `/actuator/**` | Spring Boot Actuator (management port `8092`) |
+|              Endpoint              |                       Description                       |
+|------------------------------------|---------------------------------------------------------|
+| `GET /api/readyz`                  | Health / readiness probe                                |
+| `GET /api/authentication/callback` | Identity OIDC redirect callback                         |
+| `GET /api/authentication/logout`   | Session logout (must work with expired tokens)          |
+| `GET /api/ui-configuration`        | UI bootstrap configuration                              |
+| `GET /api/localization`            | Locale files                                            |
+| `/api/external/**`                 | Public share API (dashboards / reports shared publicly) |
+| `/external/**`                     | Public share UI resources                               |
+| `/actuator/**`                     | Spring Boot Actuator (management port `8092`)           |
 
 ### Troubleshooting
 
-| Symptom | Likely cause | Fix |
-|---|---|---|
-| `401` with a valid token | `audience` mismatch | Set `CAMUNDA_OPTIMIZE_API_AUDIENCE=optimize-api` |
-| `401` with `"Client not allowed for direct access grants"` | Direct Access Grants disabled | Run Step 1 |
-| `401` with no error body | Flag is `false` | Set `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true` and restart |
-| `500 IllegalStateException` on startup | `jwtSetUri` not set while flag is `true` | Set `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI` |
-| Token obtained but still `401` | Token expired | Re-run Step 3 to get a fresh token |
-| `NoResourceFoundException` | Wrong port — hitting actuator (`8092`) instead of app | Use port `8090` (HTTP) or `8091` (HTTPS) |
+|                          Symptom                           |                     Likely cause                      |                             Fix                              |
+|------------------------------------------------------------|-------------------------------------------------------|--------------------------------------------------------------|
+| `401` with a valid token                                   | `audience` mismatch                                   | Set `CAMUNDA_OPTIMIZE_API_AUDIENCE=optimize-api`             |
+| `401` with `"Client not allowed for direct access grants"` | Direct Access Grants disabled                         | Run Step 1                                                   |
+| `401` with no error body                                   | Flag is `false`                                       | Set `CAMUNDA_OPTIMIZE_API_JWT_AUTH_ENABLED=true` and restart |
+| `500 IllegalStateException` on startup                     | `jwtSetUri` not set while flag is `true`              | Set `SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`  |
+| Token obtained but still `401`                             | Token expired                                         | Re-run Step 3 to get a fresh token                           |
+| `NoResourceFoundException`                                 | Wrong port — hitting actuator (`8092`) instead of app | Use port `8090` (HTTP) or `8091` (HTTPS)                     |
+

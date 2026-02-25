@@ -22,9 +22,9 @@ public class OptimizeApiConfiguration {
   private String audience;
 
   /**
-   * When {@code true}, non-public {@code /api/**} endpoints also accept a standard
-   * {@code Authorization: Bearer <jwt>} header in addition to the existing Identity session cookie.
-   * Only meaningful in self-managed (CCSM) mode. Defaults to {@code false}.
+   * When {@code true}, non-public {@code /api/**} endpoints also accept a standard {@code
+   * Authorization: Bearer <jwt>} header in addition to the existing Identity session cookie. Only
+   * meaningful in self-managed (CCSM) mode. Defaults to {@code false}.
    */
   @JsonProperty("jwtAuthForApiEnabled")
   private boolean jwtAuthForApiEnabled = false;
