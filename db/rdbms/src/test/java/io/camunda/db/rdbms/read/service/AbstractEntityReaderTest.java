@@ -171,4 +171,29 @@ class AbstractEntityReaderTest {
             new KeySetPaginationFieldEntry(
                 "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
   }
+
+  @Test
+  void shouldConvertSortWithDuplicatedColumn() {
+    final var reader = new ProcessInstanceDbReader(null, TEST_CONFIG);
+
+    final var convertedSort =
+        reader.convertSort(
+            ProcessInstanceSort.of(
+                b ->
+                    b.processDefinitionName()
+                        .asc()
+                        .startDate()
+                        .desc()
+                        .processDefinitionName()
+                        .desc()),
+            ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
+
+    assertThat(convertedSort.orderings()).hasSize(3);
+    assertThat(convertedSort.orderings())
+        .containsExactly(
+            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC),
+            new SortingEntry<>(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC),
+            // Note: duplicated PROCESS_DEFINITION_NAME is ignored
+            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
+  }
 }
