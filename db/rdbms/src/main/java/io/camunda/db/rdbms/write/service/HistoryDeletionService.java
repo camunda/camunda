@@ -22,6 +22,7 @@ import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.ProcessInstanceQuery;
 import io.camunda.zeebe.util.ExponentialBackoff;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
@@ -43,13 +44,15 @@ public class HistoryDeletionService {
   private final HistoryDeletionConfig config;
   private final ExponentialBackoff exponentialBackoff;
   private Duration currentDelayBetweenRuns;
+  private final InstantSource clock;
 
   public HistoryDeletionService(
       final RdbmsWriters rdbmsWriters,
       final HistoryDeletionDbReader historyDeletionDbReader,
       final ProcessInstanceDbReader processInstanceDbReader,
       final DecisionInstanceDbReader decisionInstanceDbReader,
-      final HistoryDeletionConfig config) {
+      final HistoryDeletionConfig config,
+      final InstantSource clock) {
     this.rdbmsWriters = rdbmsWriters;
     this.historyDeletionDbReader = historyDeletionDbReader;
     this.processInstanceDbReader = processInstanceDbReader;
@@ -63,6 +66,7 @@ public class HistoryDeletionService {
             0.0); // Use 0.0 jitter for deterministic backoff and clamp to min delay to avoid
     // sub-min values
     currentDelayBetweenRuns = config.delayBetweenRuns();
+    this.clock = clock;
   }
 
   public Duration deleteHistory(final int partitionId) {
@@ -135,7 +139,8 @@ public class HistoryDeletionService {
     if (!completionItems.isEmpty()) {
       rdbmsWriters
           .getBatchOperationWriter()
-          .completeBatchOperationItems(completionItems, OffsetDateTime.now(ZoneOffset.UTC));
+          .completeBatchOperationItems(
+              completionItems, OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
     }
   }
 
