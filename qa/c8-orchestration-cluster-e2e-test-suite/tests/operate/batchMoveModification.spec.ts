@@ -99,7 +99,7 @@ test.describe('Process Instance Batch Modification', () => {
         operateProcessModificationModePage.batchModificationModeText,
       ).toBeVisible();
       await expect(
-        operateProcessModificationModePage.applyModificationButton,
+        operateProcessModificationModePage.reviewModificationButton,
       ).toBeDisabled();
     });
 
@@ -112,7 +112,7 @@ test.describe('Process Instance Batch Modification', () => {
         'Ship Articles',
       );
 
-      await operateProcessModificationModePage.applyAndConfirmModification();
+      await operateProcessModificationModePage.reviewAndConfirmModification();
     });
 
     await test.step('Filter and verify modified instances', async () => {

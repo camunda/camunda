@@ -263,7 +263,7 @@ test.describe('Process Instance Modifications', () => {
         '2',
       );
 
-      await operateProcessInstancePage.clickApplyModifications();
+      await operateProcessInstancePage.clickReviewModifications();
 
       await expect(
         operateProcessInstancePage.getVariableModificationSummaryText(
@@ -526,7 +526,7 @@ test.describe('Process Instance Modifications', () => {
         .newVariableByIndex(1)
         .deleteButton.click();
 
-      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+      await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
       await operateProcessInstanceViewModificationModePage.expectVariableNotPresentInDialog(
         'testVariableToRemove',
       );
@@ -549,7 +549,7 @@ test.describe('Process Instance Modifications', () => {
         ),
       ).toBeVisible();
 
-      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+      await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
 
       await operateProcessInstanceViewModificationModePage.deleteVariableModificationFromDialog(
         {nameText: 'testVariableToMeow: "meow"'},
@@ -563,7 +563,7 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Apply modifications and verify variable values in the instance', async () => {
-      await operateProcessInstanceViewModificationModePage.clickApplyModificationsButton();
+      await operateProcessInstanceViewModificationModePage.clickReviewModificationsButton();
       await operateProcessInstanceViewModificationModePage.clickApplyButtonModificationsDialog();
     });
 
@@ -833,7 +833,7 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Remove one variable from summary modal', async () => {
-      await operateProcessInstancePage.clickApplyModifications();
+      await operateProcessInstancePage.clickReviewModifications();
 
       await expect(
         operateProcessInstancePage.getDialogVariableModificationSummaryText(
@@ -854,7 +854,7 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Verify first scope still has the variable creation scheduled', async () => {
-      await operateProcessInstancePage.clickApplyModifications();
+      await operateProcessInstancePage.clickReviewModifications();
       const row =
         operateProcessInstanceViewModificationModePage.applyModificationDialogVariableModificationRowByIndex(
           0,
