@@ -102,7 +102,12 @@ describe('OperationsLog InstancesTable', () => {
   it('should render empty state when no operations are found without filters', async () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -135,7 +140,9 @@ describe('OperationsLog InstancesTable', () => {
     }) => {
       return (
         <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={['/operations-log?operationType=CREATE']}>
+          <MemoryRouter
+            initialEntries={['/operations-log?operationType=CREATE']}
+          >
             <Routes>
               <Route path="/operations-log" element={children} />
             </Routes>
