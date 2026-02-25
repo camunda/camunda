@@ -298,10 +298,6 @@
       <artifactId>spring-test</artifactId>
       <scope>test</scope>
     </dependency>
-    <dependency>
-      <groupId>io.camunda</groupId>
-      <artifactId>configuration</artifactId>
-    </dependency>
   </dependencies>
 
   <build>
@@ -313,6 +309,7 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <configuration>
           <usedDependencies>
+            <dependency>io.camunda.configuration</dependency>
             <dependency>io.camunda:operate-webjar</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-web</dependency>
             <dependency>org.springframework.boot:spring-boot-starter-validation</dependency>
