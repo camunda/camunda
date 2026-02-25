@@ -21,10 +21,10 @@ import {open} from 'modules/mocks/diagrams';
 import {Paths} from 'modules/Routes';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/flownodeInstances/sequenceFlows';
+import {mockFetchProcessSequenceFlows} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/sequenceFlows';
 import type {
   ElementInstance,
   ProcessInstance,
@@ -195,7 +195,7 @@ describe('TopPanel', () => {
       mockIncidents,
     );
     mockFetchProcessSequenceFlows().withSuccess({items: mockSequenceFlowsV2});
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'service-task-1',
@@ -337,7 +337,7 @@ describe('TopPanel', () => {
       searchResult([]),
     );
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: mockElementInstance.elementId,
@@ -437,7 +437,7 @@ describe('TopPanel', () => {
     mockFetchElementInstance('2251799813699889').withSuccess(element);
     mockSearchElementInstances().withSuccess(searchResult([element]));
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: element.elementId,

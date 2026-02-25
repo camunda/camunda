@@ -21,7 +21,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 
@@ -106,7 +106,7 @@ describe('ElementInstanceLog', () => {
   beforeEach(async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
   });
 
   it('should render skeleton when instance tree is not loaded', async () => {
@@ -211,7 +211,7 @@ describe('ElementInstanceLog', () => {
   it('should continue polling after poll failure', async () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockQueryBatchOperationItems().withSuccess({
       items: [],
       page: {

@@ -16,32 +16,32 @@ import type {
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {isProcessOrSubProcessEndEvent} from 'modules/bpmn-js/utils/isProcessEndEvent';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
-type FlowNodeState =
+type ElementState =
   | 'active'
   | 'incidents'
   | 'canceled'
   | 'completed'
   | 'completedEndEvents';
 
-type FlowNodeData = {
+type ElementData = {
   flowNodeId: string;
   count: number;
-  flowNodeState: FlowNodeState;
+  elementState: ElementState;
 };
 
-const flowNodeStatesParser =
+const elementStatesParser =
   (businessObjects?: BusinessObjects) =>
   (data: GetProcessDefinitionStatisticsResponseBody) => {
     return data.items.flatMap((statistics) => {
-      const types: FlowNodeState[] = [
+      const types: ElementState[] = [
         'active',
         'incidents',
         'canceled',
         'completed',
       ];
-      return types.reduce<FlowNodeData[]>((states, flowNodeState) => {
+      return types.reduce<ElementData[]>((states, elementState) => {
         const count = Number(
-          statistics[flowNodeState as keyof ProcessDefinitionStatistic],
+          statistics[elementState as keyof ProcessDefinitionStatistic],
         );
         if (count > 0) {
           const businessObject = businessObjects?.[statistics.elementId];
@@ -51,12 +51,12 @@ const flowNodeStatesParser =
             {
               flowNodeId: statistics.elementId,
               count,
-              flowNodeState:
-                flowNodeState === 'completed' &&
+              elementState:
+                elementState === 'completed' &&
                 businessObject &&
                 isProcessOrSubProcessEndEvent(businessObject)
                   ? 'completedEndEvents'
-                  : flowNodeState,
+                  : elementState,
             },
           ];
         } else {
@@ -66,7 +66,7 @@ const flowNodeStatesParser =
     });
   };
 
-function useProcessInstancesFlowNodeStates(
+function useProcessInstancesElementStates(
   payload: GetProcessDefinitionStatisticsRequestBody,
   processDefinitionKey?: string,
   enabled?: boolean,
@@ -74,13 +74,13 @@ function useProcessInstancesFlowNodeStates(
   const {data: businessObjects} = useBusinessObjects();
 
   return useQuery(
-    useProcessInstancesStatisticsOptions<FlowNodeData[]>(
+    useProcessInstancesStatisticsOptions<ElementData[]>(
       payload,
-      flowNodeStatesParser(businessObjects),
+      elementStatesParser(businessObjects),
       processDefinitionKey,
       enabled,
     ),
   );
 }
 
-export {flowNodeStatesParser, useProcessInstancesFlowNodeStates};
+export {elementStatesParser, useProcessInstancesElementStates};

@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockGetRequest} from '../../mockRequest';
+import {mockGetRequest} from '../../../mockRequest';
 import type {GetProcessInstanceSequenceFlowsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockFetchProcessSequenceFlows = () =>

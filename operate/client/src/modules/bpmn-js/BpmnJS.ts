@@ -16,7 +16,7 @@ import OutlineModule from 'bpmn-js/lib/features/outline';
 import ElementTemplatesIconsRenderer from '@bpmn-io/element-template-icon-renderer';
 import isEqual from 'lodash/isEqual';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {isNonSelectableFlowNode} from './utils/isNonSelectableFlowNode';
+import {isNonSelectableElement} from './utils/isNonSelectableElement';
 import {isMultiInstance} from './utils/isMultiInstance';
 import {tracking} from 'modules/tracking';
 import {bpmnRendererColors, highlightedSequenceFlowsColor} from './styled';
@@ -146,7 +146,7 @@ class BpmnJS {
         this.#removeTooltip(flowNodeId);
       });
       const nonSelectableFlowNodes = elementRegistry?.filter((element) =>
-        isNonSelectableFlowNode(element, selectableFlowNodes),
+        isNonSelectableElement(element, selectableFlowNodes),
       );
       nonSelectableFlowNodes?.forEach(({id}) => {
         this.#addMarker(id, 'op-non-selectable');
@@ -380,7 +380,7 @@ class BpmnJS {
   #handleElementClick = (event: Event) => {
     const flowNode = event.element;
     if (
-      isNonSelectableFlowNode(flowNode, this.#selectableFlowNodes) ||
+      isNonSelectableElement(flowNode, this.#selectableFlowNodes) ||
       this.#selectableFlowNodes.length === 0
     ) {
       return;

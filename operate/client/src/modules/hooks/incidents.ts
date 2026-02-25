@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getFlowNodeName} from '../utils/flowNodes';
+import {getFlowNodeName} from '../utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   queryIncidentsRequestBodySchema,

@@ -8,9 +8,9 @@
 
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useSelectableFlowNodes} from './useSelectableFlowNodes';
+import {useSelectableElements} from './useSelectableElements';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   createProcessInstance,
@@ -22,7 +22,7 @@ import {Paths} from 'modules/Routes';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-describe('useSelectableFlowNodes', () => {
+describe('useSelectableElements', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
@@ -71,9 +71,9 @@ describe('useSelectableFlowNodes', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useSelectableFlowNodes(), {
+    const {result} = renderHook(() => useSelectableElements(), {
       wrapper: Wrapper,
     });
 
@@ -87,9 +87,9 @@ describe('useSelectableFlowNodes', () => {
   });
 
   it('should handle server error while fetching selectable flow nodes', async () => {
-    mockFetchFlownodeInstancesStatistics().withServerError();
+    mockFetchElementInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useSelectableFlowNodes(), {
+    const {result} = renderHook(() => useSelectableElements(), {
       wrapper: Wrapper,
     });
 
@@ -101,9 +101,9 @@ describe('useSelectableFlowNodes', () => {
   });
 
   it('should handle network error while fetching selectable flow nodes', async () => {
-    mockFetchFlownodeInstancesStatistics().withNetworkError();
+    mockFetchElementInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useSelectableFlowNodes(), {
+    const {result} = renderHook(() => useSelectableElements(), {
       wrapper: Wrapper,
     });
 
@@ -115,9 +115,9 @@ describe('useSelectableFlowNodes', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
 
-    const {result} = renderHook(() => useSelectableFlowNodes(), {
+    const {result} = renderHook(() => useSelectableElements(), {
       wrapper: Wrapper,
     });
 
@@ -127,9 +127,9 @@ describe('useSelectableFlowNodes', () => {
   });
 
   it('should handle loading state', async () => {
-    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+    mockFetchElementInstancesStatistics().withDelay({items: []});
 
-    const {result} = renderHook(() => useSelectableFlowNodes(), {
+    const {result} = renderHook(() => useSelectableElements(), {
       wrapper: Wrapper,
     });
 

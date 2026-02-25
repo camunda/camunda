@@ -11,7 +11,7 @@ import {hasEventType} from 'modules/bpmn-js/utils/hasEventType';
 import {hasType} from 'modules/bpmn-js/utils/hasType';
 import {isEventSubProcess} from 'modules/bpmn-js/utils/isEventSubProcess';
 
-const isMigratableFlowNode = (businessObject: BusinessObject) => {
+const isMigratableElement = (businessObject: BusinessObject) => {
   /**
    * Check boundary events
    */
@@ -131,4 +131,4 @@ const isMigratableFlowNode = (businessObject: BusinessObject) => {
   });
 };
 
-export {isMigratableFlowNode};
+export {isMigratableElement};

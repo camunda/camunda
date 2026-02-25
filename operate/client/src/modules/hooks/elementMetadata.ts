@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useNewTokenCountForSelectedNode} from './flowNodeSelection';
+import {useNewTokenCountForSelectedNode} from './elementSelection';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 
 const useHasMultipleInstances = () => {

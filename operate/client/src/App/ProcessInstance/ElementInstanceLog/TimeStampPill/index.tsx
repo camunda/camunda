@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {observer} from 'mobx-react';
 import {tracking} from 'modules/tracking';
 import {Toggle} from './styled';
@@ -17,7 +17,7 @@ const TimeStampPill: React.FC = observer(() => {
   const {
     state: {isTimeStampVisible},
     toggleTimeStampVisibility,
-  } = flowNodeTimeStampStore;
+  } = elementTimeStampStore;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isSuccess} = useProcessInstanceXml({processDefinitionKey});

@@ -15,7 +15,7 @@ type Statistic = ProcessDefinitionStatistic & {
   completedEndEvents: number;
 };
 
-const getStatisticsByFlowNode = (
+const getStatisticsByElement = (
   data: ProcessDefinitionStatistic[],
   businessObjects?: BusinessObjects,
 ) => {
@@ -47,4 +47,4 @@ const getStatisticsByFlowNode = (
   }, {});
 };
 
-export {getStatisticsByFlowNode};
+export {getStatisticsByElement};
