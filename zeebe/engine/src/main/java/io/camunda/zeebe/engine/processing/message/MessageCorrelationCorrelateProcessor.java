@@ -191,6 +191,9 @@ public final class MessageCorrelationCorrelateProcessor
       final TypedRecord<MessageCorrelationRecord> command,
       final Subscriptions correlatingSubscriptions,
       final String tenantId) {
+    if (authCheckBehavior.shouldSkipAllChecks()) {
+      return Optional.empty();
+    }
     final AtomicReference<AuthorizationRequest> request = new AtomicReference<>();
     final AtomicReference<Rejection> rejection = new AtomicReference<>();
 

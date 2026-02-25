@@ -168,6 +168,11 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
+    // check if auth is disabled entirely
+    if (authCheckBehavior.shouldSkipAllChecks()) {
+      return Either.right(deployedProcess);
+    }
+
     final var processId = bufferAsString(deployedProcess.getBpmnProcessId());
     final var request =
         AuthorizationRequest.builder()
