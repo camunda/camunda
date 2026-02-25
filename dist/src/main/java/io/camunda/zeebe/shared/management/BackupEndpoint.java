@@ -25,6 +25,7 @@ import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.backup.schedule.Schedule.NoneSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.BrokerRejectionException;
@@ -74,11 +75,12 @@ public final class BackupEndpoint {
   @WriteOperation
   public WebEndpointResponse<?> take(final long backupId) {
     try {
-      if (backupCfg.isContinuous()) {
+      if (backupIdShouldBeOmitted()) {
         return new WebEndpointResponse<>(
             new Error()
                 .message(
-                    "Cannot take backup with predetermined backupId when continuous backups are enabled."
+                    "Cannot take backup with predetermined backupId when continuous backups and/or"
+                        + " backup or checkpoint scheduler is enabled."
                         + " Use POST actuator/backupRuntime without specifying a backupId."),
             WebEndpointResponse.STATUS_BAD_REQUEST);
       }
@@ -94,7 +96,7 @@ public final class BackupEndpoint {
 
   @WriteOperation
   public WebEndpointResponse<?> take() {
-    if (!backupCfg.isContinuous()) {
+    if (!backupIdShouldBeOmitted()) {
       return incorrectBackupIdErrorResponse();
     }
 
@@ -394,5 +396,12 @@ public final class BackupEndpoint {
     return new WebEndpointResponse<>(
         new Error().message("A backupId must be provided and it must be > 0"),
         WebEndpointResponse.STATUS_BAD_REQUEST);
+  }
+
+  private boolean backupIdShouldBeOmitted() {
+    return backupCfg.isContinuous()
+        || !(backupCfg.getSchedule() instanceof NoneSchedule)
+        || ((backupCfg.getCheckpointInterval() != null
+            && !backupCfg.getCheckpointInterval().isZero()));
   }
 }
