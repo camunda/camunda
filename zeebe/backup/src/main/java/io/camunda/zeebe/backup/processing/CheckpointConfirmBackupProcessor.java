@@ -53,16 +53,9 @@ public class CheckpointConfirmBackupProcessor {
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
     final var checkpointRecord = record.getValue();
     final var checkpointId = checkpointRecord.getCheckpointId();
-    final var firstLogPosition = checkpointRecord.getFirstLogPosition();
     final var latestBackupId = checkpointState.getLatestBackupId();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
-      if (latestBackupId != CheckpointState.NO_CHECKPOINT
-          && firstLogPosition <= checkpointState.getLatestBackupPosition() + 1) {
-        backupManager.extendRange(latestBackupId, checkpointId);
-      } else {
-        backupManager.startNewRange(checkpointId);
-      }
       backupConfirmedApplier.apply(checkpointRecord, record.getTimestamp());
       resultBuilder.appendRecord(
           record.getKey(),
