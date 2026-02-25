@@ -1,0 +1,620 @@
+{
+  "config": {
+    "configFile": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/playwright.config.ts",
+    "rootDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "list",
+        null
+      ],
+      [
+        "junit",
+        {
+          "embedAnnotationsAsProperties": true,
+          "outputFile": "./test-results/junit-report.xml"
+        }
+      ],
+      [
+        "html",
+        {
+          "outputFolder": "html-report"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "json-report/results.json"
+        }
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "api-tests",
+        "name": "api-tests",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/api/v2/clock/*.spec.ts",
+          "tests/api/v2/usage-metrics/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/api/**/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "api-tests-subset",
+        "name": "api-tests-subset",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [],
+        "testMatch": [
+          "tests/api/v2/clock/*.spec.ts",
+          "tests/api/v2/usage-metrics/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/tasklist/task-panel.spec.ts",
+          "v2-stateless-tests/**",
+          "tests/tasklist/v1/**",
+          "tests/common-flows/v1/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/**/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium-subset",
+        "name": "chromium-subset",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox",
+        "name": "firefox",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/tasklist/task-panel.spec.ts",
+          "v2-stateless-tests/**",
+          "tests/tasklist/v1/**",
+          "tests/common-flows/v1/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/**/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "firefox-subset",
+        "name": "firefox-subset",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "msedge",
+        "name": "msedge",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/tasklist/task-panel.spec.ts",
+          "v2-stateless-tests/**",
+          "tests/tasklist/v1/**",
+          "tests/common-flows/v1/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/**/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "msedge-subset",
+        "name": "msedge-subset",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/task-panel.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "tasklist-v1-e2e",
+        "name": "tasklist-v1-e2e",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/tasklist/v1/task-panel.spec.ts",
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/v1/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "tasklist-v2-e2e",
+        "name": "tasklist-v2-e2e",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "tests/tasklist/task-panel.spec.ts",
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/tasklist/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "identity-e2e",
+        "name": "identity-e2e",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/identity/*.spec.ts"
+        ],
+        "timeout": 720000
+      },
+      {
+        "outputDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results",
+        "repeatEach": 1,
+        "retries": 1,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "operate-e2e",
+        "name": "operate-e2e",
+        "testDir": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite",
+        "testIgnore": [
+          "v2-stateless-tests/**",
+          "tests/api/**/*.spec.ts"
+        ],
+        "testMatch": [
+          "tests/operate/*.spec.ts"
+        ],
+        "timeout": 720000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.53.2",
+    "workers": 4,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "tests/api/v2/clock/clock-pin-api.spec.ts",
+      "file": "tests/api/v2/clock/clock-pin-api.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Pin Clock API Tests",
+          "file": "tests/api/v2/clock/clock-pin-api.spec.ts",
+          "line": 19,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Pin clock to a fixed instant",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "interrupted",
+                      "duration": 11927,
+                      "errors": [],
+                      "stdout": [],
+                      "stderr": [
+                        {
+                          "text": "Unexpected status code: \u001b[33m404\u001b[39m {\"type\":\"about:blank\",\"title\":\"NOT_FOUND\",\"status\":404,\"detail\":\"Process Instance with key '2251799813685395' not found\",\"instance\":\"/v2/process-instances/2251799813685395\"}\n"
+                        }
+                      ],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Pin clock to fixed instant and verify",
+                          "duration": 89
+                        },
+                        {
+                          "title": "Create process instances and verify pinned start and end dates",
+                          "duration": -1,
+                          "steps": [
+                            {
+                              "title": "Expect \"toPass\"",
+                              "duration": -1
+                            }
+                          ]
+                        }
+                      ],
+                      "startTime": "2026-02-25T11:07:57.826Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "trace",
+                          "contentType": "application/zip",
+                          "path": "/Users/catherina.prokudina/Documents/Camunda/camunda/qa/c8-orchestration-cluster-e2e-test-suite/test-results/tests-api-v2-clock-clock-p-67760-in-clock-to-a-fixed-instant-api-tests-subset/trace.zip"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2e9cbc16acaa2a31c075-63de4eda9ea0657df0e6",
+              "file": "tests/api/v2/clock/clock-pin-api.spec.ts",
+              "line": 46,
+              "column": 3
+            },
+            {
+              "title": "Pin clock - bad request",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "2e9cbc16acaa2a31c075-7a4a1e5f28cbf2b34836",
+              "file": "tests/api/v2/clock/clock-pin-api.spec.ts",
+              "line": 75,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/v2/clock/clock-reset-api.spec.ts",
+      "file": "tests/api/v2/clock/clock-reset-api.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Reset Clock API Tests",
+          "file": "tests/api/v2/clock/clock-reset-api.spec.ts",
+          "line": 14,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Reset clock",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "f0154bf085ff1f01db4b-b0d7d6fe126711f30b1c",
+              "file": "tests/api/v2/clock/clock-reset-api.spec.ts",
+              "line": 42,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+      "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Get usage metrics API Tests",
+          "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+          "line": 53,
+          "column": 15,
+          "specs": [
+            {
+              "title": "Get Usage Metrics Success",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed6802241549c6f439ea-cd09de3c11f9a05b8bb9",
+              "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+              "line": 54,
+              "column": 3
+            },
+            {
+              "title": "Get Usage Metrics - Invalid date format",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed6802241549c6f439ea-75a9d2b18affdf222e16",
+              "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+              "line": 92,
+              "column": 3
+            },
+            {
+              "title": "Get Usage Metrics - Unauthorized",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed6802241549c6f439ea-0a77065ac092fb0e1960",
+              "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+              "line": 113,
+              "column": 3
+            }
+          ]
+        },
+        {
+          "title": "Get Usage Metrics API Tests - User with no permission",
+          "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+          "line": 137,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Get Usage Metrics - User with no granted authorization",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests-subset",
+                  "projectName": "api-tests-subset",
+                  "results": [],
+                  "status": "skipped"
+                }
+              ],
+              "id": "ed6802241549c6f439ea-05e9ec53f367eb7747d4",
+              "file": "tests/api/v2/usage-metrics/usage-metrics-api.spec.ts",
+              "line": 225,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "tests/api/v2/process-instance/process-instance-search-api.spec.ts",
+      "file": "tests/api/v2/process-instance/process-instance-search-api.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "Get Process instance Tests",
+          "file": "tests/api/v2/process-instance/process-instance-search-api.spec.ts",
+          "line": 22,
+          "column": 15,
+          "specs": [
+            {
+              "title": "Search Process Instance With Multiple Filters - Success",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 720000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "api-tests",
+                  "projectName": "api-tests",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 5632,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "{\n  processDefinitionId: \u001b[32m'process_with_task_listener'\u001b[39m,\n  processDefinitionVersion: \u001b[33m1\u001b[39m,\n  tenantId: \u001b[32m'<default>'\u001b[39m,\n  variables: {},\n  processDefinitionKey: \u001b[32m'2251799813685323'\u001b[39m,\n  processInstanceKey: \u001b[32m'2251799813685372'\u001b[39m,\n  tags: [ \u001b[32m'example'\u001b[39m ],\n  businessId: \u001b[1mnull\u001b[22m\n}\n"
+                        },
+                        {
+                          "text": "{\n  page: {\n    totalItems: \u001b[33m0\u001b[39m,\n    hasMoreTotalItems: \u001b[33mfalse\u001b[39m,\n    startCursor: \u001b[1mnull\u001b[22m,\n    endCursor: \u001b[1mnull\u001b[22m\n  },\n  items: []\n}\n"
+                        },
+                        {
+                          "text": "{\n  page: {\n    totalItems: \u001b[33m2\u001b[39m,\n    hasMoreTotalItems: \u001b[33mfalse\u001b[39m,\n    startCursor: \u001b[32m'WyJwcm9jZXNzX3dpdGhfdGFza19saXN0ZW5lciIsMjI1MTc5OTgxMzY4NTM3Ml0='\u001b[39m,\n    endCursor: \u001b[32m'WyJ1c2VyX3Rhc2tfYXBpX3Rlc3RfcHJvY2VzcyIsMjI1MTc5OTgxMzY4NTM4MF0='\u001b[39m\n  },\n  items: [\n    {\n      processDefinitionId: \u001b[32m'process_with_task_listener'\u001b[39m,\n      processDefinitionName: \u001b[32m'Process with Task listener'\u001b[39m,\n      processDefinitionVersion: \u001b[33m1\u001b[39m,\n      processDefinitionVersionTag: \u001b[1mnull\u001b[22m,\n      startDate: \u001b[32m'2026-02-25T11:07:51.841Z'\u001b[39m,\n      endDate: \u001b[1mnull\u001b[22m,\n      state: \u001b[32m'ACTIVE'\u001b[39m,\n      hasIncident: \u001b[33mfalse\u001b[39m,\n      tenantId: \u001b[32m'<default>'\u001b[39m,\n      processInstanceKey: \u001b[32m'2251799813685372'\u001b[39m,\n      processDefinitionKey: \u001b[32m'2251799813685323'\u001b[39m,\n      parentProcessInstanceKey: \u001b[1mnull\u001b[22m,\n      parentElementInstanceKey: \u001b[1mnull\u001b[22m,\n      rootProcessInstanceKey: \u001b[32m'2251799813685372'\u001b[39m,\n      tags: \u001b[36m[Array]\u001b[39m\n    },\n    {\n      processDefinitionId: \u001b[32m'user_task_api_test_process'\u001b[39m,\n      processDefinitionName: \u001b[32m'User Task API Test Process'\u001b[39m,\n      processDefinitionVersion: \u001b[33m1\u001b[39m,\n      processDefinitionVersionTag: \u001b[1mnull\u001b[22m,\n      startDate: \u001b[32m'2026-02-25T11:07:51.937Z'\u001b[39m,\n      endDate: \u001b[1mnull\u001b[22m,\n      state: \u001b[32m'ACTIVE'\u001b[39m,\n      hasIncident: \u001b[33mfalse\u001b[39m,\n      tenantId: \u001b[32m'<default>'\u001b[39m,\n      processInstanceKey: \u001b[32m'2251799813685380'\u001b[39m,\n      processDefinitionKey: \u001b[32m'2251799813685322'\u001b[39m,\n      parentProcessInstanceKey: \u001b[1mnull\u001b[22m,\n      parentElementInstanceKey: \u001b[1mnull\u001b[22m,\n      rootProcessInstanceKey: \u001b[32m'2251799813685380'\u001b[39m,\n      tags: \u001b[36m[Array]\u001b[39m\n    }\n  ]\n}\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "steps": [
+                        {
+                          "title": "Create two process instances to filter for",
+                          "duration": 190
+                        },
+                        {
+                          "title": "Search Process Instances With Multiple Filters",
+                          "duration": 5247,
+                          "steps": [
+                            {
+                              "title": "Expect \"toPass\"",
+                              "duration": 5247
+                            }
+                          ]
+                        }
+                      ],
+                      "startTime": "2026-02-25T11:07:51.607Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "38035be37975ac89ae4b-3766f921e0f73352bf90",
+              "file": "tests/api/v2/process-instance/process-instance-search-api.spec.ts",
+              "line": 112,
+              "column": 3
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-02-25T11:07:50.794Z",
+    "duration": 19320.447,
+    "expected": 1,
+    "skipped": 7,
+    "unexpected": 0,
+    "flaky": 0
+  }
+}

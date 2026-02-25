@@ -128,7 +128,7 @@ test.describe.parallel('Get Process instance Tests', () => {
       await assertStatusCode(res, 200);
       await validateResponse(
         {
-          path: '/process-instances/search',
+          path: '/process-instances',
           method: 'POST',
           status: '200',
         },
@@ -149,6 +149,14 @@ test.describe.parallel('Get Process instance Tests', () => {
         },
       });
       await assertStatusCode(res2, 200);
+      await validateResponse(
+        {
+          path: '/process-instances',
+          method: 'POST',
+          status: '200',
+        },
+        res2,
+      );
       const json2 = await res2.json();
       localState.processInstanceKey2 = json2.processInstanceKey;
     });
