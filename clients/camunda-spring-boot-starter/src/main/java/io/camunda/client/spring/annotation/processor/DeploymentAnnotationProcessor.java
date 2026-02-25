@@ -102,7 +102,7 @@ public class DeploymentAnnotationProcessor extends AbstractCamundaAnnotationProc
 
   @Override
   public void stop(final CamundaClient client) {
-    // noop for deployment
+    deploymentValues.clear();
   }
 
   private void overrideFromProperties(final DeploymentValue deploymentValue) {
