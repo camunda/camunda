@@ -653,7 +653,7 @@ public class DeploymentRejectionTest {
         .startsWith("Expected to deploy new resources, but encountered the following errors:")
         .contains(
             "- Resource name '%s' exceeds maximum length of %d characters"
-                .formatted(resourceName, MAX_WORKER_TYPE_LENGTH));
+                .formatted(resourceName, MAX_NAME_FIELD_LENGTH));
   }
 
   @Test
