@@ -147,12 +147,11 @@ public final class GcsBackupStore implements BackupStore {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
             return;
-          } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
+          } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
-                "Cannot delete Backup with id '%s' while saving is in progress."
+                "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          manifestManager.markAsDeleted(manifest);
           fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
           manifestManager.deleteManifest(manifest);
@@ -211,6 +210,20 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           manifestManager.markAsFailed(id, failureReason);
           return BackupStatusCode.FAILED;
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
+          manifestManager.markAsDeleted(manifest);
+          return BackupStatusCode.DELETED;
         },
         executor);
   }

@@ -136,12 +136,11 @@ public final class FilesystemBackupStore implements BackupStore {
           final var manifest = manifestManager.getManifest(id);
           if (manifest == null) {
             return;
-          } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
+          } else if (manifest.statusCode() != StatusCode.DELETED) {
             throw new UnexpectedManifestState(
-                "Cannot delete Backup with id '%s' while saving is in progress."
+                "Cannot delete Backup with id '%s', must be marked as deleted."
                     .formatted(id.toString()));
           }
-          manifestManager.markAsDeleted(manifest);
           fileSetManager.delete(id, SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, SEGMENTS_FILESET_NAME);
           manifestManager.deleteManifest(manifest);
@@ -183,6 +182,17 @@ public final class FilesystemBackupStore implements BackupStore {
         () -> {
           manifestManager.markAsFailed(id, failureReason);
           return BackupStatusCode.FAILED;
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          manifestManager.markAsDeleted(manifest);
+          return BackupStatusCode.DELETED;
         },
         executor);
   }

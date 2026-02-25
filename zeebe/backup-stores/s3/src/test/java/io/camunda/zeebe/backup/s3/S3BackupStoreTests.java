@@ -196,6 +196,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   default void allBackupObjectsAreDeleted(final Backup backup) {
     // given
     getStore().save(backup).join();
+    getStore().markDeleted(backup.id()).join();
 
     // when
     getStore().delete(backup.id()).join();
@@ -249,6 +250,7 @@ public interface S3BackupStoreTests extends BackupStoreTestKit {
   default void deletingPartialBackupSucceeds(final Backup backup) {
     // given
     getStore().save(backup).join();
+    getStore().markDeleted(backup.id()).join();
 
     // when
     getClient()

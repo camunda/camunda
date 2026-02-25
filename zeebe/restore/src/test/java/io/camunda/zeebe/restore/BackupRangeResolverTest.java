@@ -603,6 +603,11 @@ final class BackupRangeResolverTest {
     }
 
     @Override
+    public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+      return CompletableFuture.completedFuture(BackupStatusCode.DELETED);
+    }
+
+    @Override
     public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
       return CompletableFuture.completedFuture(
           rangeMarkersByPartition.getOrDefault(partitionId, List.of()));

@@ -258,15 +258,15 @@ public final class S3BackupStore implements BackupStore {
     return readManifestObject(id)
         .thenApply(
             manifest -> {
-              if (manifest.statusCode() == BackupStatusCode.IN_PROGRESS) {
+              if (manifest.statusCode() != BackupStatusCode.DELETED
+                  && manifest.statusCode() != BackupStatusCode.DOES_NOT_EXIST) {
                 throw new BackupInInvalidStateException(
-                    "Can't delete in-progress backup %s, must be marked as failed first"
-                        .formatted(manifest.id()));
+                    "Cannot delete Backup with id '%s', must be marked as deleted."
+                        .formatted(id.toString()));
               } else {
                 return manifest;
               }
             })
-        .thenCompose(manifest -> markAsDeleted(id, manifest))
         .thenComposeAsync(
             manifest ->
                 listObjects(manifest, Directory.MANIFESTS)
@@ -304,6 +304,19 @@ public final class S3BackupStore implements BackupStore {
       final BackupIdentifier id, final String failureReason) {
     return updateManifestObject(id, manifest -> manifest.asFailed(failureReason))
         .thenApply(Manifest::statusCode);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return readManifestObject(id)
+        .thenCompose(
+            manifest -> {
+              if (manifest instanceof final ValidBackupManifest validManifest) {
+                return updateManifestObject(id, m -> validManifest.asDeleted())
+                    .thenApply(Manifest::statusCode);
+              }
+              return CompletableFuture.completedFuture(manifest.statusCode());
+            });
   }
 
   @Override
@@ -368,15 +381,6 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
-  }
-
-  private CompletableFuture<Manifest> markAsDeleted(
-      final BackupIdentifier id, final Manifest manifest) {
-    if (manifest instanceof final ValidBackupManifest validManifest) {
-      return updateManifestObject(id, m -> validManifest.asDeleted())
-          .thenApply(Manifest.class::cast);
-    }
-    return CompletableFuture.completedFuture(manifest);
   }
 
   private String rangeMarkersPrefix(final int partitionId) {
