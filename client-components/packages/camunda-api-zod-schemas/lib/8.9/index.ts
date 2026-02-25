@@ -160,6 +160,24 @@ import {
 	getIncidentProcessInstanceStatisticsByError,
 	getIncidentProcessInstanceStatisticsByDefinition,
 } from './incident-statistics';
+import {
+	searchClusterVariables,
+	createGlobalClusterVariable,
+	createTenantClusterVariable,
+	getGlobalClusterVariable,
+	getTenantClusterVariable,
+	updateGlobalClusterVariable,
+	updateTenantClusterVariable,
+	deleteGlobalClusterVariable,
+	deleteTenantClusterVariable,
+} from './cluster-variable';
+import {
+	searchGlobalTaskListeners,
+	createGlobalTaskListener,
+	getGlobalTaskListener,
+	updateGlobalTaskListener,
+	deleteGlobalTaskListener,
+} from './global-task-listener';
 
 const endpoints = {
 	getCurrentUser,
@@ -317,6 +335,20 @@ const endpoints = {
 	queryUserTaskAuditLogs,
 	getIncidentProcessInstanceStatisticsByError,
 	getIncidentProcessInstanceStatisticsByDefinition,
+	searchClusterVariables,
+	createGlobalClusterVariable,
+	createTenantClusterVariable,
+	getGlobalClusterVariable,
+	getTenantClusterVariable,
+	updateGlobalClusterVariable,
+	updateTenantClusterVariable,
+	deleteGlobalClusterVariable,
+	deleteTenantClusterVariable,
+	searchGlobalTaskListeners,
+	createGlobalTaskListener,
+	getGlobalTaskListener,
+	updateGlobalTaskListener,
+	deleteGlobalTaskListener,
 } as const;
 
 export {
@@ -639,16 +671,20 @@ export {
 	createMappingRuleResponseBodySchema,
 	updateMappingRuleRequestBodySchema,
 	updateMappingRuleResponseBodySchema,
+	getMappingRuleResponseBodySchema,
 	queryMappingRulesRequestBodySchema,
 	queryMappingRulesResponseBodySchema,
 	mappingRuleSchema,
+	mappingRuleResultSchema,
 	type CreateMappingRuleRequestBody,
 	type CreateMappingRuleResponseBody,
 	type UpdateMappingRuleRequestBody,
 	type UpdateMappingRuleResponseBody,
+	type GetMappingRuleResponseBody,
 	type QueryMappingRulesRequestBody,
 	type QueryMappingRulesResponseBody,
 	type MappingRule,
+	type MappingRuleResult,
 } from './mapping-rule';
 export {
 	createProcessInstanceRequestBodySchema,
@@ -893,4 +929,36 @@ export {
 	type GetUsageMetricsResponseBody,
 	type GetUsageMetricsParams,
 } from './usage-metrics';
+export {
+	clusterVariableScopeSchema,
+	clusterVariableSchema,
+	clusterVariableSearchResultSchema,
+	createClusterVariableRequestBodySchema,
+	updateClusterVariableRequestBodySchema,
+	queryClusterVariablesRequestBodySchema,
+	queryClusterVariablesResponseBodySchema,
+	type ClusterVariableScope,
+	type ClusterVariable,
+	type ClusterVariableSearchResult,
+	type CreateClusterVariableRequestBody,
+	type UpdateClusterVariableRequestBody,
+	type QueryClusterVariablesRequestBody,
+	type QueryClusterVariablesResponseBody,
+} from './cluster-variable';
+export {
+	globalListenerSourceSchema,
+	globalTaskListenerEventTypeSchema,
+	globalTaskListenerSchema,
+	createGlobalTaskListenerRequestBodySchema,
+	updateGlobalTaskListenerRequestBodySchema,
+	queryGlobalTaskListenersRequestBodySchema,
+	queryGlobalTaskListenersResponseBodySchema,
+	type GlobalListenerSource,
+	type GlobalTaskListenerEventType,
+	type GlobalTaskListener,
+	type CreateGlobalTaskListenerRequestBody,
+	type UpdateGlobalTaskListenerRequestBody,
+	type QueryGlobalTaskListenersRequestBody,
+	type QueryGlobalTaskListenersResponseBody,
+} from './global-task-listener';
 export {endpoints};
