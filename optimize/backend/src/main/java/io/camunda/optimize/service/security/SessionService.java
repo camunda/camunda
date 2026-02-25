@@ -31,6 +31,8 @@ import java.util.Optional;
 import java.util.UUID;
 import org.slf4j.Logger;
 import org.springframework.context.ApplicationContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -80,10 +82,48 @@ public class SessionService implements ConfigurationReloadable {
     return isValid;
   }
 
+  /**
+   * Resolves the authenticated user ID from the current request, regardless of whether the request
+   * was authenticated via an Identity session cookie or a bearer JWT token.
+   *
+   * <p>Resolution order:
+   *
+   * <ol>
+   *   <li>If the {@link SecurityContextHolder} already holds a {@link JwtAuthenticationToken} (set
+   *       by {@link io.camunda.optimize.rest.security.ccsm.ApiBearerTokenAuthenticationFilter} when
+   *       {@code api.jwtAuthForApiEnabled=true}), the subject is taken directly from that token.
+   *       This avoids any cookie look-up for bearer-authenticated requests.
+   *   <li>Otherwise, the token is extracted from the Optimize auth cookie (or request attributes
+   *       set during cookie renewal) and the subject is decoded from it.
+   * </ol>
+   *
+   * @throws NotAuthorizedException if no authenticated identity can be resolved.
+   */
   public String getRequestUserOrFailNotAuthorized(final HttpServletRequest request) {
-    return AuthCookieService.getAuthCookieToken(request)
-        .flatMap(AuthCookieService::getTokenSubject)
+    return subjectFromSecurityContext()
+        .or(
+            () ->
+                AuthCookieService.getAuthCookieToken(request)
+                    .flatMap(AuthCookieService::getTokenSubject))
         .orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
+  }
+
+  /**
+   * Extracts the JWT subject from the {@link SecurityContextHolder} when the request was
+   * authenticated via a bearer token ({@code ApiBearerTokenAuthenticationFilter}).
+   *
+   * <p>Only consulted when {@code api.jwtAuthForApiEnabled=true}. When the flag is {@code false},
+   * this always returns {@link Optional#empty()} so that a stale or injected {@link
+   * JwtAuthenticationToken} in the context can never bypass cookie-based auth.
+   */
+  private Optional<String> subjectFromSecurityContext() {
+    if (!configurationService.getOptimizeApiConfiguration().isJwtAuthForApiEnabled()) {
+      return Optional.empty();
+    }
+    return Optional.ofNullable(SecurityContextHolder.getContext().getAuthentication())
+        .filter(JwtAuthenticationToken.class::isInstance)
+        .map(JwtAuthenticationToken.class::cast)
+        .map(jwtAuth -> jwtAuth.getToken().getSubject());
   }
 
   @Override
