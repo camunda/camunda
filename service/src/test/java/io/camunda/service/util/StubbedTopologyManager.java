@@ -18,12 +18,14 @@ import io.camunda.zeebe.dynamic.config.state.ClusterConfiguration;
 public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   private final BrokerClusterStateImpl clusterState;
+  private final ClusterConfiguration clusterConfiguration;
 
-  StubbedTopologyManager() {
+  public StubbedTopologyManager() {
     this(8);
   }
 
-  StubbedTopologyManager(final int partitionsCount) {
+  public StubbedTopologyManager(final int partitionsCount) {
+    clusterConfiguration = ClusterConfiguration.uninitialized();
     clusterState = new BrokerClusterStateImpl();
     clusterState.setClusterSize(1);
     clusterState.addBrokerIfAbsent(0);
@@ -42,7 +44,7 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
 
   @Override
   public ClusterConfiguration getClusterConfiguration() {
-    throw new UnsupportedOperationException("Not yet implemented");
+    return clusterConfiguration;
   }
 
   @Override
