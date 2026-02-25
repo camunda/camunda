@@ -131,12 +131,8 @@ public class RestoreManager implements CloseableSilently {
     // Load backup metadata for each partition in parallel
     final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
 
-    // Use the minimum exported position as the most conservative filter
-    final var minExportedPosition =
-        exportedPositions.values().stream().mapToLong(Long::longValue).min().orElseThrow();
-
     final var restorableBackups =
-        RestoreSolver.solve(metadataByPartition, from, to, minExportedPosition);
+        RestoreSolver.solve(metadataByPartition, from, to, exportedPositions);
 
     // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
     final var backupIdsByPartition =
