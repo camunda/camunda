@@ -18,7 +18,6 @@ import {
 import {
   Authorization,
   deleteAuthorization,
-  ResourceType,
 } from "src/utility/api/authorizations";
 import { useNotifications } from "src/components/notifications";
 
@@ -69,7 +68,7 @@ const DeleteAuthorizationModal: FC<UseEntityModalProps<Authorization>> = ({
           <ListItem>
             <strong>{t("ownerType")}</strong>: {ownerType}
           </ListItem>
-          {resourceData.resourceType === ResourceType.USER_TASK ? (
+          {resourceData.resourceType === "USER_TASK" ? (
             <ListItem>
               <strong>{t("resourcePropertyName")}</strong>:{" "}
               {resourceData.resourcePropertyName}

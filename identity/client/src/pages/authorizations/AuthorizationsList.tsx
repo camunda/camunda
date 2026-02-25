@@ -61,7 +61,7 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
   const headers: DataTableHeader<Authorization>[] = [
     { header: t("ownerType"), key: "ownerType", isSortable: true },
     { header: t("ownerId"), key: "ownerId", isSortable: true },
-    tab === ResourceType.USER_TASK ? propertyNameHeader : resourceIdHeader,
+    tab === "USER_TASK" ? propertyNameHeader : resourceIdHeader,
     { header: t("permissionTypes"), key: "permissionTypes" },
   ];
 
