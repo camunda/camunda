@@ -24,7 +24,6 @@ import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.util.ObjectBuilder;
 import java.util.Comparator;
 import java.util.function.Function;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,11 +31,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 @Tag("rdbms")
 @ExtendWith(CamundaRdbmsInvocationContextProviderExtension.class)
 public class GlobalListenerSortIT {
-
-  @BeforeAll
-  public static void a() {
-    final int i = 0;
-  }
 
   @TestTemplate
   public void shouldSortByIdAsc(final CamundaRdbmsTestApplication testApplication) {
@@ -141,6 +135,32 @@ public class GlobalListenerSortIT {
         testApplication,
         b -> b.listenerType().desc(),
         Comparator.comparing(GlobalListenerEntity::listenerType).reversed());
+  }
+
+  @TestTemplate
+  public void shouldSortWhenCombiningWithDefaultSorting(
+      final CamundaRdbmsTestApplication testApplication) {
+    // When searching global listeners through API, a default sorting is applied:
+    // - afterNonGlobal asc
+    // - priority desc
+    // - listenerId asc
+    // Combining a user-provided sorting (in this case listenerId desc) with the default sorting
+    // should work without causing issues
+    testSorting(
+        testApplication,
+        b ->
+            b.listenerId()
+                .desc() // user-provided sorting
+                .afterNonGlobal()
+                .asc()
+                .priority()
+                .desc()
+                .listenerId()
+                .asc(), // default sorting (API)
+        Comparator.comparing(GlobalListenerEntity::listenerId)
+            .reversed()
+            .thenComparing(GlobalListenerEntity::afterNonGlobal)
+            .thenComparing(Comparator.comparing(GlobalListenerEntity::priority).reversed()));
   }
 
   private void testSorting(
