@@ -37,7 +37,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private long operationReference;
   private ValueType valueType;
   private Intent intent;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization = new AuthInfo();
 
   public ExecuteCommandRequest() {
     reset();
@@ -50,7 +50,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
-    authorization.reset();
+    authorization = new AuthInfo();
 
     return this;
   }
@@ -133,12 +133,14 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   }
 
   public ExecuteCommandRequest setAuthorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = authorization;
     return this;
   }
 
   public ExecuteCommandRequest setAuthorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    final var auth = new AuthInfo();
+    auth.wrap(buffer);
+    this.authorization = auth;
     return this;
   }
 

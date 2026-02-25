@@ -19,7 +19,11 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-/** */
+/**
+ * AuthInfo is treated as immutable after construction. Use the static factory methods to create
+ * instances. The only mutation allowed is through {@link #wrap} and {@link #reset}, which are part
+ * of the {@link UnpackedObject} serialization contract.
+ */
 public class AuthInfo extends UnpackedObject {
 
   private final EnumProperty<AuthDataFormat> formatProp =
@@ -33,36 +37,71 @@ public class AuthInfo extends UnpackedObject {
     declareProperty(formatProp).declareProperty(authDataProp).declareProperty(claimsProp);
   }
 
-  public AuthDataFormat getFormat() {
-    return formatProp.getValue();
+  // --- Static factory methods ---
+
+  public static AuthInfo withClaims(final Map<String, Object> claims) {
+    final var auth = new AuthInfo();
+    auth.formatProp.setValue(AuthDataFormat.UNKNOWN);
+    auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    return auth;
   }
 
-  public AuthInfo setFormat(final AuthDataFormat format) {
-    formatProp.setValue(format);
-    return this;
+  public static AuthInfo withClaims(final DirectBuffer claimsBuffer) {
+    final var auth = new AuthInfo();
+    auth.claimsProp.setValue(claimsBuffer);
+    return auth;
+  }
+
+  public static AuthInfo withJwt(final String token) {
+    final var auth = new AuthInfo();
+    auth.formatProp.setValue(AuthDataFormat.JWT);
+    auth.authDataProp.setValue(token);
+    return auth;
+  }
+
+  public static AuthInfo withJwt(final String token, final Map<String, Object> claims) {
+    final var auth = new AuthInfo();
+    auth.formatProp.setValue(AuthDataFormat.JWT);
+    auth.authDataProp.setValue(token);
+    auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    return auth;
+  }
+
+  public static AuthInfo preAuthorized() {
+    final var auth = new AuthInfo();
+    auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
+    return auth;
+  }
+
+  public static AuthInfo preAuthorized(final Map<String, Object> claims) {
+    final var auth = new AuthInfo();
+    auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
+    auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    return auth;
+  }
+
+  public static AuthInfo of(final AuthInfo info) {
+    if (info == null) {
+      return null;
+    }
+
+    final var auth = new AuthInfo();
+    auth.copyFrom(info);
+    return auth;
+  }
+
+  // --- Getters ---
+
+  public AuthDataFormat getFormat() {
+    return formatProp.getValue();
   }
 
   public String getAuthData() {
     return BufferUtil.bufferAsString(authDataProp.getValue());
   }
 
-  public AuthInfo setAuthData(final String authData) {
-    authDataProp.setValue(authData);
-    return this;
-  }
-
   public Map<String, Object> getClaims() {
     return MsgPackConverter.convertToMap(claimsProp.getValue());
-  }
-
-  public AuthInfo setClaims(final DirectBuffer authInfo) {
-    claimsProp.setValue(authInfo);
-    return this;
-  }
-
-  public AuthInfo setClaims(final Map<String, Object> authInfo) {
-    claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(authInfo)));
-    return this;
   }
 
   @Override
@@ -104,16 +143,6 @@ public class AuthInfo extends UnpackedObject {
       return new JwtDecoder(token).decode().getClaims();
     }
     return getClaims();
-  }
-
-  public static AuthInfo of(final AuthInfo info) {
-    if (info == null) {
-      return null;
-    }
-
-    final var auth = new AuthInfo();
-    auth.copyFrom(info);
-    return auth;
   }
 
   public boolean hasAnyClaims() {

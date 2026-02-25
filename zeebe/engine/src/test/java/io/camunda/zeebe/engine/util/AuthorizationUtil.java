@@ -22,32 +22,25 @@ public class AuthorizationUtil {
    * @return an encoded authorization string that can be set on the record metadata
    */
   public static AuthInfo getAuthInfo(final String... authorizedTenantIds) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
-    return auth;
+    return AuthInfo.withClaims(
+        Map.of(Authorization.AUTHORIZED_TENANTS, List.of(authorizedTenantIds)));
   }
 
   public static AuthInfo getUsernameAuthInfo(
       final String username, final String... authorizedTenantIds) {
-    final var auth = new AuthInfo();
-    auth.setClaims(
+    return AuthInfo.withClaims(
         Map.of(
             Authorization.AUTHORIZED_USERNAME,
             username,
             Authorization.AUTHORIZED_TENANTS,
             List.of(authorizedTenantIds)));
-    return auth;
   }
 
   public static AuthInfo getAuthInfo(final String username) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(Authorization.AUTHORIZED_USERNAME, username));
-    return auth;
+    return AuthInfo.withClaims(Map.of(Authorization.AUTHORIZED_USERNAME, username));
   }
 
   public static AuthInfo getAuthInfoWithClaim(final String claim, final Object claimValue) {
-    final var auth = new AuthInfo();
-    auth.setClaims(Map.of(claim, claimValue));
-    return auth;
+    return AuthInfo.withClaims(Map.of(claim, claimValue));
   }
 }

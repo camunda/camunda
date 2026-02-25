@@ -48,7 +48,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   private long requestId;
   private short intentValue = Intent.NULL_VAL;
   private int requestStreamId;
-  private final AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
   private AgentInfo agent;
@@ -265,12 +265,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization.copyFrom(authorization);
+    this.authorization = Objects.requireNonNull(authorization, "authorization can't be null");
     return this;
   }
 
   public RecordMetadata authorization(final DirectBuffer buffer) {
-    authorization.wrap(buffer);
+    final var auth = new AuthInfo();
+    auth.wrap(buffer);
+    // set the auth only if parsing succeeds
+    authorization = auth;
     return this;
   }
 
@@ -333,7 +336,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization.reset();
+    authorization = new AuthInfo();
     agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;

@@ -82,10 +82,7 @@ class BufferedProcessingResultBuilderTest {
     // given
     final Consumer<RecordMetadata> authorizationDecorator =
         metadata -> {
-          final var authInfo = new AuthInfo();
-          authInfo.setFormat(AuthDataFormat.JWT);
-          authInfo.setAuthData("secret-token");
-          metadata.authorization(authInfo);
+          metadata.authorization(AuthInfo.withJwt("secret-token"));
         };
     final var builder =
         new BufferedProcessingResultBuilder(LARGE_BATCH_PREDICATE, authorizationDecorator);

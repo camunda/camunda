@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
+import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -20,10 +21,7 @@ import java.util.function.Consumer;
  * event).
  */
 public record FollowUpEventMetadata(
-    long operationReference,
-    long batchOperationReference,
-    int recordVersion,
-    Map<String, Object> claims) {
+    long operationReference, long batchOperationReference, int recordVersion, AuthInfo authInfo) {
 
   public static final int VERSION_NOT_SET = -1;
 
@@ -49,8 +47,8 @@ public record FollowUpEventMetadata(
     return recordVersion;
   }
 
-  public Map<String, Object> getClaims() {
-    return claims;
+  public AuthInfo getAuthInfo() {
+    return authInfo;
   }
 
   public static Builder builder() {
@@ -62,7 +60,7 @@ public record FollowUpEventMetadata(
     private long operationReference = RecordMetadataDecoder.operationReferenceNullValue();
     private long batchOperationReference = RecordMetadataDecoder.batchOperationReferenceNullValue();
     private int recordVersion = VERSION_NOT_SET;
-    private Map<String, Object> claims = Map.of();
+    private AuthInfo authInfo;
 
     public Builder operationReference(final long operationReference) {
       this.operationReference = operationReference;
@@ -79,14 +77,22 @@ public record FollowUpEventMetadata(
       return this;
     }
 
+    public Builder authInfo(final AuthInfo authInfo) {
+      this.authInfo = authInfo;
+      return this;
+    }
+
     public Builder claims(final Map<String, Object> claims) {
-      this.claims = claims;
+      authInfo = AuthInfo.withClaims(claims);
       return this;
     }
 
     public FollowUpEventMetadata build() {
       return new FollowUpEventMetadata(
-          operationReference, batchOperationReference, recordVersion, claims);
+          operationReference,
+          batchOperationReference,
+          recordVersion,
+          authInfo != null ? authInfo : new AuthInfo());
     }
   }
 }
