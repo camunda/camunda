@@ -85,7 +85,7 @@ public class BatchOperationReaderIT extends OperateAbstractIT {
 
   private BatchOperationDto assert3Pages() throws Exception {
     final List<BatchOperationDto> page1 =
-        queryBatchOperations(new BatchOperationRequestDto(2, null, null));
+        new ArrayList<>(queryBatchOperations(new BatchOperationRequestDto(2, null, null)));
     assertThat(page1).hasSize(2);
     assertThat(page1).isSortedAccordingTo(batchOperationEntityComparator);
 
