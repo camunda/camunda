@@ -1060,6 +1060,7 @@ public class CompactRecordLogger {
         + StringUtils.abbreviate(value.getExpression(), "..", 50)
         + "\" = "
         + formatVariableValue(value.getResultValue())
+        + formatVariables(value.getContext())
         + formatTenant(value);
   }
 
