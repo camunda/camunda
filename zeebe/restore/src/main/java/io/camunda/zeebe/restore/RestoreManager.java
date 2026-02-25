@@ -43,7 +43,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -213,9 +212,7 @@ public class RestoreManager implements CloseableSilently {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
-        .collect(
-            Collectors.toMap(
-                partition -> partition, partition -> Arrays.copyOf(backupIds, backupIds.length)));
+        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
   }
 
   /**
@@ -401,17 +398,16 @@ public class RestoreManager implements CloseableSilently {
   private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
       final int partitionCount) {
     return FuturesUtil.parTraverse(
-            IntStream.rangeClosed(1, partitionCount).boxed().toList(),
-            partition ->
-                metadataSyncer
-                    .load(partition)
-                    .thenApply(
-                        opt ->
-                            opt.orElseThrow(
-                                () ->
-                                    new IllegalStateException(
-                                        "No backup metadata found for partition " + partition))))
-        .thenApply(List::copyOf);
+        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+        partition ->
+            metadataSyncer
+                .load(partition)
+                .thenApply(
+                    opt ->
+                        opt.orElseThrow(
+                            () ->
+                                new IllegalStateException(
+                                    "No backup metadata found for partition " + partition))));
   }
 
   @Override
