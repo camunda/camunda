@@ -242,16 +242,27 @@ const InstancesTable: React.FC = observer(() => {
     return 'content';
   };
 
+  const getEmptyMessage = () => {
+    if (Object.keys(filterValues).length === 0) {
+      return {
+        message: 'No operation log items yet',
+        additionalInfo:
+          'Operations that you perform in UI or via the API will appear here.',
+      };
+    }
+    return {
+      message: 'No operations log found',
+      additionalInfo: 'Try adjusting your filters or check back later.',
+    };
+  };
+
   return (
     <Container>
       <BasePanelHeader title="Operations Log" count={data?.totalCount} />
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}
-        emptyMessage={{
-          message: 'No operations log found',
-          additionalInfo: 'Try adjusting your filters or check back later.',
-        }}
+        emptyMessage={getEmptyMessage()}
         headerColumns={headerColumns}
         pagination={{
           hasPreviousPage,
