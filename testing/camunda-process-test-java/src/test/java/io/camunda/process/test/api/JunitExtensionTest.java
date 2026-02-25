@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.client.CamundaClient;
 import io.camunda.client.CamundaClientConfiguration;
-import io.camunda.process.test.api.dsl.TestScenarioRunner;
+import io.camunda.process.test.api.testCases.TestCaseRunner;
 import io.camunda.process.test.impl.client.CamundaManagementClient;
 import io.camunda.process.test.impl.coverage.ProcessCoverage;
 import io.camunda.process.test.impl.coverage.ProcessCoverageBuilder;
@@ -81,7 +81,7 @@ public class JunitExtensionTest {
   private CamundaClient client;
   private ZeebeClient zeebeClient;
   private CamundaProcessTestContext camundaProcessTestContext;
-  private TestScenarioRunner testScenarioRunner;
+  private TestCaseRunner testCaseRunner;
 
   @BeforeEach
   void configureMocks() {
@@ -147,7 +147,7 @@ public class JunitExtensionTest {
   }
 
   @Test
-  void shouldInjectTestScenarioRunner() throws Exception {
+  void shouldInjectTestCaseRunner() throws Exception {
     // given
     final CamundaProcessTestExtension extension =
         new CamundaProcessTestExtension(camundaRuntimeBuilder, processCoverageBuilder, NOOP);
@@ -157,7 +157,7 @@ public class JunitExtensionTest {
     extension.beforeEach(extensionContext);
 
     // then
-    assertThat(testScenarioRunner).isNotNull();
+    assertThat(testCaseRunner).isNotNull();
   }
 
   @Test
