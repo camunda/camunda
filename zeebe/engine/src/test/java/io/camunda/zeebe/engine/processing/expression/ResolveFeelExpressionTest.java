@@ -666,4 +666,55 @@ public class ResolveFeelExpressionTest {
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo(8);
   }
+
+  @Test
+  public void shouldResolveDateTimeExpressionWithContextVariable() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("= date and time(myDateTime)")
+            .withContext(Map.of("myDateTime", "2024-01-15T10:30:00"))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("2024-01-15T10:30:00");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithListInContext() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=count(myList)")
+            .withContext(Map.of("myList", java.util.List.of(1, 2, 3, 4, 5)))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldResolveExpressionWithNestedContext() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=person.name + \" is \" + string(person.age) + \" years old\"")
+            .withContext(Map.of("person", Map.of("name", "Alice", "age", 30)))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("Alice is 30 years old");
+  }
 }
