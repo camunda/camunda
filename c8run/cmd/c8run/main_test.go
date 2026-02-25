@@ -78,3 +78,32 @@ func TestCamundaCmdDifferentPort(t *testing.T) {
 	assert.Contains(t, javaOptsEnvVar, "-Dserver.port=8087")
 
 }
+
+func TestDockerCommandEnvOverridesVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.7.99")
+	base := []string{"CAMUNDA_VERSION=8.7.23", "FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.7.99")
+	assert.Equal(t, []string{"CAMUNDA_VERSION=8.7.23", "FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvAddsVersionWhenMissing(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.7.99")
+	base := []string{"FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.7.99")
+	assert.Equal(t, []string{"FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvNoOverrideWithoutDockerVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "")
+	base := []string{"CAMUNDA_VERSION=8.7.23"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Equal(t, base, result)
+}
