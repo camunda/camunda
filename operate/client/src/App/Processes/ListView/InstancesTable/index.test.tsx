@@ -179,7 +179,7 @@ describe('<InstancesTable />', () => {
 
     expect(batchModificationStore.state.isEnabled).toBe(true);
     expect(
-      screen.getByRole('button', {name: /apply modification/i}),
+      screen.getByRole('button', {name: /review modification/i}),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: /exit/i}));
@@ -190,7 +190,7 @@ describe('<InstancesTable />', () => {
 
     expect(batchModificationStore.state.isEnabled).toBe(false);
     expect(
-      screen.queryByRole('button', {name: /apply modification/i}),
+      screen.queryByRole('button', {name: /review modification/i}),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('button', {name: /exit/i}),

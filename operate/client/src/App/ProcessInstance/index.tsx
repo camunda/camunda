@@ -227,10 +227,10 @@ const ProcessInstance: React.FC = observer(() => {
                             });
                             setOpen(true);
                           }}
-                          data-testid="apply-modifications-button"
+                          data-testid="review-modifications-button"
                           disabled={!hasPendingModifications}
                         >
-                          Apply Modifications
+                          Review Modifications
                         </Button>
                       )}
                     >
