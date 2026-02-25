@@ -230,7 +230,12 @@ final class TemplateReaderTest {
                 Property.builder().long_(LongNumberProperty.builder().build()).build()),
             Map.entry(
                 "elementInstanceKey",
-                Property.builder().long_(LongNumberProperty.builder().build()).build()));
+                Property.builder().long_(LongNumberProperty.builder().build()).build()),
+            Map.entry(
+                "source",
+                Property.builder()
+                    .object(ObjectProperty.builder().enabled(false).build())
+                    .build()));
 
     assertThat(request.template().mappings())
         .as("index template request should have mappings with properties")

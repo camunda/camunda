@@ -12,6 +12,7 @@ import static io.camunda.zeebe.util.buffer.BufferUtil.bufferAsString;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.LongProperty;
+import io.camunda.zeebe.msgpack.property.ObjectProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -34,6 +35,7 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
   private static final StringValue ROOT_PROCESS_INSTANCE_KEY_KEY =
       new StringValue("rootProcessInstanceKey");
+  private static final StringValue SOURCE_KEY = new StringValue("source");
 
   private final StringProperty nameProp = new StringProperty(NAME_KEY);
   private final BinaryProperty valueProp = new BinaryProperty(VALUE_KEY);
@@ -46,9 +48,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
       new StringProperty(TENANT_ID_KEY, TenantOwned.DEFAULT_TENANT_IDENTIFIER);
   private final LongProperty rootProcessInstanceKeyProp =
       new LongProperty(ROOT_PROCESS_INSTANCE_KEY_KEY, -1L);
+  private final ObjectProperty<VariableSourceRecord> sourceProp =
+      new ObjectProperty<>(SOURCE_KEY, new VariableSourceRecord());
 
   public VariableRecord() {
-    super(8);
+    super(9);
     declareProperty(nameProp)
         .declareProperty(valueProp)
         .declareProperty(scopeKeyProp)
@@ -56,7 +60,8 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
         .declareProperty(processDefinitionKeyProp)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(rootProcessInstanceKeyProp);
+        .declareProperty(rootProcessInstanceKeyProp)
+        .declareProperty(sourceProp);
   }
 
   @Override
@@ -95,6 +100,11 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
+  public long getRootProcessInstanceKey() {
+    return rootProcessInstanceKeyProp.getValue();
+  }
+
+  @Override
   public String getBpmnProcessId() {
     return BufferUtil.bufferAsString(bpmnProcessIdProp.getValue());
   }
@@ -105,8 +115,13 @@ public final class VariableRecord extends UnifiedRecordValue implements Variable
   }
 
   @Override
-  public long getRootProcessInstanceKey() {
-    return rootProcessInstanceKeyProp.getValue();
+  public VariableSourceRecord getSource() {
+    return sourceProp.getValue();
+  }
+
+  public VariableRecord setSource(final VariableSourceRecord source) {
+    sourceProp.getValue().wrap(source);
+    return this;
   }
 
   public VariableRecord setRootProcessInstanceKey(final long rootProcessInstanceKey) {
