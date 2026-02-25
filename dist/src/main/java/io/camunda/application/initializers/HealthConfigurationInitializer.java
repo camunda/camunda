@@ -72,12 +72,13 @@ public class HealthConfigurationInitializer
       propertyMap.put(SPRING_READINESS_GROUP_PROPERTY, healthIndicators);
     }
 
+    final Set<String> startupGroup = new HashSet<>();
+
     // --- Gateway Properties ---
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
       propertyMap.put("management.health.defaults.enabled", true);
-      propertyMap.put(
-          "management.endpoint.health.group.startup.include", INDICATOR_GATEWAY_STARTED);
+      startupGroup.add(INDICATOR_GATEWAY_STARTED);
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
 
       final Set<String> livenessGroup = new HashSet<>();
@@ -109,8 +110,13 @@ public class HealthConfigurationInitializer
       propertyMap.put("management.endpoint.health.group.status.show-details", "never");
 
       /* Configure startup health check */
+      startupGroup.add(INDICATOR_BROKER_STARTUP);
       propertyMap.put("management.endpoint.health.group.startup.show-components", "never");
       propertyMap.put("management.endpoint.health.group.startup.show-details", "never");
+    }
+
+    if (!startupGroup.isEmpty()) {
+      propertyMap.put("management.endpoint.health.group.startup.include", startupGroup);
     }
 
     // add or merges with the default property settings
@@ -154,10 +160,6 @@ public class HealthConfigurationInitializer
 
     if (activeProfiles.contains(Profile.GATEWAY.getId())) {
       healthIndicators.add(INDICATOR_GATEWAY_STARTED);
-    }
-
-    if (activeProfiles.contains(Profile.BROKER.getId())) {
-      healthIndicators.add(INDICATOR_BROKER_STARTUP);
     }
 
     if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
