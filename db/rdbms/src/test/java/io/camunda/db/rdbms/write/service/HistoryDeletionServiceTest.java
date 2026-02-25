@@ -34,6 +34,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.SearchQueryResult;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,8 @@ public class HistoryDeletionServiceTest {
             historyDeletionDbReaderMock,
             processInstanceDbReaderMock,
             decisionInstanceDbReaderMock,
-            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, LIMIT));
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, LIMIT),
+            InstantSource.system());
   }
 
   @Test

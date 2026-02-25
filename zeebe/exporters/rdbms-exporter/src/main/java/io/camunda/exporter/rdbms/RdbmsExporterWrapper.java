@@ -151,7 +151,8 @@ public class RdbmsExporterWrapper implements Exporter {
                 config.getHistoryDeletion().getDelayBetweenRuns(),
                 config.getHistoryDeletion().getMaxDelayBetweenRuns(),
                 config.getHistoryDeletion().getQueueBatchSize(),
-                config.getHistoryDeletion().getDependentRowLimit()));
+                config.getHistoryDeletion().getDependentRowLimit()),
+            context.clock());
     builder.historyDeletionService(historyDeletionService);
 
     createHandlers(partitionId, rdbmsWriters, builder, config, historyCleanupService);
