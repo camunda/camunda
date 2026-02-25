@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type { Role } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
@@ -18,13 +19,9 @@ import { Group } from "src/utility/api/groups";
 import { MappingRule } from "src/utility/api/mapping-rules";
 import { PageSearchParams } from "../hooks/usePagination";
 
-export const ROLES_ENDPOINT = "/roles";
+export type { Role };
 
-export type Role = {
-  roleId: string;
-  name: string;
-  description: string;
-};
+export const ROLES_ENDPOINT = "/roles";
 
 export const searchRoles: ApiDefinition<
   SearchResponse<Role>,

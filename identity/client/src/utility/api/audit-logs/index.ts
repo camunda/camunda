@@ -10,7 +10,7 @@ import { ApiDefinition, apiPost } from "src/utility/api/request";
 import type {
   QueryAuditLogsRequestBody,
   QueryAuditLogsResponseBody,
-} from "@camunda/camunda-api-zod-schemas/8.9/audit-log";
+} from "@camunda/camunda-api-zod-schemas/8.9";
 
 export const AUDIT_LOGS_ENDPOINT = "/audit-logs";
 

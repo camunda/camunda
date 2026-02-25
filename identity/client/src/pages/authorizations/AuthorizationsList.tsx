@@ -9,12 +9,7 @@
 import { FC } from "react";
 import { Add, TrashCan } from "@carbon/react/icons";
 import { C3EmptyState } from "@camunda/camunda-composite-components";
-import {
-  Authorization,
-  GeneralAuthorization,
-  ResourceType,
-  TaskAuthorization,
-} from "src/utility/api/authorizations";
+import { Authorization, ResourceType } from "src/utility/api/authorizations";
 import { SearchResponse, usePagination } from "src/utility/api";
 import useTranslate from "src/utility/localization";
 import EntityList from "src/components/entityList";
@@ -51,13 +46,13 @@ const AuthorizationList: FC<AuthorizationListProps> = ({
     reload,
   );
 
-  const propertyNameHeader: DataTableHeader<TaskAuthorization> = {
+  const propertyNameHeader: DataTableHeader<Authorization> = {
     header: t("resourcePropertyName"),
     key: "resourcePropertyName",
     isSortable: true,
   };
 
-  const resourceIdHeader: DataTableHeader<GeneralAuthorization> = {
+  const resourceIdHeader: DataTableHeader<Authorization> = {
     header: t("resourceId"),
     key: "resourceId",
     isSortable: true,

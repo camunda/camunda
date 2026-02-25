@@ -7,7 +7,7 @@
  */
 
 import { FC } from "react";
-import { OwnerType } from "src/utility/api/authorizations";
+import { Authorization, OwnerType } from "src/utility/api/authorizations";
 import { searchUser } from "src/utility/api/users";
 import { searchGroups } from "src/utility/api/groups";
 import { searchMappingRule } from "src/utility/api/mapping-rules";
@@ -21,7 +21,7 @@ import { DocumentationLink } from "src/components/documentation";
 import { getIdPattern } from "src/utility/validate";
 
 type SelectionProps = {
-  type: OwnerType;
+  type: Authorization["ownerType"];
   ownerId: string;
   onChange: (newOwner: string) => void;
   onBlur: () => void;
