@@ -46,7 +46,6 @@ test.describe.parallel('Tenants API Tests', () => {
         data: tenant,
       });
 
-      expect(res.status()).toBe(201);
       await validateResponse(
         {
           path: '/tenants',
@@ -125,7 +124,7 @@ test.describe.parallel('Tenants API Tests', () => {
       const res = await request.get(buildUrl('/tenants/{tenantId}', p), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+      
       await validateResponse(
         {
           path: '/tenants/{tenantId}',
@@ -171,7 +170,7 @@ test.describe.parallel('Tenants API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      
       await validateResponse(
         {
           path: '/tenants/{tenantId}',
@@ -222,7 +221,7 @@ test.describe.parallel('Tenants API Tests', () => {
         data: {name: 'missing description'},
       });
 
-      expect(res.status()).toBe(200);
+      
       await validateResponse(
         {
           path: '/tenants/{tenantId}',
@@ -266,7 +265,7 @@ test.describe.parallel('Tenants API Tests', () => {
         const res = await request.delete(buildUrl('/tenants/{tenantId}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

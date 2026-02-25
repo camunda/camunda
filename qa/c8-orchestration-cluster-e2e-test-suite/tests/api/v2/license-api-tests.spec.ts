@@ -16,7 +16,7 @@ test.describe.parallel('License API Tests', () => {
       const res = await request.get(buildUrl('/license'), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+
       await validateResponse(
         {
           path: '/license',
@@ -35,7 +35,6 @@ test.describe.parallel('License API Tests', () => {
   test('Get License Unauthorized', async ({request}) => {
     const res = await request.get(buildUrl('/license'), {headers: {}});
 
-    expect(res.status()).toBe(200);
     await validateResponse(
       {
         path: '/license',

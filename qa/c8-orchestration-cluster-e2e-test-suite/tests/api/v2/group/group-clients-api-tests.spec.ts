@@ -15,6 +15,7 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -63,7 +64,7 @@ test.describe.parallel('Groups Clients API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -98,7 +99,6 @@ test.describe.parallel('Groups Clients API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/groups/{groupId}/clients/search',
@@ -136,7 +136,6 @@ test.describe.parallel('Groups Clients API Tests', () => {
       },
     );
 
-    expect(res.status()).toBe(200);
     await validateResponse(
       {
         path: '/groups/{groupId}/clients/search',
@@ -163,7 +162,7 @@ test.describe.parallel('Groups Clients API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -178,7 +177,7 @@ test.describe.parallel('Groups Clients API Tests', () => {
             data: {},
           },
         );
-        expect(res.status()).toBe(200);
+      
         await validateResponse(
           {
             path: '/groups/{groupId}/clients/search',

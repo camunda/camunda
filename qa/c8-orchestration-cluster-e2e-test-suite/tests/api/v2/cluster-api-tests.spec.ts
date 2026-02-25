@@ -8,6 +8,7 @@
 
 import {expect, test} from '@playwright/test';
 import {
+  assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
   defaultHeaders,
@@ -19,7 +20,6 @@ test.describe('Cluster API Tests', () => {
     const res = await request.get(buildUrl('/topology'), {
       headers: defaultHeaders(),
     });
-    expect(res.status()).toBe(200);
     await validateResponse(
       {
         path: '/topology',
@@ -41,7 +41,7 @@ test.describe('Cluster API Tests', () => {
   //Skipped due to bug 43397: https://github.com/camunda/camunda/issues/43397
   test.skip('Get Cluster Status', async ({request}) => {
     const res = await request.get(buildUrl('/status'));
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     const result = await res.body();
     expect(result.length).toBe(0);
   });

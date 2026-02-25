@@ -91,7 +91,7 @@ test.describe('Correlate Message API Tests', () => {
         headers: jsonHeaders(),
         data: CORRELATE_MESSAGE,
       });
-      expect(res.status()).toBe(200);
+
       await validateResponse(
         {
           path: '/messages/correlation',
@@ -125,7 +125,7 @@ test.describe('Correlate Message API Tests', () => {
             },
           },
         );
-        expect(res.status()).toBe(200);
+
         await validateResponse(
           {
             path: '/message-subscriptions/search',

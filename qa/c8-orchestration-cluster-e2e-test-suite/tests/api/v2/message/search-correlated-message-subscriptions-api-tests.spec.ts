@@ -95,7 +95,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           headers: jsonHeaders(),
           data: payload.body,
         });
-        expect(res.status()).toBe(200);
+
         await validateResponse(
           {
             path: '/messages/correlation',
@@ -141,7 +141,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
@@ -191,7 +191,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,

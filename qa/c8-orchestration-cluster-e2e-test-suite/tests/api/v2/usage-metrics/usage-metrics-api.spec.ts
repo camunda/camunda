@@ -141,7 +141,6 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         data: LIMITED_ROLE,
       });
 
-      expect(res.status()).toBe(201);
       await validateResponse(
         {
           path: '/roles',
@@ -178,7 +177,6 @@ test.describe('Get Usage Metrics API Tests - User with no permission', () => {
         data: LIMITED_USER,
       });
 
-      expect(res.status()).toBe(201);
       await validateResponse(
         {
           path: CREATE_USER_ENDPOINT,

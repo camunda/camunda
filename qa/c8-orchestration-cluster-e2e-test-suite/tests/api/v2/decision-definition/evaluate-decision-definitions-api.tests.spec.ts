@@ -84,7 +84,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -142,7 +141,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -200,7 +198,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -260,7 +257,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -338,7 +334,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -416,7 +411,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -476,7 +470,6 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
