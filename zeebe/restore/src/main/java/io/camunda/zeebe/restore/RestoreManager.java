@@ -132,7 +132,7 @@ public class RestoreManager implements CloseableSilently {
     final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
 
     final var restorableBackups =
-        RestoreSolver.solve(metadataByPartition, from, to, exportedPositions);
+        RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
 
     // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
     final var backupIdsByPartition =
@@ -174,7 +174,7 @@ public class RestoreManager implements CloseableSilently {
     // Load backup metadata for each partition in parallel
     final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
 
-    final var restorableBackups = RestoreSolver.solve(metadataByPartition, from, to, null);
+    final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
 
     // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
     final var backupIdsByPartition =
