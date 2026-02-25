@@ -6,15 +6,13 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useEffect, useMemo, useState} from 'react';
+import {useEffect, useMemo} from 'react';
 import {observer} from 'mobx-react';
 import {useProcessInstancePageParams} from '../useProcessInstancePageParams';
 import {diagramOverlaysStore} from 'modules/stores/diagramOverlays';
-import {IncidentsBanner} from './IncidentsBanner';
 import {tracking} from 'modules/tracking';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Container, DiagramPanel} from './styled';
-import {IncidentsWrapper} from '../IncidentsWrapper';
 import {
   CANCELED_BADGE,
   MODIFICATIONS,
@@ -28,7 +26,6 @@ import {DiagramShell} from 'modules/components/DiagramShell';
 import {computed} from 'mobx';
 import {type OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
 import {Diagram} from 'modules/components/Diagram';
-import {MetadataPopover} from './MetadataPopover';
 import {ModificationBadgeOverlay} from './ModificationBadgeOverlay';
 import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
@@ -58,8 +55,6 @@ import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/elements'
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
-import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
@@ -242,14 +237,6 @@ const TopPanel: React.FC = observer(() => {
 
   const modifiableFlowNodes = useModifiableFlowNodes();
 
-  const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
-    enabled:
-      processInstance &&
-      isInstanceRunning(processInstance) &&
-      !!processInstance.hasIncident,
-  });
-  const isIncidentBarOpen = incidentsPanelStore.state.isPanelVisible;
-
   const {isModificationModeEnabled} = modificationsStore;
 
   useEffect(() => {
@@ -280,25 +267,6 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && (
-        <IncidentsBanner
-          processInstanceKey={processInstanceId}
-          incidentsCount={incidentsCount}
-          onClick={() => {
-            if (isInTransition) {
-              return;
-            }
-
-            tracking.track({
-              eventName: isIncidentBarOpen
-                ? 'incidents-panel-closed'
-                : 'incidents-panel-opened',
-            });
-            incidentsPanelStore.setPanelOpen(!isIncidentBarOpen);
-          }}
-          isOpen={isIncidentBarOpen}
-        />
-      )}
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
@@ -378,11 +346,7 @@ const TopPanel: React.FC = observer(() => {
                     : flowNodeStateOverlays
                 }
                 selectedFlowNodeOverlay={
-                  isModificationModeEnabled ? (
-                    <ModificationDropdown />
-                  ) : (
-                    !isIncidentBarOpen && <MetadataPopover />
-                  )
+                  isModificationModeEnabled ? <ModificationDropdown /> : false
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
@@ -436,12 +400,6 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && (
-          <IncidentsWrapper
-            setIsInTransition={setIsInTransition}
-            processInstance={processInstance}
-          />
-        )}
       </DiagramPanel>
     </Container>
   );

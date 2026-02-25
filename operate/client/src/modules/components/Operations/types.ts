@@ -8,6 +8,7 @@
 
 type OperationType =
   | 'RESOLVE_INCIDENT'
+  | 'MIGRATE_PROCESS_INSTANCE'
   | 'CANCEL_PROCESS_INSTANCE'
   | 'DELETE_PROCESS_INSTANCE'
   | 'ENTER_MODIFICATION_MODE';
@@ -19,4 +20,4 @@ type OperationConfig = {
   label?: string;
 };
 
-export type {OperationConfig};
+export type {OperationConfig, OperationType};

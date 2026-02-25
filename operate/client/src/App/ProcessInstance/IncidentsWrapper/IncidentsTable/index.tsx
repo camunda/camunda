@@ -121,7 +121,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             {
               header: 'Failing Element',
               key: 'elementName',
-              isDisabled: true,
             },
             {
               header: 'Job Id',
@@ -136,7 +135,6 @@ const IncidentsTable: React.FC<IncidentsTableProps> = observer(
             {
               header: 'Error Message',
               key: 'errorMessage',
-              isDisabled: true,
             },
             {
               header: 'Operations',

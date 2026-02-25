@@ -6,23 +6,26 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import {Button, type ButtonSize} from '@carbon/react';
 import {
   Error,
   Tools,
   RetryFailed,
+  MigrateAlt,
   type CarbonIconType,
 } from '@carbon/react/icons';
-import {Button, type ButtonSize} from '@carbon/react';
 
 type ItemProps = {
   type:
     | 'RESOLVE_INCIDENT'
+    | 'MIGRATE_PROCESS_INSTANCE'
     | 'CANCEL_PROCESS_INSTANCE'
     | 'ENTER_MODIFICATION_MODE';
   onClick: React.ComponentProps<'button'>['onClick'];
   title: string;
   disabled?: boolean;
   size?: ButtonSize;
+  useIcons?: boolean;
 };
 
 const TYPE_DETAILS: Readonly<
@@ -32,13 +35,30 @@ const TYPE_DETAILS: Readonly<
       icon?: CarbonIconType;
       testId: string;
       isDangerous?: boolean;
-      label?: string;
+      label: string;
     }
   >
 > = {
-  RESOLVE_INCIDENT: {icon: RetryFailed, testId: 'retry-operation'},
-  CANCEL_PROCESS_INSTANCE: {icon: Error, testId: 'cancel-operation'},
-  ENTER_MODIFICATION_MODE: {icon: Tools, testId: 'enter-modification-mode'},
+  RESOLVE_INCIDENT: {
+    testId: 'retry-operation',
+    label: 'Retry',
+    icon: RetryFailed,
+  },
+  MIGRATE_PROCESS_INSTANCE: {
+    testId: 'migrate-operation',
+    label: 'Migrate',
+    icon: MigrateAlt,
+  },
+  CANCEL_PROCESS_INSTANCE: {
+    testId: 'cancel-operation',
+    label: 'Cancel',
+    icon: Error,
+  },
+  ENTER_MODIFICATION_MODE: {
+    testId: 'enter-modification-mode',
+    label: 'Modify',
+    icon: Tools,
+  },
 };
 
 const OperationItem: React.FC<ItemProps> = ({
@@ -47,24 +67,43 @@ const OperationItem: React.FC<ItemProps> = ({
   type,
   disabled,
   size,
+  useIcons = false,
 }) => {
-  const {icon, testId} = TYPE_DETAILS[type];
+  const {testId, label, isDangerous, icon} = TYPE_DETAILS[type];
+
+  if (useIcons && icon) {
+    return (
+      <li>
+        <Button
+          kind="ghost"
+          renderIcon={icon}
+          tooltipPosition="left"
+          iconDescription={title}
+          onClick={onClick}
+          disabled={disabled}
+          data-testid={testId}
+          title={title}
+          aria-label={title}
+          hasIconOnly
+          size={size}
+        />
+      </li>
+    );
+  }
 
   return (
     <li>
       <Button
         kind="ghost"
         renderIcon={icon}
-        tooltipPosition="left"
-        iconDescription={title}
         onClick={onClick}
         disabled={disabled}
         data-testid={testId}
-        title={title}
         aria-label={title}
-        hasIconOnly
         size={size}
-      />
+      >
+        {label}
+      </Button>
     </li>
   );
 };
