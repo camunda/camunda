@@ -60,7 +60,7 @@ jobs:
 
   integration-tests:
     name: "[IT] Run on Elasticsearch"
-    runs-on: gcp-core-32-default
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 120
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
@@ -125,6 +125,7 @@ jobs:
           parameters: >
             verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dtest.forkCount=${{ env.LIMITS_CPU }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
             -Ddatabase.type=elasticsearch -f optimize/pom.xml -pl backend -am
@@ -145,7 +146,7 @@ jobs:
 
   integration-tests-os:
     name: "[IT] Run on OpenSearch"
-    runs-on: gcp-core-32-default
+    runs-on: gcp-perf-core-16-default
     timeout-minutes: 120
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.backend-changes == 'true' }}
@@ -209,6 +210,7 @@ jobs:
           parameters: >
             verify -Dit.test.excludedGroups=${{ matrix.excludedGroups }}
             -Dit.test.includedGroups=${{ matrix.includedGroups }}
+            -Dtest.forkCount=${{ env.LIMITS_CPU }}
             -Dskip.docker -Dskip.fe.build -P${{ matrix.profiles }}
             -Dfailsafe.rerunFailingTestsCount=2
             -Ddatabase.type=opensearch -f optimize/pom.xml -pl backend -am
