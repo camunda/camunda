@@ -40,7 +40,7 @@ public final class CreateProcessInstanceResponseImpl implements ProcessInstanceE
     processInstanceKey = response.getProcessInstanceKey();
     tenantId = response.getTenantId();
     tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
-    businessId = response.getBusinessId();
+    businessId = response.hasBusinessId() ? response.getBusinessId() : null;
   }
 
   public CreateProcessInstanceResponseImpl(final CreateProcessInstanceResult response) {

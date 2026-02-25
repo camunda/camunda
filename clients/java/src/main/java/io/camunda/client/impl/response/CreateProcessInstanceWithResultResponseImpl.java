@@ -62,7 +62,7 @@ public final class CreateProcessInstanceWithResultResponseImpl implements Proces
     variables = response.getVariables();
     tenantId = response.getTenantId();
     tags = Collections.unmodifiableSet(new HashSet<>(response.getTagsList()));
-    businessId = response.getBusinessId();
+    businessId = response.hasBusinessId() ? response.getBusinessId() : null;
   }
 
   @Override
