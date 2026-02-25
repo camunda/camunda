@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertEqualsForKeys,
@@ -71,7 +70,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, user, userRequiredFields);
       if (json && json.username) {
         createdUserIds.push(json.username);
@@ -110,7 +108,6 @@ test.describe.parallel('Users API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, userRequiredFields);
         assertEqualsForKeys(
           json,
           expectedBodyForSecondUser,
@@ -223,7 +220,6 @@ test.describe.parallel('Users API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
     createdUserIds.push(json.username);
   });
@@ -255,7 +251,6 @@ test.describe.parallel('Users API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
     createdUserIds.push(json.username);
   });
@@ -288,7 +283,6 @@ test.describe.parallel('Users API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, userRequiredFields);
     assertEqualsForKeys(json, expectedBody, userRequiredFields);
     createdUserIds.push(json.username);
   });
@@ -353,7 +347,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -400,7 +393,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -431,7 +423,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -462,7 +453,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -496,7 +486,6 @@ test.describe.parallel('Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, userRequiredFields);
       assertEqualsForKeys(json, expectedResponseBody, userRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
