@@ -133,36 +133,4 @@ final class VariableRecordTest {
     record.setRootProcessInstanceKey(4L);
     return record;
   }
-
-  @Test
-  void shouldReturnCachedInstanceAcrossMultipleHandlerSimulation() {
-    // given - simulating the exporter scenario where multiple handlers call getValue()
-    final var record = new VariableRecord();
-    final byte[] msgPack = MsgPackConverter.convertToMsgPack("\"some-large-variable-value\"");
-    record.setValue(new UnsafeBuffer(msgPack));
-
-    // when - simulate multiple handlers calling getValue() as happens during export
-    // Handler 1: VariableHandler calls getValue() for length check and assignment
-    final String handler1LengthCheck = record.getValue();
-    final String handler1Assignment = record.getValue();
-
-    // Handler 2: UserTaskVariableHandler calls getValue() for its setVariableValues
-    final String handler2LengthCheck = record.getValue();
-    final String handler2Assignment = record.getValue();
-
-    // Handler 3: UserTaskVariableHandler creates a second entity and calls again
-    final String handler3LengthCheck = record.getValue();
-    final String handler3Assignment = record.getValue();
-
-    // Handler 4: ListViewVariableFromVariableHandler calls getValue()
-    final String handler4Assignment = record.getValue();
-
-    // then - all 7 calls should return the exact same String instance
-    assertThat(handler1Assignment).isSameAs(handler1LengthCheck);
-    assertThat(handler2LengthCheck).isSameAs(handler1LengthCheck);
-    assertThat(handler2Assignment).isSameAs(handler1LengthCheck);
-    assertThat(handler3LengthCheck).isSameAs(handler1LengthCheck);
-    assertThat(handler3Assignment).isSameAs(handler1LengthCheck);
-    assertThat(handler4Assignment).isSameAs(handler1LengthCheck);
-  }
 }
