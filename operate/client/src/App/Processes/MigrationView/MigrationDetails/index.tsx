@@ -8,35 +8,34 @@
 
 import {observer} from 'mobx-react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import pluralSuffix from 'modules/utils/pluralSuffix';
+import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const MigrationDetails: React.FC = observer(() => {
   const {
-    migrationState: {selectedTargetProcess, selectedTargetVersion},
-    getSelectedProcessDetails,
-  } = processesStore;
+    sourceProcessDefinition,
+    targetProcessDefinition,
+    selectedInstancesCount,
+  } = processInstanceMigrationStore.state;
 
-  const {
-    processName: selectedSourceProcessName,
-    version: selectedSourceProcessVersion,
-  } = getSelectedProcessDetails();
+  const sourceVersion = sourceProcessDefinition?.version;
+  const sourceName = sourceProcessDefinition
+    ? getProcessDefinitionName(sourceProcessDefinition)
+    : 'Process';
+
+  const targetVersion = targetProcessDefinition?.version;
+  const targetName = targetProcessDefinition
+    ? getProcessDefinitionName(targetProcessDefinition)
+    : 'Process';
 
   return (
     <p>
       You are about to migrate{' '}
-      {pluralSuffix(
-        processInstanceMigrationStore.state.selectedInstancesCount,
-        'process instance',
-      )}{' '}
-      from the process definition:{' '}
-      <strong>
-        {`${selectedSourceProcessName} - version ${selectedSourceProcessVersion}`}
-      </strong>{' '}
-      to the process definition:{' '}
-      <strong>
-        {`${selectedTargetProcess?.name} - version ${selectedTargetVersion}`}
-      </strong>
+      {pluralSuffix(selectedInstancesCount, 'process instance')} from the
+      process definition:{' '}
+      <strong>{`${sourceName} - version ${sourceVersion}`}</strong> to the
+      process definition:{' '}
+      <strong>{`${targetName} - version ${targetVersion}`}</strong>
     </p>
   );
 });

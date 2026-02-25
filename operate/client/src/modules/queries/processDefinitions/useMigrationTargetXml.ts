@@ -11,52 +11,58 @@ import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import type {DiagramModel} from 'bpmn-moddle';
 import {isMigratableElement} from 'modules/bpmn-js/utils/isMigratableElement';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {getMappableSequenceFlows} from 'modules/utils/sequenceFlows';
+import {useMemo} from 'react';
 
-function migrationTargetXmlParser({
-  xml,
-  diagramModel,
-  selectableFlowNodes,
-}: {
-  xml: string;
-  diagramModel: DiagramModel;
-  selectableFlowNodes: BusinessObject[];
-}) {
-  return {
+const getMigrationTargetXmlParser =
+  (targetProcessDefinitionId?: string) =>
+  ({
     xml,
     diagramModel,
-    selectableFlowNodes: selectableFlowNodes
-      .filter(isMigratableElement)
-      .filter((targetFlowNode) => {
-        const targetBpmnProcessId =
-          processesStore.migrationState.selectedTargetProcess?.bpmnProcessId;
-
-        return (
-          targetBpmnProcessId !== undefined &&
-          hasParentProcess({
-            flowNode: diagramModel?.elementsById[targetFlowNode.id],
-            bpmnProcessId: targetBpmnProcessId,
-          })
-        );
-      })
-      .map((flowNode) => {
-        return {...flowNode, name: flowNode.name ?? flowNode.id};
-      }),
-    selectableSequenceFlows: getMappableSequenceFlows(
-      diagramModel?.elementsById,
-    ),
+    selectableFlowNodes,
+  }: {
+    xml: string;
+    diagramModel: DiagramModel;
+    selectableFlowNodes: BusinessObject[];
+  }) => {
+    return {
+      xml,
+      diagramModel,
+      selectableFlowNodes: selectableFlowNodes
+        .filter(isMigratableElement)
+        .filter((targetFlowNode) => {
+          return (
+            targetProcessDefinitionId !== undefined &&
+            hasParentProcess({
+              flowNode: diagramModel?.elementsById[targetFlowNode.id],
+              bpmnProcessId: targetProcessDefinitionId,
+            })
+          );
+        })
+        .map((flowNode) => {
+          return {...flowNode, name: flowNode.name ?? flowNode.id};
+        }),
+      selectableSequenceFlows: getMappableSequenceFlows(
+        diagramModel?.elementsById,
+      ),
+    };
   };
-}
 
 function useMigrationTargetXml({
   processDefinitionKey,
+  processDefinitionId: processDefinitionId,
 }: {
   processDefinitionKey?: string;
+  processDefinitionId?: string;
 }) {
+  const select = useMemo(
+    () => getMigrationTargetXmlParser(processDefinitionId),
+    [processDefinitionId],
+  );
+
   return useProcessDefinitionXml({
     processDefinitionKey,
-    select: migrationTargetXmlParser,
+    select,
   });
 }
 
