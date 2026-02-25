@@ -10,9 +10,11 @@ package io.camunda.search.clients;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.SecurityContext;
 
@@ -23,6 +25,9 @@ public interface JobSearchClient {
   GlobalJobStatisticsEntity getGlobalJobStatistics(GlobalJobStatisticsQuery query);
 
   SearchQueryResult<JobTypeStatisticsEntity> getJobTypeStatistics(JobTypeStatisticsQuery query);
+
+  SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
+      JobWorkerStatisticsQuery query);
 
   JobSearchClient withSecurityContext(SecurityContext securityContext);
 }

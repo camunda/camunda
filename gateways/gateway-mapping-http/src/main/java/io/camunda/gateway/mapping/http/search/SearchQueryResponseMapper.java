@@ -79,6 +79,8 @@ import io.camunda.gateway.protocol.model.JobSearchResult;
 import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
@@ -158,6 +160,7 @@ import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionE
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -1573,6 +1576,30 @@ public final class SearchQueryResponseMapper {
         .completed(toStatusMetric(entity.completed()))
         .failed(toStatusMetric(entity.failed()))
         .workers(entity.workers());
+  }
+
+  public static JobWorkerStatisticsQueryResult toJobWorkerStatisticsQueryResult(
+      final SearchQueryResult<JobWorkerStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobWorkerStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobWorkerStatisticsItem)
+                .toList());
+  }
+
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
+      final JobWorkerStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobWorkerStatisticsItem();
+    }
+
+    return new JobWorkerStatisticsItem()
+        .worker(entity.worker())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
   }
 
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
