@@ -17,11 +17,11 @@ import {
 } from '@carbon/react/icons';
 import {observer} from 'mobx-react';
 import {currentTheme} from 'modules/stores/currentTheme';
-import type {FlowNodeState} from 'modules/types/operate';
+import type {ElementState} from 'modules/types/operate';
 import type {DecisionInstanceState} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type Props = {
-  state: (FlowNodeState | 'completedEndEvents') | DecisionInstanceState;
+  state: (ElementState | 'completedEndEvents') | DecisionInstanceState;
   container: HTMLElement;
   count?: number;
   isFaded?: boolean;

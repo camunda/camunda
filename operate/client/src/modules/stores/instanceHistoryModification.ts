@@ -7,13 +7,13 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {FlowNodeInstance} from 'modules/types/operate';
-import type {FlowNodeModification} from './modifications';
+import type {ElementInstance as FlowNodeInstance} from 'modules/types/operate';
+import type {ElementModification} from './modifications';
 
 type ModificationPlaceholder = {
   flowNodeInstance: FlowNodeInstance;
   parentFlowNodeId?: string;
-  operation: FlowNodeModification['payload']['operation'];
+  operation: ElementModification['payload']['operation'];
   parentInstanceId?: string;
 };
 
