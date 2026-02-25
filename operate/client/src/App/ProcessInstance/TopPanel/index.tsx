@@ -37,8 +37,8 @@ import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
 import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
 import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
 import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
-import {useModificationsByFlowNode} from 'modules/hooks/modifications';
-import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
+import {useModificationsByElement} from 'modules/hooks/modifications';
+import {useModifiableElements} from 'modules/hooks/processInstanceDetailsDiagram';
 import {
   useTotalRunningInstancesByElement,
   useTotalRunningInstancesForElement,
@@ -110,7 +110,7 @@ const TopPanel: React.FC = observer(() => {
       sourceFlowNodeIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
-  const modificationsByFlowNode = useModificationsByFlowNode();
+  const modificationsByElement = useModificationsByElement();
   const affectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
     ? 1
     : totalMoveOperationRunningInstances || 1;
@@ -210,7 +210,7 @@ const TopPanel: React.FC = observer(() => {
   }, [executedFlowNodes]);
 
   const modificationBadgesPerFlowNode = computed(() =>
-    Object.entries(modificationsByFlowNode).reduce<
+    Object.entries(modificationsByElement).reduce<
       {
         flowNodeId: string;
         type: string;
@@ -240,7 +240,7 @@ const TopPanel: React.FC = observer(() => {
     ({type}) => type === OVERLAY_TYPE_MODIFICATIONS_BADGE,
   );
 
-  const modifiableFlowNodes = useModifiableFlowNodes();
+  const modifiableElements = useModifiableElements();
 
   const incidentsCount = useProcessInstanceIncidentsCount(processInstanceId, {
     enabled:
@@ -325,7 +325,7 @@ const TopPanel: React.FC = observer(() => {
                 processDefinitionKey={processDefinitionKey}
                 selectableFlowNodes={
                   isModificationModeEnabled
-                    ? modifiableFlowNodes
+                    ? modifiableElements
                     : selectableFlowNodes
                 }
                 selectedFlowNodeIds={selectedElementIds}
@@ -411,7 +411,7 @@ const TopPanel: React.FC = observer(() => {
                       isFaded={hasPendingCancelOrMoveModification({
                         flowNodeId: overlay.flowNodeId,
                         flowNodeInstanceKey: undefined,
-                        modificationsByFlowNode,
+                        modificationsByFlowNode: modificationsByElement,
                       })}
                       title={
                         payload.flowNodeState === 'completed'
