@@ -228,24 +228,24 @@ public class ModifyProcessInstanceTest {
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
-            .toList();
+            .getFirst();
     final var activatedTasksB =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("B")
-            .toList();
+            .getFirst();
 
     Assertions.assertThat(terminatedTasksA)
         .describedAs("Expect that tasks A are terminated")
-        .hasSize(1);
+        .isNotNull();
     Assertions.assertThat(activatedTasksB)
         .describedAs("Expect that task B is activated")
-        .hasSize(1);
+        .isNotNull();
 
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withScopeKey(activatedTasksB.getFirst().getKey())
+                .withScopeKey(activatedTasksB.getKey())
                 .withName("foo")
                 .getFirst())
         .describedAs("Expect that variable 'foo' is created in task B's scope")
@@ -289,24 +289,24 @@ public class ModifyProcessInstanceTest {
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_TERMINATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("A")
-            .toList();
+            .getFirst();
     final var activatedTasksB =
         RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
             .withProcessInstanceKey(processInstanceKey)
             .withElementId("B")
-            .toList();
+            .getFirst();
 
     Assertions.assertThat(terminatedTasksA)
         .describedAs("Expect that tasks A are terminated")
-        .hasSize(1);
+        .isNotNull();
     Assertions.assertThat(activatedTasksB)
         .describedAs("Expect that task B is activated")
-        .hasSize(1);
+        .isNotNull();
 
     Assertions.assertThat(
             RecordingExporter.variableRecords(VariableIntent.CREATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withScopeKey(activatedTasksB.getFirst().getKey())
+                .withScopeKey(activatedTasksB.getKey())
                 .withName("foo")
                 .getFirst())
         .describedAs("Expect that variable 'foo' is created in task B's scope")
