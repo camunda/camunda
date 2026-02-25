@@ -126,19 +126,20 @@ For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-proc
 **:thinking:  What are the benchmarks**
 
 * There’s a GKE Kubernetes cluster to run the benchmarks:
-  * GCP project: `zeebe-io`, cluster name: `zeebe-cluster`
-  * Run by the Zeebe team
+  * Cluster name: `camunda-benchmark-prod`
+  * Maintained by the infra team
 * This Kubernetes cluster has a monitoring stack installed (Prometheus, Grafana)
-  * There’s a [dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m&from=now-24h&to=now&timezone=browser&var-DS_PROMETHEUS=prometheus&var-cluster=$__all&var-namespace=$__all&var-pod=$__all&var-partition=$__all) to observe the status of the benchmarks
-* Every created benchmark has a dedicated namespace in the Kubernetes cluster (e.g. `release-8-7-x`)
+  * There's a [dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m&from=now-24h&to=now&timezone=browser&var-DS_PROMETHEUS=prometheus&var-cluster=$__all&var-namespace=$__all&var-pod=$__all&var-partition=$__all) to observe the status of the benchmarks
+* Every created benchmark has a dedicated namespace in the Kubernetes cluster (e.g. `c8-release-8-7-x`)
 * There's a benchmark for every currently supported ([maintained](https://docs.camunda.io/docs/next/reference/announcements-release-notes/overview/#announcements--release-notes)) version + previously released alpha version.
-* A benchmark is installed/upgraded by this [GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-medic-benchmarks.yml)
-  * Under the hood, it’s running a `helm install --upgrade` command for a benchmark creation/update
-  * Helm installs a special [Helm chart](https://github.com/camunda/zeebe-benchmark-helm) that is a thin wrapper around the standard Camunda 8 [Helm chart](https://github.com/camunda/camunda-platform-helm), with additional components for benchmark testing (workload generators)
+* A benchmark is installed/upgraded by this [GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml)
+  * Under the hood, it's running a `helm install --upgrade` command for a benchmark creation/update
+  * installs a special [Helm chart](https://github.com/camunda/camunda-load-tests-helm) containing the load test applications
+  * installs the standard Camunda 8 [Helm chart](https://github.com/camunda/camunda-platform-helm)
 
 **:leaves: Benchmark flow**
 
-* A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered ([GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/zeebe-medic-benchmarks.yml))
+* A benchmark is automatically created via GitHub Action call after a release candidate (RC) is triggered ([GHA workflow](https://github.com/camunda/camunda/blob/main/.github/workflows/camunda-load-test.yml))
   * Benchmark creation applies only to alpha, minor, and major releases.
   * Patches don't require a new benchmark creation. What is required is to re-use the same namespace + the recently released patch version, and update the the applicable benchmark with the newest patch version.
 * If during the release, new commits are merged into the release branch (major, minor, alpha), the corresponding benchmark needs to be updated to run the code from latest commit of the release branch.
@@ -148,16 +149,16 @@ For [the ZPT (zeebe-process-test) project](https://github.com/camunda/zeebe-proc
     * Additionally, for alpha releases, previous alpha for the current version is to be removed
       * E.g. if 8.8.0-alpha6 is released, a benchmark for 8.8.0-alpha5 is be removed, for 8.8.0-alpha6 running
   * For the patch releases, a benchmark for this minor version is to be update to this version)
-    * E.g. if a version 8.7.10 is released, the benchmark for 8.7 (`release-8-7-x`) will be updated to use this version as a part of the 8.7.10 patch release.
+    * E.g. if a version 8.7.10 is released, the benchmark for 8.7 (`c8-release-8-7-x`) will be updated to use this version as a part of the 8.7.10 patch release.
 
 **:file_folder: Example**
 
-| Release Version | Benchmark Namespace in Kubernetes |                                                 Patch Release                                                 |                                                                                                                 Alpha Release                                                                                                                 |
-|-----------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| 8.5.x           | release-8-5-x                     | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                             |
-| 8.6.x           | release-8-6-x                     | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                             |
-| 8.7.x           | release-8-7-x                     | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                             |
-| 8.8.0-alphaN    | release-8-8-0-alphaN              | (does not happen)                                                                                             | • `release-8.8.0-alphaN` and `release-8.8.0-alpha(N+1)` benchmarks coexist during the release of `release-8.8.0-alpha(N+1)`<br />• after `8.8.0-alpha(N+1)` release → `release-8-8-0-alphaN` is deleted<br />• Other benchmarks are untouched |
+| Release Version | Benchmark Namespace in Kubernetes |                                                 Patch Release                                                 |                                                                                                                       Alpha Release                                                                                                                       |
+|-----------------|-----------------------------------|---------------------------------------------------------------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 8.5.x           | c8-release-8-5-x                  | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                                         |
+| 8.6.x           | c8-release-8-6-x                  | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                                         |
+| 8.7.x           | c8-release-8-7-x                  | • Update benchmark to use newly released image version via GHA workflow<br />• Other benchmarks are untouched | (does not happen)                                                                                                                                                                                                                                         |
+| 8.8.0-alphaN    | c8-release-8-8-0-alphaN           | (does not happen)                                                                                             | • `c8-release-8.8.0-alphaN` and `c8-release-8.8.0-alpha(N+1)` benchmarks coexist during the release of `c8-release-8.8.0-alpha(N+1)`<br />• after `8.8.0-alpha(N+1)` release → `c8-release-8-8-0-alphaN` is deleted<br />• Other benchmarks are untouched |
 
 More details on how benchmark tests work can be found in our [reliability testing documentation](https://github.com/camunda/camunda/blob/main/docs/testing/reliability-testing.md).
 

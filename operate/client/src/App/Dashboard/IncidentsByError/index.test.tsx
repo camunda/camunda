@@ -32,6 +32,7 @@ import {mockMe} from 'modules/mocks/api/v2/me';
 import {useEffect} from 'react';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {truncateErrorMessage} from './utils/truncateErrorMessage';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 function createWrapper(initialPath: string = Paths.dashboard()) {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
@@ -54,6 +55,8 @@ function createWrapper(initialPath: string = Paths.dashboard()) {
 }
 
 describe('IncidentsByError', () => {
+  const mockScrollableContainerRef = {current: null};
+
   beforeEach(() => {
     mockMe().withSuccess(createUser());
   });
@@ -76,9 +79,12 @@ describe('IncidentsByError', () => {
   it('should display skeleton when loading', async () => {
     mockIncidentQueries();
 
-    render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(screen.getByTestId('data-table-skeleton')).toBeInTheDocument();
 
@@ -90,11 +96,16 @@ describe('IncidentsByError', () => {
   });
 
   it('should handle server errors', async () => {
-    mockFetchIncidentProcessInstanceStatisticsByError().withServerError();
-
-    render(<IncidentsByError />, {
-      wrapper: createWrapper(),
+    Array.from({length: 5}).forEach(() => {
+      mockFetchIncidentProcessInstanceStatisticsByError().withServerError();
     });
+
+    render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(
       await screen.findByText('Data could not be fetched'),
@@ -106,11 +117,16 @@ describe('IncidentsByError', () => {
       .spyOn(global.console, 'error')
       .mockImplementation(() => {});
 
-    mockFetchIncidentProcessInstanceStatisticsByError().withNetworkError();
-
-    render(<IncidentsByError />, {
-      wrapper: createWrapper(),
+    Array.from({length: 5}).forEach(() => {
+      mockFetchIncidentProcessInstanceStatisticsByError().withNetworkError();
     });
+
+    render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(
       await screen.findByText('Data could not be fetched'),
@@ -122,9 +138,12 @@ describe('IncidentsByError', () => {
   it('should display information message when there are no incidents', async () => {
     mockIncidentQueries({incidents: searchResult([])});
 
-    render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(
       await screen.findByText('Your processes are healthy'),
@@ -137,9 +156,12 @@ describe('IncidentsByError', () => {
   it('should render process incidents with expandable process list', async () => {
     mockIncidentQueries();
 
-    const {user} = render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    const {user} = render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     const withinIncident = within(
       await screen.findByTestId('incident-byError-0'),
@@ -178,13 +200,19 @@ describe('IncidentsByError', () => {
   });
 
   it('should include tenant in link when multi-tenancy is enabled', async () => {
-    vi.stubGlobal('clientConfig', {multiTenancyEnabled: true});
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
+      multiTenancyEnabled: true,
+    });
 
     mockIncidentQueries();
 
-    const {user} = render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    const {user} = render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     const expandButton = within(
       await screen.findByTestId('incident-byError-0'),
@@ -208,9 +236,12 @@ describe('IncidentsByError', () => {
       incidents: mockIncidentStatisticsByErrorWithBigMessage,
     });
 
-    const {user} = render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    const {user} = render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     const truncated = truncateErrorMessage(bigErrorMessage);
     const mainSearch = new URLSearchParams({
@@ -256,9 +287,12 @@ describe('IncidentsByError', () => {
   it('should expand filters panel on click', async () => {
     mockIncidentQueries();
 
-    const {user} = render(<IncidentsByError />, {
-      wrapper: createWrapper(),
-    });
+    const {user} = render(
+      <IncidentsByError scrollableContainerRef={mockScrollableContainerRef} />,
+      {
+        wrapper: createWrapper(),
+      },
+    );
 
     expect(panelStatesStore.state.isFiltersCollapsed).toBe(false);
 

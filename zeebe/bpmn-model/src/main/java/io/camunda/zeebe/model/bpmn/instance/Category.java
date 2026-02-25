@@ -18,11 +18,7 @@ package io.camunda.zeebe.model.bpmn.instance;
 
 import java.util.Collection;
 
-public interface Category extends RootElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Category extends RootElement, NamedBpmnElement {
 
   Collection<CategoryValue> getCategoryValues();
 }

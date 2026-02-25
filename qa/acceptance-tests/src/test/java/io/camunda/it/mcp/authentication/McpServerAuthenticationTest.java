@@ -38,14 +38,24 @@ abstract class McpServerAuthenticationTest extends McpServerTest {
         .extracting(
             ServerCapabilities::completions,
             ServerCapabilities::experimental,
-            ServerCapabilities::logging,
-            ServerCapabilities::prompts,
-            ServerCapabilities::resources)
+            ServerCapabilities::logging)
         .allMatch(Objects::isNull);
 
     assertThat(initializeResult.capabilities().tools())
         .isNotNull()
         .satisfies(tools -> assertThat(tools.listChanged()).isFalse());
+
+    assertThat(initializeResult.capabilities().prompts())
+        .isNotNull()
+        .satisfies(prompts -> assertThat(prompts.listChanged()).isFalse());
+
+    assertThat(initializeResult.capabilities().resources())
+        .isNotNull()
+        .satisfies(
+            resources -> {
+              assertThat(resources.listChanged()).isFalse();
+              assertThat(resources.subscribe()).isFalse();
+            });
   }
 
   @Test

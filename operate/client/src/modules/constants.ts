@@ -6,19 +6,6 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-const OPERATION_STATE = {
-  SCHEDULED: 'SCHEDULED',
-  LOCKED: 'LOCKED',
-  SENT: 'SENT',
-  COMPLETED: 'COMPLETED',
-};
-
-const ACTIVE_OPERATION_STATES = [
-  OPERATION_STATE.SCHEDULED,
-  OPERATION_STATE.LOCKED,
-  OPERATION_STATE.SENT,
-];
-
 const TOKEN_OPERATIONS = {
   ADD_TOKEN: 'ADD_TOKEN',
   MOVE_TOKEN: 'MOVE_TOKEN',
@@ -47,7 +34,6 @@ const ARROW_ICON_WIDTH = 'var(--cds-spacing-08)';
 const DEFAULT_TENANT = '<default>';
 
 export {
-  ACTIVE_OPERATION_STATES,
   TOKEN_OPERATIONS,
   PAGE_TITLE,
   PAGE_TOP_PADDING,

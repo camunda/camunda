@@ -30,6 +30,7 @@ components:
         - validLicense
         - licenseType
         - isCommercial
+        - expiresAt
       properties:
         validLicense:
           description: True if the Camunda license is valid, false if otherwise
@@ -43,7 +44,7 @@ components:
           description: Will be false when a license contains a non-commerical=true property
           type: boolean
         expiresAt:
+          nullable: true
           description: The date when the Camunda license expires
           type: string
           format: date-time
-          nullable: true

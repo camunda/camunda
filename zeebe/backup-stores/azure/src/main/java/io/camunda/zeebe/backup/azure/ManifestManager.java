@@ -21,7 +21,7 @@ import com.azure.storage.blob.models.BlobStorageException;
 import com.azure.storage.blob.models.BlockBlobItem;
 import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.options.BlobParallelUploadOptions;
-import com.azure.storage.common.implementation.Constants;
+import com.azure.storage.common.implementation.Constants.HeaderConstants;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -106,7 +106,6 @@ public final class ManifestManager {
   void completeManifest(final PersistedManifest inProgressManifest) {
     final byte[] serializedManifest;
     final var completed = inProgressManifest.manifest().complete();
-    assureContainerCreated();
     try {
       serializedManifest = MAPPER.writeValueAsBytes(completed);
     } catch (final JsonProcessingException e) {
@@ -144,7 +143,6 @@ public final class ManifestManager {
   }
 
   void markAsFailed(final BackupIdentifier manifestId, final String failureReason) {
-    assureContainerCreated();
 
     final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifestId));
     Manifest manifest = getManifest(manifestId);
@@ -157,6 +155,8 @@ public final class ManifestManager {
           case FAILED -> manifest.asFailed();
           case COMPLETED -> manifest.asCompleted().fail(failureReason);
           case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
+          case DELETED ->
+              throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
         };
 
     if (manifest != updatedManifest) {
@@ -168,21 +168,34 @@ public final class ManifestManager {
     }
   }
 
-  public void deleteManifest(final BackupIdentifier id) {
-    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(id));
-    final Manifest manifest = getManifest(id);
-    if (manifest == null) {
-      return;
-    } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
-      throw new UnexpectedManifestState(
-          "Cannot delete Backup with id '%s' while saving is in progress."
-              .formatted(id.toString()));
-    }
+  void markAsDeleted(final Manifest manifest) {
 
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+
+    if (manifest != deletedManifest) {
+      try {
+        final BlobClient blobClient =
+            blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
+        blobClient.upload(BinaryData.fromBytes(MAPPER.writeValueAsBytes(deletedManifest)), true);
+      } catch (final JsonProcessingException e) {
+        throw new RuntimeException(e);
+      }
+    }
+  }
+
+  public void deleteManifest(final Manifest manifest) {
+    final BlobClient blobClient = blobContainerClient.getBlobClient(manifestIdPath(manifest.id()));
     blobClient.delete();
   }
 
   Manifest getManifest(final BackupIdentifier id) {
+    assureContainerCreated();
     return getManifestWithPath(
         MANIFEST_PATH_FORMAT.formatted(id.partitionId(), id.checkpointId(), id.nodeId()));
   }
@@ -261,7 +274,7 @@ public final class ManifestManager {
   public static void disableOverwrite(final BlobRequestConditions blobRequestConditions) {
     // Optionally limit requests to resources that do not match the passed ETag.
     // None will match therefore it will not overwrite.
-    blobRequestConditions.setIfNoneMatch(Constants.HeaderConstants.ETAG_WILDCARD);
+    blobRequestConditions.setIfNoneMatch(HeaderConstants.ETAG_WILDCARD);
   }
 
   record PersistedManifest(String eTag, InProgressManifest manifest) {}

@@ -12,6 +12,7 @@ import {useEffect, useState} from 'react';
 import {logger} from 'modules/logger';
 import {getStage} from 'modules/tracking/getStage';
 import {getSaasUserToken} from 'modules/api/v2/authentication/token';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const STAGE = getStage(window.location.host);
 
@@ -31,13 +32,14 @@ type Props = {
 };
 
 const C3Provider: React.FC<Props> = ({children}) => {
+  const clientConfig = getClientConfig();
   const [token, setToken] = useState<string | null>(null);
-  const organizationId = window.clientConfig?.organizationId;
-  const clusterId = window.clientConfig?.clusterId;
+  const organizationId = clientConfig.organizationId;
+  const clusterId = clientConfig.clusterId;
 
   useEffect(() => {
     async function init() {
-      const organizationId = window.clientConfig?.organizationId;
+      const {organizationId} = getClientConfig();
 
       if (typeof organizationId === 'string') {
         setToken(await fetchToken());

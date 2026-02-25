@@ -39,7 +39,14 @@ public final class MappingRuleFixtures extends CommonFixtures {
   public static void createAndSaveRandomMappingRules(
       final RdbmsWriters rdbmsWriters,
       final Function<MappingRuleDbModelBuilder, MappingRuleDbModelBuilder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomMappingRules(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomMappingRules(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<MappingRuleDbModelBuilder, MappingRuleDbModelBuilder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getMappingRuleWriter()
           .create(MappingRuleFixtures.createRandomized(builderFunction));

@@ -385,6 +385,24 @@ public final class CreateProcessInstanceTest extends ClientTest {
     assertThat(response.getTags()).isEqualTo(tags);
   }
 
+  @Test
+  public void shouldCreateWithBusinessId() {
+    // given
+    final String businessId = "order-12345";
+
+    // when
+    client
+        .newCreateInstanceCommand()
+        .processDefinitionKey(123)
+        .businessId(businessId)
+        .send()
+        .join();
+
+    // then
+    final CreateProcessInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getBusinessId()).isEqualTo(businessId);
+  }
+
   public static class VariableDocument {
 
     VariableDocument() {}

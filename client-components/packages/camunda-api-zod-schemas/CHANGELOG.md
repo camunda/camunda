@@ -1,10 +1,65 @@
 # Changelog
 
+## v0.0.45
+
+### 🩹 Fixes
+
+- make jobKey nullable in incident schema ([#46640](https://github.com/camunda/camunda/issues/46640))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.44
+
+### 🩹 Fixes
+
+- fix process instance query type ([#46537](https://github.com/camunda/camunda/issues/46537))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.43
+
+- Add `DELETE_DECISION_INSTANCE` to `batchOperationTypeSchema` ([#45988](https://github.com/camunda/camunda/issues/45988))
+
+### ❤️ Contributors
+
+- Omran Abazeed ([@omranAbazeed](https://github.com/omranAbazeed))
+
+## v0.0.42
+
+### 🚀 Enhancements
+
+- fix audit log shape ([#46339](https://github.com/camunda/camunda/issues/46339))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.41
+
+### 🚀 Enhancements
+
+- fix 8.9 defs and mark optional fields as nullable ([#46339](https://github.com/camunda/camunda/issues/46339))
+- add missing 8.9 defs ([#463100](https://github.com/camunda/camunda/issues/463100))
+
+### ❤️ Contributors
+
+- Vinicius Goulart ([@vsgoulart](https://github.com/vsgoulart))
+
+## v0.0.40
+
+### 🚀 Enhancements
+
+Accidental empty release
+
 ## v0.0.39
 
 ### 🚀 Enhancements
 
-update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
+- update zod schema for audit log endpoint with `agentElementId` ([#45500](https://github.com/camunda/camunda/issues/45500))
 
 ### ❤️ Contributors
 

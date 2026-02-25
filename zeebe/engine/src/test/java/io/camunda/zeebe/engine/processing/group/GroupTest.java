@@ -388,6 +388,7 @@ public class GroupTest {
         RecordingExporter.groupRecords()
             .withIntents(GroupIntent.ENTITY_REMOVED, GroupIntent.DELETED)
             .withGroupId(groupId)
+            .limit(2)
             .asList();
     assertThat(deletedGroup).hasGroupId(groupId);
     assertThat(groupRecords).hasSize(2);

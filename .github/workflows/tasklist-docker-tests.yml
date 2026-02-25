@@ -20,6 +20,9 @@ jobs:
         image: registry:3
         ports:
           - 5000:5000
+    env:
+      TASKLIST_TEST_DOCKER_IMAGE: localhost:5000/camunda/tasklist
+      TASKLIST_TEST_DOCKER_IMAGE_TAG: current-test
     steps:
       - uses: actions/checkout@v6
       - uses: hadolint/hadolint-action@v3.3.0
@@ -39,13 +42,23 @@ jobs:
           maven-extra-args: -D skip.fe.build -D skipOptimize
       - uses: ./.github/actions/build-platform-docker
         with:
-          repository: localhost:5000/camunda/tasklist
-          version: current-test
+          repository: ${{ env.TASKLIST_TEST_DOCKER_IMAGE }}
+          version: ${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }}
           push: true
           distball: ${{ steps.build-backend.outputs.distball }}
           dockerfile: tasklist.Dockerfile
       - name: Run Docker tests
-        run: ./mvnw --no-snapshot-updates -pl tasklist/qa/integration-tests -DskipChecks -Dtest=StartupIT -Dsurefire.failIfNoSpecifiedTests=false -Dspring.profiles.active=docker-test test
+        run: |
+          ./mvnw \
+            --no-snapshot-updates \
+            -pl tasklist/qa/integration-tests \
+            -DskipChecks \
+            -Dtest=StartupIT \
+            -Dsurefire.failIfNoSpecifiedTests=false \
+            -Dspring.profiles.active=docker-test \
+            -Dtasklist.currentVersion.docker.tag=${{ env.TASKLIST_TEST_DOCKER_IMAGE_TAG }} \
+            -Dtasklist.currentVersion.docker.repo=${{ env.TASKLIST_TEST_DOCKER_IMAGE }} \
+            test
       - name: Upload Test Report
         if: failure()
         uses: ./.github/actions/collect-test-artifacts

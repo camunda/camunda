@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.FormDbQuery;
 import io.camunda.db.rdbms.sql.FormMapper;
 import io.camunda.db.rdbms.sql.columns.FormSearchColumn;
@@ -26,8 +27,8 @@ public class FormDbReader extends AbstractEntityReader<FormEntity> implements Fo
 
   private final FormMapper formMapper;
 
-  public FormDbReader(final FormMapper formMapper) {
-    super(FormSearchColumn.values());
+  public FormDbReader(final FormMapper formMapper, final RdbmsReaderConfig readerConfig) {
+    super(FormSearchColumn.values(), readerConfig);
     this.formMapper = formMapper;
   }
 

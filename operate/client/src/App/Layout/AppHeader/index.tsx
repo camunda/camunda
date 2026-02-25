@@ -19,6 +19,7 @@ import {licenseTagStore} from 'modules/stores/licenseTag';
 import {currentTheme} from 'modules/stores/currentTheme';
 import {useCurrentUser} from 'modules/queries/useCurrentUser';
 import {isForbidden} from 'modules/auth/isForbidden';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import {notificationsStore} from 'modules/stores/notifications';
 
 function getInfoSidebarItems(isPaidPlan: boolean) {
@@ -82,14 +83,27 @@ function getInfoSidebarItems(isPaidPlan: boolean) {
     : [...BASE_INFO_SIDEBAR_ITEMS, COMMUNITY_FORUM_ITEM];
 }
 
+const NAVBAR_LG_BREAKPOINT = '(min-width: 66rem)';
+
 const LOGOUT_DELAY = 1000;
 
 const AppHeader: React.FC = observer(() => {
   const {data: currentUser} = useCurrentUser();
-  const IS_SAAS = typeof window.clientConfig?.organizationId === 'string';
+  const clientConfig = getClientConfig();
+  const IS_SAAS = typeof clientConfig.organizationId === 'string';
   const {currentPage} = useCurrentPage();
   const {theme, changeTheme} = currentTheme;
   const [isAppBarOpen, setIsAppBarOpen] = useState(false);
+  const [isLargeScreen, setIsLargeScreen] = useState(
+    () => window.matchMedia(NAVBAR_LG_BREAKPOINT).matches,
+  );
+
+  useEffect(() => {
+    const mql = window.matchMedia(NAVBAR_LG_BREAKPOINT);
+    const handler = (e: MediaQueryListEvent) => setIsLargeScreen(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     if (currentUser !== undefined) {
@@ -198,21 +212,82 @@ const AppHeader: React.FC = observer(() => {
                   },
                 },
               },
-              {
-                key: 'operations-log',
-                label: 'Operations Log',
-                isCurrentPage: currentPage === 'operations-log',
-                routeProps: {
-                  to: Paths.operationsLog(),
-                  onClick: () => {
-                    tracking.track({
-                      eventName: 'navigation',
-                      link: 'header-operations-log',
-                      currentPage,
-                    });
-                  },
-                },
-              },
+              ...(isLargeScreen
+                ? [
+                    {
+                      key: 'operations',
+                      label: 'Operations',
+                      isCurrentPage:
+                        currentPage === 'batch-operations' ||
+                        currentPage === 'operations-log',
+                      subElements: [
+                        {
+                          key: 'batch-operations',
+                          label: 'Batch operations',
+                          isCurrentPage: currentPage === 'batch-operations',
+                          routeProps: {
+                            to: Paths.batchOperations(),
+                            onClick: () => {
+                              tracking.track({
+                                eventName: 'navigation',
+                                link: 'header-batch-operations',
+                                currentPage,
+                              });
+                              (document.activeElement as HTMLElement)?.blur();
+                            },
+                          },
+                        },
+                        {
+                          key: 'operations-log',
+                          label: 'Operations log',
+                          isCurrentPage: currentPage === 'operations-log',
+                          routeProps: {
+                            to: Paths.operationsLog(),
+                            onClick: () => {
+                              tracking.track({
+                                eventName: 'navigation',
+                                link: 'header-operations-log',
+                                currentPage,
+                              });
+                              (document.activeElement as HTMLElement)?.blur();
+                            },
+                          },
+                        },
+                      ],
+                    },
+                  ]
+                : [
+                    {
+                      key: 'batch-operations',
+                      label: 'Batch operations',
+                      isCurrentPage: currentPage === 'batch-operations',
+                      routeProps: {
+                        to: Paths.batchOperations(),
+                        onClick: () => {
+                          tracking.track({
+                            eventName: 'navigation',
+                            link: 'header-batch-operations',
+                            currentPage,
+                          });
+                        },
+                      },
+                    },
+                    {
+                      key: 'operations-log',
+                      label: 'Operations log',
+                      isCurrentPage: currentPage === 'operations-log',
+                      routeProps: {
+                        to: Paths.operationsLog(),
+                        onClick: () => {
+                          tracking.track({
+                            eventName: 'navigation',
+                            link: 'header-operations-log',
+                            currentPage,
+                          });
+                        },
+                      },
+                    },
+                  ]),
             ],
         licenseTag: {
           show: licenseTagStore.state.isTagVisible,
@@ -306,7 +381,7 @@ const AppHeader: React.FC = observer(() => {
             },
           },
         ],
-        bottomElements: window.clientConfig?.canLogout
+        bottomElements: clientConfig.canLogout
           ? [
               {
                 key: 'logout',

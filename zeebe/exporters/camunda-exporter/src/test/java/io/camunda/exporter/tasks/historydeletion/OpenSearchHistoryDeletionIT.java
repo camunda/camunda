@@ -11,6 +11,7 @@ import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.os.OpensearchConnector;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
 import java.io.IOException;
+import java.time.InstantSource;
 import org.opensearch.client.opensearch.OpenSearchAsyncClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,8 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
         Runnable::run,
         LOGGER,
         partitionId,
-        config.getHistoryDeletion());
+        config.getHistoryDeletion(),
+        InstantSource.system());
   }
 
   @Override
@@ -47,5 +49,11 @@ public class OpenSearchHistoryDeletionIT extends HistoryDeletionRepositoryIT {
                     .id(entity.getId()))
         .join();
     client.indices().refresh(r -> r.index(historyDeletionIndex.getFullQualifiedName())).join();
+  }
+
+  @Override
+  protected long countAuditLogCleanupEntries() throws IOException {
+    client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
+    return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
   }
 }

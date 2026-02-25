@@ -32,6 +32,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockMe} from 'modules/mocks/api/v2/me';
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
+import type {QueryProcessInstancesResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -80,8 +81,11 @@ const mockProcessInstancesV2WithOperation = {
   ],
   page: {
     totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
-};
+} satisfies QueryProcessInstancesResponseBody;
 
 const mockBatchOperationItemsWithFailure = {
   items: [
@@ -89,13 +93,18 @@ const mockBatchOperationItemsWithFailure = {
       batchOperationKey: 'f4be6304-a0e0-4976-b81b-7a07fb4e96e5',
       itemKey: 'item-key-1',
       processInstanceKey: '0000000000000002',
+      rootProcessInstanceKey: null,
       state: 'FAILED' as const,
+      processedDate: null,
       operationType: 'MODIFY_PROCESS_INSTANCE' as const,
       errorMessage: 'Batch Operation Error Message',
     },
   ],
   page: {
     totalItems: 1,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
   },
 };
 
@@ -110,12 +119,18 @@ describe('Instances', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockQueryBatchOperationItems().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockFetchProcessInstancesStatistics().withSuccess({
@@ -461,5 +476,37 @@ describe('Instances', () => {
     );
 
     expect(withinRow.getByText('FAILED')).toBeInTheDocument();
+  });
+
+  it('should display "10000+ results" when there are more than 10000 results', async () => {
+    const mockLargeProcessInstancesResult: QueryProcessInstancesResponseBody = {
+      items: [
+        createProcessInstance({
+          processInstanceKey: '2251799813685594',
+          processDefinitionKey: '2251799813685592',
+          processDefinitionId: 'someKey',
+          processDefinitionName: 'someProcessName',
+          state: 'ACTIVE',
+        }),
+      ],
+      page: {
+        totalItems: 10000,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: true,
+      },
+    };
+
+    mockSearchProcessInstances().withSuccess(mockLargeProcessInstancesResult);
+
+    render(<ListView />, {
+      wrapper: getWrapper(`${Paths.processes()}?active=true`),
+    });
+
+    expect(
+      await screen.findByRole('heading', {
+        name: /process instances - 10000\+ results/i,
+      }),
+    ).toBeInTheDocument();
   });
 });

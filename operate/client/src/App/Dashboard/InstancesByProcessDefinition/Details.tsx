@@ -16,8 +16,9 @@ import {InstancesBar} from 'modules/components/InstancesBar';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitionVersionStatistics} from 'modules/queries/processDefinitionStatistics/useProcessDefinitionVersionStatistics';
 import {InlineLoading} from '@carbon/react';
-import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ProcessDefinitionInstanceVersionStatistics} from '@camunda/camunda-api-zod-schemas/8.9';
 import {DEFAULT_TENANT} from 'modules/constants';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   processDefinitionId: string;
@@ -32,7 +33,7 @@ const Details: React.FC<Props> = ({
   tenantId,
   tabIndex,
 }) => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const tenantsById = useAvailableTenants();
 
   const result = useProcessDefinitionVersionStatistics(processDefinitionId, {
@@ -55,6 +56,7 @@ const Details: React.FC<Props> = ({
             ],
             filter: {
               processDefinitionId,
+              tenantId: null,
             },
           },
   });
@@ -130,7 +132,7 @@ const Details: React.FC<Props> = ({
                   });
                 }}
                 title={getAccordionItemTitle({
-                  processName: processDefinitionName || processName,
+                  processName: processDefinitionName ?? processName,
                   instancesCount: totalInstancesCount,
                   version: processDefinitionVersion,
                   ...(isMultiTenancyEnabled
@@ -145,7 +147,7 @@ const Details: React.FC<Props> = ({
                     type: 'process',
                     size: 'small',
                     text: getAccordionItemLabel({
-                      name: processDefinitionName || processName,
+                      name: processDefinitionName ?? processName,
                       instancesCount: totalInstancesCount,
                       version: processDefinitionVersion,
                       ...(isMultiTenancyEnabled

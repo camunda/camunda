@@ -9,18 +9,17 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.BackupRange.Complete;
-import io.camunda.zeebe.backup.api.BackupRange.Incomplete;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupRangeMarker.Deletion;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
-import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
+import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter.WriteFailure;
@@ -42,8 +41,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.agrona.collections.Hashing;
-import org.agrona.collections.Long2ObjectHashMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,11 +49,19 @@ final class BackupServiceImpl {
   private final Set<InProgressBackup> backupsInProgress = new HashSet<>();
   private final BackupStore backupStore;
   private final LogStreamWriter logStreamWriter;
+  private final DbBackupRangeState backupRangeState;
+  private final DbCheckpointMetadataState checkpointMetadataState;
   private ConcurrencyControl concurrencyControl;
 
-  BackupServiceImpl(final BackupStore backupStore, final LogStreamWriter logStreamWriter) {
+  BackupServiceImpl(
+      final BackupStore backupStore,
+      final LogStreamWriter logStreamWriter,
+      final DbBackupRangeState backupRangeState,
+      final DbCheckpointMetadataState checkpointMetadataState) {
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
+    this.backupRangeState = backupRangeState;
+    this.checkpointMetadataState = checkpointMetadataState;
   }
 
   void close() {
@@ -318,59 +323,61 @@ final class BackupServiceImpl {
             });
   }
 
-  ActorFuture<Void> deleteBackup(
-      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+  ActorFuture<Void> writeBackupDeletionCommand(
+      final long checkpointId, final ConcurrencyControl executor) {
     final ActorFuture<Void> deleteCompleted = executor.createFuture();
-    final var searchPattern =
-        new BackupIdentifierWildcardImpl(
-            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
-    LOG.atDebug()
-        .addKeyValue("pattern", searchPattern)
-        .setMessage("Deleting matching backups")
-        .log();
-    executor.run(
-        () ->
-            backupStore
-                .list(
-                    new BackupIdentifierWildcardImpl(
-                        Optional.empty(),
-                        Optional.of(partitionId),
-                        CheckpointPattern.of(checkpointId)))
-                .thenCompose(
-                    backups ->
-                        CompletableFuture.allOf(
-                            backups.stream()
-                                .map(this::deleteBackupIfExists)
-                                .toArray(CompletableFuture[]::new)))
-                .thenAccept(ignore -> deleteCompleted.complete(null))
-                .exceptionally(
-                    error -> {
-                      deleteCompleted.completeExceptionally(error);
-                      return null;
-                    }));
+    final var deleteWritten =
+        logStreamWriter.tryWrite(
+            WriteContext.internal(),
+            LogAppendEntry.of(
+                new RecordMetadata()
+                    .recordType(RecordType.COMMAND)
+                    .valueType(ValueType.CHECKPOINT)
+                    .intent(CheckpointIntent.DELETE_BACKUP),
+                new CheckpointRecord().setCheckpointId(checkpointId)));
+    switch (deleteWritten) {
+      case Either.Left(final var error) ->
+          deleteCompleted.completeExceptionally(
+              new RuntimeException("Failed to write DELETE_BACKUP command: " + error));
+      case final Either.Right<WriteFailure, Long> ignoredPosition -> deleteCompleted.complete(null);
+    }
     return deleteCompleted;
   }
 
-  private CompletableFuture<Void> deleteBackupIfExists(final BackupStatus backupStatus) {
-    LOG.atInfo().addKeyValue("backup", backupStatus.id()).setMessage("Deleting backup").log();
-    final CompletableFuture<Void> preparationStep;
-    if (backupStatus.statusCode() == BackupStatusCode.IN_PROGRESS) {
-      // In progress backups cannot be deleted. So first mark it as failed
-      preparationStep =
-          backupStore
-              .markFailed(backupStatus.id(), "The backup is going to be deleted.")
-              .thenApply(ignored -> null);
-    } else {
-      preparationStep = CompletableFuture.completedFuture(null);
-    }
+  ActorFuture<Void> deleteBackupIfExists(
+      final int partitionId, final long checkpointId, final ConcurrencyControl executor) {
+    final var result = executor.<Void>createFuture();
+    final var pattern =
+        new BackupIdentifierWildcardImpl(
+            Optional.empty(), Optional.of(partitionId), CheckpointPattern.of(checkpointId));
 
-    return preparationStep
+    backupStore
+        .list(pattern)
         .thenCompose(
-            ignored ->
-                backupStore.storeRangeMarker(
-                    backupStatus.id().partitionId(),
-                    new Deletion(backupStatus.id().checkpointId())))
-        .thenCompose(ignored -> backupStore.delete(backupStatus.id()));
+            backups ->
+                CompletableFuture.allOf(
+                    backups.stream()
+                        .map(
+                            backup ->
+                                backupStore
+                                    .markDeleted(backup.id())
+                                    .thenCompose(
+                                        ignored ->
+                                            backupStore.storeRangeMarker(
+                                                backup.id().partitionId(),
+                                                new Deletion(checkpointId)))
+                                    .thenCompose(ignored -> backupStore.delete(backup.id())))
+                        .toArray(CompletableFuture[]::new)))
+        .exceptionally(
+            error -> {
+              LOG.warn(
+                  "Failed to delete backup for checkpoint {} from backup store",
+                  checkpointId,
+                  error);
+              return null;
+            })
+        .whenComplete(result);
+    return result;
   }
 
   ActorFuture<Collection<BackupStatus>> listBackups(
@@ -392,117 +399,51 @@ final class BackupServiceImpl {
   }
 
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus(
-      final int partitionId, final ConcurrencyControl executor) {
+      final ConcurrencyControl executor) {
     LOG.atDebug().setMessage("Listing backup ranges").log();
     final ActorFuture<Collection<BackupRangeStatus>> future = executor.createFuture();
     executor.run(
-        () ->
-            backupStore
-                .rangeMarkers(partitionId)
-                .whenCompleteAsync(
-                    (markers, throwable) -> {
-                      if (throwable != null) {
-                        LOG.atError()
-                            .setMessage("Failed to retrieve range markers")
-                            .setCause(throwable)
-                            .log();
-                        future.completeExceptionally(throwable);
-                      } else {
-                        LOG.atTrace()
-                            .addKeyValue("markers", markers::size)
-                            .setMessage("Retrieved range markers")
-                            .log();
-                        getStatusForRanges(
-                            partitionId, BackupRanges.fromMarkers(markers), future, executor);
-                      }
-                    },
-                    executor));
+        () -> {
+          try {
+            final var ranges = backupRangeState.getAllRanges();
+            final var result = new ArrayList<BackupRangeStatus>(ranges.size());
+            for (final var range : ranges) {
+              final var firstMeta = checkpointMetadataState.getCheckpoint(range.start());
+              final var lastMeta = checkpointMetadataState.getCheckpoint(range.end());
+              if (firstMeta == null || lastMeta == null) {
+                LOG.atWarn()
+                    .addKeyValue("rangeStart", range.start())
+                    .addKeyValue("rangeEnd", range.end())
+                    .addKeyValue("firstMetaPresent", firstMeta != null)
+                    .addKeyValue("lastMetaPresent", lastMeta != null)
+                    .setMessage("Checkpoint metadata missing for range boundary, skipping range")
+                    .log();
+                continue;
+              }
+              final var first = toCheckpointInfo(range.start(), firstMeta);
+              final var last = toCheckpointInfo(range.end(), lastMeta);
+              result.add(new BackupRangeStatus.Complete(first, last));
+            }
+            future.complete(result);
+          } catch (final Exception e) {
+            LOG.atError()
+                .setMessage("Failed to read backup ranges from column families")
+                .setCause(e)
+                .log();
+            future.completeExceptionally(e);
+          }
+        });
     return future;
   }
 
-  private void getStatusForRanges(
-      final int partitionId,
-      final Collection<BackupRange> ranges,
-      final ActorFuture<Collection<BackupRangeStatus>> future,
-      final ConcurrencyControl executor) {
-    final var statuses = getBackupStatusForAllRanges(partitionId, ranges, executor);
-    final var result = new ArrayList<BackupRangeStatus>(ranges.size());
-    executor.runOnCompletion(
-        statuses.values(),
-        error -> {
-          if (error != null) {
-            LOG.atError()
-                .addKeyValue("ranges", ranges::size)
-                .setMessage("Failed to determine backup status for all ranges")
-                .setCause(error)
-                .log();
-            future.completeExceptionally(error);
-            return;
-          }
-          LOG.atTrace()
-              .addKeyValue("ranges", ranges::size)
-              .addKeyValue("statuses", statuses::size)
-              .setMessage("Resolved all backup statuses for ranges")
-              .log();
-          for (final var range : ranges) {
-            final var firstStatus = statuses.get(range.firstCheckpointId()).join().orElse(null);
-            final var lastStatus = statuses.get(range.lastCheckpointId()).join().orElse(null);
-            if (!isValidRange(range, firstStatus, lastStatus)) {
-              continue;
-            }
-            result.add(
-                switch (range) {
-                  case final Complete ignored ->
-                      new BackupRangeStatus.Complete(firstStatus, lastStatus);
-                  case final Incomplete incomplete ->
-                      new BackupRangeStatus.Incomplete(
-                          firstStatus, lastStatus, incomplete.deletedCheckpointIds());
-                });
-          }
-          future.complete(result);
-        });
-  }
-
-  private static boolean isValidRange(
-      final BackupRange range, final BackupStatus firstStatus, final BackupStatus lastStatus) {
-    if (firstStatus == null || lastStatus == null) {
-      LOG.atWarn()
-          .addKeyValue("range", range)
-          .addKeyValue("firstStatus", firstStatus)
-          .addKeyValue("lastStatus", lastStatus)
-          .setMessage("Did not find backup status for checkpoints in range, skipping range")
-          .log();
-      return false;
-    }
-    if (firstStatus.statusCode() != BackupStatusCode.COMPLETED
-        || lastStatus.statusCode() != BackupStatusCode.COMPLETED) {
-      LOG.atWarn()
-          .addKeyValue("range", range)
-          .addKeyValue("firstStatus", firstStatus)
-          .addKeyValue("lastStatus", lastStatus)
-          .setMessage("Backup status for range is not completed, skipping range")
-          .log();
-      return false;
-    }
-    return true;
-  }
-
-  private Long2ObjectHashMap<ActorFuture<Optional<BackupStatus>>> getBackupStatusForAllRanges(
-      final int partitionId,
-      final Collection<BackupRange> ranges,
-      final ConcurrencyControl executor) {
-    final var result =
-        new Long2ObjectHashMap<ActorFuture<Optional<BackupStatus>>>(
-            ranges.size() * 2, Hashing.DEFAULT_LOAD_FACTOR);
-    for (final BackupRange range : ranges) {
-      result.putIfAbsent(
-          range.firstCheckpointId(),
-          getBackupStatus(partitionId, range.firstCheckpointId(), executor));
-      result.putIfAbsent(
-          range.lastCheckpointId(),
-          getBackupStatus(partitionId, range.lastCheckpointId(), executor));
-    }
-    return result;
+  private static BackupRangeStatus.CheckpointInfo toCheckpointInfo(
+      final long checkpointId, final CheckpointMetadataValue meta) {
+    return new BackupRangeStatus.CheckpointInfo(
+        checkpointId,
+        meta.getCheckpointPosition(),
+        meta.getCheckpointTimestamp(),
+        meta.getCheckpointType(),
+        meta.getFirstLogPosition());
   }
 
   void createFailedBackup(

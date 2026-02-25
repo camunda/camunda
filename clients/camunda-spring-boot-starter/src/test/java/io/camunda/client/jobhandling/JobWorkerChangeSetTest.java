@@ -18,10 +18,11 @@ package io.camunda.client.jobhandling;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.Empty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromAnnotation;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromOverrideProperty;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.FromRuntimeOverride;
+import io.camunda.client.annotation.value.SourceAware.Empty;
+import io.camunda.client.annotation.value.SourceAware.FromAnnotation;
+import io.camunda.client.annotation.value.SourceAware.FromOverrideProperty;
+import io.camunda.client.annotation.value.SourceAware.FromRuntimeOverride;
+import io.camunda.client.api.command.enums.TenantFilter;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.FetchVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.ForceFetchAllVariablesChangeSet;
 import io.camunda.client.jobhandling.JobWorkerChangeSet.MaxJobsActiveChangeSet;
@@ -160,5 +161,17 @@ public class JobWorkerChangeSetTest {
     changeSet1.applyChanges(jobWorkerValue);
     assertThat(jobWorkerValue.getTenantIds())
         .isEqualTo(List.of(new FromRuntimeOverride<>("xyz", new FromAnnotation<>("abc"))));
+  }
+
+  @Test
+  void shouldResetTenantFilter() {
+    final JobWorkerValue jobWorkerValue = new JobWorkerValue();
+    jobWorkerValue.setTenantFilter(
+        new FromRuntimeOverride<>(
+            TenantFilter.ASSIGNED, new FromAnnotation<>(TenantFilter.PROVIDED)));
+    final ResetChangeSet resetChangeSet = new ResetChangeSet();
+    resetChangeSet.applyChanges(jobWorkerValue);
+    assertThat(jobWorkerValue.getTenantFilter())
+        .isEqualTo(new FromAnnotation<>(TenantFilter.PROVIDED));
   }
 }

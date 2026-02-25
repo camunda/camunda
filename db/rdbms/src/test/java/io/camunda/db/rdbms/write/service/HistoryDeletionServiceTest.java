@@ -8,11 +8,13 @@
 package io.camunda.db.rdbms.write.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -21,6 +23,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.db.rdbms.read.service.DecisionInstanceDbReader;
 import io.camunda.db.rdbms.read.service.HistoryDeletionDbReader;
 import io.camunda.db.rdbms.read.service.ProcessInstanceDbReader;
+import io.camunda.db.rdbms.sql.BatchOperationMapper.BatchOperationItemCompletionDto;
 import io.camunda.db.rdbms.sql.ProcessInstanceDependantMapper;
 import io.camunda.db.rdbms.write.RdbmsWriterConfig.HistoryDeletionConfig;
 import io.camunda.db.rdbms.write.RdbmsWriters;
@@ -31,6 +34,7 @@ import io.camunda.search.entities.DecisionInstanceEntity;
 import io.camunda.search.entities.ProcessInstanceEntity;
 import io.camunda.search.query.SearchQueryResult;
 import java.time.Duration;
+import java.time.InstantSource;
 import java.util.Collections;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -58,7 +62,8 @@ public class HistoryDeletionServiceTest {
             historyDeletionDbReaderMock,
             processInstanceDbReaderMock,
             decisionInstanceDbReaderMock,
-            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, LIMIT));
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, LIMIT),
+            InstantSource.system());
   }
 
   @Test
@@ -505,6 +510,178 @@ public class HistoryDeletionServiceTest {
         .deleteByDecisionRequirementsKeys(anyList(), anyInt());
     verify(rdbmsWritersMock.getDecisionRequirementsWriter(), never()).deleteByKeys(anyList());
     verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
+  @Test
+  void shouldMarkProcessInstanceBatchOperationItemAsCompleted() {
+    // given
+    final var partitionId = 1;
+    final var processInstanceKey = 1L;
+    final var batchOperationKey = 2L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
+    when(rdbmsWritersMock.getProcessInstanceDependantWriters()).thenReturn(Collections.emptyList());
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getBatchOperationWriter())
+        .completeBatchOperationItems(
+            argThat(
+                items ->
+                    items.size() == 1
+                        && items
+                            .getFirst()
+                            .equals(
+                                new BatchOperationItemCompletionDto(
+                                    String.valueOf(batchOperationKey), processInstanceKey))),
+            any());
+  }
+
+  @Test
+  void shouldMarkDecisionInstanceBatchOperationItemAsCompleted() {
+    // given
+    final var partitionId = 1;
+    final var decisionInstanceKey = 1L;
+    final var batchOperationKey = 2L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        decisionInstanceKey, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(rdbmsWritersMock.getBatchOperationWriter())
+        .completeBatchOperationItems(
+            argThat(
+                items ->
+                    items.size() == 1
+                        && items
+                            .getFirst()
+                            .equals(
+                                new BatchOperationItemCompletionDto(
+                                    String.valueOf(batchOperationKey), decisionInstanceKey))),
+            any());
+  }
+
+  @Test
+  void shouldNotDeleteFromHistoryDeletionTableIfMarkingProcessInstanceItemFails() {
+    // given
+    final var partitionId = 1;
+    final var processInstanceKey = 1L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE))));
+    when(rdbmsWritersMock.getProcessInstanceDependantWriters()).thenReturn(Collections.emptyList());
+    final var batchOperationWriterMock = rdbmsWritersMock.getBatchOperationWriter();
+    doThrow(new RuntimeException("marking failed"))
+        .when(batchOperationWriterMock)
+        .completeBatchOperationItems(anyList(), any());
+
+    // when / then
+    assertThatThrownBy(() -> historyDeletionService.deleteHistory(partitionId))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("marking failed");
+    verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
+  @Test
+  void shouldNotDeleteFromHistoryDeletionTableIfMarkingDecisionInstanceItemFails() {
+    // given
+    final var partitionId = 1;
+    final var decisionInstanceKey = 1L;
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(
+                        decisionInstanceKey, HistoryDeletionTypeDbModel.DECISION_INSTANCE))));
+    final var batchOperationWriterMock = rdbmsWritersMock.getBatchOperationWriter();
+    doThrow(new RuntimeException("marking failed"))
+        .when(batchOperationWriterMock)
+        .completeBatchOperationItems(anyList(), any());
+
+    // when / then
+    assertThatThrownBy(() -> historyDeletionService.deleteHistory(partitionId))
+        .isInstanceOf(RuntimeException.class)
+        .hasMessage("marking failed");
+    verify(rdbmsWritersMock.getHistoryDeletionWriter(), never()).deleteByResourceKeys(anyList());
+  }
+
+  @Test
+  void shouldScheduleAuditLogHistoryDeletionTimes() {
+    // given
+    final var partitionId = 1;
+    final var processInstanceKey = 1L;
+    final var processDefinitionKey = 2L;
+    final var decisionInstanceKey = 3L;
+    final var decisionRequirementsKey = 4L;
+
+    final AuditLogWriter auditLogWriterMock = mock(AuditLogWriter.class);
+    when(rdbmsWritersMock.getAuditLogWriter()).thenReturn(auditLogWriterMock);
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(
+            new HistoryDeletionBatch(
+                List.of(
+                    createModel(processInstanceKey, HistoryDeletionTypeDbModel.PROCESS_INSTANCE),
+                    createModel(
+                        processDefinitionKey, HistoryDeletionTypeDbModel.PROCESS_DEFINITION),
+                    createModel(decisionInstanceKey, HistoryDeletionTypeDbModel.DECISION_INSTANCE),
+                    createModel(
+                        decisionRequirementsKey,
+                        HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS))));
+    final var mapperMock = mock(ProcessInstanceDependantMapper.class);
+    when(rdbmsWritersMock.getProcessInstanceDependantWriters())
+        .thenReturn(List.of(new TestProcessInstanceDependantWriter(mapperMock)));
+    when(processInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+    when(decisionInstanceDbReaderMock.search(any())).thenReturn(SearchQueryResult.empty());
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(auditLogWriterMock)
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+            List.of(processInstanceKey), HistoryDeletionTypeDbModel.PROCESS_INSTANCE, LIMIT);
+    verify(auditLogWriterMock)
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+            List.of(processDefinitionKey), HistoryDeletionTypeDbModel.PROCESS_DEFINITION, LIMIT);
+    verify(auditLogWriterMock)
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+            List.of(decisionInstanceKey), HistoryDeletionTypeDbModel.DECISION_INSTANCE, LIMIT);
+    verify(auditLogWriterMock)
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(
+            List.of(decisionRequirementsKey),
+            HistoryDeletionTypeDbModel.DECISION_REQUIREMENTS,
+            LIMIT);
+  }
+
+  @Test
+  void shouldNotScheduleAuditLogHistoryDeletionTimesIfNothingDeleted() {
+    // given
+    final var partitionId = 1;
+
+    final AuditLogWriter auditLogWriterMock = mock(AuditLogWriter.class);
+    when(rdbmsWritersMock.getAuditLogWriter()).thenReturn(auditLogWriterMock);
+    when(historyDeletionDbReaderMock.getNextBatch(anyInt(), anyInt()))
+        .thenReturn(new HistoryDeletionBatch(List.of()));
+
+    // when
+    historyDeletionService.deleteHistory(partitionId);
+
+    // then
+    verify(auditLogWriterMock, never())
+        .scheduleKeyRelatedAuditLogsHistoryCleanupTime(any(), any(), anyInt());
   }
 
   private static HistoryDeletionDbModel createModel(

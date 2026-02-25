@@ -53,8 +53,8 @@ public class ProcessInstanceHistoryDeletionOperationHandler
 
   @Override
   boolean isCompleted(final Record<HistoryDeletionRecordValue> record) {
-    return record.getValueType() == ValueType.HISTORY_DELETION
-        && record.getIntent().equals(HistoryDeletionIntent.DELETED);
+    // Completion is handled in the HistoryDeletionJob.
+    return false;
   }
 
   @Override

@@ -34,7 +34,7 @@ COMMENT_TEMPLATE = (
     "Hi @{assignee},\n\n"
     "You have been " + COMMENT_TEMPLATE_DETECTION_LINE + ". "
     "Please review and process it according to our Renovate PR Handling policy: "
-    "https://github.com/camunda/camunda/wiki/Renovate-PR-Handling#dri-responsibilities\n\n"
+    "https://camunda.github.io/camunda/renovate-pr-handling/#dri-responsibilities\n\n"
     "Thank you!"
 )
 
@@ -45,7 +45,7 @@ REMINDER_COMMENT_TEMPLATE = (
     "Hi @{assignee},\n\n"
     "This is a friendly " + REMINDER_COMMENT_DETECTION_LINE + " that has been assigned for at least " + str(REMINDER_DAYS_THRESHOLD) + " days. "
     "Please make sure to work on it according to our Renovate PR Handling policy soon: "
-    "https://github.com/camunda/camunda/wiki/Renovate-PR-Handling#dri-responsibilities\n\n"
+    "https://camunda.github.io/camunda/renovate-pr-handling/#dri-responsibilities\n\n"
     "Thank you!"
 )
 

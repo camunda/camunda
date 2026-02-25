@@ -1119,6 +1119,35 @@
     </modifySql>
   </changeSet>
 
+  <changeSet id="create_global_listener_table" author="camunda">
+    <!-- Global listener table -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER">
+      <column name="ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints primaryKey="true"/>
+      </column>
+      <column name="LISTENER_ID" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="TYPE" type="VARCHAR(${userCharColumnSize})"/>
+      <column name="RETRIES" type="SMALLINT"/>
+      <column name="AFTER_NON_GLOBAL" type="BOOLEAN"/>
+      <column name="PRIORITY" type="INT"/>
+      <column name="SOURCE" type="VARCHAR(50)"/>
+      <column name="LISTENER_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <!-- Global listener event type table: manages collection of event types for global listeners -->
+    <createTable tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE">
+      <column name="GLOBAL_LISTENER_ID" type="VARCHAR(${userCharColumnSize})">
+        <constraints foreignKeyName="${prefix}FK_EVENT_TYPE_GLOBAL_LISTENER" referencedTableName="${prefix}GLOBAL_LISTENER" referencedColumnNames="ID" deleteCascade="true"/>
+      </column>
+      <column name="EVENT_TYPE" type="VARCHAR(50)"/>
+    </createTable>
+
+    <createIndex tableName="${prefix}GLOBAL_LISTENER_EVENT_TYPE" indexName="${prefix}IDX_GLOBAL_LISTENER_EVENT_TYPE_ID">
+      <column name="GLOBAL_LISTENER_ID"/>
+    </createIndex>
+
+  </changeSet>
+
   <changeSet id="create_variable_name_index" author="camunda">
     <createIndex tableName="${prefix}VARIABLE" indexName="${prefix}IDX_VARIABLE_NAME">
       <column name="VAR_NAME"/>
@@ -1201,6 +1230,35 @@
     <addColumn tableName="${prefix}AUDIT_LOG">
       <column name="AGENT_ELEMENT_ID" type="VARCHAR(${userCharColumnSize})"/>
     </addColumn>
+  </changeSet>
+
+  <changeSet id="create_audit_log_element_instance_key_index" author="camunda">
+    <!-- Index for ELEMENT_INSTANCE_KEY - optimizes querying for the Operate PI detailed view,
+         when a single process element is selected -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_EI_KEY">
+      <column name="ELEMENT_INSTANCE_KEY"/>
+    </createIndex>
+  </changeSet>
+
+  <changeSet id="create_audit_log_user_task_key_index" author="camunda">
+    <!-- Index for USER_TASK_KEY - optimizes querying for the Tasklist history view -->
+    <sql dbms="mysql,mariadb,h2,oracle">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+    </sql>
+    <!-- Since the user task key is sparse, we allow Postgres and MSSQL to exclude null values -->
+    <sql dbms="postgresql,mssql">
+      CREATE INDEX ${prefix}IDX_AUDIT_LOG_UT_KEY
+      ON ${prefix}AUDIT_LOG (USER_TASK_KEY)
+      WHERE USER_TASK_KEY IS NOT NULL
+    </sql>
+  </changeSet>
+
+  <changeSet id="create_audit_log_process_definition_key_index" author="camunda">
+    <!-- Index for PROCESS_DEFINITION_KEY - optimizes querying for the process instances -->
+    <createIndex tableName="${prefix}AUDIT_LOG" indexName="${prefix}IDX_AUDIT_LOG_PD_KEY">
+      <column name="PROCESS_DEFINITION_KEY"/>
+    </createIndex>
   </changeSet>
 
 </databaseChangeLog>

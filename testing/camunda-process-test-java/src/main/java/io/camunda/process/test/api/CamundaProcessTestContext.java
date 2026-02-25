@@ -32,6 +32,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 /** The injected context for a process test. */
 public interface CamundaProcessTestContext {
@@ -139,6 +140,21 @@ public interface CamundaProcessTestContext {
    * @param variables a map of variables to set for the mocked child process
    */
   void mockChildProcess(final String childProcessId, final Map<String, Object> variables);
+
+  /**
+   * Mocks a child process with the specified ID and sets the variables provided by the given
+   * function. The function receives the variables of the parent process as input and should return
+   * the variables to set for the mocked child process. This allows you to dynamically determine the
+   * variables for the child process based on the parent process at the time the child process is
+   * called.
+   *
+   * @param childProcessId the ID of the child process to mock
+   * @param variablesSupplier a function that supplies the variables to set for the mocked child
+   *     process
+   */
+  void mockChildProcess(
+      final String childProcessId,
+      final Function<Map<String, Object>, Map<String, Object>> variablesSupplier);
 
   /**
    * Completes a job of the specified type.

@@ -837,6 +837,56 @@ public class BatchOperationIT {
   }
 
   @TestTemplate
+  public void shouldFindAllBatchOperationsPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+
+    final BatchOperationType operationType = randomEnum(BatchOperationType.class);
+    createAndSaveRandomBatchOperations(
+        rdbmsService.createWriter(0), 120, b -> b.operationType(operationType));
+
+    final var searchResult =
+        rdbmsService
+            .getBatchOperationReader()
+            .search(
+                new BatchOperationQuery(
+                    new BatchOperationFilter.Builder().operationTypes(operationType.name()).build(),
+                    BatchOperationSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindAllBatchOperationItemsPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters writer = rdbmsService.createWriter(0);
+
+    final var batchOperation = createAndSaveBatchOperation(writer, b -> b);
+    createAndSaveRandomBatchOperationItems(writer, batchOperation.batchOperationKey(), 101);
+
+    final var searchResult =
+        rdbmsService
+            .getBatchOperationItemReader()
+            .search(
+                new BatchOperationItemQuery(
+                    new BatchOperationItemFilter.Builder()
+                        .batchOperationKeys(batchOperation.batchOperationKey())
+                        .build(),
+                    BatchOperationItemSort.of(b -> b),
+                    SearchQueryPage.of(b -> b.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
   public void shouldFindBatchOperationItemsWithFullFilter(
       final CamundaRdbmsTestApplication testApplication) {
     final RdbmsService rdbmsService = testApplication.getRdbmsService();

@@ -53,4 +53,10 @@ public record FailedBackupManifest(
   public Optional<BackupDescriptor> backupDescriptor() {
     return descriptor.map(Function.identity());
   }
+
+  @Override
+  public DeletedBackupManifest asDeleted() {
+    return new DeletedBackupManifest(
+        id, descriptor, snapshotFiles, segmentFiles, createdAt, Instant.now());
+  }
 }

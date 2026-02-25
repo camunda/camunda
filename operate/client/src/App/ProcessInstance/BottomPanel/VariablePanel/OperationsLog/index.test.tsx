@@ -58,7 +58,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -86,9 +91,35 @@ describe('OperationsLog', () => {
           actorType: 'USER',
           category: 'USER_TASKS',
           entityDescription: 'variableValue',
+          batchOperationKey: null,
+          batchOperationType: null,
+          relatedEntityType: null,
+          resourceKey: null,
+          jobKey: null,
+          elementInstanceKey: '123',
+          tenantId: '<default>',
+          decisionRequirementsId: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          decisionRequirementsKey: null,
+          processDefinitionId: null,
+          relatedEntityKey: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          userTaskKey: null,
+          formKey: null,
+          agentElementId: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -96,7 +127,10 @@ describe('OperationsLog', () => {
     });
 
     expect(
-      screen.getByRole('columnheader', {name: /operation/i}),
+      screen.getByRole('columnheader', {name: /operation type/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole('columnheader', {name: /entity type/i}),
     ).toBeInTheDocument();
     expect(
       screen.getByRole('columnheader', {name: /property/i}),
@@ -109,7 +143,8 @@ describe('OperationsLog', () => {
     ).toBeInTheDocument();
 
     expect(await screen.findByTestId('SUCCESS-icon')).toBeInTheDocument();
-    expect(await screen.findByText(/update variable/i)).toBeInTheDocument();
+    expect(await screen.findByText('Update')).toBeInTheDocument();
+    expect(await screen.findByText('Variable')).toBeInTheDocument();
     expect(screen.getByText(/variable name/i)).toBeInTheDocument();
     expect(screen.getByText('variableValue')).toBeInTheDocument();
     expect(screen.getAllByText('user1').at(0)).toBeInTheDocument();
@@ -123,7 +158,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockQueryAuditLogs().withDelay({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {
@@ -154,7 +194,12 @@ describe('OperationsLog', () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<OperationsLog isVisible />, {

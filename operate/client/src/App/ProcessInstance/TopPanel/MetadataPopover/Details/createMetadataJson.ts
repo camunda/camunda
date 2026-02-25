@@ -14,7 +14,7 @@ import type {
   MessageSubscription,
   DecisionDefinition,
   DecisionInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type UserTaskSubset = Pick<
   UserTask,
@@ -85,8 +85,8 @@ export function createMetadataJson(
     calledProcessDefinitionName:
       calledProcessInstance?.processDefinitionName ?? null,
     calledDecisionDefinitionName:
-      calledDecisionInstance?.decisionDefinitionName ||
-      calledDecisionDefinition?.name ||
+      calledDecisionInstance?.decisionDefinitionName ??
+      calledDecisionDefinition?.name ??
       null,
     jobRetries: job?.retries ?? null,
     jobDeadline: job?.deadline ?? null,
@@ -100,16 +100,16 @@ export function createMetadataJson(
     type: elementInstance.type,
     elementInstanceState: elementInstance.state,
     userTaskState: userTaskState,
-    startDate: elementInstance.startDate || '',
-    endDate: elementInstance.endDate || null,
+    startDate: elementInstance.startDate ?? '',
+    endDate: elementInstance.endDate ?? null,
     processDefinitionId: elementInstance.processDefinitionId,
     processInstanceKey: elementInstance.processInstanceKey,
     processDefinitionKey: elementInstance.processDefinitionKey,
     hasIncident: elementInstance.hasIncident,
     tenantId: elementInstance.tenantId,
     elementType: elementInstance.type,
-    incidentErrorType: incident?.errorTypeName || null,
-    incidentErrorMessage: incident?.errorMessage || null,
+    incidentErrorType: incident?.errorTypeName ?? null,
+    incidentErrorMessage: incident?.errorMessage ?? null,
     calledProcessInstanceKey: calledProcessInstance?.processInstanceKey ?? null,
     calledDecisionInstanceKey:
       calledDecisionInstance?.decisionEvaluationInstanceKey ?? null,

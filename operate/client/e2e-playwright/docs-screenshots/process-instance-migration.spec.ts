@@ -42,7 +42,15 @@ test.describe('process instance migration', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         processDefinitions: mockOrderProcessDefinitions,
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         processInstances: mockOrderProcessInstances,
         statistics: {
           items: [
@@ -215,7 +223,12 @@ test.describe('process instance migration', () => {
               operationsCompletedCount: 1,
             },
           ],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         processInstances: mockOrderProcessV2Instances,
         statistics: {
@@ -255,7 +268,15 @@ test.describe('process instance migration', () => {
       URL_API_PATTERN,
       mockProcessesResponses({
         processDefinitions: mockAhspProcessDefinitions,
-        batchOperations: {items: [], page: {totalItems: 0}},
+        batchOperations: {
+          items: [],
+          page: {
+            totalItems: 0,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
+        },
         processInstances: mockAhspProcessInstances,
         statistics: {
           items: [
@@ -375,7 +396,12 @@ test.describe('process instance migration', () => {
         processDefinitions: mockAhspProcessDefinitions,
         batchOperations: {
           items: [mockMigrationOperation],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
       }),
     );
@@ -404,11 +430,19 @@ test.describe('process instance migration', () => {
               operationsCompletedCount: 3,
             },
           ],
-          page: {totalItems: 1},
+          page: {
+            totalItems: 1,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
+          },
         },
         processInstances: {
           page: {
             totalItems: 3,
+            startCursor: null,
+            endCursor: null,
+            hasMoreTotalItems: false,
           },
           items: mockAhspProcessInstances.items.map((instance) => ({
             ...instance,
@@ -455,8 +489,10 @@ test.describe('process instance migration', () => {
       processesPage.processInstancesTable.getByRole('row'),
     ).not.toHaveCount(0);
 
-    // Navigate to batch operations page
-    await page.getByRole('button', {name: /view batch operations/i}).click();
+    // Navigate to batch operations page via Operations submenu
+    const nav = page.getByRole('navigation', {name: /camunda operate/i});
+    await nav.getByText('Operations', {exact: true}).click();
+    await page.getByRole('link', {name: /^Batch operations$/i}).click();
     await page.waitForURL('**/batch-operations');
 
     // Verify migration operation appears in the table

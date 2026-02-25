@@ -325,6 +325,7 @@ describe('useBatchOperationMutationRequestBody', () => {
     expect(result.current).toEqual({
       filter: {
         elementId: {$eq: 'task-1'},
+        elementInstanceState: {$eq: 'ACTIVE'},
         state: {$eq: 'ACTIVE'},
         hasIncident: false,
       },

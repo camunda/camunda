@@ -29,7 +29,7 @@ import type {
   ElementInstance,
   ProcessInstance,
   SequenceFlow,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockSearchIncidentsByProcessInstance} from 'modules/mocks/api/v2/incidents/searchIncidentsByProcessInstance';
@@ -104,12 +104,18 @@ const mockProcessInstance: ProcessInstance = {
   processInstanceKey: 'instance_id',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: true,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const mockElementInstance: ElementInstance = {
@@ -119,10 +125,13 @@ const mockElementInstance: ElementInstance = {
   type: 'SERVICE_TASK',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionId: 'process-def-1',
   processInstanceKey: 'instance_id',
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
 };
 
@@ -222,6 +231,10 @@ describe('TopPanel', () => {
     mockFetchProcessInstance().withSuccess({
       ...mockProcessInstance,
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     });
 
     render(<TopPanel />, {

@@ -21,6 +21,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {open} from 'modules/mocks/diagrams';
 import {createUser, searchResult} from 'modules/testUtils';
 import {mockMe} from 'modules/mocks/api/v2/me';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 vi.mock('App/Processes/ListView', () => {
   const ListView: React.FC = () => {
@@ -87,7 +88,8 @@ describe('MigrationView', () => {
   it.each(['/custom', ''])(
     'should block navigation to dashboard page when migration mode is enabled - context path: %p',
     async (contextPath) => {
-      vi.stubGlobal('clientConfig', {
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         contextPath,
       });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(
@@ -155,7 +157,8 @@ describe('MigrationView', () => {
     'should block navigation to processes page when migration mode is enabled - context path: %p',
 
     async (contextPath) => {
-      vi.stubGlobal('clientConfig', {
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         contextPath,
       });
       mockFetchProcessDefinitionXml({contextPath}).withSuccess(

@@ -88,9 +88,9 @@ public final class JobWorkerBuilderImpl
     requestTimeout = configuration.getDefaultRequestTimeout();
     enableStreaming = configuration.getDefaultJobWorkerStreamEnabled();
     defaultTenantIds = configuration.getDefaultJobWorkerTenantIds();
+    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     jobExceptionHandler = configuration.getDefaultJobWorkerExceptionHandler();
     customTenantIds = new ArrayList<>();
-    tenantFilter = configuration.getDefaultJobWorkerTenantFilter();
     backoffSupplier = DEFAULT_BACKOFF_SUPPLIER;
     streamNoJobsBackoffSupplier = DEFAULT_STREAM_NO_JOBS_BACKOFF_SUPPLIER;
     streamingTimeout = DEFAULT_STREAMING_TIMEOUT;
@@ -234,6 +234,7 @@ public final class JobWorkerBuilderImpl
               timeout,
               fetchVariables,
               getTenantIds(),
+              tenantFilter,
               streamingTimeout,
               backoffSupplier,
               scheduledExecutor);

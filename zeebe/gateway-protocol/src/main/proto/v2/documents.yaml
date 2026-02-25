@@ -315,6 +315,9 @@ components:
     DocumentCreationBatchResponse:
       allOf:
         - type: object
+          required:
+          - failedDocuments
+          - createdDocuments
           properties:
             failedDocuments:
               type: array
@@ -328,6 +331,8 @@ components:
                 $ref: '#/components/schemas/DocumentReference'
 
     DocumentMetadata:
+      required: 
+        - customProperties
       description: Information about the document.
       type: object
       properties:

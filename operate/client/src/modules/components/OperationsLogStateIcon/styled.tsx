@@ -8,16 +8,16 @@
 
 import styled from 'styled-components';
 import {
-  CheckmarkFilled as BaseCheckmarkFilled,
-  ErrorFilled as BaseErrorFilled,
+  CheckmarkOutline as BaseCheckmarkOutline,
+  ErrorOutline as BaseErrorOutline,
 } from '@carbon/react/icons';
 
-const CheckmarkFilled = styled(BaseCheckmarkFilled)`
+const CheckmarkOutline = styled(BaseCheckmarkOutline)`
   fill: var(--cds-support-success);
 `;
 
-const ErrorFilled = styled(BaseErrorFilled)`
+const ErrorOutline = styled(BaseErrorOutline)`
   fill: var(--cds-support-error);
 `;
 
-export {CheckmarkFilled, ErrorFilled};
+export {CheckmarkOutline, ErrorOutline};

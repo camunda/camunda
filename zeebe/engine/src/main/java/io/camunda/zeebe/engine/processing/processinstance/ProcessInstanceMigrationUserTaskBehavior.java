@@ -32,6 +32,7 @@ import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.JobIntent;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
 import java.util.Map;
 import org.agrona.DirectBuffer;
@@ -41,9 +42,10 @@ public class ProcessInstanceMigrationUserTaskBehavior {
 
   private static final String ERROR_JOB_NOT_FOUND =
       """
-                  Expected to migrate a job for process instance with key '%d', \
+                  Expected to migrate a job for user task '%s' \
+                  on process instance with key '%d', \
                   but could not find job with key '%d'. \
-                  Please report this as a bug""";
+                  Please resolve any incidents on the user task before migrating the process instance.""";
 
   private static final String ERROR_TARGET_FORM_EVALUATION =
       """
@@ -95,14 +97,14 @@ public class ProcessInstanceMigrationUserTaskBehavior {
 
   public void tryMigrateJobWorkerToCamundaUserTask() {
     final var jobKey = elementInstance.getJobKey();
+    final String elementId = elementInstance.getValue().getElementId();
 
     final var job = jobState.getJob(jobKey);
     if (job == null) {
       throw new SafetyCheckFailedException(
-          String.format(ERROR_JOB_NOT_FOUND, processInstanceKey, jobKey));
+          String.format(ERROR_JOB_NOT_FOUND, elementId, processInstanceKey, jobKey));
     }
 
-    final String elementId = elementInstance.getValue().getElementId();
     final ExecutableJobWorkerElement sourceElement =
         sourceProcessDefinition
             .getProcess()
@@ -217,7 +219,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   failure -> {
                     throw new ProcessInstanceMigrationPreconditionFailedException(
                         ERROR_TARGET_FORM_EVALUATION.formatted(
-                            sourceElement.getId(),
+                            BufferUtil.bufferAsString(sourceElement.getId()),
                             "external",
                             targetElementProperties.getExternalFormReference(),
                             targetElementId,
@@ -239,7 +241,7 @@ public class ProcessInstanceMigrationUserTaskBehavior {
                   failure -> {
                     throw new ProcessInstanceMigrationPreconditionFailedException(
                         ERROR_TARGET_FORM_EVALUATION.formatted(
-                            sourceElement.getId(),
+                            BufferUtil.bufferAsString(sourceElement.getId()),
                             "internal",
                             targetElementProperties.getFormId().getExpression(),
                             targetElementId,
@@ -250,7 +252,9 @@ public class ProcessInstanceMigrationUserTaskBehavior {
           // none
           LOGGER.warn(
               WARN_EMBEDDED_FORM_MIGRATION.formatted(
-                  sourceElement.getId(), targetElementId, processInstanceKey));
+                  BufferUtil.bufferAsString(sourceElement.getId()),
+                  targetElementId,
+                  processInstanceKey));
         }
       } else if (workerFormId == null) {
         // external form

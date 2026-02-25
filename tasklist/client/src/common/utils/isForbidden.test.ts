@@ -7,7 +7,7 @@
  */
 
 import {isForbidden} from './isForbidden';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 
 describe('isForbidden', () => {
   const baseUser: CurrentUser = {
@@ -15,12 +15,11 @@ describe('isForbidden', () => {
     displayName: 'Test User',
     salesPlanType: null,
     roles: [],
-    c8Links: [],
+    c8Links: {},
     tenants: [],
     groups: [],
     canLogout: true,
     authorizedComponents: [],
-    apiUser: false,
     email: 'test@camunda.com',
   };
 

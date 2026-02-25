@@ -7,7 +7,7 @@
  */
 
 import {useTranslation} from 'react-i18next';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {CircleDash, UserAvatar, UserAvatarFilled} from '@carbon/react/icons';
 import {Tag as BaseTag} from '@carbon/react';
 import styles from './styles.module.scss';

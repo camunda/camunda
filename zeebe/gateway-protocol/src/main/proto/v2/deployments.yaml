@@ -199,15 +199,30 @@ components:
       type: object
       properties:
         processDefinition:
-          $ref: '#/components/schemas/DeploymentProcessResult'
+          nullable: true
+          description: Deployed process.
+          allOf: 
+            - $ref: '#/components/schemas/DeploymentProcessResult'
         decisionDefinition:
-          $ref: '#/components/schemas/DeploymentDecisionResult'
+          nullable: true
+          description: Deployed decision.
+          allOf: 
+            - $ref: '#/components/schemas/DeploymentDecisionResult'
         decisionRequirements:
-          $ref: '#/components/schemas/DeploymentDecisionRequirementsResult'
+          nullable: true
+          description: Deployed decision requirement definition.
+          allOf: 
+            - $ref: '#/components/schemas/DeploymentDecisionRequirementsResult'
         form:
-          $ref: '#/components/schemas/DeploymentFormResult'
+          nullable: true
+          description: Deployed form.
+          allOf: 
+            - $ref: '#/components/schemas/DeploymentFormResult'
         resource:
-          $ref: '#/components/schemas/DeploymentResourceResult'
+          nullable: true
+          description: Deployed resource.
+          allOf: 
+            - $ref: '#/components/schemas/DeploymentResourceResult'
 
     DeploymentProcessResult:
       description: A deployed process.
@@ -290,13 +305,17 @@ components:
         - decisionRequirementsKey
       properties:
         decisionRequirementsId:
+          description: The id of the deployed decision requirements.
           type: string
         decisionRequirementsName:
+          description: The name of the deployed decision requirements.
           type: string
         version:
           type: integer
           format: int32
+          description: The version of the deployed decision requirements.
         resourceName:
+          description: The name of the resource.
           type: string
         tenantId:
           description: The tenant ID of the deployed decision requirements.
@@ -321,9 +340,11 @@ components:
             The form ID, as parsed during deployment, together with the version forms a
             unique identifier for a specific form.
         version:
+          description: The version of the deployed form.
           type: integer
           format: int32
         resourceName:
+          description: The name of the resource.
           type: string
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
@@ -339,10 +360,13 @@ components:
       type: object
       properties:
         resourceId:
+          description: The resource id of the deployed resource.
           type: string
         resourceName:
+          description: The name of the deployed resource.
           type: string
         version:
+          description: The description of the deployed resource.
           type: integer
           format: int32
         tenantId:

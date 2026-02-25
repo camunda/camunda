@@ -24,11 +24,7 @@ import java.util.Collection;
  *
  * @author Daniel Meyer
  */
-public interface Definitions extends IdentifiableBpmnElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Definitions extends IdentifiableBpmnElement, NamedBpmnElement {
 
   String getTargetNamespace();
 

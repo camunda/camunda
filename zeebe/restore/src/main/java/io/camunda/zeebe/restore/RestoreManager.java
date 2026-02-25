@@ -11,16 +11,10 @@ import io.atomix.cluster.MemberId;
 import io.atomix.primitive.partition.PartitionMetadata;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.db.rdbms.sql.ExporterPositionMapper;
-import io.camunda.zeebe.backup.api.BackupIdentifier;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
-import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.BackupRanges;
 import io.camunda.zeebe.backup.api.BackupStatus;
-import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
-import io.camunda.zeebe.backup.api.Interval;
-import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.backup.common.BackupMetadata;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.broker.partitioning.startup.RaftPartitionFactory;
 import io.camunda.zeebe.broker.partitioning.topology.PartitionDistribution;
 import io.camunda.zeebe.broker.partitioning.topology.StaticConfigurationGenerator;
@@ -49,7 +43,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -63,7 +56,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import org.agrona.collections.MutableBoolean;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -74,9 +66,8 @@ public class RestoreManager implements CloseableSilently {
   private static final Logger LOG = LoggerFactory.getLogger(RestoreManager.class);
   private final BrokerCfg configuration;
   private final BackupStore backupStore;
-  private final BackupRangeResolver rangeResolver;
+  private final BackupMetadataSyncer metadataSyncer;
   private final MeterRegistry meterRegistry;
-  private final CheckpointIdGenerator checkpointIdGenerator;
   @Nullable private final ExporterPositionMapper exporterPositionMapper;
   private final ExecutorService executor;
 
@@ -93,11 +84,9 @@ public class RestoreManager implements CloseableSilently {
       final BackupStore backupStore,
       @Nullable final ExporterPositionMapper exporterPositionMapper,
       final MeterRegistry meterRegistry) {
-    checkpointIdGenerator =
-        new CheckpointIdGenerator(configuration.getData().getBackup().getOffset());
     this.configuration = configuration;
     this.backupStore = backupStore;
-    rangeResolver = new BackupRangeResolver(backupStore);
+    metadataSyncer = new BackupMetadataSyncer(backupStore);
     this.exporterPositionMapper = exporterPositionMapper;
     this.meterRegistry = meterRegistry;
     executor =
@@ -121,7 +110,7 @@ public class RestoreManager implements CloseableSilently {
         throw new IllegalArgumentException(
             "Expected `from` to not be null, but got <null>. When the restore is not using a RDBMS as secondary storage, `from` parameter is required");
       }
-      restoreTimeRange(from, to != null ? to : Instant.now(), validateConfig, ignoreFilesInTarget);
+      restoreTimeRange(from, to, validateConfig, ignoreFilesInTarget);
     } else {
       restoreRdbms(from, to, validateConfig, ignoreFilesInTarget);
     }
@@ -137,60 +126,74 @@ public class RestoreManager implements CloseableSilently {
 
     final var exportedPositions = exportedPositions(partitionCount).join();
     LOG.info("Exported positions for all partitions: {}", exportedPositions);
-    final var restoreInfos =
-        rangeResolver
-            .getRestoreInfoForAllPartitions(
-                from, to, partitionCount, exportedPositions, checkpointIdGenerator, executor)
-            .join();
+
+    // Load backup metadata for each partition in parallel
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
+
+    final var restorableBackups =
+        RestorePointResolver.resolve(metadataByPartition, from, to, exportedPositions);
+
+    // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
+    final var backupIdsByPartition =
+        restorableBackups.backupsByPartitionId().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey,
+                    e ->
+                        e.getValue().stream()
+                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
+                            .toArray()));
 
     LOG.info(
         "Restoring RDBMS backups in range [{},{}] to global checkpoint {}: {}",
         from,
         to,
-        restoreInfos.globalCheckpointId(),
-        restoreInfos.backupsByPartitionId());
+        restorableBackups.globalCheckpointId(),
+        backupIdsByPartition);
 
-    restore(restoreInfos.backupsByPartitionId(), validateConfig, ignoreFilesInTarget);
+    restore(backupIdsByPartition, validateConfig, ignoreFilesInTarget);
   }
 
   public void restoreTimeRange(
-      final Instant from,
-      final Instant to,
+      final @Nullable Instant from,
+      final @Nullable Instant to,
       final boolean validateConfig,
       final List<String> ignoreFilesInTarget)
       throws IOException, ExecutionException, InterruptedException {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
-    // Data folder is verified separately, so that we can fail fast rather than downloading
-    // backups and then verifying the data folder is not empty.
+    // Data folder is verified separately, so that we can fail fast rather than loading metadata
+    // and then verifying the data folder is not empty.
     // Doing it as soon as possible shortens the time to find out about this, helping to achieve
     // lower RTO
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
 
-    final var wildCard =
-        BackupIdentifierWildcard.ofPattern(
-            CheckpointPattern.ofTimeRange(from, to, checkpointIdGenerator));
-    final var backups =
-        backupStore
-            .list(wildCard)
-            .thenApply(
-                b ->
-                    b.stream().filter(bs -> bs.statusCode() == BackupStatusCode.COMPLETED).toList())
-            .join();
-    final var backupIds =
-        backups.stream()
-            .map(BackupStatus::id)
-            .mapToLong(BackupIdentifier::checkpointId)
-            .distinct()
-            .sorted()
-            .toArray();
-    LOG.info("Completed backups in range [{},{}] are {}", from, to, backupIds);
+    final var partitionCount = configuration.getCluster().getPartitionsCount();
 
-    if (backupIds.length == 0) {
-      throw new IllegalArgumentException("No backups found in range [" + from + "," + to + "]");
-    }
+    // Load backup metadata for each partition in parallel
+    final var metadataByPartition = loadMetadataForAllPartitions(partitionCount).join();
 
-    restore(backupIds, validateConfig, ignoreFilesInTarget);
+    final var restorableBackups = RestorePointResolver.resolve(metadataByPartition, from, to, null);
+
+    // Convert List<CheckpointEntry> to long[] of checkpoint IDs per partition
+    final var backupIdsByPartition =
+        restorableBackups.backupsByPartitionId().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Entry::getKey,
+                    e ->
+                        e.getValue().stream()
+                            .mapToLong(BackupMetadata.CheckpointEntry::checkpointId)
+                            .toArray()));
+
+    LOG.info(
+        "Restoring time-range backups in range [{},{}] to global checkpoint {}: {}",
+        from,
+        to,
+        restorableBackups.globalCheckpointId(),
+        backupIdsByPartition);
+
+    restore(backupIdsByPartition, validateConfig, ignoreFilesInTarget);
   }
 
   public void restore(
@@ -209,9 +212,7 @@ public class RestoreManager implements CloseableSilently {
     final var partitionCount = configuration.getCluster().getPartitionsCount();
     return IntStream.rangeClosed(1, partitionCount)
         .boxed()
-        .collect(
-            Collectors.toMap(
-                partition -> partition, partition -> Arrays.copyOf(backupIds, backupIds.length)));
+        .collect(Collectors.toMap(partition -> partition, partition -> backupIds));
   }
 
   /**
@@ -233,8 +234,6 @@ public class RestoreManager implements CloseableSilently {
     final var dataDirectory = Path.of(configuration.getData().getDirectory());
 
     verifyDataFolderIsEmpty(dataDirectory, ignoreFilesInTarget);
-
-    verifyBackupIdsAreContinuous(backupIdsByPartition);
 
     try {
       final var partitionsToRestore = collectPartitions();
@@ -352,43 +351,6 @@ public class RestoreManager implements CloseableSilently {
         factory.createRaftPartition(metadata, partitionRegistry), partitionRegistry);
   }
 
-  private void verifyBackupIdsAreContinuous(final Map<Integer, long[]> backupIdsByPartition) {
-    final MutableBoolean validBackupRange = new MutableBoolean(true);
-
-    for (final var entry : backupIdsByPartition.entrySet()) {
-      final var partition = entry.getKey();
-      final var backupIds = entry.getValue();
-
-      if (backupIds.length > 1) {
-        final var minBackup = Arrays.stream(backupIds).min().orElseThrow();
-        final var maxBackup = Arrays.stream(backupIds).max().orElseThrow();
-
-        final var ranges = BackupRanges.fromMarkers(backupStore.rangeMarkers(partition).join());
-        final var validRange =
-            ranges.stream()
-                .filter(r -> r.contains(new Interval<>(minBackup, maxBackup)))
-                .findFirst();
-
-        if (validRange.isEmpty()) {
-          final var completeRanges =
-              ranges.stream().filter(BackupRange.Complete.class::isInstance).toList();
-          LOG.error(
-              "Expected to find a continuous range of backups between {} and {} for partition {}. Complete ranges are the following: {}",
-              minBackup,
-              maxBackup,
-              partition,
-              completeRanges);
-          validBackupRange.set(false);
-        }
-      }
-    }
-
-    if (!validBackupRange.get()) {
-      LOG.error("Found one or more invalid backup ranges. Aborting restore.");
-      throw new IllegalStateException("Invalid backup ranges");
-    }
-  }
-
   private void verifyDataFolderIsEmpty(
       final Path dataDirectory, final List<String> ignoreFilesInTarget) throws IOException {
     if (!dataFolderIsEmpty(dataDirectory, ignoreFilesInTarget)) {
@@ -433,6 +395,21 @@ public class RestoreManager implements CloseableSilently {
             s -> s.stream().collect(Collectors.toUnmodifiableMap(Entry::getKey, Entry::getValue)));
   }
 
+  private CompletableFuture<List<BackupMetadata>> loadMetadataForAllPartitions(
+      final int partitionCount) {
+    return FuturesUtil.parTraverse(
+        IntStream.rangeClosed(1, partitionCount).boxed().toList(),
+        partition ->
+            metadataSyncer
+                .load(partition)
+                .thenApply(
+                    opt ->
+                        opt.orElseThrow(
+                            () ->
+                                new IllegalStateException(
+                                    "No backup metadata found for partition " + partition))));
+  }
+
   @Override
   public void close() {
     try {
@@ -440,9 +417,9 @@ public class RestoreManager implements CloseableSilently {
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();
       }
-    } catch (final InterruptedException ignored) {
+    } catch (final InterruptedException e) {
       // Not much we can do here, just report in case it's a bug in the shutdown process.
-      LOG.warn("Interrupted while waiting for executor to shutdown", ignored);
+      LOG.warn("Interrupted while waiting for executor to shutdown", e);
       Thread.currentThread().interrupt();
     }
   }

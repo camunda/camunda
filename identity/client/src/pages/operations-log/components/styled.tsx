@@ -8,8 +8,8 @@
 
 import styled from "styled-components";
 import {
-  CheckmarkFilled as BaseCheckmarkFilled,
-  ErrorFilled as BaseErrorFilled,
+  CheckmarkOutline as BaseCheckmarkOutline,
+  ErrorOutline as BaseErrorOutline,
 } from "@carbon/react/icons";
 import { Column, Grid as CarbonGrid } from "@carbon/react";
 import { styles } from "@carbon/elements";
@@ -20,11 +20,11 @@ const OperationLogName = styled.div`
   gap: var(--cds-spacing-02);
 `;
 
-const SuccessIcon = styled(BaseCheckmarkFilled)`
+const SuccessIcon = styled(BaseCheckmarkOutline)`
   fill: var(--cds-support-success);
 `;
 
-const ErrorIcon = styled(BaseErrorFilled)`
+const ErrorIcon = styled(BaseErrorOutline)`
   fill: var(--cds-support-error);
 `;
 
@@ -42,27 +42,6 @@ const CenteredRow = styled.div`
   width: 100%;
 `;
 
-const DatePickerWrapper = styled.div`
-  .cds--date-picker {
-    width: 100%;
-  }
-
-  .cds--date-picker-container {
-    width: 100%;
-    max-width: 100%;
-  }
-
-  .cds--date-picker-input__wrapper {
-    display: contents;
-    width: 100%;
-  }
-
-  input.cds--date-picker__input {
-    width: 100%;
-    max-width: 100%;
-  }
-`;
-
 const PropertyText = styled.div`
   ${styles.caption01}
 `;
@@ -78,7 +57,6 @@ export {
   Grid,
   ColumnRightPadding,
   CenteredRow,
-  DatePickerWrapper,
   PropertyText,
   OwnerInfo,
 };

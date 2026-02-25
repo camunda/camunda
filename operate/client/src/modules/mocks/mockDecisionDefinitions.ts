@@ -9,7 +9,7 @@
 import type {
   DecisionDefinition,
   QueryDecisionDefinitionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const createDecisionDefinition = (
   options: Partial<DecisionDefinition> = {},
@@ -19,6 +19,8 @@ const createDecisionDefinition = (
     name: 'Assign Approver Group',
     version: 2,
     decisionRequirementsId: 'invoice-assign-approver-requirements',
+    decisionRequirementsName: null,
+    decisionRequirementsVersion: 1,
     tenantId: '<default>',
     decisionDefinitionKey: '1',
     decisionRequirementsKey: '1-requirements',
@@ -33,6 +35,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Assign Approver Group',
       version: 2,
       decisionRequirementsId: 'invoice-assign-approver-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
       decisionDefinitionKey: '1',
       decisionRequirementsKey: '1-requirements',
@@ -42,6 +46,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Assign Approver Group',
       version: 1,
       decisionRequirementsId: 'invoice-assign-approver-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
       decisionDefinitionKey: '0',
       decisionRequirementsKey: '0-requirements',
@@ -51,6 +57,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Assign Approver Group for tenant A',
       version: 3,
       decisionRequirementsId: 'invoice-assign-approver-tenant-A-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: 'tenant-A',
       decisionDefinitionKey: '4',
       decisionRequirementsKey: '4-requirements',
@@ -60,6 +68,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Assign Approver Group for tenant A',
       version: 2,
       decisionRequirementsId: 'invoice-assign-approver-tenant-A-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: 'tenant-A',
       decisionDefinitionKey: '3',
       decisionRequirementsKey: '3-requirements',
@@ -69,6 +79,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Assign Approver Group for tenant A',
       version: 1,
       decisionRequirementsId: 'invoice-assign-approver-tenant-A-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: 'tenant-A',
       decisionDefinitionKey: '2',
       decisionRequirementsKey: '2-requirements',
@@ -78,6 +90,8 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'invoiceClassification',
       version: 1,
       decisionRequirementsId: 'invoiceClassification-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
       decisionDefinitionKey: '5',
       decisionRequirementsKey: '5-requirements',
@@ -87,12 +101,19 @@ const mockDecisionDefinitions: QueryDecisionDefinitionsResponseBody = {
       name: 'Calculate Credit History Key Figures',
       version: 1,
       decisionRequirementsId: 'calc-key-figures-requirements',
+      decisionRequirementsName: null,
+      decisionRequirementsVersion: 1,
       tenantId: '<default>',
       decisionDefinitionKey: '6',
       decisionRequirementsKey: '6-requirements',
     },
   ],
-  page: {totalItems: 7},
+  page: {
+    totalItems: 7,
+    startCursor: null,
+    endCursor: null,
+    hasMoreTotalItems: false,
+  },
 };
 
 export {createDecisionDefinition, mockDecisionDefinitions};

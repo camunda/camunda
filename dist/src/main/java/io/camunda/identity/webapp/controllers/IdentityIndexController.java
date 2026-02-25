@@ -9,6 +9,7 @@ package io.camunda.identity.webapp.controllers;
 
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
  */
 @Controller
 @Deprecated
+@ConditionalOnWebappUiEnabled({"identity", "admin"})
 public class IdentityIndexController {
 
   @GetMapping({"/identity", "/identity/", "/identity/index.html"})

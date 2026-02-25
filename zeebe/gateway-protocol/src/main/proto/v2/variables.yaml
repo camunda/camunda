@@ -137,7 +137,11 @@ components:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         value:
-          description: The value of the variable.
+          description: |
+            The value of the variable.
+            Variable values in filters need to be in serialized JSON format. For example, a variable
+            with string value `myValue` can be found with the filter value `"myValue"`. Consider
+            appropriate escaping for special characters in JSON strings when constructing filter values.
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
         tenantId:
@@ -168,6 +172,8 @@ components:
     VariableSearchQueryResult:
       description: Variable search query response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -203,6 +209,8 @@ components:
     VariableResultBase:
       description: Variable response item.
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         name:
           description: Name of this variable.
@@ -245,7 +253,11 @@ components:
         value:
           allOf:
             - $ref: 'filters.yaml#/components/schemas/StringFilterProperty'
-          description: The value of the variable.
+          description: |
+            The value of the variable.
+            Variable values in filters need to be in serialized JSON format. For example, a variable
+            with string value `myValue` can be found with the filter value `"myValue"`. Consider
+            appropriate escaping for special characters in JSON strings when constructing filter values.
       required:
         - name
         - value

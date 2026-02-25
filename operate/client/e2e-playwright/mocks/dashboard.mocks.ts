@@ -7,7 +7,7 @@
  */
 
 import type {Route} from '@playwright/test';
-import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {GetProcessDefinitionInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   GetIncidentProcessInstanceStatisticsByErrorResponseBody,
   GetIncidentProcessInstanceStatisticsByDefinitionResponseBody,
@@ -18,7 +18,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
     items: [
       {
         processDefinitionId: 'complexProcess',
-        processDefinitionKey: 2251799813687201,
+        processDefinitionKey: '2251799813687201',
         processDefinitionName: 'complexProcess',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -26,7 +26,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'prWithSubprocess',
-        processDefinitionKey: 2251799813686137,
+        processDefinitionKey: '2251799813686137',
         processDefinitionName: 'Nested subprocesses',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -34,7 +34,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'multiInstanceProcess',
-        processDefinitionKey: 2251799813687192,
+        processDefinitionKey: '2251799813687192',
         processDefinitionName: 'Multi-Instance Process',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -42,14 +42,15 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'nonInterruptingBoundaryEvent',
-        processDefinitionKey: 2251799813687208,
+        processDefinitionKey: '2251799813687208',
+        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 16,
       },
       {
         processDefinitionId: 'called-process',
-        processDefinitionKey: 2251799813687210,
+        processDefinitionKey: '2251799813687210',
         processDefinitionName: 'Called Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -57,14 +58,15 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'complexProcess',
-        processDefinitionKey: 2251799813686132,
+        processDefinitionKey: '2251799813686132',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 14,
       },
       {
         processDefinitionId: 'flightRegistration',
-        processDefinitionKey: 2251799813687190,
+        processDefinitionKey: '2251799813687190',
         processDefinitionName: 'Flight registration',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -72,7 +74,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'flightRegistration',
-        processDefinitionKey: 2251799813686118,
+        processDefinitionKey: '2251799813686118',
         processDefinitionName: 'Flight registration',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -80,7 +82,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'eventSubprocessProcess',
-        processDefinitionKey: 2251799813686147,
+        processDefinitionKey: '2251799813686147',
         processDefinitionName: 'Event Subprocess Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -88,14 +90,15 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'interruptingBoundaryEvent',
-        processDefinitionKey: 2251799813687206,
+        processDefinitionKey: '2251799813687206',
+        processDefinitionName: null,
         processDefinitionVersion: 2,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 8,
       },
       {
         processDefinitionId: 'inclusiveGatewayProcess',
-        processDefinitionKey: 2251799813686168,
+        processDefinitionKey: '2251799813686168',
         processDefinitionName: 'Inclusive gateway',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -103,7 +106,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'linkEventProcess',
-        processDefinitionKey: 2251799813686161,
+        processDefinitionKey: '2251799813686161',
         processDefinitionName: 'Link events process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -111,7 +114,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'eventBasedGatewayProcess',
-        processDefinitionKey: 2251799813686134,
+        processDefinitionKey: '2251799813686134',
         processDefinitionName: 'Event based gateway with message start',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -120,21 +123,23 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
 
       {
         processDefinitionId: 'bigProcess',
-        processDefinitionKey: 2251799813686149,
+        processDefinitionKey: '2251799813686149',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 1,
       },
       {
         processDefinitionId: 'interruptingBoundaryEvent',
-        processDefinitionKey: 2251799813686139,
+        processDefinitionKey: '2251799813686139',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 1,
       },
       {
         processDefinitionId: 'onlyIncidentsProcess',
-        processDefinitionKey: 2251799813685301,
+        processDefinitionKey: '2251799813685301',
         processDefinitionName: 'Only Incidents Process',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -142,7 +147,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'onlyIncidentsProcess',
-        processDefinitionKey: 2251799813685257,
+        processDefinitionKey: '2251799813685257',
         processDefinitionName: 'Only Incidents Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -150,7 +155,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'escalationEvents',
-        processDefinitionKey: 2251799813687212,
+        processDefinitionKey: '2251799813687212',
         processDefinitionName: 'Escalation events',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -158,7 +163,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'timerProcess',
-        processDefinitionKey: 2251799813687198,
+        processDefinitionKey: '2251799813687198',
         processDefinitionName: 'Timer process',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -166,7 +171,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'signalEventProcess',
-        processDefinitionKey: 2251799813686165,
+        processDefinitionKey: '2251799813686165',
         processDefinitionName: 'Signal event',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -174,7 +179,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'escalationEvents',
-        processDefinitionKey: 2251799813686163,
+        processDefinitionKey: '2251799813686163',
         processDefinitionName: 'Escalation events',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -182,7 +187,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'dataStoreProcess',
-        processDefinitionKey: 2251799813686159,
+        processDefinitionKey: '2251799813686159',
         processDefinitionName: 'Data store process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -190,7 +195,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'undefined-task-process',
-        processDefinitionKey: 2251799813686157,
+        processDefinitionKey: '2251799813686157',
         processDefinitionName: 'undefined-task',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -198,7 +203,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'terminateEndEvent',
-        processDefinitionKey: 2251799813686155,
+        processDefinitionKey: '2251799813686155',
         processDefinitionName: 'Terminate End Event',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -206,7 +211,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'timerProcess',
-        processDefinitionKey: 2251799813686143,
+        processDefinitionKey: '2251799813686143',
         processDefinitionName: 'Timer process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -214,35 +219,39 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'message-end-event-process',
-        processDefinitionKey: 2251799813686128,
+        processDefinitionKey: '2251799813686128',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
       },
       {
         processDefinitionId: 'intermediate-none-event-process',
-        processDefinitionKey: 2251799813686126,
+        processDefinitionKey: '2251799813686126',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
       },
       {
         processDefinitionId: 'intermediate-message-throw-event-process',
-        processDefinitionKey: 2251799813686124,
+        processDefinitionKey: '2251799813686124',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
       },
       {
         processDefinitionId: 'manual-task-process',
-        processDefinitionKey: 2251799813686122,
+        processDefinitionKey: '2251799813686122',
+        processDefinitionName: null,
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
       },
       {
         processDefinitionId: 'multiInstanceProcess',
-        processDefinitionKey: 2251799813686120,
+        processDefinitionKey: '2251799813686120',
         processDefinitionName: 'Sequential Multi-Instance Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -250,7 +259,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'bigVarProcess',
-        processDefinitionKey: 2251799813685430,
+        processDefinitionKey: '2251799813685430',
         processDefinitionName: 'Big variable process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -258,7 +267,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'withoutIncidentsProcess',
-        processDefinitionKey: 2251799813685364,
+        processDefinitionKey: '2251799813685364',
         processDefinitionName: 'Without Incidents Process',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -266,7 +275,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'withoutIncidentsProcess',
-        processDefinitionKey: 2251799813685350,
+        processDefinitionKey: '2251799813685350',
         processDefinitionName: 'Without Incidents Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -274,7 +283,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'noInstancesProcess',
-        processDefinitionKey: 2251799813685255,
+        processDefinitionKey: '2251799813685255',
         processDefinitionName: 'Without Instances Process',
         processDefinitionVersion: 2,
         tenantId: '<default>',
@@ -282,7 +291,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'noInstancesProcess',
-        processDefinitionKey: 2251799813685253,
+        processDefinitionKey: '2251799813685253',
         processDefinitionName: 'Without Instances Process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -290,7 +299,7 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'Process_b1711b2e-ec8e-4dad-908c-8c12e028f32f',
-        processDefinitionKey: 2251799813685251,
+        processDefinitionKey: '2251799813685251',
         processDefinitionName: 'Input Output Mapping Test',
         processDefinitionVersion: 1,
         tenantId: '<default>',
@@ -298,14 +307,19 @@ const mockIncidentsByDefinition: GetIncidentProcessInstanceStatisticsByDefinitio
       },
       {
         processDefinitionId: 'always-completing-process',
-        processDefinitionKey: 2251799813685249,
+        processDefinitionKey: '2251799813685249',
         processDefinitionName: 'Always completing process',
         processDefinitionVersion: 1,
         tenantId: '<default>',
         activeInstancesWithErrorCount: 0,
       },
     ],
-    page: {totalItems: 37},
+    page: {
+      totalItems: 37,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockIncidentsByError: GetIncidentProcessInstanceStatisticsByErrorResponseBody =
@@ -437,7 +451,12 @@ const mockIncidentsByError: GetIncidentProcessInstanceStatisticsByErrorResponseB
         activeInstancesWithErrorCount: 1,
       },
     ],
-    page: {totalItems: 22},
+    page: {
+      totalItems: 22,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsResponseBody =
@@ -500,7 +519,12 @@ const mockProcessDefinitionStatistics: GetProcessDefinitionInstanceStatisticsRes
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 7},
+    page: {
+      totalItems: 7,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   };
 
 const mockProcessDefinitionVersionStatistics = {
@@ -525,7 +549,12 @@ const mockProcessDefinitionVersionStatistics = {
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 2},
+    page: {
+      totalItems: 2,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
   complexProcess: {
     items: [
@@ -557,7 +586,12 @@ const mockProcessDefinitionVersionStatistics = {
         tenantId: '<default>',
       },
     ],
-    page: {totalItems: 3},
+    page: {
+      totalItems: 3,
+      startCursor: null,
+      endCursor: null,
+      hasMoreTotalItems: false,
+    },
   },
 };
 

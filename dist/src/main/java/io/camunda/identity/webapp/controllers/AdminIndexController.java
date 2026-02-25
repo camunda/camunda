@@ -7,6 +7,7 @@
  */
 package io.camunda.identity.webapp.controllers;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@ConditionalOnWebappUiEnabled({"identity", "admin"})
 public class AdminIndexController {
   private final ServletContext context;
 

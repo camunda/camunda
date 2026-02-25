@@ -7,8 +7,6 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
-import static io.camunda.zeebe.protocol.Protocol.START_PARTITION_ID;
-
 import org.agrona.DirectBuffer;
 
 public final class SubscriptionUtil {
@@ -20,13 +18,7 @@ public final class SubscriptionUtil {
    * @return the hash code of the subscription
    */
   static int getSubscriptionHashCode(final DirectBuffer correlationKey) {
-    // is equal to java.lang.String#hashCode
-    int hashCode = 0;
-
-    for (int i = 0, length = correlationKey.capacity(); i < length; i++) {
-      hashCode = 31 * hashCode + correlationKey.getByte(i);
-    }
-    return hashCode;
+    return PartitionUtil.hashCode(correlationKey);
   }
 
   /**
@@ -38,8 +30,6 @@ public final class SubscriptionUtil {
    */
   public static int getSubscriptionPartitionId(
       final DirectBuffer correlationKey, final int partitionCount) {
-    final int hashCode = getSubscriptionHashCode(correlationKey);
-    // partition ids range from START_PARTITION_ID .. START_PARTITION_ID + partitionCount
-    return Math.abs(hashCode % partitionCount) + START_PARTITION_ID;
+    return PartitionUtil.getPartitionId(correlationKey, partitionCount);
   }
 }

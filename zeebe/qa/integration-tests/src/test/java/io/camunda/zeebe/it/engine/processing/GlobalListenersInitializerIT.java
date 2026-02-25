@@ -16,8 +16,10 @@ import io.camunda.zeebe.protocol.impl.record.value.globallistener.GlobalListener
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ClockIntent;
+import io.camunda.zeebe.protocol.record.intent.CommandDistributionIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerBatchIntent;
 import io.camunda.zeebe.protocol.record.intent.GlobalListenerIntent;
+import io.camunda.zeebe.protocol.record.value.CommandDistributionRecordValue;
 import io.camunda.zeebe.protocol.record.value.GlobalListenerRecordValue;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
@@ -30,6 +32,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.api.Assertions;
+import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,6 +68,15 @@ final class GlobalListenersInitializerIT {
     ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
     restartBroker();
 
+    // Wait for configuration to be distributed to all partitions and keep track of the last
+    // position for each partition, this way we can filter records for the assertions to only
+    // include records actually generated after the restart.
+    waitForConfigurationDistributionComplete();
+    final var lastPositionByPartition =
+        RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .limit(PARTITIONS_COUNT)
+            .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
+
     // When the configuration is changed and the broker restarted
     ZEEBE
         .unifiedConfig()
@@ -78,6 +90,8 @@ final class GlobalListenersInitializerIT {
     // Collect listener records for each partition and group them by partition id
     final var listenerRecordsByPartition =
         RecordingExporter.records()
+            // skip records re-exported after restart but generated before it
+            .filter(r -> lastPositionByPartition.get(r.getPartitionId()) < r.getPosition())
             // one CONFIGURED event for each partition mark the end of the initialization
             .limitByCount(
                 r -> r.getIntent().equals(GlobalListenerBatchIntent.CONFIGURED), PARTITIONS_COUNT)
@@ -130,6 +144,15 @@ final class GlobalListenersInitializerIT {
     ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global"));
     restartBroker();
 
+    // Wait for configuration to be distributed to all partitions and keep track of the last
+    // position for each partition, this way we can filter records for the assertions to only
+    // include records actually generated after the restart.
+    waitForConfigurationDistributionComplete();
+    final var lastPositionByPartition =
+        RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .limit(PARTITIONS_COUNT)
+            .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
+
     // When an empty configuration is set and the broker is restarted
     ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg());
     restartBroker();
@@ -140,6 +163,8 @@ final class GlobalListenersInitializerIT {
     // Collect listener records for each partition and group them by partition id
     final var listenerRecordsByPartition =
         RecordingExporter.records()
+            // skip records re-exported after restart but generated before it
+            .filter(r -> lastPositionByPartition.get(r.getPartitionId()) < r.getPosition())
             // one CONFIGURED event for each partition mark the end of the initialization
             .limitByCount(
                 r -> r.getIntent().equals(GlobalListenerBatchIntent.CONFIGURED), PARTITIONS_COUNT)
@@ -185,6 +210,15 @@ final class GlobalListenersInitializerIT {
     ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
     restartBroker();
 
+    // Wait for configuration to be distributed to all partitions and keep track of the last
+    // position for each partition, this way we can filter records for the assertions to only
+    // include records actually generated after the restart.
+    waitForConfigurationDistributionComplete();
+    final var lastPositionByPartition =
+        RecordingExporter.globalListenerBatchRecords(GlobalListenerBatchIntent.CONFIGURED)
+            .limit(PARTITIONS_COUNT)
+            .collect(Collectors.toMap(Record::getPartitionId, Record::getPosition));
+
     // When the configuration is not changed and the broker is restarted
     ZEEBE.unifiedConfig().getCluster().setGlobalListeners(createGlobalListenersCfg("global1"));
     restartBroker();
@@ -195,6 +229,8 @@ final class GlobalListenersInitializerIT {
     // Then no configuration event is created
     assertThat(
             RecordingExporter.records()
+                // skip records re-exported after restart but generated before it
+                .filter(r -> lastPositionByPartition.get(r.getPartitionId()) < r.getPosition())
                 .limit(r -> r.getIntent().equals(ClockIntent.RESET))
                 .globalListenerBatchRecords()
                 .withIntent(GlobalListenerBatchIntent.CONFIGURED))
@@ -220,9 +256,35 @@ final class GlobalListenersInitializerIT {
   private void restartBroker() {
     if (ZEEBE.isStarted()) {
       ZEEBE.stop();
-      RecordingExporter.reset();
     }
     ZEEBE.start();
     ZEEBE.awaitCompleteTopology(1, PARTITIONS_COUNT, 1, Duration.ofSeconds(30));
+  }
+
+  private void waitForConfigurationDistributionComplete() {
+    Awaitility.await()
+        .untilAsserted(
+            () -> {
+              // Wait for configuration to be applied on all partitions
+              assertThat(
+                      RecordingExporter.globalListenerBatchRecords(
+                              GlobalListenerBatchIntent.CONFIGURED)
+                          .limit(PARTITIONS_COUNT)
+                          .map(Record::getPartitionId))
+                  .containsExactlyInAnyOrderElementsOf(PARTITION_IDS);
+              // Wait for main partition to complete the distribution on all partitions
+              // Waiting only for the events to be exported in each partition is not enough because
+              // the main partitions could not have received the acknowledgment of the command
+              // distribution yet and in that case we risk having the commands distributed again
+              // after the restart.
+              assertThat(
+                      RecordingExporter.commandDistributionRecords(
+                              CommandDistributionIntent.FINISHED)
+                          .withDistributionIntent(GlobalListenerBatchIntent.CONFIGURE)
+                          .limit(PARTITIONS_COUNT - 1)
+                          .map(Record::getValue)
+                          .map(CommandDistributionRecordValue::getPartitionId))
+                  .hasSize(PARTITIONS_COUNT - 1);
+            });
   }
 }

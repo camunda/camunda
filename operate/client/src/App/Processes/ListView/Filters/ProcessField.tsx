@@ -13,9 +13,10 @@ import {ComboBox} from 'modules/components/ComboBox';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
 import {useProcessDefinitions} from 'modules/hooks/processDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const ProcessField: React.FC = observer(() => {
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
   const tenantsById = useAvailableTenants();
 
   const form = useForm();

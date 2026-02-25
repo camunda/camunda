@@ -1,5 +1,5 @@
 {
-  "operationsLog": "Operations log",
+  "operationsLog": "Operations Log",
   "operationType": "Operation type",
   "entityType": "Entity type",
   "status": "Status",
@@ -8,7 +8,7 @@
   "actor": "Actor",
   "actorPlaceholder": "Username or client ID",
   "date": "Date",
-  "operationsLogCouldNotLoad": "Operations log could not be loaded",
+  "operationsLogCouldNotLoad": "Operations Log could not be loaded",
   "selectLabel": "Choose option",
   "multiSelectLabel": "Choose option(s)",
   "selectAll": "All",

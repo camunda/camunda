@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
 import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
@@ -22,10 +23,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 
 public final class RequestValidator {
+
+  /** Compiled pattern for a valid BPMN process definition ID, matching the OpenAPI spec. */
+  public static final Pattern PROCESS_DEFINITION_ID_PATTERN =
+      Pattern.compile("^[a-zA-Z_][a-zA-Z0-9_\\-.]*$");
 
   public static Optional<ProblemDetail> createProblemDetail(final List<String> violations) {
     String problems = String.join(". ", violations);
@@ -92,6 +98,22 @@ public final class RequestValidator {
       final String keyValue, final String fieldName, final List<String> violations) {
     if (keyValue != null && KeyUtil.tryParseLong(keyValue).isEmpty()) {
       violations.add(ERROR_MESSAGE_INVALID_KEY_FORMAT.formatted(fieldName, keyValue));
+    }
+  }
+
+  /**
+   * Validates that a process definition ID matches the BPMN identifier pattern.
+   *
+   * @param processDefinitionId the value to validate (may be null; null is not validated)
+   * @param violations the list to add validation errors to
+   */
+  public static void validateProcessDefinitionId(
+      final String processDefinitionId, final List<String> violations) {
+    if (processDefinitionId != null
+        && !PROCESS_DEFINITION_ID_PATTERN.matcher(processDefinitionId).matches()) {
+      violations.add(
+          ERROR_MESSAGE_ILLEGAL_CHARACTER.formatted(
+              "processDefinitionId", PROCESS_DEFINITION_ID_PATTERN.pattern()));
     }
   }
 }

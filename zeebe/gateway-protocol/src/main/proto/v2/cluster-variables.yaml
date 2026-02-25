@@ -391,7 +391,6 @@ components:
       type: object
       required:
         - name
-        - value
         - scope
       properties:
         name:
@@ -401,7 +400,8 @@ components:
           $ref: '#/components/schemas/ClusterVariableScopeEnum'
         tenantId:
           type: string
-          description: Only provided if the cluster variable scope is TENANT.
+          nullable: true
+          description: Only provided if the cluster variable scope is TENANT. Null for global scope variables.
     ClusterVariableSearchQueryRequest:
       description: Cluster variable search query request.
       additionalProperties: false
@@ -493,11 +493,14 @@ components:
     ClusterVariableSearchQueryResult:
       description: Cluster variable search query response.
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
         items:
           description: The matching cluster variables.
           type: array
+          default: []
           items:
             $ref: '#/components/schemas/ClusterVariableSearchResult'

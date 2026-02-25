@@ -603,6 +603,11 @@ final class BackupRangeResolverTest {
     }
 
     @Override
+    public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+      return CompletableFuture.completedFuture(BackupStatusCode.DELETED);
+    }
+
+    @Override
     public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
       return CompletableFuture.completedFuture(
           rangeMarkersByPartition.getOrDefault(partitionId, List.of()));
@@ -623,6 +628,17 @@ final class BackupRangeResolverTest {
         markers.remove(marker);
       }
       return CompletableFuture.completedFuture(null);
+    }
+
+    @Override
+    public CompletableFuture<Void> storeBackupMetadata(
+        final int partitionId, final byte[] content) {
+      throw new UnsupportedOperationException("Not implemented");
+    }
+
+    @Override
+    public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+      throw new UnsupportedOperationException("Not implemented");
     }
 
     @Override

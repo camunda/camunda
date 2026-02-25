@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.AuthorizationDbQuery;
 import io.camunda.db.rdbms.read.mapper.AuthorizationEntityMapper;
 import io.camunda.db.rdbms.sql.AuthorizationMapper;
@@ -30,8 +31,9 @@ public class AuthorizationDbReader extends AbstractEntityReader<AuthorizationEnt
 
   private final AuthorizationMapper authorizationMapper;
 
-  public AuthorizationDbReader(final AuthorizationMapper authorizationMapper) {
-    super(AuthorizationSearchColumn.values());
+  public AuthorizationDbReader(
+      final AuthorizationMapper authorizationMapper, final RdbmsReaderConfig readerConfig) {
+    super(AuthorizationSearchColumn.values(), readerConfig);
     this.authorizationMapper = authorizationMapper;
   }
 

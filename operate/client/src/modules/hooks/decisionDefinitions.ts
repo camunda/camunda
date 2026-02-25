@@ -8,7 +8,7 @@
 
 import {useMemo} from 'react';
 import {useSearchParams} from 'react-router-dom';
-import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {DecisionDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 import {parseDecisionDefinitionsSearchFilter} from 'modules/utils/filter/decisionsFilter';
 import {useDecisionDefinitionsSearch} from 'modules/queries/decisionDefinitions/useDecisionDefinitionsSearch';
 import {DEFAULT_TENANT} from 'modules/constants';
@@ -52,7 +52,11 @@ function useDecisionDefinitions(tenantId?: string) {
             definition.tenantId,
           ),
         }))
-        .sort((d1, d2) => d1.name.localeCompare(d2.name)),
+        .sort((d1, d2) =>
+          (d1.name ?? d1.decisionDefinitionId).localeCompare(
+            d2.name ?? d2.decisionDefinitionId,
+          ),
+        ),
   });
 }
 

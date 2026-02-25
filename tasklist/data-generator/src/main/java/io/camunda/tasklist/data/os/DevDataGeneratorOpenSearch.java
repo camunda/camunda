@@ -7,6 +7,7 @@
  */
 package io.camunda.tasklist.data.os;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
@@ -17,7 +18,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.context.annotation.Profile;
@@ -26,7 +26,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Profile("dev-data")
 @Conditional(OpenSearchCondition.class)
-@ConditionalOnProperty(value = "camunda.tasklist.webapp-enabled", matchIfMissing = true)
+@ConditionalOnWebappEnabled("tasklist")
 @DependsOn("searchEngineSchemaInitializer")
 public class DevDataGeneratorOpenSearch extends DevDataGeneratorAbstract implements DataGenerator {
 

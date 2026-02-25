@@ -5,6 +5,23 @@ spring:
         enabled: true
         name: Camunda 8 Orchestration API MCP Server
         version: '${project.version}'
+        instructions: |
+          This server exposes APIs of a Camunda 8 Orchestration Cluster. All operations are
+          scoped to the permissions of the authenticated user.
+
+          Most tools return eventually consistent data. Recently written data may not appear
+          immediately in subsequent reads.
+
+          Process instances, incidents, and user tasks are related. A process instance can have
+          active incidents and user tasks. Use the process instance key to correlate across
+          domains. To understand the structure of a process, retrieve its BPMN XML.
+
+          When starting a process instance with awaitCompletion, a timeout does NOT mean the
+          process failed — the instance was created and continues running. Tag each instance
+          (e.g. "mcp-tool:<operation>-<timestamp>") so you can find it later. Poll the instance
+          state: if COMPLETED, retrieve result variables; if it has an incident, investigate
+          using the process instance key. Variables can be retrieved at any time, including
+          while the instance is still running.
         type: sync
         protocol: stateless
         annotation-scanner:
@@ -13,6 +30,6 @@ spring:
           mcp-endpoint: /mcp/cluster
         capabilities:
           completion: false
-          prompt: false
-          resource: false
+          prompt: true
+          resource: true
           tool: true

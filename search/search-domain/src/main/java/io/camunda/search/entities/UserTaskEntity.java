@@ -10,6 +10,7 @@ package io.camunda.search.entities;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +51,7 @@ public record UserTaskEntity(
     // Immutable defaults (e.g. List.of()) would cause UnsupportedOperationException at runtime.
     candidateGroups = candidateGroups != null ? candidateGroups : new ArrayList<>();
     candidateUsers = candidateUsers != null ? candidateUsers : new ArrayList<>();
+    customHeaders = customHeaders != null ? customHeaders : new HashMap<>();
     tags = tags != null ? tags : new HashSet<>();
   }
 

@@ -78,6 +78,12 @@ public class CamundaExporterMetrics implements AutoCloseable {
   /** Count of document updated when incident updates were processed. */
   private final Counter incidentUpdatesDocumentsUpdated;
 
+  /** Count of audit logs that are in progress of archiving. */
+  private final Counter auditLogsArchiving;
+
+  /** Count of audit logs that have been archived. */
+  private final Counter auditLogsArchived;
+
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
   private final Timer archiverReindexTimer;
@@ -237,6 +243,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
                 "How much time it took to export a record from the moment it was written (not committed)")
             .serviceLevelObjectives(MicrometerUtil.defaultPrometheusBuckets())
             .register(meterRegistry);
+    auditLogsArchived =
+        Counter.builder(meterName("archiver.standalone.audit-logs"))
+            .tag("state", "archived")
+            .description("Count of standalone audit logs, that have been archived.")
+            .register(meterRegistry);
+    auditLogsArchiving =
+        Counter.builder(meterName("archiver.standalone.audit-logs"))
+            .tag("state", "archiving")
+            .description(
+                "Count of completed standalone audit logs that have been found, and are now in progress of archiving.")
+            .register(meterRegistry);
 
     TimeGauge.builder(
             meterName("since.last.flush.seconds"), this::secondSinceLastFlush, TimeUnit.SECONDS)
@@ -315,6 +332,14 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordStandaloneDecisionsArchiving(final int count) {
     standaloneDecisionsArchiving.increment(count);
+  }
+
+  public void recordAuditLogsArchived(final int count) {
+    auditLogsArchived.increment(count);
+  }
+
+  public void recordAuditLogsArchiving(final int count) {
+    auditLogsArchiving.increment(count);
   }
 
   public void recordJobBatchMetricsArchived(final int count) {

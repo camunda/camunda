@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.webapp.management;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -16,8 +16,5 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @ComponentScan(
     basePackages = "io.camunda.tasklist.webapp.management",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(
-    name = "camunda.tasklist.webapp-enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("tasklist")
 public class WebappManagementModuleConfiguration {}

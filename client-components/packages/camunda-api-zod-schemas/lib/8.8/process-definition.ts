@@ -206,8 +206,7 @@ type GetProcessDefinitionInstanceVersionStatisticsResponseBody = z.infer<
 
 const getProcessDefinitionInstanceVersionStatistics: Endpoint = {
 	method: 'POST',
-	getUrl: () =>
-		`/${API_VERSION}/process-definitions/statistics/process-instances-by-version`,
+	getUrl: () => `/${API_VERSION}/process-definitions/statistics/process-instances-by-version`,
 };
 
 export {

@@ -21,11 +21,7 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Sebastian Menski
  */
-public interface Message extends RootElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Message extends RootElement, NamedBpmnElement {
 
   ItemDefinition getItem();
 

@@ -8,6 +8,7 @@
 
 import {logger} from 'modules/logger';
 import {authenticationStore} from 'modules/stores/authentication';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import {mergePathname} from './mergePathname';
 
 type RequestError =
@@ -91,27 +92,25 @@ async function request(
   {url, method, body, headers, signal}: RequestParams,
   {skipSessionCheck = false}: {skipSessionCheck?: boolean} = {},
 ) {
+  const clientConfig = getClientConfig();
   const csrfToken = sessionStorage.getItem('X-CSRF-TOKEN');
   const hasCsrfToken =
     csrfToken !== null &&
     method !== undefined &&
     ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method.toUpperCase());
 
-  const response = await fetch(
-    mergePathname(window.clientConfig?.contextPath ?? '/', url),
-    {
-      method,
-      credentials: 'include',
-      body: typeof body === 'string' ? body : JSON.stringify(body),
-      headers: {
-        'Content-Type': 'application/json',
-        ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
-        ...headers,
-      },
-      mode: 'cors',
-      signal,
+  const response = await fetch(mergePathname(clientConfig.contextPath, url), {
+    method,
+    credentials: 'include',
+    body: typeof body === 'string' ? body : JSON.stringify(body),
+    headers: {
+      'Content-Type': 'application/json',
+      ...(hasCsrfToken ? {'X-CSRF-TOKEN': csrfToken} : {}),
+      ...headers,
     },
-  );
+    mode: 'cors',
+    signal,
+  });
 
   if (!skipSessionCheck && response.status === 401) {
     authenticationStore.disableSession();

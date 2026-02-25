@@ -6,29 +6,31 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {type MetaDataDto} from 'modules/api/processInstances/fetchFlowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {useEffect} from 'react';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
 import {modificationsStore} from 'modules/stores/modifications';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {createInstance} from 'modules/testUtils';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const mockProcessInstance: ProcessInstance = {
   processInstanceKey: '1',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'someProcessName',
   hasIncident: false,
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
 };
 
 const getWrapper = (
@@ -38,11 +40,7 @@ const getWrapper = (
 ) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
-      flowNodeSelectionStore.init();
-
       return () => {
-        processInstanceDetailsStore.reset();
-        flowNodeSelectionStore.reset();
         modificationsStore.reset();
       };
     }, []);
@@ -62,21 +60,4 @@ const getWrapper = (
   return Wrapper;
 };
 
-const mockMetaData: MetaDataDto = {
-  flowNodeId: null,
-  flowNodeInstanceId: '123',
-  flowNodeType: 'start-event',
-  instanceCount: null,
-  instanceMetadata: null,
-  incident: null,
-  incidentCount: 0,
-};
-
-const mockProcessInstanceDeprecated = createInstance();
-
-export {
-  getWrapper,
-  mockMetaData,
-  mockProcessInstance,
-  mockProcessInstanceDeprecated,
-};
+export {getWrapper, mockProcessInstance};

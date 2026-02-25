@@ -21,6 +21,7 @@ import io.camunda.search.entities.ProcessInstanceEntity.ProcessInstanceState;
 import io.camunda.search.filter.ClusterVariableFilter;
 import io.camunda.search.filter.FilterBase;
 import io.camunda.search.filter.FilterBuilders;
+import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.ProcessDefinitionStatisticsFilter;
 import io.camunda.search.filter.UsageMetricsFilter;
 import io.camunda.search.filter.VariableFilter;
@@ -35,6 +36,7 @@ import io.camunda.search.query.DecisionDefinitionQuery;
 import io.camunda.search.query.DecisionInstanceQuery;
 import io.camunda.search.query.DecisionRequirementsQuery;
 import io.camunda.search.query.FlowNodeInstanceQuery;
+import io.camunda.search.query.GlobalListenerQuery;
 import io.camunda.search.query.GroupMemberQuery;
 import io.camunda.search.query.GroupQuery;
 import io.camunda.search.query.IncidentQuery;
@@ -137,15 +139,24 @@ public final class SearchQueryRequestMapper {
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
 
+  public static Either<ProblemDetail, io.camunda.search.query.JobWorkerStatisticsQuery>
+      toJobWorkerStatisticsQuery(
+          final io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobWorkerStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobWorkerStatisticsSearchQuery);
+  }
+
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
-      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<ProcessDefinitionSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery query) {
     return toProcessDefinitionQuery(
-        new ProcessDefinitionSearchQuery()
-            .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new ProcessDefinitionSearchQuery()
+                .filter(SimpleSearchQueryMapper.toProcessDefinitionFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
@@ -185,14 +196,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
-      final io.camunda.gateway.protocol.model.simple.ProcessInstanceFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<ProcessInstanceSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.ProcessInstanceSearchQuery query) {
     return toProcessInstanceQuery(
-        new ProcessInstanceSearchQuery()
-            .filter(SimpleSearchQueryMapper.toProcessInstanceFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new ProcessInstanceSearchQuery()
+                .filter(SimpleSearchQueryMapper.toProcessInstanceFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceQuery> toProcessInstanceQuery(
@@ -471,14 +482,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
-      final io.camunda.gateway.protocol.model.simple.UserTaskFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<UserTaskSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.UserTaskSearchQuery query) {
     return toUserTaskQuery(
-        new UserTaskSearchQuery()
-            .filter(SimpleSearchQueryMapper.toUserTaskFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new UserTaskSearchQuery()
+                .filter(SimpleSearchQueryMapper.toUserTaskFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, UserTaskQuery> toUserTaskQuery(
@@ -587,14 +598,14 @@ public final class SearchQueryRequestMapper {
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
-      final io.camunda.gateway.protocol.model.simple.IncidentFilter filter,
-      final io.camunda.gateway.protocol.model.simple.SearchQueryPageRequest page,
-      final List<IncidentSearchQuerySortRequest> sort) {
+      final io.camunda.gateway.protocol.model.simple.IncidentSearchQuery query) {
     return toIncidentQuery(
-        new IncidentSearchQuery()
-            .filter(SimpleSearchQueryMapper.toIncidentFilter(filter))
-            .page(SimpleSearchQueryMapper.toPageRequest(page))
-            .sort(sort == null ? List.of() : sort));
+        query == null
+            ? null
+            : new IncidentSearchQuery()
+                .filter(SimpleSearchQueryMapper.toIncidentFilter(query.getFilter()))
+                .page(SimpleSearchQueryMapper.toPageRequest(query.getPage()))
+                .sort(query.getSort() == null ? List.of() : query.getSort()));
   }
 
   public static Either<ProblemDetail, IncidentQuery> toIncidentQuery(
@@ -838,6 +849,25 @@ public final class SearchQueryRequestMapper {
         sort,
         page,
         SearchQueryBuilders::incidentProcessInstanceStatisticsByDefinitionQuery);
+  }
+
+  public static Either<ProblemDetail, GlobalListenerQuery> toGlobalTaskListenerQuery(
+      final GlobalTaskListenerSearchQueryRequest request) {
+    // Create empty request if not provided, then pass through normal transformation to apply
+    // default values
+    final GlobalTaskListenerSearchQueryRequest actualRequest =
+        request == null ? new GlobalTaskListenerSearchQueryRequest() : request;
+
+    final var page = SearchQueryRequestMapper.toSearchQueryPage(actualRequest.getPage());
+    final var sort =
+        SearchQuerySortRequestMapper.toSearchQuerySort(
+            SearchQuerySortRequestMapper.fromGlobalTaskListenerSearchQuerySortRequest(
+                actualRequest.getSort()),
+            SortOptionBuilders::globalListener,
+            SearchQuerySortRequestMapper::applyGlobalTaskListenerSortField);
+    final GlobalListenerFilter filter =
+        SearchQueryFilterMapper.toGlobalTaskListenerFilter(actualRequest.getFilter());
+    return buildSearchQuery(filter, sort, page, SearchQueryBuilders::globalListenerSearchQuery);
   }
 
   private static Either<List<String>, SearchQueryPage> toSearchQueryPage(

@@ -8,7 +8,10 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.RecordMetadata;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.RecordType;
@@ -24,22 +27,34 @@ public class CheckpointConfirmBackupProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
-  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
   private final BackupManager backupManager;
+  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
+  private final DbCheckpointMetadataState checkpointMetadataState;
+  private final DbBackupRangeState backupRangeState;
+  private final BackupMetadataSyncer syncer;
 
   public CheckpointConfirmBackupProcessor(
-      final CheckpointState checkpointState, final BackupManager backupManager) {
+      final CheckpointState checkpointState,
+      final DbCheckpointMetadataState checkpointMetadataState,
+      final DbBackupRangeState backupRangeState,
+      final BackupManager backupManager,
+      final BackupMetadataSyncer syncer) {
     this.checkpointState = checkpointState;
-    backupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
     this.backupManager = backupManager;
+    this.checkpointMetadataState = checkpointMetadataState;
+    this.backupRangeState = backupRangeState;
+    this.syncer = syncer;
+    backupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
   }
 
   public ProcessingResult process(
       final TypedRecord<CheckpointRecord> record, final ProcessingResultBuilder resultBuilder) {
     final var checkpointRecord = record.getValue();
     final var checkpointId = checkpointRecord.getCheckpointId();
-    final var latestBackupId = checkpointState.getLatestBackupId();
     final var firstLogPosition = checkpointRecord.getFirstLogPosition();
+    final var latestBackupId = checkpointState.getLatestBackupId();
     if (latestBackupId < checkpointId) {
       LOG.debug("Confirming backup for checkpoint {}", checkpointId);
       if (latestBackupId != CheckpointState.NO_CHECKPOINT
@@ -56,6 +71,14 @@ public class CheckpointConfirmBackupProcessor {
               .recordType(RecordType.EVENT)
               .valueType(ValueType.CHECKPOINT)
               .intent(CheckpointIntent.CONFIRMED_BACKUP));
+
+      final var checkpoints = checkpointMetadataState.getAllCheckpoints();
+      final var ranges = backupRangeState.getAllRanges();
+      resultBuilder.appendPostCommitTask(
+          () -> {
+            syncer.store(record.getPartitionId(), checkpoints, ranges);
+            return true;
+          });
     } else {
       LOG.debug(
           "Ignoring backup for checkpoint {} as it is older than the latest backup {}",

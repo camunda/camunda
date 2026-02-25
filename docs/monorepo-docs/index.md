@@ -13,7 +13,7 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 
 ### Collaboration
 
-**[Collaboration guidelines](./collaboration-guidelines)** - Guidelines for collaborating on CI/CD, releases, and monorepo infrastructure. All teams are welcome to contribute and improve these processes:
+**[Collaboration guidelines](./collaboration-guidelines.md)** - Guidelines for collaborating on CI/CD, releases, and monorepo infrastructure. All teams are welcome to contribute and improve these processes:
 
 - Core collaboration principles and ownership boundaries
 - When and how to reach out to the Monorepo DevOps team for support
@@ -23,7 +23,7 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 
 ### CI & Automation
 
-**[CI & Automation](./ci)** - Complete guide to continuous integration and automation processes including:
+**[CI & Automation](./ci.md)** - Complete guide to continuous integration and automation processes including:
 
 - Git branch strategy and SNAPSHOT artifacts
 - Issue tracking and prioritization
@@ -38,9 +38,38 @@ There you'll find anything to get started using Camunda 8, best practices, and r
 - ChatOps commands and flaky test handling
 - Comprehensive troubleshooting guide
 
+### CI Runbooks
+
+**[CI Runbooks](./ci-runbooks.md)** - Runbooks for responding to CI incidents and alerts including:
+
+- Incident runbooks: checking status pages, disabling flaky tests, bypassing the merge queue
+- Alert runbooks for merge queue failures, high job runtimes, self-hosted runner disconnects
+- Snapshot artifact staleness and missing artifact alerts
+- Helm chart integration test failures and preview environment smoke test failures
+
+### Infrastructure Services
+
+**[Infrastructure Services](./infrastructure-services.md)** - Overview of the infrastructure services
+used by the monorepo, owned by the Infrastructure team (`#ask-infra`):
+
+- Secret management with Hashicorp Vault
+- Self-hosted GitHub Actions runners (GCP/AWS, autoscaled)
+- Dependency management with Renovate
+- CI analytics monitoring with BigQuery, Prometheus, and Grafana
+- Infra Global GitHub Actions reusable workflows and composite actions
+
+### Renovate PR Handling
+
+**[Renovate PR Handling](./renovate-pr-handling.md)** - Process and responsibilities for handling
+Renovate dependency update PRs that require manual intervention:
+
+- How DRIs are assigned to open Renovate PRs based on expertise
+- DRI responsibilities: resolving breaking changes, follow-up tickets, Renovate config improvements
+- Assignment automation via GitHub Actions (in progress)
+
 ### Release Process
 
-**[Release Process](./release)** - Complete software release procedures and guidelines including:
+**[Release Process](./release.md)** - Complete software release procedures and guidelines including:
 
 - Release types (Minor, Alpha, Patch) and artifacts
 - BPMN-based release process implementation

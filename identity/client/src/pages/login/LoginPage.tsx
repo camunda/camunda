@@ -180,7 +180,7 @@ export const LoginPage: React.FC = () => {
       <Content>
         <Header>
           <CamundaLogo />
-          <h1>{t("identity")}</h1>
+          <h1>{t("admin")}</h1>
         </Header>
         <LoginForm onSuccess={onSuccess} />
         {!hasProductionLicense && (

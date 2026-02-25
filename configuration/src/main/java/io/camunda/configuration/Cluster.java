@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_NAME;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
@@ -38,7 +39,9 @@ public class Cluster implements Cloneable {
           "clusterName",
           "zeebe.gateway.cluster.clusterName",
           "initialContactPoints",
-          "zeebe.gateway.cluster.initialContactPoints");
+          "zeebe.gateway.cluster.initialContactPoints",
+          "gatewayId",
+          "zeebe.gateway.cluster.memberId");
 
   private static final Map<String, String> LEGACY_BROKER_PROPERTIES =
       Map.of(
@@ -107,6 +110,12 @@ public class Cluster implements Cloneable {
    * unique across clusters. If not configured, the cluster ID will be set with a new random UUID.
    */
   private String clusterId;
+
+  /**
+   * The member id of this gateway node in the cluster. Only relevant for standalone gateway
+   * deployments.
+   */
+  private String gatewayId = DEFAULT_CLUSTER_MEMBER_ID;
 
   /** Configuration for the Raft protocol in the cluster. */
   @NestedConfigurationProperty private Raft raft = new Raft();
@@ -261,6 +270,19 @@ public class Cluster implements Cloneable {
 
   public void setClusterId(final String clusterId) {
     this.clusterId = clusterId;
+  }
+
+  public String getGatewayId() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".gateway-id",
+        gatewayId,
+        String.class,
+        UnifiedConfigurationHelper.BackwardsCompatibilityMode.SUPPORTED,
+        Set.of(LEGACY_GATEWAY_PROPERTIES.get("gatewayId")));
+  }
+
+  public void setGatewayId(final String gatewayId) {
+    this.gatewayId = gatewayId;
   }
 
   public Raft getRaft() {

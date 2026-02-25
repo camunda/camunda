@@ -126,7 +126,6 @@ test.describe('task details page', () => {
   });
 
   test('assign and unassign task', async ({
-    page,
     taskPanelPageV1,
     taskDetailsPageV1,
   }) => {

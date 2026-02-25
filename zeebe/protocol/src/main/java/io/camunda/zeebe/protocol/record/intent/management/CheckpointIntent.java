@@ -22,7 +22,9 @@ public enum CheckpointIntent implements Intent {
   CREATED(1),
   IGNORED(2),
   CONFIRM_BACKUP(3),
-  CONFIRMED_BACKUP(4);
+  CONFIRMED_BACKUP(4),
+  DELETE_BACKUP(5),
+  DELETED_BACKUP(6);
 
   private final short value;
 
@@ -41,6 +43,7 @@ public enum CheckpointIntent implements Intent {
       case CREATED:
       case IGNORED:
       case CONFIRMED_BACKUP:
+      case DELETED_BACKUP:
         return true;
       default:
         return false;
@@ -59,6 +62,10 @@ public enum CheckpointIntent implements Intent {
         return CONFIRM_BACKUP;
       case 4:
         return CONFIRMED_BACKUP;
+      case 5:
+        return DELETE_BACKUP;
+      case 6:
+        return DELETED_BACKUP;
       default:
         return UNKNOWN;
     }

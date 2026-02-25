@@ -7,19 +7,23 @@
  */
 package io.camunda.zeebe.gateway.impl.broker.request;
 
+import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
 import io.camunda.zeebe.broker.client.api.dto.BrokerExecuteCommand;
+import io.camunda.zeebe.gateway.impl.broker.HashBasedDispatchStrategy;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ProcessInstanceCreationStartInstruction;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceCreationRecord;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceResultRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 
 public final class BrokerCreateProcessInstanceWithResultRequest
     extends BrokerExecuteCommand<ProcessInstanceResultRecord> {
   private final ProcessInstanceCreationRecord requestDto = new ProcessInstanceCreationRecord();
+  private String businessId;
 
   public BrokerCreateProcessInstanceWithResultRequest() {
     super(
@@ -49,6 +53,12 @@ public final class BrokerCreateProcessInstanceWithResultRequest
 
   public BrokerCreateProcessInstanceWithResultRequest setTags(final Set<String> tags) {
     requestDto.setTags(tags);
+    return this;
+  }
+
+  public BrokerCreateProcessInstanceWithResultRequest setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    requestDto.setBusinessId(businessId != null ? businessId : "");
     return this;
   }
 
@@ -95,6 +105,14 @@ public final class BrokerCreateProcessInstanceWithResultRequest
     final ProcessInstanceResultRecord responseDto = new ProcessInstanceResultRecord();
     responseDto.wrap(buffer);
     return responseDto;
+  }
+
+  @Override
+  public Optional<RequestDispatchStrategy> requestDispatchStrategy() {
+    if (businessId != null && !businessId.isEmpty()) {
+      return Optional.of(new HashBasedDispatchStrategy(businessId, "business id"));
+    }
+    return Optional.empty();
   }
 
   @Override

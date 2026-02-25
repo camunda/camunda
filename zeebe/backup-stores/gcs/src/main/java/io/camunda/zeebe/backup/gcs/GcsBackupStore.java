@@ -21,7 +21,9 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
@@ -46,6 +48,7 @@ public final class GcsBackupStore implements BackupStore {
   public static final String ERROR_VALIDATION_FAILED =
       "Invalid configuration for GcsBackupStore: %s";
   private static final Logger LOG = LoggerFactory.getLogger(GcsBackupStore.class);
+  private static final String METADATA_OBJECT_NAME = "metadata.json";
   private final ExecutorService executor;
   private final ManifestManager manifestManager;
   private final FileSetManager fileSetManager;
@@ -138,11 +141,20 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
+
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.deleteManifest(id);
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return;
+          } else if (manifest.statusCode() != StatusCode.DELETED) {
+            throw new UnexpectedManifestState(
+                "Cannot delete Backup with id '%s', must be marked as deleted."
+                    .formatted(id.toString()));
+          }
           fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          manifestManager.deleteManifest(manifest);
         },
         executor);
   }
@@ -156,7 +168,7 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS ->
+            case FAILED, DELETED, IN_PROGRESS ->
                 throw new RuntimeException(
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
@@ -198,6 +210,20 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           manifestManager.markAsFailed(id, failureReason);
           return BackupStatusCode.FAILED;
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
+          manifestManager.markAsDeleted(manifest);
+          return BackupStatusCode.DELETED;
         },
         executor);
   }
@@ -246,6 +272,30 @@ public final class GcsBackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
+    return CompletableFuture.runAsync(
+        () -> {
+          final var blobInfo = backupMetadataBlobInfo(partitionId);
+          client.create(blobInfo, content);
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var blobId = backupMetadataBlobInfo(partitionId).getBlobId();
+          final var blob = client.get(blobId);
+          if (blob == null || !blob.exists()) {
+            return Optional.empty();
+          }
+          return Optional.of(blob.getContent());
+        },
+        executor);
+  }
+
+  @Override
   public CompletableFuture<Void> closeAsync() {
     return CompletableFuture.runAsync(
         () -> {
@@ -269,6 +319,12 @@ public final class GcsBackupStore implements BackupStore {
   private BlobInfo rangeMarkerBlobInfo(final int partitionId, final BackupRangeMarker marker) {
     return BlobInfo.newBuilder(
             bucketInfo, rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker))
+        .build();
+  }
+
+  private BlobInfo backupMetadataBlobInfo(final int partitionId) {
+    return BlobInfo.newBuilder(
+            bucketInfo, "%smetadata/%d/%s".formatted(basePath, partitionId, METADATA_OBJECT_NAME))
         .build();
   }
 

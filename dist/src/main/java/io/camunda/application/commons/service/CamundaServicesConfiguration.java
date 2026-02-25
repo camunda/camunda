@@ -20,6 +20,7 @@ import io.camunda.search.clients.DecisionInstanceSearchClient;
 import io.camunda.search.clients.DecisionRequirementSearchClient;
 import io.camunda.search.clients.FlowNodeInstanceSearchClient;
 import io.camunda.search.clients.FormSearchClient;
+import io.camunda.search.clients.GlobalListenerSearchClient;
 import io.camunda.search.clients.GroupSearchClient;
 import io.camunda.search.clients.IncidentSearchClient;
 import io.camunda.search.clients.JobSearchClient;
@@ -608,11 +609,13 @@ public class CamundaServicesConfiguration {
   public GlobalListenerServices globalListenerServices(
       final BrokerClient brokerClient,
       final SecurityContextProvider securityContextProvider,
+      final GlobalListenerSearchClient globalListenerSearchClient,
       final ApiServicesExecutorProvider executorProvider,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter) {
     return new GlobalListenerServices(
         brokerClient,
         securityContextProvider,
+        globalListenerSearchClient,
         null,
         executorProvider,
         brokerRequestAuthorizationConverter);

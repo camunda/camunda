@@ -14,10 +14,4 @@ const Container = styled.section`
   flex-direction: column;
 `;
 
-const OperationLogName = styled.div`
-  display: flex;
-  align-items: center;
-  gap: var(--cds-spacing-02);
-`;
-
-export {Container, OperationLogName};
+export {Container};

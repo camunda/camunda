@@ -25,9 +25,11 @@ import io.camunda.client.api.search.filter.DecisionDefinitionFilter;
 import io.camunda.client.api.search.filter.DecisionInstanceFilter;
 import io.camunda.client.api.search.filter.DecisionRequirementsFilter;
 import io.camunda.client.api.search.filter.ElementInstanceFilter;
+import io.camunda.client.api.search.filter.GlobalTaskListenerFilter;
 import io.camunda.client.api.search.filter.GroupFilter;
 import io.camunda.client.api.search.filter.IncidentFilter;
 import io.camunda.client.api.search.filter.JobFilter;
+import io.camunda.client.api.search.filter.JobTypeStatisticsFilter;
 import io.camunda.client.api.search.filter.MappingRuleFilter;
 import io.camunda.client.api.search.filter.MessageSubscriptionFilter;
 import io.camunda.client.api.search.filter.ProcessDefinitionFilter;
@@ -51,6 +53,7 @@ import io.camunda.client.api.search.sort.DecisionDefinitionSort;
 import io.camunda.client.api.search.sort.DecisionInstanceSort;
 import io.camunda.client.api.search.sort.DecisionRequirementsSort;
 import io.camunda.client.api.search.sort.ElementInstanceSort;
+import io.camunda.client.api.search.sort.GlobalTaskListenerSort;
 import io.camunda.client.api.search.sort.GroupSort;
 import io.camunda.client.api.search.sort.GroupUserSort;
 import io.camunda.client.api.search.sort.IncidentSort;
@@ -78,6 +81,7 @@ import io.camunda.client.impl.search.filter.DecisionDefinitionFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionInstanceFilterImpl;
 import io.camunda.client.impl.search.filter.DecisionRequirementsFilterImpl;
 import io.camunda.client.impl.search.filter.ElementInstanceFilterImpl;
+import io.camunda.client.impl.search.filter.GlobalTaskListenerFilterImpl;
 import io.camunda.client.impl.search.filter.GroupFilterImpl;
 import io.camunda.client.impl.search.filter.IncidentFilterImpl;
 import io.camunda.client.impl.search.filter.JobFilterImpl;
@@ -106,6 +110,7 @@ import io.camunda.client.impl.search.sort.DecisionDefinitionSortImpl;
 import io.camunda.client.impl.search.sort.DecisionInstanceSortImpl;
 import io.camunda.client.impl.search.sort.DecisionRequirementsSortImpl;
 import io.camunda.client.impl.search.sort.ElementInstanceSortImpl;
+import io.camunda.client.impl.search.sort.GlobalTaskListenerSortImpl;
 import io.camunda.client.impl.search.sort.GroupSortImpl;
 import io.camunda.client.impl.search.sort.GroupUserSortImpl;
 import io.camunda.client.impl.search.sort.IncidentSortImpl;
@@ -123,6 +128,7 @@ import io.camunda.client.impl.search.sort.TenantUserSortImpl;
 import io.camunda.client.impl.search.sort.UserSortImpl;
 import io.camunda.client.impl.search.sort.UserTaskSortImpl;
 import io.camunda.client.impl.search.sort.VariableSortImpl;
+import io.camunda.client.impl.statistics.filter.JobTypeStatisticsFilterImpl;
 import io.camunda.client.impl.statistics.filter.ProcessDefinitionStatisticsFilterImpl;
 import java.util.function.Consumer;
 
@@ -282,6 +288,13 @@ public final class SearchRequestBuilders {
   public static ProcessDefinitionStatisticsFilter processDefinitionStatisticsFilter(
       final Consumer<ProcessDefinitionStatisticsFilter> fn) {
     final ProcessDefinitionStatisticsFilter filter = new ProcessDefinitionStatisticsFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static JobTypeStatisticsFilter jobTypeStatisticsFilter(
+      final Consumer<JobTypeStatisticsFilter> fn) {
+    final JobTypeStatisticsFilter filter = new JobTypeStatisticsFilterImpl();
     fn.accept(filter);
     return filter;
   }
@@ -478,6 +491,20 @@ public final class SearchRequestBuilders {
     final UserTaskAuditLogFilter filter = new UserTaskAuditLogFilterImpl();
     fn.accept(filter);
     return filter;
+  }
+
+  public static GlobalTaskListenerFilter globalTaskListenerFilter(
+      final Consumer<GlobalTaskListenerFilter> fn) {
+    final GlobalTaskListenerFilter filter = new GlobalTaskListenerFilterImpl();
+    fn.accept(filter);
+    return filter;
+  }
+
+  public static GlobalTaskListenerSort globalTaskListenerSort(
+      final Consumer<GlobalTaskListenerSort> fn) {
+    final GlobalTaskListenerSort sort = new GlobalTaskListenerSortImpl();
+    fn.accept(sort);
+    return sort;
   }
 
   public static SearchRequestOffsetPage offsetPage(final Consumer<SearchRequestOffsetPage> fn) {

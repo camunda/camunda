@@ -21,11 +21,7 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Falko Menge
  */
-public interface DataStore extends RootElement, ItemAwareElement {
-
-  String getName();
-
-  void setName(String name);
+public interface DataStore extends RootElement, ItemAwareElement, NamedBpmnElement {
 
   Integer getCapacity();
 

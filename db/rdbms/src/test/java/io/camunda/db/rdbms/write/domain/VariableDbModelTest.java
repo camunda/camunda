@@ -155,6 +155,32 @@ public class VariableDbModelTest {
   }
 
   @Test
+  public void shouldSetCorrectTypeAndValueForNullValue() {
+    // given
+    final VariableDbModel.VariableDbModelBuilder builder =
+        new VariableDbModel.VariableDbModelBuilder();
+
+    // when
+    final VariableDbModel model =
+        builder
+            .variableKey(1L)
+            .name("test")
+            .value("null")
+            .scopeKey(2L)
+            .processInstanceKey(3L)
+            .rootProcessInstanceKey(4L)
+            .tenantId("tenant1")
+            .elementInstanceKey(5L)
+            .build();
+
+    // then
+    assertThat(model.type()).isEqualTo(ValueTypeEnum.NULL);
+    assertThat(model.doubleValue()).isNull();
+    assertThat(model.longValue()).isNull();
+    assertThat(model.value()).isEqualTo("null");
+  }
+
+  @Test
   public void shouldSetCorrectTypeAndValueForNonNumericValue() {
     // given
     final VariableDbModel.VariableDbModelBuilder builder =

@@ -37,11 +37,15 @@
   </select>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}PROCESS_INSTANCE pi
-    <!-- TODO: only when definition filters are active -->
-    LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY = pd.PROCESS_DEFINITION_KEY)
-    <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}PROCESS_INSTANCE pi
+      <!-- TODO: only when definition filters are active -->
+      LEFT JOIN ${prefix}PROCESS_DEFINITION pd ON (pi.PROCESS_DEFINITION_KEY =
+      pd.PROCESS_DEFINITION_KEY)
+      <include refid="io.camunda.db.rdbms.sql.ProcessInstanceMapper.searchAndAuthFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

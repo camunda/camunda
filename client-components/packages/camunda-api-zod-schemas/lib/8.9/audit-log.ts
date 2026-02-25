@@ -15,8 +15,7 @@ import {
 	getQueryRequestBodySchema,
 	getQueryResponseBodySchema,
 	type Endpoint,
-} from '../common';
-import {batchOperationTypeSchema} from '../8.8';
+} from './common';
 
 const auditLogEntityTypeSchema = z.enum([
 	'AUTHORIZATION',
@@ -32,6 +31,7 @@ const auditLogEntityTypeSchema = z.enum([
 	'USER_TASK',
 	'RESOURCE',
 	'VARIABLE',
+	'CLIENT',
 ]);
 type AuditLogEntityType = z.infer<typeof auditLogEntityTypeSchema>;
 
@@ -48,6 +48,7 @@ const auditLogOperationTypeSchema = z.enum([
 	'RESUME',
 	'SUSPEND',
 	'UNASSIGN',
+	'UNKNOWN',
 	'UPDATE',
 ]);
 type AuditLogOperationType = z.infer<typeof auditLogOperationTypeSchema>;
@@ -61,38 +62,52 @@ type AuditLogResult = z.infer<typeof auditLogResultSchema>;
 const auditLogCategorySchema = z.enum(['DEPLOYED_RESOURCES', 'USER_TASKS', 'ADMIN']);
 type AuditLogCategory = z.infer<typeof auditLogCategorySchema>;
 
+const auditLogBatchOperationTypeSchema = z.enum([
+	'CANCEL_PROCESS_INSTANCE',
+	'RESOLVE_INCIDENT',
+	'MIGRATE_PROCESS_INSTANCE',
+	'MODIFY_PROCESS_INSTANCE',
+	'DELETE_DECISION_DEFINITION',
+	'DELETE_PROCESS_DEFINITION',
+	'DELETE_PROCESS_INSTANCE',
+	'ADD_VARIABLE',
+	'UPDATE_VARIABLE',
+	'DELETE_DECISION_INSTANCE',
+]);
+
 const auditLogSchema = z.object({
 	auditLogKey: z.string(),
 	entityKey: z.string(),
 	entityType: auditLogEntityTypeSchema,
 	operationType: auditLogOperationTypeSchema,
-	batchOperationKey: z.string().optional(),
-	batchOperationType: batchOperationTypeSchema.optional(),
+	batchOperationKey: z.string().nullable(),
+	batchOperationType: auditLogBatchOperationTypeSchema.nullable(),
 	timestamp: z.string(),
 	actorId: z.string(),
 	actorType: auditLogActorTypeSchema,
-	tenantId: z.string().optional(),
+	tenantId: z.string().nullable(),
 	result: auditLogResultSchema,
-	annotation: z.string().optional(),
+	annotation: z.string().nullable(),
 	category: auditLogCategorySchema,
-	processDefinitionId: z.string().optional(),
-	processDefinitionKey: z.string().optional(),
-	processInstanceKey: z.string().optional(),
-	elementInstanceKey: z.string().optional(),
-	jobKey: z.string().optional(),
-	userTaskKey: z.string().optional(),
-	decisionRequirementsId: z.string().optional(),
-	decisionRequirementsKey: z.string().optional(),
-	decisionDefinitionId: z.string().optional(),
-	decisionDefinitionKey: z.string().optional(),
-	decisionEvaluationKey: z.string().optional(),
-	deploymentKey: z.string().optional(),
-	formKey: z.string().optional(),
-	resourceKey: z.string().optional(),
-	relatedEntityKey: z.string().optional(),
-	relatedEntityType: auditLogEntityTypeSchema.optional(),
-	entityDescription: z.string().optional(),
-	agentElementId: z.string().optional(),
+	processDefinitionId: z.string().nullable(),
+	processDefinitionKey: z.string().nullable(),
+	processInstanceKey: z.string().nullable(),
+	rootProcessInstanceKey: z.string().nullable(),
+	elementInstanceKey: z.string().nullable(),
+	jobKey: z.string().nullable(),
+	userTaskKey: z.string().nullable(),
+	decisionRequirementsId: z.string().nullable(),
+	decisionRequirementsKey: z.string().nullable(),
+	decisionDefinitionId: z.string().nullable(),
+	decisionDefinitionKey: z.string().nullable(),
+	decisionEvaluationKey: z.string().nullable(),
+	deploymentKey: z.string().nullable(),
+	formKey: z.string().nullable(),
+	resourceKey: z.string().nullable(),
+	relatedEntityKey: z.string().nullable(),
+	relatedEntityType: auditLogEntityTypeSchema.nullable(),
+	entityDescription: z.string().nullable(),
+	agentElementId: z.string().nullable(),
 });
 type AuditLog = z.infer<typeof auditLogSchema>;
 

@@ -16,12 +16,9 @@
 package io.camunda.zeebe.model.bpmn.instance.zeebe;
 
 import io.camunda.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.camunda.zeebe.model.bpmn.instance.NamedBpmnElement;
 
-public interface ZeebeProperty extends BpmnModelElementInstance {
-
-  String getName();
-
-  void setName(String name);
+public interface ZeebeProperty extends BpmnModelElementInstance, NamedBpmnElement {
 
   String getValue();
 

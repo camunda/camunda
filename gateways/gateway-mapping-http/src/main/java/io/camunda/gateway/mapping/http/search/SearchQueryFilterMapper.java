@@ -27,6 +27,7 @@ import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.mapping.http.validator.TagsValidator;
 import io.camunda.gateway.protocol.model.BaseProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.ClusterVariableSearchQueryFilterRequest;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryFilterRequest;
 import io.camunda.gateway.protocol.model.IncidentProcessInstanceStatisticsByDefinitionFilter;
 import io.camunda.gateway.protocol.model.ProcessInstanceFilterFields;
 import io.camunda.gateway.protocol.model.StringFilterProperty;
@@ -35,6 +36,7 @@ import io.camunda.gateway.protocol.model.UserTaskVariableFilter;
 import io.camunda.gateway.protocol.model.VariableValueFilterProperty;
 import io.camunda.search.entities.DecisionInstanceEntity.DecisionDefinitionType;
 import io.camunda.search.entities.FlowNodeInstanceEntity.FlowNodeType;
+import io.camunda.search.entities.GlobalListenerType;
 import io.camunda.search.entities.IncidentEntity.IncidentState;
 import io.camunda.search.filter.AuditLogFilter;
 import io.camunda.search.filter.AuthorizationFilter;
@@ -47,10 +49,12 @@ import io.camunda.search.filter.DecisionRequirementsFilter;
 import io.camunda.search.filter.FilterBuilders;
 import io.camunda.search.filter.FlowNodeInstanceFilter;
 import io.camunda.search.filter.GlobalJobStatisticsFilter;
+import io.camunda.search.filter.GlobalListenerFilter;
 import io.camunda.search.filter.GroupFilter;
 import io.camunda.search.filter.IncidentFilter;
 import io.camunda.search.filter.JobFilter;
 import io.camunda.search.filter.JobTypeStatisticsFilter;
+import io.camunda.search.filter.JobWorkerStatisticsFilter;
 import io.camunda.search.filter.MappingRuleFilter;
 import io.camunda.search.filter.MessageSubscriptionFilter;
 import io.camunda.search.filter.Operation;
@@ -438,6 +442,33 @@ public class SearchQueryFilterMapper {
     Optional.ofNullable(filter.getJobType())
         .map(mapToOperations(String.class))
         .ifPresent(builder::jobTypeOperations);
+
+    return validationErrors.isEmpty()
+        ? Either.right(builder.build())
+        : Either.left(validationErrors);
+  }
+
+  public static Either<List<String>, JobWorkerStatisticsFilter> toJobWorkerStatisticsFilter(
+      final io.camunda.gateway.protocol.model.JobWorkerStatisticsFilter filter) {
+    final var builder = FilterBuilders.jobWorkerStatistics();
+    final List<String> validationErrors = new ArrayList<>();
+
+    if (filter == null) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("filter"));
+      return Either.left(validationErrors);
+    }
+
+    final var from = validateDate(filter.getFrom(), "from", validationErrors);
+    Optional.ofNullable(from).ifPresent(builder::from);
+
+    final var to = validateDate(filter.getTo(), "to", validationErrors);
+    Optional.ofNullable(to).ifPresent(builder::to);
+
+    if (filter.getJobType() == null || filter.getJobType().isBlank()) {
+      validationErrors.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("jobType"));
+    } else {
+      builder.jobType(filter.getJobType());
+    }
 
     return validationErrors.isEmpty()
         ? Either.right(builder.build())
@@ -1199,5 +1230,36 @@ public class SearchQueryFilterMapper {
     return Either.right(
         io.camunda.search.filter.FilterBuilders.incidentProcessInstanceStatisticsByDefinition(
             f -> f.state(IncidentState.ACTIVE.name()).errorHashCode(filter.getErrorHashCode())));
+  }
+
+  static GlobalListenerFilter toGlobalTaskListenerFilter(
+      final GlobalTaskListenerSearchQueryFilterRequest filter) {
+
+    final var builder =
+        FilterBuilders.globalListener().listenerTypes(GlobalListenerType.USER_TASK.name());
+
+    if (filter != null) {
+      ofNullable(filter.getId())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::listenerIdOperations);
+      ofNullable(filter.getType())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::typeOperations);
+      ofNullable(filter.getRetries())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::retriesOperations);
+      ofNullable(filter.getEventTypes())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::eventTypeOperations);
+      ofNullable(filter.getAfterNonGlobal()).ifPresent(builder::afterNonGlobal);
+      ofNullable(filter.getPriority())
+          .map(mapToOperations(Integer.class))
+          .ifPresent(builder::priorityOperations);
+      ofNullable(filter.getSource())
+          .map(mapToOperations(String.class))
+          .ifPresent(builder::sourceOperations);
+    }
+
+    return builder.build();
   }
 }

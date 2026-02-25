@@ -37,6 +37,8 @@ import io.camunda.zeebe.backup.client.api.BackupStatus;
 import io.camunda.zeebe.backup.client.api.PartitionBackupStatus;
 import io.camunda.zeebe.backup.client.api.State;
 import io.camunda.zeebe.backup.common.CheckpointIdGenerator;
+import io.camunda.zeebe.backup.schedule.Schedule;
+import io.camunda.zeebe.backup.schedule.Schedule.IntervalSchedule;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerErrorException;
 import io.camunda.zeebe.broker.client.api.dto.BrokerError;
@@ -50,6 +52,7 @@ import io.camunda.zeebe.protocol.record.ErrorCode;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.netty.channel.ConnectTimeoutException;
 import java.net.ConnectException;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
@@ -112,6 +115,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
       doThrow(failure).when(api).takeBackup(anyLong());
@@ -132,6 +137,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new BackupAlreadyExistException(2, 1);
       doReturn(CompletableFuture.failedFuture(failure)).when(api).takeBackup(anyLong());
@@ -151,6 +158,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).takeBackup(anyLong());
 
@@ -184,7 +193,83 @@ final class BackupEndpointTest {
           .isInstanceOf(Error.class)
           .extracting("message")
           .isEqualTo(
-              "Cannot take backup with predetermined backupId when continuous backups are enabled."
+              "Cannot take backup with predetermined backupId when continuous backups and/or"
+                  + " backup or checkpoint scheduler is enabled."
+                  + " Use POST actuator/backupRuntime without specifying a backupId.");
+    }
+
+    @Test
+    void shouldReturn400WhenContinuousBackupsAreDisabledBackupsEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
+      when(config.getCheckpointInterval()).thenReturn(null);
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(400);
+      assertThat(response.getBody())
+          .isInstanceOf(Error.class)
+          .extracting("message")
+          .isEqualTo(
+              "Cannot take backup with predetermined backupId when continuous backups and/or"
+                  + " backup or checkpoint scheduler is enabled."
+                  + " Use POST actuator/backupRuntime without specifying a backupId.");
+    }
+
+    @Test
+    void shouldReturn400WhenContinuousBackupsAreDisabledCheckpointsEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(400);
+      assertThat(response.getBody())
+          .isInstanceOf(Error.class)
+          .extracting("message")
+          .isEqualTo(
+              "Cannot take backup with predetermined backupId when continuous backups and/or"
+                  + " backup or checkpoint scheduler is enabled."
+                  + " Use POST actuator/backupRuntime without specifying a backupId.");
+    }
+
+    @Test
+    void shouldReturn400WhenAllEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(true);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
+      when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take(1);
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(400);
+      assertThat(response.getBody())
+          .isInstanceOf(Error.class)
+          .extracting("message")
+          .isEqualTo(
+              "Cannot take backup with predetermined backupId when continuous backups and/or"
+                  + " backup or checkpoint scheduler is enabled."
                   + " Use POST actuator/backupRuntime without specifying a backupId.");
     }
 
@@ -270,6 +355,82 @@ final class BackupEndpointTest {
       assertThat(Instant.ofEpochMilli(actualTimestamp))
           .isCloseTo(now, within(2, ChronoUnit.SECONDS));
     }
+
+    @Test
+    void shouldTakeWhenContinuousBackupsAreEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(true);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
+      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+    }
+
+    @Test
+    void shouldTakeWhenContinuousBackupsAreDisabledBackupsEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
+      when(config.getCheckpointInterval()).thenReturn(null);
+      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+    }
+
+    @Test
+    void shouldTakeWhenContinuousBackupsAreDisabledCheckpointsEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
+      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+    }
+
+    @Test
+    void shouldTakeWhenAllEnabled() {
+
+      // given
+      final var api = mock(BackupApi.class);
+      final var config = mock(BackupCfg.class);
+      when(config.isContinuous()).thenReturn(true);
+      when(config.getSchedule()).thenReturn(new IntervalSchedule(Duration.ofSeconds(1)));
+      when(config.getCheckpointInterval()).thenReturn(Duration.ofSeconds(1));
+      when(api.takeBackup()).thenReturn(CompletableFuture.completedFuture(1L));
+      final var endpoint = new BackupEndpoint(api, config);
+
+      // when
+      final WebEndpointResponse<?> response = endpoint.take();
+
+      // then
+      assertThat(response.getStatus()).isEqualTo(202);
+    }
   }
 
   @Nested
@@ -280,6 +441,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
       doThrow(failure).when(api).getStatus(anyLong());
@@ -299,6 +462,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var backupStatus =
           new BackupStatus(1, State.DOES_NOT_EXIST, Optional.empty(), List.of());
@@ -321,6 +486,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).getStatus(anyLong());
 
@@ -342,6 +509,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createPartitionBackupStatus();
       doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
@@ -396,6 +565,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var status = createFailedBackupStatus();
       doReturn(CompletableFuture.completedFuture(status)).when(api).getStatus(anyLong());
@@ -493,6 +664,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
       doThrow(failure).when(api).listBackups("*");
@@ -513,6 +686,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).listBackups("*");
 
@@ -534,6 +709,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var backup1 =
           new BackupStatus(
@@ -602,6 +779,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(List.of())).when(api).listBackups("*");
 
@@ -638,6 +817,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       final var failure = new RuntimeException("failure");
       doThrow(failure).when(api).deleteBackup(1);
@@ -658,6 +839,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.failedFuture(error)).when(api).deleteBackup(anyLong());
 
@@ -679,6 +862,8 @@ final class BackupEndpointTest {
       final var api = mock(BackupApi.class);
       final var config = mock(BackupCfg.class);
       when(config.isContinuous()).thenReturn(false);
+      when(config.getSchedule()).thenReturn(Schedule.none());
+      when(config.getCheckpointInterval()).thenReturn(null);
       final var endpoint = new BackupEndpoint(api, config);
       doReturn(CompletableFuture.completedFuture(null)).when(api).deleteBackup(1);
 

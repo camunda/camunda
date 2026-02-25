@@ -8,7 +8,7 @@
 
 import {type Mixpanel} from 'mixpanel-browser';
 import {getStage} from 'common/config/getStage';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import type {MultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 import {getClientConfig} from 'common/config/getClientConfig';
 

@@ -9,6 +9,7 @@ package io.camunda.application;
 
 import static org.springframework.core.env.AbstractEnvironment.ACTIVE_PROFILES_PROPERTY_NAME;
 
+import io.camunda.configuration.helpers.WebappsHelper;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -74,12 +75,10 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
       }
       case "gateway" -> {
         configureProfilesForGatewayMode();
-        setProperty(WEBAPPS_ENABLED_PROPERTY, true);
       }
       case "all-in-one" -> {
         configureProfilesForAllInOneMode();
         setProperty(EMBEDDED_GATEWAY_ENABLED_PROPERTY, true);
-        setProperty(WEBAPPS_ENABLED_PROPERTY, true);
       }
       default -> {
         throw new IllegalStateException(
@@ -124,18 +123,8 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
 
   private void configureProfilesForAllInOneMode() {
     final Set<String> profiles =
-        new HashSet<>(
-            Set.of(
-                Profile.BROKER.getId(),
-                Profile.TASKLIST.getId(),
-                Profile.OPERATE.getId(),
-                Profile.ADMIN.getId(),
-                Profile.CONSOLIDATED_AUTH.getId()));
-
-    if (isDevelopment()) {
-      profiles.add(Profile.DEVELOPMENT.getId());
-    }
-
+        new HashSet<>(Set.of(Profile.BROKER.getId(), Profile.CONSOLIDATED_AUTH.getId()));
+    prepareOptionalProfiles(profiles);
     setupActiveProfiles(profiles);
   }
 
@@ -150,20 +139,27 @@ public class ModesAndProfilesProcessor implements SpringApplicationRunListener {
     setupActiveProfiles(profiles);
   }
 
-  private void configureProfilesForGatewayMode() {
-    final Set<String> profiles =
-        new HashSet<>(
-            Set.of(
-                Profile.GATEWAY.getId(),
-                Profile.OPERATE.getId(),
-                Profile.ADMIN.getId(),
-                Profile.TASKLIST.getId(),
-                Profile.CONSOLIDATED_AUTH.getId()));
-
+  private void prepareOptionalProfiles(final Set<String> profiles) {
     if (isDevelopment()) {
       profiles.add(Profile.DEVELOPMENT.getId());
     }
 
+    if (WebappsHelper.isTasklistEnabled(environment)) {
+      profiles.add(Profile.TASKLIST.getId());
+    }
+
+    if (WebappsHelper.isOperateEnabled(environment)) {
+      profiles.add(Profile.OPERATE.getId());
+    }
+
+    if (WebappsHelper.isIdentityEnabled(environment)) {
+      profiles.add(Profile.IDENTITY.getId());
+    }
+  }
+
+  private void configureProfilesForGatewayMode() {
+    final Set<String> profiles = new HashSet<>(Set.of(Profile.GATEWAY.getId()));
+    prepareOptionalProfiles(profiles);
     setupActiveProfiles(profiles);
   }
 }

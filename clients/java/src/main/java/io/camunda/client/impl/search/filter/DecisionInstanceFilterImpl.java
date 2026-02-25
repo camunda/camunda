@@ -174,6 +174,9 @@ public class DecisionInstanceFilterImpl
       case LITERAL_EXPRESSION:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
         break;
+      case UNSPECIFIED:
+        decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNSPECIFIED;
+        break;
       case UNKNOWN:
         decisionDefinitionTypeEnum = DecisionDefinitionTypeEnum.UNKNOWN;
         break;

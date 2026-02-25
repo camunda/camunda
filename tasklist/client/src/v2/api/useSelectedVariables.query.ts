@@ -12,7 +12,7 @@ import {request} from 'common/api/request';
 import type {
   QueryVariablesByUserTaskResponseBody,
   UserTask,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 class TruncatedVariableError extends Error {
   constructor(message = 'Variables are truncated') {

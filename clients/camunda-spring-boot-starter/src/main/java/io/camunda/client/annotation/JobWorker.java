@@ -123,5 +123,5 @@ public @interface JobWorker {
   long retryBackoff() default -1L;
 
   /** Set the tenant filter mode for job activation */
-  TenantFilter[] TenantFilter() default {};
+  TenantFilter[] tenantFilter() default {};
 }

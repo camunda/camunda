@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.9.0-SNAPSHOT</version>
+    <version>8.10.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -26,7 +26,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-dsl</artifactId>
+      <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
     <dependency>
@@ -207,7 +207,7 @@
             <dependency>org.awaitility:awaitility</dependency>
             <dependency>org.apache.httpcomponents.client5:httpclient5</dependency>
             <dependency>org.apache.httpcomponents.core5:httpcore5</dependency>
-            <dependency>io.camunda:camunda-process-test-dsl</dependency>
+            <dependency>io.camunda:camunda-process-test-json-test-cases</dependency>
           </ignoredNonTestScopedDependencies>
         </configuration>
       </plugin>

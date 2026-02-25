@@ -77,6 +77,7 @@ func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	composeCmd := exec.Command("docker", append([]string{"compose"}, args...)...)
 	composeCmd.Stdout = os.Stdout
 	composeCmd.Stderr = os.Stderr
+	composeCmd.Env = dockerCommandEnv(os.Environ())
 
 	err = composeCmd.Run()
 	if err != nil {
@@ -89,6 +90,27 @@ func runDockerCommand(composeExtractedFolder string, args ...string) error {
 	}
 
 	return nil
+}
+
+func dockerCommandEnv(baseEnv []string) []string {
+	dockerVersion := strings.TrimSpace(os.Getenv("CAMUNDA_DOCKER_VERSION"))
+	if dockerVersion == "" {
+		return baseEnv
+	}
+
+	env := append([]string(nil), baseEnv...)
+	return overrideEnvVar(env, "CAMUNDA_VERSION", dockerVersion)
+}
+
+func overrideEnvVar(env []string, key, value string) []string {
+	prefix := key + "="
+	for i := range env {
+		if strings.HasPrefix(env[i], prefix) {
+			env[i] = prefix + value
+			return env
+		}
+	}
+	return append(env, prefix+value)
 }
 
 var helpTemplate = `Usage:

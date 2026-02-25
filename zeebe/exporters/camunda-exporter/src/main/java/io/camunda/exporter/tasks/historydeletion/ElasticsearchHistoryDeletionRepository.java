@@ -18,11 +18,20 @@ import co.elastic.clients.elasticsearch.core.search.Hit;
 import io.camunda.exporter.ExporterResourceProvider;
 import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import java.time.InstantSource;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executor;
 import javax.annotation.WillCloseWhenClosed;
 import org.slf4j.Logger;
@@ -35,8 +44,11 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
     implements HistoryDeletionRepository {
 
   private final IndexDescriptor indexDescriptor;
+  private final IndexDescriptor auditLogCleanupIndex;
   private final int partitionId;
   private final HistoryDeletionConfiguration config;
+  private final InstantSource clock;
+  private final OperationTemplate operationIndexTemplateDescriptor;
 
   public ElasticsearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
@@ -44,7 +56,8 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
       final Executor executor,
       final Logger logger,
       final int partitionId,
-      final HistoryDeletionConfiguration config) {
+      final HistoryDeletionConfiguration config,
+      final InstantSource clock) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -52,8 +65,17 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             .findFirst()
             .orElseThrow(
                 () -> new IllegalStateException("No HistoryDeletionIndex descriptor found"));
+    auditLogCleanupIndex =
+        resourceProvider.getIndexDescriptors().stream()
+            .filter(AuditLogCleanupIndex.class::isInstance)
+            .findFirst()
+            .orElseThrow(
+                () -> new IllegalStateException("No AuditLogCleanupIndex descriptor found"));
+    operationIndexTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     this.partitionId = partitionId;
     this.config = config;
+    this.clock = clock;
   }
 
   @Override
@@ -147,6 +169,82 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
               }
               final var deleted = response.items().size();
               return CompletableFuture.completedFuture(deleted);
+            },
+            executor);
+  }
+
+  @Override
+  public CompletionStage<Void> createAuditLogCleanupEntries(
+      final List<HistoryDeletionEntity> historyDeletionEntities,
+      final Set<String> deletedResources) {
+    if (deletedResources.isEmpty()) {
+      return CompletableFuture.completedFuture(null);
+    }
+    final var entries =
+        AuditLogCleanupTransformer.buildAuditLogCleanupEntries(
+            historyDeletionEntities, deletedResources);
+    final var targetIndexName = auditLogCleanupIndex.getFullQualifiedName();
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+
+    entries.forEach(
+        entry ->
+            bulkRequestBuilder.operations(
+                op -> op.index(i -> i.index(targetIndexName).id(entry.getId()).document(entry))));
+
+    return client
+        .bulk(bulkRequestBuilder.build())
+        .thenComposeAsync(
+            response -> {
+              if (response.errors()) {
+                final var errorMessage =
+                    "Bulk indexing audit log cleanup entries to index '%s' failed with errors: %s"
+                        .formatted(targetIndexName, response.items());
+                logger.error(errorMessage);
+                return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+              }
+              logger.debug(
+                  "Indexed {} audit log cleanup entries to index '{}'",
+                  entries.size(),
+                  targetIndexName);
+              return CompletableFuture.completedFuture(null);
+            },
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+
+    final var fieldsToUpdate =
+        Map.of(
+            OperationTemplate.STATE,
+            OperationState.COMPLETED,
+            OperationTemplate.COMPLETED_DATE,
+            OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
+
+    ids.forEach(
+        id ->
+            bulkRequestBuilder.operations(
+                op ->
+                    op.update(
+                        u ->
+                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
+                                .id(id)
+                                .action(a -> a.doc(fieldsToUpdate))
+                                .retryOnConflict(3))));
+
+    return client
+        .bulk(bulkRequestBuilder.build())
+        .thenComposeAsync(
+            response -> {
+              if (response.errors()) {
+                final var errorMessage =
+                    "Bulk updating operations by ids '%s' failed with errors: %s"
+                        .formatted(ids, response.items());
+                logger.error(errorMessage);
+                return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+              }
+              return CompletableFuture.completedFuture(ids);
             },
             executor);
   }

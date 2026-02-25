@@ -43,7 +43,7 @@ class TaskPanelPageV1 {
     await this.availableTasks
       .getByText(name, {exact: true})
       .nth(0)
-      .click({timeout: 10000});
+      .click({timeout: 30000});
   }
 
   async filterBy(
@@ -64,7 +64,9 @@ class TaskPanelPageV1 {
           ? 'assigned-to-me'
           : option.toLowerCase().replace(/\s+/g, '-');
 
-    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`));
+    await expect(this.page).toHaveURL(new RegExp(`${expectedSegment}`), {
+      timeout: 15000,
+    });
 
     await this.collapseSidePanelButton.click();
   }

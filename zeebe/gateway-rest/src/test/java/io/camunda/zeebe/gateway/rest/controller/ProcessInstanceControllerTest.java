@@ -76,7 +76,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
              "processInstanceKey":"123",
              "tenantId":"tenantId",
              "variables":{},
-             "tags":[]
+             "tags":[],
+             "businessId": null
           }""";
   static final String PROCESS_INSTANCES_START_URL = "/v2/process-instances";
   static final String CANCEL_PROCESS_URL = PROCESS_INSTANCES_START_URL + "/%s/cancellation";
@@ -174,7 +175,8 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
               "processInstanceKey":"123",
               "tenantId":"<default>",
               "variables":{},
-              "tags":[]
+              "tags":[],
+              "businessId": null
             }""";
 
     // when / then
@@ -291,6 +293,62 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     final var capturedRequest = createRequestCaptor.getValue();
     assertThat(capturedRequest.bpmnProcessId()).isEqualTo("bpmnProcessId");
     assertThat(capturedRequest.version()).isEqualTo(-1);
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithBusinessId() {
+    // given
+    final var businessId = "order-12345";
+    final var mockResponse =
+        new ProcessInstanceCreationRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>")
+            .setBusinessId(businessId);
+
+    when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "businessId": "order-12345"
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "processDefinitionKey":"123",
+              "processDefinitionId":"bpmnProcessId",
+              "processDefinitionVersion":-1,
+              "processInstanceKey":"456",
+              "tenantId":"<default>",
+              "variables":{},
+              "tags":[],
+              "businessId":"order-12345"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.businessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -490,6 +548,65 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
     assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
     assertThat(capturedRequest.awaitCompletion()).isTrue();
     assertThat(capturedRequest.requestTimeout()).isEqualTo(600000L);
+  }
+
+  @Test
+  void shouldCreateProcessInstancesWithResultAndBusinessId() {
+    // given
+    final var businessId = "order-12345";
+    final var mockResponse =
+        new ProcessInstanceResultRecord()
+            .setProcessDefinitionKey(123L)
+            .setBpmnProcessId("bpmnProcessId")
+            .setProcessInstanceKey(456L)
+            .setTenantId("<default>")
+            .setBusinessId(businessId);
+
+    when(processInstanceServices.createProcessInstanceWithResult(
+            any(ProcessInstanceCreateRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(mockResponse));
+
+    final var request =
+        """
+            {
+                "processDefinitionKey": "123",
+                "awaitCompletion": true,
+                "businessId": "order-12345"
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "processDefinitionKey":"123",
+              "processDefinitionId":"bpmnProcessId",
+              "processDefinitionVersion":-1,
+              "processInstanceKey":"456",
+              "tenantId":"<default>",
+              "variables":{},
+              "tags":[],
+              "businessId":"order-12345"
+            }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+
+    verify(processInstanceServices).createProcessInstanceWithResult(createRequestCaptor.capture());
+    final var capturedRequest = createRequestCaptor.getValue();
+    assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+    assertThat(capturedRequest.awaitCompletion()).isTrue();
+    assertThat(capturedRequest.businessId()).isEqualTo(businessId);
   }
 
   @Test
@@ -2848,6 +2965,41 @@ public class ProcessInstanceControllerTest extends RestControllerTest {
         .exchange()
         .expectStatus()
         .isNotFound()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldRejectCreateProcessInstanceWithInvalidProcessDefinitionId() {
+    // given — processDefinitionId starting with a digit violates BPMN identifier pattern
+    final var request =
+        """
+            {
+                "processDefinitionId": "9invalid"
+            }""";
+
+    final var expectedBody =
+        """
+            {
+                "type":"about:blank",
+                "title":"INVALID_ARGUMENT",
+                "status":400,
+                "detail":"The provided processDefinitionId contains illegal characters. It must match the pattern '^[a-zA-Z_][a-zA-Z0-9_\\\\-.]*$'.",
+                "instance":"/v2/process-instances"
+             }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(PROCESS_INSTANCES_START_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
         .expectHeader()
         .contentType(MediaType.APPLICATION_PROBLEM_JSON)
         .expectBody()

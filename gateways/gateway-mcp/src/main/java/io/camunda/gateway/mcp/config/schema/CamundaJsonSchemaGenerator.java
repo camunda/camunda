@@ -77,7 +77,7 @@ public class CamundaJsonSchemaGenerator {
     this.objectMapper = objectMapper;
 
     final SchemaGeneratorConfigBuilder schemaGeneratorConfigBuilder =
-        typeSchemaCustomizer.apply(createSchemaGeneratorConfig());
+        typeSchemaCustomizer.apply(createSchemaGeneratorConfig(objectMapper));
     typeSchemaGenerator = new SchemaGenerator(schemaGeneratorConfigBuilder.build());
 
     final SchemaGeneratorConfig subtypeSchemaGeneratorConfig =
@@ -87,11 +87,13 @@ public class CamundaJsonSchemaGenerator {
     subtypeSchemaGenerator = new SchemaGenerator(subtypeSchemaGeneratorConfig);
   }
 
-  private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig() {
+  private static SchemaGeneratorConfigBuilder createSchemaGeneratorConfig(
+      final ObjectMapper objectMapper) {
     final Module jacksonModule =
         new JacksonModule(
             JacksonOption.RESPECT_JSONPROPERTY_REQUIRED,
             JacksonOption.FLATTENED_ENUMS_FROM_JSONVALUE);
+
     final Module openApiModule = new Swagger2Module();
     final Module springAiSchemaModule =
         CamundaJsonSchemaGenerator.PROPERTY_REQUIRED_BY_DEFAULT
@@ -99,7 +101,7 @@ public class CamundaJsonSchemaGenerator {
             : new SpringAiSchemaModule(
                 SpringAiSchemaModule.Option.PROPERTY_REQUIRED_FALSE_BY_DEFAULT);
 
-    return new SchemaGeneratorConfigBuilder(SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
+    return new SchemaGeneratorConfigBuilder(objectMapper, SCHEMA_VERSION, OptionPreset.PLAIN_JSON)
         .with(jacksonModule)
         .with(openApiModule)
         .with(springAiSchemaModule)

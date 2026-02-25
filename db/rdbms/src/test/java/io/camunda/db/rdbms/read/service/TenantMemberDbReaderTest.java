@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 class TenantMemberDbReaderTest {
 
   private final TenantMapper tenantMapper = mock(TenantMapper.class);
-  private final TenantMemberDbReader tenantMemberDbReader = new TenantMemberDbReader(tenantMapper);
+  private final TenantMemberDbReader tenantMemberDbReader =
+      new TenantMemberDbReader(tenantMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {

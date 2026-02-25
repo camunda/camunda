@@ -10,7 +10,6 @@ import {render, screen} from 'common/testing/testing-library';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {AuthorizationCheck} from './index';
 import {pages} from 'common/routing';
-import {vi} from 'vitest';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {http, HttpResponse} from 'msw';
 import * as userMocks from 'common/mocks/current-user';

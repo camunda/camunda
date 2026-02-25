@@ -4,7 +4,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-testing</artifactId>
-    <version>8.9.0-SNAPSHOT</version>
+    <version>8.10.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
@@ -28,7 +28,7 @@
 
     <dependency>
       <groupId>io.camunda</groupId>
-      <artifactId>camunda-process-test-dsl</artifactId>
+      <artifactId>camunda-process-test-json-test-cases</artifactId>
     </dependency>
 
     <dependency>

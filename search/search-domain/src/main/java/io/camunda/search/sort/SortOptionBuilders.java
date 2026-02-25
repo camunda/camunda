@@ -272,6 +272,15 @@ public final class SortOptionBuilders {
     return fn.apply(processDefinitionMessageSubscriptionStatistics()).build();
   }
 
+  public static JobTypeStatisticsSort.Builder jobTypeStatistics() {
+    return new JobTypeStatisticsSort.Builder();
+  }
+
+  public static JobTypeStatisticsSort jobTypeStatistics(
+      final Function<JobTypeStatisticsSort.Builder, ObjectBuilder<JobTypeStatisticsSort>> fn) {
+    return fn.apply(jobTypeStatistics()).build();
+  }
+
   public static CorrelatedMessageSubscriptionSort.Builder correlatedMessageSubscription() {
     return new CorrelatedMessageSubscriptionSort.Builder();
   }
@@ -323,5 +332,14 @@ public final class SortOptionBuilders {
                   ObjectBuilder<IncidentProcessInstanceStatisticsByDefinitionSort>>
               fn) {
     return fn.apply(new IncidentProcessInstanceStatisticsByDefinitionSort.Builder()).build();
+  }
+
+  public static GlobalListenerSort.Builder globalListener() {
+    return new GlobalListenerSort.Builder();
+  }
+
+  public static GlobalListenerSort globalListener(
+      final Function<GlobalListenerSort.Builder, ObjectBuilder<GlobalListenerSort>> fn) {
+    return fn.apply(globalListener()).build();
   }
 }

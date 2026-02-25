@@ -13,31 +13,20 @@ import {
   waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
-import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {
-  createInstance,
   createVariable,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {modificationsStore} from 'modules/stores/modifications';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {useEffect, act} from 'react';
-import {Paths} from 'modules/Routes';
-import {QueryClientProvider} from '@tanstack/react-query';
-import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {getWrapper as getBaseWrapper, mockProcessInstance} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {init} from 'modules/utils/flowNodeMetadata';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 
 vi.mock('modules/stores/notifications', () => ({
   notificationsStore: {
@@ -45,69 +34,73 @@ vi.mock('modules/stores/notifications', () => ({
   },
 }));
 
-const getWrapper = (
-  initialEntries: React.ComponentProps<
-    typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
-) => {
-  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
-    useEffect(() => {
-      return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
-        modificationsStore.reset();
-        processInstanceDetailsStore.reset();
-      };
-    }, []);
+const TestSelectionControls: React.FC = () => {
+  const {selectElementInstance} = useProcessInstanceElementSelection();
 
-    return (
-      <ProcessDefinitionKeyContext.Provider value="123">
-        <QueryClientProvider client={getMockQueryClient()}>
-          <MemoryRouter initialEntries={initialEntries}>
-            <Routes>
-              <Route path={Paths.processInstance()} element={children} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
-      </ProcessDefinitionKeyContext.Provider>
-    );
-  };
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'TEST_FLOW_NODE',
+            elementInstanceKey: '2',
+          })
+        }
+      >
+        select flow node instance
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'non-existing',
+            elementInstanceKey: 'non-existing-placeholder',
+            isPlaceholder: true,
+          })
+        }
+      >
+        select placeholder scope
+      </button>
+    </>
+  );
+};
+
+const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
+  const BaseWrapper = getBaseWrapper(...args);
+
+  const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => (
+    <BaseWrapper>
+      <>
+        <TestSelectionControls />
+        {children}
+      </>
+    </BaseWrapper>
+  );
+
   return Wrapper;
 };
 
-// TODO: fix test with #44450
-describe.skip('VariablePanel spinner', () => {
+const selectedElementInstance: ElementInstance = {
+  elementInstanceKey: '2',
+  elementId: 'TEST_FLOW_NODE',
+  elementName: 'Test Flow Node',
+  type: 'SERVICE_TASK',
+  state: 'ACTIVE',
+  startDate: '2018-06-21',
+  endDate: null,
+  processDefinitionId: 'someKey',
+  processInstanceKey: '1',
+  processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
+  hasIncident: false,
+  incidentKey: null,
+  tenantId: '<default>',
+};
+
+describe('VariablePanel spinner', () => {
   beforeEach(() => {
-    const mockProcessInstance: ProcessInstance = {
-      processInstanceKey: 'instance_id',
-      state: 'ACTIVE',
-      startDate: '2018-06-21',
-      processDefinitionKey: '2',
-      processDefinitionVersion: 1,
-      processDefinitionId: 'someKey',
-      tenantId: '<default>',
-      processDefinitionName: 'someProcessName',
-      hasIncident: false,
-    };
-
-    const mockProcessInstanceDeprecated = createInstance();
-
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
 
     const statistics = [
       {
@@ -129,24 +122,19 @@ describe.skip('VariablePanel spinner', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess({
       items: statistics,
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
-      items: statistics,
-    });
 
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessDefinitionXml().withSuccess(
       mockProcessWithInputOutputMappingsXML,
     );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-
-    init('process-instance', statistics);
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
   });
 
   it('should display spinner for variables tab when switching between tabs', async () => {
@@ -154,8 +142,12 @@ describe.skip('VariablePanel spinner', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
+
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
       {wrapper: getWrapper()},
@@ -165,23 +157,34 @@ describe.skip('VariablePanel spinner', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockFetchElementInstance('2').withSuccess(selectedElementInstance);
     mockSearchVariables().withDelay({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'TEST_FLOW_NODE',
-        flowNodeInstanceId: '2',
-      });
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select flow node instance/i}),
+    );
 
     expect(await screen.findByTestId('variables-spinner')).toBeInTheDocument();
-    await waitForElementToBeRemoved(screen.queryByTestId('variables-spinner'));
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('variables-spinner'),
+    );
     expect(screen.getByText('testVariableName')).toBeInTheDocument();
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
@@ -191,28 +194,48 @@ describe.skip('VariablePanel spinner', () => {
   });
 
   it('should display spinner on second variable fetch', async () => {
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withDelay({
-      items: [createVariable()],
-      page: {totalItems: 1},
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockSearchVariables().withDelay({
       items: [createVariable()],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
-    render(<VariablePanel setListenerTabVisibility={vi.fn()} />, {
-      wrapper: getWrapper(),
+    mockSearchVariables().withDelay({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
+
+    const {user} = render(
+      <VariablePanel setListenerTabVisibility={vi.fn()} />,
+      {
+        wrapper: getWrapper(),
+      },
+    );
     await waitFor(() => {
       expect(screen.getByTestId('variables-list')).toBeInTheDocument();
     });
 
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'TEST_FLOW_NODE',
-        flowNodeInstanceId: '2',
-      });
-    });
+    mockFetchElementInstance('2').withSuccess(selectedElementInstance);
+    await user.click(
+      screen.getByRole('button', {name: /select flow node instance/i}),
+    );
 
     expect(screen.getByTestId('variables-spinner')).toBeInTheDocument();
 
@@ -227,12 +250,18 @@ describe.skip('VariablePanel spinner', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -245,15 +274,31 @@ describe.skip('VariablePanel spinner', () => {
     });
     expect(await screen.findByText('testVariableName')).toBeInTheDocument();
 
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    act(() => {
-      flowNodeSelectionStore.setSelection({
-        flowNodeId: 'non-existing',
-        isPlaceholder: true,
-      });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    await user.click(
+      screen.getByRole('button', {name: /select placeholder scope/i}),
+    );
 
-    expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText('testVariableName')).not.toBeInTheDocument();
+    });
 
     await user.click(screen.getByRole('tab', {name: 'Input Mappings'}));
     expect(screen.getByText('No Input Mappings defined')).toBeInTheDocument();

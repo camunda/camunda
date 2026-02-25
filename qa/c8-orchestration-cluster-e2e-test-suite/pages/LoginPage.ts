@@ -7,6 +7,7 @@
  */
 
 import {Page, Locator, expect} from '@playwright/test';
+import {waitForAssertion} from '../utils/waitForAssertion';
 
 export class LoginPage {
   private page: Page;
@@ -50,7 +51,14 @@ export class LoginPage {
   }
 
   async login(username: string, password: string) {
-    await expect(this.usernameInput).toBeVisible({timeout: 180000});
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.usernameInput).toBeVisible({timeout: 30000});
+      },
+      onFailure: async () => {
+        await this.page.reload();
+      },
+    });
     await this.clickUsername();
     await this.fillUsername(username);
     await this.fillPassword(password);

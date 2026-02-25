@@ -11,6 +11,7 @@ import {getStateLocally, storeStateLocally} from 'modules/utils/localStorage';
 import {currentUserQueryOptions} from 'modules/queries/useCurrentUser';
 import {reactQueryClient} from 'modules/react-query/reactQueryClient';
 import {request} from 'modules/request';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import z from 'zod';
 
 type Status =
@@ -116,11 +117,9 @@ class Authentication {
       }
 
       reactQueryClient.clear();
+      const clientConfig = getClientConfig();
 
-      if (
-        !window?.clientConfig?.canLogout ||
-        window?.clientConfig?.isLoginDelegated
-      ) {
+      if (!clientConfig.canLogout || clientConfig.isLoginDelegated) {
         /*
          * In case an IdP supports RP-initiated logout,
          * its logout endpoint will be returned in a JSON response.
@@ -147,10 +146,9 @@ class Authentication {
   };
 
   disableSession = () => {
-    if (
-      !window?.clientConfig?.canLogout ||
-      window?.clientConfig?.isLoginDelegated
-    ) {
+    const clientConfig = getClientConfig();
+
+    if (!clientConfig.canLogout || clientConfig.isLoginDelegated) {
       this.#handleThirdPartySessionExpiration();
 
       return;

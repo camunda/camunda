@@ -6,7 +6,7 @@
   <parent>
     <groupId>io.camunda</groupId>
     <artifactId>camunda-bom</artifactId>
-    <version>8.9.0-SNAPSHOT</version>
+    <version>8.10.0-SNAPSHOT</version>
     <relativePath>../bom/pom.xml</relativePath>
   </parent>
 
@@ -147,6 +147,7 @@
     <version.awssdk>2.41.32</version.awssdk>
     <version.toxiproxy>2.1.11</version.toxiproxy>
     <version.validation-api>3.1.1</version.validation-api>
+    <version.bind-api>4.0.5</version.bind-api>
     <version.jackson-databind-nullable>0.2.9</version.jackson-databind-nullable>
     <version.findbugs.jsr305>3.0.2</version.findbugs.jsr305>
     <version.jackson-annotations>2.21</version.jackson-annotations>
@@ -1000,7 +1001,7 @@
 
       <dependency>
         <groupId>io.camunda</groupId>
-        <artifactId>camunda-process-test-dsl</artifactId>
+        <artifactId>camunda-process-test-json-test-cases</artifactId>
         <version>${project.version}</version>
       </dependency>
 
@@ -1873,6 +1874,12 @@
         <groupId>jakarta.validation</groupId>
         <artifactId>jakarta.validation-api</artifactId>
         <version>${version.validation-api}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>jakarta.xml.bind</groupId>
+        <artifactId>jakarta.xml.bind-api</artifactId>
+        <version>${version.bind-api}</version>
       </dependency>
 
       <dependency>

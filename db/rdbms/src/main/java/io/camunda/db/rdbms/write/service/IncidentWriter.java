@@ -62,8 +62,7 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
   }
 
   public void resolve(final Long incidentKey) {
-    final boolean wasMerged =
-        mergeToQueue(incidentKey, b -> b.state(IncidentState.RESOLVED).errorMessage(null));
+    final boolean wasMerged = mergeToQueue(incidentKey, b -> b.state(IncidentState.RESOLVED));
 
     if (!wasMerged) {
       executionQueue.executeInQueue(
@@ -72,8 +71,7 @@ public class IncidentWriter extends ProcessInstanceDependant implements RdbmsWri
               WriteStatementType.UPDATE,
               incidentKey,
               "io.camunda.db.rdbms.sql.IncidentMapper.updateState",
-              new IncidentMapper.IncidentStateDto(
-                  incidentKey, IncidentState.RESOLVED, null, null)));
+              new IncidentMapper.IncidentStateDto(incidentKey, IncidentState.RESOLVED)));
     }
   }
 

@@ -7,7 +7,6 @@
  */
 package io.camunda.zeebe.logstreams.impl.log;
 
-import static io.camunda.zeebe.logstreams.impl.log.LogAppendEntryMetadata.copyMetadata;
 import static io.camunda.zeebe.logstreams.impl.serializer.DataFrameDescriptor.FRAME_ALIGNMENT;
 import static io.camunda.zeebe.logstreams.impl.serializer.SequencedBatchSerializer.calculateBatchLength;
 
@@ -94,7 +93,7 @@ final class Sequencer implements LogStreamWriter, Closeable {
       }
     }
     final InFlightEntry inFlightEntry;
-    switch (flowControl.tryAcquire(context, copyMetadata(appendEntries))) {
+    switch (flowControl.tryAcquire(context, appendEntries)) {
       case Either.Left<Rejection, InFlightEntry>(final var rejected) -> {
         return switch (rejected) {
           case RequestLimitExhausted -> Either.left(WriteFailure.REQUEST_LIMIT_EXHAUSTED);

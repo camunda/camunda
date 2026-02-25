@@ -32,6 +32,7 @@ describe('BottomPanel - sequence flow mappings', () => {
           versionTag: '',
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
         },
         {
           processDefinitionId: 'SequenceFlowMigration',
@@ -41,6 +42,7 @@ describe('BottomPanel - sequence flow mappings', () => {
           versionTag: '',
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
         },
       ]),
     );

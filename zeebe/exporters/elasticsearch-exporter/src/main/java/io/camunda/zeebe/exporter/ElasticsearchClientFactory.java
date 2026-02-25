@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.exporter.ElasticsearchExporterConfiguration.ProxyConfiguration;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
+import org.apache.http.Header;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequestInterceptor;
 import org.apache.http.auth.AuthScope;
@@ -22,6 +23,7 @@ import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.nio.client.HttpAsyncClientBuilder;
 import org.apache.http.impl.nio.reactor.IOReactorConfig;
+import org.apache.http.message.BasicHeader;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
@@ -60,8 +62,14 @@ final class ElasticsearchClientFactory {
       final ElasticsearchExporterConfiguration config,
       final HttpRequestInterceptor... interceptors) {
     final HttpHost[] httpHosts = parseUrl(config);
+    final Header[] defaultHeaders =
+        new Header[] {
+          new BasicHeader("Accept", "application/vnd.elasticsearch+json;compatible-with=8"),
+          new BasicHeader("Content-Type", "application/vnd.elasticsearch+json;compatible-with=8")
+        };
     final RestClientBuilder builder =
         RestClient.builder(httpHosts)
+            .setDefaultHeaders(defaultHeaders)
             .setRequestConfigCallback(
                 b ->
                     b.setConnectTimeout(config.requestTimeoutMs)

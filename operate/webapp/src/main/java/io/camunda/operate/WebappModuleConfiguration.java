@@ -7,10 +7,10 @@
  */
 package io.camunda.operate;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
@@ -19,10 +19,7 @@ import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGe
 @ComponentScan(
     basePackages = "io.camunda.operate.webapp",
     nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
-@ConditionalOnProperty(
-    name = "camunda.operate.webapp-enabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("operate")
 public class WebappModuleConfiguration {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(WebappModuleConfiguration.class);

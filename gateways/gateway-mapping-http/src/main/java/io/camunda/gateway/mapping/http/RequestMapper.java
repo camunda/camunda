@@ -165,6 +165,18 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
+      final io.camunda.gateway.protocol.model.simple.UserTaskAssignmentRequest assignmentRequest,
+      final long userTaskKey) {
+
+    return toUserTaskAssignmentRequest(
+        new UserTaskAssignmentRequest()
+            .action(assignmentRequest.getAction())
+            .allowOverride(assignmentRequest.getAllowOverride())
+            .assignee(assignmentRequest.getAssignee()),
+        userTaskKey);
+  }
+
+  public static Either<ProblemDetail, AssignUserTaskRequest> toUserTaskAssignmentRequest(
       final UserTaskAssignmentRequest assignmentRequest, final long userTaskKey) {
 
     final String actionValue =
@@ -361,7 +373,8 @@ public class RequestMapper {
               .reduce(
                   CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                   (acc, detail) -> {
-                    acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                    final String existing = acc.getDetail();
+                    acc.setDetail((existing == null ? "" : existing + ". ") + detail.getDetail());
                     return acc;
                   });
 
@@ -414,7 +427,8 @@ public class RequestMapper {
             .reduce(
                 CamundaProblemDetail.forStatus(HttpStatus.BAD_REQUEST),
                 (acc, detail) -> {
-                  acc.setDetail(acc.getDetail() + ". " + detail.getDetail());
+                  final String existing = acc.getDetail();
+                  acc.setDetail((existing == null ? "" : existing + ". ") + detail.getDetail());
                   return acc;
                 });
 
@@ -447,7 +461,10 @@ public class RequestMapper {
   }
 
   public static Either<ProblemDetail, ExpressionEvaluationRequest> toExpressionEvaluationRequest(
-      final String expression, final String tenantId, final boolean isMultiTenancyEnabled) {
+      final String expression,
+      final String tenantId,
+      final Map<String, Object> context,
+      final boolean isMultiTenancyEnabled) {
     final var validator =
         validateTenantId(tenantId, isMultiTenancyEnabled, "Expression Evaluation");
     if (expression == null || expression.isBlank()) {
@@ -458,7 +475,7 @@ public class RequestMapper {
               INVALID_ARGUMENT.name()));
     }
     return validator.map(
-        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId));
+        validTenantId -> new ExpressionEvaluationRequest(expression, validTenantId, context));
   }
 
   public static Either<ProblemDetail, DeployResourcesRequest> toDeployResourceRequest(
@@ -678,7 +695,8 @@ public class RequestMapper {
                         })
                     .toList(),
                 request.getFetchVariables(),
-                request.getTags()));
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCreateRequest> toCreateProcessInstance(
@@ -720,7 +738,8 @@ public class RequestMapper {
                         })
                     .toList(),
                 request.getFetchVariables(),
-                request.getTags()));
+                request.getTags(),
+                request.getBusinessId()));
   }
 
   public static Either<ProblemDetail, ProcessInstanceCancelRequest> toCancelProcessInstance(

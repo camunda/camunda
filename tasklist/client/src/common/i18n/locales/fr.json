@@ -20,6 +20,8 @@
     "headerPrivacyPolicyLabel": "Politique de confidentialité",
     "headerImprintLabel": "Mentions légales",
     "headerLogOutLabel": "Déconnexion",
+    "notificationLogOutTitle": "Déconnexion",
+    "notificationLogOutSubtitle": "Vous êtes en cours de déconnexion...",
     "loginErrorUsernamePasswordMismatch": "Nom d'utilisateur et mot de passe ne correspondent pas",
     "loginErrorCredentialsNotVerified": "Les informations d'identification n'ont pas pu être vérifiées",
     "loginErrorUsernameRequired": "Nom d'utilisateur requis",

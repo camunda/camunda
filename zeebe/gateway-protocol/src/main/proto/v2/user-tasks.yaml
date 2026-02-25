@@ -456,10 +456,12 @@ components:
           description: The user task due date.
         processInstanceVariables:
           type: array
+          description: The variables of the process instance.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         localVariables:
           type: array
+          description: The local variables of the user task.
           items:
             $ref: 'variables.yaml#/components/schemas/VariableValueFilterProperty'
         userTaskKey:
@@ -483,6 +485,8 @@ components:
 
     UserTaskSearchQueryResult:
       description: User task search query response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -495,6 +499,18 @@ components:
 
     UserTaskResult:
       type: object
+      required:
+        - rootProcessInstanceKey
+        - candidateGroups
+        - candidateUsers
+        - customHeaders 
+        - tags
+        - assignee
+        - completionDate
+        - dueDate
+        - externalFormReference
+        - followUpDate
+        - formKey
       properties:
         name:
           type: string
@@ -502,6 +518,7 @@ components:
         state:
           $ref: '#/components/schemas/UserTaskStateEnum'
         assignee:
+          nullable: true
           description: The assignee of the user task.
           type: string
         elementId:
@@ -527,22 +544,26 @@ components:
           description: The creation date of a user task.
           format: date-time
         completionDate:
-          type: string
           description: The completion date of a user task.
+          nullable: true
+          type: string
           format: date-time
         followUpDate:
-          type: string
           description: The follow date of a user task.
+          nullable: true
+          type: string
           format: date-time
         dueDate:
-          type: string
           description: The due date of a user task.
+          nullable: true
+          type: string
           format: date-time
         tenantId:
           $ref: 'identifiers.yaml#/components/schemas/TenantId'
         externalFormReference:
-          type: string
           description: The external form reference.
+          nullable: true
+          type: string
         processDefinitionVersion:
           type: integer
           description: The version of the process definition.
@@ -586,9 +607,10 @@ components:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         formKey:
+          description: The key of the form.
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/FormKey'
-          description: The key of the form.
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
 
@@ -750,7 +772,9 @@ components:
     ## Enums
 
     UserTaskStateEnum:
-      description: The state of the user task.
+      description: |
+        The state of the user task.
+        Note: FAILED state is only for legacy job-worker-based tasks.
       type: string
       enum:
         - CREATING

@@ -18,6 +18,11 @@ package io.camunda.client.api.search.response;
 public enum DecisionDefinitionType {
   DECISION_TABLE,
   LITERAL_EXPRESSION,
+  /**
+   * @deprecated for removal.
+   */
+  @Deprecated
+  UNSPECIFIED,
   UNKNOWN,
   UNKNOWN_ENUM_VALUE;
 }

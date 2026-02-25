@@ -7,6 +7,7 @@
   "openTenantContextMenu": "Open tenant context menu",
   "tenantDetails": "Tenant details",
   "createTenant": "Create tenant",
+  "creatingTenant": "Creating tenant...",
   "createNewTenant": "Create new tenant",
   "learnMoreAboutTenants": "Learn more about tenants",
   "tenantsListCouldNotLoad": "The list of tenants could not be loaded.",
@@ -21,6 +22,15 @@
   "tenantMemberRemoved": "Tenant member has been removed.",
   "assignUsersToTenant": "Assign users to this Tenant",
   "tenantCreated": "Tenant created",
+  "tenantCreatedSuccessfully": "\u201c{{ name }}\u201d successfully created",
+  "nextStepAssignEntities": "Next step: assign entities to your new tenant",
+  "assignUsers": "Assign users",
+  "assignGroups": "Assign groups",
+  "assignRoles": "Assign roles",
+  "assignMappingRules": "Assign mapping rules",
+  "assignClients": "Assign clients",
+  "assignConnectorRoleInfo": "Assign the \u201cconnector\u201d role to this tenant to automatically assign all clients with the same role.",
+  "dynamicAccessToAssignedTenantsInfoLink": "Your clients can be configured to <1>dynamically access assigned tenants</1>.",
   "createTenantSuccess": "You have successfully created tenant {{ name }}",
   "deleteTenantSuccess": "You have successfully deleted tenant {{ name }}",
   "tenantIdPlaceholder": "Enter tenant ID",
@@ -72,5 +82,6 @@
   "removeClientFromTenant": "Are you sure you want to remove <strong>{{clientId}}</strong> from this tenant?",
   "pleaseEnterValidTenantId": "Please enter a valid Tenant ID (only characters, numbers and . _ - and max 31 characters)",
   "tenantNameRequired": "Tenant name is required",
-  "searchByTenantId": "Search by tenant ID"
+  "searchByTenantId": "Search by tenant ID",
+  "gotIt": "Got it"
 }

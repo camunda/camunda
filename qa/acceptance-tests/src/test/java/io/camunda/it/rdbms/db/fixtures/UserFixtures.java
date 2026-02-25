@@ -44,7 +44,14 @@ public final class UserFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomUsers(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomUsers(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomUsers(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters.getUserWriter().create(UserFixtures.createRandomized(builderFunction));
     }
 

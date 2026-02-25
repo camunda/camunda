@@ -28,7 +28,12 @@ describe('IncidentsWrapper', () => {
     mockFetchProcessDefinitionXml().withSuccess('');
     mockFetchProcessInstanceV2().withSuccess(mockProcessInstance);
     mockSearchProcessInstances().withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [mockProcessInstance],
     });
   });
@@ -63,7 +68,12 @@ describe('IncidentsWrapper', () => {
   it('should render incidents with filters applied', async () => {
     // Note: MSW's "http.use" prepends handlers! The actual matching order is reversed.
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [firstIncident],
     });
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess(
@@ -113,7 +123,12 @@ describe('IncidentsWrapper', () => {
 
   it('should render incidents fetched for the process instance', async () => {
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [firstIncident],
     });
 
@@ -139,7 +154,12 @@ describe('IncidentsWrapper', () => {
 
   it('should render incidents fetched for a element instance when scoped to it', async () => {
     mockSearchIncidentsByElementInstance(':elementInstanceId').withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [secondIncident],
     });
 
@@ -174,7 +194,12 @@ describe('IncidentsWrapper', () => {
 
   it('should render incidents filtered for an elementId when scoped to it', async () => {
     mockSearchIncidentsByProcessInstance(':instanceId').withSuccess({
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
       items: [firstIncident],
     });
 

@@ -11,7 +11,7 @@ import {Pause, Play} from '@carbon/react/icons';
 import type {
   BatchOperationState,
   BatchOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.8/batch-operation';
+} from '@camunda/camunda-api-zod-schemas/8.9/batch-operation';
 import {useSuspendBatchOperation} from 'modules/mutations/batchOperations/useSuspendBatchOperation';
 import {useResumeBatchOperation} from 'modules/mutations/batchOperations/useResumeBatchOperation';
 import {useCancelBatchOperation} from 'modules/mutations/batchOperations/useCancelBatchOperation';
@@ -85,6 +85,7 @@ const OperationsActions: React.FC<Props> = ({
     <ActionsContainer gap={2} orientation="horizontal">
       {allowedActions.includes('SUSPEND') && (
         <Button
+          size="md"
           kind="tertiary"
           renderIcon={Pause}
           onClick={() => {
@@ -97,6 +98,7 @@ const OperationsActions: React.FC<Props> = ({
       )}
       {allowedActions.includes('RESUME') && (
         <Button
+          size="md"
           kind="tertiary"
           renderIcon={Play}
           onClick={() => {
@@ -108,7 +110,7 @@ const OperationsActions: React.FC<Props> = ({
         </Button>
       )}
       {allowedActions.includes('CANCEL') && (
-        <OverflowMenu aria-label="overflow-menu" flipped>
+        <OverflowMenu size="md" aria-label="overflow-menu" flipped>
           <OverflowMenuItem
             itemText="Cancel"
             isDelete

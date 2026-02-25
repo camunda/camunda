@@ -69,8 +69,19 @@ const ModificationDropdown: React.FC<Props> = observer(
       );
     const {data: totalRunningInstancesByFlowNode} =
       useTotalRunningInstancesByFlowNode();
-    const selectedElementRunningInstancesCount =
-      resolvedElementInstance === null ? totalRunningInstancesCount : 1;
+
+    // true if an element instance is selected from the element history tree
+    const isSpecificElementInstanceSelected =
+      selectedElementInstanceKey !== null;
+
+    // true if an element is selected from diagram or element history tree,
+    // and a single specific element instance is resolved for the selection
+    const isElementInstanceResolved = resolvedElementInstance !== null;
+
+    let selectedElementRunningInstancesCount = totalRunningInstancesCount;
+    if (isElementInstanceResolved && !isSelectedInstanceMultiInstanceBody) {
+      selectedElementRunningInstancesCount = 1;
+    }
 
     const resolvedElementInstanceKey =
       resolvedElementInstance?.elementInstanceKey;
@@ -78,11 +89,9 @@ const ModificationDropdown: React.FC<Props> = observer(
     const availableModifications = useAvailableModifications({
       runningElementInstanceCount: selectedElementRunningInstancesCount ?? 0,
       elementId: selectedElementId ?? undefined,
-      isSpecificElementInstanceSelected: selectedElementInstanceKey !== null,
+      isSpecificElementInstanceSelected,
       isMultiInstanceBody: isSelectedInstanceMultiInstanceBody,
-      isElementInstanceKeyAvailable:
-        selectedElementInstanceKey !== null ||
-        resolvedElementInstanceKey !== undefined,
+      isElementInstanceKeyAvailable: isElementInstanceResolved,
     });
     const canBeModified = useCanBeModified(selectedElementId ?? undefined);
     const {data: processInstance} = useProcessInstance();

@@ -44,4 +44,13 @@ public interface ArchiveBatch {
       return ids.size();
     }
   }
+
+  record AuditLogCleanupBatch(
+      String finishDate, List<String> auditLogCleanupIds, List<String> auditLogIds)
+      implements ArchiveBatch {
+    @Override
+    public int size() {
+      return auditLogCleanupIds.size() + auditLogIds.size();
+    }
+  }
 }

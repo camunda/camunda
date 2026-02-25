@@ -10,7 +10,7 @@ import {useQuery} from '@tanstack/react-query';
 import {
   type QueryMessageSubscriptionsRequestBody,
   type QueryMessageSubscriptionsResponseBody,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {searchMessageSubscriptions} from 'modules/api/v2/messageSubscriptions/searchMessageSubscriptions';
 import {queryKeys} from '../queryKeys';
 

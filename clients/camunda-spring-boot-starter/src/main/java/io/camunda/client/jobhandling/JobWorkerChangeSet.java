@@ -18,8 +18,8 @@ package io.camunda.client.jobhandling;
 import static java.util.function.Predicate.not;
 
 import io.camunda.client.annotation.value.JobWorkerValue;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware;
-import io.camunda.client.annotation.value.JobWorkerValue.SourceAware.*;
+import io.camunda.client.annotation.value.SourceAware;
+import io.camunda.client.annotation.value.SourceAware.*;
 import io.camunda.client.api.command.enums.TenantFilter;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -150,7 +150,8 @@ public sealed interface JobWorkerChangeSet {
                   jobWorkerValue::setForceFetchAllVariables),
               reset(jobWorkerValue.getStreamEnabled(), jobWorkerValue::setStreamEnabled),
               reset(jobWorkerValue.getStreamTimeout(), jobWorkerValue::setStreamTimeout),
-              reset(jobWorkerValue.getMaxRetries(), jobWorkerValue::setMaxRetries))
+              reset(jobWorkerValue.getMaxRetries(), jobWorkerValue::setMaxRetries),
+              reset(jobWorkerValue.getTenantFilter(), jobWorkerValue::setTenantFilter))
           .reduce(false, Boolean::logicalOr);
     }
   }

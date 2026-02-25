@@ -34,7 +34,10 @@ public enum ContextType {
   USER(false),
   USER_TASK(true),
   VARIABLE(false),
-  CLUSTER_VARIABLE(false);
+  CLUSTER_VARIABLE(false),
+  // for global listeners, event types are updated through delete+insert, so order needs to be
+  // preserved
+  GLOBAL_LISTENER(true);
 
   private final boolean preserveOrder;
 

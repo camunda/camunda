@@ -9,6 +9,7 @@ package io.camunda.db.rdbms.read.service;
 
 import static io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry.determineOperator;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPagination;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
@@ -24,6 +25,7 @@ import io.camunda.search.sort.SortOrder;
 import io.camunda.security.reader.ResourceAccessChecks;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -37,14 +39,17 @@ abstract class AbstractEntityReader<T> {
 
   private static final SearchColumn<?>[] EMPTY_SEARCHABLE_COLUMNS = new SearchColumn[0];
   private final Map<String, SearchColumn<T>> columns;
+  private final RdbmsReaderConfig readerConfig;
 
-  public AbstractEntityReader(final SearchColumn<T>[] searchableColumns) {
+  public AbstractEntityReader(
+      final SearchColumn<T>[] searchableColumns, final RdbmsReaderConfig readerConfig) {
     final var searchColumns =
         Objects.requireNonNullElse(searchableColumns, (SearchColumn<T>[]) EMPTY_SEARCHABLE_COLUMNS);
 
     columns =
         Stream.of(searchColumns)
             .collect(Collectors.toMap(SearchColumn::property, Function.identity()));
+    this.readerConfig = readerConfig;
   }
 
   private SearchColumn<T> getSearchColumn(final String property) {
@@ -58,8 +63,15 @@ abstract class AbstractEntityReader<T> {
     final var builder = new DbQuerySorting.Builder<T>();
     final var discriminatorColumnList = new ArrayList<>(Arrays.asList(discriminatorColumns));
 
+    final var usedFields = new HashSet<String>();
+
     for (final FieldSorting fieldSorting : sortOption.getFieldSortings()) {
-      final var column = getSearchColumn(fieldSorting.field());
+      final String fieldName = fieldSorting.field();
+      if (!usedFields.add(fieldName)) {
+        continue; // skip duplicate field sorting
+      }
+
+      final var column = getSearchColumn(fieldName);
 
       // remove the column from the discriminator list to not sort double
       discriminatorColumnList.remove(column);
@@ -81,10 +93,11 @@ abstract class AbstractEntityReader<T> {
 
     if (SearchQueryResultType.UNLIMITED.equals(page.resultType())) {
       // assuming Integer.MAX_VALUE is enough
-      return new DbQueryPage(Integer.MAX_VALUE, 0, keySetPagination);
+      return new DbQueryPage(Integer.MAX_VALUE, 0, Integer.MAX_VALUE, keySetPagination);
     }
 
-    return new DbQueryPage(page.size(), page.from(), keySetPagination);
+    return new DbQueryPage(
+        page.size(), page.from(), readerConfig.maxTotalHits() + 1, keySetPagination);
   }
 
   /**
@@ -138,7 +151,12 @@ abstract class AbstractEntityReader<T> {
 
   protected final SearchQueryResult<T> buildSearchQueryResult(
       final long totalHits, final List<T> hits, final DbQuerySorting<T> dbSort) {
-    final var result = new SearchQueryResult.Builder<T>().total(totalHits).items(hits);
+    final var maxTotalHits = readerConfig.maxTotalHits();
+    final var returnedTotalHits = totalHits > maxTotalHits ? maxTotalHits : totalHits;
+    final var hasMoreItems = totalHits > maxTotalHits;
+
+    final var result =
+        new SearchQueryResult.Builder<T>().total(returnedTotalHits, hasMoreItems).items(hits);
 
     if (!hits.isEmpty() && dbSort != null) {
       final var columns = dbSort.columns();

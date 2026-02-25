@@ -40,6 +40,7 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
@@ -49,6 +50,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.client.api.command.DeleteGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteProcessInstanceCommandStep1;
@@ -93,6 +95,7 @@ import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
+import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
@@ -113,6 +116,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
@@ -146,6 +150,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
@@ -175,6 +180,7 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
+import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -999,6 +1005,23 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the global job statistics request
    */
   GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to);
+
+  /**
+   * Executes a request to query job statistics grouped by job type.
+   *
+   * <pre>
+   * camundaClient
+   *  .newJobTypeStatisticsRequest(OffsetDateTime.now().minusDays(1), OffsetDateTime.now())
+   *  .filter(f -&gt; f.jobType(jt -&gt; jt.like("fetch-*")))
+   *  .send();
+   * </pre>
+   *
+   * @param from the start of the time range (inclusive)
+   * @param to the end of the time range (inclusive)
+   * @return a builder for the job type statistics request
+   */
+  JobTypeStatisticsRequest newJobTypeStatisticsRequest(
       final OffsetDateTime from, final OffsetDateTime to);
 
   /**
@@ -3275,4 +3298,82 @@ public interface CamundaClient extends AutoCloseable, JobClient {
    * @return a builder for the request to get a resource content
    */
   ResourceContentGetRequest newResourceContentGetRequest(long resourceKey);
+
+  /**
+   * Creates a request to create a new global task listener.
+   *
+   * <pre>
+   *   GlobalTaskListenerResponse response = camundaClient
+   *       .newCreateGlobalTaskListenerRequest()
+   *       .id("my-listener")
+   *       .type("my-job-type")
+   *       .eventTypes(GlobalTaskListenerEventType.ALL)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @return a builder for creating a global task listener
+   */
+  CreateGlobalTaskListenerCommandStep1 newCreateGlobalTaskListenerRequest();
+
+  /**
+   * Creates a request to update an existing global task listener.
+   *
+   * <pre>
+   *   GlobalTaskListenerResponse response = camundaClient
+   *       .newUpdateGlobalTaskListenerRequest("my-listener")
+   *       .type("my-job-type")
+   *       .eventTypes(GlobalTaskListenerEventType.ALL)
+   *       .send()
+   *       .join();
+   * </pre>
+   *
+   * @param id the id of the global listener to update
+   * @return a builder for updating a global task listener
+   */
+  UpdateGlobalTaskListenerCommandStep1 newUpdateGlobalTaskListenerRequest(final String id);
+
+  /**
+   * Creates a request to delete a global task listener.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newDeleteGlobalTaskListenerRequest("my-listener")
+   *       .send();
+   * </pre>
+   *
+   * @param id the id of the global listener to delete
+   * @return a builder for deleting a global task listener
+   */
+  DeleteGlobalTaskListenerCommandStep1 newDeleteGlobalTaskListenerRequest(final String id);
+
+  /**
+   * Creates a request to fetch a global task listener by id.
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGlobalTaskListenerGetRequest("my-listener")
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for fetching a global task listener
+   */
+  GlobalTaskListenerGetRequest newGlobalTaskListenerGetRequest(final String id);
+
+  /**
+   * Creates a request to search for global task listeners.
+   *
+   * <p>Global task listeners can be searched with filtering and sorting capabilities:
+   *
+   * <pre>
+   *   camundaClient
+   *       .newGlobalTaskListenerSearchRequest()
+   *       .filter(f -> f.source(GlobalListenerSource.CONFIGURATION))
+   *       .sort(s -> s.priority().desc())
+   *       .send();
+   * </pre>
+   *
+   * @return a builder for searching global task listeners
+   */
+  GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest();
 }

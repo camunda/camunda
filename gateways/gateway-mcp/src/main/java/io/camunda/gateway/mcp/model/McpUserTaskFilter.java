@@ -7,33 +7,14 @@
  */
 package io.camunda.gateway.mcp.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import io.camunda.gateway.protocol.model.simple.UserTaskFilter;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * MCP-specific user task filter that hides fields not exposed to MCP tools.
  *
- * <p>This extends the generated simple filter model and overrides getters with {@code @JsonIgnore}
+ * <p>This modifies the generated simple filter model and overrides getters with {@code @JsonIgnore}
  * to exclude certain fields from the MCP JSON schema while keeping the underlying mapping code
  * intact.
  */
-public class McpUserTaskFilter extends UserTaskFilter {
-
-  @Override
-  @JsonIgnore
-  public String getTenantId() {
-    return super.getTenantId();
-  }
-
-  @Override
-  @JsonIgnore
-  public String getCandidateGroup() {
-    return super.getCandidateGroup();
-  }
-
-  @Override
-  @JsonIgnore
-  public String getCandidateUser() {
-    return super.getCandidateUser();
-  }
-}
+@JsonIgnoreProperties({"candidateGroup", "candidateUser", "tenantId"})
+public interface McpUserTaskFilter {}

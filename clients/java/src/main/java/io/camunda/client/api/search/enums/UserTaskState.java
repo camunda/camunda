@@ -24,6 +24,10 @@ public enum UserTaskState {
   COMPLETED,
   CANCELING,
   CANCELED,
+  /**
+   * The FAILED state is only applicable to legacy, job-worker-based user tasks. Native Camunda User
+   * Tasks (non-job-worker-based) do not reach this state.
+   */
   FAILED,
   UNKNOWN_ENUM_VALUE;
 }

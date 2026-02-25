@@ -7,9 +7,6 @@
  */
 
 import {observer} from 'mobx-react';
-import {Button} from '@carbon/react';
-import {ClassicBatch} from '@carbon/react/icons';
-import {useNavigate} from 'react-router-dom';
 import {CopiableProcessID} from 'App/Processes/CopiableProcessID';
 import {ProcessOperations} from '../../ProcessOperations';
 import {
@@ -19,7 +16,6 @@ import {
   DescriptionData,
   HeaderActions,
 } from './styled';
-import {Paths} from 'modules/Routes';
 import {
   getProcessDefinitionName,
   type ProcessDefinitionSelection,
@@ -32,7 +28,6 @@ type DiagramHeaderProps = {
 
 const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
   ({processDefinitionSelection, panelHeaderRef}) => {
-    const navigate = useNavigate();
     const title =
       processDefinitionSelection.kind === 'no-match' ? 'Process' : undefined;
 
@@ -48,17 +43,6 @@ const DiagramHeader: React.FC<DiagramHeaderProps> = observer(
           <ProcessOperationsContent
             processDefinitionSelection={processDefinitionSelection}
           />
-          <Button
-            kind="tertiary"
-            onClick={() => navigate(Paths.batchOperations())}
-            iconDescription="View batch operations"
-            renderIcon={ClassicBatch}
-            title="View batch operations"
-            aria-label="View batch operations"
-            size="sm"
-          >
-            View batch operations
-          </Button>
         </HeaderActions>
       </PanelHeader>
     );

@@ -49,9 +49,4 @@ const isModificationBadgePayload = (
 };
 
 export {isStatisticsPayload, isModificationBadgePayload};
-export type {
-  OverlayPosition,
-  OverlayData,
-  StatisticsPayload,
-  ModificationBadgePayload,
-};
+export type {OverlayData};

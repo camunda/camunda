@@ -22,7 +22,7 @@ import {
   formatISODateTime,
 } from 'common/dates/formatDateRelative';
 import {unraw} from './unraw';
-import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {CurrentUser} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useMultiModeTaskFilters} from 'common/tasks/filters/useMultiModeTaskFilters';
 import {encodeTaskOpenedRef} from 'common/tracking/reftags';
 import {AssigneeTag} from 'common/components/AssigneeTag';

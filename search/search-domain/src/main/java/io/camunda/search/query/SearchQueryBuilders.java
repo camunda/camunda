@@ -44,6 +44,10 @@ public final class SearchQueryBuilders {
     return new JobTypeStatisticsQuery.Builder();
   }
 
+  public static JobWorkerStatisticsQuery.Builder jobWorkerStatisticsSearchQuery() {
+    return new JobWorkerStatisticsQuery.Builder();
+  }
+
   public static ProcessInstanceQuery processInstanceSearchQuery(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(processInstanceSearchQuery()).build();
@@ -297,5 +301,14 @@ public final class SearchQueryBuilders {
   public static IncidentProcessInstanceStatisticsByDefinitionQuery.Builder
       incidentProcessInstanceStatisticsByDefinitionQuery() {
     return new IncidentProcessInstanceStatisticsByDefinitionQuery.Builder();
+  }
+
+  public static GlobalListenerQuery.Builder globalListenerSearchQuery() {
+    return new GlobalListenerQuery.Builder();
+  }
+
+  public static GlobalListenerQuery globalListenerSearchQuery(
+      final Function<GlobalListenerQuery.Builder, ObjectBuilder<GlobalListenerQuery>> fn) {
+    return fn.apply(globalListenerSearchQuery()).build();
   }
 }

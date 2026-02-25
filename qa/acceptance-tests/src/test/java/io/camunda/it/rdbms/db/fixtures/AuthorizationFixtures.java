@@ -60,7 +60,14 @@ public final class AuthorizationFixtures extends CommonFixtures {
 
   public static void createAndSaveRandomAuthorizations(
       final RdbmsWriters rdbmsWriters, final Function<Builder, Builder> builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomAuthorizations(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomAuthorizations(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<Builder, Builder> builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getAuthorizationWriter()
           .createAuthorization(AuthorizationFixtures.createRandomized(builderFunction));

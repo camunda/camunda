@@ -67,9 +67,12 @@
   </insert>
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.CorrelatedMessageSubscriptionDbQuery" resultType="long">
-    SELECT COUNT(*)
-    FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
-    <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}CORRELATED_MESSAGE_SUBSCRIPTION
+      <include refid="io.camunda.db.rdbms.sql.CorrelatedMessageSubscriptionMapper.searchAndAuthFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <!-- default search statement for databases supporting LIMIT/OFFSET-->

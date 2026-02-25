@@ -48,6 +48,7 @@ import io.camunda.client.api.command.CreateBatchOperationCommandStep1;
 import io.camunda.client.api.command.CreateDocumentBatchCommandStep1;
 import io.camunda.client.api.command.CreateDocumentCommandStep1;
 import io.camunda.client.api.command.CreateDocumentLinkCommandStep1;
+import io.camunda.client.api.command.CreateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.CreateGroupCommandStep1;
 import io.camunda.client.api.command.CreateMappingRuleCommandStep1;
 import io.camunda.client.api.command.CreateProcessInstanceCommandStep1;
@@ -57,6 +58,7 @@ import io.camunda.client.api.command.CreateUserCommandStep1;
 import io.camunda.client.api.command.DeleteAuthorizationCommandStep1;
 import io.camunda.client.api.command.DeleteDecisionInstanceCommandStep1;
 import io.camunda.client.api.command.DeleteDocumentCommandStep1;
+import io.camunda.client.api.command.DeleteGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.DeleteGroupCommandStep1;
 import io.camunda.client.api.command.DeleteMappingRuleCommandStep1;
 import io.camunda.client.api.command.DeleteProcessInstanceCommandStep1;
@@ -104,6 +106,7 @@ import io.camunda.client.api.command.UnassignUserFromGroupCommandStep1;
 import io.camunda.client.api.command.UnassignUserFromTenantCommandStep1;
 import io.camunda.client.api.command.UnassignUserTaskCommandStep1;
 import io.camunda.client.api.command.UpdateAuthorizationCommandStep1;
+import io.camunda.client.api.command.UpdateGlobalTaskListenerCommandStep1;
 import io.camunda.client.api.command.UpdateGroupCommandStep1;
 import io.camunda.client.api.command.UpdateJobCommandStep1;
 import io.camunda.client.api.command.UpdateMappingRuleCommandStep1;
@@ -124,6 +127,7 @@ import io.camunda.client.api.fetch.DecisionRequirementsGetRequest;
 import io.camunda.client.api.fetch.DecisionRequirementsGetXmlRequest;
 import io.camunda.client.api.fetch.DocumentContentGetRequest;
 import io.camunda.client.api.fetch.ElementInstanceGetRequest;
+import io.camunda.client.api.fetch.GlobalTaskListenerGetRequest;
 import io.camunda.client.api.fetch.GloballyScopedClusterVariableGetRequest;
 import io.camunda.client.api.fetch.GroupGetRequest;
 import io.camunda.client.api.fetch.IncidentGetRequest;
@@ -157,6 +161,7 @@ import io.camunda.client.api.search.request.DecisionDefinitionSearchRequest;
 import io.camunda.client.api.search.request.DecisionInstanceSearchRequest;
 import io.camunda.client.api.search.request.DecisionRequirementsSearchRequest;
 import io.camunda.client.api.search.request.ElementInstanceSearchRequest;
+import io.camunda.client.api.search.request.GlobalTaskListenerSearchRequest;
 import io.camunda.client.api.search.request.GroupsByRoleSearchRequest;
 import io.camunda.client.api.search.request.GroupsByTenantSearchRequest;
 import io.camunda.client.api.search.request.GroupsSearchRequest;
@@ -186,6 +191,7 @@ import io.camunda.client.api.search.request.VariableSearchRequest;
 import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
+import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -218,6 +224,7 @@ import io.camunda.client.impl.command.CreateBatchOperationCommandImpl.CreateBatc
 import io.camunda.client.impl.command.CreateDocumentBatchCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentCommandImpl;
 import io.camunda.client.impl.command.CreateDocumentLinkCommandImpl;
+import io.camunda.client.impl.command.CreateGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.CreateGroupCommandImpl;
 import io.camunda.client.impl.command.CreateMappingRuleCommandImpl;
 import io.camunda.client.impl.command.CreateProcessInstanceCommandImpl;
@@ -227,6 +234,7 @@ import io.camunda.client.impl.command.CreateUserCommandImpl;
 import io.camunda.client.impl.command.DeleteAuthorizationCommandImpl;
 import io.camunda.client.impl.command.DeleteDecisionInstanceCommandImpl;
 import io.camunda.client.impl.command.DeleteDocumentCommandImpl;
+import io.camunda.client.impl.command.DeleteGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.DeleteGroupCommandImpl;
 import io.camunda.client.impl.command.DeleteMappingRuleCommandImpl;
 import io.camunda.client.impl.command.DeleteProcessInstanceCommandImpl;
@@ -274,6 +282,7 @@ import io.camunda.client.impl.command.UnassignUserFromGroupCommandImpl;
 import io.camunda.client.impl.command.UnassignUserFromTenantCommandImpl;
 import io.camunda.client.impl.command.UnassignUserTaskCommandImpl;
 import io.camunda.client.impl.command.UpdateAuthorizationCommandImpl;
+import io.camunda.client.impl.command.UpdateGlobalTaskListenerCommandImpl;
 import io.camunda.client.impl.command.UpdateGroupCommandImpl;
 import io.camunda.client.impl.command.UpdateJobCommandImpl;
 import io.camunda.client.impl.command.UpdateMappingRuleCommandImpl;
@@ -291,6 +300,7 @@ import io.camunda.client.impl.fetch.DecisionRequirementsGetRequestImpl;
 import io.camunda.client.impl.fetch.DecisionRequirementsGetXmlRequestImpl;
 import io.camunda.client.impl.fetch.DocumentContentGetRequestImpl;
 import io.camunda.client.impl.fetch.ElementInstanceGetRequestImpl;
+import io.camunda.client.impl.fetch.GlobalTaskListenerGetRequestImpl;
 import io.camunda.client.impl.fetch.GloballyScopedClusterVariableGetRequestImpl;
 import io.camunda.client.impl.fetch.GroupGetRequestImpl;
 import io.camunda.client.impl.fetch.IncidentGetRequestImpl;
@@ -324,6 +334,7 @@ import io.camunda.client.impl.search.request.DecisionDefinitionSearchRequestImpl
 import io.camunda.client.impl.search.request.DecisionInstanceSearchRequestImpl;
 import io.camunda.client.impl.search.request.DecisionRequirementsSearchRequestImpl;
 import io.camunda.client.impl.search.request.ElementInstanceSearchRequestImpl;
+import io.camunda.client.impl.search.request.GlobalTaskListenerSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByRoleSearchRequestImpl;
 import io.camunda.client.impl.search.request.GroupsByTenantSearchRequestImpl;
@@ -354,6 +365,7 @@ import io.camunda.client.impl.search.request.VariableSearchRequestImpl;
 import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
+import io.camunda.client.impl.statistics.request.JobTypeStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -923,6 +935,12 @@ public final class CamundaClientImpl implements CamundaClient {
   public GlobalJobStatisticsRequest newGlobalJobStatisticsRequest(
       final OffsetDateTime from, final OffsetDateTime to) {
     return new GlobalJobStatisticsRequestImpl(httpClient, from, to);
+  }
+
+  @Override
+  public JobTypeStatisticsRequest newJobTypeStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to) {
+    return new JobTypeStatisticsRequestImpl(httpClient, config.getJsonMapper(), from, to);
   }
 
   @Override
@@ -1628,6 +1646,31 @@ public final class CamundaClientImpl implements CamundaClient {
   @Override
   public ResourceContentGetRequest newResourceContentGetRequest(final long resourceKey) {
     return new ResourceContentGetRequestImpl(httpClient, resourceKey);
+  }
+
+  @Override
+  public CreateGlobalTaskListenerCommandStep1 newCreateGlobalTaskListenerRequest() {
+    return new CreateGlobalTaskListenerCommandImpl(httpClient, jsonMapper);
+  }
+
+  @Override
+  public UpdateGlobalTaskListenerCommandStep1 newUpdateGlobalTaskListenerRequest(final String id) {
+    return new UpdateGlobalTaskListenerCommandImpl(httpClient, jsonMapper, id);
+  }
+
+  @Override
+  public DeleteGlobalTaskListenerCommandStep1 newDeleteGlobalTaskListenerRequest(final String id) {
+    return new DeleteGlobalTaskListenerCommandImpl(httpClient, id);
+  }
+
+  @Override
+  public GlobalTaskListenerGetRequest newGlobalTaskListenerGetRequest(final String id) {
+    return new GlobalTaskListenerGetRequestImpl(httpClient, id);
+  }
+
+  @Override
+  public GlobalTaskListenerSearchRequest newGlobalTaskListenerSearchRequest() {
+    return new GlobalTaskListenerSearchRequestImpl(httpClient, jsonMapper);
   }
 
   private JobClient newJobClient() {

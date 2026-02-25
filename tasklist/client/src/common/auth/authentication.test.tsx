@@ -10,28 +10,14 @@ import {http, HttpResponse} from 'msw';
 import {authenticationStore} from './authentication';
 import {nodeMockServer} from 'common/testing/nodeMockServer';
 import {getStateLocally} from 'common/local-storage';
-import {getClientConfig} from 'common/config/getClientConfig';
+import * as clientConfig from 'common/config/getClientConfig';
 import {currentUser} from 'common/mocks/current-user';
-
-vi.mock('common/config/getClientConfig', async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import('common/config/getClientConfig')>();
-  return {
-    getClientConfig: vi.fn().mockImplementation(actual.getClientConfig),
-  };
-});
-
-const {getClientConfig: actualGetClientConfig} = await vi.importActual<
-  typeof import('common/config/getClientConfig')
->('common/config/getClientConfig');
-const mockGetClientConfig = vi.mocked(getClientConfig);
 
 const unchangedHref = window.location.href;
 
 describe('authentication store', () => {
   beforeEach(() => {
     authenticationStore.reset();
-    mockGetClientConfig.mockReturnValue(actualGetClientConfig());
   });
 
   it('should assume that there is an existing session', () => {
@@ -111,9 +97,8 @@ describe('authentication store', () => {
       ...window.location,
       reload: mockReload,
     });
-
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: true,
     });
@@ -161,9 +146,8 @@ describe('authentication store', () => {
       ...window.location,
       reload: mockReload,
     });
-
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: false,
     });
@@ -199,9 +183,8 @@ describe('authentication store', () => {
         ...window.location,
         reload: mockReload,
       });
-
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -238,9 +221,8 @@ describe('authentication store', () => {
         ...window.location,
         reload: mockReload,
       });
-
-      mockGetClientConfig.mockReturnValue({
-        ...actualGetClientConfig(),
+      vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+        ...clientConfig.getClientConfig(),
         canLogout,
         isLoginDelegated,
       });
@@ -290,9 +272,8 @@ describe('authentication store', () => {
       ...window.location,
       reload: mockReload,
     });
-
-    mockGetClientConfig.mockReturnValue({
-      ...actualGetClientConfig(),
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       canLogout: true,
       isLoginDelegated: true,
     });

@@ -22,4 +22,14 @@ public record CamundaUserDTO(
     List<String> roles,
     String salesPlanType,
     Map<ClusterMetadata.AppName, String> c8Links,
-    boolean canLogout) {}
+    boolean canLogout) {
+
+  public CamundaUserDTO {
+    // initialize with empty collections as default in case null was passed on creation
+    authorizedComponents = authorizedComponents != null ? authorizedComponents : List.of();
+    tenants = tenants != null ? tenants : List.of();
+    groups = groups != null ? groups : List.of();
+    roles = roles != null ? roles : List.of();
+    c8Links = c8Links != null ? c8Links : Map.of();
+  }
+}

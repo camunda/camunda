@@ -7,19 +7,14 @@
  */
 package io.camunda.operate.util.j5templates;
 
-import io.camunda.operate.property.OperateProperties;
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import java.util.function.Predicate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
-@ConditionalOnProperty(
-    prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("operate")
 public class SearchCheckPredicatesHolder {
   @Autowired
   @Qualifier("processInstancesAreStartedCheck")

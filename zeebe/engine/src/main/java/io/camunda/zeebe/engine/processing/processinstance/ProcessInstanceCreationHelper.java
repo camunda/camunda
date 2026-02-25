@@ -61,7 +61,7 @@ public class ProcessInstanceCreationHelper {
           BpmnElementType.BOUNDARY_EVENT,
           BpmnElementType.UNSPECIFIED);
   private static final Either<Rejection, Object> VALID = Either.right(null);
-
+  private static final int MAX_BUSINESS_ID_LENGTH = 256;
   private final AuthorizationCheckBehavior authCheckBehavior;
   private final ProcessState processState;
   private final VariableBehavior variableBehavior;
@@ -204,11 +204,11 @@ public class ProcessInstanceCreationHelper {
     return validateHasNoneStartEventOrStartInstructions(process, startInstructions)
         .flatMap(valid -> validateElementsExist(process, startInstructions))
         .flatMap(valid -> validateElementsNotInsideMultiInstance(process, startInstructions))
-        .flatMap(valid -> validateElementsNotInsideAdHocSubProcess(process, startInstructions))
         .flatMap(valid -> validateTargetsSupportedElementType(process, startInstructions))
         .flatMap(
             valid -> validateElementNotBelongingToEventBasedGateway(process, startInstructions))
         .flatMap(valid -> validateTags(tags))
+        .flatMap(valid -> validateBusinessIdFormat(businessId))
         .flatMap(
             valid ->
                 validateBusinessIdUniqueness(
@@ -322,43 +322,6 @@ public class ProcessInstanceCreationHelper {
     }
   }
 
-  private Either<Rejection, ?> validateElementsNotInsideAdHocSubProcess(
-      final ExecutableProcess process,
-      final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
-
-    return startInstructions.stream()
-        .map(ProcessInstanceCreationStartInstruction::getElementId)
-        .filter(elementId -> isElementInsideAdHocSubProcess(process, elementId))
-        .findAny()
-        .map(
-            elementId ->
-                Either.left(
-                    new Rejection(
-                        RejectionType.INVALID_ARGUMENT,
-                        "Expected to create instance of process with start instructions but the element with id '%s' is inside an ad-hoc subprocess. The creation of elements inside an ad-hoc subprocess is not supported."
-                            .formatted(elementId))))
-        .orElse(VALID);
-  }
-
-  private boolean isElementInsideAdHocSubProcess(
-      final ExecutableProcess process, final String elementId) {
-    final var element = process.getElementById(wrapString(elementId));
-    return element != null && hasAdHocSubProcessScope(element);
-  }
-
-  private boolean hasAdHocSubProcessScope(final ExecutableFlowElement flowElement) {
-    final var flowScope = flowElement.getFlowScope();
-    if (flowScope == null) {
-      return false;
-    }
-
-    if (flowScope.getElementType() == BpmnElementType.AD_HOC_SUB_PROCESS) {
-      return true;
-    } else {
-      return hasAdHocSubProcessScope(flowScope);
-    }
-  }
-
   private Either<Rejection, ?> validateTargetsSupportedElementType(
       final ExecutableProcess process,
       final ArrayProperty<ProcessInstanceCreationStartInstruction> startInstructions) {
@@ -428,6 +391,22 @@ public class ProcessInstanceCreationHelper {
     }
 
     return VALID;
+  }
+
+  private Either<Rejection, ?> validateBusinessIdFormat(final String businessId) {
+    if (businessId == null) {
+      return VALID;
+    }
+    if (businessId.length() <= MAX_BUSINESS_ID_LENGTH) {
+      return VALID;
+    }
+    return Either.left(
+        new Rejection(
+            RejectionType.INVALID_ARGUMENT,
+            """
+            Expected to create instance of process with a valid business id, \
+            but the business id exceeds the max length of %d."""
+                .formatted(MAX_BUSINESS_ID_LENGTH)));
   }
 
   private Either<Rejection, ?> validateBusinessIdUniqueness(

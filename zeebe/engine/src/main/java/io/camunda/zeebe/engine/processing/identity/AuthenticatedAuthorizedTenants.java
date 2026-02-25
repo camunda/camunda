@@ -40,4 +40,9 @@ public final class AuthenticatedAuthorizedTenants implements AuthorizedTenants {
   public List<String> getAuthorizedTenantIds() {
     return new ArrayList<>(authorizedTenantIds);
   }
+
+  @Override
+  public boolean isAnonymous() {
+    return false;
+  }
 }

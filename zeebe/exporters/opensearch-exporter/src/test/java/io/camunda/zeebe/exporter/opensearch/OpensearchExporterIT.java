@@ -11,9 +11,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
-import io.camunda.zeebe.exporter.opensearch.TestClient.ComponentTemplatesDto.ComponentTemplateWrapper;
 import io.camunda.zeebe.exporter.opensearch.TestClient.IndexISMPolicyDto;
-import io.camunda.zeebe.exporter.opensearch.TestClient.IndexTemplatesDto.IndexTemplateWrapper;
+import io.camunda.zeebe.exporter.opensearch.dto.GetIndexStateManagementPolicyResponse;
 import io.camunda.zeebe.exporter.test.ExporterTestConfiguration;
 import io.camunda.zeebe.exporter.test.ExporterTestContext;
 import io.camunda.zeebe.exporter.test.ExporterTestController;
@@ -28,7 +27,6 @@ import io.camunda.zeebe.test.broker.protocol.ProtocolFactory;
 import io.camunda.zeebe.test.util.testcontainers.TestSearchContainers;
 import io.camunda.zeebe.util.VersionUtil;
 import java.io.IOException;
-import java.io.UncheckedIOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,6 +35,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 import org.agrona.CloseHelper;
+import org.assertj.core.api.InstanceOfAssertFactories;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assumptions;
@@ -47,9 +46,11 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
-import org.opensearch.client.ResponseException;
 import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.cluster.ComponentTemplate;
+import org.opensearch.client.opensearch.cluster.GetComponentTemplateResponse;
 import org.opensearch.client.opensearch.core.GetResponse;
+import org.opensearch.client.opensearch.indices.get_index_template.IndexTemplateItem;
 import org.opensearch.testcontainers.OpenSearchContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -250,12 +251,13 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    final var template = testClient.getIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
-    assertThat(template)
+    final var maybeTemplate =
+        testClient.maybeGetIndexTemplate(valueType, VersionUtil.getVersionLowerCase());
+    assertThat(maybeTemplate)
         .as("should have created index template for value type %s", valueType)
         .isPresent()
         .get()
-        .extracting(IndexTemplateWrapper::name)
+        .extracting(IndexTemplateItem::name)
         .isEqualTo(expectedIndexTemplateName);
   }
 
@@ -268,12 +270,22 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    final var template = testClient.getComponentTemplate();
-    assertThat(template)
-        .as("should have created the component template")
-        .isPresent()
-        .get()
-        .extracting(ComponentTemplateWrapper::name)
+    final Optional<GetComponentTemplateResponse> maybeGetComponentTemplate =
+        testClient.maybeGetComponentTemplate();
+
+    assertThat(maybeGetComponentTemplate).as("should have created component template").isPresent();
+
+    final GetComponentTemplateResponse componentTemplateResponse = maybeGetComponentTemplate.get();
+
+    final ComponentTemplate firstComponentTemplate =
+        assertThat(componentTemplateResponse)
+            .extracting(GetComponentTemplateResponse::componentTemplates)
+            .asInstanceOf(InstanceOfAssertFactories.list(ComponentTemplate.class))
+            .hasSize(1)
+            .first()
+            .actual();
+
+    assertThat(firstComponentTemplate.name())
         .isEqualTo(config.index.prefix + "-" + VersionUtil.getVersionLowerCase());
   }
 
@@ -286,7 +298,11 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    final var policy = testClient.getIndexStateManagementPolicy().policy();
+    final Optional<GetIndexStateManagementPolicyResponse> maybeIsmPolicy =
+        testClient.maybeGetIndexStateManagementPolicy();
+    assertThat(maybeIsmPolicy).isPresent();
+
+    final var policy = maybeIsmPolicy.get().policy();
     assertThat(policy.description())
         .as("Uses configured description")
         .isEqualTo(config.retention.getPolicyDescription());
@@ -301,7 +317,7 @@ final class OpensearchExporterIT {
     assertThat(transition.stateName())
         .as("Initial state transitions to delete state")
         .isEqualTo("delete");
-    assertThat(transition.conditions().minIndexAge())
+    assertThat(transition.conditions().get("min_index_age").to(String.class))
         .as("Initial state transitions after configured minimum age")
         .isEqualTo(config.retention.getMinimumAge());
 
@@ -331,11 +347,16 @@ final class OpensearchExporterIT {
     // when - export a single record to enforce creating the policy
     export(record);
 
-    // then
-    final var updatedPolicy = testClient.getIndexStateManagementPolicy().policy();
-    final String updatedMinimumAge =
-        updatedPolicy.states().getFirst().transitions().getFirst().conditions().minIndexAge();
-    assertThat(updatedMinimumAge).isEqualTo(config.retention.getMinimumAge());
+    final Optional<GetIndexStateManagementPolicyResponse> maybeIsmPolicy =
+        testClient.maybeGetIndexStateManagementPolicy();
+    assertThat(maybeIsmPolicy).isPresent();
+
+    final var updatedPolicy = maybeIsmPolicy.get().policy();
+    final var initialState = updatedPolicy.states().getFirst();
+    final var transition = initialState.transitions().getFirst();
+    assertThat(transition.conditions().get("min_index_age").to(String.class))
+        .as("Initial state transitions after updating the minimum age")
+        .isEqualTo(config.retention.getMinimumAge());
   }
 
   @Test
@@ -351,10 +372,7 @@ final class OpensearchExporterIT {
     export(record);
 
     // then
-    assertThatThrownBy(() -> testClient.getIndexStateManagementPolicy())
-        .isInstanceOf(UncheckedIOException.class)
-        .hasCauseInstanceOf(ResponseException.class)
-        .hasMessageContaining("Policy not found");
+    assertThat(testClient.maybeGetIndexStateManagementPolicy()).isEmpty();
   }
 
   @ParameterizedTest(name = "{0} - version={1}")
@@ -651,13 +669,13 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
-      assertThat(template)
+      final var maybeTemplate =
+          testClient.maybeGetIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+      assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(template -> template.indexTemplate().priority())
           .isEqualTo((long) priority);
     }
 
@@ -671,13 +689,13 @@ final class OpensearchExporterIT {
       export(record);
 
       // then
-      final var template =
-          testClient.getIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
-      assertThat(template)
+      final var maybeTemplate =
+          testClient.maybeGetIndexTemplate(ValueType.JOB, VersionUtil.getVersionLowerCase());
+      assertThat(maybeTemplate)
           .as("should have created index template for value type %s", ValueType.JOB)
           .isPresent()
           .get()
-          .extracting(wrapper -> wrapper.template().priority())
+          .extracting(template -> template.indexTemplate().priority())
           .isEqualTo(20L); // default priority is 20
     }
 

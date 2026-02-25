@@ -20,9 +20,9 @@ import co.elastic.clients.elasticsearch._types.SortOrder;
 import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.Hit;
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.operate.conditions.ElasticsearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.ScrollException;
 import io.camunda.operate.store.elasticsearch.ElasticsearchIncidentStore;
@@ -58,18 +58,13 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Conditional(ElasticsearchCondition.class)
-@ConditionalOnProperty(
-    prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("operate")
 public class ElasticsearchChecks {
 
   @Autowired UserTaskReader userTaskReader;

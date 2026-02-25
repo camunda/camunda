@@ -24,11 +24,14 @@ import io.camunda.client.metrics.MetricsRecorder;
 import io.camunda.client.spring.annotation.processor.DeploymentAnnotationProcessor;
 import io.camunda.client.spring.annotation.processor.JobWorkerAnnotationProcessor;
 import io.camunda.client.spring.event.CamundaClientEventListener;
+import io.camunda.client.spring.properties.CamundaClientProperties;
 import java.util.Set;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 
+@EnableConfigurationProperties(CamundaClientProperties.class)
 public class AnnotationProcessorConfiguration {
 
   @Bean
@@ -40,8 +43,8 @@ public class AnnotationProcessorConfiguration {
   @Bean
   @ConditionalOnProperty(value = "camunda.client.deployment.enabled", matchIfMissing = true)
   public DeploymentAnnotationProcessor deploymentPostProcessor(
-      final ApplicationEventPublisher publisher) {
-    return new DeploymentAnnotationProcessor(publisher);
+      final ApplicationEventPublisher publisher, final CamundaClientProperties properties) {
+    return new DeploymentAnnotationProcessor(publisher, properties);
   }
 
   @Bean

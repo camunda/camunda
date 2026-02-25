@@ -17,6 +17,7 @@ import mappingRules from "./mappingRules.json";
 import clusterVariables from "./clusterVariables.json";
 import operationsLog from "./operationsLog.json";
 import authentication from "./authentication.json";
+import globalTaskListeners from "./globalTaskListeners.json";
 
 export default {
   components,
@@ -30,4 +31,5 @@ export default {
   clusterVariables,
   operationsLog,
   authentication,
+  globalTaskListeners,
 };

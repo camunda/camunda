@@ -10,6 +10,8 @@ fi
 
 if [ "${IS_MAIN}" = "true" ]; then
     tags+=("${DOCKER_IMAGE_DOCKER_HUB}:8-SNAPSHOT")
+elif [ -n "${DOCKER_HUB_SNAPSHOT_TAG}" ]; then
+    tags+=("${DOCKER_IMAGE_DOCKER_HUB}:${DOCKER_HUB_SNAPSHOT_TAG}")
 fi
 
 printf -v tag_arguments -- "-t %s " "${tags[@]}"

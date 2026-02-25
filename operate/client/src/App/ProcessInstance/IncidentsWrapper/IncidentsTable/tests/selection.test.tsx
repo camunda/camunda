@@ -18,6 +18,10 @@ describe('Selection', () => {
     mockFetchProcessInstanceV2().withSuccess(
       createProcessInstance({
         hasIncident: true,
+        parentProcessInstanceKey: null,
+        parentElementInstanceKey: null,
+        rootProcessInstanceKey: null,
+        tags: [],
       }),
     );
     mockFetchElementInstance('18239123812938').withSuccess({
@@ -31,7 +35,9 @@ describe('Selection', () => {
       processDefinitionId: 'calledInstance',
       processInstanceKey: '1',
       processDefinitionKey: '123',
+      rootProcessInstanceKey: null,
       hasIncident: true,
+      incidentKey: null,
       tenantId: '<default>',
     });
   });

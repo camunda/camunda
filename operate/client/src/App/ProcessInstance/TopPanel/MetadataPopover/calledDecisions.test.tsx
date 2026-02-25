@@ -34,11 +34,12 @@ import {mockSearchDecisionInstances} from 'modules/mocks/api/v2/decisionInstance
 import type {
   ElementInstance,
   ProcessInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+  Incident,
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchProcessInstances} from 'modules/mocks/api/v2/processInstances/searchProcessInstances';
 import {mockSearchMessageSubscriptions} from 'modules/mocks/api/v2/messageSubscriptions/searchMessageSubscriptions';
 
-const mockElementInstance: ElementInstance = {
+const mockElementInstance = {
   elementInstanceKey: '2251799813699889',
   elementId: BUSINESS_RULE_FLOW_NODE_ID,
   elementName: 'Business Rule Task',
@@ -49,28 +50,36 @@ const mockElementInstance: ElementInstance = {
   processDefinitionId: 'someKey',
   processInstanceKey: PROCESS_INSTANCE_ID,
   processDefinitionKey: '2',
+  rootProcessInstanceKey: null,
   hasIncident: false,
+  incidentKey: null,
   tenantId: '<default>',
-};
+} satisfies ElementInstance;
 
-const mockProcessInstance: ProcessInstance = {
+const mockProcessInstance = {
   processInstanceKey: '229843728748927482',
   state: 'ACTIVE',
   startDate: '2018-06-21',
+  endDate: null,
   processDefinitionKey: '2',
   processDefinitionVersion: 1,
+  processDefinitionVersionTag: null,
   processDefinitionId: 'someKey',
   tenantId: '<default>',
   processDefinitionName: 'Called Process',
   hasIncident: true,
-};
+  parentProcessInstanceKey: null,
+  parentElementInstanceKey: null,
+  rootProcessInstanceKey: null,
+  tags: [],
+} satisfies ProcessInstance;
 
 const mockIncident = {
   incidentKey: '4503599627375678',
-  errorType: 'DECISION_EVALUATION_ERROR' as const,
+  errorType: 'DECISION_EVALUATION_ERROR',
   errorMessage:
     "Failed to evaluate expression 'paid = false': no variable found for name 'paid'",
-  state: 'ACTIVE' as const,
+  state: 'ACTIVE',
   creationTime: '2022-02-03T16:44:06.981+0000',
   processDefinitionId: 'someKey',
   processDefinitionKey: '2',
@@ -79,7 +88,8 @@ const mockIncident = {
   elementInstanceKey: '2251799813699889',
   jobKey: '',
   tenantId: '<default>',
-};
+  rootProcessInstanceKey: null,
+} satisfies Incident;
 
 describe('MetadataPopover', () => {
   beforeEach(() => {

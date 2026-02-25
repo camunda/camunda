@@ -20,7 +20,7 @@ import {
   ErrorMessage,
 } from './styled';
 import {Skeleton} from './Skeleton';
-import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {DecisionInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useDecisionInstance} from 'modules/queries/decisionInstances/useDecisionInstance';
 
 type RowProps = React.ComponentProps<typeof StructuredList>['rows'][number];
@@ -92,9 +92,9 @@ const InputsAndOutputs: React.FC<InputAndOutputProps> = ({
 
     return decisionInstance.matchedRules.flatMap((rule) => {
       return rule.evaluatedOutputs.map<RowProps>((output) => ({
-        key: `${output.outputId}--${rule.ruleId}`,
+        key: `${output.outputId}--${rule.ruleId ?? 'no-rule-id'}`,
         columns: [
-          {cellContent: rule.ruleIndex},
+          {cellContent: rule.ruleIndex ?? '--'},
           {cellContent: output.outputName},
           {cellContent: output.outputValue},
         ],

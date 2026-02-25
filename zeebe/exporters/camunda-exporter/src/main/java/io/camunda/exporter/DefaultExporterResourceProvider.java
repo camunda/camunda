@@ -31,6 +31,8 @@ import io.camunda.exporter.handlers.ExportHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromIncidentHandler;
 import io.camunda.exporter.handlers.FlowNodeInstanceFromProcessInstanceHandler;
 import io.camunda.exporter.handlers.FormHandler;
+import io.camunda.exporter.handlers.GlobalListenerCreatedUpdatedHandler;
+import io.camunda.exporter.handlers.GlobalListenerDeletedHandler;
 import io.camunda.exporter.handlers.GroupCreatedUpdatedHandler;
 import io.camunda.exporter.handlers.GroupDeletedHandler;
 import io.camunda.exporter.handlers.GroupEntityAddedHandler;
@@ -93,11 +95,13 @@ import io.camunda.exporter.handlers.operation.OperationFromVariableDocumentHandl
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.IndexDescriptors;
 import io.camunda.webapps.schema.descriptors.IndexTemplateDescriptor;
+import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.AuthorizationIndex;
 import io.camunda.webapps.schema.descriptors.index.ClusterVariableIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.index.DecisionRequirementsIndex;
 import io.camunda.webapps.schema.descriptors.index.FormIndex;
+import io.camunda.webapps.schema.descriptors.index.GlobalListenerIndex;
 import io.camunda.webapps.schema.descriptors.index.GroupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
 import io.camunda.webapps.schema.descriptors.index.MappingRuleIndex;
@@ -371,7 +375,11 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
             new CorrelatedMessageSubscriptionFromProcessMessageSubscriptionHandler(
                 indexDescriptors
                     .get(CorrelatedMessageSubscriptionTemplate.class)
-                    .getFullQualifiedName())));
+                    .getFullQualifiedName()),
+            new GlobalListenerCreatedUpdatedHandler(
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName()),
+            new GlobalListenerDeletedHandler(
+                indexDescriptors.get(GlobalListenerIndex.class).getFullQualifiedName())));
 
     if (configuration.getAuditLog().isEnabled()) {
       addAuditLogHandlers(configuration.getAuditLog(), partitionId);
@@ -481,7 +489,10 @@ public class DefaultExporterResourceProvider implements ExporterResourceProvider
 
   private void addAuditLogHandlers(final AuditLogConfiguration auditLog, final int partitionId) {
     final var indexName = (indexDescriptors.get(AuditLogTemplate.class).getFullQualifiedName());
-    final var auditLogBuilder = AuditLogHandler.builder(indexName, auditLog);
+    final var auditLogCleanupIndexName =
+        (indexDescriptors.get(AuditLogCleanupIndex.class).getFullQualifiedName());
+    final var auditLogBuilder =
+        AuditLogHandler.builder(indexName, auditLogCleanupIndexName, auditLog);
 
     if (partitionId == PROCESS_DEFINITION_PARTITION) {
       AuditLogTransformerRegistry.createPartitionSpecificTransformers()

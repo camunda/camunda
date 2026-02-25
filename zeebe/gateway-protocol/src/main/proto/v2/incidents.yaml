@@ -293,6 +293,7 @@ components:
 
     IncidentErrorTypeEnum:
       description: Incident error type with a defined set of values.
+      type: string
       enum:
         - AD_HOC_SUB_PROCESS_NO_RETRIES
         - CALLED_DECISION_ERROR
@@ -353,6 +354,7 @@ components:
 
     IncidentStateEnum:
       description: Incident states with a defined set of values.
+      type: string
       enum:
         - ACTIVE
         - MIGRATED
@@ -384,6 +386,8 @@ components:
         - field
 
     IncidentSearchQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -396,12 +400,17 @@ components:
 
     IncidentResult:
       type: object
+      required:
+        - rootProcessInstanceKey
+        - jobKey
+        - tenantId
       properties:
         processDefinitionId:
           allOf:
             - $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
           description: The process definition ID associated to this incident.
         errorType:
+          description: The type of the incident error.
           allOf:
             - $ref: "#/components/schemas/IncidentErrorTypeEnum"
         errorMessage:
@@ -412,9 +421,11 @@ components:
             - $ref: 'identifiers.yaml#/components/schemas/ElementId'
           description: The element ID associated to this incident.
         creationTime:
+          description: The creation time of the incident.
           type: string
           format: date-time
         state:
+          description: The incident state.
           allOf:
             - $ref: "#/components/schemas/IncidentStateEnum"
         tenantId:
@@ -446,9 +457,10 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
           description: The element instance key associated to this incident.
         jobKey:
+          description: The job key, if exists, associated with this incident.
+          nullable: true
           allOf:
             - $ref: 'keys.yaml#/components/schemas/JobKey'
-          description: The job key, if exists, associated with this incident.
 
     IncidentResolutionRequest:
       type: object
@@ -473,6 +485,8 @@ components:
             $ref: '#/components/schemas/IncidentProcessInstanceStatisticsByErrorQuerySortRequest'
 
     IncidentProcessInstanceStatisticsByErrorQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -534,6 +548,8 @@ components:
         - filter
 
     IncidentProcessInstanceStatisticsByDefinitionQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'

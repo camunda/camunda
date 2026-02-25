@@ -375,6 +375,8 @@ components:
 
     ElementInstanceSearchQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: "search-models.yaml#/components/schemas/SearchQueryResponse"
       properties:
@@ -398,6 +400,7 @@ components:
         - elementInstanceKey
         - processInstanceKey
         - processDefinitionKey
+        - rootProcessInstanceKey
       properties:
         processDefinitionId:
           description: The process definition ID associated to this element instance.
@@ -409,6 +412,7 @@ components:
           format: date-time
         endDate:
           description: Date when element instance finished.
+          nullable: true
           type: string
           format: date-time
         elementId:
@@ -484,6 +488,7 @@ components:
           allOf:
             - $ref: "keys.yaml#/components/schemas/IncidentKey"
           description: Incident key associated with this element instance.
+          nullable: true
 
     ElementInstanceStateEnum:
       description: Element states

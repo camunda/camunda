@@ -170,6 +170,24 @@ export const RESPONSE_INDEX = {
       '200': 1
     }
   },
+  '/global-task-listeners': {
+    'POST': {
+      '201': 1
+    }
+  },
+  '/global-task-listeners/{id}': {
+    'GET': {
+      '200': 1
+    },
+    'PUT': {
+      '200': 1
+    }
+  },
+  '/global-task-listeners/search': {
+    'POST': {
+      '200': 1
+    }
+  },
   '/groups': {
     'POST': {
       '201': 1
@@ -240,6 +258,16 @@ export const RESPONSE_INDEX = {
   },
   '/jobs/statistics/global': {
     'GET': {
+      '200': 1
+    }
+  },
+  '/jobs/statistics/by-types': {
+    'POST': {
+      '200': 1
+    }
+  },
+  '/jobs/statistics/by-workers': {
+    'POST': {
       '200': 1
     }
   },
@@ -427,6 +455,11 @@ export const RESPONSE_INDEX = {
   '/roles/{roleId}/users/search': {
     'POST': {
       '200': 1
+    }
+  },
+  '/setup/user': {
+    'POST': {
+      '201': 1
     }
   },
   '/signals/broadcast': {

@@ -109,8 +109,8 @@ public class AzureBackupStoreIT implements BackupStoreTestKit {
         .withMessageContaining(
             """
                 Cannot delete Backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}' \
-                while saving is in progress.""");
+                'BackupId{node=1, partition=2, checkpoint=3}'\
+                , must be marked as deleted.""");
   }
 
   @ParameterizedTest

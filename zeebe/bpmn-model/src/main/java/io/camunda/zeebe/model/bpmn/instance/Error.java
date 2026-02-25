@@ -21,11 +21,7 @@ package io.camunda.zeebe.model.bpmn.instance;
  *
  * @author Sebastian Menski
  */
-public interface Error extends RootElement {
-
-  String getName();
-
-  void setName(String name);
+public interface Error extends RootElement, NamedBpmnElement {
 
   String getErrorCode();
 

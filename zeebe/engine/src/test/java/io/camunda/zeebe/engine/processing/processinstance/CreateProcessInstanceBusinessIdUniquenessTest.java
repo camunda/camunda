@@ -8,11 +8,11 @@
 package io.camunda.zeebe.engine.processing.processinstance;
 
 import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
-import io.camunda.zeebe.protocol.record.Assertions;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceCreationIntent;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -215,7 +215,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .create();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceCreationRecords()
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
                 .withBpmnProcessId(processId)
@@ -259,7 +259,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .create();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceCreationRecords()
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
                 .withBpmnProcessId(processId)
@@ -300,7 +300,7 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
             .create();
 
     // then
-    Assertions.assertThat(
+    assertThat(
             RecordingExporter.processInstanceCreationRecords()
                 .withIntent(ProcessInstanceCreationIntent.CREATED)
                 .withBpmnProcessId(processId)
@@ -309,5 +309,173 @@ public final class CreateProcessInstanceBusinessIdUniquenessTest {
                 .getValue())
         .hasBusinessId(businessId)
         .hasProcessInstanceKey(secondProcessInstanceKey);
+  }
+
+  @Test
+  public void shouldAllowMultipleChildProcessInstancesWithSameBusinessId() {
+    final String parentProcessId = helper.getBpmnProcessId() + "_parent";
+    final String childProcessId = helper.getBpmnProcessId() + "_child";
+    final String businessId = "biz-123";
+
+    // given two processes:
+    // - parent process with a parallel gateway that creates two child instances in parallel
+    // - child process with a user task
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(parentProcessId)
+                .startEvent()
+                .parallelGateway("fork")
+                .callActivity("call1", c -> c.zeebeProcessId(childProcessId))
+                .endEvent()
+                .moveToLastGateway()
+                .callActivity("call2", c -> c.zeebeProcessId(childProcessId))
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(childProcessId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var parentProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(parentProcessId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(childProcessId)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .limit(2))
+        .describedAs("Expect two active child instances with the same business id")
+        .allSatisfy(r -> assertThat(r.getValue()).hasBusinessId(businessId));
+  }
+
+  @Test
+  public void shouldAllowCallActivityToCreateProcessInstanceWithBusinessIdInUse() {
+    final String processUnderTestId = helper.getBpmnProcessId() + "_underTest";
+    final String processWithCallActivityId = helper.getBpmnProcessId() + "_callActivity";
+    final String businessId = "biz-123";
+
+    // given:
+    // - two processes: process under test and call activity process
+    // - and an instance of the process under test with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processUnderTestId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processWithCallActivityId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(processUnderTestId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // and an already active instance of the process under test with business id
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processUnderTestId)
+            .withBusinessId(businessId)
+            .create();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withProcessInstanceKey(processInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect business id in use")
+        .hasBusinessId(businessId);
+
+    // when
+    final var parentProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processWithCallActivityId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect called process instance created even with business id already in use")
+        .hasBusinessId(businessId);
+  }
+
+  @Test
+  public void shouldAllowCreateProcessInstanceWithBusinessIdInUseOnlyByChildInstance() {
+    final String processUnderTestId = helper.getBpmnProcessId() + "_underTest";
+    final String processWithCallActivityId = helper.getBpmnProcessId() + "_callActivity";
+    final String businessId = "biz-123";
+
+    // given:
+    // - two processes: process under test and call activity process
+    // - and an instance of the process under test with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processUnderTestId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processWithCallActivityId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(processUnderTestId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // and an instance of process under test created via a call activity with a business id
+    final var parentProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processWithCallActivityId)
+            .withBusinessId(businessId)
+            .create();
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .withBpmnProcessId(processUnderTestId)
+                .getFirst()
+                .getValue())
+        .describedAs("Expect child instance with business id in use")
+        .hasBusinessId(businessId);
+
+    // when
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processUnderTestId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .withBpmnProcessId(processUnderTestId)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Allow creating process instance with business id only in use by child instance")
+        .hasBusinessId(businessId);
   }
 }

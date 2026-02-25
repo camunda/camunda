@@ -11,10 +11,13 @@
 <mapper namespace="io.camunda.db.rdbms.sql.DecisionDefinitionMapper">
 
   <select id="count" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery">
-    SELECT COUNT(*)
-    FROM ${prefix}DECISION_DEFINITION t
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
-    <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}DECISION_DEFINITION t
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.maxVersionFilter"/>
+      <include refid="io.camunda.db.rdbms.sql.DecisionDefinitionMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <select id="search" parameterType="io.camunda.db.rdbms.read.domain.DecisionDefinitionDbQuery"

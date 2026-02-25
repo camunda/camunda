@@ -50,16 +50,28 @@ describe('OperationsLog InstancesTable', () => {
           version: 1,
           tenantId: '<default>',
           hasStartForm: false,
+          resourceName: null,
+          versionTag: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
   it('should render operations log header', () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -72,7 +84,12 @@ describe('OperationsLog InstancesTable', () => {
   it('should show loading state when data is being fetched', () => {
     mockQueryAuditLogs().withDelay({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -85,7 +102,12 @@ describe('OperationsLog InstancesTable', () => {
   it('should render empty state when no operations are found', async () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -105,7 +127,12 @@ describe('OperationsLog InstancesTable', () => {
   it('should render table headers correctly', async () => {
     mockQueryAuditLogs().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -147,6 +174,27 @@ describe('OperationsLog InstancesTable', () => {
           actorType: 'USER',
           category: 'USER_TASKS',
           entityDescription: 'variableName',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
         },
         {
           auditLogKey: '456',
@@ -160,9 +208,35 @@ describe('OperationsLog InstancesTable', () => {
           actorType: 'USER',
           category: 'DEPLOYED_RESOURCES',
           entityDescription: 'ERROR_CODE',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
         },
       ],
-      page: {totalItems: 2},
+      page: {
+        totalItems: 2,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -199,9 +273,34 @@ describe('OperationsLog InstancesTable', () => {
           annotation: 'Batch operation',
           actorType: 'USER',
           category: 'DEPLOYED_RESOURCES',
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          entityDescription: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -233,9 +332,36 @@ describe('OperationsLog InstancesTable', () => {
           annotation: 'Updated variable',
           actorType: 'USER',
           category: 'USER_TASKS',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          entityDescription: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(<InstancesTable />, {
@@ -281,9 +407,36 @@ describe('OperationsLog InstancesTable', () => {
           annotation: 'Test',
           actorType: 'USER',
           category: 'USER_TASKS',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          entityDescription: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -310,9 +463,33 @@ describe('OperationsLog InstancesTable', () => {
           category: 'DEPLOYED_RESOURCES',
           processDefinitionId: 'process1',
           processDefinitionKey: '123456',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          entityDescription: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {
@@ -342,9 +519,36 @@ describe('OperationsLog InstancesTable', () => {
           annotation: 'Evaluated',
           actorType: 'USER',
           category: 'DEPLOYED_RESOURCES',
+          batchOperationKey: null,
+          batchOperationType: null,
+          tenantId: null,
+          processDefinitionId: null,
+          processDefinitionKey: null,
+          processInstanceKey: null,
+          rootProcessInstanceKey: null,
+          elementInstanceKey: null,
+          jobKey: null,
+          userTaskKey: null,
+          decisionRequirementsId: null,
+          decisionRequirementsKey: null,
+          decisionDefinitionId: null,
+          decisionDefinitionKey: null,
+          decisionEvaluationKey: null,
+          deploymentKey: null,
+          formKey: null,
+          resourceKey: null,
+          relatedEntityKey: null,
+          relatedEntityType: null,
+          agentElementId: null,
+          entityDescription: null,
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<InstancesTable />, {

@@ -18,6 +18,7 @@ import io.camunda.gateway.protocol.model.CamundaProblemDetail;
 import io.camunda.service.exception.ServiceException;
 import io.camunda.zeebe.gateway.rest.exception.DeserializationException;
 import io.camunda.zeebe.gateway.rest.mapper.RestErrorMapper;
+import io.camunda.zeebe.gateway.rest.validation.ResponseValidationException;
 import jakarta.servlet.http.HttpServletRequest;
 import java.net.URI;
 import java.util.Arrays;
@@ -156,6 +157,19 @@ public class GlobalControllerExceptionHandler extends ResponseEntityExceptionHan
   private boolean isUnknownTypeError(final Exception ex) {
     return ex instanceof HttpMessageNotReadableException
         && ex.getCause() instanceof InvalidTypeIdException;
+  }
+
+  @ExceptionHandler(ResponseValidationException.class)
+  public ResponseEntity<ProblemDetail> handleResponseValidationException(
+      final ResponseValidationException ex, final HttpServletRequest request) {
+    final ProblemDetail problemDetail =
+        CamundaProblemDetail.forStatusAndDetail(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Gateway response validation: response violates the API specification. "
+                + ex.getMessage());
+    problemDetail.setInstance(URI.create(request.getRequestURI()));
+    problemDetail.setTitle("Response Validation Failed");
+    return RestErrorMapper.mapProblemToResponse(problemDetail);
   }
 
   @ExceptionHandler(Exception.class)

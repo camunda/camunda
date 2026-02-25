@@ -21,7 +21,7 @@ import type {
   BatchOperationItem,
   ProcessInstanceState,
   BatchOperationType,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {batchModificationStore} from 'modules/stores/batchModification';
 import {Toolbar} from './Toolbar';
 import {getProcessInstanceFilters} from 'modules/utils/filter/getProcessInstanceFilters';
@@ -33,11 +33,13 @@ import {getProcessDefinitionName} from 'modules/utils/instance';
 import {useOperationItemsForInstances} from 'modules/queries/batch-operations/useOperationItemsForInstances';
 import {useActiveOperationItemsForInstances} from 'modules/queries/batch-operations/useActiveOperationItemsForInstances';
 import {InlineLoading} from '@carbon/react';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type InstancesTableProps = {
   state: 'skeleton' | 'loading' | 'error' | 'empty' | 'content';
   processInstances: ProcessInstance[];
   totalProcessInstancesCount: number;
+  hasMoreTotalItems: boolean;
   onVerticalScrollStartReach?: (scrollDown: (offset: number) => void) => void;
   onVerticalScrollEndReach?: () => void;
 };
@@ -47,6 +49,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
     state,
     processInstances,
     totalProcessInstancesCount,
+    hasMoreTotalItems,
     onVerticalScrollStartReach,
     onVerticalScrollEndReach,
   }) => {
@@ -62,9 +65,10 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
       location.search,
     );
     const listHasFinishedInstances = canceled || completed;
+    const clientConfig = getClientConfig();
 
     const isTenantColumnVisible =
-      window.clientConfig?.multiTenancyEnabled &&
+      clientConfig.multiTenancyEnabled &&
       (tenant === undefined || tenant === 'all');
 
     const batchOperationId = searchParams.get('operationId') ?? undefined;
@@ -109,6 +113,7 @@ const InstancesTable: React.FC<InstancesTableProps> = observer(
         <PanelHeader
           title="Process Instances"
           count={totalProcessInstancesCount}
+          hasMoreTotalItems={hasMoreTotalItems}
         />
         <Toolbar
           selectedInstancesCount={

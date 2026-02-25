@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.processing.identity.authorization.resolver;
 
+import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_ANONYMOUS_USER;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_CLIENT_ID;
 import static io.camunda.zeebe.auth.Authorization.AUTHORIZED_USERNAME;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -35,6 +36,34 @@ class TenantResolverTest {
     mappingRuleState = mock(MappingRuleState.class);
     claimsExtractor = new ClaimsExtractor(membershipState);
     tenantResolver = new TenantResolver(membershipState, mappingRuleState, claimsExtractor, true);
+  }
+
+  @Test
+  void shouldReturnAnonymousAuthorizedTenantsWhenClaimsAreAnonymous() {
+    // given
+    final var claims = Map.<String, Object>of(AUTHORIZED_ANONYMOUS_USER, true);
+
+    // when
+    final var authorizedTenants = tenantResolver.getAuthorizedTenants(claims);
+
+    // then — isAnonymous() must return true so the ASSIGNED filter guard rejects the stream
+    assertThat(authorizedTenants.isAnonymous()).isTrue();
+  }
+
+  @Test
+  void shouldNotReturnAnonymousAuthorizedTenantsWhenClaimsAreAuthenticated() {
+    // given
+    final var username = "demo-user";
+    final var tenantId = "tenant-1";
+    when(membershipState.getMemberships(EntityType.USER, username, RelationType.TENANT))
+        .thenReturn(List.of(tenantId));
+    final var claims = Map.<String, Object>of(AUTHORIZED_USERNAME, username);
+
+    // when
+    final var authorizedTenants = tenantResolver.getAuthorizedTenants(claims);
+
+    // then
+    assertThat(authorizedTenants.isAnonymous()).isFalse();
   }
 
   @Test

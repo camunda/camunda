@@ -138,9 +138,12 @@
   </select>
 
   <select id="count" resultType="java.lang.Long">
-    SELECT COUNT(*)
-    FROM ${prefix}USER_TASK ut
-    <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+    SELECT COUNT(*) FROM (
+      SELECT 1 as col
+      FROM ${prefix}USER_TASK ut
+      <include refid="io.camunda.db.rdbms.sql.UserTaskMapper.searchFilter"/>
+      ${count.limit}
+    ) t
   </select>
 
   <sql id="searchFilter">

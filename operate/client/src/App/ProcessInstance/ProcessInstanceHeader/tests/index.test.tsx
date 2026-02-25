@@ -50,7 +50,12 @@ describe('InstanceHeader', () => {
   it('should render process instance data', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -98,7 +103,12 @@ describe('InstanceHeader', () => {
   it('should render "View All" link for call activity process', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -120,7 +130,12 @@ describe('InstanceHeader', () => {
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockCallActivityProcessXML);
 
@@ -147,7 +162,12 @@ describe('InstanceHeader', () => {
   it('should render parent Process Instance Key', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -181,11 +201,19 @@ describe('InstanceHeader', () => {
           batchOperationKey: '1',
           itemKey: '1',
           processInstanceKey: mockInstance.processInstanceKey,
+          rootProcessInstanceKey: null,
+          processedDate: null,
+          errorMessage: null,
           state: 'ACTIVE',
           operationType: 'CANCEL_PROCESS_INSTANCE',
         },
       ],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -203,7 +231,12 @@ describe('InstanceHeader', () => {
   it('should not show spinner when instance has no active operations', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -221,7 +254,12 @@ describe('InstanceHeader', () => {
   it('should show operation buttons for running process instance when user has permission', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -247,7 +285,12 @@ describe('InstanceHeader', () => {
   it('should show operation buttons for finished process instance when user has permission', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -274,7 +317,12 @@ describe('InstanceHeader', () => {
   it('should redirect and show notification when "Delete Instance" is clicked', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
@@ -293,7 +341,12 @@ describe('InstanceHeader', () => {
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     await user.click(screen.getByRole('button', {name: /Delete Instance/}));
 
@@ -302,7 +355,12 @@ describe('InstanceHeader', () => {
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     await user.click(screen.getByRole('button', {name: /danger delete/i}));
 
@@ -322,7 +380,12 @@ describe('InstanceHeader', () => {
   it('should show spinner on process instance cancellation', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockCancelProcessInstance().withSuccess({});
@@ -347,7 +410,12 @@ describe('InstanceHeader', () => {
     // Mock for refetch after successful cancel
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     await user.click(screen.getByRole('button', {name: /cancel instance/i}));
     await user.click(screen.getByRole('button', {name: /apply/i}));

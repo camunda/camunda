@@ -28,7 +28,8 @@ class IncidentProcessInstanceStatisticsByDefinitionDbReaderTest {
 
   private final IncidentMapper incidentMapper = mock(IncidentMapper.class);
   private final IncidentProcessInstanceStatisticsByDefinitionDbReader reader =
-      new IncidentProcessInstanceStatisticsByDefinitionDbReader(incidentMapper);
+      new IncidentProcessInstanceStatisticsByDefinitionDbReader(
+          incidentMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyListWhenAuthorizedResourceIdsIsNull() {

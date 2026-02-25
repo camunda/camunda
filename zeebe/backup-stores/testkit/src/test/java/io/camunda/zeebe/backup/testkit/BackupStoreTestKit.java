@@ -18,7 +18,8 @@ public interface BackupStoreTestKit
         UpdatingBackupStatus,
         QueryingBackupStatus,
         ListingBackups,
-        StoringRangeMarkers {
+        StoringRangeMarkers,
+        StoringBackupMetadata {
 
   static Stream<? extends Arguments> provideBackups() throws Exception {
     return TestBackupProvider.provideArguments();

@@ -21,6 +21,7 @@ import io.camunda.service.ExpressionServices.ExpressionEvaluationRequest;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -95,6 +96,55 @@ public class ExpressionControllerTest extends RestControllerTest {
     final var capturedRequest = requestCaptor.getValue();
     assertThat(capturedRequest.expression()).isEqualTo("=x + y");
     assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+  }
+
+  @Test
+  void shouldEvaluateExpressionWithContext() {
+    // given
+    final var expressionRecord = mock(ExpressionRecord.class);
+    when(expressionRecord.getExpression()).thenReturn("=x + y");
+    when(expressionRecord.getResultValue()).thenReturn("10");
+    when(expressionRecord.getWarnings()).thenReturn(List.of());
+
+    when(expressionServices.evaluateExpression(any(ExpressionEvaluationRequest.class)))
+        .thenReturn(CompletableFuture.completedFuture(expressionRecord));
+
+    final var request =
+        """
+        {
+            "expression": "=x + y",
+            "tenantId": "tenant1",
+            "context": {
+                "x": 4,
+                "y": 6
+            }
+        }""";
+
+    // when / then
+    webClient
+        .post()
+        .uri(EXPRESSION_URL)
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .json(
+            """
+            {
+                "expression": "=x + y",
+                "result": "10",
+                "warnings": []
+            }""",
+            JsonCompareMode.STRICT);
+
+    verify(expressionServices).evaluateExpression(requestCaptor.capture());
+    final var capturedRequest = requestCaptor.getValue();
+    assertThat(capturedRequest.expression()).isEqualTo("=x + y");
+    assertThat(capturedRequest.tenantId()).isEqualTo("tenant1");
+    assertThat(capturedRequest.context()).isEqualTo(Map.of("x", 4, "y", 6));
   }
 
   @Test

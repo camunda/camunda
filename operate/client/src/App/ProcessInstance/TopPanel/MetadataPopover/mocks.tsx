@@ -40,6 +40,7 @@ const getWrapper = (
 const renderPopover = (searchParams?: {
   elementId?: string;
   elementInstanceKey?: string;
+  isMultiInstanceBody?: string;
 }) => {
   const svgElement = document.createElementNS(
     'http://www.w3.org/2000/svg',

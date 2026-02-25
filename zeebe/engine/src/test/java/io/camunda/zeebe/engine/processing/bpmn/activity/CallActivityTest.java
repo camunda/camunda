@@ -14,6 +14,7 @@ import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.builder.AbstractBpmnModelElementBuilder;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.model.bpmn.builder.CallActivityBuilder;
 import io.camunda.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeBindingType;
@@ -54,6 +55,7 @@ public final class CallActivityTest {
 
   private static final String PROCESS_ID_PARENT = "wf-parent";
   private static final String PROCESS_ID_CHILD = "wf-child";
+  private static final String CHILD_TASK = "child-task";
 
   @Rule public final BrokerClassRuleHelper helper = new BrokerClassRuleHelper();
 
@@ -75,7 +77,7 @@ public final class CallActivityTest {
     final var builder =
         Bpmn.createExecutableProcess(PROCESS_ID_CHILD)
             .startEvent()
-            .serviceTask("child-task", t -> t.zeebeJobType(jobType));
+            .serviceTask(CHILD_TASK, t -> t.zeebeJobType(jobType));
 
     consumer.accept(builder);
 
@@ -1290,12 +1292,30 @@ public final class CallActivityTest {
     // when
     final long rootInstanceKey = ENGINE.processInstance().ofBpmnProcessId(rootProcessId).create();
 
-    final var rootInstanceRecords = getInstancesOf(rootInstanceKey);
+    final var processInstanceRecords =
+        RecordingExporter.processInstanceRecords()
+            .limit(
+                r ->
+                    r.getValue().getElementId().equals(CHILD_TASK)
+                        && r.getIntent() == ProcessInstanceIntent.ELEMENT_ACTIVATED)
+            .map(Record::getValue)
+            .toList();
+
+    final var rootInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == rootInstanceKey)
+            .toList();
     final var parentInstanceKey = getChildInstanceOf(rootInstanceKey).getProcessInstanceKey();
-    final var parentInstanceRecords = getInstancesOf(parentInstanceKey);
+    final var parentInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == parentInstanceKey)
+            .toList();
     final var childProcessInstanceKey =
         getChildInstanceOf(parentInstanceKey).getProcessInstanceKey();
-    final var childInstanceRecords = getInstancesOf(childProcessInstanceKey);
+    final var childInstanceRecords =
+        processInstanceRecords.stream()
+            .filter(r -> r.getProcessInstanceKey() == childProcessInstanceKey)
+            .toList();
 
     // then
     assertThat(rootInstanceRecords)
@@ -1313,6 +1333,51 @@ public final class CallActivityTest {
         .allSatisfy(
             instance ->
                 assertThat(instance.getRootProcessInstanceKey()).isEqualTo(rootInstanceKey));
+  }
+
+  @Test
+  public void shouldInheritBusinessIdFromParentProcessInstance() {
+    final String processUnderTestId = helper.getBpmnProcessId() + "_underTest";
+    final String processWithCallActivityId = helper.getBpmnProcessId() + "_callActivity";
+    final String businessId = "biz-123";
+
+    // given:
+    // - two processes: process under test and call activity process
+    // - and an instance of the process under test with a business id
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processUnderTestId)
+                .startEvent()
+                .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                .endEvent()
+                .done())
+        .withXmlResource(
+            Bpmn.createExecutableProcess(processWithCallActivityId)
+                .startEvent()
+                .callActivity("call", c -> c.zeebeProcessId(processUnderTestId))
+                .endEvent()
+                .done())
+        .deploy();
+
+    // when
+    final var parentProcessInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(processWithCallActivityId)
+            .withBusinessId(businessId)
+            .create();
+
+    // then
+    Assertions.assertThat(
+            RecordingExporter.processInstanceRecords(ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withBpmnProcessId(processUnderTestId)
+                .withParentProcessInstanceKey(parentProcessInstanceKey)
+                .getFirst()
+                .getValue())
+        .describedAs(
+            "Expect the called process instance to inherit the business id from the call activity instance")
+        .hasBusinessId(businessId);
   }
 
   private void deployDefaultParentAndChildProcess() {
@@ -1354,13 +1419,6 @@ public final class CallActivityTest {
         .withParentProcessInstanceKey(processInstanceKey)
         .getFirst()
         .getValue();
-  }
-
-  private List<ProcessInstanceRecordValue> getInstancesOf(final long processInstanceKey) {
-    return RecordingExporter.processInstanceRecords()
-        .withProcessInstanceKey(processInstanceKey)
-        .map(Record::getValue)
-        .toList();
   }
 
   private long getCallActivityInstanceKey(final long processInstanceKey) {

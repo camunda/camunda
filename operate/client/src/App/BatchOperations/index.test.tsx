@@ -17,7 +17,7 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter} from 'react-router-dom';
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {BatchOperations} from './';
-import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {BatchOperation} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   return (
@@ -36,7 +36,9 @@ const operation: BatchOperation = {
   operationsTotalCount: 2,
   operationsCompletedCount: 2,
   operationsFailedCount: 0,
+  actorType: null,
   actorId: 'demo',
+  errors: [],
 };
 
 const createMockOperations = (count: number): BatchOperation[] => {
@@ -51,7 +53,12 @@ describe('<BatchOperations />', () => {
     vi.clearAllMocks();
     mockQueryBatchOperations().withSuccess({
       items: [operation],
-      page: {totalItems: 1},
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
   });
 
@@ -70,7 +77,12 @@ describe('<BatchOperations />', () => {
   it('should render empty state when no operations exist', async () => {
     mockQueryBatchOperations().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     render(<BatchOperations />, {wrapper: Wrapper});
 
@@ -102,7 +114,12 @@ describe('<BatchOperations />', () => {
   it('should hide pagination when no operations exist', async () => {
     mockQueryBatchOperations().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<BatchOperations />, {wrapper: Wrapper});
@@ -117,7 +134,12 @@ describe('<BatchOperations />', () => {
     const mockOperations = createMockOperations(20);
     mockQueryBatchOperations().withSuccess({
       items: mockOperations,
-      page: {totalItems: 50},
+      page: {
+        totalItems: 50,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<BatchOperations />, {wrapper: Wrapper});
@@ -139,7 +161,12 @@ describe('<BatchOperations />', () => {
 
     mockQueryBatchOperations().withSuccess({
       items: firstPageOperations,
-      page: {totalItems: 50},
+      page: {
+        totalItems: 50,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(<BatchOperations />, {wrapper: Wrapper});
@@ -152,7 +179,12 @@ describe('<BatchOperations />', () => {
 
     mockQueryBatchOperations().withSuccess({
       items: secondPageOperations,
-      page: {totalItems: 50},
+      page: {
+        totalItems: 50,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const nextButton = screen.getByRole('button', {name: /next page/i});
@@ -166,7 +198,12 @@ describe('<BatchOperations />', () => {
   it('should change page size when selecting different items per page', async () => {
     mockQueryBatchOperations().withSuccess({
       items: createMockOperations(20),
-      page: {totalItems: 100},
+      page: {
+        totalItems: 100,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const {user} = render(<BatchOperations />, {wrapper: Wrapper});
@@ -179,7 +216,12 @@ describe('<BatchOperations />', () => {
 
     mockQueryBatchOperations().withSuccess({
       items: createMockOperations(50),
-      page: {totalItems: 100},
+      page: {
+        totalItems: 100,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     const pageSizeSelect = screen.getByRole('combobox', {
@@ -196,7 +238,12 @@ describe('<BatchOperations />', () => {
   it('should hide pagination when there is only one page', async () => {
     mockQueryBatchOperations().withSuccess({
       items: createMockOperations(5),
-      page: {totalItems: 5},
+      page: {
+        totalItems: 5,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
 
     render(<BatchOperations />, {wrapper: Wrapper});

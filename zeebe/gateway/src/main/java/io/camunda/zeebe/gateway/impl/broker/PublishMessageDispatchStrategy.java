@@ -7,53 +7,24 @@
  */
 package io.camunda.zeebe.gateway.impl.broker;
 
-import static io.camunda.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
-import static io.camunda.zeebe.util.buffer.BufferUtil.wrapString;
-
-import io.camunda.zeebe.broker.client.api.BrokerClusterState;
 import io.camunda.zeebe.broker.client.api.BrokerTopologyManager;
-import io.camunda.zeebe.broker.client.api.NoTopologyAvailableException;
 import io.camunda.zeebe.broker.client.api.RequestDispatchStrategy;
-import io.camunda.zeebe.dynamic.config.state.RoutingState;
-import io.camunda.zeebe.dynamic.config.state.RoutingState.MessageCorrelation.HashMod;
-import java.util.Optional;
 
+/**
+ * Dispatch strategy for message publish and correlate requests. Delegates to {@link
+ * HashBasedDispatchStrategy} using the correlation key to deterministically route messages to the
+ * same partition.
+ */
 public final class PublishMessageDispatchStrategy implements RequestDispatchStrategy {
 
-  private final String correlationKey;
+  private final HashBasedDispatchStrategy delegate;
 
   public PublishMessageDispatchStrategy(final String correlationKey) {
-    this.correlationKey = correlationKey;
+    delegate = new HashBasedDispatchStrategy(correlationKey, "correlation key");
   }
 
   @Override
   public int determinePartition(final BrokerTopologyManager topologyManager) {
-    return topologyManager
-        .getClusterConfiguration()
-        .routingState()
-        .map(this::fromRoutingState)
-        .or(() -> Optional.ofNullable(topologyManager.getTopology()).map(this::fromTopology))
-        .orElseThrow(
-            () ->
-                new NoTopologyAvailableException(
-                    "Expected to pick partition for message with correlation key '%s', but no topology is available"
-                        .formatted(correlationKey)));
-  }
-
-  public int fromRoutingState(final RoutingState routingState) {
-    return switch (routingState.messageCorrelation()) {
-      case HashMod(final int partitionCount) ->
-          getSubscriptionPartitionId(wrapString(correlationKey), partitionCount);
-    };
-  }
-
-  public int fromTopology(final BrokerClusterState topology) {
-    final var partitionCount = topology.getPartitionsCount();
-    if (partitionCount == 0) {
-      throw new NoTopologyAvailableException(
-          "Expected to pick partition for message with correlation key '%s', but topology contains no partitions"
-              .formatted(correlationKey));
-    }
-    return getSubscriptionPartitionId(wrapString(correlationKey), partitionCount);
+    return delegate.determinePartition(topologyManager);
   }
 }

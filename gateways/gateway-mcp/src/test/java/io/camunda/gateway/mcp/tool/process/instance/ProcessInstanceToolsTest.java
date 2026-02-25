@@ -295,6 +295,25 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
+    void shouldIgnoreTenantIdInFilter() {
+      // given
+      when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
+          .thenReturn(SEARCH_QUERY_RESULT);
+
+      // when (tenantId passed in arguments should be ignored by MCP filter schema)
+      mcpClient.callTool(
+          CallToolRequest.builder()
+              .name("searchProcessInstances")
+              .arguments(Map.of("filter", Map.of("tenantId", "tenantId")))
+              .build());
+
+      // then
+      verify(processInstanceServices).search(queryCaptor.capture());
+      final ProcessInstanceQuery capturedQuery = queryCaptor.getValue();
+      assertThat(capturedQuery.filter().tenantIdOperations()).isEmpty();
+    }
+
+    @Test
     void shouldFailSearchProcessInstancesOnException() {
       // given
       when(processInstanceServices.search(any(ProcessInstanceQuery.class)))
@@ -788,6 +807,48 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail())
           .contains(
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
+    }
+
+    @Test
+    void shouldCreateProcessInstanceWithBusinessId() {
+      // given
+      when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(false);
+
+      final var businessId = "order-12345";
+      final var createResponse =
+          new ProcessInstanceCreationRecord()
+              .setProcessDefinitionKey(123L)
+              .setBpmnProcessId("testProcessId")
+              .setVersion(-1)
+              .setProcessInstanceKey(456L)
+              .setTenantId("<default>")
+              .setTags(Set.of())
+              .setBusinessId(businessId);
+
+      when(processInstanceServices.createProcessInstance(any(ProcessInstanceCreateRequest.class)))
+          .thenReturn(CompletableFuture.completedFuture(createResponse));
+
+      // when
+      final CallToolResult result =
+          mcpClient.callTool(
+              CallToolRequest.builder()
+                  .name("createProcessInstance")
+                  .arguments(Map.of("processDefinitionKey", "123", "businessId", businessId))
+                  .build());
+
+      // then
+      assertThat(result.isError()).isFalse();
+      assertThat(result.structuredContent()).isNotNull();
+
+      verify(processInstanceServices).createProcessInstance(createRequestCaptor.capture());
+      final var capturedRequest = createRequestCaptor.getValue();
+      assertThat(capturedRequest.processDefinitionKey()).isEqualTo(123L);
+      assertThat(capturedRequest.businessId()).isEqualTo(businessId);
+
+      final var actualResult =
+          objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
+      assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
+      assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
     }
   }
 }

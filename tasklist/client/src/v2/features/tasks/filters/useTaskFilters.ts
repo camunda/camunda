@@ -12,7 +12,7 @@ import {z} from 'zod';
 import {
   queryUserTasksRequestBodySchema,
   querySortOrderSchema,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const apiFiltersSchema = queryUserTasksRequestBodySchema.shape.filter
   .unwrap()

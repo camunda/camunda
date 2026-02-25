@@ -24,7 +24,8 @@ import org.junit.jupiter.api.Test;
 class GroupMemberDbReaderTest {
 
   private final GroupMapper groupMapper = mock(GroupMapper.class);
-  private final GroupMemberDbReader groupMemberDbReader = new GroupMemberDbReader(groupMapper);
+  private final GroupMemberDbReader groupMemberDbReader =
+      new GroupMemberDbReader(groupMapper, AbstractEntityReaderTest.TEST_CONFIG);
 
   @Test
   void shouldReturnEmptyPageWhenPageSizeIsZero() {

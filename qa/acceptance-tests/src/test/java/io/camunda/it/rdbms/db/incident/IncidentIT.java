@@ -97,7 +97,26 @@ public class IncidentIT {
 
     assertThat(instance).isNotNull();
     assertThat(instance.state()).isEqualTo(IncidentEntity.IncidentState.RESOLVED);
-    assertThat(instance.errorMessage()).isNull();
+    assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
+  }
+
+  @TestTemplate
+  public void shouldSaveAndResolveIncidentInSingleFlush(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final var original = IncidentFixtures.createRandomized(b -> b);
+    rdbmsWriters.getIncidentWriter().create(original);
+    rdbmsWriters.getIncidentWriter().resolve(original.incidentKey());
+    rdbmsWriters.flush();
+
+    final var instance = incidentReader.findOne(original.incidentKey()).orElse(null);
+
+    assertThat(instance).isNotNull();
+    assertThat(instance.state()).isEqualTo(IncidentEntity.IncidentState.RESOLVED);
+    assertThat(instance.errorMessage()).isEqualTo(original.errorMessage());
   }
 
   @TestTemplate
@@ -191,6 +210,31 @@ public class IncidentIT {
 
     assertThat(searchResult).isNotNull();
     assertThat(searchResult.total()).isEqualTo(20);
+    assertThat(searchResult.items()).hasSize(5);
+  }
+
+  @TestTemplate
+  public void shouldFindAllIncidentPagedWithHasMoreHits(
+      final CamundaRdbmsTestApplication testApplication) {
+    final RdbmsService rdbmsService = testApplication.getRdbmsService();
+    final RdbmsWriters rdbmsWriters = rdbmsService.createWriter(PARTITION_ID);
+    final IncidentDbReader incidentReader = rdbmsService.getIncidentReader();
+
+    final String processDefinitionId = IncidentFixtures.nextStringId();
+    createAndSaveRandomIncidents(
+        rdbmsWriters, 120, b -> b.processDefinitionId(processDefinitionId));
+
+    final var searchResult =
+        incidentReader.search(
+            IncidentQuery.of(
+                b ->
+                    b.filter(f -> f.processDefinitionIds(processDefinitionId))
+                        .sort(s -> s.creationTime().asc().flowNodeId().asc())
+                        .page(p -> p.from(0).size(5))));
+
+    assertThat(searchResult).isNotNull();
+    assertThat(searchResult.total()).isEqualTo(100);
+    assertThat(searchResult.hasMoreTotalItems()).isEqualTo(true);
     assertThat(searchResult.items()).hasSize(5);
   }
 

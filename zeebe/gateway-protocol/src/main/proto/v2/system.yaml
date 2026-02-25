@@ -83,6 +83,8 @@ paths:
 components:
   schemas:
     UsageMetricsResponse:
+      required: 
+        - tenants
       type: object
       allOf:
         - $ref: '#/components/schemas/UsageMetricsResponseItem'

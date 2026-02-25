@@ -11,6 +11,21 @@ This site automatically generates documentation from markdown files in the `../d
 - ⚙️ **Configuration**: This directory contains Docusaurus setup and themes
 - 🌐 **Output**: Generates a complete documentation website
 
+## 🌐 Published Camunda Platform Developer Documentation
+
+This documentation site is automatically published to GitHub Pages:
+
+### 📖 **Live Documentation**
+
+- **Main Branch**: https://camunda.github.io/camunda/
+- **PR Previews**: `https://camunda.github.io/camunda/pr-preview/pr-<PR_NUMBER>/`
+
+### How It Works
+
+- **Every PR** gets its own preview site for reviewing documentation changes
+- **Main branch** publishes the Camunda Platform Developer Documentation automatically
+- **Real-time updates** - changes are deployed within minutes of merging
+
 ## Quick Start
 
 **First time setup:**
@@ -206,10 +221,23 @@ Use these Copilot prompts to efficiently fix link issues in your migrated conten
 
 ## 🚀 Deployment
 
-The site is configured for GitHub Pages with these settings:
-- **URL**: `/camunda/` (customizable via `BASE_URL` env var)
+The documentation site is automatically deployed using GitHub Pages:
+
+### 📋 **Deployment Details**
+
+- **Main Camunda Platform Developer Documentation**: https://camunda.github.io/camunda/
+  - Deploys automatically on push to `main` branch
+  - Official documentation for users and contributors
+- **Camunda Platform Developer Documentation PR Preview**: `https://camunda.github.io/camunda/pr-preview/pr-<PR_NUMBER>/`
+  - Each pull request gets its own preview URL
+  - Perfect for reviewing documentation changes before merging
+  - Automatically cleaned up when PR is closed
+
+### ⚙️ **Configuration**
+
+- **Base URL**: `/camunda/` (customizable via `BASE_URL` env var)
 - **Repository**: `camunda/camunda`
-- **Builds**: Automatically on push to main branch
+- **GitHub Pages**: Configured for automatic deployment
 
 ## 🆘 Troubleshooting
 

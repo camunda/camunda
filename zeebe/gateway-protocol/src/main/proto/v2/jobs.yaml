@@ -347,6 +347,8 @@ components:
         - elementInstanceKey
         - kind
         - listenerEventType
+        - rootProcessInstanceKey
+        - tags
       properties:
         type:
           description: The type of the job (should match what was requested).
@@ -405,6 +407,7 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
           description: The key of the job's process definition.
         elementInstanceKey:
+          description: The element instance key of the task.
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ElementInstanceKey'
         kind:
@@ -425,6 +428,10 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
 
     UserTaskProperties:
+      required:
+        - candidateGroups
+        - candidateUsers
+        - changedAttributes
       type: object
       description: Contains properties of a user task.
       properties:
@@ -619,6 +626,8 @@ components:
 
     JobSearchQueryResult:
       description: Job search response.
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -647,6 +656,7 @@ components:
         - tenantId
         - type
         - worker
+        - rootProcessInstanceKey
       properties:
         customHeaders:
           description: A set of custom headers defined during modelling.
@@ -663,7 +673,8 @@ components:
           type: string
           nullable: true
         elementId:
-          description: The element ID associated with the job.
+          description: The element ID associated with the job. May be missing on job failure.
+          nullable: true
           allOf:
             - $ref: "identifiers.yaml#/components/schemas/ElementId"
         elementInstanceKey:

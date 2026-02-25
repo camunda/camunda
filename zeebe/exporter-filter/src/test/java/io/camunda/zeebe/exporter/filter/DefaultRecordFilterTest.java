@@ -317,6 +317,7 @@ final class DefaultRecordFilterTest {
     final Record<?> jobRecord = (Record<?>) mock(Record.class);
     when(jobRecord.getRecordType()).thenReturn(RecordType.EVENT);
     when(jobRecord.getValueType()).thenReturn(ValueType.JOB);
+    when(jobRecord.getBrokerVersion()).thenReturn("8.9.0");
 
     // when / then
     assertThat(filter.acceptRecord(jobRecord))

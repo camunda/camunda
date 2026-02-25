@@ -7,6 +7,7 @@
  */
 package io.camunda.configuration;
 
+import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CLUSTER_MEMBER_ID;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.camunda.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -33,7 +34,8 @@ public class ClusterGatewayPropertiesTest {
       properties = {
         "camunda.cluster.compression-algorithm=gzip",
         "camunda.cluster.name=zeebeClusterNew",
-        "camunda.cluster.initial-contact-points=1new,2new"
+        "camunda.cluster.initial-contact-points=1new,2new",
+        "camunda.cluster.gateway-id=my-gateway",
       })
   class WithOnlyUnifiedConfigSet {
     final GatewayBasedProperties gatewayCfg;
@@ -47,7 +49,8 @@ public class ClusterGatewayPropertiesTest {
       assertThat(gatewayCfg.getCluster())
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
+          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints)
+          .returns("my-gateway", ClusterCfg::getMemberId);
     }
   }
 
@@ -56,7 +59,7 @@ public class ClusterGatewayPropertiesTest {
       properties = {
         "zeebe.broker.cluster.messageCompression=gzip",
         "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker",
-        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker"
+        "zeebe.broker.cluster.initialContactPoints=1LegacyBroker",
       })
   class WithOnlyBrokerLegacySet {
     final GatewayBasedProperties gatewayCfg;
@@ -72,7 +75,8 @@ public class ClusterGatewayPropertiesTest {
           .returns("zeebe-cluster", ClusterCfg::getClusterName)
           .returns(
               List.of(DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT),
-              ClusterCfg::getInitialContactPoints);
+              ClusterCfg::getInitialContactPoints)
+          .returns(DEFAULT_CLUSTER_MEMBER_ID, ClusterCfg::getMemberId);
     }
   }
 
@@ -81,7 +85,8 @@ public class ClusterGatewayPropertiesTest {
       properties = {
         "zeebe.gateway.cluster.messageCompression=gzip",
         "zeebe.gateway.cluster.clusterName=zeebeClusterLegacyGateway",
-        "zeebe.gateway.cluster.initialContactPoints=1LegacyGateway,2LegacyGateway"
+        "zeebe.gateway.cluster.initialContactPoints=1LegacyGateway,2LegacyGateway",
+        "zeebe.gateway.cluster.memberId=legacy-gateway"
       })
   class WithOnlyGatewayLegacySet {
     final GatewayBasedProperties gatewayCfg;
@@ -95,8 +100,8 @@ public class ClusterGatewayPropertiesTest {
       assertThat(gatewayCfg.getCluster())
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterLegacyGateway", ClusterCfg::getClusterName)
-          .returns(
-              List.of("1LegacyGateway", "2LegacyGateway"), ClusterCfg::getInitialContactPoints);
+          .returns(List.of("1LegacyGateway", "2LegacyGateway"), ClusterCfg::getInitialContactPoints)
+          .returns("legacy-gateway", ClusterCfg::getMemberId);
     }
   }
 
@@ -107,6 +112,7 @@ public class ClusterGatewayPropertiesTest {
         "camunda.cluster.compression-algorithm=gzip",
         "camunda.cluster.name=zeebeClusterNew",
         "camunda.cluster.initial-contact-points=1new,2new",
+        "camunda.cluster.gateway-id=unified-gateway",
         // legacy broker
         "zeebe.broker.cluster.messageCompression=none",
         "zeebe.broker.cluster.clusterName=zeebeClusterLegacyBroker",
@@ -114,7 +120,8 @@ public class ClusterGatewayPropertiesTest {
         // legacy gateway
         "zeebe.gateway.cluster.messageCompression=none",
         "zeebe.gateway.cluster.clusterName=zeebeClusterLegacyGateway",
-        "zeebe.gateway.cluster.initialContactPoints=1LegacyGateway,2LegacyGateway"
+        "zeebe.gateway.cluster.initialContactPoints=1LegacyGateway,2LegacyGateway",
+        "zeebe.gateway.cluster.memberId=legacy-gateway"
       })
   class WithNewAndLegacySet {
     final GatewayBasedProperties gatewayCfg;
@@ -128,7 +135,8 @@ public class ClusterGatewayPropertiesTest {
       assertThat(gatewayCfg.getCluster())
           .returns(CompressionAlgorithm.GZIP, ClusterCfg::getMessageCompression)
           .returns("zeebeClusterNew", ClusterCfg::getClusterName)
-          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints);
+          .returns(List.of("1new", "2new"), ClusterCfg::getInitialContactPoints)
+          .returns("unified-gateway", ClusterCfg::getMemberId);
     }
   }
 }

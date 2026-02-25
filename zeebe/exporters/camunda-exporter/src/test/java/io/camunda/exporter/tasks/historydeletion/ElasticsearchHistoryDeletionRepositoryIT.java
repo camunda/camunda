@@ -12,6 +12,7 @@ import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.search.connect.es.ElasticsearchConnector;
 import io.camunda.search.test.utils.SearchDBExtension;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import java.time.InstantSource;
 import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,7 +41,8 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
         Runnable::run,
         LOGGER,
         partitionId,
-        config.getHistoryDeletion());
+        config.getHistoryDeletion(),
+        InstantSource.system());
   }
 
   @Override
@@ -53,5 +55,11 @@ public class ElasticsearchHistoryDeletionRepositoryIT extends HistoryDeletionRep
                     .id(entity.getId()))
         .join();
     client.indices().refresh(r -> r.index(historyDeletionIndex.getFullQualifiedName())).join();
+  }
+
+  @Override
+  protected long countAuditLogCleanupEntries() {
+    client.indices().refresh(r -> r.index(auditLogCleanupIndex.getFullQualifiedName())).join();
+    return client.count(c -> c.index(auditLogCleanupIndex.getFullQualifiedName())).join().count();
   }
 }

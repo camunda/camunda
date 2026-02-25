@@ -376,7 +376,7 @@ jobs:
                       "correlation_id": "'"$CORRELATION_ID"'",
                       "source_repo": "${{ github.repository }}",
                       "source_sha": "${{ github.sha }}",
-                      "c8Version": "8.9",
+                      "c8Version": "8.10",
                       "zeebeVersion": "${{ needs.build-and-push.outputs.image-tag }}",
                       "operateVersion": "SNAPSHOT",
                       "tasklistVersion": "SNAPSHOT",

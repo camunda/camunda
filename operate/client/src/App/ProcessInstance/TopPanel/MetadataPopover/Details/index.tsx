@@ -17,11 +17,12 @@ import {SummaryDataKey, SummaryDataValue, SummaryText} from '../styled';
 import {getExecutionDuration} from './getExecutionDuration';
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {DetailsModal} from './DetailsModal';
-import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {ElementInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useProcessInstancesSearch} from 'modules/queries/processInstance/useProcessInstancesSearch';
 import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useDecisionInstancesSearch} from 'modules/queries/decisionInstances/useDecisionInstancesSearch';
 import {isCamundaUserTask} from 'modules/bpmn-js/utils/isCamundaUserTask';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 type Props = {
   elementInstance: ElementInstance;
@@ -29,6 +30,7 @@ type Props = {
 };
 
 const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
+  const clientConfig = getClientConfig();
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const {startDate, endDate, type, elementInstanceKey} = elementInstance;
@@ -84,9 +86,9 @@ const Details: React.FC<Props> = ({elementInstance, businessObject}) => {
         title="Details"
         titleId="metadata-popover-details-title"
         link={
-          !isNil(window.clientConfig?.tasklistUrl) && type === 'USER_TASK'
+          !isNil(clientConfig.tasklistUrl) && type === 'USER_TASK'
             ? {
-                href: window.clientConfig!.tasklistUrl,
+                href: clientConfig.tasklistUrl,
                 label: 'Open Tasklist',
                 onClick: () => {
                   tracking.track({

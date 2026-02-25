@@ -1,4 +1,4 @@
-# Identity frontend
+# Admin frontend
 
 To start in development mode run
 

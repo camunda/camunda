@@ -33,6 +33,7 @@ import io.camunda.zeebe.broker.system.configuration.backup.GcsBackupStoreConfig;
 import io.camunda.zeebe.broker.system.configuration.backup.S3BackupStoreConfig;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.ActorSchedulingService;
+import io.camunda.zeebe.scheduler.SchedulingHints;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
@@ -89,6 +90,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
       backupRetentionJob =
           new BackupRetention(
               backupStore,
+              brokerClient,
               retentionCfg.getCleanupSchedule(),
               retentionCfg.getWindow(),
               brokerClient.getTopologyManager(),
@@ -107,12 +109,7 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   @Override
   protected void onActorStarted() {
-    if (checkpointScheduler != null && shouldStartSchedulers()) {
-      actorScheduler.submitActor(checkpointScheduler);
-      if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob);
-      }
-    }
+    checkedStartScheduler();
   }
 
   @Override
@@ -162,9 +159,9 @@ public class CheckpointSchedulingService extends Actor implements ClusterMembers
 
   private void checkedStartScheduler() {
     if (shouldStartSchedulers() && isSchedulerInactive()) {
-      actorScheduler.submitActor(checkpointScheduler);
+      actorScheduler.submitActor(checkpointScheduler, SchedulingHints.ioBound());
       if (backupRetentionJob != null) {
-        actorScheduler.submitActor(backupRetentionJob);
+        actorScheduler.submitActor(backupRetentionJob, SchedulingHints.ioBound());
       }
     }
   }

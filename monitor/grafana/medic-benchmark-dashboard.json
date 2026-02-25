@@ -158,7 +158,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -247,7 +247,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -328,7 +328,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic.*typical\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic.*typical\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -426,7 +426,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"((c8-)?medic.*(mixed|realistic)|(c8-)?release-rolling)\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -511,7 +511,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"((c8-)?medic.*(mixed|realistic)|(c8-)?release-rolling)\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -596,7 +596,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(medic.*mixed|release-rolling)\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"((c8-)?medic.*(mixed|realistic)|(c8-)?release-rolling)\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -693,7 +693,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic-daily.*\", type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -779,7 +779,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\",action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic-daily.*\",action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -865,7 +865,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"medic-daily.*\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?medic-daily.*\", action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": false,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1064,7 +1064,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*-typical|medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical|(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1076,7 +1076,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*-typical|medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical|(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1166,7 +1166,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1178,7 +1178,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1268,7 +1268,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1280,7 +1280,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-typical\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1370,7 +1370,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1382,7 +1382,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1472,7 +1472,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -1484,7 +1484,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*-latency\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -1584,7 +1584,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -1598,7 +1598,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "interval": "",
           "legendFormat": "p99 {{namespace}}",
           "range": true,
@@ -1609,7 +1609,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "format": "heatmap",
           "interval": "30s",
           "intervalFactor": 1,
@@ -1623,7 +1623,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"medic.*latency\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?medic.*latency\"}[$__rate_interval])) by (le, namespace))",
           "interval": "",
           "legendFormat": "p99 {{namespace}}",
           "range": true,
@@ -1870,7 +1870,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "zeebe_health{namespace=~\"medic.*\"} ",
+          "expr": "zeebe_health{namespace=~\"(c8-)?medic.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -1883,7 +1883,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "atomix_role{namespace=~\"medic.*\"} ",
+          "expr": "atomix_role{namespace=~\"(c8-)?medic.*\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -2022,7 +2022,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"medic.*\", container=~\"zeebe|camunda\"}",
+          "expr": "kube_pod_container_status_last_terminated_reason{namespace=~\"(c8-)?medic.*\", container=~\"zeebe|camunda\"}",
           "interval": "",
           "legendFormat": "{{ pod }}",
           "range": true,
@@ -2148,7 +2148,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?medic.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
           "legendFormat": "{{persistentvolumeclaim}}",
           "range": true,
           "refId": "B"
@@ -2245,7 +2245,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",type!=\"PROCESS\", action!=\"activated\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2330,7 +2330,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\", action=\"completed\", type=\"PROCESS\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2411,7 +2411,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"release-8.*\",action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
+          "expr": "sum(rate(zeebe_element_instance_events_total{namespace=~\"(c8-)?release-8.*\",action=\"completed\", type=\"SERVICE_TASK\"}[$__rate_interval])) by (namespace)",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2500,7 +2500,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2512,7 +2512,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.50, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2602,7 +2602,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2614,7 +2614,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.90, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2704,7 +2704,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "instant": true,
           "interval": "",
           "legendFormat": "{{namespace}}",
@@ -2716,7 +2716,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"release-8.*\"}[$__rate_interval])) by (le, namespace))",
+          "expr": "histogram_quantile(0.99, sum(rate(zeebe_process_instance_execution_time_seconds_bucket{namespace=~\"(c8-)?release-8.*\"}[$__rate_interval])) by (le, namespace))",
           "hide": false,
           "instant": false,
           "legendFormat": "{{namespace}}",
@@ -2939,7 +2939,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "zeebe_health{namespace=~\"release.*\"} ",
+          "expr": "zeebe_health{namespace=~\"(c8-)?release.*\"} ",
           "format": "table",
           "instant": true,
           "interval": "",
@@ -2952,7 +2952,7 @@
             "uid": "${DS_PROMETHEUS}"
           },
           "editorMode": "code",
-          "expr": "atomix_role{namespace=~\"release.*\"} ",
+          "expr": "atomix_role{namespace=~\"(c8-)?release.*\"} ",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -3076,7 +3076,7 @@
             "uid": "$DS_PROMETHEUS"
           },
           "editorMode": "code",
-          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
+          "expr": "max(kubelet_volume_stats_used_bytes{namespace=~\"(c8-)?release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"} / kubelet_volume_stats_capacity_bytes{namespace=~\"(c8-)?release.*\", persistentvolumeclaim=~\".*zeebe.*|.*camunda.*\"}) by (namespace)",
           "legendFormat": "{{persistentvolumeclaim}} {{namespace}}",
           "range": true,
           "refId": "B"

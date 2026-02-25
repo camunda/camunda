@@ -10,6 +10,7 @@ package io.camunda.db.rdbms.read.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.read.domain.DbQueryPage;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.KeySetPaginationFieldEntry;
 import io.camunda.db.rdbms.read.domain.DbQueryPage.Operator;
@@ -27,11 +28,13 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.Test;
 
 class AbstractEntityReaderTest {
-  final AbstractEntityReader<ProcessInstanceEntity> reader = new ProcessInstanceDbReader(null);
+  public static final RdbmsReaderConfig TEST_CONFIG = RdbmsReaderConfig.builder().build();
+  final AbstractEntityReader<ProcessInstanceEntity> reader =
+      new ProcessInstanceDbReader(null, TEST_CONFIG);
 
   @Test
   void shouldConvertSort() {
-    final var reader = new ProcessInstanceDbReader(null);
+    final var reader = new ProcessInstanceDbReader(null, TEST_CONFIG);
 
     final var convertedSort =
         reader.convertSort(
@@ -48,7 +51,7 @@ class AbstractEntityReaderTest {
 
   @Test
   void shouldThrowOnUnknownSortColumn() {
-    final var reader = new ProcessInstanceDbReader(null);
+    final var reader = new ProcessInstanceDbReader(null, TEST_CONFIG);
 
     assertThatThrownBy(
             () ->
@@ -167,5 +170,30 @@ class AbstractEntityReaderTest {
                 "PROCESS_DEFINITION_VERSION", Operator.EQUALS, entity.processDefinitionVersion()),
             new KeySetPaginationFieldEntry(
                 "PROCESS_INSTANCE_KEY", Operator.LOWER, entity.processInstanceKey()));
+  }
+
+  @Test
+  void shouldConvertSortWithDuplicatedColumn() {
+    final var reader = new ProcessInstanceDbReader(null, TEST_CONFIG);
+
+    final var convertedSort =
+        reader.convertSort(
+            ProcessInstanceSort.of(
+                b ->
+                    b.processDefinitionName()
+                        .asc()
+                        .startDate()
+                        .desc()
+                        .processDefinitionName()
+                        .desc()),
+            ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY);
+
+    assertThat(convertedSort.orderings()).hasSize(3);
+    assertThat(convertedSort.orderings())
+        .containsExactly(
+            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_DEFINITION_NAME, SortOrder.ASC),
+            new SortingEntry<>(ProcessInstanceSearchColumn.START_DATE, SortOrder.DESC),
+            // Note: duplicated PROCESS_DEFINITION_NAME is ignored
+            new SortingEntry<>(ProcessInstanceSearchColumn.PROCESS_INSTANCE_KEY, SortOrder.ASC));
   }
 }

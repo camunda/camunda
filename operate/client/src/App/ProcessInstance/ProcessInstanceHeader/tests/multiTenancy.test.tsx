@@ -25,6 +25,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
+import * as clientConfig from 'modules/utils/getClientConfig';
 
 vi.mock('modules/stores/process', () => ({
   processStore: {state: {process: {}}, fetchProcess: vi.fn()},
@@ -51,20 +52,26 @@ const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
 
 describe('InstanceHeader', () => {
   it('should render multi tenancy column and include tenant in version link', async () => {
-    vi.stubGlobal('clientConfig', {
+    vi.spyOn(clientConfig, 'getClientConfig').mockReturnValue({
+      ...clientConfig.getClientConfig(),
       multiTenancyEnabled: true,
     });
 
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );
@@ -98,14 +105,19 @@ describe('InstanceHeader', () => {
   it('should hide multi tenancy column and exclude tenant from version link', async () => {
     mockQueryBatchOperationItems().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockMe().withSuccess(
       createUser({
         tenants: [
-          {key: 1, tenantId: '<default>', name: 'Default Tenant'},
-          {key: 2, tenantId: 'tenant-a', name: 'Tenant A'},
+          {tenantId: '<default>', name: 'Default Tenant', description: null},
+          {tenantId: 'tenant-a', name: 'Tenant A', description: null},
         ],
       }),
     );

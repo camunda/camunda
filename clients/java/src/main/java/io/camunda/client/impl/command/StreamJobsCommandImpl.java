@@ -66,7 +66,9 @@ public final class StreamJobsCommandImpl
     this.asyncStub = asyncStub;
     this.jsonMapper = jsonMapper;
     this.retryPredicate = retryPredicate;
-    builder = StreamActivatedJobsRequest.newBuilder();
+    builder =
+        StreamActivatedJobsRequest.newBuilder()
+            .setTenantFilter(GatewayOuterClass.TenantFilter.PROVIDED);
 
     timeout(config.getDefaultJobTimeout());
     workerName(config.getDefaultJobWorkerName());
@@ -84,10 +86,12 @@ public final class StreamJobsCommandImpl
   @Override
   public CamundaFuture<StreamJobsResponse> send() {
     builder.clearTenantIds();
-    if (customTenantIds.isEmpty()) {
-      builder.addAllTenantIds(defaultTenantIds);
-    } else {
-      builder.addAllTenantIds(customTenantIds);
+    if (builder.getTenantFilter() == GatewayOuterClass.TenantFilter.PROVIDED) {
+      if (customTenantIds.isEmpty()) {
+        builder.addAllTenantIds(defaultTenantIds);
+      } else {
+        builder.addAllTenantIds(customTenantIds);
+      }
     }
 
     final StreamActivatedJobsRequest request = builder.build();
@@ -169,7 +173,7 @@ public final class StreamJobsCommandImpl
 
   @Override
   public StreamJobsCommandStep3 tenantFilter(final TenantFilter tenantFilter) {
-    // TODO: https://github.com/camunda/camunda/issues/45356
+    builder.setTenantFilter(GatewayOuterClass.TenantFilter.valueOf(tenantFilter.name()));
     return this;
   }
 

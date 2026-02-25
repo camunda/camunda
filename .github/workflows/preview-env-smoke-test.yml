@@ -246,7 +246,7 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/camunda SLACK_TOPMONOREPOCI_WEBHOOK_URL;
+            secret/data/products/camunda/ci/github-actions SLACK_TOPMONOREPOCI_WEBHOOK_URL;
 
       - name: Get failed jobs
         id: failed
@@ -290,7 +290,7 @@ jobs:
                   "type": "section",
                   "text": {
                     "type": "mrkdwn",
-                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>\n<https://github.com/camunda/camunda/wiki/CI-Runbooks#preview-environment-smoke-test-failure|Runbook>"
+                    "text": "<!subteam^S07D6C6B18T|monorepo-ci-medic> please check <https://github.com/camunda/camunda/actions/runs/${{ github.run_id }}|workflow run>\n<https://camunda.github.io/camunda/ci-runbooks/#preview-environment-smoke-test-failure|Runbook>"
                   }
                 }
               ]

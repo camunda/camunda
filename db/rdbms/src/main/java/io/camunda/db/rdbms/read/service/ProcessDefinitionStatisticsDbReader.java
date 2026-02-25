@@ -7,6 +7,7 @@
  */
 package io.camunda.db.rdbms.read.service;
 
+import io.camunda.db.rdbms.read.RdbmsReaderConfig;
 import io.camunda.db.rdbms.sql.ProcessDefinitionMapper;
 import io.camunda.search.clients.reader.ProcessDefinitionStatisticsReader;
 import io.camunda.search.entities.ProcessFlowNodeStatisticsEntity;
@@ -26,8 +27,8 @@ public class ProcessDefinitionStatisticsDbReader
   private final ProcessDefinitionMapper processDefinitionMapper;
 
   public ProcessDefinitionStatisticsDbReader(
-      final ProcessDefinitionMapper processDefinitionMapper) {
-    super(null);
+      final ProcessDefinitionMapper processDefinitionMapper, final RdbmsReaderConfig readerConfig) {
+    super(null, readerConfig);
     this.processDefinitionMapper = processDefinitionMapper;
   }
 

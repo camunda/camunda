@@ -16,28 +16,26 @@ import {
 } from 'modules/testing-library';
 
 import {LastModification} from 'App/ProcessInstance/LastModification';
-import {flowNodeSelectionStore} from 'modules/stores/flowNodeSelection';
-import {flowNodeMetaDataStore} from 'modules/stores/flowNodeMetaData';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {createInstance, createVariable} from 'modules/testUtils';
+import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
   type FlowNodeModification,
 } from 'modules/stores/modifications';
-import {singleInstanceMetadata} from 'modules/mocks/metadata';
-import {mockFetchFlowNodeMetadata} from 'modules/mocks/api/processInstances/fetchFlowNodeMetaData';
-import {useEffect, act} from 'react';
+import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
-import {selectFlowNode} from 'modules/utils/flowNodeSelection';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchProcessInstance as mockFetchProcessInstanceDeprecated} from 'modules/mocks/api/processInstances/fetchProcessInstance';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
-import {processInstanceDetailsStore} from 'modules/stores/processInstanceDetails';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
 import {mockSearchJobs} from 'modules/mocks/api/v2/jobs/searchJobs';
+import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
+import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
+import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 
 /**
  * Variables can only be added and modified in the root if a pending add/move token modification exists.
@@ -91,47 +89,92 @@ const editLastNewVariableValue = async (
   await user.tab();
 };
 
+const TestSelectionControls: React.FC = () => {
+  const {selectElementInstance, selectElement, clearSelection} =
+    useProcessInstanceElementSelection();
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() =>
+          selectElementInstance({
+            elementId: 'TEST_FLOW_NODE',
+            elementInstanceKey: 'instance_id',
+          })
+        }
+      >
+        select flow node instance
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          selectElement({
+            elementId: 'flow-node-that-has-not-run-yet',
+          })
+        }
+      >
+        select flow node from diagram
+      </button>
+      <button type="button" onClick={() => clearSelection()}>
+        clear selection
+      </button>
+    </>
+  );
+};
+
 const getWrapper = (
   initialEntries: React.ComponentProps<
     typeof MemoryRouter
-  >['initialEntries'] = [Paths.processInstance('1')],
+  >['initialEntries'] = [Paths.processInstance('instance_id')],
 ) => {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       return () => {
-        flowNodeSelectionStore.reset();
-        flowNodeMetaDataStore.reset();
         modificationsStore.reset();
       };
     }, []);
 
     return (
-      <QueryClientProvider client={getMockQueryClient()}>
-        <MemoryRouter initialEntries={initialEntries}>
-          <Routes>
-            <Route path={Paths.processInstance()} element={children} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
+      <ProcessDefinitionKeyContext.Provider value="123">
+        <QueryClientProvider client={getMockQueryClient()}>
+          <MemoryRouter initialEntries={initialEntries}>
+            <Routes>
+              <Route
+                path={Paths.processInstance()}
+                element={
+                  <>
+                    <TestSelectionControls />
+                    {children}
+                  </>
+                }
+              />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>
+      </ProcessDefinitionKeyContext.Provider>
     );
   };
   return Wrapper;
 };
 
-// TODO: fix test with #44450
-describe.skip('New Variable Modifications', () => {
+describe('New Variable Modifications', () => {
   const mockProcessInstance: ProcessInstance = {
     processInstanceKey: 'instance_id',
     state: 'ACTIVE',
     startDate: '2018-06-21',
+    endDate: null,
     processDefinitionKey: '2',
     processDefinitionVersion: 1,
+    processDefinitionVersionTag: null,
     processDefinitionId: 'someKey',
     tenantId: '<default>',
     processDefinitionName: 'someProcessName',
     hasIncident: false,
+    parentProcessInstanceKey: null,
+    parentElementInstanceKey: null,
+    rootProcessInstanceKey: null,
+    tags: [],
   };
-  const mockProcessInstanceDeprecated = createInstance({id: 'instance_id'});
 
   beforeEach(async () => {
     const statisticsData = [
@@ -158,29 +201,26 @@ describe.skip('New Variable Modifications', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-
-    flowNodeSelectionStore.init();
-    processInstanceDetailsStore.setProcessInstance(
-      createInstance({
-        id: 'instance_id',
-        state: 'ACTIVE',
-      }),
-    );
+    mockFetchProcessDefinitionXml().withSuccess('');
   });
 
   it('should not create add variable modification if fields are empty', async () => {
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
@@ -208,10 +248,15 @@ describe.skip('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if name field is empty', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -244,26 +289,40 @@ describe.skip('New Variable Modifications', () => {
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withSuccess({
-      items: [createVariable()],
+    mockSearchJobs().withSuccess({
+      items: [],
       page: {
-        totalItems: 1,
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -332,27 +391,40 @@ describe.skip('New Variable Modifications', () => {
   });
 
   it('should not create add variable modification if value field is empty or invalid', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchVariables().withSuccess({
+    mockSearchJobs().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -390,10 +462,15 @@ describe.skip('New Variable Modifications', () => {
   });
 
   it('should create add variable modification on blur and update same modification if name or value is changed', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -581,10 +658,15 @@ describe.skip('New Variable Modifications', () => {
   });
 
   it('should not apply modification if value is the same as the last modification', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
@@ -646,19 +728,40 @@ describe.skip('New Variable Modifications', () => {
     modificationsStore.enableModificationMode();
     modificationsStore.addModification(INITIAL_ADD_MODIFICATION);
 
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     mockSearchVariables().withSuccess({
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 
@@ -686,16 +789,68 @@ describe.skip('New Variable Modifications', () => {
     await editLastNewVariableName(user, 'test2', 1);
     await editLastNewVariableValue(user, '456', 1);
 
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockFetchElementInstance('instance_id').withSuccess({
+      elementInstanceKey: 'instance_id',
+      elementId: 'TEST_FLOW_NODE',
+      elementName: 'Test Flow Node',
+      type: 'SERVICE_TASK',
+      state: 'ACTIVE',
+      startDate: '2018-06-21',
+      endDate: null,
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      processDefinitionId: 'someKey',
+      tenantId: '<default>',
+      hasIncident: false,
+      rootProcessInstanceKey: null,
+      incidentKey: null,
+    });
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
-    act(() => {
-      selectFlowNode(
-        {flowNodeInstanceId: 'instance_id', isMultiInstance: false},
-        {
-          flowNodeInstanceId: 'instance_id',
-          isMultiInstance: false,
-        },
-      );
+    await user.click(
+      screen.getByRole('button', {name: /select flow node instance/i}),
+    );
+
+    mockSearchVariables().withSuccess({
+      items: [createVariable()],
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    await user.click(screen.getByRole('button', {name: /clear selection/i}));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', {name: /add variable/i})).toBeEnabled();
     });
 
     const [deleteFirstAddedVariable] = screen.getAllByRole('button', {
@@ -714,12 +869,33 @@ describe.skip('New Variable Modifications', () => {
   });
 
   it('should be able to add variable when a flow node that has no tokens on it is selected from the diagram', async () => {
-    mockFetchProcessInstanceDeprecated().withSuccess(
-      mockProcessInstanceDeprecated,
-    );
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
-    mockSearchJobs().withSuccess({items: [], page: {totalItems: 0}});
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+    mockSearchJobs().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
     vi.useFakeTimers({shouldAdvanceTime: true});
 
     modificationsStore.enableModificationMode();
@@ -738,17 +914,32 @@ describe.skip('New Variable Modifications', () => {
       },
     });
 
-    // select flow node without instance id (use case: from the diagram)
-    selectFlowNode(
-      {},
-      {
-        flowNodeId: 'flow-node-that-has-not-run-yet',
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
-    );
+    });
+    mockSearchVariables().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
     const {user} = render(
       <VariablePanel setListenerTabVisibility={vi.fn()} />,
-      {wrapper: getWrapper()},
+      {
+        wrapper: getWrapper([
+          `${Paths.processInstance('instance_id')}?elementId=flow-node-that-has-not-run-yet`,
+        ]),
+      },
     );
     expect(
       await screen.findByText('The Flow Node has no Variables'),
@@ -770,30 +961,42 @@ describe.skip('New Variable Modifications', () => {
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
     mockSearchVariables().withSuccess({
       items: [],
       page: {
         totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
-    mockFetchFlowNodeMetadata().withSuccess(singleInstanceMetadata);
+    mockSearchElementInstances().withSuccess({
+      items: [],
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
 
-    act(() => {
-      selectFlowNode(
-        {},
-        {
-          flowNodeId: 'flow-node-that-has-not-run-yet',
-        },
-      );
-    });
+    await user.click(
+      screen.getByRole('button', {name: /select flow node from diagram/i}),
+    );
 
     expect(await screen.findByDisplayValue('test1')).toBeInTheDocument();
     expect(screen.getByDisplayValue('123')).toBeInTheDocument();

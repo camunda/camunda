@@ -504,7 +504,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         null,
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   public static CreateProcessInstanceResult toCreateProcessInstanceWithResultResponse(
@@ -516,7 +517,8 @@ public final class ResponseMapper {
         brokerResponse.getProcessInstanceKey(),
         brokerResponse.getTenantId(),
         brokerResponse.getVariables(),
-        brokerResponse.getTags());
+        brokerResponse.getTags(),
+        brokerResponse.getBusinessId());
   }
 
   private static CreateProcessInstanceResult buildCreateProcessInstanceResponse(
@@ -526,21 +528,24 @@ public final class ResponseMapper {
       final Long processInstanceKey,
       final String tenantId,
       final Map<String, Object> variables,
-      final Set<String> tags) {
+      final Set<String> tags,
+      final String businessId) {
     final var response =
         new CreateProcessInstanceResult()
             .processDefinitionKey(KeyUtil.keyToString(processDefinitionKey))
             .processDefinitionId(bpmnProcessId)
             .processDefinitionVersion(version)
             .processInstanceKey(KeyUtil.keyToString(processInstanceKey))
-            .tenantId(tenantId);
+            .tenantId(tenantId)
+            // defaults to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .businessId(emptyToNull(businessId));
     if (variables != null) {
       response.variables(variables);
     }
     if (tags != null) {
       response.setTags(tags);
     }
-
     return response;
   }
 
@@ -671,8 +676,10 @@ public final class ResponseMapper {
             .decisionRequirementsKey(
                 KeyUtil.keyToString(decisionEvaluationRecord.getDecisionRequirementsKey()))
             .output(decisionEvaluationRecord.getDecisionOutput())
-            .failedDecisionDefinitionId(decisionEvaluationRecord.getFailedDecisionId())
-            .failureMessage(decisionEvaluationRecord.getEvaluationFailureMessage())
+            // these optional fields default to an empty string on the originating record
+            // the conversion to null ensures response contract compliance
+            .failedDecisionDefinitionId(emptyToNull(decisionEvaluationRecord.getFailedDecisionId()))
+            .failureMessage(emptyToNull(decisionEvaluationRecord.getEvaluationFailureMessage()))
             .tenantId(decisionEvaluationRecord.getTenantId())
             .decisionInstanceKey(KeyUtil.keyToString(brokerResponse.getKey()))
             .decisionEvaluationKey(KeyUtil.keyToString(brokerResponse.getKey()));
@@ -802,6 +809,10 @@ public final class ResponseMapper {
           partitionDto.setHealth(EnumUtil.convert(partition.health(), HealthEnum.class));
           brokerInfo.addPartitionsItem(partitionDto);
         });
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   static class RestJobActivationResult

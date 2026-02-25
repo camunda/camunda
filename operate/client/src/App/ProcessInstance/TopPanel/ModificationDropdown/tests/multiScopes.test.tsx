@@ -12,11 +12,12 @@ import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
 import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {Paths} from 'modules/Routes';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
+import {searchResult} from 'modules/testUtils';
 
 const stats = {
   items: [
@@ -79,12 +80,18 @@ describe('Modification Dropdown - Multi Scopes', () => {
       processInstanceKey: 'instance_id',
       state: 'ACTIVE',
       startDate: '2018-06-21',
+      endDate: null,
       processDefinitionKey: '2',
       processDefinitionVersion: 1,
+      processDefinitionVersionTag: null,
       processDefinitionId: 'someKey',
       tenantId: '<default>',
       processDefinitionName: 'someProcessName',
       hasIncident: false,
+      parentProcessInstanceKey: null,
+      parentElementInstanceKey: null,
+      rootProcessInstanceKey: null,
+      tags: [],
     };
 
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -95,7 +102,12 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockFetchFlownodeInstancesStatistics().withSuccess(stats);
     mockSearchElementInstances().withSuccess({
       items: [],
-      page: {totalItems: 0},
+      page: {
+        totalItems: 0,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
     });
     modificationsStore.enableModificationMode();
   });
@@ -157,9 +169,11 @@ describe('Modification Dropdown - Multi Scopes', () => {
       elementId: 'OuterSubProcess',
       elementName: 'Outer Sub Process',
       hasIncident: false,
+      incidentKey: null,
       tenantId: '<default>',
       startDate: '2018-12-12T00:00:02.000+0000',
       endDate: '2018-12-12T00:00:03.000+0000',
+      rootProcessInstanceKey: null,
     });
 
     renderPopover([
@@ -176,5 +190,54 @@ describe('Modification Dropdown - Multi Scopes', () => {
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
+
+  it('should display visible child instances count when multi instance body element with multiple child instances is selected', async () => {
+    mockFetchFlownodeInstancesStatistics().withSuccess({
+      items: [
+        {
+          elementId: 'TaskB',
+          active: 3,
+          incidents: 0,
+          completed: 0,
+          canceled: 0,
+        },
+      ],
+    });
+
+    mockSearchElementInstances().withSuccess(
+      searchResult([
+        {
+          elementInstanceKey: '2251799813686200',
+          processInstanceKey: '1',
+          processDefinitionKey: 'processName',
+          processDefinitionId: 'processName',
+          state: 'ACTIVE' as const,
+          type: 'MULTI_INSTANCE_BODY' as const,
+          elementId: 'TaskB',
+          elementName: 'Task B',
+          hasIncident: false,
+          tenantId: '<default>',
+          startDate: '2018-12-12T00:00:02.000+0000',
+          endDate: null,
+          rootProcessInstanceKey: null,
+          incidentKey: null,
+        },
+      ]),
+    );
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=TaskB&isMultiInstanceBody=true`,
+    ]);
+
+    expect(
+      await screen.findByText(/Flow Node Modifications/),
+    ).toBeInTheDocument();
+
+    await waitForElementToBeRemoved(() => screen.queryByTitle(/loading/i));
+
+    expect(
+      await screen.findByText(/Selected running instances: 3/),
+    ).toBeInTheDocument();
   });
 });

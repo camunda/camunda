@@ -15,6 +15,7 @@ import static io.camunda.application.Profile.TASKLIST;
 import static io.camunda.authentication.config.AuthenticationProperties.METHOD;
 
 import io.camunda.authentication.config.WebSecurityConfig;
+import io.camunda.configuration.helpers.WebappsHelper;
 import io.camunda.security.entity.AuthenticationMethod;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -57,40 +58,25 @@ public class WebappsConfigurationInitializer
       propertyMap.put("spring.thymeleaf.check-template-location", true);
       propertyMap.put("spring.thymeleaf.prefix", DEFAULT_RESOURCES_LOCATION);
 
-      if (activeProfiles.contains(OPERATE.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, OPERATE.getId());
-      } else if (activeProfiles.contains(TASKLIST.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, TASKLIST.getId());
-      } else if (activeProfiles.contains(IDENTITY.getId())
-          || activeProfiles.contains(ADMIN.getId())) {
-        propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, ADMIN.getId());
-      }
       propertyMap.put(CAMUNDA_WEBAPPS_LOGIN_DELEGATED_PROPERTY, isLoginDelegated(context));
       propertyMap.put(
           SERVER_SERVLET_SESSION_COOKIE_NAME_PROPERTY, WebSecurityConfig.SESSION_COOKIE);
     }
 
+    // locations and home page
+
     final Set<String> locations = new HashSet<>();
     locations.add(DEFAULT_RESOURCES_LOCATION);
-
-    // Tasklist Properties
-
-    if (activeProfiles.contains(TASKLIST.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
-      if (activeProfiles.contains(STANDALONE.getId())) {
-        propertyMap.putAll(
-            Map.of(
-                AUTHORIZATIONS_ENABLED_PROPERTY,
-                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
-                MULTITENANCY_CHECKSENABLED_PROPERTY,
-                "${camunda.tasklist.multiTenancy.enabled:false}"));
-      }
-    }
+    String defaultWebapp = null;
 
     // Operate Properties
 
     if (activeProfiles.contains(OPERATE.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "operate/");
+      if (WebappsHelper.isOperateUiEnabled(environment)) {
+        locations.add(DEFAULT_RESOURCES_LOCATION + "operate/");
+        defaultWebapp = OPERATE.getId();
+      }
+
       if (activeProfiles.contains(STANDALONE.getId())) {
         propertyMap.putAll(
             Map.of(
@@ -101,16 +87,43 @@ public class WebappsConfigurationInitializer
       }
     }
 
-    // Admin Properties
+    // Tasklist Properties
 
-    if (activeProfiles.contains(IDENTITY.getId()) || activeProfiles.contains(ADMIN.getId())) {
-      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
-      locations.add(DEFAULT_RESOURCES_LOCATION + "admin/");
+    if (activeProfiles.contains(TASKLIST.getId())) {
+      if (WebappsHelper.isTasklistUiEnabled(environment)) {
+        locations.add(DEFAULT_RESOURCES_LOCATION + "tasklist/");
+        if (defaultWebapp == null) {
+          defaultWebapp = TASKLIST.getId();
+        }
+      }
+
+      if (activeProfiles.contains(STANDALONE.getId())) {
+        propertyMap.putAll(
+            Map.of(
+                AUTHORIZATIONS_ENABLED_PROPERTY,
+                "${camunda.tasklist.identity.resourcePermissionsEnabled:false}",
+                MULTITENANCY_CHECKSENABLED_PROPERTY,
+                "${camunda.tasklist.multiTenancy.enabled:false}"));
+      }
     }
 
-    // Store locations and merge everything
+    // Identity/Admin Properties
+
+    if ((activeProfiles.contains(IDENTITY.getId()) || activeProfiles.contains(ADMIN.getId()))
+        && WebappsHelper.isIdentityUiEnabled(environment)) {
+      locations.add(DEFAULT_RESOURCES_LOCATION + "identity/");
+      locations.add(DEFAULT_RESOURCES_LOCATION + "admin/");
+      if (defaultWebapp == null) {
+        defaultWebapp = ADMIN.getId();
+      }
+    }
+
+    // Store locations, default homepage and merge everything
 
     propertyMap.put(RESOURCES_LOCATION_PROPERTY, locations);
+    if (defaultWebapp != null) {
+      propertyMap.put(CAMUNDA_WEBAPPS_DEFAULT_APP_PROPERTY, defaultWebapp);
+    }
     DefaultPropertiesPropertySource.addOrMerge(propertyMap, propertySources);
   }
 

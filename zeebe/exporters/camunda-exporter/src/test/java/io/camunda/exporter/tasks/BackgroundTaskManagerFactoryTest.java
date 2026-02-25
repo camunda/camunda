@@ -15,6 +15,7 @@ import io.camunda.exporter.ExporterMetadata;
 import io.camunda.exporter.config.ExporterConfiguration;
 import io.camunda.exporter.metrics.CamundaExporterMetrics;
 import io.camunda.exporter.tasks.archiver.ApplyRolloverPeriodJob;
+import io.camunda.exporter.tasks.archiver.AuditLogArchiverJob;
 import io.camunda.exporter.tasks.archiver.BatchOperationArchiverJob;
 import io.camunda.exporter.tasks.archiver.JobBatchMetricsArchiverJob;
 import io.camunda.exporter.tasks.archiver.ProcessInstanceArchiverJob;
@@ -28,6 +29,7 @@ import io.camunda.exporter.tasks.incident.IncidentUpdateTask;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.zeebe.exporter.common.cache.ExporterEntityCacheImpl;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
+import java.time.InstantSource;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +55,8 @@ class BackgroundTaskManagerFactoryTest {
             LoggerFactory.getLogger(BackgroundTaskManagerFactoryTest.class),
             mock(ExporterMetadata.class),
             new ObjectMapper(),
-            mock(ExporterEntityCacheImpl.class));
+            mock(ExporterEntityCacheImpl.class),
+            InstantSource.system());
   }
 
   @Test
@@ -166,7 +169,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should always schedule incident and usage metrics tasks regardless of PI config")
-        .hasSize(9)
+        .hasSize(10)
         .anyMatch(task -> isTaskOfType(task, IncidentUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, UsageMetricTUArchiverJob.class))
@@ -175,7 +178,8 @@ class BackgroundTaskManagerFactoryTest {
         .anyMatch(task -> isTaskOfType(task, BatchOperationArchiverJob.class))
         .anyMatch(task -> isTaskOfType(task, BatchOperationUpdateTask.class))
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class))
-        .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class));
+        .anyMatch(task -> isTaskOfType(task, HistoryDeletionJob.class))
+        .anyMatch(task -> isTaskOfType(task, AuditLogArchiverJob.class));
   }
 
   @Test
@@ -190,7 +194,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should not schedule ApplyRolloverPeriodJob when retention is disabled")
-        .hasSize(10)
+        .hasSize(11)
         .noneMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 
@@ -206,7 +210,7 @@ class BackgroundTaskManagerFactoryTest {
     final var tasks = getTasksFromManager(taskManager);
     assertThat(tasks)
         .as("Should schedule ApplyRolloverPeriodJob when retention is enabled")
-        .hasSize(11)
+        .hasSize(12)
         .anyMatch(task -> isTaskOfType(task, ApplyRolloverPeriodJob.class));
   }
 

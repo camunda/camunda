@@ -16,6 +16,8 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.scheduler.Actor;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
@@ -49,13 +51,17 @@ public final class BackupService extends Actor implements BackupManager {
       final Path segmentsDirectory,
       final JournalInfoProvider raftMetadataProvider,
       final MeterRegistry partitionRegistry,
-      final LogStreamWriter logStreamWriter) {
+      final LogStreamWriter logStreamWriter,
+      final DbBackupRangeState backupRangeState,
+      final DbCheckpointMetadataState checkpointMetadataState) {
     this.nodeId = nodeId;
     this.partitionId = partitionId;
     this.snapshotStore = snapshotStore;
     this.segmentsDirectory = segmentsDirectory;
     metrics = new BackupManagerMetrics(partitionRegistry);
-    internalBackupManager = new BackupServiceImpl(backupStore, logStreamWriter);
+    internalBackupManager =
+        new BackupServiceImpl(
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }
@@ -169,11 +175,16 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
+  public ActorFuture<Void> requestBackupDeletion(final long checkpointId) {
+    return internalBackupManager.writeBackupDeletionCommand(checkpointId, actor);
+  }
+
+  @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     final var operationMetrics = metrics.startDeleting();
 
-    final var backupDeleted = internalBackupManager.deleteBackup(partitionId, checkpointId, actor);
-
+    final var backupDeleted =
+        internalBackupManager.deleteBackupIfExists(partitionId, checkpointId, actor);
     backupDeleted.onComplete(operationMetrics::complete);
     backupDeleted.onComplete(
         (ignore, error) -> {
@@ -181,7 +192,6 @@ public final class BackupService extends Actor implements BackupManager {
             LOG.warn("Failed to delete backup {}", checkpointId, error);
           }
         });
-
     return backupDeleted;
   }
 
@@ -205,7 +215,7 @@ public final class BackupService extends Actor implements BackupManager {
 
   @Override
   public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
-    return internalBackupManager.getBackupRangeStatus(partitionId, actor);
+    return internalBackupManager.getBackupRangeStatus(actor);
   }
 
   @Override

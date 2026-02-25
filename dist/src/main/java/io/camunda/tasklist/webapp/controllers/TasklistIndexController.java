@@ -9,6 +9,7 @@ package io.camunda.tasklist.webapp.controllers;
 
 import static io.camunda.webapps.util.HttpUtils.getRequestedUrl;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 @Controller
+@ConditionalOnWebappUiEnabled("tasklist")
 public class TasklistIndexController {
 
   @Autowired private ServletContext context;

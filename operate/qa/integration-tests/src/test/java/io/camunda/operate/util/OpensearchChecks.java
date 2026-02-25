@@ -17,9 +17,9 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
+import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
-import io.camunda.operate.property.OperateProperties;
 import io.camunda.operate.store.NotFoundException;
 import io.camunda.operate.store.opensearch.client.sync.RichOpenSearchClient;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
@@ -52,18 +52,13 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @Conditional(OpensearchCondition.class)
-@ConditionalOnProperty(
-    prefix = OperateProperties.PREFIX,
-    name = "webappEnabled",
-    havingValue = "true",
-    matchIfMissing = true)
+@ConditionalOnWebappEnabled("operate")
 public class OpensearchChecks {
 
   @Autowired UserTaskReader userTaskReader;

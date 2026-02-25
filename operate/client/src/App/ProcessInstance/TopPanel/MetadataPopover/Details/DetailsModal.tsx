@@ -18,7 +18,7 @@ import type {
   Job,
   ProcessInstance,
   DecisionInstance,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 import {getIncidentErrorName} from 'modules/utils/incidents';
 
 type Props = {

@@ -8,9 +8,13 @@
 package io.camunda.zeebe.backup.processing;
 
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.CheckpointListener;
+import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
 import io.camunda.zeebe.backup.metrics.CheckpointMetrics;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import io.camunda.zeebe.protocol.record.ValueType;
@@ -40,22 +44,30 @@ public final class CheckpointRecordsProcessor
   private final BackupManager backupManager;
   private CheckpointCreateProcessor checkpointCreateProcessor;
   private CheckpointConfirmBackupProcessor checkpointConfirmBackupProcessor;
+  private CheckpointDeleteBackupProcessor checkpointDeleteBackupProcessor;
   private CheckpointCreatedEventApplier checkpointCreatedEventApplier;
   private CheckpointBackupConfirmedApplier checkpointBackupConfirmedApplier;
+  private CheckpointBackupDeletedApplier checkpointBackupDeletedApplier;
 
   //  Can be accessed concurrently by other threads to add new listeners. Hence we have to use a
   // thread safe collection
   private final Set<CheckpointListener> checkpointListeners = new CopyOnWriteArraySet<>();
+  private final BackupMetadataSyncer syncer;
   private final CheckpointMetrics metrics;
   private DbCheckpointState checkpointState;
+  private DbCheckpointMetadataState checkpointMetadataState;
+  private DbBackupRangeState backupRangeState;
   private ProcessingScheduleService executor;
   private ScalingStatusSupplier scalingInProgressSupplier;
   private PartitionCountSupplier partitionCountSupplier;
 
   public CheckpointRecordsProcessor(
-      final BackupManager backupManager, final int partitionId, final MeterRegistry registry) {
+      final BackupManager backupManager,
+      final BackupStore backupStore,
+      final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
+    syncer = new BackupMetadataSyncer(backupStore);
   }
 
   public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {
@@ -79,6 +91,13 @@ public final class CheckpointRecordsProcessor
         new DbCheckpointState(
             recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
 
+    checkpointMetadataState =
+        new DbCheckpointMetadataState(
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
+    backupRangeState =
+        new DbBackupRangeState(
+            recordProcessorContext.getZeebeDb(), recordProcessorContext.getTransactionContext());
+
     if (scalingInProgressSupplier == null) {
       throw new IllegalStateException("Scaling in progress supplier is not initialized.");
     }
@@ -90,16 +109,29 @@ public final class CheckpointRecordsProcessor
         new CheckpointCreateProcessor(
             checkpointState,
             backupManager,
+            checkpointMetadataState,
             checkpointListeners,
             scalingInProgressSupplier,
             partitionCountSupplier,
             metrics);
 
     checkpointConfirmBackupProcessor =
-        new CheckpointConfirmBackupProcessor(checkpointState, backupManager);
+        new CheckpointConfirmBackupProcessor(
+            checkpointState, checkpointMetadataState, backupRangeState, backupManager, syncer);
+
+    checkpointDeleteBackupProcessor =
+        new CheckpointDeleteBackupProcessor(
+            checkpointMetadataState, backupRangeState, checkpointState, backupManager, syncer);
+
     checkpointCreatedEventApplier =
-        new CheckpointCreatedEventApplier(checkpointState, checkpointListeners, metrics);
-    checkpointBackupConfirmedApplier = new CheckpointBackupConfirmedApplier(checkpointState);
+        new CheckpointCreatedEventApplier(
+            checkpointState, checkpointMetadataState, checkpointListeners);
+    checkpointBackupConfirmedApplier =
+        new CheckpointBackupConfirmedApplier(
+            checkpointState, checkpointMetadataState, backupRangeState);
+    checkpointBackupDeletedApplier =
+        new CheckpointBackupDeletedApplier(
+            checkpointMetadataState, backupRangeState, checkpointState);
 
     final long checkpointId = checkpointState.getLatestCheckpointId();
     final var checkpointType = checkpointState.getLatestCheckpointType();
@@ -123,6 +155,12 @@ public final class CheckpointRecordsProcessor
       // Should never reach here. StreamProcessor must choose the right processor always.
       throw new IllegalArgumentException("Unknown record");
     }
+    if (!record.getIntent().isEvent()) {
+      throw new IllegalArgumentException(
+          "Expected to replay event but got non-event with intent: %s"
+              .formatted(record.getIntent()));
+    }
+
     final CheckpointIntent intent = (CheckpointIntent) record.getIntent();
     switch (intent) {
       case CREATED ->
@@ -131,27 +169,38 @@ public final class CheckpointRecordsProcessor
       case CONFIRMED_BACKUP ->
           checkpointBackupConfirmedApplier.apply(
               (CheckpointRecord) record.getValue(), record.getTimestamp());
-      default -> {
-        // Don't apply intents CREATE and IGNORED
-      }
+      case DELETED_BACKUP ->
+          checkpointBackupDeletedApplier.apply((CheckpointRecord) record.getValue());
+      case IGNORED -> {}
+      default ->
+          throw new IllegalStateException(
+              "Unknown checkpoint intent: %s".formatted(record.getIntent()));
     }
   }
 
   @Override
   public ProcessingResult process(
       final TypedRecord record, final ProcessingResultBuilder resultBuilder) {
-    if (record.getValueType() == ValueType.CHECKPOINT
-        && record.getIntent() == CheckpointIntent.CREATE) {
-      return checkpointCreateProcessor.process(record, resultBuilder);
+    if (record.getValueType() != ValueType.CHECKPOINT) {
+      throw new IllegalArgumentException(
+          "Unknown value type %s for record %s".formatted(record.getValueType(), record));
     }
 
-    if (record.getValueType() == ValueType.CHECKPOINT
-        && record.getIntent() == CheckpointIntent.CONFIRM_BACKUP) {
-      return checkpointConfirmBackupProcessor.process(record, resultBuilder);
+    if (!(record.getIntent() instanceof final CheckpointIntent checkpointIntent)) {
+      throw new IllegalArgumentException(
+          "Unknown checkpoint intent %s".formatted(record.getIntent()));
     }
 
-    // Should never reach here. StreamProcessor must choose the right processor always.
-    throw new IllegalArgumentException("Unknown record");
+    return switch (checkpointIntent) {
+      case CheckpointIntent.CREATE -> checkpointCreateProcessor.process(record, resultBuilder);
+      case CheckpointIntent.CONFIRM_BACKUP ->
+          checkpointConfirmBackupProcessor.process(record, resultBuilder);
+      case CheckpointIntent.DELETE_BACKUP ->
+          checkpointDeleteBackupProcessor.process(record, resultBuilder);
+      default ->
+          throw new IllegalArgumentException(
+              "Unknown checkpoint intent %s".formatted(record.getIntent()));
+    };
   }
 
   @Override

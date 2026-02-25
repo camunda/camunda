@@ -6,12 +6,11 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type {Form} from '@camunda/camunda-api-zod-schemas/8.8';
+import type {Form} from '@camunda/camunda-api-zod-schemas/8.9';
 import * as schemas from 'common/mocks/form-schema';
 
 const form: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   schema: schemas.basicInputForm,
   version: 1,
   tenantId: '<default>',
@@ -19,7 +18,6 @@ const form: Form = {
 
 const invalidForm: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   schema: schemas.invalidForm,
   version: 1,
   tenantId: '<default>',
@@ -27,7 +25,6 @@ const invalidForm: Form = {
 
 const dynamicForm: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   version: 1,
   schema: schemas.dynamicRadioOptions,
   tenantId: '<default>',
@@ -35,7 +32,6 @@ const dynamicForm: Form = {
 
 const nestedForm: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   version: 1,
   schema: schemas.nestedForm,
   tenantId: '<default>',
@@ -43,7 +39,6 @@ const nestedForm: Form = {
 
 const noInputForm: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   version: 1,
   schema: schemas.noInput,
   tenantId: '<default>',
@@ -51,7 +46,6 @@ const noInputForm: Form = {
 
 const formWithDocumentPreview: Form = {
   formKey: 'form-0',
-  bpmnId: 'task-0',
   schema: schemas.documentPreview,
   version: 1,
   tenantId: '<default>',

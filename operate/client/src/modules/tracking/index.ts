@@ -8,6 +8,7 @@
 
 import type {Mixpanel} from 'mixpanel-browser';
 import {getStage} from './getStage';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 import type {
   InstanceEntityState,
   OperationEntityType,
@@ -16,7 +17,7 @@ import type {
   BatchOperationState,
   BatchOperationType,
   DecisionInstanceState,
-} from '@camunda/camunda-api-zod-schemas/8.8';
+} from '@camunda/camunda-api-zod-schemas/8.9';
 
 const EVENT_PREFIX = 'operate:';
 
@@ -32,6 +33,7 @@ type Events =
         | 'header-dashboard'
         | 'header-processes'
         | 'header-decisions'
+        | 'header-batch-operations'
         | 'header-operations-log'
         | 'dashboard-running-processes'
         | 'dashboard-processes-with-incidents'
@@ -54,6 +56,7 @@ type Events =
         | 'dashboard'
         | 'processes'
         | 'decisions'
+        | 'batch-operations'
         | 'operations-log'
         | 'process-details'
         | 'decision-details'
@@ -371,18 +374,24 @@ class Tracking {
   #mixpanel: null | Mixpanel = null;
   #appCues: null | NonNullable<typeof window.Appcues> = null;
 
-  #baseProperties = {
-    organizationId: window.clientConfig?.organizationId,
-    clusterId: window.clientConfig?.clusterId,
-    stage: STAGE_ENV,
-    version: import.meta.env.VITE_VERSION,
-  } as const;
+  #baseProperties = (() => {
+    const clientConfig = getClientConfig();
+
+    return {
+      organizationId: clientConfig.organizationId,
+      clusterId: clientConfig.clusterId,
+      stage: STAGE_ENV,
+      version: import.meta.env.VITE_VERSION,
+    } as const;
+  })();
 
   #isTrackingSupported = () => {
+    const clientConfig = getClientConfig();
+
     return (
       !import.meta.env.DEV &&
       ['prod', 'int'].includes(STAGE_ENV) &&
-      window.clientConfig?.organizationId
+      Boolean(clientConfig.organizationId)
     );
   };
 
@@ -435,13 +444,13 @@ class Tracking {
 
   #loadMixpanel = (): Promise<void> => {
     return import('mixpanel-browser').then(({default: mixpanel}) => {
+      const clientConfig = getClientConfig();
+
       mixpanel.init(
-        window.clientConfig?.mixpanelToken ??
-          import.meta.env.VITE_MIXPANEL_TOKEN,
+        clientConfig.mixpanelToken ?? import.meta.env.VITE_MIXPANEL_TOKEN,
         {
           api_host:
-            window.clientConfig?.mixpanelAPIHost ??
-            import.meta.env.VITE_MIXPANEL_HOST,
+            clientConfig.mixpanelAPIHost ?? import.meta.env.VITE_MIXPANEL_HOST,
           opt_out_tracking_by_default: true,
         },
       );

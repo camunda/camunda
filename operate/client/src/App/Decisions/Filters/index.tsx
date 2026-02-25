@@ -36,6 +36,7 @@ import {
   getDefinitionIdentifier,
   getDefinitionIdFromIdentifier,
 } from 'modules/hooks/decisionDefinitions';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const initialValues: DecisionsFilter = {
   evaluated: true,
@@ -43,6 +44,7 @@ const initialValues: DecisionsFilter = {
 };
 
 const Filters: React.FC = observer(() => {
+  const clientConfig = getClientConfig();
   const [params] = useSearchParams();
   const navigate = useNavigate();
   const [visibleFilters, setVisibleFilters] = useState<OptionalFilter[]>([]);
@@ -95,7 +97,7 @@ const Filters: React.FC = observer(() => {
               />
               <Stack gap={8}>
                 <Stack gap={5}>
-                  {window.clientConfig?.multiTenancyEnabled && (
+                  {clientConfig.multiTenancyEnabled && (
                     <div>
                       <Title>Tenant</Title>
                       <TenantField

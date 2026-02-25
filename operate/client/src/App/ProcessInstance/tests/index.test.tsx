@@ -30,6 +30,9 @@ describe('ProcessInstance', () => {
       items: [createVariable()],
       page: {
         totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
       },
     });
 

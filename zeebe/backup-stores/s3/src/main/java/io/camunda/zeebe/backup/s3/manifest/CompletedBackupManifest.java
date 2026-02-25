@@ -58,4 +58,10 @@ public record CompletedBackupManifest(
   public Optional<BackupDescriptor> backupDescriptor() {
     return Optional.of(descriptor);
   }
+
+  @Override
+  public DeletedBackupManifest asDeleted() {
+    return new DeletedBackupManifest(
+        id, Optional.of(descriptor), snapshotFiles, segmentFiles, createdAt, Instant.now());
+  }
 }

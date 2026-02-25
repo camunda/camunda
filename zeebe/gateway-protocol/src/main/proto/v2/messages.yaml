@@ -229,6 +229,8 @@ components:
 
     MessageSubscriptionSearchQueryResult:
       type: object
+      required:
+        - items
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
       properties:
@@ -240,6 +242,8 @@ components:
 
     MessageSubscriptionResult:
       type: object
+      required:
+        - rootProcessInstanceKey
       properties:
         messageSubscriptionKey:
           allOf:
@@ -376,6 +380,8 @@ components:
           description: The unique external tenant ID.
 
     CorrelatedMessageSubscriptionSearchQueryResult:
+      required:
+        - items
       type: object
       allOf:
         - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
@@ -453,6 +459,7 @@ components:
         - processInstanceKey
         - subscriptionKey
         - tenantId
+        - rootProcessInstanceKey
 
     CorrelatedMessageSubscriptionSearchQuery:
       type: object

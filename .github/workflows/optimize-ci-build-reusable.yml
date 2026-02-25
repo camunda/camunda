@@ -104,14 +104,14 @@ jobs:
       - name: Build optimize dependencies
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml -pl backend -am install -T1
+          parameters: -f optimize/pom.xml -pl backend -am install -DskipITs -T1
 
       #########################################################################
       # Build Optimize
       - name: Generate production .tar.gz
         uses: ./.github/actions/run-maven
         with:
-          parameters: -f optimize/pom.xml install -DskipTests -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
+          parameters: -f optimize/pom.xml install -DskipITs -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
 
       #########################################################################
       # Build Docker image

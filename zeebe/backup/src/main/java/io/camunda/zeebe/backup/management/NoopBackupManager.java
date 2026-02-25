@@ -52,6 +52,12 @@ public class NoopBackupManager implements BackupManager {
   }
 
   @Override
+  public ActorFuture<Void> requestBackupDeletion(final long checkpointId) {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
+
+  @Override
   public ActorFuture<Void> deleteBackup(final long checkpointId) {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));

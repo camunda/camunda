@@ -13,7 +13,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.fasterxml.jackson.core.JsonParseException;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DeleteResourceRequest;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.StreamActivatedJobsRequest;
+import io.camunda.zeebe.protocol.record.value.TenantFilter;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
+import io.camunda.zeebe.util.buffer.BufferUtil;
+import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -352,6 +356,214 @@ public class RequestMapperTest {
 
       // when/then
       assertThatThrownBy(() -> RequestMapper.toActivateJobsRequest(grpcRequest))
+          .isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Unrecognized tenantFilter option")
+          .hasMessageContaining("expected one of ASSIGNED or PROVIDED");
+    }
+  }
+
+  @Nested
+  class StreamActivatedJobsRequestMappingTest {
+
+    private static final Map<String, Object> EMPTY_CLAIMS = Map.of();
+
+    @BeforeEach
+    public void setup() {
+      RequestMapper.setMultiTenancyEnabled(true);
+    }
+
+    @AfterEach
+    public void tearDown() {
+      RequestMapper.setMultiTenancyEnabled(false);
+    }
+
+    @Test
+    public void shouldMapWithProvidedTenantFilter() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setTimeout(5000L)
+              .addTenantIds("tenant-a")
+              .addTenantIds("tenant-b")
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.PROVIDED)
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(BufferUtil.bufferAsString(properties.worker())).isEqualTo("test-worker");
+      assertThat(properties.timeout()).isEqualTo(5000L);
+      assertThat(properties.tenantIds()).containsExactly("tenant-a", "tenant-b");
+      assertThat(properties.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+    }
+
+    @Test
+    public void shouldMapWithAssignedTenantFilter() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setTimeout(3000L)
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.ASSIGNED)
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(BufferUtil.bufferAsString(properties.worker())).isEqualTo("test-worker");
+      assertThat(properties.timeout()).isEqualTo(3000L);
+      assertThat(properties.tenantIds()).isEmpty();
+      assertThat(properties.tenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+    }
+
+    @Test
+    public void shouldIgnoreTenantIdsWhenAssignedTenantFilterIsUsed() {
+      // given — request has tenantIds but uses ASSIGNED filter
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .addTenantIds("tenant-b")
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.ASSIGNED)
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then — tenantIds should be empty when ASSIGNED filter is used
+      assertThat(properties.tenantIds()).isEmpty();
+      assertThat(properties.tenantFilter()).isEqualTo(TenantFilter.ASSIGNED);
+    }
+
+    @Test
+    public void shouldDefaultToProvidedTenantFilterWhenNotSpecified() {
+      // given — request without explicit tenant filter
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then — should default to PROVIDED
+      assertThat(properties.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+      assertThat(properties.tenantIds()).containsExactly("tenant-a");
+    }
+
+    @Test
+    public void shouldRejectProvidedFilterWithoutTenantIds() {
+      // given — PROVIDED filter but no tenant IDs
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .setTenantFilter(
+                  io.camunda.zeebe.gateway.protocol.GatewayOuterClass.TenantFilter.PROVIDED)
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS))
+          .hasMessageContaining("no tenant identifiers were provided");
+    }
+
+    @Test
+    public void shouldMapWithMultiTenancyDisabled() {
+      // given
+      RequestMapper.setMultiTenancyEnabled(false);
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then — should default to default tenant
+      assertThat(properties.tenantIds()).containsExactly(TenantOwned.DEFAULT_TENANT_IDENTIFIER);
+      assertThat(properties.tenantFilter()).isEqualTo(TenantFilter.PROVIDED);
+    }
+
+    @Test
+    public void shouldRejectNonDefaultTenantIdWhenMultiTenancyDisabled() {
+      // given
+      RequestMapper.setMultiTenancyEnabled(false);
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS))
+          .hasMessageContaining("multi-tenancy is disabled");
+    }
+
+    @Test
+    public void shouldMapFetchVariables() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .addFetchVariable("var1")
+              .addFetchVariable("var2")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS);
+
+      // then
+      assertThat(properties.fetchVariables())
+          .extracting(BufferUtil::bufferAsString)
+          .containsExactly("var1", "var2");
+    }
+
+    @Test
+    public void shouldPassClaimsThrough() {
+      // given
+      final var claims = Map.<String, Object>of("authorized_username", "test-user");
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .build();
+
+      // when
+      final var properties = RequestMapper.toJobActivationProperties(request, claims);
+
+      // then
+      assertThat(properties.claims()).containsEntry("authorized_username", "test-user");
+    }
+
+    @Test
+    public void shouldThrowExceptionForUnrecognizedTenantFilter() {
+      // given
+      final var request =
+          StreamActivatedJobsRequest.newBuilder()
+              .setType("test-job")
+              .setWorker("test-worker")
+              .addTenantIds("tenant-a")
+              .setTenantFilterValue(999)
+              .build();
+
+      // when/then
+      assertThatThrownBy(() -> RequestMapper.toJobActivationProperties(request, EMPTY_CLAIMS))
           .isInstanceOf(IllegalArgumentException.class)
           .hasMessageContaining("Unrecognized tenantFilter option")
           .hasMessageContaining("expected one of ASSIGNED or PROVIDED");

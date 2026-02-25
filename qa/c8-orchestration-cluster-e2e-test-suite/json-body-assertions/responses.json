@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "43faeb6199caf837b98734a717388cef0163ede3",
-    "generatedAt": "2026-02-16T07:49:36.707Z",
+    "commit": "a10bb5b34c3d34fa432bd856142bf136b8629258",
+    "generatedAt": "2026-02-25T13:09:08.097Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "6760af776522a661f7999babeaa41a341e74d292bbefdfbb9ac4632386c34eea"
+    "specSha256": "195577de47d16a714c11b79cd94536877e71e7cc5823011285bc7ac717d2e765"
   },
   "responses": [
     {
@@ -14,38 +14,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "actorId",
@@ -60,6 +38,10 @@
                     "UNKNOWN",
                     "USER"
                   ]
+                },
+                {
+                  "name": "agentElementId",
+                  "type": "string"
                 },
                 {
                   "name": "annotation",
@@ -203,13 +185,6 @@
                   ]
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "tenantId",
                   "type": "string"
                 },
@@ -223,8 +198,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -232,7 +236,13 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          }
+        ],
         "optional": [
           {
             "name": "actorId",
@@ -247,6 +257,10 @@
               "UNKNOWN",
               "USER"
             ]
+          },
+          {
+            "name": "agentElementId",
+            "type": "string"
           },
           {
             "name": "annotation",
@@ -390,13 +404,6 @@
             ]
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
-          },
-          {
             "name": "tenantId",
             "type": "string"
           },
@@ -418,6 +425,10 @@
       "schema": {
         "required": [
           {
+            "name": "authorizedComponents",
+            "type": "array<string>"
+          },
+          {
             "name": "c8Links",
             "type": "object"
           },
@@ -435,7 +446,8 @@
           },
           {
             "name": "salesPlanType",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "tenants",
@@ -464,20 +476,19 @@
         ],
         "optional": [
           {
-            "name": "authorizedComponents",
-            "type": "array<string>"
-          },
-          {
             "name": "displayName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "email",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "username",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -503,38 +514,20 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "permissionTypes",
+                  "type": "array<string>"
+                },
+                {
+                  "name": "resourcePropertyName",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "authorizationKey",
@@ -557,16 +550,9 @@
                   ]
                 },
                 {
-                  "name": "permissionTypes",
-                  "type": "array<string>"
-                },
-                {
                   "name": "resourceId",
-                  "type": "string"
-                },
-                {
-                  "name": "resourcePropertyName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "resourceType",
@@ -596,8 +582,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -605,7 +620,17 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "permissionTypes",
+            "type": "array<string>"
+          },
+          {
+            "name": "resourcePropertyName",
+            "type": "string",
+            "nullable": true
+          }
+        ],
         "optional": [
           {
             "name": "authorizationKey",
@@ -628,16 +653,9 @@
             ]
           },
           {
-            "name": "permissionTypes",
-            "type": "array<string>"
-          },
-          {
             "name": "resourceId",
-            "type": "string"
-          },
-          {
-            "name": "resourcePropertyName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "resourceType",
@@ -675,38 +693,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "batchOperationKey",
@@ -714,7 +710,8 @@
                 },
                 {
                   "name": "errorMessage",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "itemKey",
@@ -748,13 +745,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -767,16 +757,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/batch-operations/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -790,7 +771,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -798,18 +780,53 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/batch-operations/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "errors",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "message",
+                        "type": "string"
+                      },
+                      {
+                        "name": "partitionId",
+                        "type": "number"
+                      },
+                      {
+                        "name": "type",
+                        "type": "string",
+                        "enumValues": [
+                          "QUERY_FAILED",
+                          "RESULT_BUFFER_SIZE_EXCEEDED"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
               "optional": [
                 {
                   "name": "actorId",
@@ -856,31 +873,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "errors",
-                  "type": "array<object>",
-                  "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "message",
-                        "type": "string"
-                      },
-                      {
-                        "name": "partitionId",
-                        "type": "number"
-                      },
-                      {
-                        "name": "type",
-                        "type": "string",
-                        "enumValues": [
-                          "QUERY_FAILED",
-                          "RESULT_BUFFER_SIZE_EXCEEDED"
-                        ]
-                      }
-                    ]
-                  }
-                },
-                {
                   "name": "operationsCompletedCount",
                   "type": "number"
                 },
@@ -911,8 +903,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -920,7 +941,33 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "errors",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "partitionId",
+                  "type": "number"
+                },
+                {
+                  "name": "type",
+                  "type": "string",
+                  "enumValues": [
+                    "QUERY_FAILED",
+                    "RESULT_BUFFER_SIZE_EXCEEDED"
+                  ]
+                }
+              ]
+            }
+          }
+        ],
         "optional": [
           {
             "name": "actorId",
@@ -965,31 +1012,6 @@
           {
             "name": "endDate",
             "type": "string"
-          },
-          {
-            "name": "errors",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "message",
-                  "type": "string"
-                },
-                {
-                  "name": "partitionId",
-                  "type": "number"
-                },
-                {
-                  "name": "type",
-                  "type": "string",
-                  "enumValues": [
-                    "QUERY_FAILED",
-                    "RESULT_BUFFER_SIZE_EXCEEDED"
-                  ]
-                }
-              ]
-            }
           },
           {
             "name": "operationsCompletedCount",
@@ -1040,15 +1062,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1071,15 +1094,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1102,15 +1126,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1122,34 +1147,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<0>",
@@ -1166,10 +1163,6 @@
                     "GLOBAL",
                     "TENANT"
                   ]
-                },
-                {
-                  "name": "value",
-                  "type": "string"
                 }
               ],
               "optional": [
@@ -1179,12 +1172,46 @@
                 },
                 {
                   "name": "tenantId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "value",
                   "type": "string"
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1204,15 +1231,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1235,15 +1263,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1266,15 +1295,16 @@
               "GLOBAL",
               "TENANT"
             ]
-          },
-          {
-            "name": "value",
-            "type": "string"
           }
         ],
         "optional": [
           {
             "name": "tenantId",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "value",
             "type": "string"
           }
         ]
@@ -1322,34 +1352,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -1387,6 +1389,11 @@
                   "type": "string"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "subscriptionKey",
                   "type": "string"
                 },
@@ -1403,18 +1410,40 @@
                 {
                   "name": "processDefinitionKey",
                   "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
                   "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1455,7 +1484,79 @@
             "name": "evaluatedDecisions",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "evaluatedInputs",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [],
+                    "optional": [
+                      {
+                        "name": "inputId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "inputName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "inputValue",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "matchedRules",
+                  "type": "array<items>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "evaluatedOutputs",
+                        "type": "array<object>",
+                        "children": {
+                          "required": [
+                            {
+                              "name": "ruleId",
+                              "type": "string",
+                              "nullable": true
+                            },
+                            {
+                              "name": "ruleIndex",
+                              "type": "number",
+                              "nullable": true
+                            }
+                          ],
+                          "optional": [
+                            {
+                              "name": "outputId",
+                              "type": "string"
+                            },
+                            {
+                              "name": "outputName",
+                              "type": "string"
+                            },
+                            {
+                              "name": "outputValue",
+                              "type": "string"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "optional": [
+                      {
+                        "name": "ruleId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "ruleIndex",
+                        "type": "number"
+                      }
+                    ]
+                  }
+                }
+              ],
               "optional": [
                 {
                   "name": "decisionDefinitionId",
@@ -1482,73 +1583,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "evaluatedInputs",
-                  "type": "array<items>",
-                  "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "inputId",
-                        "type": "string"
-                      },
-                      {
-                        "name": "inputName",
-                        "type": "string"
-                      },
-                      {
-                        "name": "inputValue",
-                        "type": "string"
-                      }
-                    ]
-                  }
-                },
-                {
-                  "name": "matchedRules",
-                  "type": "array<items>",
-                  "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "evaluatedOutputs",
-                        "type": "array<object>",
-                        "children": {
-                          "required": [],
-                          "optional": [
-                            {
-                              "name": "outputId",
-                              "type": "string"
-                            },
-                            {
-                              "name": "outputName",
-                              "type": "string"
-                            },
-                            {
-                              "name": "outputValue",
-                              "type": "string"
-                            },
-                            {
-                              "name": "ruleId",
-                              "type": "string"
-                            },
-                            {
-                              "name": "ruleIndex",
-                              "type": "number"
-                            }
-                          ]
-                        }
-                      },
-                      {
-                        "name": "ruleId",
-                        "type": "string"
-                      },
-                      {
-                        "name": "ruleIndex",
-                        "type": "number"
-                      }
-                    ]
-                  }
-                },
-                {
                   "name": "output",
                   "type": "string"
                 },
@@ -1561,11 +1595,13 @@
           },
           {
             "name": "failedDecisionDefinitionId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "failureMessage",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "output",
@@ -1590,34 +1626,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -1662,8 +1670,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1719,38 +1756,25 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<0>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "evaluationFailure",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "decisionDefinitionId",
@@ -1770,6 +1794,7 @@
                   "enumValues": [
                     "DECISION_TABLE",
                     "LITERAL_EXPRESSION",
+                    "UNSPECIFIED",
                     "UNKNOWN"
                   ]
                 },
@@ -1794,10 +1819,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "evaluationFailure",
-                  "type": "string"
-                },
-                {
                   "name": "processDefinitionKey",
                   "type": "string"
                 },
@@ -1814,29 +1835,48 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
                     "EVALUATED",
                     "FAILED",
-                    "UNSPECIFIED"
+                    "UNSPECIFIED",
+                    "UNKNOWN"
                   ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "tenantId",
-                  "type": "string"
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1844,45 +1884,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
-          {
-            "name": "decisionDefinitionId",
-            "type": "string"
-          },
-          {
-            "name": "decisionDefinitionKey",
-            "type": "string"
-          },
-          {
-            "name": "decisionDefinitionName",
-            "type": "string"
-          },
-          {
-            "name": "decisionDefinitionType",
-            "type": "string",
-            "enumValues": [
-              "DECISION_TABLE",
-              "LITERAL_EXPRESSION",
-              "UNKNOWN"
-            ]
-          },
-          {
-            "name": "decisionDefinitionVersion",
-            "type": "number"
-          },
-          {
-            "name": "decisionEvaluationInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "decisionEvaluationKey",
-            "type": "string"
-          },
-          {
-            "name": "elementInstanceKey",
-            "type": "string"
-          },
+        "required": [
           {
             "name": "evaluatedInputs",
             "type": "array<object>",
@@ -1905,24 +1907,31 @@
             }
           },
           {
-            "name": "evaluationDate",
-            "type": "string"
-          },
-          {
             "name": "evaluationFailure",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "matchedRules",
             "type": "array<object>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "evaluatedOutputs",
                   "type": "array<object>",
                   "children": {
-                    "required": [],
+                    "required": [
+                      {
+                        "name": "ruleId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "ruleIndex",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
                     "optional": [
                       {
                         "name": "outputId",
@@ -1935,18 +1944,12 @@
                       {
                         "name": "outputValue",
                         "type": "string"
-                      },
-                      {
-                        "name": "ruleId",
-                        "type": "string"
-                      },
-                      {
-                        "name": "ruleIndex",
-                        "type": "number"
                       }
                     ]
                   }
-                },
+                }
+              ],
+              "optional": [
                 {
                   "name": "ruleId",
                   "type": "string"
@@ -1957,6 +1960,59 @@
                 }
               ]
             }
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
+        "optional": [
+          {
+            "name": "decisionDefinitionId",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionName",
+            "type": "string"
+          },
+          {
+            "name": "decisionDefinitionType",
+            "type": "string",
+            "enumValues": [
+              "DECISION_TABLE",
+              "LITERAL_EXPRESSION",
+              "UNSPECIFIED",
+              "UNKNOWN"
+            ]
+          },
+          {
+            "name": "decisionDefinitionVersion",
+            "type": "number"
+          },
+          {
+            "name": "decisionEvaluationInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "decisionEvaluationKey",
+            "type": "string"
+          },
+          {
+            "name": "elementInstanceKey",
+            "type": "string"
+          },
+          {
+            "name": "evaluationDate",
+            "type": "string"
           },
           {
             "name": "processDefinitionKey",
@@ -1975,24 +2031,14 @@
             "type": "string"
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
-          },
-          {
             "name": "state",
             "type": "string",
             "enumValues": [
               "EVALUATED",
               "FAILED",
-              "UNSPECIFIED"
+              "UNSPECIFIED",
+              "UNKNOWN"
             ]
-          },
-          {
-            "name": "tenantId",
-            "type": "string"
           }
         ]
       }
@@ -2034,34 +2080,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -2093,8 +2111,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2150,6 +2197,7 @@
                 {
                   "name": "decisionDefinition",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [],
                     "optional": [
@@ -2187,6 +2235,7 @@
                 {
                   "name": "decisionRequirements",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [],
                     "optional": [
@@ -2220,6 +2269,7 @@
                 {
                   "name": "form",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [],
                     "optional": [
@@ -2252,6 +2302,7 @@
                 {
                   "name": "processDefinition",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -2281,6 +2332,7 @@
                 {
                   "name": "resource",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [],
                     "optional": [
@@ -2348,15 +2400,16 @@
             "type": "metadata",
             "rawRefName": "metadata",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "customProperties",
+                  "type": "object"
+                }
+              ],
               "optional": [
                 {
                   "name": "contentType",
                   "type": "string"
-                },
-                {
-                  "name": "customProperties",
-                  "type": "object"
                 },
                 {
                   "name": "expiresAt",
@@ -2393,8 +2446,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "createdDocuments",
             "type": "array<schema>",
@@ -2421,15 +2473,16 @@
                   "type": "metadata",
                   "rawRefName": "metadata",
                   "children": {
-                    "required": [],
+                    "required": [
+                      {
+                        "name": "customProperties",
+                        "type": "object"
+                      }
+                    ],
                     "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
-                      },
-                      {
-                        "name": "customProperties",
-                        "type": "object"
                       },
                       {
                         "name": "expiresAt",
@@ -2486,7 +2539,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2494,8 +2548,7 @@
       "method": "POST",
       "status": "207",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "createdDocuments",
             "type": "array<schema>",
@@ -2522,15 +2575,16 @@
                   "type": "metadata",
                   "rawRefName": "metadata",
                   "children": {
-                    "required": [],
+                    "required": [
+                      {
+                        "name": "customProperties",
+                        "type": "object"
+                      }
+                    ],
                     "optional": [
                       {
                         "name": "contentType",
                         "type": "string"
-                      },
-                      {
-                        "name": "customProperties",
-                        "type": "object"
                       },
                       {
                         "name": "expiresAt",
@@ -2587,7 +2641,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2614,34 +2669,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -2674,6 +2701,11 @@
                 {
                   "name": "processInstanceKey",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "startDate",
@@ -2729,23 +2761,47 @@
               "optional": [
                 {
                   "name": "endDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "incidentKey",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
                   "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2781,6 +2837,11 @@
           {
             "name": "processInstanceKey",
             "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "startDate",
@@ -2836,18 +2897,13 @@
         "optional": [
           {
             "name": "endDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "incidentKey",
-            "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
             "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
+            "nullable": true
           }
         ]
       }
@@ -2859,38 +2915,25 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "creationTime",
@@ -2910,7 +2953,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -2935,10 +2978,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "jobKey",
-                  "type": "string"
-                },
-                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -2951,27 +2990,48 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string"
-                },
-                {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
                     "RESOLVED"
                   ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "tenantId",
-                  "type": "string"
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2986,11 +3046,232 @@
           },
           {
             "name": "result",
-            "type": "object"
+            "type": "unknown"
           },
           {
             "name": "warnings",
             "type": "array<string>"
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/global-task-listeners",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
+        "optional": [
+          {
+            "name": "afterNonGlobal",
+            "type": "boolean"
+          },
+          {
+            "name": "id",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "retries",
+            "type": "number"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "enumValues": [
+              "CONFIGURATION",
+              "API"
+            ]
+          },
+          {
+            "name": "type",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/global-task-listeners/{id}",
+      "method": "GET",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
+        "optional": [
+          {
+            "name": "afterNonGlobal",
+            "type": "boolean"
+          },
+          {
+            "name": "id",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "retries",
+            "type": "number"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "enumValues": [
+              "CONFIGURATION",
+              "API"
+            ]
+          },
+          {
+            "name": "type",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/global-task-listeners/{id}",
+      "method": "PUT",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
+        "optional": [
+          {
+            "name": "afterNonGlobal",
+            "type": "boolean"
+          },
+          {
+            "name": "id",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
+          },
+          {
+            "name": "priority",
+            "type": "number"
+          },
+          {
+            "name": "retries",
+            "type": "number"
+          },
+          {
+            "name": "source",
+            "type": "string",
+            "enumValues": [
+              "CONFIGURATION",
+              "API"
+            ]
+          },
+          {
+            "name": "type",
+            "type": "string"
+          }
+        ]
+      }
+    },
+    {
+      "path": "/global-task-listeners/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<0>",
+            "children": {
+              "required": [
+                {
+                  "name": "eventTypes",
+                  "type": "array<string>"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "afterNonGlobal",
+                  "type": "boolean"
+                },
+                {
+                  "name": "id",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "schema",
+                  "wrapper": true
+                },
+                {
+                  "name": "priority",
+                  "type": "number"
+                },
+                {
+                  "name": "retries",
+                  "type": "number"
+                },
+                {
+                  "name": "source",
+                  "type": "string",
+                  "enumValues": [
+                    "CONFIGURATION",
+                    "API"
+                  ]
+                },
+                {
+                  "name": "type",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
         ],
         "optional": []
@@ -3025,34 +3306,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -3072,8 +3325,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3127,6 +3409,19 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "clientId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -3139,7 +3434,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3147,27 +3443,14 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "clientId",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -3189,7 +3472,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3197,7 +3481,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -3225,7 +3510,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3233,7 +3519,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -3249,34 +3536,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -3291,16 +3550,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/incidents/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -3314,7 +3564,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3322,18 +3573,42 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/incidents/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "creationTime",
@@ -3353,7 +3628,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -3378,10 +3653,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "jobKey",
-                  "type": "string"
-                },
-                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -3394,27 +3665,48 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string"
-                },
-                {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
                     "RESOLVED"
                   ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "tenantId",
-                  "type": "string"
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3422,7 +3714,22 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "jobKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "tenantId",
+            "type": "string"
+          }
+        ],
         "optional": [
           {
             "name": "creationTime",
@@ -3442,7 +3749,7 @@
           },
           {
             "name": "errorType",
-            "type": "unknown",
+            "type": "string",
             "enumValues": [
               "AD_HOC_SUB_PROCESS_NO_RETRIES",
               "CALLED_DECISION_ERROR",
@@ -3467,10 +3774,6 @@
             "type": "string"
           },
           {
-            "name": "jobKey",
-            "type": "string"
-          },
-          {
             "name": "processDefinitionId",
             "type": "string"
           },
@@ -3483,22 +3786,14 @@
             "type": "string"
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "string"
-          },
-          {
             "name": "state",
-            "type": "unknown",
+            "type": "string",
             "enumValues": [
               "ACTIVE",
               "MIGRATED",
               "PENDING",
               "RESOLVED"
             ]
-          },
-          {
-            "name": "tenantId",
-            "type": "string"
           }
         ]
       }
@@ -3509,34 +3804,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -3578,16 +3845,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/incidents/statistics/process-instances-by-error",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -3601,7 +3859,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -3609,13 +3868,22 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/incidents/statistics/process-instances-by-error",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -3636,8 +3904,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3722,6 +4019,16 @@
                   "type": "number"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "tags"
+                },
+                {
                   "name": "tenantId",
                   "type": "string"
                 },
@@ -3740,24 +4047,10 @@
               ],
               "optional": [
                 {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
-                },
-                {
                   "name": "userTask",
                   "type": "object",
                   "children": {
-                    "required": [],
-                    "optional": [
-                      {
-                        "name": "action",
-                        "type": "string"
-                      },
-                      {
-                        "name": "assignee",
-                        "type": "string"
-                      },
+                    "required": [
                       {
                         "name": "candidateGroups",
                         "type": "array<string>"
@@ -3769,14 +4062,27 @@
                       {
                         "name": "changedAttributes",
                         "type": "array<string>"
+                      }
+                    ],
+                    "optional": [
+                      {
+                        "name": "action",
+                        "type": "string"
+                      },
+                      {
+                        "name": "assignee",
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "dueDate",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "followUpDate",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       },
                       {
                         "name": "formKey",
@@ -3784,11 +4090,13 @@
                       },
                       {
                         "name": "priority",
-                        "type": "number"
+                        "type": "number",
+                        "nullable": true
                       },
                       {
                         "name": "userTaskKey",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       }
                     ]
                   }
@@ -3807,34 +4115,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -3845,7 +4125,8 @@
                 },
                 {
                   "name": "elementId",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "elementInstanceKey",
@@ -3900,6 +4181,11 @@
                   "type": "number"
                 },
                 {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -3936,11 +4222,13 @@
                 },
                 {
                   "name": "deadline",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "deniedReason",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "endTime",
@@ -3948,31 +4236,56 @@
                 },
                 {
                   "name": "errorCode",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "errorMessage",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "isDenied",
-                  "type": "boolean"
+                  "type": "boolean",
+                  "nullable": true
                 },
                 {
                   "name": "lastUpdateTime",
                   "type": "string"
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "rootProcessInstanceKey",
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
                   "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3993,7 +4306,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4011,7 +4325,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4028,7 +4343,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4043,11 +4359,236 @@
       }
     },
     {
+      "path": "/jobs/statistics/by-types",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "completed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "created",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "jobType",
+                  "type": "string"
+                },
+                {
+                  "name": "workers",
+                  "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/jobs/statistics/by-workers",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "completed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "created",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
       "path": "/license",
       "method": "GET",
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "expiresAt",
+            "type": "string",
+            "nullable": true
+          },
           {
             "name": "isCommercial",
             "type": "boolean"
@@ -4061,12 +4602,7 @@
             "type": "boolean"
           }
         ],
-        "optional": [
-          {
-            "name": "expiresAt",
-            "type": "string"
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -4102,34 +4638,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -4153,8 +4661,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4216,38 +4753,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "correlationKey",
@@ -4296,13 +4811,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -4311,8 +4819,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4362,34 +4899,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -4401,7 +4910,8 @@
                 },
                 {
                   "name": "name",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionId",
@@ -4425,20 +4935,12 @@
                 },
                 {
                   "name": "versionTag",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/process-definitions/statistics/message-subscriptions",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -4452,7 +4954,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4460,13 +4963,22 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-definitions/statistics/message-subscriptions",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -4495,16 +5007,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/process-definitions/statistics/process-instances",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -4518,7 +5021,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -4526,13 +5030,22 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-definitions/statistics/process-instances",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -4553,7 +5066,8 @@
                 },
                 {
                   "name": "latestProcessDefinitionName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionId",
@@ -4571,8 +5085,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4588,7 +5131,8 @@
           },
           {
             "name": "name",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionId",
@@ -4612,7 +5156,8 @@
           },
           {
             "name": "versionTag",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -4652,8 +5197,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<items>",
@@ -4683,7 +5227,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4692,34 +5237,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -4743,7 +5260,8 @@
                 },
                 {
                   "name": "processDefinitionName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionVersion",
@@ -4756,8 +5274,37 @@
               ],
               "optional": []
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4783,6 +5330,10 @@
             "type": "string"
           },
           {
+            "name": "tags",
+            "type": "array<string>"
+          },
+          {
             "name": "tenantId",
             "type": "string"
           },
@@ -4793,8 +5344,9 @@
         ],
         "optional": [
           {
-            "name": "tags",
-            "type": "array<string>"
+            "name": "businessId",
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -4961,8 +5513,23 @@
             "children": {
               "required": [
                 {
+                  "name": "endDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "hasIncident",
                   "type": "boolean"
+                },
+                {
+                  "name": "parentElementInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "parentProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionId",
@@ -4974,15 +5541,26 @@
                 },
                 {
                   "name": "processDefinitionName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "processDefinitionVersion",
                   "type": "number"
                 },
                 {
+                  "name": "processDefinitionVersionTag",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
                   "name": "processInstanceKey",
                   "type": "string"
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "startDate",
@@ -4998,6 +5576,11 @@
                   ]
                 },
                 {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "tags"
+                },
+                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -5005,36 +5588,7 @@
                   "wrapper": true
                 }
               ],
-              "optional": [
-                {
-                  "name": "endDate",
-                  "type": "string"
-                },
-                {
-                  "name": "parentElementInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "parentProcessInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "processDefinitionVersionTag",
-                  "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
-                }
-              ]
+              "optional": []
             }
           },
           {
@@ -5050,7 +5604,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5058,7 +5613,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -5074,8 +5630,23 @@
       "schema": {
         "required": [
           {
+            "name": "endDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "hasIncident",
             "type": "boolean"
+          },
+          {
+            "name": "parentElementInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "parentProcessInstanceKey",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionId",
@@ -5087,15 +5658,26 @@
           },
           {
             "name": "processDefinitionName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "processDefinitionVersion",
             "type": "number"
           },
           {
+            "name": "processDefinitionVersionTag",
+            "type": "string",
+            "nullable": true
+          },
+          {
             "name": "processInstanceKey",
             "type": "string"
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "startDate",
@@ -5111,6 +5693,11 @@
             ]
           },
           {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          },
+          {
             "name": "tenantId",
             "type": "string",
             "underlyingPrimitive": "string",
@@ -5118,36 +5705,7 @@
             "wrapper": true
           }
         ],
-        "optional": [
-          {
-            "name": "endDate",
-            "type": "string"
-          },
-          {
-            "name": "parentElementInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "parentProcessInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "processDefinitionVersionTag",
-            "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
-          },
-          {
-            "name": "tags",
-            "type": "array<string>",
-            "rawRefName": "tags"
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -5196,38 +5754,25 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "jobKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string"
+                }
+              ],
               "optional": [
                 {
                   "name": "creationTime",
@@ -5247,7 +5792,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -5272,10 +5817,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "jobKey",
-                  "type": "string"
-                },
-                {
                   "name": "processDefinitionId",
                   "type": "string"
                 },
@@ -5288,27 +5829,48 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string"
-                },
-                {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
                     "PENDING",
                     "RESOLVED"
                   ]
+                }
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
                 },
                 {
-                  "name": "tenantId",
-                  "type": "string"
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5316,13 +5878,18 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "elementId",
@@ -5341,13 +5908,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "sequenceFlowId",
                   "type": "string"
                 },
@@ -5361,7 +5921,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5369,8 +5930,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5400,7 +5960,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5510,34 +6071,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -5557,8 +6090,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5612,34 +6174,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -5651,16 +6185,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/roles/{roleId}/groups/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -5674,7 +6199,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5682,13 +6208,22 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/roles/{roleId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5701,8 +6236,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5724,7 +6288,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -5732,7 +6297,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -5748,34 +6314,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -5790,6 +6328,60 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/setup/user",
+      "method": "POST",
+      "status": "201",
+      "schema": {
+        "required": [],
+        "optional": [
+          {
+            "name": "email",
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "username",
+            "type": "string",
+            "underlyingPrimitive": "string",
+            "rawRefName": "schema",
+            "wrapper": true
           }
         ]
       }
@@ -5817,7 +6409,12 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "tenants",
+            "type": "object"
+          }
+        ],
         "optional": [
           {
             "name": "activeTenants",
@@ -5834,10 +6431,6 @@
           {
             "name": "processInstances",
             "type": "number"
-          },
-          {
-            "name": "tenants",
-            "type": "object"
           }
         ]
       }
@@ -5874,34 +6467,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -5924,8 +6489,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5985,34 +6579,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -6024,16 +6590,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/tenants/{tenantId}/groups/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -6047,7 +6604,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -6055,13 +6613,22 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -6074,8 +6641,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6097,7 +6693,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -6105,7 +6702,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -6133,7 +6731,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -6141,7 +6740,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -6157,34 +6757,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -6199,8 +6771,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6289,7 +6890,8 @@
         "optional": [
           {
             "name": "clusterId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           }
         ]
       }
@@ -6362,7 +6964,8 @@
               "optional": [
                 {
                   "name": "endCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "hasMoreTotalItems",
@@ -6370,7 +6973,8 @@
                 },
                 {
                   "name": "startCursor",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ]
             }
@@ -6436,42 +7040,14 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
-              "optional": [
+              "required": [
                 {
                   "name": "assignee",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "candidateGroups",
@@ -6483,11 +7059,8 @@
                 },
                 {
                   "name": "completionDate",
-                  "type": "string"
-                },
-                {
-                  "name": "creationDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "customHeaders",
@@ -6495,6 +7068,38 @@
                 },
                 {
                   "name": "dueDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "externalFormReference",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "followUpDate",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "formKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "tags",
+                  "type": "array<string>",
+                  "rawRefName": "tags"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "creationDate",
                   "type": "string"
                 },
                 {
@@ -6503,18 +7108,6 @@
                 },
                 {
                   "name": "elementInstanceKey",
-                  "type": "string"
-                },
-                {
-                  "name": "externalFormReference",
-                  "type": "string"
-                },
-                {
-                  "name": "followUpDate",
-                  "type": "string"
-                },
-                {
-                  "name": "formKey",
                   "type": "string"
                 },
                 {
@@ -6546,13 +7139,6 @@
                   "type": "string"
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "state",
                   "type": "string",
                   "enumValues": [
@@ -6568,11 +7154,6 @@
                   ]
                 },
                 {
-                  "name": "tags",
-                  "type": "array<string>",
-                  "rawRefName": "tags"
-                },
-                {
                   "name": "tenantId",
                   "type": "string",
                   "underlyingPrimitive": "string",
@@ -6585,8 +7166,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6594,11 +7204,11 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "assignee",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "candidateGroups",
@@ -6610,11 +7220,8 @@
           },
           {
             "name": "completionDate",
-            "type": "string"
-          },
-          {
-            "name": "creationDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "customHeaders",
@@ -6622,6 +7229,38 @@
           },
           {
             "name": "dueDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "externalFormReference",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "followUpDate",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "formKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          },
+          {
+            "name": "tags",
+            "type": "array<string>",
+            "rawRefName": "tags"
+          }
+        ],
+        "optional": [
+          {
+            "name": "creationDate",
             "type": "string"
           },
           {
@@ -6630,18 +7269,6 @@
           },
           {
             "name": "elementInstanceKey",
-            "type": "string"
-          },
-          {
-            "name": "externalFormReference",
-            "type": "string"
-          },
-          {
-            "name": "followUpDate",
-            "type": "string"
-          },
-          {
-            "name": "formKey",
             "type": "string"
           },
           {
@@ -6673,13 +7300,6 @@
             "type": "string"
           },
           {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
-          },
-          {
             "name": "state",
             "type": "string",
             "enumValues": [
@@ -6693,11 +7313,6 @@
               "CANCELED",
               "FAILED"
             ]
-          },
-          {
-            "name": "tags",
-            "type": "array<string>",
-            "rawRefName": "tags"
           },
           {
             "name": "tenantId",
@@ -6720,38 +7335,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "actorId",
@@ -6766,6 +7359,10 @@
                     "UNKNOWN",
                     "USER"
                   ]
+                },
+                {
+                  "name": "agentElementId",
+                  "type": "string"
                 },
                 {
                   "name": "annotation",
@@ -6909,13 +7506,6 @@
                   ]
                 },
                 {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
-                },
-                {
                   "name": "tenantId",
                   "type": "string"
                 },
@@ -6929,8 +7519,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6970,38 +7589,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<0>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "isTruncated",
@@ -7014,13 +7611,6 @@
                 {
                   "name": "processInstanceKey",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
                 },
                 {
                   "name": "scopeKey",
@@ -7040,8 +7630,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7051,38 +7670,16 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string"
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<0>",
             "children": {
-              "required": [],
+              "required": [
+                {
+                  "name": "rootProcessInstanceKey",
+                  "type": "string",
+                  "nullable": true
+                }
+              ],
               "optional": [
                 {
                   "name": "isTruncated",
@@ -7095,13 +7692,6 @@
                 {
                   "name": "processInstanceKey",
                   "type": "string"
-                },
-                {
-                  "name": "rootProcessInstanceKey",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "rootProcessInstanceKey",
-                  "wrapper": true
                 },
                 {
                   "name": "scopeKey",
@@ -7121,8 +7711,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7130,7 +7749,13 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "rootProcessInstanceKey",
+            "type": "string",
+            "nullable": true
+          }
+        ],
         "optional": [
           {
             "name": "name",
@@ -7139,13 +7764,6 @@
           {
             "name": "processInstanceKey",
             "type": "string"
-          },
-          {
-            "name": "rootProcessInstanceKey",
-            "type": "string",
-            "underlyingPrimitive": "string",
-            "rawRefName": "rootProcessInstanceKey",
-            "wrapper": true
           },
           {
             "name": "scopeKey",

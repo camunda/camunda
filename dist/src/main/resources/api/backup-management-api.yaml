@@ -364,6 +364,7 @@ components:
         - FAILED
         - INCOMPLETE
         - INCOMPATIBLE
+        - DELETED
       example: IN_PROGRESS
 
     HistoryStateCode:

@@ -54,6 +54,10 @@ import io.camunda.gateway.protocol.model.EvaluatedDecisionInputItem;
 import io.camunda.gateway.protocol.model.EvaluatedDecisionOutputItem;
 import io.camunda.gateway.protocol.model.FormResult;
 import io.camunda.gateway.protocol.model.GlobalJobStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.GlobalListenerSourceEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerEventTypeEnum;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerResult;
+import io.camunda.gateway.protocol.model.GlobalTaskListenerSearchQueryResult;
 import io.camunda.gateway.protocol.model.GroupClientResult;
 import io.camunda.gateway.protocol.model.GroupClientSearchResult;
 import io.camunda.gateway.protocol.model.GroupResult;
@@ -75,6 +79,8 @@ import io.camunda.gateway.protocol.model.JobSearchResult;
 import io.camunda.gateway.protocol.model.JobStateEnum;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsItem;
+import io.camunda.gateway.protocol.model.JobWorkerStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
 import io.camunda.gateway.protocol.model.MappingRuleSearchQueryResult;
 import io.camunda.gateway.protocol.model.MatchedDecisionRuleItem;
@@ -146,6 +152,7 @@ import io.camunda.search.entities.DecisionRequirementsEntity;
 import io.camunda.search.entities.FlowNodeInstanceEntity;
 import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
+import io.camunda.search.entities.GlobalListenerEntity;
 import io.camunda.search.entities.GroupEntity;
 import io.camunda.search.entities.GroupMemberEntity;
 import io.camunda.search.entities.IncidentEntity;
@@ -153,6 +160,7 @@ import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionE
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
 import io.camunda.search.entities.ProcessDefinitionEntity;
@@ -1239,6 +1247,8 @@ public final class SearchQueryResponseMapper {
     return switch (state) {
       case EVALUATED -> DecisionInstanceStateEnum.EVALUATED;
       case FAILED -> DecisionInstanceStateEnum.FAILED;
+      case UNSPECIFIED -> DecisionInstanceStateEnum.UNSPECIFIED;
+      default -> DecisionInstanceStateEnum.UNKNOWN;
     };
   }
 
@@ -1250,6 +1260,7 @@ public final class SearchQueryResponseMapper {
     return switch (decisionDefinitionType) {
       case DECISION_TABLE -> DecisionDefinitionTypeEnum.DECISION_TABLE;
       case LITERAL_EXPRESSION -> DecisionDefinitionTypeEnum.LITERAL_EXPRESSION;
+      case UNSPECIFIED -> DecisionDefinitionTypeEnum.UNSPECIFIED;
       default -> DecisionDefinitionTypeEnum.UNKNOWN;
     };
   }
@@ -1567,6 +1578,30 @@ public final class SearchQueryResponseMapper {
         .workers(entity.workers());
   }
 
+  public static JobWorkerStatisticsQueryResult toJobWorkerStatisticsQueryResult(
+      final SearchQueryResult<JobWorkerStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobWorkerStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobWorkerStatisticsItem)
+                .toList());
+  }
+
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
+      final JobWorkerStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobWorkerStatisticsItem();
+    }
+
+    return new JobWorkerStatisticsItem()
+        .worker(entity.worker())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
+  }
+
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
       return new StatusMetric().count(0L);
@@ -1574,6 +1609,34 @@ public final class SearchQueryResponseMapper {
     return new StatusMetric()
         .count(metric.count())
         .lastUpdatedAt(formatDate(metric.lastUpdatedAt()));
+  }
+
+  public static GlobalTaskListenerSearchQueryResult toGlobalTaskListenerSearchQueryResponse(
+      final SearchQueryResult<GlobalListenerEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new GlobalTaskListenerSearchQueryResult()
+        .page(page)
+        .items(
+            ofNullable(result.items())
+                .map(
+                    entities ->
+                        entities.stream()
+                            .map(SearchQueryResponseMapper::toGlobalTaskListenerResult)
+                            .toList())
+                .orElseGet(Collections::emptyList));
+  }
+
+  public static GlobalTaskListenerResult toGlobalTaskListenerResult(
+      final GlobalListenerEntity entity) {
+    return new GlobalTaskListenerResult()
+        .id(entity.listenerId())
+        .type(entity.type())
+        .retries(entity.retries())
+        .eventTypes(
+            entity.eventTypes().stream().map(GlobalTaskListenerEventTypeEnum::fromValue).toList())
+        .afterNonGlobal(entity.afterNonGlobal())
+        .priority(entity.priority())
+        .source(GlobalListenerSourceEnum.fromValue(entity.source().name()));
   }
 
   // sometimes we've seen null for properties that should not be null; log a warning if that happens

@@ -82,23 +82,23 @@ For tests, we can
 use [DevAwaitBehavior](camunda-process-test-java/src/test/java/io/camunda/process/test/utils/DevAwaitBehavior.java)
 to verify assertion messages without waiting for the timeout.
 
-### Test Scenarios DSL
+### JSON test cases
 
-The DSL is defined in the JSON
-schema [test-scenario-dsl.schema.json](camunda-process-test-dsl/src/main/resources/schema/test-scenario-dsl.schema.json).
+The JSON format is defined in the JSON
+schema [cpt-test-cases.schema.json](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases.schema.json).
 We use [Immutables](https://immutables.github.io/)
 and [Jackson](https://github.com/FasterXML/jackson) to deserialize a JSON file into a Java object of
 the
-type [TestScenario](camunda-process-test-dsl/src/main/java/io/camunda/process/test/api/dsl/TestScenario.java).
+type [TestCases](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCases.java).
 
 We don't generate the Java classes directly from the JSON schema because of limitations in the
 existing tools. We manually keep the JSON schema and the Java interfaces in sync. The test
-[PojoCompatibilityTest](camunda-process-test-dsl/src/test/java/io/camunda/process/test/dsl/PojoCompatibilityTest.java)
+[PojoCompatibilityTest](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
 verifies the compatibility between both.
 
 A process test can use
-the [TestScenarioRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/api/dsl/TestScenarioRunner.java)
-to execute a test scenario.
+the [TestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/api/testCases/TestCaseRunner.java)
+to execute a JSON test case.
 
 ### Tests
 
@@ -159,39 +159,39 @@ Example: Add a new assertion method `assertProcessInstance(..).isAwesome(true)`.
 - Add documentation for the new assertion method in the
   [Camunda docs](https://docs.camunda.io/docs/next/apis-tools/testing/assertions/).
 
-### Add a new DSL instruction
+### Add a new JSON test case instruction
 
-Example: Add a new instruction `HAVE_FUN` to the test scenario DSL.
+Example: Add a new instruction `HAVE_FUN` to the JSON test case.
 
 - Add the new instruction `HAVE_FUN` to the JSON schema of the
-  DSL [test-scenario-dsl.schema.json](camunda-process-test-dsl/src/main/resources/schema/test-scenario-dsl.schema.json)
+  DSL [cpt-test-cases.schema.json](camunda-process-test-json-test-cases/src/main/resources/schema/cpt-test-cases.schema.json)
   under the `TestCaseInstruction`
   definition. Define its
   required and optional properties. Add descriptions for the instruction and its properties.
 - Add the new Java interface `HaveFunInstruction` that extends
-  [TestCaseInstruction](camunda-process-test-dsl/src/main/java/io/camunda/process/test/api/dsl/TestCaseInstruction.java).
+  [TestCaseInstruction](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstruction.java).
   Add getter methods for all properties defined in the JSON schema with their descriptions. Add the
   Immutable's annotation `@Value.Immutable` and the Jackson annotation `@JsonDeserialize` to the
   interface.
 - Add the new instruction type `HAVE_FUN`
-  to [TestCaseInstructionType](camunda-process-test-dsl/src/main/java/io/camunda/process/test/api/dsl/TestCaseInstructionType.java).
+  to [TestCaseInstructionType](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstructionType.java).
   Add the Jackson sub-type mapping for the new instruction
-  to [TestCaseInstruction](camunda-process-test-dsl/src/main/java/io/camunda/process/test/api/dsl/TestCaseInstruction.java).
+  to [TestCaseInstruction](camunda-process-test-json-test-cases/src/main/java/io/camunda/process/test/api/testCases/TestCaseInstruction.java).
   Override the `getType()` method in the interface `HaveFunInstruction` to return the type
   `HAVE_FUN`.
 - Extend
-  the [PojoCompatibilityTest](camunda-process-test-dsl/src/test/java/io/camunda/process/test/dsl/PojoCompatibilityTest.java)
+  the [PojoCompatibilityTest](camunda-process-test-json-test-cases/src/test/java/io/camunda/process/test/testCases/PojoCompatibilityTest.java)
   by adding new arguments for
   the parameterized tests to verify the new instruction `HAVE_FUN`.
 - Add the new instruction handler `HaveFunInstructionHandler` that implements
-  [TestCaseInstructionHandler](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/dsl/TestCaseInstructionHandler.java).
+  [TestCaseInstructionHandler](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/TestCaseInstructionHandler.java).
   Use the client, the context, or the assertions to execute the instruction behavior.
 - Register the new instruction handler in
-  [CamundaTestScenarioRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/dsl/CamundaTestScenarioRunner.java).
+  [CamundaTestCaseRunner](camunda-process-test-java/src/main/java/io/camunda/process/test/impl/testCases/CamundaTestCaseRunner.java).
 - Add unit tests for the new instruction handler.
 - Optionally, extend the integration
-  test [TestScenarioIT](camunda-process-test-java/src/test/java/io/camunda/process/test/api/TestScenarioIT.java)
-  by adding the new instruction in a test scenario DSL file.
+  test [TestCasesIT](camunda-process-test-java/src/test/java/io/camunda/process/test/api/TestCasesIT.java)
+  by adding the new instruction in a test case JSON file.
 
 ## FAQ
 

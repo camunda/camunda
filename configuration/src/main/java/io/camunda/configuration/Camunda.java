@@ -27,6 +27,7 @@ public class Camunda {
   @NestedConfigurationProperty private Monitoring monitoring = new Monitoring();
   @NestedConfigurationProperty private Security security = new Security();
   @NestedConfigurationProperty private Expression expression = new Expression();
+  @NestedConfigurationProperty private Webapps webapps = new Webapps();
 
   @NestedConfigurationProperty
   private ProcessInstanceCreation processInstanceCreation = new ProcessInstanceCreation();
@@ -118,5 +119,13 @@ public class Camunda {
 
   public String getMode() {
     return mode;
+  }
+
+  public Webapps getWebapps() {
+    return webapps;
+  }
+
+  public void setWebapps(final Webapps webapps) {
+    this.webapps = webapps;
   }
 }

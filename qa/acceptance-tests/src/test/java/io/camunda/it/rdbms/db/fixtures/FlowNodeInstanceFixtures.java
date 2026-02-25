@@ -51,7 +51,15 @@ public final class FlowNodeInstanceFixtures extends CommonFixtures {
       final RdbmsWriters rdbmsWriters,
       final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
           builderFunction) {
-    for (int i = 0; i < 20; i++) {
+    createAndSaveRandomFlowNodeInstances(rdbmsWriters, 20, builderFunction);
+  }
+
+  public static void createAndSaveRandomFlowNodeInstances(
+      final RdbmsWriters rdbmsWriters,
+      final int numberOfInstances,
+      final Function<FlowNodeInstanceDbModelBuilder, FlowNodeInstanceDbModelBuilder>
+          builderFunction) {
+    for (int i = 0; i < numberOfInstances; i++) {
       rdbmsWriters
           .getFlowNodeInstanceWriter()
           .create(FlowNodeInstanceFixtures.createRandomized(builderFunction));

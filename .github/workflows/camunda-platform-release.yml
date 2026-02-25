@@ -86,7 +86,7 @@ jobs:
   # - When both flags are active, dryRun takes precedence over releaseProcessDryRun
   release:
     name: Maven Release
-    runs-on: gcp-core-16-release
+    runs-on: gcp-core-32-release
     outputs:
       releaseTagRevision: ${{ steps.maven-perform-release.outputs.tagRevision }}
       releaseBranch: ${{ env.RELEASE_BRANCH }}

@@ -26,20 +26,25 @@ const ClientConfigSchema = z.object({
 
 const DEFAULT_CLIENT_CONFIG = ClientConfigSchema.safeParse({}).data!;
 
-function getClientConfig() {
-  if (typeof window === 'undefined') {
-    return DEFAULT_CLIENT_CONFIG;
-  }
+const getClientConfig = (() => {
+  let cachedConfig: z.infer<typeof ClientConfigSchema> | undefined;
 
-  const {success, data} = ClientConfigSchema.safeParse(
-    window?.clientConfig ?? {},
-  );
+  return () => {
+    if (cachedConfig !== undefined) {
+      return cachedConfig;
+    }
 
-  if (success) {
-    return data;
-  }
+    if (typeof window === 'undefined') {
+      return DEFAULT_CLIENT_CONFIG;
+    }
 
-  return DEFAULT_CLIENT_CONFIG;
-}
+    const {success, data} = ClientConfigSchema.safeParse(
+      window?.clientConfig ?? {},
+    );
+
+    cachedConfig = success ? data : DEFAULT_CLIENT_CONFIG;
+    return cachedConfig;
+  };
+})();
 
 export {getClientConfig};

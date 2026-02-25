@@ -20,8 +20,9 @@ import {VersionTag} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
 import {hasCalledProcessInstances} from 'modules/bpmn-js/utils/hasCalledProcessInstances';
-import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.8';
+import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useAvailableTenants} from 'modules/queries/useAvailableTenants';
+import {getClientConfig} from 'modules/utils/getClientConfig';
 
 const headerColumns = [
   'Process Name',
@@ -89,7 +90,7 @@ const ProcessInstanceHeader: React.FC<Props> = ({processInstance}) => {
   const tenantsById = useAvailableTenants();
   const tenantName = tenantsById[tenantId] ?? tenantId;
 
-  const isMultiTenancyEnabled = window.clientConfig?.multiTenancyEnabled;
+  const isMultiTenancyEnabled = getClientConfig().multiTenancyEnabled;
 
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {isPending, data: processInstanceXmlData} = useProcessInstanceXml({
