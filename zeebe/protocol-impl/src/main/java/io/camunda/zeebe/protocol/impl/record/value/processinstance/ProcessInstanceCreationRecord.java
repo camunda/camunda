@@ -195,6 +195,10 @@ public final class ProcessInstanceCreationRecord extends UnifiedRecordValue
     return this;
   }
 
+  public boolean hasBusinessId() {
+    return businessIdProperty.getValue().capacity() > 0;
+  }
+
   @JsonIgnore
   public boolean hasStartInstructions() {
     return !startInstructionsProperty.isEmpty();
