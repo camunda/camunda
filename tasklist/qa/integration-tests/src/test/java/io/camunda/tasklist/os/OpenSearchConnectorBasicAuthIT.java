@@ -53,7 +53,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 public class OpenSearchConnectorBasicAuthIT extends TasklistIntegrationTest {
 
   private static final OpenSearchContainer OPENSEARCH_CONTAINER =
-      new OpenSearchContainer("opensearchproject/opensearch:2.17.0");
+      new OpenSearchContainer("opensearchproject/opensearch:2.19.4");
 
   @Autowired
   @Qualifier("tasklistOsClient")

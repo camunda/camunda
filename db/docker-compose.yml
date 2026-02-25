@@ -73,7 +73,7 @@ services:
       start_period: 5s
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.18.4}
+    image: docker.elastic.co/elasticsearch/elasticsearch:${IMAGE_VERSION:-8.19.11}
     container_name: elasticsearch
     environment:
       - discovery.type=single-node
@@ -97,7 +97,7 @@ services:
       - ./els-snapshots:/usr/local/els-snapshots
 
   opensearch:
-    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.17.0}
+    image: opensearchproject/opensearch:${IMAGE_VERSION:-2.19.4}
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster

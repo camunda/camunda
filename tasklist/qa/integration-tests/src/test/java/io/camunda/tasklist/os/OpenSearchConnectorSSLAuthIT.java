@@ -52,7 +52,7 @@ public class OpenSearchConnectorSSLAuthIT extends TasklistIntegrationTest {
 
   static OpenSearchContainer opensearch =
       (OpenSearchContainer)
-          new OpenSearchContainer("opensearchproject/opensearch:2.17.0")
+          new OpenSearchContainer("opensearchproject/opensearch:2.19.4")
               // .withSecurityEnabled() // this should be uncommented to test SSL
               .withCopyFileToContainer(
                   MountableFile.forClasspathResource(CERTIFICATE_RESOURCE_PATH),
