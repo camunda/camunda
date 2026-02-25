@@ -86,6 +86,14 @@ public class RestorePointResolver {
           }
         }
       }
+      if (backups.getLast().checkpointId() < commonCheckpoint) {
+        throw new IllegalStateException(
+            String.format(
+                "Last restorable backup %d for partition %d does not cover the common checkpoint %d",
+                backups.getLast().checkpointId(),
+                restorableCheckpoints.partitionId(),
+                commonCheckpoint));
+      }
       LOG.atDebug()
           .addKeyValue("partition", restorableCheckpoints.partitionId())
           .log("Found required backups: requiredBackups={}", backups.size());
