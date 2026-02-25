@@ -8,6 +8,7 @@
 package io.camunda.application.initializers;
 
 import io.camunda.application.Profile;
+import io.camunda.application.commons.search.SchemaReadinessCheck;
 import io.camunda.spring.utils.DatabaseTypeUtils;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Stream;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.env.DefaultPropertiesPropertySource;
 import org.springframework.context.ApplicationContextInitializer;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -45,9 +45,8 @@ public class HealthConfigurationInitializer
       "management.endpoint.health.group.status.include";
   private static final String HEALTH_GROUP_LIVENESS_PROPERTY =
       "management.endpoint.health.group.liveness.include";
-
-  @Value("camunda.mode")
-  private String camundaMode;
+  private static final String BROKER_EMBEDDED_GATEWAY_ENABLED_PROPERTY =
+      "zeebe.broker.gateway.enable";
 
   @Override
   public void initialize(final ConfigurableApplicationContext context) {
@@ -56,7 +55,8 @@ public class HealthConfigurationInitializer
     final var activeProfiles =
         Stream.of(environment.getActiveProfiles()).map(String::toLowerCase).toList();
 
-    final var healthIndicators = collectHealthIndicators(activeProfiles, environment);
+    final var readinessGroupHealthIndicators =
+        collectReadinessGroupHealthIndicators(activeProfiles, environment);
     final var enableReadinessState = shouldReadinessState(activeProfiles);
     final var enableProbes = shouldEnableProbes(activeProfiles);
 
@@ -68,8 +68,8 @@ public class HealthConfigurationInitializer
     // Enables Kubernetes health groups
     propertyMap.put(SPRING_PROBES_PROPERTY, enableProbes);
 
-    if (!healthIndicators.isEmpty()) {
-      propertyMap.put(SPRING_READINESS_GROUP_PROPERTY, healthIndicators);
+    if (!readinessGroupHealthIndicators.isEmpty()) {
+      propertyMap.put(SPRING_READINESS_GROUP_PROPERTY, readinessGroupHealthIndicators);
     }
 
     final Set<String> startupGroup = new HashSet<>();
@@ -148,10 +148,13 @@ public class HealthConfigurationInitializer
   }
 
   /** Returns a list of health indicators which will be member of the readiness group */
-  protected List<String> collectHealthIndicators(
+  List<String> collectReadinessGroupHealthIndicators(
       final List<String> activeProfiles, final Environment env) {
     final var healthIndicators = new ArrayList<String>();
     final boolean secondaryStorageEnabled = DatabaseTypeUtils.isSecondaryStorageEnabled(env);
+    final boolean esOrOsEnabled = secondaryStorageEnabled && DatabaseTypeUtils.isRdbmsDisabled(env);
+    final boolean hasWebappProfile =
+        Profile.getWebappProfiles().stream().anyMatch(p -> activeProfiles.contains(p.getId()));
 
     if (activeProfiles.contains(Profile.BROKER.getId())) {
       healthIndicators.add(INDICATOR_BROKER_READY);
@@ -162,23 +165,27 @@ public class HealthConfigurationInitializer
       healthIndicators.add(INDICATOR_GATEWAY_STARTED);
     }
 
-    if (secondaryStorageEnabled && activeProfiles.contains(Profile.OPERATE.getId())) {
+    if (secondaryStorageEnabled && hasWebappProfile) {
       healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
-      if (DatabaseTypeUtils.isRdbmsDisabled(env)) {
+    }
+
+    // Schema readiness is only relevant for ES/OS and only when serving traffic
+    // (broker with embedded gateway, standalone gateway, or webapp profiles).
+    // It must not be added for other profiles like RESTORE.
+    if (esOrOsEnabled) {
+      if (hasWebappProfile
+          || activeProfiles.contains(Profile.GATEWAY.getId())
+          || (activeProfiles.contains(Profile.BROKER.getId())
+              && env.getProperty(BROKER_EMBEDDED_GATEWAY_ENABLED_PROPERTY, Boolean.class, true))) {
+        healthIndicators.add(SchemaReadinessCheck.SCHEMA_READINESS_CHECK);
+      }
+      // legacy ES/OS health indicators for Operate and Tasklist
+      if (activeProfiles.contains(Profile.OPERATE.getId())) {
         healthIndicators.add(INDICATOR_OPERATE_INDICES_CHECK);
       }
-    }
-
-    if (secondaryStorageEnabled
-        && activeProfiles.contains(Profile.TASKLIST.getId())
-        && DatabaseTypeUtils.isRdbmsDisabled(env)) {
-      healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
-    }
-
-    if (secondaryStorageEnabled
-        && (activeProfiles.contains(Profile.IDENTITY.getId())
-            || activeProfiles.contains(Profile.ADMIN.getId()))) {
-      healthIndicators.add(INDICATOR_SPRING_READINESS_STATE);
+      if (activeProfiles.contains(Profile.TASKLIST.getId())) {
+        healthIndicators.add(INDICATOR_TASKLIST_SEARCH_ENGINE_CHECK);
+      }
     }
 
     return healthIndicators;
