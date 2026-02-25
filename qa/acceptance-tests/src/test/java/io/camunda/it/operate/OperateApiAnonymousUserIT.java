@@ -71,35 +71,4 @@ public class OperateApiAnonymousUserIT {
       assertThat(processInstance).containsEntry("key", processInstanceKey);
     }
   }
-
-  @Test
-  public void shouldReturnProcessInstanceViaInternalApi() throws Exception {
-
-    // given
-    try (final var operateClient = STANDALONE_CAMUNDA.newOperateClient()) {
-
-      // when
-      final HttpResponse<String> searchResponse =
-          operateClient.sendInternalSearchRequest(
-              "api/process-instances", "{\"query\": {\"active\": true, \"running\": true}}");
-
-      // then
-      assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-
-      final Either<Exception, Map> result = operateClient.mapResult(searchResponse, Map.class);
-
-      assertThat(result.isRight()).isTrue();
-      final Map<String, Object> responseBody = result.get();
-
-      assertThat(responseBody).containsEntry("totalCount", 1);
-
-      final List<Map<String, Object>> processInstances =
-          (List<Map<String, Object>>) responseBody.get("processInstances");
-
-      assertThat(processInstances).hasSize(1);
-
-      final Map<String, Object> processInstance = processInstances.get(0);
-      assertThat(processInstance).containsEntry("id", Long.toString(processInstanceKey));
-    }
-  }
 }

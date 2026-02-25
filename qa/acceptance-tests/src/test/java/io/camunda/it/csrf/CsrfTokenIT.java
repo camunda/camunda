@@ -51,7 +51,7 @@ public class CsrfTokenIT {
 
   // Test endpoints
   private static final List<String> PROTECTED_ENDPOINTS =
-      List.of("api/processes/grouped", "v2/process-instances/search", "v1/tasks/search");
+      List.of("v2/process-instances/search", "v1/tasks/search");
 
   @Test
   public void visitProtectedEndpointSuccessfulWhenCsrfTokenPresent()

@@ -35,10 +35,7 @@ import org.junit.jupiter.api.condition.DisabledIfSystemProperty;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.http.HttpStatus;
 
-/**
- * Covers cases in which a client (i.e. matches) authenticates against the Operate V1 API and
- * internal API (as one class, to save time on Keycloak setup).
- */
+/** Covers cases in which a client authenticates against the Operate V1 API. */
 @MultiDbTest(setupKeycloak = true)
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "rdbms.*$")
 @DisabledIfSystemProperty(named = "test.integration.camunda.database.type", matches = "AWS_OS")
@@ -133,39 +130,6 @@ public class OperateApiOidcClientIT {
   }
 
   @Test
-  public void shouldReturnProcessInstanceViaInternalApiToPrivilegedClient(
-      @TempDir final Path tempDir) throws Exception {
-    // given
-    try (TestRestOperateClient operateClient =
-        STANDALONE_CAMUNDA.newOperateClient(
-            buildOAuthCredentialsProvider(PRIVILEGED_CLIENT, tempDir))) {
-
-      // when
-      final HttpResponse<String> searchResponse =
-          operateClient.sendInternalSearchRequest(
-              "api/process-instances", "{\"query\": {\"active\": true, \"running\": true}}");
-
-      // then
-      assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-
-      final Either<Exception, Map> result = operateClient.mapResult(searchResponse, Map.class);
-
-      assertThat(result.isRight()).isTrue();
-      final Map<String, Object> responseBody = result.get();
-
-      assertThat(responseBody).containsEntry("totalCount", 1);
-
-      final List<Map<String, Object>> processInstances =
-          (List<Map<String, Object>>) responseBody.get("processInstances");
-
-      assertThat(processInstances).hasSize(1);
-
-      final Map<String, Object> processInstance = processInstances.get(0);
-      assertThat(processInstance).containsEntry("id", Long.toString(processInstanceKey));
-    }
-  }
-
-  @Test
   public void shouldNotReturnProcessInstanceViaV1ApiToUnprivilegedClient(
       @TempDir final Path tempDir) throws Exception {
     // given
@@ -179,31 +143,6 @@ public class OperateApiOidcClientIT {
 
       // then
       assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.FORBIDDEN.value());
-    }
-  }
-
-  @Test
-  public void shouldNotReturnProcessInstanceViaInternalApiToUnprivilegedClient(
-      @TempDir final Path tempDir) throws Exception {
-    // given
-    try (TestRestOperateClient operateClient =
-        STANDALONE_CAMUNDA.newOperateClient(
-            buildOAuthCredentialsProvider(UNPRIVILEGED_CLIENT, tempDir))) {
-
-      // when
-      final HttpResponse<String> searchResponse =
-          operateClient.sendInternalSearchRequest(
-              "api/process-instances", "{\"query\": {\"active\": true, \"running\": true}}");
-
-      // then
-      assertThat(searchResponse.statusCode()).isEqualTo(HttpStatus.OK.value());
-
-      final Either<Exception, Map> result = operateClient.mapResult(searchResponse, Map.class);
-
-      assertThat(result.isRight()).isTrue();
-      final Map<String, Object> responseBody = result.get();
-
-      assertThat(responseBody).containsEntry("totalCount", 0);
     }
   }
 

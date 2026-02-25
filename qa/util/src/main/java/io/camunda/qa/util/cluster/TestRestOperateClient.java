@@ -53,28 +53,6 @@ public class TestRestOperateClient implements AutoCloseable {
     httpClient = HttpClient.newBuilder().cookieHandler(new CookieManager()).build();
   }
 
-  public Either<Exception, HttpResponse<String>> deleteDecisionDefinition(
-      final long decisionDefinitionKey) {
-    try {
-      final var path = String.format("%sapi/decisions/%s", endpoint, decisionDefinitionKey);
-      final var request = createBuilder(path).DELETE();
-      return sendRequestCatchingException(request);
-    } catch (final URISyntaxException e) {
-      return Either.left(e);
-    }
-  }
-
-  public Either<Exception, HttpResponse<String>> deleteProcessDefinition(
-      final long processDefinitionKey) {
-    try {
-      final var path = String.format("%sapi/processes/%s", endpoint, processDefinitionKey);
-      final var builder = createBuilder(path).DELETE();
-      return sendRequestCatchingException(builder);
-    } catch (final URISyntaxException e) {
-      return Either.left(e);
-    }
-  }
-
   public HttpResponse<String> sendGetRequest(final String endpointUriFormat, final String key)
       throws Exception {
     final String url = endpoint + endpointUriFormat.formatted(key);
@@ -92,16 +70,6 @@ public class TestRestOperateClient implements AutoCloseable {
 
     final Builder requestBuilder =
         createBuilder(url)
-            .POST(HttpRequest.BodyPublishers.ofString(request))
-            .header("Content-Type", "application/json");
-
-    return sendRequest(requestBuilder);
-  }
-
-  public HttpResponse sendInternalSearchRequest(final String endpointUri, final String request)
-      throws Exception {
-    final Builder requestBuilder =
-        createBuilder(endpoint + endpointUri)
             .POST(HttpRequest.BodyPublishers.ofString(request))
             .header("Content-Type", "application/json");
 
