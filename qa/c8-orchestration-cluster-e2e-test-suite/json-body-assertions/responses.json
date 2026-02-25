@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "818c65948b7dbe5d7890aa3d0841494246fea24e",
-    "generatedAt": "2026-02-20T20:18:58.724Z",
+    "commit": "a10bb5b34c3d34fa432bd856142bf136b8629258",
+    "generatedAt": "2026-02-25T13:09:08.097Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "32297a269ed0909fdbf6da87067538ead7bd9d867a405e89c6dabc138289a78e"
+    "specSha256": "195577de47d16a714c11b79cd94536877e71e7cc5823011285bc7ac717d2e765"
   },
   "responses": [
     {
@@ -13,36 +13,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -228,8 +198,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -515,36 +514,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -613,8 +582,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -695,36 +693,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -789,16 +757,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/batch-operations/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -828,7 +787,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/batch-operations/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -936,8 +903,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1071,7 +1067,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1102,7 +1099,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1133,7 +1131,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1148,6 +1147,41 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<0>",
+            "children": {
+              "required": [
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "scope",
+                  "type": "string",
+                  "enumValues": [
+                    "GLOBAL",
+                    "TENANT"
+                  ]
+                }
+              ],
+              "optional": [
+                {
+                  "name": "isTruncated",
+                  "type": "boolean"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "value",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
@@ -1177,42 +1211,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<0>",
-            "children": {
-              "required": [
-                {
-                  "name": "name",
-                  "type": "string"
-                },
-                {
-                  "name": "scope",
-                  "type": "string",
-                  "enumValues": [
-                    "GLOBAL",
-                    "TENANT"
-                  ]
-                }
-              ],
-              "optional": [
-                {
-                  "name": "isTruncated",
-                  "type": "boolean"
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string"
-                },
-                {
-                  "name": "value",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -1237,7 +1236,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1268,7 +1268,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1299,7 +1300,8 @@
         "optional": [
           {
             "name": "tenantId",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "value",
@@ -1349,36 +1351,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -1441,8 +1413,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1626,36 +1627,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -1699,8 +1670,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1755,36 +1755,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<0>",
@@ -1876,8 +1846,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -1887,9 +1886,80 @@
       "schema": {
         "required": [
           {
+            "name": "evaluatedInputs",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "inputId",
+                  "type": "string"
+                },
+                {
+                  "name": "inputName",
+                  "type": "string"
+                },
+                {
+                  "name": "inputValue",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "evaluationFailure",
             "type": "string",
             "nullable": true
+          },
+          {
+            "name": "matchedRules",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "evaluatedOutputs",
+                  "type": "array<object>",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "ruleId",
+                        "type": "string",
+                        "nullable": true
+                      },
+                      {
+                        "name": "ruleIndex",
+                        "type": "number",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": [
+                      {
+                        "name": "outputId",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputName",
+                        "type": "string"
+                      },
+                      {
+                        "name": "outputValue",
+                        "type": "string"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "optional": [
+                {
+                  "name": "ruleId",
+                  "type": "string"
+                },
+                {
+                  "name": "ruleIndex",
+                  "type": "number"
+                }
+              ]
+            }
           },
           {
             "name": "rootProcessInstanceKey",
@@ -1941,79 +2011,8 @@
             "type": "string"
           },
           {
-            "name": "evaluatedInputs",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "inputId",
-                  "type": "string"
-                },
-                {
-                  "name": "inputName",
-                  "type": "string"
-                },
-                {
-                  "name": "inputValue",
-                  "type": "string"
-                }
-              ]
-            }
-          },
-          {
             "name": "evaluationDate",
             "type": "string"
-          },
-          {
-            "name": "matchedRules",
-            "type": "array<object>",
-            "children": {
-              "required": [
-                {
-                  "name": "evaluatedOutputs",
-                  "type": "array<object>",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "ruleId",
-                        "type": "string",
-                        "nullable": true
-                      },
-                      {
-                        "name": "ruleIndex",
-                        "type": "number",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": [
-                      {
-                        "name": "outputId",
-                        "type": "string"
-                      },
-                      {
-                        "name": "outputName",
-                        "type": "string"
-                      },
-                      {
-                        "name": "outputValue",
-                        "type": "string"
-                      }
-                    ]
-                  }
-                }
-              ],
-              "optional": [
-                {
-                  "name": "ruleId",
-                  "type": "string"
-                },
-                {
-                  "name": "ruleIndex",
-                  "type": "number"
-                }
-              ]
-            }
           },
           {
             "name": "processDefinitionKey",
@@ -2081,36 +2080,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -2142,8 +2111,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2448,8 +2446,7 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "createdDocuments",
             "type": "array<schema>",
@@ -2542,7 +2539,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2550,8 +2548,7 @@
       "method": "POST",
       "status": "207",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "createdDocuments",
             "type": "array<schema>",
@@ -2644,7 +2641,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -2917,36 +2915,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -2985,7 +2953,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -3023,7 +2991,7 @@
                 },
                 {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
@@ -3033,8 +3001,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3064,15 +3061,16 @@
       "method": "POST",
       "status": "201",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
         "optional": [
           {
             "name": "afterNonGlobal",
             "type": "boolean"
-          },
-          {
-            "name": "eventTypes",
-            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3109,15 +3107,16 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
         "optional": [
           {
             "name": "afterNonGlobal",
             "type": "boolean"
-          },
-          {
-            "name": "eventTypes",
-            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3154,15 +3153,16 @@
       "method": "PUT",
       "status": "200",
       "schema": {
-        "required": [],
+        "required": [
+          {
+            "name": "eventTypes",
+            "type": "array<string>"
+          }
+        ],
         "optional": [
           {
             "name": "afterNonGlobal",
             "type": "boolean"
-          },
-          {
-            "name": "eventTypes",
-            "type": "array<string>"
           },
           {
             "name": "id",
@@ -3201,48 +3201,19 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
+            "name": "items",
+            "type": "array<0>",
             "children": {
               "required": [
                 {
-                  "name": "totalItems",
-                  "type": "number"
+                  "name": "eventTypes",
+                  "type": "array<string>"
                 }
               ],
               "optional": [
                 {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<0>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
                   "name": "afterNonGlobal",
                   "type": "boolean"
-                },
-                {
-                  "name": "eventTypes",
-                  "type": "array<string>"
                 },
                 {
                   "name": "id",
@@ -3273,8 +3244,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3306,6 +3306,27 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "groupId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -3334,29 +3355,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<schema>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "description",
-                  "type": "string"
-                },
-                {
-                  "name": "groupId",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -3410,6 +3409,19 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "clientId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -3438,21 +3450,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "clientId",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -3538,36 +3536,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -3582,16 +3550,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/incidents/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -3621,7 +3580,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/incidents/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -3661,7 +3628,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -3699,7 +3666,7 @@
                 },
                 {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
@@ -3709,8 +3676,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -3753,7 +3749,7 @@
           },
           {
             "name": "errorType",
-            "type": "unknown",
+            "type": "string",
             "enumValues": [
               "AD_HOC_SUB_PROCESS_NO_RETRIES",
               "CALLED_DECISION_ERROR",
@@ -3791,7 +3787,7 @@
           },
           {
             "name": "state",
-            "type": "unknown",
+            "type": "string",
             "enumValues": [
               "ACTIVE",
               "MIGRATED",
@@ -3808,36 +3804,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -3879,16 +3845,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/incidents/statistics/process-instances-by-error",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -3918,7 +3875,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/incidents/statistics/process-instances-by-error",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -3939,8 +3904,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4121,36 +4115,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -4291,8 +4255,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4313,7 +4306,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4331,7 +4325,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4348,7 +4343,8 @@
                 },
                 {
                   "name": "lastUpdatedAt",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 }
               ],
               "optional": []
@@ -4385,7 +4381,8 @@
                       },
                       {
                         "name": "lastUpdatedAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -4403,7 +4400,8 @@
                       },
                       {
                         "name": "lastUpdatedAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -4421,7 +4419,8 @@
                       },
                       {
                         "name": "lastUpdatedAt",
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true
                       }
                     ],
                     "optional": []
@@ -4434,6 +4433,114 @@
                 {
                   "name": "workers",
                   "type": "number"
+                }
+              ],
+              "optional": []
+            }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
+          }
+        ],
+        "optional": []
+      }
+    },
+    {
+      "path": "/jobs/statistics/by-workers",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
+          {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [
+                {
+                  "name": "completed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "created",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "failed",
+                  "type": "failed",
+                  "rawRefName": "failed",
+                  "children": {
+                    "required": [
+                      {
+                        "name": "count",
+                        "type": "number"
+                      },
+                      {
+                        "name": "lastUpdatedAt",
+                        "type": "string",
+                        "nullable": true
+                      }
+                    ],
+                    "optional": []
+                  }
+                },
+                {
+                  "name": "worker",
+                  "type": "string"
                 }
               ],
               "optional": []
@@ -4531,6 +4638,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -4559,33 +4691,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<schema>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "claimName",
-                  "type": "string"
-                },
-                {
-                  "name": "claimValue",
-                  "type": "string"
-                },
-                {
-                  "name": "mappingRuleId",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -4646,36 +4752,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -4743,8 +4819,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -4794,36 +4899,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -4865,16 +4940,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/process-definitions/statistics/message-subscriptions",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -4904,7 +4970,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-definitions/statistics/message-subscriptions",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -4933,16 +5007,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/process-definitions/statistics/process-instances",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -4972,7 +5037,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/process-definitions/statistics/process-instances",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5012,8 +5085,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5095,8 +5197,7 @@
       "method": "POST",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<items>",
@@ -5126,7 +5227,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5135,36 +5237,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5202,8 +5274,37 @@
               ],
               "optional": []
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5653,36 +5754,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -5721,7 +5792,7 @@
                 },
                 {
                   "name": "errorType",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "AD_HOC_SUB_PROCESS_NO_RETRIES",
                     "CALLED_DECISION_ERROR",
@@ -5759,7 +5830,7 @@
                 },
                 {
                   "name": "state",
-                  "type": "unknown",
+                  "type": "string",
                   "enumValues": [
                     "ACTIVE",
                     "MIGRATED",
@@ -5769,8 +5840,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5778,8 +5878,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5822,7 +5921,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5830,8 +5930,7 @@
       "method": "GET",
       "status": "200",
       "schema": {
-        "required": [],
-        "optional": [
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -5861,7 +5960,8 @@
               ]
             }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -5971,6 +6071,27 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -5999,29 +6120,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<schema>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "description",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
-                },
-                {
-                  "name": "roleId",
-                  "type": "string"
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -6075,36 +6174,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -6116,16 +6185,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/roles/{roleId}/groups/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -6155,7 +6215,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/roles/{roleId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -6168,8 +6236,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6217,6 +6314,22 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "schema",
+                  "wrapper": true
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6245,24 +6358,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "username",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -6371,6 +6467,30 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "tenantId",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "schema",
+                  "wrapper": true
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6399,32 +6519,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<schema>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "description",
-                  "type": "string"
-                },
-                {
-                  "name": "name",
-                  "type": "string"
-                },
-                {
-                  "name": "tenantId",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -6484,36 +6579,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<object>",
             "children": {
@@ -6525,16 +6590,7 @@
                 }
               ]
             }
-          }
-        ]
-      }
-    },
-    {
-      "path": "/tenants/{tenantId}/groups/search",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
+          },
           {
             "name": "page",
             "type": "object",
@@ -6564,7 +6620,15 @@
             }
           }
         ],
-        "optional": [
+        "optional": []
+      }
+    },
+    {
+      "path": "/tenants/{tenantId}/groups/search",
+      "method": "POST",
+      "status": "200",
+      "schema": {
+        "required": [
           {
             "name": "items",
             "type": "array<object>",
@@ -6577,8 +6641,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -6664,6 +6757,22 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<object>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "username",
+                  "type": "string",
+                  "underlyingPrimitive": "string",
+                  "rawRefName": "schema",
+                  "wrapper": true
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6692,24 +6801,7 @@
             }
           }
         ],
-        "optional": [
-          {
-            "name": "items",
-            "type": "array<object>",
-            "children": {
-              "required": [],
-              "optional": [
-                {
-                  "name": "username",
-                  "type": "string",
-                  "underlyingPrimitive": "string",
-                  "rawRefName": "schema",
-                  "wrapper": true
-                }
-              ]
-            }
-          }
-        ]
+        "optional": []
       }
     },
     {
@@ -6948,36 +7040,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<schema>",
             "children": {
@@ -7104,8 +7166,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7243,36 +7334,6 @@
       "status": "200",
       "schema": {
         "required": [
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
           {
             "name": "items",
             "type": "array<schema>",
@@ -7458,8 +7519,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7499,36 +7589,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<0>",
             "children": {
@@ -7570,8 +7630,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
@@ -7581,36 +7670,6 @@
       "schema": {
         "required": [
           {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": [
-          {
             "name": "items",
             "type": "array<0>",
             "children": {
@@ -7652,8 +7711,37 @@
                 }
               ]
             }
+          },
+          {
+            "name": "page",
+            "type": "object",
+            "children": {
+              "required": [
+                {
+                  "name": "totalItems",
+                  "type": "number"
+                }
+              ],
+              "optional": [
+                {
+                  "name": "endCursor",
+                  "type": "string",
+                  "nullable": true
+                },
+                {
+                  "name": "hasMoreTotalItems",
+                  "type": "boolean"
+                },
+                {
+                  "name": "startCursor",
+                  "type": "string",
+                  "nullable": true
+                }
+              ]
+            }
           }
-        ]
+        ],
+        "optional": []
       }
     },
     {
