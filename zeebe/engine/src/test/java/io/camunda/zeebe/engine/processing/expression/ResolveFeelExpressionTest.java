@@ -631,4 +631,39 @@ public class ResolveFeelExpressionTest {
     // context is passed through
     assertThat(record.getValue().getContext()).isEqualTo(Map.of("myVar", 5));
   }
+
+  @Test
+  public void shouldResolveWithWarningIfContextVarHasAWrongTypeOrMissing() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=a * 2 + b")
+            .withContext(Map.of("a", "not a number"))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(null);
+    assertThat(record.getValue().getWarnings())
+        .containsExactlyInAnyOrder(
+            "Can't multiply '\"not a number\"' by '2'",
+            "No variable found with name 'b'",
+            "Can't add 'null' to 'null'");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithExplicitContextAsNull() {
+    // when
+    final var record =
+        ENGINE_RULE.expression().withExpression("=5 + 3").withContext(null).resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(8);
+  }
 }
