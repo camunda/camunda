@@ -12,17 +12,17 @@ import type {ElementModification} from './modifications';
 
 type ModificationPlaceholder = {
   elementInstancePlaceholder: ElementInstancePlaceholder;
-  parentFlowNodeId?: string;
+  parentElementId?: string;
   operation: ElementModification['payload']['operation'];
   parentInstanceId?: string;
 };
 
 type State = {
-  expandedFlowNodeInstanceIds: string[];
+  expandedElementInstanceIds: string[];
 };
 
 const DEFAULT_STATE: State = {
-  expandedFlowNodeInstanceIds: [],
+  expandedElementInstanceIds: [],
 };
 
 class InstanceHistoryModification {
@@ -32,16 +32,16 @@ class InstanceHistoryModification {
     makeAutoObservable(this);
   }
 
-  addExpandedFlowNodeInstanceIds = (id: ElementInstancePlaceholder['id']) => {
-    this.state.expandedFlowNodeInstanceIds.push(id);
+  addExpandedElementInstanceIds = (id: ElementInstancePlaceholder['id']) => {
+    this.state.expandedElementInstanceIds.push(id);
   };
 
-  removeFromExpandedFlowNodeInstanceIds = (
+  removeFromExpandedElementInstanceIds = (
     id: ElementInstancePlaceholder['id'],
   ) => {
-    this.state.expandedFlowNodeInstanceIds =
-      this.state.expandedFlowNodeInstanceIds.filter(
-        (expandedFlowNodeInstanceId) => expandedFlowNodeInstanceId !== id,
+    this.state.expandedElementInstanceIds =
+      this.state.expandedElementInstanceIds.filter(
+        (expandedElementInstanceId) => expandedElementInstanceId !== id,
       );
   };
 

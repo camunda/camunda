@@ -144,23 +144,23 @@ const TopPanel: React.FC = observer(() => {
   }, [processInstanceId]);
 
   const flowNodeStateOverlays = useMemo(() => {
-    const flowNodeIdsWithIncidents = statistics
+    const elementIdsWithIncidents = statistics
       ?.filter(({elementState}) => elementState === 'incidents')
-      ?.map((flowNode) => flowNode.id);
+      ?.map((element) => element.id);
 
-    const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
-      (flowNodeId) => businessObjects?.[flowNodeId],
+    const selectableElementsWithIncidents = elementIdsWithIncidents?.map(
+      (elementId) => businessObjects?.[elementId],
     );
 
     const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
-      selectableFlowNodesWithIncidents,
+      selectableElementsWithIncidents,
     );
 
     const allFlowNodeStateOverlays = [
-      ...(statistics?.map(({elementState, count, id: flowNodeId}) => ({
+      ...(statistics?.map(({elementState, count, id: elementId}) => ({
         payload: {flowNodeState: elementState, count},
         type: OVERLAY_TYPE_STATE,
-        flowNodeId,
+        elementId,
         position: overlayPositions[elementState],
       })) || []),
       ...subprocessOverlays,
@@ -213,16 +213,16 @@ const TopPanel: React.FC = observer(() => {
   const modificationBadgesPerFlowNode = computed(() =>
     Object.entries(modificationsByElement).reduce<
       {
-        flowNodeId: string;
+        elementId: string;
         type: string;
         payload: ModificationBadgePayload;
         position: OverlayPosition;
       }[]
-    >((badges, [flowNodeId, tokens]) => {
+    >((badges, [elementId, tokens]) => {
       return [
         ...badges,
         {
-          flowNodeId,
+          elementId,
           type: OVERLAY_TYPE_MODIFICATIONS_BADGE,
           position: MODIFICATIONS,
           payload: {
@@ -406,12 +406,12 @@ const TopPanel: React.FC = observer(() => {
 
                   return (
                     <StateOverlay
-                      key={`${overlay.flowNodeId}-${payload.flowNodeState}`}
+                      key={`${overlay.elementId}-${payload.flowNodeState}`}
                       state={payload.flowNodeState}
                       count={payload.count}
                       container={overlay.container}
                       isFaded={hasPendingCancelOrMoveModification({
-                        elementId: overlay.flowNodeId,
+                        elementId: overlay.elementId,
                         elementInstanceKey: undefined,
                         modificationsByElement: modificationsByElement,
                       })}
@@ -428,7 +428,7 @@ const TopPanel: React.FC = observer(() => {
 
                   return (
                     <ModificationBadgeOverlay
-                      key={overlay.flowNodeId}
+                      key={overlay.elementId}
                       container={overlay.container}
                       newTokenCount={payload.newTokenCount}
                       cancelledTokenCount={payload.cancelledTokenCount}
