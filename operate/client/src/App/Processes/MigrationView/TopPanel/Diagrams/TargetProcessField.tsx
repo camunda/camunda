@@ -8,28 +8,24 @@
 
 import {Label} from './styled';
 import {observer} from 'mobx-react';
-import isNil from 'lodash/isNil';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {Stack} from '@carbon/react';
 import {ComboBox} from 'modules/components/ComboBox';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useMemo} from 'react';
+import {useAvailableMigrationTargetProcessDefinitions} from 'modules/hooks/migrationTargetProcessDefinitions';
+import {getProcessDefinitionName} from 'modules/hooks/processDefinitions';
 
 const TargetProcessField: React.FC = observer(() => {
-  const {
-    versionsByProcessAndTenant,
-    processes,
-    migrationState: {selectedTargetProcess},
-  } = processesStore;
+  const availableDefinitions = useAvailableMigrationTargetProcessDefinitions();
+  const {targetProcessDefinition} = processInstanceMigrationStore.state;
 
+  const selectedKey = targetProcessDefinition?.processDefinitionKey;
   const items = useMemo(() => {
-    return processes.map(({id, label}) => {
-      return {
-        label,
-        id,
-      };
-    });
-  }, [processes]);
+    return availableDefinitions.map((d) => ({
+      label: getProcessDefinitionName(d),
+      id: d.processDefinitionKey,
+    }));
+  }, [availableDefinitions]);
 
   return (
     <Stack orientation="horizontal" gap={5}>
@@ -40,29 +36,19 @@ const TargetProcessField: React.FC = observer(() => {
         id="targetProcess"
         placeholder="Search by process name"
         items={items}
+        value={selectedKey}
         onChange={({selectedItem}) => {
+          const matchingDefinition = !selectedItem
+            ? null
+            : (availableDefinitions.find(
+                (d) => d.processDefinitionKey === selectedItem.id,
+              ) ?? null);
+
           processInstanceMigrationStore.resetElementMapping();
-
-          if (isNil(selectedItem)) {
-            processInstanceMigrationStore.setTargetProcessDefinitionKey(null);
-            processesStore.clearSelectedTarget();
-            return;
-          }
-
-          processesStore.setSelectedTargetProcess(selectedItem.id);
-
-          const versions = versionsByProcessAndTenant[selectedItem.id];
-
-          const initialVersionSelection =
-            versions?.[versions.length - 1]?.version ?? null;
-
-          processesStore.setSelectedTargetVersion(initialVersionSelection);
-
-          processInstanceMigrationStore.setTargetProcessDefinitionKey(
-            processesStore.selectedTargetProcessId ?? null,
+          processInstanceMigrationStore.setTargetProcessDefinition(
+            matchingDefinition,
           );
         }}
-        value={selectedTargetProcess?.key ?? ''}
       />
     </Stack>
   );

@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 import {makeAutoObservable} from 'mobx';
 
 const STEPS = {
@@ -32,8 +33,8 @@ type State = {
   selectedTargetElementId?: string;
   selectedInstancesCount: number;
   batchOperationQuery: BatchOperationQuery | null;
-  sourceProcessDefinitionKey?: string | null;
-  targetProcessDefinitionKey: string | null;
+  sourceProcessDefinition: ProcessDefinition | null;
+  targetProcessDefinition: ProcessDefinition | null;
   hasPendingRequest: boolean;
 };
 
@@ -44,8 +45,8 @@ const DEFAULT_STATE: State = {
   selectedTargetElementId: undefined,
   selectedInstancesCount: 0,
   batchOperationQuery: null,
-  targetProcessDefinitionKey: null,
-  sourceProcessDefinitionKey: null,
+  sourceProcessDefinition: null,
+  targetProcessDefinition: null,
   hasPendingRequest: false,
 };
 
@@ -174,20 +175,20 @@ class ProcessInstanceMigration {
     this.state.elementMapping = {};
   };
 
-  setTargetProcessDefinitionKey = (
-    key: State['targetProcessDefinitionKey'],
+  setSourceProcessDefinition = (
+    definition: State['sourceProcessDefinition'],
   ) => {
-    this.state.targetProcessDefinitionKey = key;
-  };
-
-  setSourceProcessDefinitionKey = (
-    key: State['sourceProcessDefinitionKey'],
-  ) => {
-    this.state.sourceProcessDefinitionKey = key;
+    this.state.sourceProcessDefinition = definition;
   };
 
   resetElementMapping = () => {
     this.state.elementMapping = {...DEFAULT_STATE.elementMapping};
+  };
+
+  setTargetProcessDefinition = (
+    definition: State['targetProcessDefinition'],
+  ) => {
+    this.state.targetProcessDefinition = definition;
   };
 }
 

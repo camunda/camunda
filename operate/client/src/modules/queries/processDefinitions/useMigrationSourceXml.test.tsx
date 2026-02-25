@@ -42,7 +42,7 @@ describe('useMigrationSourceXml', () => {
       () =>
         useMigrationSourceXml({
           processDefinitionKey: '27589024892748902347',
-          bpmnProcessId: 'orderProcess',
+          processDefinitionId: 'orderProcess',
         }),
       {
         wrapper,
@@ -114,7 +114,7 @@ describe('useMigrationSourceXml', () => {
       () =>
         useMigrationSourceXml({
           processDefinitionKey: '27589024892748902347',
-          bpmnProcessId: 'ParticipantMigrationA',
+          processDefinitionId: 'ParticipantMigrationA',
         }),
       {
         wrapper,
@@ -145,7 +145,7 @@ describe('useMigrationSourceXml', () => {
       () =>
         useMigrationSourceXml({
           processDefinitionKey: '27589024892748902347',
-          bpmnProcessId: 'ParticipantMigrationB',
+          processDefinitionId: 'ParticipantMigrationB',
         }),
       {
         wrapper,

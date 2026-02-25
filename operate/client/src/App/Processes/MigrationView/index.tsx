@@ -10,27 +10,34 @@ import {useEffect} from 'react';
 import {InstancesList} from 'App/Layout/InstancesList';
 import {VisuallyHiddenH1} from 'modules/components/VisuallyHiddenH1';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TopPanel} from './TopPanel';
 import {BottomPanel} from './BottomPanel';
 import {Footer} from './Footer';
 import {PAGE_TITLE} from 'modules/constants';
 import {MigrationSummaryNotification} from './MigrationSummaryNotification';
 import {observer} from 'mobx-react';
+import {useInitialMigrationTargetProcessDefinition} from 'modules/hooks/migrationTargetProcessDefinitions';
 
 const MigrationView: React.FC = observer(() => {
+  const {data: initialTargetDefinition} =
+    useInitialMigrationTargetProcessDefinition();
+
   useEffect(() => {
     document.title = PAGE_TITLE.INSTANCES;
   }, []);
 
   useEffect(() => {
-    processesStore.init();
-    processesStore.fetchProcesses();
+    if (
+      initialTargetDefinition &&
+      processInstanceMigrationStore.state.targetProcessDefinition === null
+    ) {
+      processInstanceMigrationStore.setTargetProcessDefinition(
+        initialTargetDefinition,
+      );
+    }
 
-    return () => {
-      processesStore.reset();
-    };
-  }, []);
+    return () => processInstanceMigrationStore.setTargetProcessDefinition(null);
+  }, [initialTargetDefinition]);
 
   const {currentStep} = processInstanceMigrationStore;
 
