@@ -14,6 +14,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 type Props = {
   title?: string;
   count?: number;
+  hasMoreTotalItems?: boolean;
   children?: React.ReactNode;
   className?: string;
   hasTopBorder?: boolean;
@@ -21,16 +22,25 @@ type Props = {
 };
 
 const PanelHeader = forwardRef<HTMLElement, Props>(
-  ({title, count = 0, children, className, size = 'md'}, ref) => {
+  (
+    {title, count = 0, hasMoreTotalItems = false, children, className, size = 'md'},
+    ref,
+  ) => {
+    const countDisplay = hasMoreTotalItems
+      ? '10000+ results'
+      : count > 0
+        ? pluralSuffix(count, 'result')
+        : null;
+
     return (
       <Header className={className} ref={ref} $size={size}>
         {title !== undefined && (
           <Title>
             {title}
-            {count > 0 && (
+            {countDisplay !== null && (
               <>
                 &nbsp;&nbsp;&nbsp;-&nbsp;&nbsp;&nbsp;
-                {pluralSuffix(count, 'result')}
+                {countDisplay}
               </>
             )}
           </Title>
