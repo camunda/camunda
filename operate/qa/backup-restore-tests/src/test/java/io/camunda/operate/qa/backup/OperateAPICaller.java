@@ -11,16 +11,13 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
-import io.camunda.operate.util.CollectionUtil;
 import io.camunda.operate.webapp.reader.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
 import io.camunda.webapps.backup.TakeBackupRequestDto;
 import io.camunda.webapps.backup.TakeBackupResponseDto;
-import io.camunda.webapps.schema.descriptors.template.BatchOperationTemplate;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
-import java.util.Map;
 import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -83,13 +80,19 @@ public class OperateAPICaller {
   }
 
   boolean createOperation(final Long processInstanceKey, final OperationType operationType) {
-    final Map<String, Object> operationRequest =
-        CollectionUtil.asMap("operationType", operationType.name());
-    final URI url =
-        restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation");
-    final ResponseEntity<Map> operationResponse =
-        restTemplate.postForEntity(url, operationRequest, Map.class);
+    final String operationPath =
+        switch (operationType) {
+          case CANCEL_PROCESS_INSTANCE -> "/v2/process-instances/%d/cancellation";
+          case RESOLVE_INCIDENT -> "/v2/process-instances/%d/incident-resolution";
+          default ->
+              throw new IllegalArgumentException(
+                  "Unsupported operation type for backup data generator: " + operationType);
+        };
+    final URI url = restTemplate.getURL(operationPath.formatted(processInstanceKey));
+    final ResponseEntity<String> operationResponse =
+        restTemplate.postForEntity(url, null, String.class);
     return operationResponse.getStatusCode().equals(HttpStatus.OK)
-        && operationResponse.getBody().get(BatchOperationTemplate.ID) != null;
+        && operationResponse.getBody() != null
+        && operationResponse.getBody().contains("batchOperationKey");
   }
 }

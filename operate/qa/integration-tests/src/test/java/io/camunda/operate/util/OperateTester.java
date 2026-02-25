@@ -8,12 +8,8 @@
 package io.camunda.operate.util;
 
 import static io.camunda.operate.qa.util.RestAPITestUtil.*;
-import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.beans.factory.config.BeanDefinition.SCOPE_PROTOTYPE;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.client.CamundaClient;
@@ -40,7 +36,6 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.function.Predicate;
 import org.apache.commons.lang3.Validate;
-import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,8 +43,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Scope;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.stereotype.Component;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 @Component
 @Scope(SCOPE_PROTOTYPE)
@@ -413,7 +406,7 @@ public class OperateTester {
     op.setVariableName(varName);
     op.setVariableValue(varValue);
     op.setVariableScopeId(ConversionUtils.toStringOrNull(processInstanceKey));
-    postOperation(op);
+    scheduleOperation(op);
     searchTestRule.refreshSerchIndexes();
     return this;
   }
@@ -432,31 +425,22 @@ public class OperateTester {
     return this;
   }
 
-  private MvcResult postOperation(final CreateOperationRequestDto operationRequest)
-      throws Exception {
-    final MockHttpServletRequestBuilder postOperationRequest =
-        post(format("/api/process-instances/%s/operation", processInstanceKey))
-            .content(mockMvcTestRule.json(operationRequest))
-            .contentType(mockMvcTestRule.getContentType());
-
-    final MvcResult mvcResult =
-        mockMvcTestRule
-            .getMockMvc()
-            .perform(postOperationRequest)
-            .andExpect(status().is(HttpStatus.SC_OK))
-            .andReturn();
-    operation = mockMvcTestRule.fromResponse(mvcResult, BatchOperationDto.class);
-    return mvcResult;
+  private BatchOperationDto scheduleOperation(final CreateOperationRequestDto operationRequest) {
+    operation =
+        BatchOperationDto.createFrom(
+            batchOperationWriter.scheduleBatchOperation(processInstanceKey, operationRequest),
+            objectMapper);
+    return operation;
   }
 
   public OperateTester cancelProcessInstanceOperation() throws Exception {
-    postOperation(new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
+    scheduleOperation(new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
     searchTestRule.refreshSerchIndexes();
     return this;
   }
 
   public OperateTester deleteProcessInstance() throws Exception {
-    postOperation(new CreateOperationRequestDto(OperationType.DELETE_PROCESS_INSTANCE));
+    scheduleOperation(new CreateOperationRequestDto(OperationType.DELETE_PROCESS_INSTANCE));
     searchTestRule.refreshSerchIndexes();
     return this;
   }
@@ -602,20 +586,6 @@ public class OperateTester {
       final int count) {
     ZeebeTestUtil.sendMessages(camundaClient, messageName, payload, count, correlationKey);
     return this;
-  }
-
-  private MvcResult postRequest(final String requestUrl, final Object query) throws Exception {
-    final MockHttpServletRequestBuilder request =
-        post(requestUrl)
-            .content(mockMvcTestRule.json(query))
-            .contentType(mockMvcTestRule.getContentType());
-
-    return mockMvcTestRule
-        .getMockMvc()
-        .perform(request)
-        .andExpect(status().isOk())
-        .andExpect(content().contentTypeCompatibleWith(mockMvcTestRule.getContentType()))
-        .andReturn();
   }
 
   public List<Long> getFlowNodeInstanceKeysFor(final String flowNodeId) {

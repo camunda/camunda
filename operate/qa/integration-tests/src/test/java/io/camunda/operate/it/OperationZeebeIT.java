@@ -11,7 +11,6 @@ import static io.camunda.operate.qa.util.RestAPITestUtil.createGetAllProcessInst
 import static io.camunda.operate.util.ThreadUtil.sleepFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import io.camunda.operate.util.*;
 import io.camunda.operate.webapp.elasticsearch.reader.ProcessInstanceReader;
 import io.camunda.operate.webapp.operation.dto.BatchOperationDto;
@@ -40,7 +39,6 @@ import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
-import java.net.HttpURLConnection;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -49,7 +47,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.web.servlet.MvcResult;
 
 public class OperationZeebeIT extends OperateZeebeAbstractIT {
 
@@ -112,7 +109,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final Long processInstanceKey = startDemoProcessInstance();
 
     // when
-    final MvcResult mvcResult =
+    final BatchOperationDto batchOperationResponse =
         postOperationWithOKResponse(
             processInstanceKey,
             new CreateOperationRequestDto(OperationType.CANCEL_PROCESS_INSTANCE));
@@ -131,8 +128,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(batchOperationDto.getStartDate()).isNotNull();
     assertThat(batchOperationDto.getEndDate()).isNull();
 
-    final BatchOperationDto batchOperationResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(batchOperationResponse)
         .usingRecursiveComparison()
         // ignore because the Dto is created from an Entity (which doesn't have SortValues)
@@ -159,7 +154,7 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
         incidentReader.getAllIncidentsByProcessInstanceKey(processInstanceKey);
 
     // when
-    final MvcResult mvcResult =
+    final BatchOperationDto batchOperationResponse =
         postOperationWithOKResponse(
             processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
 
@@ -177,8 +172,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(batchOperationDto.getStartDate()).isNotNull();
     assertThat(batchOperationDto.getEndDate()).isNull();
 
-    final BatchOperationDto batchOperationResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(batchOperationResponse)
         .usingRecursiveComparison()
         // ignore because the Dto is created from an Entity (which doesn't have SortValues)
@@ -206,12 +199,9 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     final Long processInstanceKey = startDemoProcessInstance();
 
     // when
-    final MvcResult mvcResult =
+    final BatchOperationDto batchOperationResponse =
         postOperationWithOKResponse(
             processInstanceKey, new CreateOperationRequestDto(OperationType.RESOLVE_INCIDENT));
-
-    final BatchOperationEntity batchOperationResponse =
-        mockMvcTestRule.fromResponse(mvcResult, new TypeReference<>() {});
     assertThat(batchOperationResponse.getInstancesCount()).isEqualTo(1);
     assertThat(batchOperationResponse.getOperationsTotalCount()).isEqualTo(0);
     final ListViewProcessInstanceDto processInstance =
@@ -568,56 +558,6 @@ public class OperationZeebeIT extends OperateZeebeAbstractIT {
     assertThat(lastOperation.getType()).isEqualTo(OperationType.RESOLVE_INCIDENT);
     assertThat(lastOperation.getState()).isEqualTo(OperationState.FAILED);
     assertThat(lastOperation.getErrorMessage()).contains("no such incident was found");
-  }
-
-  @Test
-  public void testFailAddVariableOperationAsVariableAlreadyExists() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-
-    // when we call ADD_VARIABLE operation for the variable that already exists
-    final String newVarName = "a";
-    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-    op.setVariableName(newVarName);
-    op.setVariableValue("\"newValue\"");
-    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
-    op.setVariableScopeId(scope);
-    final MvcResult mvcResult =
-        postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
-
-    // then
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(
-            String.format(
-                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: a variable with this name already exists.",
-                newVarName, scope, processInstanceKey));
-  }
-
-  @Test
-  public void testFailAddVariableOperationAsOperationAlreadyExists() throws Exception {
-    // given
-    final Long processInstanceKey = startDemoProcessInstance();
-
-    // when we call ADD_VARIABLE operation for the first time
-    final String newVarName = "newVar";
-    final CreateOperationRequestDto op = new CreateOperationRequestDto(OperationType.ADD_VARIABLE);
-    op.setVariableName(newVarName);
-    op.setVariableValue("\"newValue\"");
-    final String scope = ConversionUtils.toStringOrNull(processInstanceKey);
-    op.setVariableScopeId(scope);
-    // then it succeeds
-    postOperation(processInstanceKey, op, HttpURLConnection.HTTP_OK);
-
-    // when we call the same operation for the second time, it fails
-    final MvcResult mvcResult =
-        postOperation(processInstanceKey, op, HttpURLConnection.HTTP_BAD_REQUEST);
-
-    // then
-    assertThat(mvcResult.getResolvedException().getMessage())
-        .isEqualTo(
-            String.format(
-                "Cannot add variable \"%s\" in scope \"%s\" of processInstanceId=%s: an ADD_VARIABLE operation for this variable already exists.",
-                newVarName, scope, processInstanceKey));
   }
 
   @Test
