@@ -200,8 +200,6 @@ public interface ProcessInstanceRecordValue
    * user-defined string identifier that can be used to identify a process instance within the scope
    * of a process definition.
    *
-   * <p>The business id is set only on elements of type PROCESS.
-   *
    * <p>Once set, it remains immutable throughout the instance's lifecycle.
    *
    * <p>It can be used to enforce idempotency when creating process instances.
