@@ -13,7 +13,6 @@ import {
   assertUnauthorizedRequest,
   assertBadRequest,
   assertStatusCode,
-  assertRequiredFields,
   assertEqualsForKeys,
   assertNotFoundRequest,
 } from '../../../../utils/http';
@@ -24,7 +23,6 @@ import {
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
-  getDecisionInstanceResponseRequiredFields,
   decisionInstanceRequiredFields,
 } from 'utils/beans/requestBeans';
 
@@ -66,7 +64,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
         decisionEvaluationInstanceKeyToGet,
       );
       expect(body.processInstanceKey).toBe(processInstanceKey);
-      assertRequiredFields(body, getDecisionInstanceResponseRequiredFields);
       assertEqualsForKeys(
         decisionInstanceToGet,
         body,

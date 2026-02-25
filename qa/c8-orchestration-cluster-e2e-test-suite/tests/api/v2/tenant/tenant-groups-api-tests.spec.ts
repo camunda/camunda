@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
@@ -173,7 +172,6 @@ test.describe.parallel('Tenant Groups API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
     });
@@ -242,6 +240,15 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         buildUrl('/tenants/{tenantId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 3,
         totalItemsEqualTo: 3,
@@ -264,6 +271,15 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         buildUrl('/tenants/{tenantId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+
+      await validateResponse(
+        {
+          path: '/tenants/{tenantId}/groups/search',
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
@@ -285,6 +301,15 @@ test.describe.parallel('Tenant Groups API Tests', () => {
     const res = await request.post(
       buildUrl('/tenants/{tenantId}/groups/search', p),
       {headers: jsonHeaders(), data: {}},
+    );
+    
+    await validateResponse(
+      {
+        path: '/tenants/{tenantId}/groups/search',
+        method: 'POST',
+        status: '200',
+      },
+      res,
     );
     await assertPaginatedRequest(res, {
       itemsLengthEqualTo: 0,

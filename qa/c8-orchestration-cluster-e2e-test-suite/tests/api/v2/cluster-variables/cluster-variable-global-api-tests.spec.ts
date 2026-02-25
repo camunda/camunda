@@ -10,21 +10,19 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
 } from '../../../../utils/http';
 import {
   CREATE_CLUSTER_VARIABLE,
-  clusterVariableRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createGlobalClusterVariable,
   deleteGlobalClusterVariable,
 } from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponseShape} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
@@ -55,16 +53,15 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const json = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/global',
           method: 'POST',
           status: '200',
         },
-        res,
+        json,
       );
-      const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
       expect(json.scope).toBe('GLOBAL');
       createdVariableNames.push(json.name);
@@ -114,16 +111,15 @@ test.describe.parallel('Cluster Variable API Tests - Global Scope', () => {
         },
       );
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const json = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/global/{name}',
           method: 'GET',
           status: '200',
         },
-        res,
+        json,
       );
-      const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);
       expect(json.scope).toBe('GLOBAL');
     }).toPass(defaultAssertionOptions);

@@ -33,7 +33,6 @@ test.describe.parallel('Publish Message API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, ['tenantId', 'messageKey']);
     assertEqualsForKeys(json, {tenantId: '<default>'}, ['tenantId']);
   });
 

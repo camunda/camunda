@@ -8,17 +8,11 @@
 
 import {expect, test} from '@playwright/test';
 import {
-  assertRequiredFields,
   assertUnauthorizedRequest,
   buildUrl,
   defaultHeaders,
 } from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
-import {
-  brokerResponseFields,
-  clusterTopologyResponseFields,
-  partitionsResponseFields,
-} from '../../../utils/beans/requestBeans';
 
 test.describe('Cluster API Tests', () => {
   test('Get Cluster Topology', async ({request}) => {
@@ -35,14 +29,8 @@ test.describe('Cluster API Tests', () => {
       res,
     );
     const result = await res.json();
-    assertRequiredFields(result, clusterTopologyResponseFields);
     expect(result.brokers).toHaveLength(1);
-    assertRequiredFields(result.brokers[0], brokerResponseFields);
     expect(result.brokers[0].partitions).toHaveLength(1);
-    assertRequiredFields(
-      result.brokers[0].partitions[0],
-      partitionsResponseFields,
-    );
   });
 
   test('Get Cluster Topology - Unauthorized', async ({request}) => {

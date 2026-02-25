@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertUnauthorizedRequest,
@@ -124,9 +123,7 @@ test.describe.parallel('Group Users API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
-      assertRequiredFields(json.items[0], requiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, requiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -159,7 +156,6 @@ test.describe.parallel('Group Users API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items).toHaveLength(0);
   });
@@ -203,7 +199,6 @@ test.describe.parallel('Group Users API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
         expect(json.items).toHaveLength(0);
       }).toPass(defaultAssertionOptions);

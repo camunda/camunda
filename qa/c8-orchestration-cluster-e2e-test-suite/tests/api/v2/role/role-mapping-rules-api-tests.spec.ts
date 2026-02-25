@@ -14,7 +14,6 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
-  assertRequiredFields,
   assertEqualsForKeys,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
@@ -256,12 +255,11 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         totalItemsEqualTo: 2,
       });
       const json = await res.json();
+      
       const matchingItem1 = json.items.find(
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule1,
       );
-
       expect(matchingItem1).toBeDefined();
-      assertRequiredFields(matchingItem1, mappingRuleRequiredFields);
       assertEqualsForKeys(
         matchingItem1,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 1),
@@ -272,7 +270,6 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         (it: {mappingRuleId: string}) => it.mappingRuleId === mappingRule2,
       );
       expect(matchingItem2).toBeDefined();
-      assertRequiredFields(matchingItem2, mappingRuleRequiredFields);
       assertEqualsForKeys(
         matchingItem2,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),
@@ -310,7 +307,6 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 1),
@@ -346,7 +342,6 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),
@@ -385,7 +380,6 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
       });
       const json = await res.json();
       const item = json.items[0];
-      assertRequiredFields(item, mappingRuleRequiredFields);
       assertEqualsForKeys(
         item,
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('roleId2', state, 2),

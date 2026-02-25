@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertNotFoundRequest,
@@ -115,9 +114,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
-      assertRequiredFields(json.items[0], mappingRuleRequiredFields);
       assertEqualsForKeys(
         json.items[0],
         MAPPING_RULE_EXPECTED_BODY_USING_STATE('groupId2', state),
@@ -157,7 +154,6 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
   });
@@ -200,7 +196,6 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(0);
       expect(json.items.length).toBe(0);
     });

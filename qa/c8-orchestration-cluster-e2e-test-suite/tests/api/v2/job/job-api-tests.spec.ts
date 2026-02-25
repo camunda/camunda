@@ -16,7 +16,6 @@ import {
   assertBadRequest,
   assertEqualsForKeys,
   assertPaginatedRequest,
-  assertRequiredFields,
   assertStatusCode,
   assertUnauthorizedRequest,
   buildUrl,
@@ -27,8 +26,6 @@ import {validateResponse, validateResponseShape} from '../../../../json-body-ass
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   jobResponseFields,
-  jobSearchItemResponseFields,
-  jobSearchPageResponseRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 
 test.describe.parallel('Job API Tests', () => {
@@ -90,7 +87,6 @@ test.describe.parallel('Job API Tests', () => {
     );
     const json = await res.json();
     expect(json.jobs.length).toBe(1);
-    assertRequiredFields(json.jobs[0], jobResponseFields);
     const filteredFields = filterOutDynamicFields(jobResponseFields);
     assertEqualsForKeys(json.jobs[0], expectedJobFields, filteredFields);
   });
@@ -177,9 +173,6 @@ test.describe.parallel('Job API Tests', () => {
           },
           res,
         );
-        assertRequiredFields(json, paginatedResponseFields);
-        assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
-        assertRequiredFields(json.items[0], jobSearchItemResponseFields);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -211,14 +204,11 @@ test.describe.parallel('Job API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
-        assertRequiredFields(json.page, jobSearchPageResponseRequiredFields);
         const actualTypeList = json.items.map(
           (item: {type: string}) => item.type,
         );
         const expectedTypeList = [...actualTypeList].sort();
         expect(actualTypeList).toEqual(expectedTypeList);
-        assertRequiredFields(json.items[0], jobSearchItemResponseFields);
       }).toPass(defaultAssertionOptions);
     });
 

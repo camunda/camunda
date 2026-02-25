@@ -10,7 +10,6 @@ import {test, expect, APIRequestContext} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertStatusCode,
@@ -24,8 +23,6 @@ import {
   CORRELATE_MESSAGE2,
   CORRELATE_MESSAGE_DOUBLE_1,
   CORRELATE_MESSAGE_DOUBLE_2,
-  correlateMessageRequiredFields,
-  correlatedMessageSubscriptionRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {createInstances, deploy} from '../../../../utils/zeebeClient';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -110,7 +107,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, correlateMessageRequiredFields);
         state[payload.stateKey] = json.messageKey;
         messageKeys.push(json.messageKey);
       }
@@ -158,13 +154,8 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
       const subscription = json.items[0] as CorrelatedMessageSubscription;
-      assertRequiredFields(
-        subscription,
-        correlatedMessageSubscriptionRequiredFields,
-      );
       expect(subscription.messageKey).toBe(state.messageKeyPrimary);
       expect(subscription.tenantId).toBe('<default>');
       assertEqualsForKeys(
@@ -213,17 +204,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(3);
 
       const subscriptions = json.items as CorrelatedMessageSubscription[];
-      for (const subscription of subscriptions) {
-        assertRequiredFields(
-          subscription,
-          correlatedMessageSubscriptionRequiredFields,
-        );
-      }
-
       const resultMessageKeys = subscriptions.map((s) => s.messageKey);
       expect(resultMessageKeys).toEqual(expect.arrayContaining(messageKeys));
     }).toPass(defaultAssertionOptions);
@@ -256,7 +239,6 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
       );
 
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(0);
     }).toPass(defaultAssertionOptions);
   });
@@ -289,14 +271,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(2);
         const subscriptions = json.items as CorrelatedMessageSubscription[];
         for (const subscription of subscriptions) {
-          assertRequiredFields(
-            subscription,
-            correlatedMessageSubscriptionRequiredFields,
-          );
           expect(subscription.processInstanceKey).toBe(
             processInstanceKeyToSearch,
           );
@@ -329,14 +306,9 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           res,
         );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(1);
 
         const subscription = json.items[0] as CorrelatedMessageSubscription;
-        assertRequiredFields(
-          subscription,
-          correlatedMessageSubscriptionRequiredFields,
-        );
         expect(subscription.processInstanceKey).toBe(
           processInstanceKeyToSearch,
         );
@@ -500,8 +472,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
-      expect(json.items).toHaveLength(0);
+      expect(json.items.length).toBe(0);
       expect(json.page.totalItems).toBeGreaterThanOrEqual(1);
     }).toPass(defaultAssertionOptions);
   });

@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
   assertUnauthorizedRequest,
@@ -65,7 +64,6 @@ test.describe.parallel('Groups API Tests', () => {
     const json = await res.json();
 
     (state['createdIds'] as string[]).push(json.groupId);
-    assertRequiredFields(json, groupRequiredFields);
     assertEqualsForKeys(json, requestBody, groupRequiredFields);
   });
 
@@ -118,9 +116,7 @@ test.describe.parallel('Groups API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, paginatedResponseFields);
       expect(json.page.totalItems).toBe(1);
-      assertRequiredFields(json.items[0], groupRequiredFields);
       assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -153,9 +149,7 @@ test.describe.parallel('Groups API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(1);
-    assertRequiredFields(json.items[0], groupRequiredFields);
     assertEqualsForKeys(json.items[0], expectedBody, groupRequiredFields);
   });
 
@@ -181,7 +175,6 @@ test.describe.parallel('Groups API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, paginatedResponseFields);
     expect(json.page.totalItems).toBe(0);
     expect(json.items.length).toBe(0);
   });
@@ -226,7 +219,6 @@ test.describe.parallel('Groups API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, groupRequiredFields);
       assertEqualsForKeys(json, expectedBody, groupRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
@@ -277,7 +269,6 @@ test.describe.parallel('Groups API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, ['groupId', 'name']);
       assertEqualsForKeys(json, {name: body.name}, ['name']);
       assertEqualsForKeys(json, {description: body.description}, [
         'description',

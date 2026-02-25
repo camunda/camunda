@@ -10,14 +10,12 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
 } from '../../../../utils/http';
 import {
   CREATE_CLUSTER_VARIABLE,
-  clusterVariableRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -25,7 +23,7 @@ import {
   deleteTenantClusterVariable,
   createTenantAndStoreResponseFields,
 } from '@requestHelpers';
-import { validateResponse } from 'json-body-assertions';
+import {validateResponseShape} from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
@@ -69,16 +67,15 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
       );
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const json = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/tenants/{tenantId}',
           method: 'POST',
           status: '200',
         },
-        res,
+        json,
       );
-      const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variable.name);
       expect(json.scope).toBe('TENANT');
       expect(json.tenantId).toBe(tenantId);
@@ -161,16 +158,15 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         },
       );
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const json = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/tenants/{tenantId}/{name}',
           method: 'GET',
           status: '200',
         },
-        res,
+        json,
       );
-      const json = await res.json();
-      assertRequiredFields(json, clusterVariableRequiredFields);
       expect(json.name).toBe(variableName);
       expect(json.scope).toBe('TENANT');
       expect(json.tenantId).toBe(tenantId);

@@ -17,7 +17,6 @@ import {
   assertConflictRequest,
   encode,
   assertStatusCode,
-  assertRequiredFields,
   assertForbiddenRequest,
 } from '../../../../utils/http';
 import {
@@ -34,7 +33,6 @@ import {
 import {validateResponse} from '../../../../json-body-assertions';
 import {
   CREATE_CUSTOM_AUTHORIZATION_BODY,
-  authorizedComponentRequiredFields,
 } from '../../../../utils/beans/requestBeans';
 
 const CREATE_AUTHORIZATION_ENDPOINT = '/authorizations';
@@ -92,9 +90,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -127,9 +122,6 @@ test.describe
         },
         authRes,
       );
-
-      const authBody = await authRes.json();
-      assertRequiredFields(authBody, authorizedComponentRequiredFields);
     }).toPass(defaultAssertionOptions);
   });
 

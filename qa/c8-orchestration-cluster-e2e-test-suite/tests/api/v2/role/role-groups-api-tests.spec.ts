@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
@@ -184,8 +183,15 @@ test.describe.parallel('Role Groups API Tests', () => {
         );
 
         expect(res.status()).toBe(200);
+        await validateResponse(
+          {
+            path: '/groups/{groupId}/roles/search',
+            method: 'POST',
+            status: '200',
+          },
+          res,
+        );
         const json = await res.json();
-        assertRequiredFields(json, paginatedResponseFields);
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
     });

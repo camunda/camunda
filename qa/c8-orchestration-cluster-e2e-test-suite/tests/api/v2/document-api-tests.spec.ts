@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   jsonHeaders,
   buildUrl,
-  assertRequiredFields,
   defaultHeaders,
   assertEqualsForKeys,
   assertUnauthorizedRequest,
@@ -28,9 +27,7 @@ import {
   CREATE_TXT_DOC_RESPONSE_BODY,
   CREATE_TXT_DOC_RESPONSE_WITH_METADATA,
   CREATE_TXT_DOCUMENT_REQUEST,
-  documentFileContent,
-  documentRequiredFields,
-  multipleDocumentsRequiredFields,
+  documentFileContent
 } from '../../../utils/beans/requestBeans';
 import {
   defaultAssertionOptions,
@@ -71,7 +68,6 @@ test.describe.parallel('Document API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, documentRequiredFields);
       state[`documentId${nth}`] = json.documentId;
       state[`contentHash${nth}`] = json.contentHash;
       state[`storeId${nth}`] = json.storeId;
@@ -165,7 +161,6 @@ test.describe.parallel('Document API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -193,7 +188,6 @@ test.describe.parallel('Document API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
     expect(json.documentId).toBe(uniqueId);
     expect(json.storeId).toBe(storeId);
@@ -228,7 +222,6 @@ test.describe.parallel('Document API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, documentRequiredFields);
     assertEqualsForKeys(json, expectedPostBody, responseKeys);
   });
 
@@ -370,7 +363,6 @@ test.describe.parallel('Document API Tests', () => {
         res,
       );
       json = await res.json();
-      assertRequiredFields(json, multipleDocumentsRequiredFields);
       expect(json['createdDocuments']).toHaveLength(2);
       expect(json['failedDocuments']).toHaveLength(0);
     });

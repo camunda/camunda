@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertEqualsForKeys,
@@ -69,7 +68,6 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
         res,
       );
       const json = await res.json();
-      assertRequiredFields(json, decisionDefinitionRequiredFields);
       assertEqualsForKeys(
         json,
         expectedBody1,

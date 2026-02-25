@@ -10,7 +10,6 @@ import {test, expect} from '@playwright/test';
 import {
   buildUrl,
   jsonHeaders,
-  assertRequiredFields,
   assertStatusCode,
   assertBadRequest,
   assertUnauthorizedRequest,
@@ -25,8 +24,6 @@ import {
   EVALUATE_CONDITIONAL_MULTIPLE_CONDITIONS,
   EVALUATE_CONDITIONAL_NO_MATCH,
   EVALUATE_CONDITIONAL_PARTIAL_MATCH,
-  conditionalEvaluationResponseRequiredFields,
-  conditionalProcessInstanceItemRequiredFields,
 } from '../../../../utils/beans/conditional-evaluation-requestBeans';
 import {deploy, cancelProcessInstance} from '../../../../utils/zeebeClient';
 
@@ -65,14 +62,9 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(json.processInstances.length).toBeGreaterThan(0);
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(
-        instance,
-        conditionalProcessInstanceItemRequiredFields,
-      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
@@ -96,15 +88,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
     expect(json.processInstances.length).toBeGreaterThan(0);
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(
-        instance,
-        conditionalProcessInstanceItemRequiredFields,
-      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
@@ -126,15 +113,10 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
     expect(json.processInstances.length).toBe(1);
 
     const instance = json.processInstances[0];
-    assertRequiredFields(
-      instance,
-      conditionalProcessInstanceItemRequiredFields,
-    );
     expect(instance.processDefinitionKey).toBeDefined();
     expect(instance.processInstanceKey).toBeDefined();
     processInstancesToCleanup.push(instance.processInstanceKey);
@@ -159,7 +141,6 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(Array.isArray(json.processInstances)).toBe(true);
     expect(json.processInstances.length).toBe(0);
   });
@@ -181,13 +162,7 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
-
     for (const instance of json.processInstances) {
-      assertRequiredFields(
-        instance,
-        conditionalProcessInstanceItemRequiredFields,
-      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
@@ -241,17 +216,12 @@ test.describe.parallel('Conditional Evaluation API Tests', () => {
       res,
     );
     const json = await res.json();
-    assertRequiredFields(json, conditionalEvaluationResponseRequiredFields);
     expect(json.processInstances.length).toBeGreaterThan(0);
     expect(json.processInstances[0].processDefinitionKey).toBe(
       processDefinitionKey,
     );
 
     for (const instance of json.processInstances) {
-      assertRequiredFields(
-        instance,
-        conditionalProcessInstanceItemRequiredFields,
-      );
       processInstancesToCleanup.push(instance.processInstanceKey);
     }
   });
