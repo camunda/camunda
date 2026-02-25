@@ -22,17 +22,17 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 @Execution(ExecutionMode.CONCURRENT)
-final class RestoreSolverTest {
+final class RestorePointResolverTest {
 
   @Test
-  void shouldSolveWithSinglePartitionSingleBackup() {
+  void shouldResolveWithSinglePartitionSingleBackup() {
     // given – one partition, one SCHEDULED_BACKUP checkpoint, one range covering it
     final var t1 = Instant.parse("2025-01-01T00:00:00Z");
     final var cp = entry(1, 100, t1, CheckpointType.SCHEDULED_BACKUP, 50);
     final var meta = metadata(1, List.of(cp), List.of(new RangeEntry(1, 1)));
 
     // when
-    final var result = RestoreSolver.solve(List.of(meta), null, null, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
@@ -57,7 +57,7 @@ final class RestoreSolverTest {
             metadata(2, List.of(cp1p2, cp2p2), List.of(new RangeEntry(1, 2))));
 
     // when – no 'to' timestamp
-    final var result = RestoreSolver.solve(metadataByPartition, null, null, Map.of());
+    final var result = RestorePointResolver.resolve(metadataByPartition, null, null, Map.of());
 
     // then – it picks the checkpoint closest to now (= checkpoint 2)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -83,7 +83,7 @@ final class RestoreSolverTest {
             metadata(2, List.of(cp1p2, cp2p2), List.of(new RangeEntry(1, 2))));
 
     // when
-    final var result = RestoreSolver.solve(metadataByPartition, null, to, Map.of());
+    final var result = RestorePointResolver.resolve(metadataByPartition, null, to, Map.of());
 
     // then – checkpoint 1 is closest to 'to'
     assertThat(result.globalCheckpointId()).isEqualTo(1);
@@ -105,7 +105,7 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(marker, backup1, backup2), List.of(new RangeEntry(1, 3)));
 
     // when – target checkpoint 3
-    final var result = RestoreSolver.solve(List.of(meta), null, t3, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t3, Map.of());
 
     // then – marker is excluded from backups, only backup-type entries are included
     assertThat(result.globalCheckpointId()).isEqualTo(3);
@@ -126,7 +126,7 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(cp1, cp2, cp3), List.of(new RangeEntry(1, 3)));
 
     // when – 'to' is closest to t2
-    final var result = RestoreSolver.solve(List.of(meta), null, t2, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t2, Map.of());
 
     // then – stops at checkpoint 2, does not include checkpoint 3
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -151,7 +151,7 @@ final class RestoreSolverTest {
             1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 2), new RangeEntry(3, 4)));
 
     // when – from=t2 means range start timestamp must be <= t2 (not after t2)
-    final var result = RestoreSolver.solve(List.of(meta), t2, null, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), t2, null, Map.of());
 
     // then – only checkpoints from range [1,2] are usable
     // range [1,2] start=cp1 at t1, t1.isAfter(t2)=false -> qualifies
@@ -178,7 +178,7 @@ final class RestoreSolverTest {
             1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 2), new RangeEntry(3, 4)));
 
     // when – exportedPosition=100 means range start's firstLogPosition must be <= 100
-    final var result = RestoreSolver.solve(List.of(meta), null, null, Map.of(1, 100L));
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 100L));
 
     // then – only checkpoints from range [1,2]
     // cp1.firstLogPosition=50 <= 100 ✓, cp3.firstLogPosition=250 > 100 ✗
@@ -201,7 +201,8 @@ final class RestoreSolverTest {
     final var fromBeforeAll = Instant.parse("2024-01-01T00:00:00Z");
 
     // when/then
-    assertThatThrownBy(() -> RestoreSolver.solve(List.of(meta), fromBeforeAll, null, Map.of()))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(List.of(meta), fromBeforeAll, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
@@ -223,7 +224,8 @@ final class RestoreSolverTest {
             metadata(2, List.of(cp2p2), List.of(new RangeEntry(2, 2))));
 
     // when/then
-    assertThatThrownBy(() -> RestoreSolver.solve(metadataByPartition, null, null, Map.of()))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Could not find common checkpoint")
         .hasMessageContaining("Restorable checkpoint count per partition");
@@ -237,7 +239,7 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(cp), List.of(new RangeEntry(1, 1)));
 
     // when
-    final var result = RestoreSolver.solve(List.of(meta), null, null, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of());
 
     // then – MANUAL_BACKUP should be included (shouldCreateBackup() = true)
     assertThat(result.globalCheckpointId()).isEqualTo(1);
@@ -264,7 +266,7 @@ final class RestoreSolverTest {
             1, List.of(marker1, backup1, marker2, backup2, marker3), List.of(new RangeEntry(1, 5)));
 
     // when – target closest to t4 (checkpoint 4)
-    final var result = RestoreSolver.solve(List.of(meta), null, t4, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t4, Map.of());
 
     // then – only backup-type checkpoints, stopping at checkpoint 4
     assertThat(result.globalCheckpointId()).isEqualTo(4);
@@ -299,7 +301,7 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(1, 2))));
 
     // when
-    final var result = RestoreSolver.solve(metadataByPartition, null, null, Map.of());
+    final var result = RestorePointResolver.resolve(metadataByPartition, null, null, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -335,7 +337,7 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(2, 4))));
 
     // when – no 'to', so picks closest to now; checkpoint 3 is common and closer to now than 2
-    final var result = RestoreSolver.solve(metadataByPartition, null, null, Map.of());
+    final var result = RestorePointResolver.resolve(metadataByPartition, null, null, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(3);
@@ -367,7 +369,7 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(1, 3))));
 
     // when
-    final var result = RestoreSolver.solve(metadataByPartition, null, to, Map.of());
+    final var result = RestorePointResolver.resolve(metadataByPartition, null, to, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -390,7 +392,7 @@ final class RestoreSolverTest {
         metadata(1, List.of(marker, backup, markerAfter), List.of(new RangeEntry(1, 3)));
 
     // when
-    final var result = RestoreSolver.solve(List.of(meta), null, t2, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t2, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -418,7 +420,7 @@ final class RestoreSolverTest {
             1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 2), new RangeEntry(3, 4)));
 
     // when
-    final var result = RestoreSolver.solve(List.of(meta), t2, t1, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), t2, t1, Map.of());
 
     // then
     assertThat(result.globalCheckpointId()).isEqualTo(1);
@@ -434,7 +436,8 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(cp1), List.of(new RangeEntry(1, 1)));
 
     // when – exportedPosition=10 < cp1.firstLogPosition=50 -> range filtered out
-    assertThatThrownBy(() -> RestoreSolver.solve(List.of(meta), null, null, Map.of(1, 10L)))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 10L)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
@@ -460,7 +463,7 @@ final class RestoreSolverTest {
 
     // when – exportedPosition=250; range [1,2] end cp2.checkpointPosition=200 < 250 -> filtered
     // range [3,4] start cp3.firstLogPosition=250 <= 250 ✓, end cp4.checkpointPosition=400 >= 250 ✓
-    final var result = RestoreSolver.solve(List.of(meta), null, null, Map.of(1, 250L));
+    final var result = RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 250L));
 
     // then – only checkpoints from range [3,4]
     assertThat(result.globalCheckpointId()).isEqualTo(4);
@@ -479,7 +482,8 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(cp1, cp2), List.of(new RangeEntry(1, 2)));
 
     // when – exportedPosition=500 > cp2.checkpointPosition=200 -> range filtered out
-    assertThatThrownBy(() -> RestoreSolver.solve(List.of(meta), null, null, Map.of(1, 500L)))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(List.of(meta), null, null, Map.of(1, 500L)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1")
@@ -502,7 +506,7 @@ final class RestoreSolverTest {
     final var meta = metadata(1, List.of(cp1, cp2, cp3, cp4), List.of(new RangeEntry(1, 4)));
 
     // when – 'to' is closest to t2
-    final var result = RestoreSolver.solve(List.of(meta), null, t2, Map.of());
+    final var result = RestorePointResolver.resolve(List.of(meta), null, t2, Map.of());
 
     // then – only backups up to checkpoint 2 are returned
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -533,7 +537,7 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(3, 4))));
 
     // when/then – from=t2 filters out P2's range (t3 > t2)
-    assertThatThrownBy(() -> RestoreSolver.solve(metadataByPartition, t2, null, Map.of()))
+    assertThatThrownBy(() -> RestorePointResolver.resolve(metadataByPartition, t2, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 2");
@@ -562,7 +566,8 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(1, 2))));
 
     // when – P2 exportedPosition=200 means cp1 on P2 (checkpointPosition=110) < 200 -> skip cp1
-    final var result = RestoreSolver.solve(metadataByPartition, null, null, Map.of(2, 200L));
+    final var result =
+        RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(2, 200L));
 
     // then – checkpoint 2 is selected (cp2 on P2 has checkpointPosition=210 >= 200)
     assertThat(result.globalCheckpointId()).isEqualTo(2);
@@ -585,7 +590,8 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(1, 1))));
 
     // when – P1 exportedPosition=500 > cp1.checkpointPosition=100 -> range filtered out
-    assertThatThrownBy(() -> RestoreSolver.solve(metadataByPartition, null, null, Map.of(1, 500L)))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 500L)))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("No usable range found")
         .hasMessageContaining("partition 1");
@@ -622,7 +628,7 @@ final class RestoreSolverTest {
     //        P2 exportedPosition=260 filters out range [1,2] (end cp2.pos=210 < 260)
     //        Both partitions use range [3,4]
     final var result =
-        RestoreSolver.solve(metadataByPartition, null, null, Map.of(1, 250L, 2, 260L));
+        RestorePointResolver.resolve(metadataByPartition, null, null, Map.of(1, 250L, 2, 260L));
 
     // then – common checkpoint from range [3,4] -> cp 4
     assertThat(result.globalCheckpointId()).isEqualTo(4);
@@ -652,7 +658,8 @@ final class RestoreSolverTest {
                 List.of(new RangeEntry(3, 4))));
 
     // when/then
-    assertThatThrownBy(() -> RestoreSolver.solve(metadataByPartition, null, null, Map.of()))
+    assertThatThrownBy(
+            () -> RestorePointResolver.resolve(metadataByPartition, null, null, Map.of()))
         .isInstanceOf(IllegalStateException.class)
         .hasMessageContaining("Could not find common checkpoint");
   }

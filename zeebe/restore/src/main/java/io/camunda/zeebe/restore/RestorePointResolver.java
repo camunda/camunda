@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 
-public class RestoreSolver {
+public class RestorePointResolver {
 
   /**
    * Figures out which backups are required for a globally consistent restore that fits the given
@@ -38,7 +38,7 @@ public class RestoreSolver {
    *     null} if no specific position is required
    * @return a {@link RestorableBackups} object containing the required backups for restoration
    */
-  public static RestorableBackups solve(
+  public static RestorableBackups resolve(
       final List<BackupMetadata> metadataByPartition,
       @Nullable final Instant from,
       @Nullable final Instant to,
