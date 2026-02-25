@@ -23,6 +23,7 @@ import {defaultAssertionOptions, generateUniqueId} from '../constants';
 import {groupIdFromState} from './get-value-from-state-requestHelpers';
 import {createGroupAndStoreResponseFields} from './group-requestHelpers';
 import {Serializable} from 'playwright-core/types/structs';
+import {validateResponse} from 'json-body-assertions';
 
 export async function createRole(
   request: APIRequestContext,
@@ -39,6 +40,14 @@ export async function createRole(
   expect(res.status()).toBe(201);
   const json = await res.json();
   assertRequiredFields(json, roleRequiredFields);
+  await validateResponse(
+    {
+      path: '/roles',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   if (state && key) {
     state[`roleId${key}`] = json.roleId;
     state[`roleName${key}`] = json.name;
@@ -68,6 +77,14 @@ export async function createMappingRule(
       headers: jsonHeaders(),
       data: body,
     });
+    await validateResponse(
+      {
+        path: '/mapping-rules',
+        method: 'POST',
+        status: '201',
+      },
+      res,
+    );
     expect(res.status()).toBe(201);
     if (state && key) {
       const json = await res.json();

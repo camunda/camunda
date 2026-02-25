@@ -20,6 +20,7 @@ import {createMappingRule, createRole} from './role-requestHelpers';
 import {CREATE_NEW_GROUP, groupRequiredFields} from '../beans/requestBeans';
 import {Serializable} from 'playwright-core/types/structs';
 import {createUser} from './user-requestHelpers';
+import {validateResponse} from 'json-body-assertions';
 
 export async function assignUsersToGroup(
   request: APIRequestContext,
@@ -134,6 +135,14 @@ export async function createGroupAndStoreResponseFields(
       data: requestBody,
     });
     await assertStatusCode(res, 201);
+    await validateResponse(
+      {
+        path: '/groups',
+        method: 'POST',
+        status: '201',
+       },
+       res,
+    );
     const json = await res.json();
     assertRequiredFields(json, groupRequiredFields);
     const arrayKey = key ? `${key}${i}` : `${i}`;
@@ -169,6 +178,14 @@ export async function createGroup(
   });
 
   await assertStatusCode(res, 201);
+  await validateResponse(
+    {
+      path: '/groups',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, groupRequiredFields);
   if (state && key) {
