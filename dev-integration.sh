@@ -27,12 +27,7 @@ INTEGRATION="integration"
 # Format: "branch-name  # optional comment"
 TOPICS=(
   "jwulf/dev-scripts                          # chore: dev workflow scripts"
-  "46406-fix-e2e-document-test               # test: document processDefinitionId fix"
-  "gateway-response-violation-enhanced-output # refactor: validator shows violating value"
-  "copilot/validate-process-definition-id    # fix: validate processDefinitionId on upload"
   "copilot/fix-rdbms-null-value-storage     # fix: RDBMS NULL variable value (#46401)"
-  "copilot/fix-rdbms-exporter-incident-resolution # fix: RDBMS incident errorMessage (#46396)"
-  "30674-add-type-to-incident-enums          # fix: missing type on incident enums (#30674)"
   "46224-enforce-response-arrays-required-not-nullable # ci: spectral enforcement rule"
 )
 # ─────────────────────────────────────────────────────────────────────────────
