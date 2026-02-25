@@ -90,7 +90,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, 1, null, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, null, context.getMeterRegistry());
 
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
@@ -355,7 +355,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, 1, null, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, null, context.getMeterRegistry());
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
@@ -917,7 +917,7 @@ final class CheckpointRecordsProcessorTest {
 
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, backupStore, context.getMeterRegistry());
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
@@ -954,7 +954,7 @@ final class CheckpointRecordsProcessorTest {
     final var backupStore = mock(BackupStore.class);
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, 1, backupStore, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, backupStore, context.getMeterRegistry());
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);

@@ -8,7 +8,6 @@
 package io.camunda.zeebe.restore;
 
 import io.camunda.zeebe.backup.api.Backup;
-import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
 import io.camunda.zeebe.backup.api.BackupRangeMarker;
@@ -16,15 +15,12 @@ import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.api.NamedFileSet;
-import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.common.NamedFileSetImpl;
-import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +36,7 @@ final class TestRestorableBackupStore implements BackupStore {
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
   final Map<Integer, Collection<BackupRangeMarker>> rangeMarkersByPartition =
       new ConcurrentHashMap<>();
+  final Map<Integer, byte[]> metadataByPartition = new ConcurrentHashMap<>();
 
   /**
    * Must be called before a backup is saved or marked as failed.
@@ -48,24 +45,6 @@ final class TestRestorableBackupStore implements BackupStore {
    */
   CompletableFuture<Backup> waitForBackup(final BackupIdentifier id) {
     return waiters.computeIfAbsent(id, (ignored) -> new CompletableFuture<>());
-  }
-
-  /**
-   * Helper method to add a backup with a timestamp for testing time-based queries.
-   *
-   * @param id The backup identifier
-   * @param checkpointTimestamp The timestamp of the checkpoint
-   * @param partitionCount The number of partitions
-   */
-  void addBackupWithTimestamp(
-      final BackupIdentifier id, final Instant checkpointTimestamp, final int partitionCount) {
-    final BackupDescriptor descriptor =
-        new BackupDescriptorImpl(
-            1L, partitionCount, "test-version", checkpointTimestamp, CheckpointType.MANUAL_BACKUP);
-    final Backup backup =
-        new BackupImpl(
-            id, descriptor, new NamedFileSetImpl(Map.of()), new NamedFileSetImpl(Map.of()));
-    backups.put(id, backup);
   }
 
   @Override
@@ -188,12 +167,14 @@ final class TestRestorableBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
-    throw new UnsupportedOperationException("Backup metadata is not yet supported");
+    metadataByPartition.put(partitionId, content);
+    return CompletableFuture.completedFuture(null);
   }
 
   @Override
   public CompletableFuture<Optional<byte[]>> loadBackupMetadata(final int partitionId) {
-    throw new UnsupportedOperationException("Backup metadata is not yet supported");
+    return CompletableFuture.completedFuture(
+        Optional.ofNullable(metadataByPartition.get(partitionId)));
   }
 
   @Override

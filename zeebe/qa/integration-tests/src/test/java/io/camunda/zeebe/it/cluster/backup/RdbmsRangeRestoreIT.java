@@ -135,9 +135,8 @@ final class RdbmsRangeRestoreIT implements ClockSupport {
     // then
     try (final var restoreApp = testRestoreApp(interval)) {
       assertThatThrownBy(restoreApp::start)
-          .rootCause()
           .isInstanceOf(IllegalStateException.class)
-          .hasMessageContaining("is less than exporter position");
+          .hasMessageContaining("No usable range found");
     }
   }
 
