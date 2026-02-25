@@ -31,7 +31,7 @@ import org.immutables.value.Value;
  *
  * <ul>
  *   <li>{@link #getExpression()} – the FEEL expression to evaluate.
- *   <li>{@link #getContext()} – the optional context for the expression evaluation (can be am empty
+ *   <li>{@link #getContext()} – the optional context for the expression evaluation (can be an empty
  *       map but not {@code null}).
  *   <li>{@link #getResultValue()} – the result value (nullable).
  *   <li>{@link #getWarnings()} – the list of warnings generated during evaluation.
@@ -54,7 +54,7 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned {
   /**
    * Returns the optional FEEL context in which the expression is evaluated.
    *
-   * @return the FEEL context as an Object (can be {@code null})
+   * @return the FEEL context as a {@link Map} (never {@code null}, but can be empty)
    */
   Map<String, Object> getContext();
 
