@@ -329,7 +329,7 @@ public abstract class OperateZeebeAbstractIT extends OperateAbstractIT {
       throws Exception {
     final BatchOperationDto batchOperation =
         BatchOperationDto.createFrom(
-            batchOperationWriter.scheduleBatchOperation(processInstanceKey, operationRequest),
+            batchOperationWriter.scheduleSingleOperation(processInstanceKey, operationRequest),
             objectMapper);
     searchTestRule.refreshSerchIndexes();
     return batchOperation;
