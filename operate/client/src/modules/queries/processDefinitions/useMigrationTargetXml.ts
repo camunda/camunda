@@ -28,20 +28,20 @@ function migrationTargetXmlParser({
     diagramModel,
     selectableFlowNodes: selectableFlowNodes
       .filter(isMigratableElement)
-      .filter((targetFlowNode) => {
+      .filter((targetElement) => {
         const targetBpmnProcessId =
           processesStore.migrationState.selectedTargetProcess?.bpmnProcessId;
 
         return (
           targetBpmnProcessId !== undefined &&
           hasParentProcess({
-            flowNode: diagramModel?.elementsById[targetFlowNode.id],
+            element: diagramModel?.elementsById[targetElement.id],
             bpmnProcessId: targetBpmnProcessId,
           })
         );
       })
-      .map((flowNode) => {
-        return {...flowNode, name: flowNode.name ?? flowNode.id};
+      .map((element) => {
+        return {...element, name: element.name ?? element.id};
       }),
     selectableSequenceFlows: getMappableSequenceFlows(
       diagramModel?.elementsById,
