@@ -53,7 +53,7 @@ const StyledToolTip = styled(Tooltip)`
 `;
 
 export type EntityData = {
-  [key: string]: string | object | boolean | number | null | undefined;
+  [key: string]: string | object | boolean | number | null;
 } & {
   id?: string;
 };
