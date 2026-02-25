@@ -117,3 +117,32 @@ func TestCamundaCmdPassword(t *testing.T) {
 	}
 	assert.Contains(t, javaOptsEnvVar, "-Dcamunda.security.initialization.users[0].password=changeme")
 }
+
+func TestDockerCommandEnvOverridesVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
+	base := []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT", "FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
+	assert.Equal(t, []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT", "FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvAddsVersionWhenMissing(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
+	base := []string{"FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
+	assert.Equal(t, []string{"FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvNoOverrideWithoutDockerVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "")
+	base := []string{"CAMUNDA_VERSION=8.9.0-SNAPSHOT"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Equal(t, base, result)
+}
