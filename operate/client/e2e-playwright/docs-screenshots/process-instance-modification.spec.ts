@@ -315,8 +315,8 @@ test.describe('process instance modification', () => {
 
     await commonPage.deleteArrows();
 
-    const applyModificationsButton = await page.getByRole('button', {
-      name: /apply modifications/i,
+    const applyModificationsButton = page.getByRole('button', {
+      name: /review modifications/i,
     });
 
     await commonPage.addDownArrow(applyModificationsButton);
@@ -326,7 +326,7 @@ test.describe('process instance modification', () => {
     });
 
     await commonPage.deleteArrows();
-    await page.getByRole('button', {name: /apply modifications/i}).click();
+    await page.getByRole('button', {name: /review modifications/i}).click();
 
     await expect(
       page.getByText(/Planned modifications for Process Instance/i),
