@@ -242,7 +242,7 @@ const InstancesTable: React.FC = observer(() => {
     return 'content';
   };
 
-  const getEmptyMessage = () => {
+  const emptyMessage = useMemo(() => {
     if (Object.keys(filterValues).length === 0) {
       return {
         message: 'No operation log items yet',
@@ -254,7 +254,7 @@ const InstancesTable: React.FC = observer(() => {
       message: 'No operations log found',
       additionalInfo: 'Try adjusting your filters or check back later.',
     };
-  };
+  }, [filterValues]);
 
   return (
     <Container>
@@ -262,7 +262,7 @@ const InstancesTable: React.FC = observer(() => {
       <PaginatedSortableTable
         state={getTableState()}
         rows={rows}
-        emptyMessage={getEmptyMessage()}
+        emptyMessage={emptyMessage}
         headerColumns={headerColumns}
         pagination={{
           hasPreviousPage,
