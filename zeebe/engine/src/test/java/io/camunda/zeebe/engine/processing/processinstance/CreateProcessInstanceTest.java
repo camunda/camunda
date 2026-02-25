@@ -281,14 +281,24 @@ public final class CreateProcessInstanceTest {
         ENGINE.processInstance().ofBpmnProcessId(processId).withBusinessId(businessId).create();
 
     // then
-    final Record<ProcessInstanceRecordValue> processActivated =
-        RecordingExporter.processInstanceRecords()
-            .withProcessInstanceKey(processInstanceKey)
-            .withIntent(ProcessInstanceIntent.ELEMENT_ACTIVATED)
-            .withElementType(BpmnElementType.PROCESS)
-            .getFirst();
+    assertThat(
+            RecordingExporter.processInstanceCreationRecords()
+                .withInstanceKey(processInstanceKey)
+                .withIntent(ProcessInstanceCreationIntent.CREATED)
+                .getFirst()
+                .getValue()
+                .getBusinessId())
+        .describedAs("Should create process instance with the given business id")
+        .isEqualTo(businessId);
 
-    assertThat(processActivated.getValue().getBusinessId()).isEqualTo(businessId);
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceCompleted())
+        .map(Record::getValue)
+        .map(ProcessInstanceRecordValue::getBusinessId)
+        .describedAs("Should propagate business id to all process instance records")
+        .containsOnly(businessId);
   }
 
   @Test
