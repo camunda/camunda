@@ -59,6 +59,12 @@ public record InProgressBackupManifest(
     return Optional.of(descriptor);
   }
 
+  @Override
+  public DeletedBackupManifest asDeleted() {
+    return new DeletedBackupManifest(
+        id, Optional.of(descriptor), snapshotFiles, segmentFiles, createdAt, Instant.now());
+  }
+
   public CompletedBackupManifest asCompleted(final FileSet snapshot, final FileSet segments) {
     return new CompletedBackupManifest(
         id, descriptor, snapshot, segments, createdAt, Instant.now());

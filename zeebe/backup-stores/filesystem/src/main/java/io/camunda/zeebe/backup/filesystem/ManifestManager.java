@@ -126,12 +126,30 @@ public final class ManifestManager {
           case FAILED -> manifest.asFailed();
           case COMPLETED -> manifest.asCompleted().fail(failureReason);
           case IN_PROGRESS -> manifest.asInProgress().fail(failureReason);
+          case DELETED ->
+              throw new UnexpectedManifestState("Cannot fail a deleted manifest" + manifestId);
         };
 
-    if (manifest != updatedManifest) {
+    updateManifestFile(manifest, updatedManifest);
+  }
+
+  void markAsDeleted(final Manifest manifest) {
+    final var deletedManifest =
+        switch (manifest.statusCode()) {
+          case DELETED -> manifest;
+          case COMPLETED -> manifest.asCompleted().delete();
+          case IN_PROGRESS -> manifest.asInProgress().delete();
+          case FAILED -> manifest.asFailed().delete();
+        };
+
+    updateManifestFile(manifest, deletedManifest);
+  }
+
+  private void updateManifestFile(final Manifest originManifest, final Manifest updatedManifest) {
+    if (originManifest != updatedManifest) {
       try {
         final var serializedManifest = MAPPER.writeValueAsBytes(updatedManifest);
-        final var path = manifestPath(manifest);
+        final var path = manifestPath(originManifest);
         Files.write(path, serializedManifest, StandardOpenOption.SYNC);
       } catch (final IOException e) {
         throw new UncheckedIOException("Unable to write updated manifest", e);
@@ -139,23 +157,14 @@ public final class ManifestManager {
     }
   }
 
-  void deleteManifest(final BackupIdentifier id) {
-    final Manifest manifest = getManifest(id);
-    if (manifest == null) {
-      return;
-    } else if (manifest.statusCode() == StatusCode.IN_PROGRESS) {
-      throw new UnexpectedManifestState(
-          "Cannot delete Backup with id '%s' while saving is in progress."
-              .formatted(id.toString()));
-    }
-
+  void deleteManifest(final Manifest manifest) {
     try {
       final var path = manifestPath(manifest);
       Files.delete(path);
-      final var dirLimit = manifestsPath.resolve(String.valueOf(id.partitionId()));
+      final var dirLimit = manifestsPath.resolve(String.valueOf(manifest.id().partitionId()));
       FilesystemBackupStore.backtrackDeleteEmptyParents(path.getParent(), dirLimit);
     } catch (final NoSuchFileException e) {
-      LOGGER.warn("Try to remove unknown manifest with id {}", id);
+      LOGGER.warn("Try to remove unknown manifest with id {}", manifest.id());
     } catch (final IOException e) {
       throw new UncheckedIOException("Unable to delete manifest", e);
     }

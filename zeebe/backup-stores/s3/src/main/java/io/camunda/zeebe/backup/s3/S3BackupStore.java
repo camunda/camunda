@@ -39,6 +39,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -257,10 +258,11 @@ public final class S3BackupStore implements BackupStore {
     return readManifestObject(id)
         .thenApply(
             manifest -> {
-              if (manifest.statusCode() == BackupStatusCode.IN_PROGRESS) {
+              if (manifest.statusCode() != BackupStatusCode.DELETED
+                  && manifest.statusCode() != BackupStatusCode.DOES_NOT_EXIST) {
                 throw new BackupInInvalidStateException(
-                    "Can't delete in-progress backup %s, must be marked as failed first"
-                        .formatted(manifest.id()));
+                    "Cannot delete Backup with id '%s', must be marked as deleted."
+                        .formatted(id.toString()));
               } else {
                 return manifest;
               }
@@ -305,6 +307,19 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return readManifestObject(id)
+        .thenCompose(
+            manifest -> {
+              if (manifest instanceof final ValidBackupManifest validManifest) {
+                return updateManifestObject(id, m -> validManifest.asDeleted())
+                    .thenApply(Manifest::statusCode);
+              }
+              return CompletableFuture.completedFuture(manifest.statusCode());
+            });
+  }
+
+  @Override
   public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
     final var prefix = rangeMarkersPrefix(partitionId);
     return client
@@ -315,7 +330,7 @@ public final class S3BackupStore implements BackupStore {
                     .map(S3Object::key)
                     .map(key -> key.substring(prefix.length()))
                     .map(BackupRangeMarker::fromName)
-                    .filter(marker -> marker != null)
+                    .filter(Objects::nonNull)
                     .toList());
   }
 

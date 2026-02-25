@@ -40,6 +40,8 @@ public interface BackupStore {
    */
   CompletableFuture<BackupStatusCode> markFailed(BackupIdentifier id, final String failureReason);
 
+  CompletableFuture<BackupStatusCode> markDeleted(BackupIdentifier id);
+
   /** Returns all range markers stored for this partition. */
   CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(int partitionId);
 

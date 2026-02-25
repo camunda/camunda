@@ -358,24 +358,15 @@ final class BackupServiceImpl {
                 CompletableFuture.allOf(
                     backups.stream()
                         .map(
-                            backup -> {
-                              final CompletableFuture<Void> preparationStep;
-                              if (backup.statusCode() == BackupStatusCode.IN_PROGRESS) {
-                                preparationStep =
-                                    backupStore
-                                        .markFailed(backup.id(), "The backup is being deleted.")
-                                        .thenApply(ignored -> null);
-                              } else {
-                                preparationStep = CompletableFuture.completedFuture(null);
-                              }
-                              return preparationStep
-                                  .thenCompose(
-                                      ignored ->
-                                          backupStore.storeRangeMarker(
-                                              backup.id().partitionId(),
-                                              new Deletion(checkpointId)))
-                                  .thenCompose(ignored -> backupStore.delete(backup.id()));
-                            })
+                            backup ->
+                                backupStore
+                                    .markDeleted(backup.id())
+                                    .thenCompose(
+                                        ignored ->
+                                            backupStore.storeRangeMarker(
+                                                backup.id().partitionId(),
+                                                new Deletion(checkpointId)))
+                                    .thenCompose(ignored -> backupStore.delete(backup.id())))
                         .toArray(CompletableFuture[]::new)))
         .exceptionally(
             error -> {

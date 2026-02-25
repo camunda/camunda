@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.common.manifest;
 
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.COMPLETED;
+import static io.camunda.zeebe.backup.common.Manifest.StatusCode.DELETED;
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.FAILED;
 import static io.camunda.zeebe.backup.common.Manifest.StatusCode.IN_PROGRESS;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,8 +62,9 @@ final class ManifestStateTransitionTest {
     assertThat(completed.statusCode()).isEqualTo(COMPLETED);
     assertThat(completed.createdAt().getEpochSecond()).isPositive();
     assertThat(completed.modifiedAt().getEpochSecond()).isPositive();
-    assertThat(completed.createdAt()).isBefore(completed.modifiedAt());
-    assertThat(completed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(completed.createdAt())
+        .isBefore(completed.modifiedAt())
+        .isEqualTo(created.modifiedAt());
     assertThat(completed.modifiedAt()).isNotEqualTo(created.modifiedAt());
   }
 
@@ -85,8 +87,7 @@ final class ManifestStateTransitionTest {
     assertThat(failed.statusCode()).isEqualTo(FAILED);
     assertThat(failed.createdAt().getEpochSecond()).isPositive();
     assertThat(failed.modifiedAt().getEpochSecond()).isPositive();
-    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
-    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(failed.createdAt()).isBefore(failed.modifiedAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
     assertThat(failed.failureReason()).isEqualTo("expected failure reason");
   }
@@ -112,9 +113,81 @@ final class ManifestStateTransitionTest {
     assertThat(failed.statusCode()).isEqualTo(FAILED);
     assertThat(failed.createdAt().getEpochSecond()).isPositive();
     assertThat(failed.modifiedAt().getEpochSecond()).isPositive();
-    assertThat(failed.createdAt()).isBefore(failed.modifiedAt());
-    assertThat(failed.createdAt()).isEqualTo(created.modifiedAt());
+    assertThat(failed.createdAt()).isBefore(failed.modifiedAt()).isEqualTo(created.modifiedAt());
     assertThat(failed.modifiedAt()).isNotEqualTo(created.modifiedAt());
     assertThat(failed.failureReason()).isEqualTo("expected failure reason");
+  }
+
+  @Test
+  void shouldUpdateManifestFromInProgressToDeleted() {
+    // given
+    final var created =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    // when
+    final var deleted = created.delete();
+
+    // then
+    assertThat(deleted.statusCode()).isEqualTo(DELETED);
+    assertThat(deleted.createdAt().getEpochSecond()).isPositive();
+    assertThat(deleted.modifiedAt().getEpochSecond()).isPositive();
+    assertThat(deleted.createdAt()).isBefore(deleted.modifiedAt()).isEqualTo(created.modifiedAt());
+    assertThat(deleted.modifiedAt()).isNotEqualTo(created.modifiedAt());
+  }
+
+  @Test
+  void shouldUpdateManifestFromCompletedToDeleted() {
+    // given
+    final var created =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var completed = created.complete();
+
+    // when
+    final var deleted = completed.delete();
+
+    // then
+    assertThat(deleted.statusCode()).isEqualTo(DELETED);
+    assertThat(deleted.createdAt().getEpochSecond()).isPositive();
+    assertThat(deleted.modifiedAt().getEpochSecond()).isPositive();
+    assertThat(deleted.createdAt()).isBefore(deleted.modifiedAt()).isEqualTo(created.modifiedAt());
+    assertThat(deleted.modifiedAt()).isNotEqualTo(completed.modifiedAt());
+  }
+
+  @Test
+  void shouldUpdateManifestFromFailedToDeleted() {
+    // given
+    final var created =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var failed = created.fail("expected failure reason");
+
+    // when
+    final var deleted = failed.delete();
+
+    // then
+    assertThat(deleted.statusCode()).isEqualTo(DELETED);
+    assertThat(deleted.createdAt().getEpochSecond()).isPositive();
+    assertThat(deleted.modifiedAt().getEpochSecond()).isPositive();
+    assertThat(deleted.createdAt()).isBefore(deleted.modifiedAt()).isEqualTo(created.modifiedAt());
+    assertThat(deleted.modifiedAt()).isNotEqualTo(failed.modifiedAt());
   }
 }

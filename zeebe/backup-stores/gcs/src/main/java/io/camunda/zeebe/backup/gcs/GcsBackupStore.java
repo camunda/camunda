@@ -21,7 +21,9 @@ import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
+import io.camunda.zeebe.backup.common.BackupStoreException.UnexpectedManifestState;
 import io.camunda.zeebe.backup.common.Manifest;
+import io.camunda.zeebe.backup.common.Manifest.StatusCode;
 import io.camunda.zeebe.backup.gcs.GcsBackupStoreException.ConfigurationException;
 import io.camunda.zeebe.backup.gcs.GcsConnectionConfig.Authentication.None;
 import java.nio.file.Path;
@@ -139,11 +141,20 @@ public final class GcsBackupStore implements BackupStore {
 
   @Override
   public CompletableFuture<Void> delete(final BackupIdentifier id) {
+
     return CompletableFuture.runAsync(
         () -> {
-          manifestManager.deleteManifest(id);
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            return;
+          } else if (manifest.statusCode() != StatusCode.DELETED) {
+            throw new UnexpectedManifestState(
+                "Cannot delete Backup with id '%s', must be marked as deleted."
+                    .formatted(id.toString()));
+          }
           fileSetManager.delete(id, FileSetManager.SNAPSHOT_FILESET_NAME);
           fileSetManager.delete(id, FileSetManager.SEGMENTS_FILESET_NAME);
+          manifestManager.deleteManifest(manifest);
         },
         executor);
   }
@@ -157,7 +168,7 @@ public final class GcsBackupStore implements BackupStore {
             throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
           }
           return switch (manifest.statusCode()) {
-            case FAILED, IN_PROGRESS ->
+            case FAILED, DELETED, IN_PROGRESS ->
                 throw new RuntimeException(
                     ERROR_MSG_BACKUP_WRONG_STATE_TO_RESTORE.formatted(id, manifest.statusCode()));
             case COMPLETED -> {
@@ -199,6 +210,20 @@ public final class GcsBackupStore implements BackupStore {
         () -> {
           manifestManager.markAsFailed(id, failureReason);
           return BackupStatusCode.FAILED;
+        },
+        executor);
+  }
+
+  @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    return CompletableFuture.supplyAsync(
+        () -> {
+          final var manifest = manifestManager.getManifest(id);
+          if (manifest == null) {
+            throw new RuntimeException(ERROR_MSG_BACKUP_NOT_FOUND.formatted(id));
+          }
+          manifestManager.markAsDeleted(manifest);
+          return BackupStatusCode.DELETED;
         },
         executor);
   }

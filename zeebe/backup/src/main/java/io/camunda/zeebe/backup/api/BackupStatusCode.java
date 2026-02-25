@@ -12,6 +12,7 @@ import java.util.Comparator;
 public enum BackupStatusCode {
   // WARNING! Must be ordered from "worst" to "best" for comparator below!
   DOES_NOT_EXIST,
+  DELETED,
   FAILED,
 
   IN_PROGRESS,

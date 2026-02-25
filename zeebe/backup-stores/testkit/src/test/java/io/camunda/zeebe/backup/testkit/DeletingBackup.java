@@ -35,6 +35,7 @@ public interface DeletingBackup {
   default void backupDoesNotExistAfterDeleting(final Backup backup) {
     // given
     getStore().save(backup).join();
+    getStore().markDeleted(backup.id()).join();
 
     // when
     getStore().delete(backup.id()).join();
