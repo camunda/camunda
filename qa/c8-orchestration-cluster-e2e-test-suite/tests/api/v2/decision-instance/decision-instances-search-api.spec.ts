@@ -13,7 +13,6 @@ import {
   assertUnauthorizedRequest,
   assertBadRequest,
   assertStatusCode,
-  assertRequiredFields,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -21,7 +20,6 @@ import {
   DecisionInstance,
 } from '@requestHelpers';
 import {validateResponse} from '../../../../json-body-assertions';
-import {decisionInstanceRequiredFields} from 'utils/beans/requestBeans';
 
 const DECISION_INSTANCES_SEARCH_ENDPOINT = '/decision-instances/search';
 
@@ -59,9 +57,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       expect(body.items.length).toBeGreaterThanOrEqual(3);
       expect(Array.isArray(body.items)).toBe(true);
     }).toPass(defaultAssertionOptions);
@@ -93,9 +88,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.state).toBe('EVALUATED');
       });
@@ -134,9 +126,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.decisionEvaluationInstanceKey).toBe(
           decisionEvaluationInstanceKeyToSearch,
@@ -176,9 +165,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
 
       const body = await res.json();
       expect(body.items.length).toEqual(3);
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.processInstanceKey).toBe(processInstanceKey);
       });
@@ -216,9 +202,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
 
       const body = await res.json();
       expect(body.items.length).toBeGreaterThanOrEqual(1);
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.decisionDefinitionId).toBe(decisionDefinitionIdToSearch);
       });
@@ -258,9 +241,6 @@ test.describe.parallel('Search Decision Instances API Tests', () => {
       );
 
       const body = await res.json();
-      for (const element of body.items) {
-        assertRequiredFields(element, decisionInstanceRequiredFields);
-      }
       expect(body.items.length).toBeGreaterThanOrEqual(1);
       expect(body.items[0].decisionDefinitionId).toBe(
         decisionDefinitionIdToSearch,

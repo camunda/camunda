@@ -23,7 +23,7 @@ import {
   createTenantAndStoreResponseFields,
   assertClusterVariableUpdate,
 } from '@requestHelpers';
-import {validateResponse} from 'json-body-assertions';
+import {validateResponse, validateResponseShape} from 'json-body-assertions';
 
 test.describe.parallel('Search Cluster Variables API Tests', () => {
   const state: Record<string, unknown> = {};
@@ -85,15 +85,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(Array.isArray(body.items)).toBe(true);
       expect(body.items.length).toBeGreaterThan(0);
@@ -114,15 +114,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(body.items.length).toBeGreaterThan(0);
       body.items.forEach((item: Record<string, unknown>) => {
@@ -145,15 +145,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.scope).toBe('GLOBAL');
@@ -175,15 +175,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.scope).toBe('TENANT');
@@ -206,15 +206,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.tenantId).toBe(tenantId);
@@ -237,15 +237,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       body.items.forEach((item: Record<string, unknown>) => {
         expect(item.name).toBe(variableName);
@@ -266,15 +266,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(body.items.length).toBe(1);
     }).toPass(defaultAssertionOptions);
@@ -295,15 +295,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       const names = body.items.map(
         (item: Record<string, unknown>) => item.name as string,
       );
@@ -327,15 +327,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       });
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       const names = body.items.map(
         (item: Record<string, unknown>) => item.name as string,
       );
@@ -359,15 +359,15 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
       );
 
       expect(res.status()).toBe(200);
-      await validateResponse(
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      const body = await res.json();
       expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
       expect(Array.isArray(body.items)).toBe(true);
     }).toPass(defaultAssertionOptions);
@@ -398,15 +398,17 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
           },
         },
       });
-      await validateResponse(
+      await assertStatusCode(res, 200);
+      const body = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
+        body,
       );
-      await assertPaginatedRequest(res, {
+      assertPaginatedRequest(res, {
         itemLengthGreaterThan: 1,
         totalItemGreaterThan: 1,
       });
@@ -484,14 +486,16 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         data: body,
       });
 
-      await validateResponse(
+      expect(res.status()).toBe(200);
+      const responseBody = await res.json();
+      validateResponseShape(
         {
           path: '/cluster-variables/search',
           method: 'POST',
           status: '200',
         },
-        res,
-      );
+        responseBody,
+      );      
       await assertPaginatedRequest(res, {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
