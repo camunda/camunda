@@ -117,7 +117,7 @@ public final class CheckpointRecordsProcessor
 
     checkpointConfirmBackupProcessor =
         new CheckpointConfirmBackupProcessor(
-            checkpointState, checkpointMetadataState, backupRangeState, backupManager, syncer);
+            checkpointState, checkpointMetadataState, backupRangeState, syncer);
 
     checkpointDeleteBackupProcessor =
         new CheckpointDeleteBackupProcessor(
