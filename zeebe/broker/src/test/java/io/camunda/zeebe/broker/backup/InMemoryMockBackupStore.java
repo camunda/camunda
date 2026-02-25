@@ -78,6 +78,11 @@ public class InMemoryMockBackupStore implements BackupStore, AutoCloseable {
   }
 
   @Override
+  public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
+    throw new UnsupportedOperationException("Not yet implemented; implemented it when required");
+  }
+
+  @Override
   public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
     throw new UnsupportedOperationException("Range markers are not yet supported");
   }
