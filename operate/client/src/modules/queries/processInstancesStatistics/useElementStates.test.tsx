@@ -8,7 +8,7 @@
 
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useProcessInstancesFlowNodeStates} from './useFlowNodeStates';
+import {useProcessInstancesElementStates} from './useElementStates';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters';
@@ -16,7 +16,7 @@ import * as filterModule from 'modules/hooks/useProcessInstanceStatisticsFilters
 vi.mock('modules/hooks/useFilters');
 vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
 
-describe('useProcessInstancesFlowNodeStates', () => {
+describe('useProcessInstancesElementStates', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => (
     <QueryClientProvider client={getMockQueryClient()}>
       {children}
@@ -51,17 +51,17 @@ describe('useProcessInstancesFlowNodeStates', () => {
     };
 
     const expectedParsedData = [
-      {flowNodeId: 'task1', count: 5, flowNodeState: 'active'},
-      {flowNodeId: 'task1', count: 1, flowNodeState: 'incidents'},
-      {flowNodeId: 'task1', count: 2, flowNodeState: 'canceled'},
-      {flowNodeId: 'task1', count: 3, flowNodeState: 'completed'},
-      {flowNodeId: 'task2', count: 4, flowNodeState: 'completed'},
+      {flowNodeId: 'task1', count: 5, elementState: 'active'},
+      {flowNodeId: 'task1', count: 1, elementState: 'incidents'},
+      {flowNodeId: 'task1', count: 2, elementState: 'canceled'},
+      {flowNodeId: 'task1', count: 3, elementState: 'completed'},
+      {flowNodeId: 'task2', count: 4, elementState: 'completed'},
     ];
 
     mockFetchProcessInstancesStatistics().withSuccess(mockData);
 
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      () => useProcessInstancesElementStates({}, 'processId'),
       {
         wrapper,
       },
@@ -76,7 +76,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
     mockFetchProcessInstancesStatistics().withServerError();
 
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      () => useProcessInstancesElementStates({}, 'processId'),
       {
         wrapper,
       },
@@ -93,7 +93,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
     mockFetchProcessInstancesStatistics().withNetworkError();
 
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      () => useProcessInstancesElementStates({}, 'processId'),
       {
         wrapper,
       },
@@ -112,7 +112,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
     });
 
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      () => useProcessInstancesElementStates({}, 'processId'),
       {
         wrapper,
       },
@@ -129,7 +129,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
     });
 
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId'),
+      () => useProcessInstancesElementStates({}, 'processId'),
       {
         wrapper,
       },
@@ -140,7 +140,7 @@ describe('useProcessInstancesFlowNodeStates', () => {
 
   it('should not fetch data when enabled is false', async () => {
     const {result} = renderHook(
-      () => useProcessInstancesFlowNodeStates({}, 'processId', false),
+      () => useProcessInstancesElementStates({}, 'processId', false),
       {
         wrapper,
       },

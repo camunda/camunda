@@ -11,7 +11,7 @@ import {
   type ParsedXmlData,
   useProcessDefinitionXml,
 } from './useProcessDefinitionXml';
-import {isFlowNode} from 'modules/utils/flowNodes';
+import {isFlowNode} from 'modules/utils/elements';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 
 function businessObjectsParser({

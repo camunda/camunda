@@ -12,7 +12,7 @@ import pluralSuffix from 'modules/utils/pluralSuffix';
 import {Container, InlineNotification, Button} from './styled';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getFlowNodeName} from 'modules/utils/elements';
 import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 
 type Props = {

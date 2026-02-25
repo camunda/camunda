@@ -29,7 +29,7 @@ import {tracking} from 'modules/tracking';
 import {HelperModal} from 'modules/components/HelperModal';
 import {useProcessDefinitionKeyContext} from '../../../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
-import {getFlowNode} from 'modules/utils/flowNodes';
+import {getFlowNode} from 'modules/utils/elements';
 
 const localStorageKey = 'hideMoveModificationHelperModal';
 

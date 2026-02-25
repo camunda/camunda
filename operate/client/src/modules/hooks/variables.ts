@@ -12,8 +12,8 @@ import {
   useHasRunningOrFinishedTokens,
   useIsPlaceholderSelected,
   useNewTokenCountForSelectedNode,
-} from './flowNodeSelection';
-import {useHasMultipleInstances} from './flowNodeMetadata';
+} from './elementSelection';
+import {useHasMultipleInstances} from './elementMetadata';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {useElementSelectionInstanceKey} from './useElementSelectionInstanceKey';

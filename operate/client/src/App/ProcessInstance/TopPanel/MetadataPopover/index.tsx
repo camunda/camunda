@@ -12,7 +12,7 @@ import {flip, offset} from '@floating-ui/react-dom';
 import {Header} from './Header';
 import {Stack} from '@carbon/react';
 import {MultiIncidents} from './Incidents/multiIncidents';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
 import {Details} from './Details';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
@@ -41,7 +41,7 @@ const MetadataPopover = observer(({selectedFlowNodeRef}: Props) => {
   const businessObject = selectedElementId
     ? data?.businessObjects[selectedElementId]
     : null;
-  const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: statistics} = useElementInstancesStatistics();
 
   const incidentCount =
     statistics?.items.find((stat) => stat.elementId === selectedElementId)

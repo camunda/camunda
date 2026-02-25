@@ -12,7 +12,7 @@ import {
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {requestWithThrow} from 'modules/request';
 
-const fetchFlownodeInstancesStatistics = async (processInstanceKey: string) => {
+const fetchElementInstancesStatistics = async (processInstanceKey: string) => {
   return requestWithThrow<GetProcessInstanceStatisticsResponseBody>({
     url: endpoints.getProcessInstanceStatistics.getUrl({
       processInstanceKey,
@@ -22,4 +22,4 @@ const fetchFlownodeInstancesStatistics = async (processInstanceKey: string) => {
   });
 };
 
-export {fetchFlownodeInstancesStatistics};
+export {fetchElementInstancesStatistics};

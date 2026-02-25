@@ -8,7 +8,7 @@
 
 import {render, screen, waitFor} from 'modules/testing-library';
 import {TimeStampPill} from './index';
-import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {useEffect} from 'react';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -22,7 +22,7 @@ const Wrapper = ({children}: {children?: React.ReactNode}) => {
 
   useEffect(() => {
     return () => {
-      flowNodeTimeStampStore.reset();
+      elementTimeStampStore.reset();
     };
   }, []);
 

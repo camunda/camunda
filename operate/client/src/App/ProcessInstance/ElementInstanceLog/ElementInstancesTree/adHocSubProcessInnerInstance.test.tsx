@@ -17,7 +17,7 @@ import {
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
@@ -39,7 +39,7 @@ describe('ElementInstancesTree - Ad Hoc Sub Process Inner Instance', () => {
       mockAdHocSubProcessInnerInstanceProcessInstance,
     );
     mockFetchProcessDefinitionXml().withSuccess(adHocSubProcessInnerInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockQueryBatchOperationItems().withSuccess(searchResult([]));
     mockSearchElementInstances().withSuccess(
       adHocSubProcessInnerInstanceElementInstances.level1,

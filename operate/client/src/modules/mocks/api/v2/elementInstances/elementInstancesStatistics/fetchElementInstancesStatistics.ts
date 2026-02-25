@@ -6,18 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
+import {mockGetRequest} from '../../../mockRequest';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
-const executedFlowNodesParser = (
-  response: GetProcessInstanceStatisticsResponseBody,
-) =>
-  response.items.filter(({completed}) => {
-    return completed > 0;
-  });
+const mockFetchElementInstancesStatistics = () =>
+  mockGetRequest<GetProcessInstanceStatisticsResponseBody>(
+    '/v2/process-instances/:processInstanceKey/statistics/element-instances',
+  );
 
-const useExecutedFlowNodes = () => {
-  return useFlownodeInstancesStatistics(executedFlowNodesParser);
-};
-
-export {useExecutedFlowNodes};
+export {mockFetchElementInstancesStatistics};

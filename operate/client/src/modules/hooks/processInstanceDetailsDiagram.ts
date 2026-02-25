@@ -8,8 +8,8 @@
 
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {getFirstMultiInstanceParent} from 'modules/bpmn-js/utils/isWithinMultiInstance';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
-import {useTotalRunningInstancesByFlowNode} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
+import {useTotalRunningInstancesByElement} from 'modules/queries/elementInstancesStatistics/useTotalRunningInstancesForElement';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {modificationsStore} from 'modules/stores/modifications';
 import {
@@ -18,9 +18,9 @@ import {
 } from 'modules/utils/processInstanceDetailsDiagram';
 
 const useFlowNodes = () => {
-  const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: statistics} = useElementInstancesStatistics();
   const {data: totalRunningInstancesByFlowNode} =
-    useTotalRunningInstancesByFlowNode();
+    useTotalRunningInstancesByElement();
   const {data: businessObjects} = useBusinessObjects();
 
   return Object.values(businessObjects ?? {}).map((flowNode) => {

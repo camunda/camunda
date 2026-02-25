@@ -12,7 +12,7 @@ import {type ModifyProcessInstanceRequestBody} from '@camunda/camunda-api-zod-sc
 import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProcessInstance';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getFlowNodeName} from 'modules/utils/elements';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';

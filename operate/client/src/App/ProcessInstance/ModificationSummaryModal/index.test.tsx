@@ -13,7 +13,7 @@ import {ModificationSummaryModal} from './index';
 import {open} from 'modules/mocks/diagrams';
 import {useEffect, act} from 'react';
 import {notificationsStore} from 'modules/stores/notifications';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
@@ -496,7 +496,7 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display total affected token count if a subprocess is canceled', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'multi-instance-subprocess',
@@ -692,7 +692,7 @@ describe('Modification Summary Modal', () => {
   });
 
   it('should display/hide warning message if all modifications are about to be canceled', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'service-task-2',
@@ -793,7 +793,7 @@ describe('Modification Summary Modal', () => {
       },
     ]);
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'taskA',

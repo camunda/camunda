@@ -9,11 +9,11 @@
 import {getFlowElementIds} from 'modules/bpmn-js/utils/getFlowElementIds';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
 import {TOKEN_OPERATIONS} from 'modules/constants';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
 import {
-  useTotalRunningInstancesForFlowNodes,
-  useTotalRunningInstancesVisibleForFlowNodes,
-} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+  useTotalRunningInstancesForElements,
+  useTotalRunningInstancesVisibleForElements,
+} from 'modules/queries/elementInstancesStatistics/useTotalRunningInstancesForElement';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   EMPTY_MODIFICATION,
@@ -26,7 +26,7 @@ import {
   useNonModifiableFlowNodes,
 } from './processInstanceDetailsDiagram';
 import {isSubProcess} from 'modules/bpmn-js/utils/isSubProcess';
-import {useHasPendingCancelOrMoveModification} from './flowNodeSelection';
+import {useHasPendingCancelOrMoveModification} from './elementSelection';
 
 type ModificationOption =
   | 'add'
@@ -36,7 +36,7 @@ type ModificationOption =
   | 'move-instance';
 
 const useWillAllFlowNodesBeCanceled = () => {
-  const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: statistics} = useElementInstancesStatistics();
   const modificationsByFlowNode = useModificationsByFlowNode();
 
   if (
@@ -65,7 +65,7 @@ const useModificationsByFlowNode = () => {
   const {data: businessObjects} = useBusinessObjects();
 
   const {data: flowNodeDataArray} =
-    useTotalRunningInstancesForFlowNodes(flowNodeIds);
+    useTotalRunningInstancesForElements(flowNodeIds);
   const flowNodeData = useMemo(() => {
     return flowNodeIds.reduce(
       (acc, id) => {
@@ -81,9 +81,9 @@ const useModificationsByFlowNode = () => {
   );
 
   const {data: elementCancelledTokens} =
-    useTotalRunningInstancesForFlowNodes(elementIds);
+    useTotalRunningInstancesForElements(elementIds);
   const {data: elementVisibleCancelledTokens} =
-    useTotalRunningInstancesVisibleForFlowNodes(elementIds);
+    useTotalRunningInstancesVisibleForElements(elementIds);
 
   const elementData = useMemo(() => {
     return elementIds.reduce(
