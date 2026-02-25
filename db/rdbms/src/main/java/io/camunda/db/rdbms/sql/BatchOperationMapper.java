@@ -34,11 +34,15 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
 
   void updateItemsWithState(BatchOperationItemStatusUpdateDto dto);
 
+  void completeBatchOperationItems(BatchOperationItemsCompletionDto dto);
+
   void incrementOperationsTotalCount(BatchOperationUpdateTotalCountDto dto);
 
   void incrementFailedOperationsCount(String batchOperationKey);
 
   void incrementCompletedOperationsCount(String batchOperationKey);
+
+  void bulkIncrementCompletedOperationsCount(BatchOperationUpdateTotalCountDto dto);
 
   Long count(BatchOperationDbQuery query);
 
@@ -78,6 +82,11 @@ public interface BatchOperationMapper extends HistoryCleanupMapper {
       String batchOperationKey,
       BatchOperationEntity.BatchOperationItemState oldState,
       BatchOperationEntity.BatchOperationItemState newState) {}
+
+  record BatchOperationItemCompletionDto(String batchOperationKey, long itemKey) {}
+
+  record BatchOperationItemsCompletionDto(
+      List<BatchOperationItemCompletionDto> items, OffsetDateTime processedDate) {}
 
   record BatchOperationErrorsDto(String batchOperationKey, List<BatchOperationErrorDto> errors) {}
 

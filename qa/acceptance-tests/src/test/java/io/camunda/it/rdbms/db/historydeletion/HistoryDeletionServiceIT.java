@@ -18,6 +18,7 @@ import io.camunda.it.rdbms.db.history.ProcessInstanceHistory;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import java.time.Duration;
+import java.time.InstantSource;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestTemplate;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,7 +38,8 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
             rdbmsService.getHistoryDeletionDbReader(),
             rdbmsService.getProcessInstanceReader(),
             rdbmsService.getDecisionInstanceReader(),
-            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000));
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10000),
+            InstantSource.system());
 
     final long processInstanceKey = ProcessInstanceFixtures.nextKey();
     createRandomProcessWithRelevantRelatedData(
@@ -82,7 +84,8 @@ public class HistoryDeletionServiceIT extends ProcessInstanceHistory {
             rdbmsService.getHistoryDeletionDbReader(),
             rdbmsService.getProcessInstanceReader(),
             rdbmsService.getDecisionInstanceReader(),
-            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10));
+            new HistoryDeletionConfig(Duration.ofSeconds(1), Duration.ofMinutes(5), 100, 10),
+            InstantSource.system());
 
     final long processInstanceKey = ProcessInstanceFixtures.nextKey();
     createRandomProcessWithRelevantRelatedData(

@@ -20,6 +20,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import io.camunda.exporter.handlers.batchoperation.AbstractOperationHandler;
 import io.camunda.exporter.tasks.utils.TestExporterResourceProvider;
 import io.camunda.webapps.schema.descriptors.ProcessInstanceDependant;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
@@ -76,6 +77,8 @@ final class HistoryDeletionJobTest {
     job = new HistoryDeletionJob(dependants, executor, repository, LOGGER, resourceProvider);
     when(repository.createAuditLogCleanupEntries(anyList(), any()))
         .thenReturn(CompletableFuture.completedFuture(null));
+    when(repository.completeOperations(anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
   }
 
   @Test
@@ -1019,5 +1022,135 @@ final class HistoryDeletionJobTest {
             argThat(
                 deletedResources ->
                     deletedResources.size() == 1 && deletedResources.contains("id1")));
+  }
+
+  @Test
+  void shouldMarkProcessInstanceDeletionOperationsAsCompleted() {
+    // given
+    final var entity1 =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var entity2 =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(3L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity1, entity2))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .completeOperations(
+            List.of(
+                AbstractOperationHandler.ID_PATTERN.formatted(
+                    entity1.getBatchOperationKey(), entity1.getResourceKey()),
+                AbstractOperationHandler.ID_PATTERN.formatted(
+                    entity2.getBatchOperationKey(), entity2.getResourceKey())));
+  }
+
+  @Test
+  void shouldMarkDecisionInstanceDeletionOperationsAsCompleted() {
+    // given
+    final var entity1 =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    final var entity2 =
+        new HistoryDeletionEntity()
+            .setId("id2")
+            .setResourceKey(3L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(
+            CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity1, entity2))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+
+    // when
+    job.execute().toCompletableFuture().join();
+
+    // then
+    verify(repository)
+        .completeOperations(
+            List.of(
+                AbstractOperationHandler.ID_PATTERN.formatted(
+                    entity1.getBatchOperationKey(), entity1.getResourceKey()),
+                AbstractOperationHandler.ID_PATTERN.formatted(
+                    entity2.getBatchOperationKey(), entity2.getResourceKey())));
+  }
+
+  @Test
+  void shouldNotDeleteProcessInstanceFromDeletionIndexIfOperationCompletionMarkFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.PROCESS_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.completeOperations(anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed marking")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository, never())
+        .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
+  }
+
+  @Test
+  void shouldNotDeleteDecisionInstanceFromDeletionIndexIfOperationCompletionMarkFailed() {
+    // given
+    final var entity =
+        new HistoryDeletionEntity()
+            .setId("id1")
+            .setResourceKey(1L)
+            .setResourceType(HistoryDeletionType.DECISION_INSTANCE)
+            .setBatchOperationKey(2L)
+            .setPartitionId(1);
+    when(repository.getNextBatch())
+        .thenReturn(CompletableFuture.completedFuture(new HistoryDeletionBatch(List.of(entity))));
+    when(repository.deleteDocumentsByField(anyString(), anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(List.of()));
+    when(repository.deleteDocumentsById(anyString(), anyList()))
+        .thenReturn(CompletableFuture.completedFuture(0));
+    when(repository.completeOperations(anyList()))
+        .thenReturn(CompletableFuture.failedFuture(new RuntimeException("Failed marking")));
+
+    // when
+    job.execute().exceptionally(ex -> 0).toCompletableFuture().join();
+
+    // then
+    verify(repository, never())
+        .deleteDocumentsById(eq(historyDeletionIndex.getFullQualifiedName()), any());
   }
 }

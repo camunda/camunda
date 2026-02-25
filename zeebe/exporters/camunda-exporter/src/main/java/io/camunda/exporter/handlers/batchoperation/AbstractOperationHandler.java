@@ -20,7 +20,7 @@ import io.camunda.zeebe.protocol.record.RecordValue;
 public abstract class AbstractOperationHandler<T extends ExporterEntity<T>, R extends RecordValue>
     implements ExportHandler<T, R> {
 
-  protected static final String ID_PATTERN = "%s_%s";
+  public static final String ID_PATTERN = "%s_%s";
   protected final String indexName;
   protected final ExporterEntityCache<String, CachedBatchOperationEntity> batchOperationCache;
   private final OperationType relevantOperationType;
