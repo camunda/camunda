@@ -41,6 +41,14 @@ export async function createComponentAuthorization(
   });
 
   expect(res.status()).toBe(201);
+  await validateResponse(
+    {
+      path: '/authorizations',
+      method: 'POST',
+      status: '201',
+    },
+    res,
+  );
   const json = await res.json();
   assertRequiredFields(json, authorizedComponentRequiredFields);
   return json.authorizationKey;
@@ -63,6 +71,14 @@ export async function grantUserResourceAuthorization(
     data: USER_RESOURCE_AUTHORIZATION,
   });
   expect(authRes.status()).toBe(201);
+  await validateResponse(
+    {
+      path: '/authorizations',
+      method: 'POST',
+      status: '201',  
+    },
+    authRes,
+   );
   const authBody = await authRes.json();
   assertRequiredFields(authBody, ['authorizationKey']);
   return {
