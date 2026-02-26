@@ -196,7 +196,7 @@
   </dependencies>
 
   <build>
-    <finalName>upgrade-optimize-from-${project.previousVersion}-to-${project.version}</finalName>
+    <finalName>upgrade-optimize-to-${project.version}</finalName>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
