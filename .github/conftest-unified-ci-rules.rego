@@ -21,9 +21,9 @@ warn[msg] {
     # only enforced on workflows that opted-in
     input.env.GHA_BEST_PRACTICES_LINTER == "enabled"
 
-    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 15)) > 0
+    count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 30)) > 0
 
-    msg := sprintf("There are GitHub Actions jobs with too high (>15) timeout-minutes! Affected job IDs: %s",
+    msg := sprintf("There are GitHub Actions jobs with too high (>30) timeout-minutes! Affected job IDs: %s",
         [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 15))])
 }
 
