@@ -17,19 +17,21 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
 import org.immutables.value.Value;
 
 /**
  * Represents a record value for a FEEL expression resolution in the engine.
  *
- * <p>A FEEL expression resolution record contains the expression to evaluate and the result of the
- * evaluation.
+ * <p>A FEEL expression resolution record contains the expression to evaluate, optional variables,
+ * and the result of the evaluation.
  *
  * <p>The value is immutable and built via {@link ImmutableExpressionRecordValue}.
  *
  * <ul>
  *   <li>{@link #getExpression()} – the FEEL expression to evaluate.
+ *   <li>{@link #getVariables()} - the variables used as context for the expression evaluation.
  *   <li>{@link #getResultValue()} – the result value (nullable).
  *   <li>{@link #getWarnings()} – the list of warnings generated during evaluation.
  * </ul>
@@ -39,7 +41,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableExpressionRecordValue.Builder.class)
-public interface ExpressionRecordValue extends RecordValue, TenantOwned {
+public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordValueWithVariables {
 
   /**
    * Returns the FEEL expression to be evaluated.

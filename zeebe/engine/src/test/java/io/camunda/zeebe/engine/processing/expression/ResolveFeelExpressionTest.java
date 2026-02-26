@@ -16,6 +16,7 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
 import io.camunda.zeebe.test.util.record.RecordingExporterTestWatcher;
 import java.time.Duration;
+import java.util.Map;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -607,5 +608,113 @@ public class ResolveFeelExpressionTest {
             """
             Expected to evaluate expression but timed out after 300 ms: \
             'for x in 0..1000000 return for y in 0..x return x + y'""");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithContext() {
+    // given
+    ENGINE_RULE.clusterVariables().withName("input").setGlobalScope().withValue("5").create();
+
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=camunda.vars.cluster.input * 2 + myVar")
+            .withVariables(Map.of("myVar", 5))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(15);
+    // context is passed through
+    assertThat(record.getValue().getVariables()).isEqualTo(Map.of("myVar", 5));
+  }
+
+  @Test
+  public void shouldResolveWithWarningIfContextVarHasAWrongTypeOrMissing() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=a * 2 + b")
+            .withVariables(Map.of("a", "not a number"))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(null);
+    assertThat(record.getValue().getWarnings())
+        .containsExactlyInAnyOrder(
+            "Can't multiply '\"not a number\"' by '2'",
+            "No variable found with name 'b'",
+            "Can't add 'null' to 'null'");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithExplicitContextAsNull() {
+    // when
+    final var record =
+        ENGINE_RULE.expression().withExpression("=5 + 3").withVariables(null).resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(8);
+  }
+
+  @Test
+  public void shouldResolveDateTimeExpressionWithContextVariable() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("= date and time(myDateTime)")
+            .withVariables(Map.of("myDateTime", "2024-01-15T10:30:00"))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("2024-01-15T10:30:00");
+  }
+
+  @Test
+  public void shouldResolveExpressionWithListInContext() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=count(myList)")
+            .withVariables(Map.of("myList", java.util.List.of(1, 2, 3, 4, 5)))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldResolveExpressionWithNestedContext() {
+    // when
+    final var record =
+        ENGINE_RULE
+            .expression()
+            .withExpression("=person.name + \" is \" + string(person.age) + \" years old\"")
+            .withVariables(Map.of("person", Map.of("name", "Alice", "age", 30)))
+            .resolve();
+
+    // then
+    Assertions.assertThat(record)
+        .hasIntent(ExpressionIntent.EVALUATED)
+        .hasRecordType(RecordType.EVENT);
+    assertThat(record.getValue().getResultValue()).isEqualTo("Alice is 30 years old");
   }
 }
