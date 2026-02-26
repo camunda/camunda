@@ -10,8 +10,6 @@ import styled from "styled-components";
 import { TableContainer } from "@carbon/react";
 import { spacing04 } from "@carbon/elements";
 
-const HEADER_HEIGHT = 312;
-
 export const DocumentationDescription = styled.p`
   margin-top: ${spacing04};
   max-width: none;
@@ -21,9 +19,5 @@ export const DocumentationDescription = styled.p`
 export const StyledTableContainer = styled(TableContainer)`
   .cds--skeleton {
     padding: 0;
-  }
-
-  .cds--data-table--sticky-header {
-    max-block-size: calc(100vh - ${HEADER_HEIGHT}px);
   }
 `;
