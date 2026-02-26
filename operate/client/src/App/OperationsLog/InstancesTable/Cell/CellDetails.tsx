@@ -7,19 +7,24 @@
  */
 
 import type {AuditLog} from '@camunda/camunda-api-zod-schemas/8.9/audit-log';
-import {OperationLogName} from '../styled';
-import {spaceAndCapitalize} from 'modules/utils/spaceAndCapitalize';
+import {PropertyText} from '../styled';
+import {mapToCellDetailsData} from 'modules/utils/operationsLog';
 
 type Props = {
   item: AuditLog;
 };
 
-const CellOperationType: React.FC<Props> = ({item}) => {
-  return (
-    <OperationLogName>
-      {spaceAndCapitalize(item.operationType)}
-    </OperationLogName>
+const CellDetails: React.FC<Props> = ({item}) => {
+  const {property, value} = mapToCellDetailsData(item);
+
+  return property ? (
+    <>
+      <PropertyText>{property}</PropertyText>
+      {value}
+    </>
+  ) : (
+    '-'
   );
 };
 
-export {CellOperationType};
+export {CellDetails};
