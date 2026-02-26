@@ -115,7 +115,7 @@ public final class AuthorizationCheckBehavior {
   @Deprecated(forRemoval = true, since = "8.8.0")
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest requestBuilder) {
     if (shouldSkipAllChecks()) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
     return isAuthorized(requestBuilder.build());
   }
@@ -134,7 +134,7 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequestMetadata request) {
     if (shouldSkipAllChecks()) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
     try {
       return authorizationsCache.get(request);
@@ -148,11 +148,11 @@ public final class AuthorizationCheckBehavior {
 
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
     if (shouldSkipAllChecks()) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
     final var command = request.command;
     if (isInternalCommand(command.hasRequestMetadata(), command.getBatchOperationReference())) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
     return isAuthorized(request);
   }
@@ -160,7 +160,7 @@ public final class AuthorizationCheckBehavior {
   private Either<Rejection, Void> checkAuthorized(final AuthorizationRequestMetadata request) {
 
     if (shouldSkipAuthorization(request)) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
 
     final List<AuthorizationRejection> aggregatedRejections = new ArrayList<>();
@@ -169,14 +169,14 @@ public final class AuthorizationCheckBehavior {
         checkPrimaryAuthorization(request, aggregatedRejections);
 
     if (primaryResult.hasBothAccess()) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
 
     final AuthorizationResult mappingRuleResult =
         checkMappingRuleAuthorization(request, primaryResult, aggregatedRejections);
 
     if (mappingRuleResult.hasBothAccess()) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
 
     return getRejection(aggregatedRejections);
@@ -288,7 +288,7 @@ public final class AuthorizationCheckBehavior {
                 AuthorizationRejectionType.TENANT));
       }
     }
-    return Either.right(null);
+    return Either.rightVoid();
   }
 
   /**
@@ -306,7 +306,7 @@ public final class AuthorizationCheckBehavior {
       final Collection<String> entityIds) {
 
     if (!authorizationsEnabled) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
 
     final var isAuthorizedForResource =
@@ -322,7 +322,7 @@ public final class AuthorizationCheckBehavior {
             .anyMatch(
                 authorizationScope -> request.authorizationScopes().contains(authorizationScope));
     if (isAuthorizedForResource) {
-      return Either.right(null);
+      return Either.rightVoid();
     }
 
     return Either.left(

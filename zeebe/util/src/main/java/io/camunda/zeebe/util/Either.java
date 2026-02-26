@@ -70,6 +70,11 @@ public sealed interface Either<L, R> {
    */
   static <L, R> Either<L, R> right(final R right) {
     return new Right<>(right);
+  }  Either<Void, Void> RIGHT_VOID = Either.rightVoid();
+
+  @SuppressWarnings("unchecked")
+  static <L> Either<L, Void> rightVoid() {
+    return (Either<L, Void>) RIGHT_VOID;
   }
 
   /**
@@ -530,4 +535,6 @@ public sealed interface Either<L, R> {
       return right.<Either<L, R>>map(Either::right).orElse(Either.left(left));
     }
   }
+
+
 }

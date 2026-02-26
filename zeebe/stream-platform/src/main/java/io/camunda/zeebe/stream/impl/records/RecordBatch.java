@@ -54,7 +54,7 @@ public final class RecordBatch implements MutableRecordBatch {
 
     recordBatchEntries.add(recordBatchEntry);
     batchSize += entryLength;
-    return Either.right(null);
+    return Either.rightVoid();
   }
 
   @Override
