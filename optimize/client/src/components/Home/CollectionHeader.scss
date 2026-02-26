@@ -1,6 +1,15 @@
 .CollectionHeader {
   align-items: center;
   margin-right: auto;
+  min-width: 0;
+  width: 100%;
+
+  .text {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
   .skeletonText {
     margin: 0;
