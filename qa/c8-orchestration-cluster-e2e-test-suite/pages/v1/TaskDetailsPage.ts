@@ -282,19 +282,18 @@ class TaskDetailsPageV1 {
 
   async fillDynamicList(label: string, value: string) {
     const locator = this.page.getByLabel(label);
-    const elements = await locator.all();
-    if (elements.length === 0) {
+    const count = await locator.count();
+    if (count === 0) {
       throw new Error(
         `No elements found for label "${label}" in the dynamic list`,
       );
     }
 
-    for (const [index, element] of elements.entries()) {
+    for (let index = 0; index < count; index++) {
       const expectedValue = `${value}${index + 1}`;
-      await element.fill(expectedValue);
-
-      // Assert that the value was added correctly
-      await expect(element).toHaveValue(expectedValue);
+      // Use nth() to re-query the DOM on each iteration, avoiding stale element handles
+      await locator.nth(index).fill(expectedValue);
+      await expect(locator.nth(index)).toHaveValue(expectedValue);
     }
   }
 
@@ -308,8 +307,13 @@ class TaskDetailsPageV1 {
     return Promise.all(elements.map((element) => element.inputValue()));
   }
 
-  async addDynamicListRow(): Promise<void> {
+  async addDynamicListRow(rowLabel: string = 'Item Name*'): Promise<void> {
+    const currentCount = await this.page.getByLabel(rowLabel).count();
     await this.addDynamicListRowButton.click();
+    // Wait for the new row to appear before proceeding
+    await expect(this.page.getByLabel(rowLabel)).toHaveCount(
+      currentCount + 1,
+    );
   }
 
   async assertFieldValue(

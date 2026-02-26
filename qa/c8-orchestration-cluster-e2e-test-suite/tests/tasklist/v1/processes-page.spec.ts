@@ -166,7 +166,7 @@ test.describe('process page', () => {
     await taskDetailsPageV1.fillTextInput('Invoice Number*', '123');
     await taskDetailsPageV1.addDynamicListRow();
 
-    await taskDetailsPageV1.fillDynamicList('Item Name*', 'Laptop');
+    await taskDetailsPageV1.fillDynamicList('Item Name*', 'laptop');
     await taskDetailsPageV1.fillDynamicList('Unit Price*', '1');
     await taskDetailsPageV1.fillDynamicList('Quantity*', '2');
 

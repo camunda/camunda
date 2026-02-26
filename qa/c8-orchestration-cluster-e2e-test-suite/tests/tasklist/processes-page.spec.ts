@@ -166,12 +166,9 @@ test.describe('process page', () => {
     await taskDetailsPage.fillTextInput('Invoice Number*', '123');
     await taskDetailsPage.addDynamicListRow();
 
-    await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
-    await sleep(100);
+    await taskDetailsPage.fillDynamicList('Item Name*', 'laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
-    await sleep(100);
     await taskDetailsPage.fillDynamicList('Quantity*', '2');
-    await sleep(100);
 
     await expect(page.getByText('EUR 231')).toBeVisible();
     await expect(page.getByText('EUR 264')).toBeVisible();
