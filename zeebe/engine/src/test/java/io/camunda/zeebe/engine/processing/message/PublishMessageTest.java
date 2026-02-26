@@ -10,6 +10,7 @@ package io.camunda.zeebe.engine.processing.message;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.camunda.zeebe.engine.EngineConfiguration;
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.engine.util.client.PublishMessageClient;
 import io.camunda.zeebe.protocol.record.Assertions;
@@ -183,5 +184,23 @@ public final class PublishMessageTest {
     // then
     assertThat(rejectedCommand.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(rejectedCommand.getRejectionType()).isEqualTo(RejectionType.ALREADY_EXISTS);
+  }
+
+  @Test
+  public void shouldRejectMessagePublishIfCorrelationKeyExceedsMaxLength() {
+    // given
+    final var tooLongCorrelationKey =
+        "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+
+    // when
+    final Record<MessageRecordValue> rejectedCommand =
+        messageClient.withCorrelationKey(tooLongCorrelationKey).expectRejection().publish();
+
+    // then
+    assertThat(rejectedCommand.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(rejectedCommand.getRejectionType()).isEqualTo(RejectionType.INVALID_ARGUMENT);
+    assertThat(rejectedCommand.getRejectionReason())
+        .contains("Expected correlation key to be at most")
+        .contains(String.valueOf(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH));
   }
 }
