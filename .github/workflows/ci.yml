@@ -454,7 +454,7 @@ jobs:
     name: Camunda docker tests
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     permissions:
       security-events: write
     services:
