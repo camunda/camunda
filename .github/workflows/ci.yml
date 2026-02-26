@@ -1132,7 +1132,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       security-events: write
     services:
@@ -1148,6 +1148,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-build
         with:
+          maven-cache-key-modifier: docker-checks
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
@@ -1210,7 +1211,7 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          ./mvnw -pl dist/ --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
           -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
           -P parallel-tests,extract-flaky-tests
           -Dcamunda.docker.test.enabled=true
