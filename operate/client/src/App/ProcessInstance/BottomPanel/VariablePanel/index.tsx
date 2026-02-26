@@ -21,7 +21,7 @@ import {useJobs} from 'modules/queries/jobs/useJobs';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceIncidentsCount} from 'modules/queries/incidents/useProcessInstanceIncidentsCount';
 import {useGetIncidentsByElementInstance} from 'modules/queries/incidents/useGetIncidentsByElementInstance';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
 import {useElementSelectionInstanceKey} from 'modules/hooks/useElementSelectionInstanceKey';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
@@ -55,7 +55,7 @@ const VariablePanel: React.FC<Props> = observer(function VariablePanel({
     useState<ListenerTypeFilter>();
   const [selectedTab, setSelectedTab] = useState<TabId>('variables');
 
-  const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: statistics} = useElementInstancesStatistics();
 
   // Get incident counts
   const processIncidentsCount = useProcessInstanceIncidentsCount(

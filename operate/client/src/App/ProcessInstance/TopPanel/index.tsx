@@ -55,7 +55,6 @@ import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/elements'
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
-import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
 
@@ -89,7 +88,6 @@ const TopPanel: React.FC = observer(() => {
     sourceFlowNodeIdForMoveOperation,
     sourceFlowNodeInstanceKeyForMoveOperation,
   } = modificationsStore.state;
-  const [isInTransition, setIsInTransition] = useState(false);
   const {data: statistics} = useElementStatistics();
   const {data: selectableFlowNodes} = useSelectableElements();
   const {data: executedFlowNodes} = useExecutedElements();
