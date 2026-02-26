@@ -575,7 +575,7 @@ public final class ConditionalBoundaryEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerOnlyMatchingBoundaryWhenMultipleVariableNameFilters() {
+  public void shouldTriggerOnlyMatchingBoundary() {
     // given
     final String processId = helper.getBpmnProcessId();
     final BpmnModelInstance process =
@@ -633,7 +633,7 @@ public final class ConditionalBoundaryEventTriggerTest {
   }
 
   @Test
-  public void shouldOnlyTriggerBoundaryForAutoDetectedVariableNames() {
+  public void shouldOnlyTriggerBoundaryForExtractedVariableNames() {
     // given
     final String processId = helper.getBpmnProcessId();
     final BpmnModelInstance process =
@@ -642,7 +642,7 @@ public final class ConditionalBoundaryEventTriggerTest {
             .serviceTask(TASK_ID, t -> t.zeebeJobType("task"))
             .boundaryEvent("boundary")
             .cancelActivity(false)
-            // variableNames are auto-detected from the FEEL condition: ["x"]
+            // variableNames are extracted from the FEEL condition: ["x"]
             .condition(c -> c.condition("=x > 10"))
             .endEvent("afterBoundary")
             .moveToActivity(TASK_ID)
