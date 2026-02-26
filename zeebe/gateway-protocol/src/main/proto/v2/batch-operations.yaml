@@ -325,7 +325,9 @@ components:
           format: date-time
         endDate:
           type: string
-          description: The end date of the batch operation. `null` if the batch operation is still running.
+          description: |
+            The end date of the batch operation. 
+            This is `null` if the batch operation is still running.
           format: date-time
           nullable: true
         actorType:
