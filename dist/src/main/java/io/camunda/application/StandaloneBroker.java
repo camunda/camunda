@@ -19,6 +19,7 @@ import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOver
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.zeebe.broker.BrokerModuleConfiguration;
 import org.springframework.boot.SpringBootConfiguration;
 
@@ -43,6 +44,7 @@ public class StandaloneBroker {
                 SearchEngineConnectPropertiesOverride.class,
                 SearchEngineIndexPropertiesOverride.class,
                 SearchEngineRetentionPropertiesOverride.class,
+                SearchEngineSchemaManagerPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 GatewayRestPropertiesOverride.class,

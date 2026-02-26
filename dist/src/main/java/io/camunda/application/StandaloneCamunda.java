@@ -27,6 +27,7 @@ import io.camunda.configuration.beanoverrides.PrimaryStorageBackupPropertiesOver
 import io.camunda.configuration.beanoverrides.SearchEngineConnectPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineIndexPropertiesOverride;
 import io.camunda.configuration.beanoverrides.SearchEngineRetentionPropertiesOverride;
+import io.camunda.configuration.beanoverrides.SearchEngineSchemaManagerPropertiesOverride;
 import io.camunda.configuration.beanoverrides.TasklistPropertiesOverride;
 import io.camunda.identity.IdentityModuleConfiguration;
 import io.camunda.operate.OperateModuleConfiguration;
@@ -74,6 +75,7 @@ public class StandaloneCamunda {
                 SearchEngineConnectPropertiesOverride.class,
                 SearchEngineIndexPropertiesOverride.class,
                 SearchEngineRetentionPropertiesOverride.class,
+                SearchEngineSchemaManagerPropertiesOverride.class,
                 // ---
                 CommonsModuleConfiguration.class,
                 OperateModuleConfiguration.class,
