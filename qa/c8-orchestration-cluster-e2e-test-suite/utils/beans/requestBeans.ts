@@ -773,3 +773,9 @@ export function CREATE_CLUSTER_VARIABLE() {
     value: {testKey: `testValue-${uid}`},
   };
 }
+
+export function UPDATE_CLUSTER_VARIABLE_VALUE(value: unknown) {
+  return {
+    value,
+  };
+}

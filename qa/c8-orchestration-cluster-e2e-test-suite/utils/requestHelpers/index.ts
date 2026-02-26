@@ -59,6 +59,7 @@ export {
   deleteGlobalClusterVariable,
   deleteTenantClusterVariable,
   assertClusterVariableInResponse,
+  assertClusterVariableUpdate,
 } from './cluster-variable-requestHelpers';
 export {
   createProcessInstanceWithAJob,
