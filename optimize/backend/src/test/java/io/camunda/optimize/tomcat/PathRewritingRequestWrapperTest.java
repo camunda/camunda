@@ -32,7 +32,11 @@ class PathRewritingRequestWrapperTest {
     void returnsRewrittenURI() {
       // given — no forward attribute set (normal REQUEST dispatch)
       final HttpServletRequest original = mock(HttpServletRequest.class);
+<<<<<<< HEAD
       final HttpServletRequest wrapper =
+=======
+      final PathRewritingRequestWrapper wrapper =
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
           new PathRewritingRequestWrapper(original, "/api/some-endpoint");
 
       // when / then
@@ -47,7 +51,11 @@ class PathRewritingRequestWrapperTest {
       when(original.getServerName()).thenReturn("example.com");
       when(original.getServerPort()).thenReturn(443);
 
+<<<<<<< HEAD
       final HttpServletRequest wrapper =
+=======
+      final PathRewritingRequestWrapper wrapper =
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
           new PathRewritingRequestWrapper(original, "/api/some-endpoint");
 
       // when / then
@@ -61,7 +69,12 @@ class PathRewritingRequestWrapperTest {
       final HttpServletRequest original = mock(HttpServletRequest.class);
       when(original.getServletPath()).thenReturn("/original/servlet/path");
 
+<<<<<<< HEAD
       final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/rewritten");
+=======
+      final PathRewritingRequestWrapper wrapper =
+          new PathRewritingRequestWrapper(original, "/rewritten");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
 
       // when / then — getServletPath must NOT be overridden
       assertThat(wrapper.getServletPath()).isEqualTo("/original/servlet/path");
@@ -122,7 +135,11 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/index.html")).thenReturn(expectedDispatcher);
 
+<<<<<<< HEAD
       final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/");
+=======
+      final PathRewritingRequestWrapper wrapper = new PathRewritingRequestWrapper(original, "/");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("index.html");
@@ -139,7 +156,12 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/api/resource.html")).thenReturn(expectedDispatcher);
 
+<<<<<<< HEAD
       final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/api/endpoint");
+=======
+      final PathRewritingRequestWrapper wrapper =
+          new PathRewritingRequestWrapper(original, "/api/endpoint");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("resource.html");
@@ -156,7 +178,11 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/absolute/path")).thenReturn(expectedDispatcher);
 
+<<<<<<< HEAD
       final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/");
+=======
+      final PathRewritingRequestWrapper wrapper = new PathRewritingRequestWrapper(original, "/");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("/absolute/path");

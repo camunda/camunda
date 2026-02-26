@@ -125,8 +125,13 @@ public class CCSMRequestAdjustmentFilterTest {
   class ContextPathHandling {
 
     @Test
+<<<<<<< HEAD
     void contextPathIsKeptOnRewrite() throws Exception {
       // given — request has a context path that should be kept on rewrite
+=======
+    void contextPathStrippedBeforeRewrite() throws Exception {
+      // given — request has a context path that should be stripped first
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
       final CCSMRequestAdjustmentFilter filter = createFilter();
       when(request.getContextPath()).thenReturn("/optimize");
       when(request.getRequestURI()).thenReturn("/optimize/external/api/some-endpoint");
@@ -140,9 +145,13 @@ public class CCSMRequestAdjustmentFilterTest {
       verify(filterChain).doFilter(requestCaptor.capture(), eq(response));
 
       final HttpServletRequest wrappedRequest = (HttpServletRequest) requestCaptor.getValue();
+<<<<<<< HEAD
       assertThat(wrappedRequest.getRequestURI())
           .describedAs("Rewritten URI must retain the context path")
           .isEqualTo("/optimize/api/external/some-endpoint");
+=======
+      assertThat(wrappedRequest.getRequestURI()).isEqualTo("/api/external/some-endpoint");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
     }
   }
 }

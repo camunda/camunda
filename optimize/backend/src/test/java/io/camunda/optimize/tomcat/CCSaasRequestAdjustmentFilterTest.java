@@ -111,9 +111,13 @@ public class CCSaasRequestAdjustmentFilterTest {
       verify(filterChain).doFilter(requestCaptor.capture(), eq(response));
 
       final HttpServletRequest wrappedRequest = (HttpServletRequest) requestCaptor.getValue();
+<<<<<<< HEAD
       assertThat(wrappedRequest.getRequestURI())
           .describedAs("Should no longer contain '/{clusterId}' prefix")
           .isEqualTo("/");
+=======
+      assertThat(wrappedRequest.getRequestURI()).isEqualTo("/");
+>>>>>>> 9f2dcfda (fix: replace RequestDispatcher.forward with HttpServletRequestWrapper)
     }
   }
 
