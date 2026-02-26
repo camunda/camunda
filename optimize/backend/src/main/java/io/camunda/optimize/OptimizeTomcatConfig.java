@@ -8,6 +8,7 @@
 package io.camunda.optimize;
 
 import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.CONTEXT_PATH;
+import static io.camunda.optimize.service.util.configuration.EnvironmentPropertiesConstants.HTTP_PORT_KEY;
 
 import io.camunda.optimize.rest.HealthRestService;
 import io.camunda.optimize.rest.LocalizationRestService;
@@ -24,6 +25,7 @@ import io.camunda.optimize.tomcat.ResponseTimezoneFilter;
 import io.camunda.optimize.tomcat.URLRedirectFilter;
 import java.util.Optional;
 import org.apache.catalina.connector.Connector;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.coyote.http2.Http2Protocol;
 import org.apache.tomcat.util.net.SSLHostConfig;
 import org.apache.tomcat.util.net.SSLHostConfigCertificate;
@@ -94,21 +96,25 @@ public class OptimizeTomcatConfig {
           factory.setContextPath(contextPath.get());
         }
 
-        // NOTE: With the current implementation, we are always installing 2 connectors,
-        //   one for HTTP, one for HTTPs. The latter can be HTTP/1.1 or HTTP/2 depending
-        //   on the configuration.
-
+        // NOTE: With the current implementation, we install the mandatory HTTPS connector first,
+        // which can be HTTP/1.1 or HTTP/2 depending on the configuration, and then optionally add
+        // an HTTP connector if the HTTP port is configured.
         factory.addConnectorCustomizers(
             connector -> {
-              configureHttpConnector(connector);
+              configureHttpsConnector(connector);
             });
 
-        factory.addAdditionalTomcatConnectors(
-            new Connector() {
-              {
-                configureHttpsConnector(this);
-              }
-            });
+        if (getPort(HTTP_PORT_KEY) >= 0) {
+          factory.addAdditionalTomcatConnectors(
+              new Connector() {
+                {
+                  configureHttpConnector(this);
+                }
+              });
+        } else {
+          LOG.info(
+              "HTTP port is not configured. HTTP connector will not be started. Only HTTPS will be available.");
+        }
       }
     };
   }
@@ -157,7 +163,7 @@ public class OptimizeTomcatConfig {
 
   public int getPort(final String portType) {
     final String portProperty = environment.getProperty(portType);
-    if (portProperty != null) {
+    if (StringUtils.isNotBlank(portProperty)) {
       try {
         return Integer.parseInt(portProperty);
       } catch (final NumberFormatException exception) {
@@ -170,10 +176,7 @@ public class OptimizeTomcatConfig {
     }
 
     final Optional<Integer> httpPort = configurationService.getContainerHttpPort();
-    if (httpPort.isEmpty()) {
-      throw new OptimizeConfigurationException("HTTP port not configured");
-    }
-    return httpPort.get();
+    return httpPort.filter(port -> port > 0).orElse(-1);
   }
 
   public Optional<String> getContextPath() {
