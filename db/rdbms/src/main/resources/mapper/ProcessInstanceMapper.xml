@@ -402,12 +402,12 @@
                                            TENANT_ID, PARENT_PROCESS_INSTANCE_KEY,
                                            PARENT_ELEMENT_INSTANCE_KEY,
                                            NUM_INCIDENTS, VERSION, PARTITION_ID, TREE_PATH,
-                                           HISTORY_CLEANUP_DATE)
+                                           HISTORY_CLEANUP_DATE, BUSINESS_ID)
     VALUES (#{processInstanceKey}, #{rootProcessInstanceKey}, #{processDefinitionId}, #{processDefinitionKey}, #{state},
             #{startDate, jdbcType=TIMESTAMP}, #{endDate, jdbcType=TIMESTAMP}, #{tenantId},
             #{parentProcessInstanceKey},
             #{parentElementInstanceKey}, #{numIncidents}, #{version}, #{partitionId}, #{treePath},
-            #{historyCleanupDate, jdbcType=TIMESTAMP})
+            #{historyCleanupDate, jdbcType=TIMESTAMP}, #{businessId})
   </insert>
 
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel">
@@ -423,7 +423,8 @@
         NUM_INCIDENTS               = #{numIncidents},
         VERSION                     = #{version},
         TREE_PATH                   = #{treePath},
-        HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP}
+        HISTORY_CLEANUP_DATE        = #{historyCleanupDate, jdbcType=TIMESTAMP},
+        BUSINESS_ID                 = #{businessId}
     WHERE PROCESS_INSTANCE_KEY = #{processInstanceKey}
   </update>
 

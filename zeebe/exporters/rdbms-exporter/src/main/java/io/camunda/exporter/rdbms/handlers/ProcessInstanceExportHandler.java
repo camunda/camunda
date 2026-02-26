@@ -108,6 +108,7 @@ public class ProcessInstanceExportHandler
         .partitionId(record.getPartitionId())
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
+        .businessId(value.getBusinessId())
         .build();
   }
 
