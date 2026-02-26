@@ -122,10 +122,17 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Pagination Limit 1', async ({request}) => {
+    const localState: Record<string, unknown> = {};
+    await setupVariableTest(localState, request);
+    processInstanceKeys.push(localState['processInstanceKey'] as string);
+
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
         data: {
+          filter: {
+            processInstanceKey: localState['processInstanceKey'],
+          },
           page: {
             limit: 1,
           },
@@ -141,10 +148,17 @@ test.describe.parallel('Search Variables API Tests', () => {
   });
 
   test('Search Variables Sort by Name ASC', async ({request}) => {
+    const localState: Record<string, unknown> = {};
+    await setupVariableTest(localState, request);
+    processInstanceKeys.push(localState['processInstanceKey'] as string);
+
     await expect(async () => {
       const res = await request.post(buildUrl('/variables/search'), {
         headers: jsonHeaders(),
         data: {
+          filter: {
+            processInstanceKey: localState['processInstanceKey'],
+          },
           sort: [
             {
               field: 'name',
