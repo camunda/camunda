@@ -117,30 +117,17 @@ test.describe.parallel('Document API Tests', () => {
     );
   });
 
-  // Regression guard for #46405 / #46407: a processDefinitionId that starts
-  // with a digit violates the BPMN identifier pattern and must be rejected.
   test('Create Document Invalid processDefinitionId 400', async ({request}) => {
-    const form = new FormData();
-    form.append(
-      'file',
-      new File(['test content'], 'test.txt', {type: 'text/plain'}),
-    );
-    form.append(
-      'metadata',
-      new Blob(
-        [
-          JSON.stringify({
-            fileName: 'test.txt',
-            processDefinitionId: '9invalid',
-          }),
-        ],
-        {type: 'application/json'},
-      ),
+    const fileName = generateUniqueId();
+    const invalidProcessDefinitionId = '123xInvalidProcessDefinitionId'; // starts with a number, not a valid BPMN ID; regression guard for #46405 / #46407
+    const payload = CREATE_ON_FLY_DOCUMENT_REQUEST_BODY_WITH_METADATA(
+      fileName,
+      invalidProcessDefinitionId,
     );
 
     const res = await request.post(buildUrl('/documents'), {
       headers: defaultHeaders(),
-      multipart: form,
+      multipart: payload,
     });
 
     await assertBadRequest(
