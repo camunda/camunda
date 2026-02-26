@@ -23,8 +23,6 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
-else # default is elasticsearch
-platform_values += -f camunda-platform-values-elasticsearch.yaml
 endif
 
 # Add Optimize values if enabled
