@@ -24,8 +24,8 @@ import org.immutables.value.Value;
 /**
  * Represents a record value for a FEEL expression resolution in the engine.
  *
- * <p>A FEEL expression resolution record contains the expression to evaluate, an optional context
- * object, and the result of the evaluation.
+ * <p>A FEEL expression resolution record contains the expression to evaluate, optional variables,
+ * and the result of the evaluation.
  *
  * <p>The value is immutable and built via {@link ImmutableExpressionRecordValue}.
  *
