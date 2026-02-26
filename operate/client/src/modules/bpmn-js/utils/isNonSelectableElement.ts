@@ -7,9 +7,9 @@
  */
 
 import {type BpmnElement} from 'bpmn-js/lib/NavigatedViewer';
-import {isFlowNode} from 'modules/utils/flowNodes';
+import {isFlowNode} from 'modules/utils/elements';
 
-function isNonSelectableFlowNode(
+function isNonSelectableElement(
   bpmnElement: BpmnElement,
   selectableFlowNodes?: string[],
 ) {
@@ -21,4 +21,4 @@ function isNonSelectableFlowNode(
   );
 }
 
-export {isNonSelectableFlowNode};
+export {isNonSelectableElement};

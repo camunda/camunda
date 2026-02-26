@@ -9,13 +9,13 @@
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {
-  useTotalRunningInstancesForFlowNode,
-  useTotalRunningInstancesForFlowNodes,
-  useTotalRunningInstancesVisibleForFlowNode,
-  useTotalRunningInstancesVisibleForFlowNodes,
-} from './useTotalRunningInstancesForFlowNode';
+  useTotalRunningInstancesForElement,
+  useTotalRunningInstancesForElements,
+  useTotalRunningInstancesVisibleForElement,
+  useTotalRunningInstancesVisibleForElements,
+} from './useTotalRunningInstancesForElement';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   createProcessInstance,
@@ -27,7 +27,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-describe('useTotalRunningInstancesForFlowNode hooks', () => {
+describe('useTotalRunningInstancesForElement hooks', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
@@ -62,10 +62,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
@@ -98,11 +98,11 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
     const {result} = renderHook(
       () =>
-        useTotalRunningInstancesForFlowNodes([
+        useTotalRunningInstancesForElements([
           'StartEvent_1',
           'Activity_0qtp1k6',
         ]),
@@ -130,10 +130,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesVisibleForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesVisibleForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
@@ -162,11 +162,11 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
     const {result} = renderHook(
       () =>
-        useTotalRunningInstancesVisibleForFlowNodes([
+        useTotalRunningInstancesVisibleForElements([
           'StartEvent_1',
           'Activity_0qtp1k6',
         ]),
@@ -182,10 +182,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
@@ -195,10 +195,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
   });
 
   it('should handle server error', async () => {
-    mockFetchFlownodeInstancesStatistics().withServerError();
+    mockFetchElementInstancesStatistics().withServerError();
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
@@ -209,10 +209,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
   });
 
   it('should handle network error', async () => {
-    mockFetchFlownodeInstancesStatistics().withNetworkError();
+    mockFetchElementInstancesStatistics().withNetworkError();
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 
@@ -223,10 +223,10 @@ describe('useTotalRunningInstancesForFlowNode hooks', () => {
   });
 
   it('should handle loading state', async () => {
-    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+    mockFetchElementInstancesStatistics().withDelay({items: []});
 
     const {result} = renderHook(
-      () => useTotalRunningInstancesForFlowNode('StartEvent_1'),
+      () => useTotalRunningInstancesForElement('StartEvent_1'),
       {wrapper: Wrapper},
     );
 

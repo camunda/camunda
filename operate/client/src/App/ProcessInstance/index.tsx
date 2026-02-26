@@ -15,7 +15,7 @@ import {useEffect, useState} from 'react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {reaction, when} from 'mobx';
 import {instanceHistoryModificationStore} from 'modules/stores/instanceHistoryModification';
-import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {ProcessInstanceHeader} from './ProcessInstanceHeader';
 import {TopPanel} from './TopPanel';
 import {BottomPanel, ModificationFooter, Buttons} from './styled';
@@ -34,7 +34,7 @@ import {useProcessInstance} from 'modules/queries/processInstance/useProcessInst
 import {useProcessTitle} from 'modules/queries/processInstance/useProcessTitle';
 import {useCallHierarchy} from 'modules/queries/callHierarchy/useCallHierarchy';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
-import {useClearSelectionOnModificationUndo} from 'modules/hooks/flowNodeSelection';
+import {useClearSelectionOnModificationUndo} from 'modules/hooks/elementSelection';
 import {notificationsStore} from 'modules/stores/notifications';
 import {useNavigate} from 'react-router-dom';
 import {Locations} from 'modules/Routes';
@@ -96,7 +96,7 @@ const ProcessInstance: React.FC = observer(() => {
   useEffect(() => {
     return () => {
       instanceHistoryModificationStore.reset();
-      flowNodeTimeStampStore.reset();
+      elementTimeStampStore.reset();
       modificationsStore.reset();
     };
   }, [processInstanceId]);

@@ -19,7 +19,7 @@ import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
-import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/elementSelection';
 import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {

@@ -26,7 +26,7 @@ import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockSearchVariables} from 'modules/mocks/api/v2/variables/searchVariables';
@@ -194,7 +194,7 @@ describe('New Variable Modifications', () => {
       },
     ];
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: statisticsData,
     });
     mockSearchVariables().withSuccess({

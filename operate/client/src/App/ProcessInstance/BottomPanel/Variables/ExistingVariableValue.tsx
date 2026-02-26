@@ -22,7 +22,7 @@ import {mergeValidators} from 'modules/utils/validators/mergeValidators';
 import {Maximize} from '@carbon/react/icons';
 import {LoadingTextfield} from './LoadingTextField';
 import {Layer} from '@carbon/react';
-import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/elementSelection';
 import type {Variable} from '@camunda/camunda-api-zod-schemas/8.9';
 import {useVariable} from 'modules/queries/variables/useVariable';
 import {notificationsStore} from 'modules/stores/notifications';

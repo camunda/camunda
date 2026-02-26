@@ -7,7 +7,7 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {TimeStampLabel} from './index';
 import {MOCK_TIMESTAMP} from 'modules/utils/date/__mocks__/formatDate';
 import {act} from 'react';
@@ -19,13 +19,13 @@ describe('TimeStampLabel', () => {
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();
 
     act(() => {
-      flowNodeTimeStampStore.toggleTimeStampVisibility();
+      elementTimeStampStore.toggleTimeStampVisibility();
     });
 
     expect(await screen.findByText(MOCK_TIMESTAMP)).toBeInTheDocument();
 
     act(() => {
-      flowNodeTimeStampStore.toggleTimeStampVisibility();
+      elementTimeStampStore.toggleTimeStampVisibility();
     });
 
     expect(screen.queryByText(MOCK_TIMESTAMP)).not.toBeInTheDocument();

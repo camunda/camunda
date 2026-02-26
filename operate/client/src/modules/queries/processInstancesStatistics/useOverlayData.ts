@@ -21,7 +21,7 @@ import {
 } from 'modules/bpmn-js/badgePositions';
 import {useProcessInstancesStatisticsOptions} from './useProcessInstancesStatistics';
 import {useQuery} from '@tanstack/react-query';
-import {flowNodeStatesParser} from './useFlowNodeStates';
+import {elementStatesParser} from './useElementStates';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 
@@ -37,15 +37,15 @@ const overlayPositions = {
 const overlayParser =
   (businessObjects?: BusinessObjects) =>
   (data: GetProcessDefinitionStatisticsResponseBody): OverlayData[] => {
-    const flowNodeStates = flowNodeStatesParser(businessObjects)(data);
+    const elementStates = elementStatesParser(businessObjects)(data);
 
-    return flowNodeStates
-      .filter((flowNodeData) => flowNodeData.flowNodeState !== 'completed')
-      .map(({flowNodeState, count, flowNodeId}) => ({
-        payload: {flowNodeState, count},
-        type: `statistics-${flowNodeState}`,
+    return elementStates
+      .filter((elementData) => elementData.elementState !== 'completed')
+      .map(({elementState, count, flowNodeId}) => ({
+        payload: {flowNodeState: elementState, count},
+        type: `statistics-${elementState}`,
         flowNodeId,
-        position: overlayPositions[flowNodeState],
+        position: overlayPositions[elementState],
       }));
   };
 

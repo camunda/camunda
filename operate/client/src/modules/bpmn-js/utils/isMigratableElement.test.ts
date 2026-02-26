@@ -7,9 +7,9 @@
  */
 
 import {type BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
-import {isMigratableFlowNode} from './isMigratableFlowNode';
+import {isMigratableElement} from './isMigratableElement';
 
-describe('isMigratableFlowNode', () => {
+describe('isMigratableElement', () => {
   it('should return true for ad hoc sub process', () => {
     const businessObject: BusinessObject = {
       id: 'adHocSubProcess',
@@ -17,7 +17,7 @@ describe('isMigratableFlowNode', () => {
       $type: 'bpmn:AdHocSubProcess',
     };
 
-    expect(isMigratableFlowNode(businessObject)).toBe(true);
+    expect(isMigratableElement(businessObject)).toBe(true);
   });
 
   it('should return true for boundary event with conditional event definition', () => {
@@ -32,7 +32,7 @@ describe('isMigratableFlowNode', () => {
       ],
     };
 
-    expect(isMigratableFlowNode(businessObject)).toBe(true);
+    expect(isMigratableElement(businessObject)).toBe(true);
   });
 
   it('should return true for intermediate catch event with conditional event definition', () => {
@@ -47,7 +47,7 @@ describe('isMigratableFlowNode', () => {
       ],
     };
 
-    expect(isMigratableFlowNode(businessObject)).toBe(true);
+    expect(isMigratableElement(businessObject)).toBe(true);
   });
 
   it('should return true for event subprocess with conditional start event', () => {
@@ -70,7 +70,7 @@ describe('isMigratableFlowNode', () => {
       flowElements: [startEventBusinessObject],
     };
 
-    expect(isMigratableFlowNode(businessObject)).toBe(true);
+    expect(isMigratableElement(businessObject)).toBe(true);
   });
 
   it('should return true for start event with conditional event definition inside event subprocess', () => {
@@ -93,6 +93,6 @@ describe('isMigratableFlowNode', () => {
       ],
     };
 
-    expect(isMigratableFlowNode(businessObject)).toBe(true);
+    expect(isMigratableElement(businessObject)).toBe(true);
   });
 });

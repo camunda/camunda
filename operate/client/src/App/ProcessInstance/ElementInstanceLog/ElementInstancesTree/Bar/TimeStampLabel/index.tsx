@@ -10,7 +10,7 @@ import React from 'react';
 
 import {formatDate} from 'modules/utils/date';
 import {TimeStamp} from './styled';
-import {flowNodeTimeStampStore} from 'modules/stores/flowNodeTimeStamp';
+import {elementTimeStampStore} from 'modules/stores/elementTimeStamp';
 import {observer} from 'mobx-react';
 
 type Props = {
@@ -18,7 +18,7 @@ type Props = {
 };
 
 const TimeStampLabel: React.FC<Props> = observer(({timeStamp}) => {
-  const {isTimeStampVisible} = flowNodeTimeStampStore.state;
+  const {isTimeStampVisible} = elementTimeStampStore.state;
 
   return isTimeStampVisible && timeStamp ? (
     <TimeStamp>{formatDate(timeStamp)}</TimeStamp>

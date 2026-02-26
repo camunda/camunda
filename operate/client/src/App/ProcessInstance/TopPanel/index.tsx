@@ -34,16 +34,16 @@ import {ModificationInfoBanner} from './ModificationInfoBanner';
 import {ModificationDropdown} from './ModificationDropdown';
 import {StateOverlay} from 'modules/components/StateOverlay';
 import {executionCountToggleStore} from 'modules/stores/executionCountToggle';
-import {useFlownodeStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeStatistics';
-import {useSelectableFlowNodes} from 'modules/queries/flownodeInstancesStatistics/useSelectableFlowNodes';
-import {useExecutedFlowNodes} from 'modules/queries/flownodeInstancesStatistics/useExecutedFlowNodes';
+import {useElementStatistics} from 'modules/queries/elementInstancesStatistics/useElementStatistics';
+import {useSelectableElements} from 'modules/queries/elementInstancesStatistics/useSelectableElements';
+import {useExecutedElements} from 'modules/queries/elementInstancesStatistics/useExecutedElements';
 import {useModificationsByFlowNode} from 'modules/hooks/modifications';
 import {useModifiableFlowNodes} from 'modules/hooks/processInstanceDetailsDiagram';
 import {
-  useTotalRunningInstancesByFlowNode,
-  useTotalRunningInstancesForFlowNode,
-  useTotalRunningInstancesVisibleForFlowNode,
-} from 'modules/queries/flownodeInstancesStatistics/useTotalRunningInstancesForFlowNode';
+  useTotalRunningInstancesByElement,
+  useTotalRunningInstancesForElement,
+  useTotalRunningInstancesVisibleForElement,
+} from 'modules/queries/elementInstancesStatistics/useTotalRunningInstancesForElement';
 import {
   finishMovingToken,
   hasPendingCancelOrMoveModification,
@@ -54,7 +54,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/flowNodes';
+import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/elements';
 import type {FlowNodeState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
@@ -95,18 +95,18 @@ const TopPanel: React.FC = observer(() => {
     sourceFlowNodeInstanceKeyForMoveOperation,
   } = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
-  const {data: statistics} = useFlownodeStatistics();
-  const {data: selectableFlowNodes} = useSelectableFlowNodes();
-  const {data: executedFlowNodes} = useExecutedFlowNodes();
+  const {data: statistics} = useElementStatistics();
+  const {data: selectableFlowNodes} = useSelectableElements();
+  const {data: executedFlowNodes} = useExecutedElements();
   const {data: totalRunningInstancesByFlowNode} =
-    useTotalRunningInstancesByFlowNode();
+    useTotalRunningInstancesByElement();
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
-    useTotalRunningInstancesForFlowNode(
+    useTotalRunningInstancesForElement(
       sourceFlowNodeIdForMoveOperation || undefined,
     );
   const {data: totalMoveOperationRunningInstancesVisible} =
-    useTotalRunningInstancesVisibleForFlowNode(
+    useTotalRunningInstancesVisibleForElement(
       sourceFlowNodeIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
@@ -124,7 +124,7 @@ const TopPanel: React.FC = observer(() => {
   const {isExecutionCountVisible} = executionCountToggleStore.state;
 
   const {data: selectedElementRunningInstancesCount} =
-    useTotalRunningInstancesForFlowNode(selectedElementId ?? undefined);
+    useTotalRunningInstancesForElement(selectedElementId ?? undefined);
   const hasSelectedElementMultipleRunningInstances =
     selectedElementInstanceKey === null &&
     (selectedElementRunningInstancesCount ?? 0) > 1;
@@ -144,7 +144,7 @@ const TopPanel: React.FC = observer(() => {
 
   const flowNodeStateOverlays = useMemo(() => {
     const flowNodeIdsWithIncidents = statistics
-      ?.filter(({flowNodeState}) => flowNodeState === 'incidents')
+      ?.filter(({elementState}) => elementState === 'incidents')
       ?.map((flowNode) => flowNode.id);
 
     const selectableFlowNodesWithIncidents = flowNodeIdsWithIncidents?.map(
@@ -156,11 +156,11 @@ const TopPanel: React.FC = observer(() => {
     );
 
     const allFlowNodeStateOverlays = [
-      ...(statistics?.map(({flowNodeState, count, id: flowNodeId}) => ({
-        payload: {flowNodeState, count},
+      ...(statistics?.map(({elementState, count, id: flowNodeId}) => ({
+        payload: {flowNodeState: elementState, count},
         type: OVERLAY_TYPE_STATE,
         flowNodeId,
-        position: overlayPositions[flowNodeState],
+        position: overlayPositions[elementState],
       })) || []),
       ...subprocessOverlays,
     ];

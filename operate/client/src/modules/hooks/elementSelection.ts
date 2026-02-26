@@ -11,11 +11,11 @@ import {
   useModificationsByFlowNode,
   useWillAllFlowNodesBeCanceled,
 } from './modifications';
-import {useFlownodeInstancesStatistics} from 'modules/queries/flownodeInstancesStatistics/useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {getFlowNodeName} from 'modules/utils/flowNodes';
+import {getFlowNodeName} from 'modules/utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useEffect} from 'react';
@@ -119,7 +119,7 @@ const useClearSelectionOnModificationUndo = () => {
 };
 
 const useHasRunningOrFinishedTokens = () => {
-  const {data: statistics} = useFlownodeInstancesStatistics();
+  const {data: statistics} = useElementInstancesStatistics();
   const {selectedElementId} = useProcessInstanceElementSelection();
 
   return (

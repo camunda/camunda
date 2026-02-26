@@ -21,7 +21,7 @@ import {Maximize} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
-import {useSelectedFlowNodeName} from 'modules/hooks/flowNodeSelection';
+import {useSelectedFlowNodeName} from 'modules/hooks/elementSelection';
 
 type Props = {
   variableName: string;

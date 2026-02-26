@@ -10,7 +10,7 @@ import {act, render, screen} from 'modules/testing-library';
 import {ModificationIcons} from './index';
 import {modificationsStore} from 'modules/stores/modifications';
 import {useEffect} from 'react';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {cancelAllTokens} from 'modules/utils/modifications';
@@ -35,7 +35,7 @@ const Wrapper = ({children}: Props) => {
 
 describe('<ModificationIcons />', () => {
   beforeEach(() => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'parent_sub_process',

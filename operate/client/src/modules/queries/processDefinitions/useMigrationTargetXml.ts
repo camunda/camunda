@@ -9,7 +9,7 @@
 import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {useProcessDefinitionXml} from './useProcessDefinitionXml';
 import type {DiagramModel} from 'bpmn-moddle';
-import {isMigratableFlowNode} from 'modules/bpmn-js/utils/isMigratableFlowNode';
+import {isMigratableElement} from 'modules/bpmn-js/utils/isMigratableElement';
 import {hasParentProcess} from 'modules/bpmn-js/utils/hasParentProcess';
 import {processesStore} from 'modules/stores/processes/processes.migration';
 import {getMappableSequenceFlows} from 'modules/utils/sequenceFlows';
@@ -27,7 +27,7 @@ function migrationTargetXmlParser({
     xml,
     diagramModel,
     selectableFlowNodes: selectableFlowNodes
-      .filter(isMigratableFlowNode)
+      .filter(isMigratableElement)
       .filter((targetFlowNode) => {
         const targetBpmnProcessId =
           processesStore.migrationState.selectedTargetProcess?.bpmnProcessId;

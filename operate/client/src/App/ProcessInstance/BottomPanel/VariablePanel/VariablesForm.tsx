@@ -13,7 +13,7 @@ import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {type FormRenderProps} from 'react-final-form';
 import {AddVariableButton, Form, VariablesContainer} from './styled';
 import {Variables} from '../Variables';
-import {useIsPlaceholderSelected} from 'modules/hooks/flowNodeSelection';
+import {useIsPlaceholderSelected} from 'modules/hooks/elementSelection';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {hasPendingAddOrMoveModification} from 'modules/utils/modifications';
 

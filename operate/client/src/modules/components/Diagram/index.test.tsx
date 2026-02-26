@@ -18,7 +18,7 @@ import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockProcessXml} from 'modules/mocks/mockProcessXml';
 import {mockProcessInstance} from 'modules/mocks/api/v2/mocks/processInstance';
 
@@ -49,7 +49,7 @@ describe('<Diagram />', () => {
       mockProcessXml,
     );
     mockFetchProcessInstance().withSuccess(mockProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
   });
 
   afterEach(() => {

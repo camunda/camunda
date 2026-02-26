@@ -8,9 +8,9 @@
 
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useExecutedFlowNodes} from './useExecutedFlowNodes';
+import {useExecutedElements} from './useExecutedElements';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   createProcessInstance,
@@ -22,7 +22,7 @@ import {Paths} from 'modules/Routes';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-describe('useExecutedFlowNodes', () => {
+describe('useExecutedElements', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
@@ -71,9 +71,9 @@ describe('useExecutedFlowNodes', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useExecutedFlowNodes(), {
+    const {result} = renderHook(() => useExecutedElements(), {
       wrapper: Wrapper,
     });
 
@@ -98,9 +98,9 @@ describe('useExecutedFlowNodes', () => {
   });
 
   it('should handle server error while fetching executed flow nodes', async () => {
-    mockFetchFlownodeInstancesStatistics().withServerError();
+    mockFetchElementInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useExecutedFlowNodes(), {
+    const {result} = renderHook(() => useExecutedElements(), {
       wrapper: Wrapper,
     });
 
@@ -112,9 +112,9 @@ describe('useExecutedFlowNodes', () => {
   });
 
   it('should handle network error while fetching executed flow nodes', async () => {
-    mockFetchFlownodeInstancesStatistics().withNetworkError();
+    mockFetchElementInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useExecutedFlowNodes(), {
+    const {result} = renderHook(() => useExecutedElements(), {
       wrapper: Wrapper,
     });
 
@@ -126,9 +126,9 @@ describe('useExecutedFlowNodes', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
 
-    const {result} = renderHook(() => useExecutedFlowNodes(), {
+    const {result} = renderHook(() => useExecutedElements(), {
       wrapper: Wrapper,
     });
 
@@ -138,9 +138,9 @@ describe('useExecutedFlowNodes', () => {
   });
 
   it('should handle loading state', async () => {
-    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+    mockFetchElementInstancesStatistics().withDelay({items: []});
 
-    const {result} = renderHook(() => useExecutedFlowNodes(), {
+    const {result} = renderHook(() => useExecutedElements(), {
       wrapper: Wrapper,
     });
 

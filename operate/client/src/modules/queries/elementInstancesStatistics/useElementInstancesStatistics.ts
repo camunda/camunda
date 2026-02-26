@@ -9,14 +9,14 @@
 import {skipToken, useQuery, type UseQueryResult} from '@tanstack/react-query';
 import type {RequestError} from 'modules/request';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
-import {fetchFlownodeInstancesStatistics} from 'modules/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {fetchElementInstancesStatistics} from 'modules/api/v2/elementInstances/fetchElementInstancesStatistics';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import isEmpty from 'lodash/isEmpty';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 import {useIsProcessInstanceRunning} from '../processInstance/useIsProcessInstanceRunning';
 import {queryKeys} from '../queryKeys';
 
-const useFlownodeInstancesStatistics = <
+const useElementInstancesStatistics = <
   T = GetProcessInstanceStatisticsResponseBody,
 >(
   select?: (data: GetProcessInstanceStatisticsResponseBody) => T,
@@ -27,14 +27,12 @@ const useFlownodeInstancesStatistics = <
   const {data: isProcessInstanceRunning} = useIsProcessInstanceRunning();
 
   return useQuery({
-    queryKey: queryKeys.flowNodeInstancesStatistics.get(
-      processInstanceId ?? '',
-    ),
+    queryKey: queryKeys.elementInstancesStatistics.get(processInstanceId ?? ''),
     queryFn:
       enabled && !!processInstanceId && !isEmpty(businessObjects)
         ? async () => {
             const {response, error} =
-              await fetchFlownodeInstancesStatistics(processInstanceId);
+              await fetchElementInstancesStatistics(processInstanceId);
 
             if (response !== null) {
               return response;
@@ -52,4 +50,4 @@ const useFlownodeInstancesStatistics = <
   });
 };
 
-export {useFlownodeInstancesStatistics};
+export {useElementInstancesStatistics};
