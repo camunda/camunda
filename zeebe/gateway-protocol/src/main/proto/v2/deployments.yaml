@@ -201,27 +201,27 @@ components:
         processDefinition:
           nullable: true
           description: Deployed process.
-          allOf: 
+          allOf:
             - $ref: '#/components/schemas/DeploymentProcessResult'
         decisionDefinition:
           nullable: true
           description: Deployed decision.
-          allOf: 
+          allOf:
             - $ref: '#/components/schemas/DeploymentDecisionResult'
         decisionRequirements:
           nullable: true
           description: Deployed decision requirement definition.
-          allOf: 
+          allOf:
             - $ref: '#/components/schemas/DeploymentDecisionRequirementsResult'
         form:
           nullable: true
           description: Deployed form.
-          allOf: 
+          allOf:
             - $ref: '#/components/schemas/DeploymentFormResult'
         resource:
           nullable: true
           description: Deployed resource.
-          allOf: 
+          allOf:
             - $ref: '#/components/schemas/DeploymentResourceResult'
 
     DeploymentProcessResult:
@@ -405,6 +405,7 @@ components:
             - $ref: '#/components/schemas/ResourceKey'
           description: The system-assigned key for this resource, requested to be deleted.
         batchOperation:
+          nullable: true
           allOf:
             - $ref: 'batch-operations.yaml#/components/schemas/BatchOperationCreatedResult'
           description: |
@@ -412,7 +413,7 @@ components:
 
             This field is only populated when the request `deleteHistory` is set to `true` and the resource
             is a process definition. For other resource types (decisions, forms, generic resources),
-            this field will not be present in the response.
+            this field will be `null`.
 
     ResourceResult:
       type: object

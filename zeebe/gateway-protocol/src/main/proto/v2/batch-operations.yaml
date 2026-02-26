@@ -321,12 +321,18 @@ components:
           $ref: '#/components/schemas/BatchOperationTypeEnum'
         startDate:
           type: string
-          description: The start date of the batch operation.
+          description: |
+            The start date of the batch operation.
+            This is `null` if the batch operation has not yet started.
           format: date-time
+          nullable: true
         endDate:
           type: string
-          description: The end date of the batch operation.
+          description: |
+            The end date of the batch operation.
+            This is `null` if the batch operation is still running.
           format: date-time
+          nullable: true
         actorType:
           $ref: 'audit-logs.yaml#/components/schemas/AuditLogActorTypeEnum'
         actorId:
