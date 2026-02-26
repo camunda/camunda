@@ -63,15 +63,11 @@ else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
 
-# Create camunda-credentials secret if enable_optimize is true
+# Create camunda-credentials secret
 .PHONY: create-credentials
 create-credentials:
-ifeq ($(enable_optimize),true)
 	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
 	./createCredsLoadTest.sh $(namespace)
-else
-	@echo "Skipping credentials creation (enable_optimize=$(enable_optimize))"
-endif
 
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
