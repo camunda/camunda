@@ -40,7 +40,7 @@ import {
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {useProcessInstanceXml} from 'modules/queries/processDefinitions/useProcessInstanceXml';
-import {getFlowNodeName} from 'modules/utils/elements';
+import {getElementName} from 'modules/utils/elements';
 import {getParentElement} from 'modules/bpmn-js/utils/getParentElement';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
@@ -188,9 +188,9 @@ const ModificationDropdown: React.FC<Props> = observer(
                                   scopeId: generateUniqueID(),
                                   flowNode: {
                                     id: selectedElementId,
-                                    name: getFlowNodeName({
+                                    name: getElementName({
                                       businessObjects,
-                                      flowNodeId: selectedElementId,
+                                      elementId: selectedElementId,
                                     }),
                                   },
                                   affectedTokenCount: 1,

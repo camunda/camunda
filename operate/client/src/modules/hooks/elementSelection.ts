@@ -15,7 +15,7 @@ import {useElementInstancesStatistics} from 'modules/queries/elementInstancesSta
 import {TOKEN_OPERATIONS} from 'modules/constants';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {getFlowNodeName} from 'modules/utils/elements';
+import {getElementName} from 'modules/utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {useProcessInstanceElementSelection} from './useProcessInstanceElementSelection';
 import {useEffect} from 'react';
@@ -167,9 +167,9 @@ const useSelectedElementName = () => {
     return processInstance?.processDefinitionName ?? '';
   }
 
-  return getFlowNodeName({
+  return getElementName({
     businessObjects,
-    flowNodeId: selectedElementId ?? undefined,
+    elementId: selectedElementId ?? undefined,
   });
 };
 

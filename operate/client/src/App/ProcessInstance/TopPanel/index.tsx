@@ -54,7 +54,7 @@ import {useProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefi
 import {isCompensationAssociation} from 'modules/bpmn-js/utils/isCompensationAssociation';
 import {useProcessSequenceFlows} from 'modules/queries/sequenceFlows/useProcessSequenceFlows';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
-import {getSubprocessOverlayFromIncidentFlowNodes} from 'modules/utils/elements';
+import {getSubprocessOverlayFromIncidentElements} from 'modules/utils/elements';
 import type {ElementState} from 'modules/types/operate';
 import {HTTP_STATUS_FORBIDDEN} from 'modules/constants/statusCode';
 import {isRequestError} from 'modules/request';
@@ -151,7 +151,7 @@ const TopPanel: React.FC = observer(() => {
       (flowNodeId) => businessObjects?.[flowNodeId],
     );
 
-    const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+    const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
       selectableFlowNodesWithIncidents,
     );
 
