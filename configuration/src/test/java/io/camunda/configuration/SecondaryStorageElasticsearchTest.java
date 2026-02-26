@@ -25,6 +25,8 @@ import io.camunda.search.connect.configuration.ConnectConfiguration;
 import io.camunda.tasklist.property.TasklistElasticsearchProperties;
 import io.camunda.tasklist.property.TasklistProperties;
 import io.camunda.zeebe.broker.system.configuration.ExporterCfg;
+import io.camunda.zeebe.broker.system.configuration.engine.ValidatorsCfg;
+import io.camunda.zeebe.engine.EngineConfiguration;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Nested;
@@ -357,6 +359,18 @@ public class SecondaryStorageElasticsearchTest {
           .isEqualTo(EXPECTED_REPLICAS_BY_INDEX_NAME);
       assertThat(searchEngineIndexProperties.getShardsByIndexName())
           .isEqualTo(EXPECTED_SHARDS_BY_INDEX_NAME);
+    }
+
+    @Test
+    void testEngineValidatorsProperties() {
+      final ValidatorsCfg validators =
+          brokerBasedProperties.getExperimental().getEngine().getValidators();
+      assertThat(validators.getMaxIdFieldLength())
+          .isEqualTo(EngineConfiguration.DEFAULT_MAX_ID_FIELD_LENGTH);
+      assertThat(validators.getMaxNameFieldLength())
+          .isEqualTo(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+      assertThat(validators.getMaxWorkerTypeLength())
+          .isEqualTo(EngineConfiguration.DEFAULT_MAX_WORKER_TYPE_LENGTH);
     }
   }
 
