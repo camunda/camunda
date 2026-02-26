@@ -566,14 +566,13 @@ class BackupServiceImplTest {
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
         .singleElement()
-        .isInstanceOf(BackupRangeStatus.Complete.class)
+        .isInstanceOf(BackupRangeStatus.class)
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first())
+              assertThat(status.first())
                   .isEqualTo(
                       new CheckpointInfo(1L, 100L, 1000L, CheckpointType.MANUAL_BACKUP, 50L));
-              assertThat(complete.last())
+              assertThat(status.last())
                   .isEqualTo(
                       new CheckpointInfo(5L, 500L, 5000L, CheckpointType.SCHEDULED_BACKUP, 400L));
             });
@@ -608,8 +607,7 @@ class BackupServiceImplTest {
     assertThat(result)
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
-        .hasSize(2)
-        .allSatisfy(status -> assertThat(status).isInstanceOf(BackupRangeStatus.Complete.class));
+        .hasSize(2);
   }
 
   @Test
@@ -711,12 +709,10 @@ class BackupServiceImplTest {
         .succeedsWithin(Duration.ofMillis(100))
         .asInstanceOf(collection(BackupRangeStatus.class))
         .singleElement()
-        .isInstanceOf(BackupRangeStatus.Complete.class)
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first().checkpointId()).isEqualTo(5L);
-              assertThat(complete.last().checkpointId()).isEqualTo(8L);
+              assertThat(status.first().checkpointId()).isEqualTo(5L);
+              assertThat(status.last().checkpointId()).isEqualTo(8L);
             });
   }
 
@@ -765,9 +761,8 @@ class BackupServiceImplTest {
         .singleElement()
         .satisfies(
             status -> {
-              final var complete = (BackupRangeStatus.Complete) status;
-              assertThat(complete.first()).isEqualTo(complete.last());
-              assertThat(complete.first().checkpointId()).isEqualTo(3L);
+              assertThat(status.first()).isEqualTo(status.last());
+              assertThat(status.first().checkpointId()).isEqualTo(3L);
             });
   }
 
