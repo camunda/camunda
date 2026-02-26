@@ -72,7 +72,7 @@ interface ProcessInstanceEntity {
   tenantId: string;
 }
 
-type ElementInstanceDto = {
+type ElementInstancePlaceholder = {
   id: string;
   type: string;
   state?: InstanceEntityState;
@@ -81,9 +81,8 @@ type ElementInstanceDto = {
   endDate: null | string;
   treePath: string;
   sortValues: [string, string] | [];
+  isPlaceholder?: boolean;
 };
-
-type ElementInstance = ElementInstanceDto & {isPlaceholder?: boolean};
 
 export type {
   OperationEntityType,
@@ -92,5 +91,5 @@ export type {
   OperationEntity,
   InstanceOperationEntity,
   ProcessInstanceEntity,
-  ElementInstance,
+  ElementInstancePlaceholder,
 };

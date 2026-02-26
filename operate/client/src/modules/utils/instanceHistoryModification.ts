@@ -11,7 +11,6 @@ import type {
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import type {ElementInstance} from 'modules/types/operate';
 import {
   instanceHistoryModificationStore,
   type ModificationPlaceholder,
@@ -63,7 +62,7 @@ const generateParentPlaceholders = (
       parentFlowNode,
     ),
     {
-      flowNodeInstance: {
+      elementInstancePlaceholder: {
         flowNodeId: flowNode.id,
         id: scopeId,
         type: 'SUB_PROCESS',
@@ -137,7 +136,7 @@ const createModificationPlaceholders = ({
   }
 
   return getScopeIds(modificationPayload).map((scopeId) => ({
-    flowNodeInstance: {
+    elementInstancePlaceholder: {
       flowNodeId: flowNode.id,
       id: scopeId,
       type: isMultiInstance(flowNode) ? 'MULTI_INSTANCE_BODY' : flowNode.$type,
@@ -203,8 +202,8 @@ const getModificationPlaceholders = (
 };
 
 const getVisibleChildPlaceholders = (
-  id: ElementInstance['id'],
-  flowNodeId: ElementInstance['flowNodeId'],
+  scopeKey: string,
+  elementId: string,
   businessObjects: BusinessObjects,
   processDefinitionId?: string,
   processInstanceKey?: string,
@@ -213,7 +212,7 @@ const getVisibleChildPlaceholders = (
   if (
     isPlaceholder &&
     !instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
-      id,
+      scopeKey,
     )
   ) {
     return [];
@@ -224,8 +223,8 @@ const getVisibleChildPlaceholders = (
     processDefinitionId,
     processInstanceKey,
   )
-    .filter(({parentInstanceId}) => parentInstanceId === id)
-    .map(({flowNodeInstance}) => flowNodeInstance);
+    .filter(({parentInstanceId}) => parentInstanceId === scopeKey)
+    .map(({elementInstancePlaceholder}) => elementInstancePlaceholder);
 
   if (placeholders.length > 0) {
     return placeholders;
@@ -238,13 +237,13 @@ const getVisibleChildPlaceholders = (
   )
     .filter(
       ({parentInstanceId, parentFlowNodeId}) =>
-        parentInstanceId === undefined && parentFlowNodeId === flowNodeId,
+        parentInstanceId === undefined && parentFlowNodeId === elementId,
     )
-    .map(({flowNodeInstance}) => flowNodeInstance);
+    .map(({elementInstancePlaceholder}) => elementInstancePlaceholder);
 };
 
 const hasChildPlaceholders = (
-  id: ElementInstance['id'],
+  scopeKey: string,
   businessObjects: BusinessObjects,
   processDefinitionId?: string,
   processInstanceKey?: string,
@@ -253,7 +252,7 @@ const hasChildPlaceholders = (
     businessObjects,
     processDefinitionId,
     processInstanceKey,
-  ).some(({parentInstanceId}) => parentInstanceId === id);
+  ).some(({parentInstanceId}) => parentInstanceId === scopeKey);
 };
 
 export {hasChildPlaceholders, getVisibleChildPlaceholders};
