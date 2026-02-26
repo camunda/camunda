@@ -9,6 +9,7 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
+import io.camunda.zeebe.protocol.record.value.VariableOperationType;
 import io.camunda.zeebe.protocol.record.value.VariableRecordValue;
 
 public class VariableAddUpdateAuditLogTransformer
@@ -23,5 +24,12 @@ public class VariableAddUpdateAuditLogTransformer
   public void transform(final Record<VariableRecordValue> record, final AuditLogEntry log) {
     final VariableRecordValue value = record.getValue();
     log.setEntityDescription(value.getName());
+  }
+
+  @Override
+  public boolean supports(final Record<?> record) {
+    final VariableRecordValue value = (VariableRecordValue) record.getValue();
+    return AuditLogTransformer.super.supports(record)
+        && VariableOperationType.API.equals(value.getSource().getType());
   }
 }
