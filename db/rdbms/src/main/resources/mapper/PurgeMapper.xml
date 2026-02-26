@@ -41,6 +41,10 @@
     TRUNCATE TABLE ${prefix}${tableName} CASCADE
   </update>
 
+  <update id="truncateTable" parameterType="java.lang.String" databaseId="oracle">
+    TRUNCATE TABLE ${prefix}${tableName} CASCADE
+  </update>
+
   <update id="truncateTable" parameterType="java.lang.String" databaseId="mssql">
     DELETE FROM ${prefix}${tableName}
   </update>
