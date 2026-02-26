@@ -6,35 +6,36 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {
+  ClusterVariable as BaseClusterVariable,
+  ClusterVariableScope,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
   apiGet,
   apiPost,
   apiPut,
-} from "src/utility/api/request.ts";
+} from "src/utility/api/request";
 import { PageSearchParams, SearchResponse } from "src/utility/api";
-import { EntityData } from "src/components/entityList/EntityList.tsx";
 
 export const CLUSTER_VARIABLES_ENDPOINT = "/cluster-variables";
 
-export enum ScopeType {
-  GLOBAL = "GLOBAL",
-  TENANT = "TENANT",
-}
+export type { ClusterVariableScope };
 
-export type ClusterVariable = EntityData & {
-  name: string;
-  scope: ScopeType;
-  tenantId?: string;
-  value: string;
-};
+export type ClusterVariable = BaseClusterVariable;
 
-function buildEndpoint(scopeType: ScopeType, tenantId?: string): string {
+function buildEndpoint(
+  scopeType: ClusterVariableScope,
+  tenantId?: string | null,
+): string {
   switch (scopeType) {
-    case ScopeType.GLOBAL:
+    case "GLOBAL":
       return `${CLUSTER_VARIABLES_ENDPOINT}/global`;
-    case ScopeType.TENANT:
+    case "TENANT":
+      if (!tenantId) {
+        throw new Error("tenantId is required for TENANT scope");
+      }
       return `${CLUSTER_VARIABLES_ENDPOINT}/tenants/${tenantId}`;
     default:
       throw new Error(`Unknown scope type: ${scopeType}`);
@@ -62,8 +63,8 @@ export const searchClusterVariables: ApiDefinition<
 };
 
 type GetClusterVariableParams = {
-  scope: ScopeType;
-  tenantId?: string;
+  scope: ClusterVariableScope;
+  tenantId?: string | null;
   name: string;
 };
 
@@ -92,8 +93,8 @@ export const deleteClusterVariable: ApiDefinition<
   apiDelete(`${buildEndpoint(scope, tenantId)}/${name}`);
 
 type UpdateClusterVariableParams = {
-  scope: ScopeType;
-  tenantId?: string;
+  scope: ClusterVariableScope;
+  tenantId?: string | null;
   name: string;
   value: string;
 };
