@@ -453,7 +453,11 @@ class OperateProcessesPage {
   }
 
   async clickGoToOperationDetailsButton(): Promise<void> {
-    await this.goToOperationDetailsButton.click();
+    await this.goToOperationDetailsButton.waitFor({
+      state: 'visible',
+      timeout: 60000,
+    });
+    await this.goToOperationDetailsButton.click({timeout: 60000});
   }
 }
 
