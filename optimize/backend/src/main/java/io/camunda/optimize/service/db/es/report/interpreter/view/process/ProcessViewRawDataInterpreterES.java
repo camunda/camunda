@@ -19,6 +19,7 @@ import static io.camunda.optimize.service.db.schema.index.ProcessInstanceIndex.V
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableNameField;
 import static io.camunda.optimize.service.db.util.ProcessVariableHelper.getNestedVariableValueField;
 
+import co.elastic.clients.elasticsearch._types.FieldValue;
 import co.elastic.clients.elasticsearch._types.Script;
 import co.elastic.clients.elasticsearch._types.ScriptField;
 import co.elastic.clients.elasticsearch._types.ScriptSortType;
@@ -231,7 +232,15 @@ public class ProcessViewRawDataInterpreterES extends AbstractProcessViewRawDataI
               if (sorting.isPresent()
                   && sorting.get().getBy().isPresent()
                   && ProcessInstanceIndex.DURATION.equals(sorting.get().getBy().get())) {
-                processInstance.setDuration(Math.round(hit.sort().get(0).doubleValue()));
+                final FieldValue fieldValue = hit.sort().getFirst();
+                switch (fieldValue._kind()) {
+                  case Double -> processInstance.setDuration(Math.round(fieldValue.doubleValue()));
+                  case Long -> processInstance.setDuration(fieldValue.longValue());
+                  default ->
+                      log.error(
+                          "Unexpected field value kind {} for duration sort field",
+                          fieldValue._kind());
+                }
               } else {
                 long currentTime =
                     Long.parseLong(hit.fields().get(CURRENT_TIME).to(List.class).get(0).toString());
