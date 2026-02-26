@@ -49,7 +49,7 @@ function useSelectedVariables(params: Params, options: Options = {}) {
             },
           },
           page: {
-            limit: variableNames.length,
+            limit: 1000,
           },
         }),
       );
