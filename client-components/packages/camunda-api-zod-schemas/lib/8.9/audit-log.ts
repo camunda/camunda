@@ -23,6 +23,7 @@ const auditLogEntityTypeSchema = z.enum([
 	'DECISION',
 	'GROUP',
 	'INCIDENT',
+	'JOB',
 	'MAPPING_RULE',
 	'PROCESS_INSTANCE',
 	'ROLE',
