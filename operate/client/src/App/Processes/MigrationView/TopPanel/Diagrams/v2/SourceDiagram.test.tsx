@@ -7,7 +7,11 @@
  */
 
 import {render, screen} from 'modules/testing-library';
-import {mockProcessStatistics, mockProcessXML} from 'modules/testUtils';
+import {
+  createProcessDefinition,
+  mockProcessStatistics,
+  mockProcessXML,
+} from 'modules/testUtils';
 import {SourceDiagram} from './SourceDiagram';
 import {mockFetchProcessInstancesStatistics} from 'modules/mocks/api/v2/processInstances/fetchProcessInstancesStatistics';
 import {QueryClientProvider} from '@tanstack/react-query';
@@ -21,16 +25,6 @@ import {MemoryRouter} from 'react-router-dom';
 
 vi.mock('modules/hooks/useFilters');
 vi.mock('modules/hooks/useProcessInstanceStatisticsFilters');
-vi.mock('modules/stores/processes/processes.migration', () => ({
-  processesStore: {
-    getSelectedProcessDetails: () => ({
-      processName: 'New demo process',
-      version: '3',
-      bpmnProcessId: 'demoProcess',
-    }),
-    fetchProcesses: vi.fn(),
-  },
-}));
 
 const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
   useEffect(() => {
@@ -79,6 +73,15 @@ describe('Source Diagram', () => {
       filterModule,
       'useProcessInstanceStatisticsFilters',
     ).mockReturnValue({filter: {}});
+
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({
+        processDefinitionKey: '123',
+        name: 'New demo process',
+        processDefinitionId: 'demoProcess',
+        version: 3,
+      }),
+    );
   });
 
   it('should render process name and version', async () => {
@@ -103,7 +106,6 @@ describe('Source Diagram', () => {
   });
 
   it('should render xml', async () => {
-    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
     render(<SourceDiagram />, {wrapper: Wrapper});
@@ -121,7 +123,6 @@ describe('Source Diagram', () => {
   });
 
   it('should render statistics overlays', async () => {
-    processInstanceMigrationStore.setSourceProcessDefinitionKey('123');
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     processInstanceMigrationStore.setBatchOperationQuery({
       ids: ['processInstance1'],

@@ -12,11 +12,6 @@ import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {useMigrationSourceXml} from './useMigrationSourceXml';
 import {open} from 'modules/mocks/diagrams';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-
-vi.mock('modules/stores/processes/processes.migration');
-
-const mockedProcessesStore = vi.mocked(processesStore);
 
 describe('useMigrationSourceXml', () => {
   const wrapper = ({children}: {children: React.ReactNode}) => {
@@ -28,14 +23,6 @@ describe('useMigrationSourceXml', () => {
   };
 
   it('should filter selectable flow nodes', async () => {
-    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
-      key: '27589024892748902347',
-      processName: 'orderProcess',
-      version: '1.0.0',
-      versionTag: null,
-      bpmnProcessId: 'orderProcess',
-    });
-
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));
 
     const {result} = renderHook(
@@ -98,14 +85,6 @@ describe('useMigrationSourceXml', () => {
   });
 
   it('should filter selectable flow nodes (ParticipantMigrationA)', async () => {
-    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
-      key: '27589024892748902347',
-      processName: 'ParticipantMigrationA',
-      version: '1.0.0',
-      versionTag: null,
-      bpmnProcessId: 'ParticipantMigrationA',
-    });
-
     mockFetchProcessDefinitionXml().withSuccess(
       open('ParticipantMigration_v1.bpmn'),
     );
@@ -129,14 +108,6 @@ describe('useMigrationSourceXml', () => {
   });
 
   it('should filter selectable flow nodes (ParticipantMigrationB)', async () => {
-    mockedProcessesStore.getSelectedProcessDetails.mockReturnValue({
-      key: '27589024892748902347',
-      processName: 'ParticipantMigrationB',
-      version: '1.0.0',
-      versionTag: null,
-      bpmnProcessId: 'ParticipantMigrationB',
-    });
-
     mockFetchProcessDefinitionXml().withSuccess(
       open('ParticipantMigration_v1.bpmn'),
     );

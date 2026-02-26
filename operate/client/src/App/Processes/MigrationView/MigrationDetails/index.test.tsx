@@ -6,25 +6,33 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, waitFor} from 'modules/testing-library';
+import {render, screen} from 'modules/testing-library';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-import {act, useEffect} from 'react';
+import {useEffect} from 'react';
 import {MemoryRouter} from 'react-router-dom';
-
 import {MigrationDetails} from '.';
-import {mockProcessDefinitions} from 'modules/testUtils';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
+import {createProcessDefinition} from 'modules/testUtils';
+
+const sourceDefinition = createProcessDefinition({
+  name: 'New demo process',
+  processDefinitionId: 'demoProcess',
+  processDefinitionKey: 'demoProcess3',
+  version: 3,
+  tenantId: '<default>',
+});
+const targetDefinition = createProcessDefinition({
+  name: 'Big variable process',
+  processDefinitionId: 'bigVarProcess',
+  version: 1,
+  tenantId: '<default>',
+});
 
 function createWrapper() {
   const Wrapper: React.FC<{children?: React.ReactNode}> = ({children}) => {
     useEffect(() => {
       processInstanceMigrationStore.enable();
-      processesStore.init();
-      processesStore.fetchProcesses();
       return () => {
         processInstanceMigrationStore.reset();
-        processesStore.reset();
       };
     }, []);
     return <MemoryRouter>{children}</MemoryRouter>;
@@ -44,18 +52,10 @@ describe('MigrationDetails', () => {
 
     processInstanceMigrationStore.setSelectedInstancesCount(7);
     processInstanceMigrationStore.setCurrentStep('summary');
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
+    processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
 
     render(<MigrationDetails />, {wrapper: createWrapper()});
-
-    await waitFor(() => {
-      expect(processesStore.state.status).toBe('fetched');
-    });
-
-    act(() => {
-      processesStore.setSelectedTargetProcess('{bigVarProcess}-{<default>}');
-      processesStore.setSelectedTargetVersion(1);
-    });
 
     expect(
       screen.getByText(

@@ -9,15 +9,16 @@
 import {
   render,
   screen,
+  waitFor,
   waitForElementToBeRemoved,
 } from 'modules/testing-library';
 import {
-  mockProcessDefinitions,
+  createProcessDefinition,
   mockProcessStatistics,
   mockProcessWithInputOutputMappingsXML,
   mockProcessXML,
+  searchResult,
 } from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 import {TargetDiagram} from './TargetDiagram';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {Wrapper} from '../tests/mocks';
@@ -35,23 +36,32 @@ describe('Target Diagram', () => {
       filterModule,
       'useProcessInstanceStatisticsFilters',
     ).mockReturnValue({filter: {}});
+
+    processInstanceMigrationStore.enable();
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({
+        processDefinitionKey: 'sourceKey',
+        processDefinitionId: 'sourceId',
+      }),
+    );
   });
 
   it('should display initial state in the diagram header and diagram panel', async () => {
-    processInstanceMigrationStore.setCurrentStep('elementMapping');
-
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     render(<TargetDiagram />, {wrapper: Wrapper});
 
     expect(screen.getByText('Target')).toBeInTheDocument();
     expect(screen.getByText('Version')).toBeInTheDocument();
     expect(
       screen.getByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).toBeDisabled();
     expect(
       screen.getByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).toHaveTextContent('-');
 
@@ -61,84 +71,133 @@ describe('Target Diagram', () => {
   });
 
   it('should render process and version components according to the step number', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    await processesStore.fetchProcesses();
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: /^target$/i}));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Target'})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
+    await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(
       screen.getByRole('combobox', {
-        name: /^target$/i,
+        name: 'Target',
       }),
     ).toHaveValue('New demo process');
     expect(
       screen.getByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).toHaveTextContent('3');
     expect(
       screen.getByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).toBeEnabled();
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', {name: /summary/i}));
+    await user.click(screen.getByRole('button', {name: 'Summary'}));
 
     expect(
       screen.queryByRole('combobox', {
-        name: /^target$/i,
+        name: 'Target',
       }),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).not.toBeInTheDocument();
 
     expect(screen.queryByText('New demo process')).not.toBeInTheDocument();
     expect(screen.queryByText('3')).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
 
     expect(
       screen.getByRole('combobox', {
-        name: /^target$/i,
+        name: 'Target',
       }),
     ).toHaveValue('New demo process');
     expect(
       screen.getByRole('combobox', {
-        name: /target version/i,
+        name: 'Target Version',
       }),
     ).toHaveTextContent('3');
   });
 
   it('should render diagram on selection and re-render on version change', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess2',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 2,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
-
-    await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Target'})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
     await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
     expect(await screen.findByTestId('diagram')).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /reset diagram zoom/i}),
+      screen.getByRole('button', {name: 'Reset diagram zoom'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /zoom in diagram/i}),
+      screen.getByRole('button', {name: 'Zoom in diagram'}),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole('button', {name: /zoom out diagram/i}),
+      screen.getByRole('button', {name: 'Zoom out diagram'}),
     ).toBeInTheDocument();
 
     mockFetchProcessDefinitionXml().withDelay(
@@ -156,13 +215,26 @@ describe('Target Diagram', () => {
   });
 
   it('should display error message on selection if diagram could not be fetched', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withServerError();
-    await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Target'})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
     await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
@@ -172,33 +244,43 @@ describe('Target Diagram', () => {
   });
 
   it('should render flow node overlays', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessInstancesStatistics().withSuccess(mockProcessStatistics);
-    processInstanceMigrationStore.setSourceProcessDefinitionKey('1');
-    processInstanceMigrationStore.setBatchOperationQuery({
-      ids: ['1'],
-    });
+
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({
+        processDefinitionKey: '1',
+        processDefinitionId: 'sourceId',
+      }),
+    );
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({
+        processDefinitionKey: 'demoProcess3',
+        processDefinitionId: 'demoProcess',
+        name: 'New demo process',
+        version: 3,
+      }),
+    );
+    processInstanceMigrationStore.setBatchOperationQuery({ids: ['1']});
     processInstanceMigrationStore.setSelectedInstancesCount(1);
-    await processesStore.fetchProcesses();
 
     const {user} = render(<TargetDiagram />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
-    await user.click(screen.getByRole('combobox', {name: 'Target'}));
-    await user.click(screen.getByRole('option', {name: 'New demo process'}));
-    await user.click(screen.getByRole('button', {name: /map elements/i}));
+    await user.click(screen.getByRole('button', {name: 'map elements'}));
 
     expect(await screen.findByText(/diagram mock/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', {name: /summary/i}));
+    await user.click(screen.getByRole('button', {name: 'Summary'}));
 
     expect(
       await screen.findByTestId('modifications-overlay'),
     ).toBeInTheDocument();
     expect(screen.getByTestId('modifications-overlay')).toHaveTextContent('1');
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
 
     expect(await screen.findByText(/diagram mock/i)).toBeInTheDocument();
     expect(
