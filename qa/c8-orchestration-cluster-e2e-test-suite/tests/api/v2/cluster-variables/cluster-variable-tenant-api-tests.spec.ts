@@ -13,6 +13,7 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {
   CREATE_CLUSTER_VARIABLE,
@@ -66,7 +67,7 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const json = await res.json();
       validateResponseShape(
         {
@@ -157,7 +158,8 @@ test.describe.parallel('Cluster Variable API Tests - Tenant Scope', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(200);
+      
+      await assertStatusCode(res, 200);
       const json = await res.json();
       validateResponseShape(
         {

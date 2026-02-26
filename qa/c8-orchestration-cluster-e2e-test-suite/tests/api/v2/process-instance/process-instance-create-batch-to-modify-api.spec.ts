@@ -20,9 +20,7 @@ import {
   jsonHeaders,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
-
 import {findUserTask} from '@requestHelpers';
-import path from 'path';
 import { validateResponse } from 'json-body-assertions';
 
 /* eslint-disable playwright/expect-expect */
