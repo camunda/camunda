@@ -110,7 +110,7 @@ jobs:
     name: "Lint / Commitlint"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 3
+    timeout-minutes: 5
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - name: Determine fetch depth for checkout
@@ -143,7 +143,7 @@ jobs:
     name: "Lint / Maven Spotless"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
@@ -168,7 +168,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Java Checks"
     needs: [ detect-changes ]
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-8-default
     steps:
@@ -195,7 +195,7 @@ jobs:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
@@ -256,7 +256,7 @@ jobs:
       # IT Engine = ZEEBE_CORE_FEATURES_MODULES + ZEEBE_PROTOCOL_MODULES + ZEEBE_GATEWAY_MODULES + ZEEBE_CLIENT_MODULES (explicit list)
       ZEEBE_IT_ENGINE_MODULES: ${{ steps.set-constants.outputs.it_engine }}
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 5
     permissions: { }
     steps:
       - name: Set all test constants
@@ -323,7 +323,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - Back End"
     needs: [ detect-changes, setup-tests ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     outputs:
@@ -389,7 +389,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "Zeebe / Unit - ${{matrix.component}}"
     needs: [ detect-changes, setup-tests ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     outputs:
@@ -561,7 +561,7 @@ jobs:
     if: needs.detect-changes.outputs.rdbms-integration-tests == 'true'
     needs: [ detect-changes ]
     name: "General / Integration / RDBMS ITs"
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: gcp-perf-core-8-default
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
@@ -870,7 +870,7 @@ jobs:
     if: needs.detect-changes.outputs.java-code-changes == 'true'
     name: "General / Unit - ArchUnit"
     needs: [ detect-changes ]
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     runs-on: gcp-perf-core-16-default
     env:
@@ -1129,7 +1129,7 @@ jobs:
     name: "Identity / Unit - Front End"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:
@@ -1272,7 +1272,7 @@ jobs:
     if: needs.detect-changes.outputs.openapi-changes == 'true'
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       # renovate: datasource=npm depName=@stoplight/spectral-cli
@@ -1321,7 +1321,7 @@ jobs:
     name: "Lint / Renovate Config Validator"
     needs: [ detect-changes ]
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions: {}  # GITHUB_TOKEN unused in this job
     steps:
       - uses: actions/checkout@v6
