@@ -325,6 +325,7 @@ public final class BackupEndpoint {
       case FAILED -> StateCode.FAILED;
       case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
       case INCOMPLETE -> StateCode.INCOMPLETE;
+      case DELETED -> StateCode.DELETED;
     };
   }
 
@@ -334,6 +335,7 @@ public final class BackupEndpoint {
       case COMPLETED -> StateCode.COMPLETED;
       case FAILED -> StateCode.FAILED;
       case DOES_NOT_EXIST -> StateCode.DOES_NOT_EXIST;
+      case DELETED -> StateCode.DELETED;
       default -> throw new IllegalStateException("Unknown BackupState %s".formatted(status));
     };
   }
