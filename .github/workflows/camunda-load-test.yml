@@ -267,7 +267,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
-          repository: '${{ env.IMAGE_REPOSITORY }}/zeebe'
+          repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
@@ -352,7 +352,7 @@ jobs:
             proxy: camunda.teleport.sh:443
             token: ${{ env.TELEPORT_JOIN_TOKEN }}
             kubernetes-cluster: ${{ env.CLUSTER }}
-      
+
       - name: Create namespace if not exists
         run: |
           cd load-tests/setup
@@ -379,7 +379,7 @@ jobs:
           make ${{ inputs.stable-vms && 'install-stable' || 'install' }} \
             secondary_storage=${{ inputs.secondary-storage-type }} \
             enable_optimize=${{ inputs.enable-optimize }} \
-            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/zeebe' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
+            additional_platform_configuration="--set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }} --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }} --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }} ${{ inputs.platform-helm-values }}" \
             additional_load_test_configuration="$load_test_config"
       - name: Summarize platform deployment
         if: success()

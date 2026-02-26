@@ -59,8 +59,8 @@ orchestration:
   # This means we will have pods like: camunda-0, camunda-1, camunda-2
   fullnameOverride: camunda
   image:
-    registry: registry.camunda.cloud
-    repository: team-zeebe/zeebe
+    registry: docker.io
+    repository: camunda/camunda
     tag: "SNAPSHOT"
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
