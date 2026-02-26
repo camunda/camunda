@@ -90,8 +90,6 @@ test.describe.parallel('Cancel Batch Operation Tests', () => {
 
     await test.step('Send second cancel request and assert failure', async () => {
       const secondRes = await cancelBatchOperation(request, key);
-      const status = secondRes.status();
-      expect(status).toBe(404);
 
       await assertNotFoundRequest(
         secondRes,
