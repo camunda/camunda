@@ -13,18 +13,24 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertBadRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {UPDATE_CLUSTER_VARIABLE_VALUE} from '../../../../utils/beans/requestBeans';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
   createGlobalClusterVariable,
   createTenantClusterVariable,
-  updateGlobalClusterVariable,
-  updateTenantClusterVariable,
   createTenantAndStoreResponseFields,
   assertClusterVariableUpdate,
 } from '@requestHelpers';
-import {validateResponseShape} from '../../../../json-body-assertions';
+import {
+  validateResponseShape,
+  validateResponse,
+} from '../../../../json-body-assertions';
+import {
+  cleanupGlobalClusterVariables,
+  cleanupTenantClusterVariables,
+} from '../../../../utils/clusterVariablesCleanup';
 
 /* eslint-disable playwright/expect-expect */
 test.describe.parallel(
@@ -34,18 +40,7 @@ test.describe.parallel(
     const createdVariableNames: string[] = [];
 
     test.afterAll(async ({request}) => {
-      for (const name of createdVariableNames) {
-        try {
-          await request.delete(
-            buildUrl('/cluster-variables/global/{name}', {name}),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
+      await cleanupGlobalClusterVariables(request, createdVariableNames);
     });
 
     test('Update Global Cluster Variable With Object Value', async ({
@@ -229,35 +224,23 @@ test.describe.parallel(
       const secondValue = {version: 2};
 
       await test.step('First update', async () => {
-        await updateGlobalClusterVariable(request, variableName, firstValue);
-
-        await expect(async () => {
-          const res = await request.get(
-            buildUrl('/cluster-variables/global/{name}', {name: variableName}),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-          expect(res.status()).toBe(200);
-          const json = await res.json();
-          expect(JSON.parse(json.value)).toEqual(firstValue);
-        }).toPass(defaultAssertionOptions);
+        await assertClusterVariableUpdate(
+          request,
+          buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+          firstValue,
+          variableName,
+          'GLOBAL',
+        );
       });
 
       await test.step('Second update', async () => {
-        await updateGlobalClusterVariable(request, variableName, secondValue);
-
-        await expect(async () => {
-          const res = await request.get(
-            buildUrl('/cluster-variables/global/{name}', {name: variableName}),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-          expect(res.status()).toBe(200);
-          const json = await res.json();
-          expect(JSON.parse(json.value)).toEqual(secondValue);
-        }).toPass(defaultAssertionOptions);
+        await assertClusterVariableUpdate(
+          request,
+          buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+          secondValue,
+          variableName,
+          'GLOBAL',
+        );
       });
     });
 
@@ -315,37 +298,42 @@ test.describe.parallel(
 
       const newValue = {verified: true, timestamp: Date.now()};
 
-      // Update using helper function with built-in retry logic
-      await updateGlobalClusterVariable(request, variableName, newValue);
-
-      // Verify variable structure with retry for eventual consistency
-      await expect(async () => {
-        const res = await request.get(
+      await test.step('Update using helper function with retry logic', async () => {
+        await assertClusterVariableUpdate(
+          request,
           buildUrl('/cluster-variables/global/{name}', {name: variableName}),
-          {
-            headers: jsonHeaders(),
-          },
+          newValue,
+          variableName,
+          'GLOBAL',
         );
+      });
 
-        expect(res.status()).toBe(200);
-        const json = await res.json();
+      await test.step('Verify variable structure with retry', async () => {
+        await expect(async () => {
+          const res = await request.get(
+            buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
 
-        // Verify response shape matches OpenAPI spec
-        validateResponseShape(
-          {
-            path: '/cluster-variables/global/{name}',
-            method: 'GET',
-            status: '200',
-          },
-          json,
-        );
+          await assertStatusCode(res, 200);
+          await validateResponse(
+            {
+              path: '/cluster-variables/global/{name}',
+              method: 'GET',
+              status: '200',
+            },
+            res,
+          );
+          const json = await res.json();
 
-        // Verify field values
-        expect(json.name).toBe(variableName);
-        expect(json.scope).toBe('GLOBAL');
-        expect(typeof json.value).toBe('string');
-        expect(JSON.parse(json.value)).toEqual(newValue);
-      }).toPass(defaultAssertionOptions);
+          expect(json.name).toBe(variableName);
+          expect(json.scope).toBe('GLOBAL');
+          expect(typeof json.value).toBe('string');
+          expect(JSON.parse(json.value)).toEqual(newValue);
+        }).toPass(defaultAssertionOptions);
+      });
     });
 
     test('Update Global Cluster Variable Immediately Retrievable', async ({
@@ -361,30 +349,29 @@ test.describe.parallel(
 
       const newValue = {consistency: 'strong'};
 
-      // Update the variable with retry for eventual consistency
-      await expect(async () => {
-        const updateRes = await request.put(
+      await test.step('Update the variable with retry', async () => {
+        await assertClusterVariableUpdate(
+          request,
           buildUrl('/cluster-variables/global/{name}', {name: variableName}),
-          {
-            headers: jsonHeaders(),
-            data: UPDATE_CLUSTER_VARIABLE_VALUE(newValue),
-          },
+          newValue,
+          variableName,
+          'GLOBAL',
         );
-        expect(updateRes.status()).toBe(200);
-      }).toPass(defaultAssertionOptions);
+      });
 
-      // Verify variable is immediately retrievable with retry for eventual consistency
-      await expect(async () => {
-        const getRes = await request.get(
-          buildUrl('/cluster-variables/global/{name}', {name: variableName}),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-        expect(getRes.status()).toBe(200);
-        const json = await getRes.json();
-        expect(JSON.parse(json.value)).toEqual(newValue);
-      }).toPass(defaultAssertionOptions);
+      await test.step('Verify variable is immediately retrievable', async () => {
+        await expect(async () => {
+          const getRes = await request.get(
+            buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          await assertStatusCode(getRes, 200);
+          const json = await getRes.json();
+          expect(JSON.parse(json.value)).toEqual(newValue);
+        }).toPass(defaultAssertionOptions);
+      });
     });
   },
 );
@@ -401,21 +388,7 @@ test.describe.parallel(
     });
 
     test.afterAll(async ({request}) => {
-      for (const variable of createdVariables) {
-        try {
-          await request.delete(
-            buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
-              tenantId: variable.tenantId,
-              name: variable.name,
-            }),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-        } catch {
-          // Ignore cleanup errors
-        }
-      }
+      await cleanupTenantClusterVariables(request, createdVariables);
     });
 
     test('Update Tenant Cluster Variable With Object Value', async ({
@@ -671,51 +644,31 @@ test.describe.parallel(
       const secondValue = {version: 2};
 
       await test.step('First update', async () => {
-        await updateTenantClusterVariable(
+        await assertClusterVariableUpdate(
           request,
-          tenantId,
-          variableName,
+          buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+            tenantId,
+            name: variableName,
+          }),
           firstValue,
+          variableName,
+          'TENANT',
+          tenantId,
         );
-
-        await expect(async () => {
-          const res = await request.get(
-            buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
-              tenantId,
-              name: variableName,
-            }),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-          expect(res.status()).toBe(200);
-          const json = await res.json();
-          expect(JSON.parse(json.value)).toEqual(firstValue);
-        }).toPass(defaultAssertionOptions);
       });
 
       await test.step('Second update', async () => {
-        await updateTenantClusterVariable(
+        await assertClusterVariableUpdate(
           request,
-          tenantId,
-          variableName,
+          buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+            tenantId,
+            name: variableName,
+          }),
           secondValue,
+          variableName,
+          'TENANT',
+          tenantId,
         );
-
-        await expect(async () => {
-          const res = await request.get(
-            buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
-              tenantId,
-              name: variableName,
-            }),
-            {
-              headers: jsonHeaders(),
-            },
-          );
-          expect(res.status()).toBe(200);
-          const json = await res.json();
-          expect(JSON.parse(json.value)).toEqual(secondValue);
-        }).toPass(defaultAssertionOptions);
       });
     });
 
@@ -815,46 +768,50 @@ test.describe.parallel(
 
       const newValue = {verified: true, timestamp: Date.now()};
 
-      // Update using helper function with built-in retry logic
-      await updateTenantClusterVariable(
-        request,
-        tenantId,
-        variableName,
-        newValue,
-      );
-
-      // Verify variable structure with retry for eventual consistency
-      await expect(async () => {
-        const res = await request.get(
+      await test.step('Update using helper function with retry logic', async () => {
+        await assertClusterVariableUpdate(
+          request,
           buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
             tenantId,
             name: variableName,
           }),
-          {
-            headers: jsonHeaders(),
-          },
+          newValue,
+          variableName,
+          'TENANT',
+          tenantId,
         );
+      });
 
-        expect(res.status()).toBe(200);
-        const json = await res.json();
+      await test.step('Verify variable structure with retry', async () => {
+        await expect(async () => {
+          const res = await request.get(
+            buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+              tenantId,
+              name: variableName,
+            }),
+            {
+              headers: jsonHeaders(),
+            },
+          );
 
-        // Verify response shape matches OpenAPI spec
-        validateResponseShape(
-          {
-            path: '/cluster-variables/tenants/{tenantId}/{name}',
-            method: 'GET',
-            status: '200',
-          },
-          json,
-        );
+          await assertStatusCode(res, 200);
+          await validateResponse(
+            {
+              path: '/cluster-variables/tenants/{tenantId}/{name}',
+              method: 'GET',
+              status: '200',
+            },
+            res,
+          );
+          const json = await res.json();
 
-        // Verify field values
-        expect(json.name).toBe(variableName);
-        expect(json.scope).toBe('TENANT');
-        expect(json.tenantId).toBe(tenantId);
-        expect(typeof json.value).toBe('string');
-        expect(JSON.parse(json.value)).toEqual(newValue);
-      }).toPass(defaultAssertionOptions);
+          expect(json.name).toBe(variableName);
+          expect(json.scope).toBe('TENANT');
+          expect(json.tenantId).toBe(tenantId);
+          expect(typeof json.value).toBe('string');
+          expect(JSON.parse(json.value)).toEqual(newValue);
+        }).toPass(defaultAssertionOptions);
+      });
     });
 
     test('Update Tenant Cluster Variable Immediately Retrievable', async ({
@@ -872,36 +829,36 @@ test.describe.parallel(
 
       const newValue = {consistency: 'strong'};
 
-      // Update the variable with retry for eventual consistency
-      await expect(async () => {
-        const updateRes = await request.put(
+      await test.step('Update the variable with retry', async () => {
+        await assertClusterVariableUpdate(
+          request,
           buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
             tenantId,
             name: variableName,
           }),
-          {
-            headers: jsonHeaders(),
-            data: UPDATE_CLUSTER_VARIABLE_VALUE(newValue),
-          },
+          newValue,
+          variableName,
+          'TENANT',
+          tenantId,
         );
-        expect(updateRes.status()).toBe(200);
-      }).toPass(defaultAssertionOptions);
+      });
 
-      // Verify variable is immediately retrievable with retry for eventual consistency
-      await expect(async () => {
-        const getRes = await request.get(
-          buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
-            tenantId,
-            name: variableName,
-          }),
-          {
-            headers: jsonHeaders(),
-          },
-        );
-        expect(getRes.status()).toBe(200);
-        const json = await getRes.json();
-        expect(JSON.parse(json.value)).toEqual(newValue);
-      }).toPass(defaultAssertionOptions);
+      await test.step('Verify variable is immediately retrievable', async () => {
+        await expect(async () => {
+          const getRes = await request.get(
+            buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+              tenantId,
+              name: variableName,
+            }),
+            {
+              headers: jsonHeaders(),
+            },
+          );
+          await assertStatusCode(getRes, 200);
+          const json = await getRes.json();
+          expect(JSON.parse(json.value)).toEqual(newValue);
+        }).toPass(defaultAssertionOptions);
+      });
     });
   },
 );
