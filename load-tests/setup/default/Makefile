@@ -52,13 +52,13 @@ ifeq ($(secondary_storage),postgresql)
 	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
-		-f secondary-storage-values-postgresql.yaml
+		$(platform_values)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
 		--namespace $(namespace) \
-		-f secondary-storage-values-opensearch.yaml
+		$(platform_values)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
