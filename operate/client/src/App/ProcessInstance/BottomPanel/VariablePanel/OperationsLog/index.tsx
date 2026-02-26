@@ -34,8 +34,8 @@ import {EmptyMessage} from 'modules/components/EmptyMessage';
 import {EmptyMessageContainer} from '../styled';
 import {useProcessInstancePageParams} from 'App/ProcessInstance/useProcessInstancePageParams';
 import {CellResult} from 'App/OperationsLog/InstancesTable/Cell/CellResult';
-import {CellProperty} from 'App/OperationsLog/InstancesTable/Cell/CellProperty';
 import {CellActor} from 'App/OperationsLog/InstancesTable/Cell/CellActor';
+import {CellEntityKey} from 'App/OperationsLog/InstancesTable/Cell/CellEntityKey';
 import {Filters} from './Filters';
 import {
   auditLogEntityTypeSchema,
@@ -68,9 +68,9 @@ const headerColumns = [
     sortKey: 'entityType',
   },
   {
-    header: 'Property',
-    key: 'property',
-    isDisabled: true,
+    header: 'Entity Key',
+    key: 'entityKey',
+    sortKey: 'entityKey',
   },
   {
     header: 'Actor',
@@ -198,7 +198,7 @@ const OperationsLog: React.FC<Props> = observer(({isVisible}) => {
         result: <CellResult item={item} />,
         operationType: spaceAndCapitalize(item.operationType.toString()),
         entityType: spaceAndCapitalize(item.entityType.toString()),
-        property: <CellProperty item={item} />,
+        entityKey: <CellEntityKey item={item} />,
         user: <CellActor item={item} />,
         timestamp: formatDate(item.timestamp),
         comment: (
