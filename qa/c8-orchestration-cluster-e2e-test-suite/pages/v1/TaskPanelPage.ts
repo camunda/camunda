@@ -18,10 +18,12 @@ class TaskPanelPageV1 {
   readonly taskListPageBanner: Locator;
   readonly collapseFilter: Locator;
   readonly completedHeading: Locator;
+  readonly taskDetailsHeader: Locator;
 
   constructor(page: Page) {
     this.page = page;
     this.availableTasks = page.getByTitle('Available tasks');
+    this.taskDetailsHeader = page.getByTitle('Task details header');
     this.collapseSidePanelButton = page.locator(
       'button[aria-controls="task-nav-bar"][aria-expanded="true"]',
     );
@@ -83,6 +85,18 @@ class TaskPanelPageV1 {
       onFailure: async () => {
         console.log('Filter not applied, retrying...');
         await this.filterBy('Completed'); // Reapply the filter if necessary
+      },
+    });
+  }
+
+  async assertTaskDetailsHeaderVisible(taskName: string) {
+    await waitForAssertion({
+      assertion: async () => {
+        await expect(this.taskDetailsHeader).toBeVisible();
+      },
+      onFailure: async () => {
+        console.log('Task details header not visible, clicking task again...');
+        await this.openTask(taskName);
       },
     });
   }
