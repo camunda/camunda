@@ -19,10 +19,12 @@ import io.camunda.security.configuration.MultiTenancyConfiguration;
 import io.camunda.service.DecisionDefinitionServices;
 import io.camunda.zeebe.broker.client.api.dto.BrokerResponse;
 import io.camunda.zeebe.gateway.rest.RestControllerTest;
+import io.camunda.zeebe.msgpack.spec.MsgPackHelper;
 import io.camunda.zeebe.protocol.impl.record.value.decision.DecisionEvaluationRecord;
 import io.camunda.zeebe.protocol.record.value.TenantOwned;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -52,7 +54,20 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
              "tenantId":"tenantId",
              "decisionInstanceKey":"123",
              "decisionEvaluationKey":"123",
-             "evaluatedDecisions":[]
+             "evaluatedDecisions":[
+               {
+                 "decisionDefinitionKey":"400",
+                 "decisionDefinitionId":"evalDecisionId",
+                 "decisionEvaluationInstanceKey":"",
+                 "decisionDefinitionName":"evalDecisionName",
+                 "decisionDefinitionVersion":1,
+                 "decisionDefinitionType":"DECISION_TABLE",
+                 "output":"null",
+                 "tenantId":"tenantId",
+                 "matchedRules":[],
+                 "evaluatedInputs":[]
+               }
+             ]
           }""";
 
   @MockitoBean MultiTenancyConfiguration multiTenancyCfg;
@@ -254,6 +269,17 @@ public class DecisionDefinitionControllerTest extends RestControllerTest {
             .setDecisionRequirementsId("decisionRequirementsId")
             .setDecisionRequirementsKey(123456L)
             .setTenantId(tenantId);
+
+    final var evaluatedDecision = record.evaluatedDecisions().add();
+    evaluatedDecision
+        .setDecisionId("evalDecisionId")
+        .setDecisionKey(400L)
+        .setDecisionName("evalDecisionName")
+        .setDecisionVersion(1)
+        .setDecisionType("DECISION_TABLE")
+        .setDecisionOutput(new UnsafeBuffer(MsgPackHelper.NIL))
+        .setTenantId(tenantId);
+
     return CompletableFuture.completedFuture(new BrokerResponse<>(record, 1, 123));
   }
 }
