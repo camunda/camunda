@@ -12,9 +12,11 @@ import static io.camunda.service.authorization.Authorizations.JOB_READ_AUTHORIZA
 import io.camunda.search.clients.JobSearchClient;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.security.auth.Authorization;
@@ -165,6 +167,31 @@ public final class JobServices<T> extends SearchQueryService<JobServices<T>, Job
                 .getJobTypeStatistics(query));
   }
 
+<<<<<<< HEAD
+=======
+  public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
+      final JobWorkerStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getJobWorkerStatistics(query));
+  }
+
+  public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
+      final JobTimeSeriesStatisticsQuery query) {
+    return executeSearchRequest(
+        () ->
+            jobSearchClient
+                .withSecurityContext(
+                    securityContextProvider.provideSecurityContext(
+                        authentication, Authorization.of(a -> a.system().readJobMetric())))
+                .getJobTimeSeriesStatistics(query));
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   public record ActivateJobsRequest(
       String type,
       int maxJobsToActivate,

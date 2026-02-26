@@ -357,6 +357,30 @@ public final class FilterBuilders {
     return fn.apply(jobTypeStatistics()).build();
   }
 
+<<<<<<< HEAD
+=======
+  public static JobWorkerStatisticsFilter.Builder jobWorkerStatistics() {
+    return new JobWorkerStatisticsFilter.Builder();
+  }
+
+  public static JobWorkerStatisticsFilter jobWorkerStatistics(
+      final Function<JobWorkerStatisticsFilter.Builder, ObjectBuilder<JobWorkerStatisticsFilter>>
+          fn) {
+    return fn.apply(jobWorkerStatistics()).build();
+  }
+
+  public static JobTimeSeriesStatisticsFilter.Builder jobTimeSeriesStatistics() {
+    return new JobTimeSeriesStatisticsFilter.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsFilter jobTimeSeriesStatistics(
+      final Function<
+              JobTimeSeriesStatisticsFilter.Builder, ObjectBuilder<JobTimeSeriesStatisticsFilter>>
+          fn) {
+    return fn.apply(jobTimeSeriesStatistics()).build();
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   public static GlobalListenerFilter.Builder globalListener() {
     return new GlobalListenerFilter.Builder();
   }

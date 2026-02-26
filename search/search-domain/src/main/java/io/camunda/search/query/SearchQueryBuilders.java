@@ -44,6 +44,17 @@ public final class SearchQueryBuilders {
     return new JobTypeStatisticsQuery.Builder();
   }
 
+<<<<<<< HEAD
+=======
+  public static JobWorkerStatisticsQuery.Builder jobWorkerStatisticsSearchQuery() {
+    return new JobWorkerStatisticsQuery.Builder();
+  }
+
+  public static JobTimeSeriesStatisticsQuery.Builder jobTimeSeriesStatisticsSearchQuery() {
+    return new JobTimeSeriesStatisticsQuery.Builder();
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   public static ProcessInstanceQuery processInstanceSearchQuery(
       final Function<ProcessInstanceQuery.Builder, ObjectBuilder<ProcessInstanceQuery>> fn) {
     return fn.apply(processInstanceSearchQuery()).build();

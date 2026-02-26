@@ -24,6 +24,8 @@ import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobSearchQuery;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
@@ -128,6 +130,25 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getTypeStatistics);
   }
 
+<<<<<<< HEAD
+=======
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/by-workers")
+  public ResponseEntity<JobWorkerStatisticsQueryResult> getJobWorkerStatistics(
+      @RequestBody final JobWorkerStatisticsQuery request) {
+    return SearchQueryRequestMapper.toJobWorkerStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getWorkerStatistics);
+  }
+
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/time-series")
+  public ResponseEntity<JobTimeSeriesStatisticsQueryResult> getJobTimeSeriesStatistics(
+      @RequestBody final JobTimeSeriesStatisticsQuery request) {
+    return SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getTimeSeriesStatistics);
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -229,4 +250,34 @@ public class JobController {
       return mapErrorToResponse(e);
     }
   }
+<<<<<<< HEAD
+=======
+
+  private ResponseEntity<JobWorkerStatisticsQueryResult> getWorkerStatistics(
+      final io.camunda.search.query.JobWorkerStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getJobWorkerStatistics(query);
+      return ResponseEntity.ok(SearchQueryResponseMapper.toJobWorkerStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<JobTimeSeriesStatisticsQueryResult> getTimeSeriesStatistics(
+      final io.camunda.search.query.JobTimeSeriesStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getJobTimeSeriesStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toJobTimeSeriesStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
 }

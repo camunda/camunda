@@ -77,6 +77,8 @@ import io.camunda.gateway.protocol.model.JobListenerEventTypeEnum;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
 import io.camunda.gateway.protocol.model.JobSearchResult;
 import io.camunda.gateway.protocol.model.JobStateEnum;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsItem;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsItem;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.MappingRuleResult;
@@ -157,6 +159,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -1579,6 +1582,57 @@ public final class SearchQueryResponseMapper {
         .workers(entity.workers());
   }
 
+<<<<<<< HEAD
+=======
+  public static JobWorkerStatisticsQueryResult toJobWorkerStatisticsQueryResult(
+      final SearchQueryResult<JobWorkerStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobWorkerStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobWorkerStatisticsItem)
+                .toList());
+  }
+
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
+      final JobWorkerStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobWorkerStatisticsItem();
+    }
+
+    return new JobWorkerStatisticsItem()
+        .worker(entity.worker())
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
+  }
+
+  public static JobTimeSeriesStatisticsQueryResult toJobTimeSeriesStatisticsQueryResult(
+      final SearchQueryResult<JobTimeSeriesStatisticsEntity> result) {
+    final var page = toSearchQueryPageResponse(result);
+    return new JobTimeSeriesStatisticsQueryResult()
+        .page(page)
+        .items(
+            result.items().stream()
+                .map(SearchQueryResponseMapper::toJobTimeSeriesStatisticsItem)
+                .toList());
+  }
+
+  private static JobTimeSeriesStatisticsItem toJobTimeSeriesStatisticsItem(
+      final JobTimeSeriesStatisticsEntity entity) {
+    if (entity == null) {
+      return new JobTimeSeriesStatisticsItem();
+    }
+
+    return new JobTimeSeriesStatisticsItem()
+        .time(formatDate(entity.time()))
+        .created(toStatusMetric(entity.created()))
+        .completed(toStatusMetric(entity.completed()))
+        .failed(toStatusMetric(entity.failed()));
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   private static StatusMetric toStatusMetric(final GlobalJobStatisticsEntity.StatusMetric metric) {
     if (metric == null) {
       return new StatusMetric().count(0L);

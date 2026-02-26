@@ -139,6 +139,27 @@ public final class SearchQueryRequestMapper {
         filter, Either.right(null), page, SearchQueryBuilders::jobTypeStatisticsSearchQuery);
   }
 
+<<<<<<< HEAD
+=======
+  public static Either<ProblemDetail, io.camunda.search.query.JobWorkerStatisticsQuery>
+      toJobWorkerStatisticsQuery(
+          final io.camunda.gateway.protocol.model.JobWorkerStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobWorkerStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobWorkerStatisticsSearchQuery);
+  }
+
+  public static Either<ProblemDetail, io.camunda.search.query.JobTimeSeriesStatisticsQuery>
+      toJobTimeSeriesStatisticsQuery(
+          final io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery request) {
+    final Either<List<String>, SearchQueryPage> page = toSearchQueryPage(request.getPage());
+    final var filter = SearchQueryFilterMapper.toJobTimeSeriesStatisticsFilter(request.getFilter());
+    return buildSearchQuery(
+        filter, Either.right(null), page, SearchQueryBuilders::jobTimeSeriesStatisticsSearchQuery);
+  }
+
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   public static Either<ProblemDetail, ProcessDefinitionQuery> toProcessDefinitionQuery(
       final io.camunda.gateway.protocol.model.simple.ProcessDefinitionSearchQuery query) {
     return toProcessDefinitionQuery(

@@ -34,6 +34,7 @@ import io.camunda.search.entities.IncidentEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByDefinitionEntity;
 import io.camunda.search.entities.IncidentProcessInstanceStatisticsByErrorEntity;
 import io.camunda.search.entities.JobEntity;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.MappingRuleEntity;
 import io.camunda.search.entities.MessageSubscriptionEntity;
@@ -79,6 +80,7 @@ import io.camunda.search.query.IncidentProcessInstanceStatisticsByDefinitionQuer
 import io.camunda.search.query.IncidentProcessInstanceStatisticsByErrorQuery;
 import io.camunda.search.query.IncidentQuery;
 import io.camunda.search.query.JobQuery;
+import io.camunda.search.query.JobTimeSeriesStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
 import io.camunda.search.query.MappingRuleQuery;
 import io.camunda.search.query.MessageSubscriptionQuery;
@@ -396,6 +398,22 @@ public class CamundaSearchClients implements SearchClientsProxy {
   }
 
   @Override
+<<<<<<< HEAD
+=======
+  public SearchQueryResult<JobWorkerStatisticsEntity> getJobWorkerStatistics(
+      final JobWorkerStatisticsQuery query) {
+    return doReadWithResourceAccessController(
+        access -> readers.jobMetricsBatchReader().getJobWorkerStatistics(query, access));
+  }
+
+  @Override
+  public SearchQueryResult<JobTimeSeriesStatisticsEntity> getJobTimeSeriesStatistics(
+      final JobTimeSeriesStatisticsQuery query) {
+    throw new UnsupportedOperationException("Job time-series statistics is not yet implemented");
+  }
+
+  @Override
+>>>>>>> 4e978024 (feat: add JobTimeSeriesStatistics API)
   public RoleEntity getRole(final String id) {
     return doGetWithReader(readers.roleReader(), id)
         .orElseThrow(() -> entityByIdNotFoundException("Role", id));
