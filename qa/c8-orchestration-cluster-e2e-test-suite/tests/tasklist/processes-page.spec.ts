@@ -122,7 +122,7 @@ test.describe('process page', () => {
         ).toBeVisible();
       },
       onFailure: async () => {
-        page.reload();
+        await page.reload();
       },
     });
 
@@ -166,7 +166,7 @@ test.describe('process page', () => {
     await taskDetailsPage.fillTextInput('Invoice Number*', '123');
     await taskDetailsPage.addDynamicListRow();
 
-    await taskDetailsPage.fillDynamicList('Item Name*', 'Laptop');
+    await taskDetailsPage.fillDynamicList('Item Name*', 'laptop');
     await taskDetailsPage.fillDynamicList('Unit Price*', '1');
     await taskDetailsPage.fillDynamicList('Quantity*', '2');
 
