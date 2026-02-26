@@ -11,9 +11,6 @@ import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.DecisionEvaluationIntent;
 import io.camunda.zeebe.protocol.record.value.DecisionEvaluationRecordValue;
-import io.camunda.zeebe.protocol.record.value.EvaluatedDecisionValue;
-import java.util.List;
-import java.util.Optional;
 
 public class DecisionEvaluationAuditLogTransformer
     implements AuditLogTransformer<DecisionEvaluationRecordValue> {
@@ -30,13 +27,21 @@ public class DecisionEvaluationAuditLogTransformer
     log.setDecisionDefinitionId(value.getDecisionId())
         .setDecisionDefinitionKey(value.getDecisionKey())
         .setDecisionRequirementsId(value.getDecisionRequirementsId())
-        .setDecisionRequirementsKey(value.getDecisionRequirementsKey())
-        .setDecisionEvaluationKey(
-            Optional.ofNullable(value.getEvaluatedDecisions())
-                .filter(list -> !list.isEmpty())
-                .map(List::getFirst)
-                .map(EvaluatedDecisionValue::getDecisionKey)
-                .orElse(null));
+        .setDecisionRequirementsKey(value.getDecisionRequirementsKey());
+
+    if (value.getEvaluatedDecisions() != null) {
+      value.getEvaluatedDecisions().stream()
+          .filter(
+              ed ->
+                  ed.getDecisionEvaluationInstanceKey() != null
+                      && !ed.getDecisionEvaluationInstanceKey().isEmpty())
+          .findFirst()
+          .ifPresent(
+              ed ->
+                  log.setEntityKey(ed.getDecisionEvaluationInstanceKey())
+                      .setDecisionEvaluationKey(ed.getDecisionKey()));
+    }
+
     if (record.getIntent() == DecisionEvaluationIntent.FAILED) {
       log.setEntityDescription(record.getRejectionType().name());
       log.setResult(io.camunda.search.entities.AuditLogEntity.AuditLogOperationResult.FAIL);
