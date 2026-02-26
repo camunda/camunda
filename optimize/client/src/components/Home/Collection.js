@@ -140,8 +140,11 @@ export class Collection extends Component {
             }}
             header={{
               title: (
-                <Stack gap={4} orientation="horizontal">
-                  <Folder size="24" /> {collection?.name}
+                <Stack gap={4} orientation="horizontal" className="titleContainer">
+                  <Folder size="24" />
+                  <span className="collectionName" title={collection?.name}>
+                    {collection?.name}
+                  </span>
                 </Stack>
               ),
               tag: collection && formatRole(collection?.currentUserRole),
