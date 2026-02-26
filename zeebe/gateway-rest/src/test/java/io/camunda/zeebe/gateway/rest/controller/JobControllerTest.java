@@ -19,6 +19,7 @@ import static org.mockito.Mockito.when;
 import io.camunda.gateway.protocol.model.JobActivationResult;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
+import io.camunda.search.entities.JobTimeSeriesStatisticsEntity;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
 import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.query.SearchQueryResult;
@@ -1012,8 +1013,9 @@ public class JobControllerTest extends RestControllerTest {
 
     final var searchResult =
         new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
-            .total(2L)
+            .total(2L, true)
             .items(List.of(statisticsEntity1, statisticsEntity2))
+            .endCursor("endCursor")
             .build();
 
     when(jobServices.getJobTypeStatistics(any())).thenReturn(searchResult);
@@ -1065,7 +1067,10 @@ public class JobControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 2
+                "totalItems": 2,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": true
               }
             }""";
 
@@ -1082,7 +1087,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.LENIENT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1099,7 +1104,8 @@ public class JobControllerTest extends RestControllerTest {
 
     final var searchResult =
         new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
-            .total(1L)
+            .total(1L, false)
+            .endCursor("endCursor")
             .items(List.of(statisticsEntity))
             .build();
 
@@ -1139,7 +1145,10 @@ public class JobControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 1
+                "totalItems": 1,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": false
               }
             }""";
 
@@ -1156,7 +1165,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.LENIENT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1173,7 +1182,8 @@ public class JobControllerTest extends RestControllerTest {
 
     final var searchResult =
         new SearchQueryResult.Builder<JobTypeStatisticsEntity>()
-            .total(1L)
+            .total(1L, false)
+            .endCursor("endCursor")
             .items(List.of(statisticsEntity))
             .build();
 
@@ -1213,7 +1223,10 @@ public class JobControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 1
+                "totalItems": 1,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": false
               }
             }""";
 
@@ -1230,7 +1243,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.LENIENT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1524,7 +1537,8 @@ public class JobControllerTest extends RestControllerTest {
 
     final var searchResult =
         new SearchQueryResult.Builder<JobWorkerStatisticsEntity>()
-            .total(2L)
+            .total(2L, true)
+            .endCursor("endCursor")
             .items(List.of(workerEntity1, workerEntity2))
             .build();
 
@@ -1576,7 +1590,10 @@ public class JobControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 2
+                "totalItems": 2,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": true
               }
             }""";
 
@@ -1593,7 +1610,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.LENIENT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1609,7 +1626,8 @@ public class JobControllerTest extends RestControllerTest {
 
     final var searchResult =
         new SearchQueryResult.Builder<JobWorkerStatisticsEntity>()
-            .total(1L)
+            .total(1L, false)
+            .endCursor("endCursor")
             .items(List.of(workerEntity))
             .build();
 
@@ -1649,7 +1667,10 @@ public class JobControllerTest extends RestControllerTest {
                 }
               ],
               "page": {
-                "totalItems": 1
+                "totalItems": 1,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": false
               }
             }""";
 
@@ -1666,7 +1687,7 @@ public class JobControllerTest extends RestControllerTest {
         .expectHeader()
         .contentType(MediaType.APPLICATION_JSON)
         .expectBody()
-        .json(expectedResponse, JsonCompareMode.LENIENT);
+        .json(expectedResponse, JsonCompareMode.STRICT);
   }
 
   @Test
@@ -1816,6 +1837,316 @@ public class JobControllerTest extends RestControllerTest {
     webClient
         .post()
         .uri(JOBS_BASE_URL + "/statistics/by-workers")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  // -------------------------------------------------------------------------
+  // /statistics/time-series tests
+  // -------------------------------------------------------------------------
+
+  @Test
+  void shouldGetJobTimeSeriesStatistics() {
+    // given
+    final var time1 = OffsetDateTime.parse("2024-07-29T15:50:00.000Z");
+    final var time2 = OffsetDateTime.parse("2024-07-29T15:51:00.000Z");
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+
+    final var entity1 =
+        new JobTimeSeriesStatisticsEntity(
+            time1,
+            new StatusMetric(12, lastUpdatedAt),
+            new StatusMetric(10, lastUpdatedAt),
+            new StatusMetric(0, null));
+    final var entity2 =
+        new JobTimeSeriesStatisticsEntity(
+            time2,
+            new StatusMetric(7, lastUpdatedAt),
+            new StatusMetric(6, lastUpdatedAt),
+            new StatusMetric(1, lastUpdatedAt));
+
+    final var searchResult =
+        new SearchQueryResult.Builder<JobTimeSeriesStatisticsEntity>()
+            .total(2L, true)
+            .items(List.of(entity1, entity2))
+            .endCursor("endCursor")
+            .build();
+
+    when(jobServices.getJobTimeSeriesStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    final var expectedResponse =
+        """
+            {
+              "items": [
+                {
+                  "time": "2024-07-29T15:50:00.000Z",
+                  "created":   { "count": 12, "lastUpdatedAt": "2024-07-29T15:51:28.071Z" },
+                  "completed": { "count": 10, "lastUpdatedAt": "2024-07-29T15:51:28.071Z" },
+                  "failed":    { "count": 0,  "lastUpdatedAt": null }
+                },
+                {
+                  "time": "2024-07-29T15:51:00.000Z",
+                  "created":   { "count": 7, "lastUpdatedAt": "2024-07-29T15:51:28.071Z" },
+                  "completed": { "count": 6, "lastUpdatedAt": "2024-07-29T15:51:28.071Z" },
+                  "failed":    { "count": 1, "lastUpdatedAt": "2024-07-29T15:51:28.071Z" }
+                }
+              ],
+              "page": {
+                "totalItems": 2,
+                "startCursor": null,
+                "endCursor": "endCursor",
+                "hasMoreTotalItems": true
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .json(expectedResponse, JsonCompareMode.STRICT);
+  }
+
+  @Test
+  void shouldGetJobTimeSeriesStatisticsWithResolution() {
+    // given
+    final var time1 = OffsetDateTime.parse("2024-07-29T15:00:00.000Z");
+    final var lastUpdatedAt = OffsetDateTime.parse("2024-07-29T15:51:28.071Z");
+    final var entity =
+        new JobTimeSeriesStatisticsEntity(
+            time1,
+            new StatusMetric(100, lastUpdatedAt),
+            new StatusMetric(95, lastUpdatedAt),
+            new StatusMetric(2, lastUpdatedAt));
+    final var searchResult =
+        new SearchQueryResult.Builder<JobTimeSeriesStatisticsEntity>()
+            .total(1L)
+            .items(List.of(entity))
+            .build();
+
+    when(jobServices.getJobTimeSeriesStatistics(any())).thenReturn(searchResult);
+
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:00:00.000Z",
+                "to":   "2024-07-29T15:00:00.000Z",
+                "jobType": "fetch-customer-data",
+                "resolution": "PT1H"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_JSON)
+        .expectBody()
+        .jsonPath("$.items[0].time")
+        .isEqualTo("2024-07-29T15:00:00.000Z")
+        .jsonPath("$.items[0].created.count")
+        .isEqualTo(100);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithMissingBody() {
+    // given
+    final var expectedBody =
+        """
+            {
+              "type": "about:blank",
+              "status": 400,
+              "title": "Bad Request",
+              "detail": "Required request body is missing",
+              "instance": "%s"
+            }"""
+            .formatted(JOBS_BASE_URL + "/statistics/time-series");
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isBadRequest()
+        .expectHeader()
+        .contentType(MediaType.APPLICATION_PROBLEM_JSON)
+        .expectBody()
+        .json(expectedBody, JsonCompareMode.STRICT);
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithMissingFilter() {
+    // given
+    final var request = "{}";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithEmptyFilter() {
+    // given
+    final var request =
+        """
+        { "filter": {} }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithMissingFrom() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "to": "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithMissingTo() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "jobType": "fetch-customer-data"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithMissingJobType() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to": "2024-07-29T15:51:28.071Z"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
+        .accept(MediaType.APPLICATION_JSON)
+        .contentType(MediaType.APPLICATION_JSON)
+        .bodyValue(request)
+        .exchange()
+        .expectStatus()
+        .isBadRequest();
+
+    verifyNoInteractions(jobServices);
+  }
+
+  @Test
+  void shouldRejectJobTimeSeriesStatisticsWithInvalidResolution() {
+    // given
+    final var request =
+        """
+            {
+              "filter": {
+                "from": "2024-07-28T15:51:28.071Z",
+                "to":   "2024-07-29T15:51:28.071Z",
+                "jobType": "fetch-customer-data",
+                "resolution": "not-a-duration"
+              }
+            }""";
+
+    // when/then
+    webClient
+        .post()
+        .uri(JOBS_BASE_URL + "/statistics/time-series")
         .accept(MediaType.APPLICATION_JSON)
         .contentType(MediaType.APPLICATION_JSON)
         .bodyValue(request)
