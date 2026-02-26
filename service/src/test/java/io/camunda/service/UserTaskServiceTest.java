@@ -28,8 +28,11 @@ import io.camunda.search.entities.FormEntity;
 import io.camunda.search.entities.UserTaskEntity;
 import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.exception.ResourceAccessDeniedException;
+import io.camunda.search.filter.Operation;
+import io.camunda.search.page.SearchQueryPage.SearchQueryResultType;
 import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
+import io.camunda.search.query.VariableQuery;
 import io.camunda.service.authorization.Authorizations;
 import io.camunda.service.cache.ProcessCache;
 import io.camunda.service.cache.ProcessCacheItem;
@@ -38,6 +41,7 @@ import io.camunda.service.exception.ServiceException;
 import io.camunda.service.exception.ServiceException.Status;
 import io.camunda.service.security.SecurityContextProvider;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
@@ -45,6 +49,7 @@ import org.instancio.Instancio;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 public class UserTaskServiceTest {
 
@@ -120,9 +125,8 @@ public class UserTaskServiceTest {
       when(client.getUserTask(any(Long.class))).thenReturn(entity);
       when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
           .thenReturn(flowNodeInstanceEntity);
-      when(variableServices.search(
-              variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))))
-          .thenReturn(SearchQueryResult.of(variable));
+      when(variableServices.search(any()))
+          .thenReturn(SearchQueryResult.of(result -> result.items(List.of(variable))));
 
       // when
       final SearchQueryResult<VariableEntity> searchQueryResult =
@@ -130,6 +134,177 @@ public class UserTaskServiceTest {
 
       // then
       assertThat(searchQueryResult.items()).containsOnly(variable);
+      final var queryCaptor = ArgumentCaptor.forClass(VariableQuery.class);
+      verify(variableServices).search(queryCaptor.capture());
+      assertThat(queryCaptor.getValue().filter().scopeKeyOperations())
+          .extracting(Operation::value)
+          .containsExactly(1L, 2L, 3L);
+      assertThat(queryCaptor.getValue().page().resultType()).isEqualTo(SearchQueryResultType.UNLIMITED);
+    }
+
+    @Test
+    public void shouldReturnClosestVariablePerNameWithPagination() {
+      // given
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::elementInstanceKey), 3L)
+              .create();
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), 3L)
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2/3")
+              .create();
+      final var rootVehicle =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "vehicleModel")
+              .set(field(VariableEntity::scopeKey), 1L)
+              .set(field(VariableEntity::value), "\"X5\"")
+              .create();
+      final var localVehicle =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "vehicleModel")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::value), "\"X5 M Competition\"")
+              .create();
+      final var rootMake =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "vehicleMake")
+              .set(field(VariableEntity::scopeKey), 1L)
+              .set(field(VariableEntity::value), "\"BMW\"")
+              .create();
+      final var localInstructions =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "instructions")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::value), "\"Use official lookup\"")
+              .create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.search(any()))
+          .thenReturn(
+              SearchQueryResult.of(
+                  result ->
+                      result.items(List.of(rootVehicle, localVehicle, rootMake, localInstructions))));
+
+      // when
+      final var result =
+          services.searchUserTaskVariables(
+              entity.userTaskKey(),
+              variableSearchQuery(
+                      q ->
+                          q.sort(s -> s.name().asc())
+                              .page(p -> p.size(3).from(0)))
+                  .build());
+
+      // then
+      assertThat(result.total()).isEqualTo(3);
+      assertThat(result.items())
+          .extracting(VariableEntity::name)
+          .containsExactly("instructions", "vehicleMake", "vehicleModel");
+      final var vehicleModel =
+          result.items().stream()
+              .filter(variable -> "vehicleModel".equals(variable.name()))
+              .findFirst()
+              .orElseThrow();
+      assertThat(vehicleModel.scopeKey()).isEqualTo(3L);
+    }
+
+    @Test
+    public void shouldUseVariableKeyFallbackWhenNameAndScopeMatch() {
+      // given
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::elementInstanceKey), 3L)
+              .create();
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), 3L)
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2/3")
+              .create();
+      final var older =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "sameName")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::variableKey), 10L)
+              .set(field(VariableEntity::value), "\"older\"")
+              .create();
+      final var newer =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "sameName")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::variableKey), 11L)
+              .set(field(VariableEntity::value), "\"newer\"")
+              .create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.search(any()))
+          .thenReturn(SearchQueryResult.of(result -> result.items(List.of(older, newer))));
+
+      // when
+      final var result =
+          services.searchUserTaskVariables(
+              entity.userTaskKey(), variableSearchQuery(q -> q.page(p -> p.size(10))).build());
+
+      // then
+      assertThat(result.total()).isEqualTo(1);
+      assertThat(result.items()).singleElement().extracting(VariableEntity::variableKey).isEqualTo(11L);
+    }
+
+    @Test
+    public void shouldSortDeduplicatedVariablesByRequestedOrder() {
+      // given
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::elementInstanceKey), 3L)
+              .create();
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), 3L)
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2/3")
+              .create();
+      final var alpha =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "alpha")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::variableKey), 1L)
+              .create();
+      final var beta =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "beta")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::variableKey), 2L)
+              .create();
+      final var gamma =
+          Instancio.of(VariableEntity.class)
+              .set(field(VariableEntity::name), "gamma")
+              .set(field(VariableEntity::scopeKey), 3L)
+              .set(field(VariableEntity::variableKey), 3L)
+              .create();
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.search(any()))
+          .thenReturn(SearchQueryResult.of(result -> result.items(List.of(alpha, beta, gamma))));
+
+      // when
+      final var result =
+          services.searchUserTaskVariables(
+              entity.userTaskKey(),
+              variableSearchQuery(
+                      q ->
+                          q.sort(s -> s.variableKey().desc())
+                              .page(p -> p.size(3).from(0)))
+                  .build());
+
+      // then
+      assertThat(result.items())
+          .extracting(VariableEntity::variableKey)
+          .containsExactly(3L, 2L, 1L);
     }
   }
 
