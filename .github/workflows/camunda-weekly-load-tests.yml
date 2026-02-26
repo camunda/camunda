@@ -78,6 +78,18 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: realistic
+  setup-realistic-rest-test:
+    name: Realistic REST API load test
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    permissions: {}
+    needs:
+      - test-data
+    with:
+      name: ${{ needs.test-data.outputs.test }}-realistic-rest
+      ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      scenario: realistic-rest
   setup-latency-test:
     name: Latency test
     uses: ./.github/workflows/camunda-load-test.yml
@@ -93,7 +105,7 @@ jobs:
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-realistic-rest-test, setup-latency-test ]
     if: failure()
     steps:
       - uses: actions/checkout@v6

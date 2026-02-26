@@ -47,6 +47,7 @@ on:
           - custom
           - latency
           - realistic
+          - realistic-rest
           - typical
           - max
         default: custom
@@ -193,6 +194,9 @@ jobs:
               ;;
             realistic)
               echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml" >> "$GITHUB_OUTPUT"
+              ;;
+            realistic-rest)
+              echo "load-test-load=-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml --set preferRest=true" >> "$GITHUB_OUTPUT"
               ;;
             typical)
               # Output typical configuration directly to avoid quote escaping issues
