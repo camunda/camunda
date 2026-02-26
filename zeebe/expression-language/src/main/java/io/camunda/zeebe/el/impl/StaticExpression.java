@@ -83,6 +83,11 @@ public final class StaticExpression implements Expression, EvaluationResult {
   }
 
   @Override
+  public List<String> getVariableNames() {
+    return List.of();
+  }
+
+  @Override
   public boolean isStatic() {
     return true;
   }

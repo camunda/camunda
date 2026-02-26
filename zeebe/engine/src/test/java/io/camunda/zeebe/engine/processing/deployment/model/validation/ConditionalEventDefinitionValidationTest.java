@@ -11,7 +11,6 @@ import io.camunda.zeebe.model.bpmn.Bpmn;
 import io.camunda.zeebe.model.bpmn.BpmnModelInstance;
 import io.camunda.zeebe.model.bpmn.instance.Condition;
 import io.camunda.zeebe.model.bpmn.instance.Process;
-import io.camunda.zeebe.model.bpmn.instance.zeebe.ZeebeConditionalFilter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -76,7 +75,7 @@ public class ConditionalEventDefinitionValidationTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .condition(c -> c.condition("= x > 1").zeebeVariableNames("x"))
+            .condition(c -> c.condition("= x > 1"))
             .done();
 
     // when/then
@@ -90,48 +89,11 @@ public class ConditionalEventDefinitionValidationTest {
     final BpmnModelInstance process =
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, y"))
+            .condition(c -> c.condition("= x > y"))
             .done();
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be comma separated for conditional start event")
-  void invalidStaticVariableNamesForConditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, ,y"))
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must not contain empty names but 'x, ,y' given."
-                + " Please provide a comma-separated list of variable names without empty entries."));
-  }
-
-  @Test
-  @DisplayName("Variable names cannot be an expression for conditional start event")
-  void variableNamesCannotBeAnExpressionForConditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("=myVarNames"))
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -274,7 +236,7 @@ public class ConditionalEventDefinitionValidationTest {
             .serviceTask("task")
             .zeebeJobType("task")
             .boundaryEvent()
-            .condition(c -> c.condition("= x > 1").zeebeVariableNames("x"))
+            .condition(c -> c.condition("= x > 1"))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
@@ -295,7 +257,7 @@ public class ConditionalEventDefinitionValidationTest {
             .serviceTask("task")
             .zeebeJobType("task")
             .boundaryEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, y"))
+            .condition(c -> c.condition("= x > y"))
             .endEvent()
             .moveToActivity("task")
             .endEvent()
@@ -303,55 +265,6 @@ public class ConditionalEventDefinitionValidationTest {
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be comma separated for conditional boundary event")
-  void invalidVariableNamesForConditionalBoundaryEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("task")
-            .boundaryEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, ,y"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must not contain empty names but 'x, ,y' given."
-                + " Please provide a comma-separated list of variable names without empty entries."));
-  }
-
-  @Test
-  @DisplayName("Variable names cannot be an expression for conditional boundary event")
-  void variableNamesCannotBeAnExpressionForConditionalBoundaryEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("task")
-            .boundaryEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("=myVarNames"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -457,7 +370,7 @@ public class ConditionalEventDefinitionValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > 1").zeebeVariableNames("x"))
+            .condition(c -> c.condition("= x > 1"))
             .endEvent()
             .done();
 
@@ -474,53 +387,12 @@ public class ConditionalEventDefinitionValidationTest {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, y"))
+            .condition(c -> c.condition("= x > y"))
             .endEvent()
             .done();
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be comma separated for conditional intermediate catch event")
-  void invalidVariableNamesForConditionalIntermediateCatchEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, ,y"))
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must not contain empty names but 'x, ,y' given."
-                + " Please provide a comma-separated list of variable names without empty entries."));
-  }
-
-  @Test
-  @DisplayName("Variable names cannot be an expression for conditional intermediate catch event")
-  void variableNamesCannotBeAnExpressionForConditionalIntermediateCatchEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("=myVarNames"))
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
@@ -621,7 +493,7 @@ public class ConditionalEventDefinitionValidationTest {
             .moveToProcess("process")
             .eventSubProcess()
             .startEvent()
-            .condition(c -> c.condition("= x > 1").zeebeVariableNames("x"))
+            .condition(c -> c.condition("= x > 1"))
             .endEvent()
             .subProcessDone()
             .done();
@@ -642,64 +514,13 @@ public class ConditionalEventDefinitionValidationTest {
             .moveToProcess("process")
             .eventSubProcess()
             .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, y"))
+            .condition(c -> c.condition("= x > y"))
             .endEvent()
             .subProcessDone()
             .done();
 
     // when/then
     ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names must be comma separated for conditional event subprocess start event")
-  void invalidStaticVariableNamesForConditionalEventSubProcessStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .moveToProcess("process")
-            .eventSubProcess()
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("x, ,y"))
-            .endEvent()
-            .subProcessDone()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must not contain empty names but 'x, ,y' given."
-                + " Please provide a comma-separated list of variable names without empty entries."));
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names cannot be an expression for conditional event subprocess start event")
-  void variableNamesCannotBeAnExpressionForConditionalEventSubProcessStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .moveToProcess("process")
-            .eventSubProcess()
-            .startEvent()
-            .condition(c -> c.condition("= x > y").zeebeVariableNames("=myVarNames"))
-            .endEvent()
-            .subProcessDone()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(
-        process,
-        ExpectedValidationResult.expect(
-            ZeebeConditionalFilter.class,
-            "Variable names must be static and cannot be expressions. '=myVarNames' starts with '='."));
   }
 
   @Test
