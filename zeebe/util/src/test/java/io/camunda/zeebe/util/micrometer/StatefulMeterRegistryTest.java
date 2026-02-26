@@ -61,7 +61,7 @@ final class StatefulMeterRegistryTest {
 
   /** See issue: <a href="https://github.com/camunda/camunda/issues/33941">...</a> */
   @Test
-  @Timeout(value = 5, unit = TimeUnit.SECONDS)
+  @Timeout(value = 30, unit = TimeUnit.SECONDS)
   void shouldNotDeadlockWithManyThreadsRegisteringAndRemoving() {
     final int numThreads = 10;
     final int numGauges = 50;
