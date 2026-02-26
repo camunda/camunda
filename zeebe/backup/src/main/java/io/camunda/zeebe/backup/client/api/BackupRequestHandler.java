@@ -353,16 +353,17 @@ public final class BackupRequestHandler implements BackupApi {
     }
     if ((statuses.contains(BackupStatusCode.IN_PROGRESS)
             || statuses.contains(BackupStatusCode.COMPLETED))
-        && (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)
-            || statuses.contains(BackupStatusCode.DELETED))) {
+        && statuses.contains(BackupStatusCode.DOES_NOT_EXIST)
+        && !statuses.contains(BackupStatusCode.DELETED)) {
       return State.INCOMPLETE;
-    }
-    if (statuses.contains(BackupStatusCode.IN_PROGRESS)) {
-      return State.IN_PROGRESS;
     }
 
     if (statuses.contains(BackupStatusCode.DELETED)) {
       return State.DELETED;
+    }
+
+    if (statuses.contains(BackupStatusCode.IN_PROGRESS)) {
+      return State.IN_PROGRESS;
     }
 
     if (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
