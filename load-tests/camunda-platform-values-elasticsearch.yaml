@@ -35,10 +35,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 10000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # Disable the importers
-        camunda.tasklist.importerEnabled: "false"
-        camunda.operate.importerEnabled: "false"
-        camunda.operate.elasticsearch.numberOfShards: 3
         # Schema management has been moved out of exporter - to be bootstrap at start; once
         camunda.data.secondary-storage.retention.enabled: "true"
         # 0s causes ILM to move data asap - it is normally the default

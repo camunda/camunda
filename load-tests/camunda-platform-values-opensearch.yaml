@@ -44,9 +44,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 4000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # Disable the importers
-        camunda.tasklist.importerEnabled: "false"
-        camunda.operate.importerEnabled: "false"
         camunda.data.secondary-storage.retention.enabled: "true"
         camunda.data.secondary-storage.retention.minimum-age: "70m"
         camunda.data.secondary-storage.opensearch.history.policy-name: "camunda-retention-policy"
