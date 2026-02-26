@@ -140,11 +140,11 @@ public final class AuthorizationCheckBehavior {
    * @return Either containing a rejection if ALL requests failed, or Void if any succeeded
    */
   public Either<Rejection, Void> isAnyAuthorized(final AuthorizationRequest... requests) {
-    if (shouldSkipAllChecks()) {
-      return AUTHORIZED;
-    }
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
+    }
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
     }
 
     final List<Rejection> rejections = new ArrayList<>();
@@ -193,11 +193,11 @@ public final class AuthorizationCheckBehavior {
    */
   public Either<Rejection, Void> isAnyAuthorizedOrInternalCommand(
       final AuthorizationRequest... requests) {
-    if (shouldSkipAllChecks()) {
-      return AUTHORIZED;
-    }
     if (requests == null || requests.length == 0) {
       throw new IllegalArgumentException("No authorization requests provided");
+    }
+    if (shouldSkipAllChecks()) {
+      return AUTHORIZED;
     }
 
     // bypass authorization if any request is from an internal command
