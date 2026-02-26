@@ -187,3 +187,32 @@ func TestValidatePort(t *testing.T) {
 		})
 	}
 }
+
+func TestDockerCommandEnvOverridesVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
+	base := []string{"CAMUNDA_VERSION=8.9.0-alpha4", "FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
+	assert.Equal(t, []string{"CAMUNDA_VERSION=8.9.0-alpha4", "FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvAddsVersionWhenMissing(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "8.9-SNAPSHOT")
+	base := []string{"FOO=bar"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Contains(t, result, "CAMUNDA_VERSION=8.9-SNAPSHOT")
+	assert.Equal(t, []string{"FOO=bar"}, base)
+}
+
+func TestDockerCommandEnvNoOverrideWithoutDockerVersion(t *testing.T) {
+	t.Setenv("CAMUNDA_DOCKER_VERSION", "")
+	base := []string{"CAMUNDA_VERSION=8.9.0-alpha4"}
+
+	result := dockerCommandEnv(base)
+
+	assert.Equal(t, base, result)
+}
