@@ -9,8 +9,6 @@ package io.camunda.zeebe.exporter.common.auditlog.transformers;
 
 import static io.camunda.zeebe.exporter.common.auditlog.transformers.AuditLogTransformerConfigs.PROCESS_INSTANCE_CANCEL_CONFIG;
 
-import io.camunda.zeebe.exporter.common.auditlog.AuditLogEntry;
-import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 
 public class ProcessInstanceCancelAuditLogTransformer
@@ -19,13 +17,5 @@ public class ProcessInstanceCancelAuditLogTransformer
   @Override
   public TransformerConfig config() {
     return PROCESS_INSTANCE_CANCEL_CONFIG;
-  }
-
-  @Override
-  public void transform(final Record<ProcessInstanceRecordValue> record, final AuditLogEntry log) {
-    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 }

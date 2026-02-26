@@ -23,9 +23,5 @@ public class IncidentResolutionAuditLogTransformer
   public void transform(final Record<IncidentRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setJobKey(value.getJobKey());
-    final long rootProcessInstanceKey = record.getValue().getRootProcessInstanceKey();
-    if (rootProcessInstanceKey > 0) {
-      log.setRootProcessInstanceKey(rootProcessInstanceKey);
-    }
   }
 }

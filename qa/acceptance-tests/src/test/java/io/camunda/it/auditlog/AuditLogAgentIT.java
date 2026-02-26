@@ -71,7 +71,7 @@ public class AuditLogAgentIT {
         .join();
 
     // Wait for audit logs to be available
-    Awaitility.await("process instance to be completed")
+    Awaitility.await("job to be completed")
         .ignoreExceptionsInstanceOf(ProblemException.class)
         .untilAsserted(
             () -> {
@@ -80,13 +80,12 @@ public class AuditLogAgentIT {
                       .newAuditLogSearchRequest()
                       .filter(
                           f ->
-                              f.operationType(AuditLogOperationTypeEnum.CREATE)
-                                  .entityType(AuditLogEntityTypeEnum.VARIABLE))
+                              f.operationType(AuditLogOperationTypeEnum.COMPLETE)
+                                  .entityType(AuditLogEntityTypeEnum.JOB))
                       .send()
                       .join();
 
-              // first is the internal adhoc subprocess variable, second is the job variable
-              assertThat(result.items()).hasSizeGreaterThan(1);
+              assertThat(result.items()).hasSize(1);
             });
   }
 
@@ -97,7 +96,7 @@ public class AuditLogAgentIT {
     final var result =
         client
             .newAuditLogSearchRequest()
-            .filter(f -> f.entityType(AuditLogEntityTypeEnum.VARIABLE))
+            .filter(f -> f.entityType(AuditLogEntityTypeEnum.JOB))
             .send()
             .join();
 
@@ -108,7 +107,8 @@ public class AuditLogAgentIT {
             auditLog -> {
               assertThat(auditLog.getActorType()).isEqualTo(AuditLogActorTypeEnum.USER);
               assertThat(auditLog.getActorId()).isEqualTo(DEFAULT_USERNAME);
-              assertThat(auditLog.getEntityDescription()).isEqualTo("testVar");
+              assertThat(auditLog.getEntityDescription())
+                  .isEqualTo(JobRecord.IO_CAMUNDA_AI_AGENT_JOB_WORKER_TYPE_PREFIX);
               assertThat(auditLog.getAgentElementId()).isEqualTo(AGENT_ELEMENT_ID);
             });
   }

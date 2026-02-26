@@ -28,6 +28,7 @@ import io.camunda.zeebe.exporter.common.auditlog.transformers.FormAuditLogTransf
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.GroupEntityAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.IncidentResolutionAuditLogTransformer;
+import io.camunda.zeebe.exporter.common.auditlog.transformers.JobAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.MappingRuleAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessAuditLogTransformer;
 import io.camunda.zeebe.exporter.common.auditlog.transformers.ProcessInstanceCancelAuditLogTransformer;
@@ -134,6 +135,7 @@ class RdbmsExporterWrapperTest {
             Map.entry(TenantEntityAuditLogTransformer.class, ValueType.TENANT),
             Map.entry(UserAuditLogTransformer.class, ValueType.USER),
             Map.entry(UserTaskAuditLogTransformer.class, ValueType.USER_TASK),
+            Map.entry(JobAuditLogTransformer.class, ValueType.JOB),
             Map.entry(VariableAddUpdateAuditLogTransformer.class, ValueType.VARIABLE));
 
     // Check that all expected AuditLogExportHandlers are registered
