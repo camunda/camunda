@@ -17,8 +17,8 @@ package io.camunda.zeebe.protocol.record.value;
 
 import io.camunda.zeebe.protocol.record.ImmutableProtocol;
 import io.camunda.zeebe.protocol.record.RecordValue;
+import io.camunda.zeebe.protocol.record.RecordValueWithVariables;
 import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 
 /**
@@ -31,8 +31,7 @@ import org.immutables.value.Value;
  *
  * <ul>
  *   <li>{@link #getExpression()} – the FEEL expression to evaluate.
- *   <li>{@link #getContext()} – the optional context for the expression evaluation (can be an empty
- *       map but not {@code null}).
+ *   <li>{@link #getVariables()} - the variables used as context for the expression evaluation.
  *   <li>{@link #getResultValue()} – the result value (nullable).
  *   <li>{@link #getWarnings()} – the list of warnings generated during evaluation.
  * </ul>
@@ -42,7 +41,7 @@ import org.immutables.value.Value;
  */
 @Value.Immutable
 @ImmutableProtocol(builder = ImmutableExpressionRecordValue.Builder.class)
-public interface ExpressionRecordValue extends RecordValue, TenantOwned {
+public interface ExpressionRecordValue extends RecordValue, TenantOwned, RecordValueWithVariables {
 
   /**
    * Returns the FEEL expression to be evaluated.
@@ -50,13 +49,6 @@ public interface ExpressionRecordValue extends RecordValue, TenantOwned {
    * @return the FEEL expression as a String (never {@code null})
    */
   String getExpression();
-
-  /**
-   * Returns the optional FEEL context in which the expression is evaluated.
-   *
-   * @return the FEEL context as a {@link Map} (never {@code null}, but can be empty)
-   */
-  Map<String, Object> getContext();
 
   /**
    * Returns the result value of the expression evaluation.

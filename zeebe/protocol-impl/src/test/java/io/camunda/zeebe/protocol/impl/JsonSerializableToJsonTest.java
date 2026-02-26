@@ -653,7 +653,7 @@ final class JsonSerializableToJsonTest {
                   .setResultValue(wrapString("15"))
                   .setTenantId("test-tenant")
                   .setWarnings(List.of("warning1", "warning2"))
-                  .setContext(Map.of("foo", "bar"));
+                  .setVariables(VARIABLES_MSGPACK);
               return record;
             },
         """
@@ -662,7 +662,7 @@ final class JsonSerializableToJsonTest {
                   "expression":"=10 + 5",
                   "resultValue":49,
                   "warnings":["warning1","warning2"],
-                  "context":{
+                  "variables":{
                     "foo":"bar"
                   }
                 }

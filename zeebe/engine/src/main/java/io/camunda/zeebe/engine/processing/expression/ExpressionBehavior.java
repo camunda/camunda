@@ -14,11 +14,13 @@ import io.camunda.zeebe.el.ExpressionLanguage;
 import io.camunda.zeebe.engine.processing.Rejection;
 import io.camunda.zeebe.engine.processing.common.ExpressionProcessor;
 import io.camunda.zeebe.engine.processing.common.Failure;
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.util.Either;
 import java.time.Duration;
 import java.util.Map;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class ExpressionBehavior {
 
@@ -35,11 +37,11 @@ public class ExpressionBehavior {
 
   public Either<Rejection, ExpressionRecord> resolveExpression(
       final Expression expression, final ExpressionRecord expressionRecord) {
-    final var contextAsMap = expressionRecord.getContext();
+    final var variables = expressionRecord.getVariables();
     final var contextAsEvaluationContext =
-        contextAsMap == null
+        variables == null
             ? new InMemoryVariableEvaluationContext(Map.of())
-            : new InMemoryVariableEvaluationContext(contextAsMap);
+            : new InMemoryVariableEvaluationContext(variables);
     return evaluate(expression, contextAsEvaluationContext, expressionRecord.getTenantId())
         .map(evaluationResult -> mapSuccess(evaluationResult, expressionRecord));
   }
@@ -74,7 +76,8 @@ public class ExpressionBehavior {
     return new ExpressionRecord()
         .setTenantId(expressionRecord.getTenantId())
         .setExpression(expressionRecord.getExpression())
-        .setContext(expressionRecord.getContext())
+        .setVariables(
+            new UnsafeBuffer(MsgPackConverter.convertToMsgPack(expressionRecord.getVariables())))
         .setWarnings(
             evaluationResult.getWarnings().stream().map(EvaluationWarning::getMessage).toList())
         .setResultValue(evaluationResult.toBuffer());
