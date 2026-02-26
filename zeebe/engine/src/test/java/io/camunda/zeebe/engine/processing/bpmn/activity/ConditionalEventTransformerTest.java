@@ -185,60 +185,60 @@ public class ConditionalEventTransformerTest {
     @Nested
     @TestInstance(TestInstance.Lifecycle.PER_CLASS)
     class VariableNamesTests {
-      Stream<Arguments> variableNames() {
+
+      Stream<Arguments> expressionsWithVariableNames() {
         return Stream.of(
-            Arguments.of(null, List.of()),
-            Arguments.of("", List.of()),
-            Arguments.of(" ", List.of()),
-            Arguments.of("var1", List.of("var1")),
-            Arguments.of("var1,var2", List.of("var1", "var2")),
-            Arguments.of(" var1 , var2 ", List.of("var1", "var2")));
+            Arguments.of("=x > 10", List.of("x")),
+            Arguments.of("=x > 10 and y < 5", List.of("x", "y")),
+            Arguments.of("=x.y > 10", List.of("x")),
+            Arguments.of("=x + y > 10", List.of("x", "y")),
+            Arguments.of("=x > 10 or y < 5 or z = 0", List.of("x", "y", "z")));
       }
 
-      @DisplayName("Should transform conditional boundary events with variableNames")
+      @DisplayName("Should auto-detect variableNames from FEEL expression for boundary event")
       @ParameterizedTest
-      @MethodSource("variableNames")
-      void shouldTransformVariableNamesForConditionalBoundaryEvent(
-          final String variableNames, final List<String> parsedVariableNames) {
+      @MethodSource("expressionsWithVariableNames")
+      void shouldAutoDetectVariableNamesForConditionalBoundaryEvent(
+          final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
-                processWithConditionalBoundaryEvent(c -> c.zeebeVariableNames(variableNames)));
-        assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
+                processWithConditionalBoundaryEvent(c -> c.condition(expression)));
+        assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
 
-      @DisplayName("Should transform intermediate conditional catch events with variableNames")
+      @DisplayName(
+          "Should auto-detect variableNames from FEEL expression for intermediate catch event")
       @ParameterizedTest
-      @MethodSource("variableNames")
-      void shouldTransformVariableNamesForIntermediateConditionalEvent(
-          final String variableNames, final List<String> parsedVariableNames) {
+      @MethodSource("expressionsWithVariableNames")
+      void shouldAutoDetectVariableNamesForIntermediateConditionalEvent(
+          final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
-                processWithConditionalIntermediateCatchEvent(
-                    c -> c.zeebeVariableNames(variableNames)));
-        assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
+                processWithConditionalIntermediateCatchEvent(c -> c.condition(expression)));
+        assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
 
-      @DisplayName("Should transform event subprocess conditional start events with variableNames")
+      @DisplayName(
+          "Should auto-detect variableNames from FEEL expression for event subprocess start event")
       @ParameterizedTest
-      @MethodSource("variableNames")
-      void shouldTransformVariableNamesForSubprocessConditionalStartEvent(
-          final String variableNames, final List<String> parsedVariableNames) {
+      @MethodSource("expressionsWithVariableNames")
+      void shouldAutoDetectVariableNamesForSubprocessConditionalStartEvent(
+          final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
-                processWithEventSubprocessConditionalStartEvent(
-                    c -> c.zeebeVariableNames(variableNames)));
-        assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
+                processWithEventSubprocessConditionalStartEvent(c -> c.condition(expression)));
+        assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
 
-      @DisplayName("Should transform conditional start events with variableNames")
+      @DisplayName("Should auto-detect variableNames from FEEL expression for start event")
       @ParameterizedTest
-      @MethodSource("variableNames")
-      void shouldTransformStaticVariableNamesForConditionalStartEvent(
-          final String variableNames, final List<String> parsedVariableNames) {
+      @MethodSource("expressionsWithVariableNames")
+      void shouldAutoDetectVariableNamesForConditionalStartEvent(
+          final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
-                processWithConditionalStartEvent(c -> c.zeebeVariableNames(variableNames)));
-        assertThat(executableConditional.getVariableNames()).isEqualTo(parsedVariableNames);
+                processWithConditionalStartEvent(c -> c.condition(expression)));
+        assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
     }
 

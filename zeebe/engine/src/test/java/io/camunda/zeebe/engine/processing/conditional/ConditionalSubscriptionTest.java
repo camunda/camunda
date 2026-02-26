@@ -36,11 +36,7 @@ public final class ConditionalSubscriptionTest {
                     .serviceTask("task")
                     .zeebeJobType("task")
                     .boundaryEvent("boundary")
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .moveToActivity("task")
                     .endEvent()
@@ -89,11 +85,7 @@ public final class ConditionalSubscriptionTest {
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
                     .intermediateCatchEvent("catchEvent")
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .done())
             .deploy();
@@ -142,11 +134,7 @@ public final class ConditionalSubscriptionTest {
                     .moveToProcess(processId)
                     .eventSubProcess()
                     .startEvent("catchEvent")
-                    .condition(
-                        c ->
-                            c.condition("=x > y")
-                                .zeebeVariableNames("x, y")
-                                .zeebeVariableEvents("create, update"))
+                    .condition(c -> c.condition("=x > y").zeebeVariableEvents("create, update"))
                     .endEvent()
                     .subProcessDone()
                     .done())
@@ -184,7 +172,7 @@ public final class ConditionalSubscriptionTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent("startEvent")
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
