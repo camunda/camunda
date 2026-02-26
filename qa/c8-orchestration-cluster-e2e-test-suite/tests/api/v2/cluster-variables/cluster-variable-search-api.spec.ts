@@ -20,6 +20,7 @@ import {
   createTenantClusterVariable,
   assertClusterVariableInResponse,
   createTenantAndStoreResponseFields,
+  assertClusterVariableUpdate,
 } from '@requestHelpers';
 
 test.describe.parallel('Search Cluster Variables API Tests', () => {
@@ -398,6 +399,47 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         itemsLengthEqualTo: 0,
         totalItemsEqualTo: 0,
       });
+    }).toPass(defaultAssertionOptions);
+  });
+
+  test('Search Finds Updated Cluster Variable Value', async ({request}) => {
+    // Create a global cluster variable
+    await createGlobalClusterVariable(request, state, 'updatedSearchVar');
+    const variableName = state['updatedSearchVarName'] as string;
+    createdVariables.push({name: variableName});
+
+    // Update the variable with a new value (with retry logic)
+    const updatedValue = {status: 'updated', timestamp: Date.now()};
+    await assertClusterVariableUpdate(
+      request,
+      buildUrl('/cluster-variables/global/{name}', {name: variableName}),
+      updatedValue,
+      variableName,
+      'GLOBAL',
+    );
+
+    // Search for the variable and verify updated value is returned
+    await expect(async () => {
+      const res = await request.post(buildUrl('/cluster-variables/search'), {
+        headers: jsonHeaders(),
+        data: {
+          filter: {
+            name: variableName,
+          },
+        },
+      });
+
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body.page.totalItems).toBeGreaterThanOrEqual(1);
+      expect(body.items.length).toBeGreaterThan(0);
+
+      const found = body.items.find(
+        (item: Record<string, unknown>) => item.name === variableName,
+      );
+      expect(found).toBeDefined();
+      expect(found!.scope).toBe('GLOBAL');
+      expect(JSON.parse(found!.value as string)).toEqual(updatedValue);
     }).toPass(defaultAssertionOptions);
   });
 });

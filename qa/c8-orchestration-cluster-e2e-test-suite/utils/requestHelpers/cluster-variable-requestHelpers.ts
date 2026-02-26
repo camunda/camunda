@@ -131,6 +131,50 @@ export async function deleteTenantClusterVariable(
 }
 
 /**
+ * Updates a global cluster variable
+ */
+export async function updateGlobalClusterVariable(
+  request: APIRequestContext,
+  name: string,
+  value: unknown,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.put(
+      buildUrl('/cluster-variables/global/{name}', {name}),
+      {
+        headers: jsonHeaders(),
+        data: {value},
+      },
+    );
+    await assertStatusCode(res, 200);
+  }).toPass(defaultAssertionOptions);
+}
+
+/**
+ * Updates a tenant-scoped cluster variable
+ */
+export async function updateTenantClusterVariable(
+  request: APIRequestContext,
+  tenantId: string,
+  name: string,
+  value: unknown,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.put(
+      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
+        tenantId,
+        name,
+      }),
+      {
+        headers: jsonHeaders(),
+        data: {value},
+      },
+    );
+    await assertStatusCode(res, 200);
+  }).toPass(defaultAssertionOptions);
+}
+
+/**
  * Asserts that a cluster variable exists in a search response
  */
 export function assertClusterVariableInResponse(
@@ -145,4 +189,34 @@ export function assertClusterVariableInResponse(
   for (const key of Object.keys(expectedBody)) {
     expect(found![key]).toEqual(expectedBody[key]);
   }
+}
+
+/**
+ * Performs a cluster variable update with retry and full validation.
+ * Consolidates the repeated PUT + status/shape check pattern used across multiple tests.
+ */
+export async function assertClusterVariableUpdate(
+  request: APIRequestContext,
+  url: string,
+  value: unknown,
+  expectedName: string,
+  expectedScope: 'GLOBAL' | 'TENANT',
+  expectedTenantId?: string,
+): Promise<void> {
+  await expect(async () => {
+    const res = await request.put(url, {
+      headers: jsonHeaders(),
+      data: {value},
+    });
+
+    expect(res.status()).toBe(200);
+    const json = await res.json();
+    expect(json.name).toBe(expectedName);
+    expect(json.scope).toBe(expectedScope);
+    if (expectedTenantId) {
+      expect(json.tenantId).toBe(expectedTenantId);
+    }
+    // Value is returned as JSON string
+    expect(JSON.parse(json.value)).toEqual(value);
+  }).toPass(defaultAssertionOptions);
 }
