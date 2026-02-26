@@ -71,12 +71,12 @@ test.describe('process instance modification', () => {
 
     await expect(
       page.getByRole('button', {
-        name: /cancel selected instance in this flow node/i,
+        name: /cancel selected instance in this element/i,
       }),
     ).toBeVisible();
 
     const cancelTokenButton = await page.getByRole('button', {
-      name: /cancel selected instance in this flow node/i,
+      name: /cancel selected instance in this element/i,
     });
 
     await commonPage.addRightArrow(cancelTokenButton);
@@ -103,11 +103,11 @@ test.describe('process instance modification', () => {
     await page.getByText('Last task').click();
 
     await expect(
-      page.getByRole('button', {name: /add single flow node instance/i}),
+      page.getByRole('button', {name: /Add single element instance/i}),
     ).toBeVisible();
 
     const addTokenButton = await page.getByRole('button', {
-      name: /add single flow node instance/i,
+      name: /Add single element instance/i,
     });
 
     await commonPage.addLeftArrow(addTokenButton);
@@ -341,7 +341,7 @@ test.describe('process instance modification', () => {
     await page.waitForTimeout(1000);
 
     const deleteFlowNodeModificationButton = await page.getByRole('button', {
-      name: /delete flow node modification/i,
+      name: /delete element modification/i,
     });
 
     await commonPage.addDownArrow(deleteFlowNodeModificationButton, '(1)');

@@ -92,7 +92,7 @@ test.describe('modifications', () => {
       .click();
     await page.getByTestId('diagram').getByText('Signal user task').click();
     await page
-      .getByRole('button', {name: 'Add single flow node instance'})
+      .getByRole('button', {name: 'Add single element instance'})
       .click();
 
     await processInstancePage.addVariableButton.click();
@@ -165,14 +165,14 @@ test.describe('modifications', () => {
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
     await page
-      .getByTitle(/move selected instance in this flow node to another target/i)
+      .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
     await processInstancePage.diagram.clickFlowNode('check order items');
     await processInstancePage.diagram.clickFlowNode('check payment');
     await page
       .getByRole('button', {
-        name: /add single flow node instance/i,
+        name: /Add single element instance/i,
       })
       .click();
 
@@ -222,7 +222,7 @@ test.describe('modifications', () => {
     await expect(page.getByTestId('dropdown-spinner')).not.toBeVisible();
 
     await page
-      .getByTitle(/move selected instance in this flow node to another target/i)
+      .getByTitle(/move selected instance in this element to another target/i)
       .click();
 
     await processInstancePage.diagram.clickFlowNode('check order items');
@@ -249,7 +249,7 @@ test.describe('modifications', () => {
 
     await expect(
       page.getByRole('button', {
-        name: /delete flow node modification/i,
+        name: /delete element modification/i,
       }),
     ).toBeVisible();
 
