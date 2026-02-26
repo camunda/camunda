@@ -10,7 +10,6 @@ package io.camunda.optimize.tomcat;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
-import jakarta.servlet.RequestDispatcher;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletRequest;
@@ -19,6 +18,15 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+/**
+ * Servlet filter for CCSaaS (Camunda Cloud SaaS) environments that adjusts request paths by
+ * stripping the clusterId prefix and rewriting external API paths.
+ *
+ * <p>This filter uses {@link HttpServletRequestWrapper} to modify the request path instead of
+ * {@link jakarta.servlet.RequestDispatcher#forward}. This is required because Spring Security 7's
+ * {@code PathPatternRequestMatcher} evaluates paths from the original request URI. Using a wrapper
+ * ensures that Spring Security (and all other downstream components) see the rewritten path.
+ */
 public class CCSaasRequestAdjustmentFilter implements Filter {
 
   private final String clusterId;
@@ -37,7 +45,7 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
   public void doFilter(
       final ServletRequest request, final ServletResponse response, final FilterChain chain)
       throws IOException, ServletException {
-    boolean shallForward = false;
+    boolean pathModified = false;
     final HttpServletRequest httpRequest = (HttpServletRequest) request;
     final HttpServletResponse httpResponse = (HttpServletResponse) response;
     String requestURI = httpRequest.getRequestURI();
@@ -58,18 +66,20 @@ public class CCSaasRequestAdjustmentFilter implements Filter {
     /* Strip cluster ID subpath */
     if (!clusterId.isEmpty() && requestURI.startsWith(clusterIdPath())) {
       requestURI = requestURI.substring(clusterIdPath().length());
-      shallForward = true;
+      if (requestURI.isEmpty()) {
+        requestURI = "/";
+      }
+      pathModified = true;
     }
 
     /* transform /external/api -> /api/external (Optimize only) */
     if (requestURI.startsWith("/external/api/")) {
       requestURI = requestURI.replaceFirst("/external/api/", "/api/external/");
-      shallForward = true;
+      pathModified = true;
     }
 
-    if (shallForward) {
-      final RequestDispatcher dispatcher = request.getRequestDispatcher(requestURI);
-      dispatcher.forward(request, response);
+    if (pathModified) {
+      chain.doFilter(new PathRewritingRequestWrapper(httpRequest, requestURI), response);
       return;
     }
 
