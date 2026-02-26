@@ -520,7 +520,7 @@ jobs:
           dockerfile: camunda.Dockerfile
       - name: Run Docker tests
         run: |
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
+          ./mvnw -pl dist/ --no-snapshot-updates -DskipChecks -Dtest=CamundaDockerIT -Dsurefire.rerunFailingTestsCount=3 \
           -Pextract-flaky-tests \
           -Dcamunda.docker.test.enabled=true \
           -Dcamunda.docker.test.image="${{ env.LOCAL_DOCKER_IMAGE }}:${{ steps.build-camunda-docker.outputs.version }}" \
