@@ -308,43 +308,41 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Move/)).toBeInTheDocument();
   });
 
-  it('should not render dropdown when no flow node is selected', async () => {
+  it('should not render dropdown when no element is selected', async () => {
     renderPopover();
 
+    expect(screen.queryByText(/Element Modifications/)).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/Flow Node Modifications/),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByTitle(/Add single flow node instance/),
+      screen.queryByTitle(/Add single element instance/),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByTitle(
-        /Cancel all running flow node instances in this flow node/,
+        /Cancel all running element instances in this element/,
       ),
     ).not.toBeInTheDocument();
     expect(
       screen.queryByTitle(
-        /Move all running instances in this flow node to another target/,
+        /Move all running instances in this element to another target/,
       ),
     ).not.toBeInTheDocument();
   });
 
-  it('should render dropdown with all options when a flow node is selected', async () => {
+  it('should render dropdown with all options when a element is selected', async () => {
     renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
     ]);
 
     expect(
-      await screen.findByTitle(/Add single flow node instance/),
+      await screen.findByTitle(/Add single element instance/),
     ).toHaveTextContent(/Add/);
     expect(
       await screen.findByTitle(
-        /Cancel all running flow node instances in this flow node/,
+        /Cancel all running element instances in this element/,
       ),
     ).toHaveTextContent(/Cancel/);
     expect(
       screen.getByTitle(
-        /Move all running instances in this flow node to another target/,
+        /Move all running instances in this element to another target/,
       ),
     ).toHaveTextContent(/Move/);
   });
@@ -356,12 +354,10 @@ describe('Modification Dropdown', () => {
 
     await user.click(await screen.findByText(/Move all/));
 
-    expect(
-      screen.queryByText(/Flow Node Modifications/),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/Element Modifications/)).not.toBeInTheDocument();
   });
 
-  it('should only render add option for completed flow nodes', async () => {
+  it('should only render add option for completed elements', async () => {
     renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=service-task-3`,
     ]);
@@ -381,13 +377,13 @@ describe('Modification Dropdown', () => {
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
   });
 
-  it('should render unsupported flow node type for non modifiable flow nodes', async () => {
+  it('should render unsupported element type for non modifiable elements', async () => {
     renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=boundary-event`,
     ]);
 
     expect(
-      await screen.findByText(/Unsupported flow node type/),
+      await screen.findByText(/Unsupported element type/),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
@@ -460,7 +456,7 @@ describe('Modification Dropdown', () => {
     await waitForElementToBeRemoved(screen.queryByTestId('dropdown-spinner'));
   });
 
-  it('should support cancel instance when flow node has 1 running instance', async () => {
+  it('should support cancel instance when element has 1 running instance', async () => {
     renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=service-task-7`,
     ]);
@@ -470,7 +466,7 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
-  it('should support cancel all when flow node has multiple running instances', async () => {
+  it('should support cancel all when element has multiple running instances', async () => {
     renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=service-task-1`,
     ]);

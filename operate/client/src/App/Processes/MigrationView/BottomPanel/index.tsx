@@ -86,7 +86,7 @@ const BottomPanel: React.FC = observer(() => {
   });
 
   /**
-   * Elements (elements and sequence flows) which are contained in both source diagram and target diagram.
+   * Elements (flow nodes and sequence flows) which are contained in both source diagram and target diagram.
    *
    * An element is auto-mappable when
    * - the element id is contained in source and target diagram

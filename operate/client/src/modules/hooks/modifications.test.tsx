@@ -60,7 +60,7 @@ describe('modifications hooks', () => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
 
-    it('should return true if all flow nodes are canceled', async () => {
+    it('should return true if all elements are canceled', async () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
@@ -118,7 +118,7 @@ describe('modifications hooks', () => {
       expect(result.current).toBe(false);
     });
 
-    it('should return false if there are active flow nodes', async () => {
+    it('should return false if there are active elements', async () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
@@ -150,7 +150,7 @@ describe('modifications hooks', () => {
       await waitFor(() => expect(result.current).toBe(false));
     });
 
-    it('should return false if there are flow nodes with incidents', async () => {
+    it('should return false if there are elements with incidents', async () => {
       const mockData: GetProcessInstanceStatisticsResponseBody = {
         items: [
           {
@@ -201,7 +201,7 @@ describe('modifications hooks', () => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
 
-    it('should return modifications by flow node', () => {
+    it('should return modifications by element', () => {
       modificationsStore.addModification({
         type: 'token',
         payload: {
