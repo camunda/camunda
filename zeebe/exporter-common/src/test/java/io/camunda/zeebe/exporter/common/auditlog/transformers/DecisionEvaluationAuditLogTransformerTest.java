@@ -82,6 +82,7 @@ class DecisionEvaluationAuditLogTransformerTest {
 
     // then
     assertThat(entity.getDecisionEvaluationKey()).isNull();
+    assertThat(entity.getEntityKey()).isEqualTo(String.valueOf(record.getKey()));
   }
 
   @Test
@@ -106,6 +107,7 @@ class DecisionEvaluationAuditLogTransformerTest {
 
     // then
     assertThat(entity.getDecisionEvaluationKey()).isNull();
+    assertThat(entity.getEntityKey()).isEqualTo(String.valueOf(record.getKey()));
   }
 
   @Test
@@ -115,6 +117,7 @@ class DecisionEvaluationAuditLogTransformerTest {
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionKey(999L)
+            .withDecisionEvaluationInstanceKey("999-1")
             .build();
 
     final DecisionEvaluationRecordValue recordValue =
@@ -136,6 +139,7 @@ class DecisionEvaluationAuditLogTransformerTest {
 
     // then
     assertThat(entity.getDecisionEvaluationKey()).isEqualTo(999L);
+    assertThat(entity.getEntityKey()).isEqualTo("999-1");
   }
 
   @Test
@@ -145,18 +149,21 @@ class DecisionEvaluationAuditLogTransformerTest {
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionKey(111L)
+            .withDecisionEvaluationInstanceKey("111-1")
             .build();
 
     final ImmutableEvaluatedDecisionValue secondDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionKey(222L)
+            .withDecisionEvaluationInstanceKey("222-1")
             .build();
 
     final ImmutableEvaluatedDecisionValue thirdDecision =
         ImmutableEvaluatedDecisionValue.builder()
             .from(factory.generateObject(EvaluatedDecisionValue.class))
             .withDecisionKey(333L)
+            .withDecisionEvaluationInstanceKey("333-1")
             .build();
 
     final DecisionEvaluationRecordValue recordValue =
@@ -178,6 +185,78 @@ class DecisionEvaluationAuditLogTransformerTest {
 
     // then
     assertThat(entity.getDecisionEvaluationKey()).isEqualTo(111L);
+    assertThat(entity.getEntityKey()).isEqualTo("111-1");
+  }
+
+  @Test
+  void shouldHandleEmptyDecisionEvaluationInstanceKey() {
+    // given
+    final ImmutableEvaluatedDecisionValue evaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionKey(999L)
+            .withDecisionEvaluationInstanceKey("")
+            .build();
+
+    final DecisionEvaluationRecordValue recordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withDecisionId("decision-1")
+            .withDecisionKey(456L)
+            .withEvaluatedDecisions(List.of(evaluatedDecision))
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getDecisionEvaluationKey()).isNull();
+    assertThat(entity.getEntityKey()).isEqualTo(String.valueOf(record.getKey()));
+  }
+
+  @Test
+  void shouldTakeFirstDecisionEvaluationWithNonEmptyInstanceKey() {
+    // given
+    final ImmutableEvaluatedDecisionValue firstEvaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionKey(777L)
+            .withDecisionEvaluationInstanceKey("")
+            .build();
+
+    final ImmutableEvaluatedDecisionValue secondEvaluatedDecision =
+        ImmutableEvaluatedDecisionValue.builder()
+            .from(factory.generateObject(EvaluatedDecisionValue.class))
+            .withDecisionKey(888L)
+            .withDecisionEvaluationInstanceKey("111-2")
+            .build();
+
+    final DecisionEvaluationRecordValue recordValue =
+        ImmutableDecisionEvaluationRecordValue.builder()
+            .from(factory.generateObject(DecisionEvaluationRecordValue.class))
+            .withDecisionId("decision-1")
+            .withDecisionKey(456L)
+            .withEvaluatedDecisions(List.of(firstEvaluatedDecision, secondEvaluatedDecision))
+            .build();
+
+    final Record<DecisionEvaluationRecordValue> record =
+        factory.generateRecord(
+            ValueType.DECISION_EVALUATION,
+            r -> r.withIntent(DecisionEvaluationIntent.EVALUATED).withValue(recordValue));
+
+    // when
+    final var entity = AuditLogEntry.of(record);
+    transformer.transform(record, entity);
+
+    // then
+    assertThat(entity.getDecisionEvaluationKey()).isEqualTo(888L);
+    assertThat(entity.getEntityKey()).isEqualTo("111-2");
   }
 
   @Test
