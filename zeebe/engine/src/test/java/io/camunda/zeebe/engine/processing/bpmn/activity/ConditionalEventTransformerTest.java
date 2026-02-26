@@ -195,10 +195,10 @@ public class ConditionalEventTransformerTest {
             Arguments.of("=x > 10 or y < 5 or z = 0", List.of("x", "y", "z")));
       }
 
-      @DisplayName("Should auto-detect variableNames from FEEL expression for boundary event")
+      @DisplayName("Should extract variableNames from FEEL expression for boundary event")
       @ParameterizedTest
       @MethodSource("expressionsWithVariableNames")
-      void shouldAutoDetectVariableNamesForConditionalBoundaryEvent(
+      void shouldExtractVariableNamesForConditionalBoundaryEvent(
           final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
@@ -206,11 +206,10 @@ public class ConditionalEventTransformerTest {
         assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
 
-      @DisplayName(
-          "Should auto-detect variableNames from FEEL expression for intermediate catch event")
+      @DisplayName("Should extract variableNames from FEEL expression for intermediate catch event")
       @ParameterizedTest
       @MethodSource("expressionsWithVariableNames")
-      void shouldAutoDetectVariableNamesForIntermediateConditionalEvent(
+      void shouldExtractVariableNamesForIntermediateConditionalEvent(
           final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
@@ -219,10 +218,10 @@ public class ConditionalEventTransformerTest {
       }
 
       @DisplayName(
-          "Should auto-detect variableNames from FEEL expression for event subprocess start event")
+          "Should extract variableNames from FEEL expression for event subprocess start event")
       @ParameterizedTest
       @MethodSource("expressionsWithVariableNames")
-      void shouldAutoDetectVariableNamesForSubprocessConditionalStartEvent(
+      void shouldExtractVariableNamesForSubprocessConditionalStartEvent(
           final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(
@@ -230,10 +229,10 @@ public class ConditionalEventTransformerTest {
         assertThat(executableConditional.getVariableNames()).isEqualTo(expectedVariableNames);
       }
 
-      @DisplayName("Should auto-detect variableNames from FEEL expression for start event")
+      @DisplayName("Should extract variableNames from FEEL expression for start event")
       @ParameterizedTest
       @MethodSource("expressionsWithVariableNames")
-      void shouldAutoDetectVariableNamesForConditionalStartEvent(
+      void shouldExtractVariableNamesForConditionalStartEvent(
           final String expression, final List<String> expectedVariableNames) {
         final var executableConditional =
             transformConditionalEvent(

@@ -242,49 +242,6 @@ public final class ConditionalIntermediateCatchEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerIntermediateCatchEventWithoutVariableNameFilter() {
-    // given
-    final String processId = helper.getBpmnProcessId();
-    engine
-        .deployment()
-        .withXmlResource(
-            Bpmn.createExecutableProcess(processId)
-                .startEvent()
-                .intermediateCatchEvent(CATCH_ID)
-                .condition(c -> c.condition("=x > 10"))
-                .endEvent()
-                .done())
-        .deploy();
-
-    final long processInstanceKey = engine.processInstance().ofBpmnProcessId(processId).create();
-    final long elementInstanceKey = awaitElementInstance(processInstanceKey, CATCH_ID);
-
-    // when
-    engine.variables().ofScope(elementInstanceKey).withDocument(Map.of("x", 20)).update();
-
-    // then
-    assertThat(
-            RecordingExporter.records()
-                .conditionalSubscriptionRecords()
-                .withIntent(ConditionalSubscriptionIntent.TRIGGERED)
-                .withProcessInstanceKey(processInstanceKey)
-                .withCatchEventId(CATCH_ID)
-                .withCondition("=x > 10")
-                .withVariableNames(List.of("x"))
-                .withVariableEvents(List.of())
-                .limit(1))
-        .hasSize(1);
-
-    assertThat(
-            RecordingExporter.processInstanceRecords()
-                .withProcessInstanceKey(processInstanceKey)
-                .withElementId(CATCH_ID)
-                .withIntent(ProcessInstanceIntent.ELEMENT_COMPLETED)
-                .limit(1))
-        .hasSize(1);
-  }
-
-  @Test
   public void shouldNotTriggerIntermediateCatchEventWhenNonFilteredVariableChanges() {
     // given
     final String processId = helper.getBpmnProcessId();

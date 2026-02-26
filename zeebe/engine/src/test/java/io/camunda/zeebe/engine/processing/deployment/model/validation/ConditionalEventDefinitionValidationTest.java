@@ -69,34 +69,6 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName("Variable names can be single static value for conditional start event")
-  void validStaticSingleVariableNameForConditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .condition(c -> c.condition("= x > 1"))
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName("Variable names must be comma separated static values for conditional start event")
-  void validStaticVariableNamesForConditionalStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .condition(c -> c.condition("= x > y"))
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
   @DisplayName("Valid conditional event XML for root level conditional start event")
   void validConditionalXMLForRootLevelConditionalStartEvent() {
     // given
@@ -227,47 +199,6 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName("Variable names can be single static value for conditional boundary event")
-  void validStaticSingleVariableNameForConditionalBoundaryEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("task")
-            .boundaryEvent()
-            .condition(c -> c.condition("= x > 1"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names must be comma separated static values for conditional boundary event")
-  void validStaticVariableNamesForConditionalBoundaryEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task")
-            .zeebeJobType("task")
-            .boundaryEvent()
-            .condition(c -> c.condition("= x > y"))
-            .endEvent()
-            .moveToActivity("task")
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
   @DisplayName("Non-interrupting conditional boundary event is allowed")
   void nonInterruptingConditionalBoundaryEvent() {
     // given
@@ -363,39 +294,6 @@ public class ConditionalEventDefinitionValidationTest {
   }
 
   @Test
-  @DisplayName("Variable names can be single static value for conditional intermediate catch event")
-  void validStaticSingleVariableNameForConditionalIntermediateCatchEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > 1"))
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names must be comma separated static values for conditional intermediate catch event")
-  void validStaticVariableNamesForConditionalIntermediateCatchEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .intermediateCatchEvent()
-            .condition(c -> c.condition("= x > y"))
-            .endEvent()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
   @DisplayName("Valid conditional event XML for conditional intermediate catch event")
   void validConditionalXMLForConditionalIntermediateCatchEvent() {
     // given
@@ -479,48 +377,6 @@ public class ConditionalEventDefinitionValidationTest {
             Condition.class,
             "failed to parse expression ' x >>> 1': Expected (binaryComparison | between"
                 + " | instanceOf | in | \"and\" | \"or\" | end-of-input):1:4, found \">>> 1\""));
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names can be single static value for conditional event subprocess start event")
-  void validStaticSingleVariableNameForConditionalEventSubProcessStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .moveToProcess("process")
-            .eventSubProcess()
-            .startEvent()
-            .condition(c -> c.condition("= x > 1"))
-            .endEvent()
-            .subProcessDone()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
-  }
-
-  @Test
-  @DisplayName(
-      "Variable names must be comma separated static values for conditional event subprocess start event")
-  void validStaticVariableNamesForConditionalEventSubProcessStartEvent() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .endEvent()
-            .moveToProcess("process")
-            .eventSubProcess()
-            .startEvent()
-            .condition(c -> c.condition("= x > y"))
-            .endEvent()
-            .subProcessDone()
-            .done();
-
-    // when/then
-    ProcessValidationUtil.validateProcess(process);
   }
 
   @Test

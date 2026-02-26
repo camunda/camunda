@@ -429,7 +429,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerOnlyMatchingEventSubprocessStartEventWhenMultipleVariableNameFilters() {
+  public void shouldTriggerOnlyMatchingEventSubprocessStartEvent() {
     // given
     final String processId = helper.getBpmnProcessId();
     engine
@@ -500,7 +500,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
   }
 
   @Test
-  public void shouldOnlyTriggerEventSubprocessStartEventForAutoDetectedVariableNames() {
+  public void shouldOnlyTriggerEventSubprocessStartEventForExtractedVariableNames() {
     // given
     final String processId = helper.getBpmnProcessId();
     engine
