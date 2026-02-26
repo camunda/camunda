@@ -62,7 +62,9 @@ public final class BpmnResourceTransformer implements DeploymentResourceTransfor
       final EngineConfiguration config,
       final InstantSource clock,
       final ExpressionLanguageMetrics expressionLanguageMetrics) {
-    bpmnTransformer = BpmnFactory.createTransformer(clock, expressionLanguageMetrics);
+    bpmnTransformer =
+        BpmnFactory.createTransformer(
+            clock, expressionLanguageMetrics, config.getMaxNameFieldLength());
     this.keyGenerator = keyGenerator;
     this.stateWriter = stateWriter;
     this.checksumGenerator = checksumGenerator;
