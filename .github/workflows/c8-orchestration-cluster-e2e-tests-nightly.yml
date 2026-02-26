@@ -270,6 +270,7 @@ jobs:
             if curl -sf -u demo:demo http://localhost:8080/v2/topology >/dev/null 2>&1; then
               exit 0
             fi
+            echo "Attempt $i: Camunda not ready yet"
             sleep 5
           done
           tail -100 dev-dist/camunda.log
