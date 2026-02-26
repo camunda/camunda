@@ -458,14 +458,14 @@ jobs:
           secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
           user_description: "team-distributed-systems"
 
-  deploy-benchmark-images:
+  deploy-load-test-images:
     name: Deploy load test images
     timeout-minutes: 5
     needs: [ test-summary ]
     runs-on: ubuntu-latest
     if: github.repository == 'camunda/camunda' && github.ref == 'refs/heads/main'
     concurrency:
-      group: deploy-benchmark-images
+      group: deploy-load-test-images
       cancel-in-progress: false
     permissions:
       contents: 'read'
