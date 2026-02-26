@@ -32,7 +32,7 @@ public class AuthInfo extends UnpackedObject {
 
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
-  private transient volatile Map<String, Object> cachedClaims;
+  private transient volatile Map<String, Object> cachedDecodedMap;
 
   public AuthInfo() {
     super(3);
@@ -103,15 +103,11 @@ public class AuthInfo extends UnpackedObject {
   }
 
   /**
-   * Returns an unmodifiable view of the claims map, lazily deserialized from msgpack on first
-   * access. The returned map and its contents must not be mutated.
+   * Returns the raw claims from the msgpack document property. Prefer {@link #toDecodedMap()} which
+   * handles both JWT and non-JWT formats and caches the result.
    */
   public Map<String, Object> getClaims() {
-    if (cachedClaims == null) {
-      cachedClaims =
-          Collections.unmodifiableMap(MsgPackConverter.convertToMap(claimsProp.getValue()));
-    }
-    return cachedClaims;
+    return Collections.unmodifiableMap(MsgPackConverter.convertToMap(claimsProp.getValue()));
   }
 
   @Override
@@ -119,7 +115,7 @@ public class AuthInfo extends UnpackedObject {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
     authDataProp.setValue("");
     claimsProp.reset();
-    cachedClaims = null;
+    cachedDecodedMap = null;
   }
 
   @Override
@@ -143,7 +139,7 @@ public class AuthInfo extends UnpackedObject {
   @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
-    cachedClaims = null;
+    cachedDecodedMap = null;
   }
 
   public DirectBuffer toDirectBuffer() {
@@ -154,12 +150,21 @@ public class AuthInfo extends UnpackedObject {
     return buffer;
   }
 
+  /**
+   * Returns the decoded claims map, lazily computed and cached on first access. For JWT format,
+   * decodes the token. For other formats, deserializes from msgpack. The returned map is
+   * unmodifiable.
+   */
   public Map<String, Object> toDecodedMap() {
-    if (getFormat() == AuthDataFormat.JWT) {
-      final String token = getAuthData();
-      return new JwtDecoder(token).decode().getClaims();
+    if (cachedDecodedMap == null) {
+      if (getFormat() == AuthDataFormat.JWT) {
+        final String token = getAuthData();
+        cachedDecodedMap = Collections.unmodifiableMap(new JwtDecoder(token).decode().getClaims());
+      } else {
+        cachedDecodedMap = getClaims();
+      }
     }
-    return getClaims();
+    return cachedDecodedMap;
   }
 
   public boolean hasAnyClaims() {
