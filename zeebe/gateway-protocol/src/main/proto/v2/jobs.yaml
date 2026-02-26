@@ -415,7 +415,10 @@ components:
         listenerEventType:
           $ref: '#/components/schemas/JobListenerEventTypeEnum'
         userTask:
-          $ref: '#/components/schemas/UserTaskProperties'
+          description: User task properties, if the job is a user task. `null` if the job is not a user task.
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/UserTaskProperties'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
         rootProcessInstanceKey:
