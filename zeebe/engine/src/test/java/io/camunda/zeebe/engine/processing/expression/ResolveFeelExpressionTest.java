@@ -620,7 +620,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=camunda.vars.cluster.input * 2 + myVar")
-            .withContext(Map.of("myVar", 5))
+            .withVariables(Map.of("myVar", 5))
             .resolve();
 
     // then
@@ -629,7 +629,7 @@ public class ResolveFeelExpressionTest {
         .hasRecordType(RecordType.EVENT);
     assertThat(record.getValue().getResultValue()).isEqualTo(15);
     // context is passed through
-    assertThat(record.getValue().getContext()).isEqualTo(Map.of("myVar", 5));
+    assertThat(record.getValue().getVariables()).isEqualTo(Map.of("myVar", 5));
   }
 
   @Test
@@ -639,7 +639,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=a * 2 + b")
-            .withContext(Map.of("a", "not a number"))
+            .withVariables(Map.of("a", "not a number"))
             .resolve();
 
     // then
@@ -658,7 +658,7 @@ public class ResolveFeelExpressionTest {
   public void shouldResolveExpressionWithExplicitContextAsNull() {
     // when
     final var record =
-        ENGINE_RULE.expression().withExpression("=5 + 3").withContext(null).resolve();
+        ENGINE_RULE.expression().withExpression("=5 + 3").withVariables(null).resolve();
 
     // then
     Assertions.assertThat(record)
@@ -674,7 +674,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("= date and time(myDateTime)")
-            .withContext(Map.of("myDateTime", "2024-01-15T10:30:00"))
+            .withVariables(Map.of("myDateTime", "2024-01-15T10:30:00"))
             .resolve();
 
     // then
@@ -691,7 +691,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=count(myList)")
-            .withContext(Map.of("myList", java.util.List.of(1, 2, 3, 4, 5)))
+            .withVariables(Map.of("myList", java.util.List.of(1, 2, 3, 4, 5)))
             .resolve();
 
     // then
@@ -708,7 +708,7 @@ public class ResolveFeelExpressionTest {
         ENGINE_RULE
             .expression()
             .withExpression("=person.name + \" is \" + string(person.age) + \" years old\"")
-            .withContext(Map.of("person", Map.of("name", "Alice", "age", 30)))
+            .withVariables(Map.of("person", Map.of("name", "Alice", "age", 30)))
             .resolve();
 
     // then

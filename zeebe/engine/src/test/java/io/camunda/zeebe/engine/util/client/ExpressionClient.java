@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.engine.util.client;
 
+import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
 import io.camunda.zeebe.protocol.impl.record.value.expression.ExpressionRecord;
 import io.camunda.zeebe.protocol.record.Record;
 import io.camunda.zeebe.protocol.record.intent.ExpressionIntent;
@@ -15,6 +16,7 @@ import io.camunda.zeebe.test.util.record.RecordingExporter;
 import java.util.Map;
 import java.util.Random;
 import java.util.function.LongFunction;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public final class ExpressionClient {
 
@@ -50,8 +52,8 @@ public final class ExpressionClient {
     return this;
   }
 
-  public ExpressionClient withContext(final Map<String, Object> context) {
-    expressionRecord.setContext(context);
+  public ExpressionClient withVariables(final Map<String, Object> context) {
+    expressionRecord.setVariables(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(context)));
     return this;
   }
 

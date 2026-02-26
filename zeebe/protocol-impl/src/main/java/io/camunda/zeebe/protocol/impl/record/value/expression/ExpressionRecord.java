@@ -28,7 +28,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue RESULT_VALUE_KEY = new StringValue("resultValue");
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
-  private static final StringValue CONTEXT_KEY = new StringValue("context");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -39,9 +39,9 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
       new ArrayProperty<>(WARNINGS_KEY, StringValue::new);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
-  private final BinaryProperty contextProp =
+  private final BinaryProperty variablesProp =
       new BinaryProperty(
-          CONTEXT_KEY, new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of())));
+          VARIABLES_KEY, new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of())));
 
   public ExpressionRecord() {
     super(5);
@@ -49,7 +49,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
         .declareProperty(tenantIdProp)
-        .declareProperty(contextProp);
+        .declareProperty(variablesProp);
   }
 
   @Override
@@ -59,17 +59,6 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setExpression(final String expression) {
     expressionProp.setValue(expression);
-    return this;
-  }
-
-  @Override
-  public Map<String, Object> getContext() {
-    return MsgPackConverter.convertToMap(contextProp.getValue());
-  }
-
-  public ExpressionRecord setContext(final Map<String, Object> context) {
-    final Map<String, Object> contextToEncode = context != null ? context : Map.of();
-    contextProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(contextToEncode)));
     return this;
   }
 
@@ -96,6 +85,16 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
 
   public ExpressionRecord setResultValue(final DirectBuffer value) {
     resultValueProp.setValue(value);
+    return this;
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public ExpressionRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
     return this;
   }
 
