@@ -314,7 +314,8 @@ public final class MessageStartEventSubscriptionTest {
   @Test
   public void shouldRejectDeploymentIfMessageStartEventNameIsTooLong() {
     // given
-    final var tooLongMessageName = "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
+    final var tooLongMessageName =
+        "a".repeat(EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH + 1);
     final var process =
         Bpmn.createExecutableProcess("processId")
             .startEvent(EVENT_ID1)

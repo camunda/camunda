@@ -27,9 +27,7 @@ public final class BpmnFactory {
   public static BpmnTransformer createTransformer(
       final InstantSource clock, final ExpressionLanguageMetrics expressionLanguageMetrics) {
     return createTransformer(
-        clock,
-        expressionLanguageMetrics,
-        EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
+        clock, expressionLanguageMetrics, EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
   public static BpmnTransformer createTransformer(

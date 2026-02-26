@@ -394,8 +394,7 @@ public final class ProcessInstanceTokenTest {
                 .intermediateCatchEvent(
                     "catch",
                     e ->
-                        e.message(
-                            m -> m.name("=messageName").zeebeCorrelationKeyExpression("key")))
+                        e.message(m -> m.name("=messageName").zeebeCorrelationKeyExpression("key")))
                 .endEvent("end-2")
                 .done())
         .deploy();
