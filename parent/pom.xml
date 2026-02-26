@@ -215,7 +215,7 @@
     <plugin.version.flaky-tests>2.1.1</plugin.version.flaky-tests>
     <plugin.version.jacoco>0.8.14</plugin.version.jacoco>
     <plugin.version.maven-jar>3.4.2</plugin.version.maven-jar>
-    <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>5.0.0</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.3.1</plugin.version.resources>
     <plugin.version.revapi>0.15.1</plugin.version.revapi>
@@ -2601,20 +2601,23 @@
 
         <!-- protobuf generation -->
         <plugin>
-          <groupId>org.xolstice.maven.plugins</groupId>
+          <groupId>io.github.ascopes</groupId>
           <artifactId>protobuf-maven-plugin</artifactId>
           <version>${plugin.version.protobuf-maven-plugin}</version>
           <configuration>
-            <checkStaleness>true</checkStaleness>
-            <protocArtifact>com.google.protobuf:protoc:${version.protobuf}:exe:${os.detected.classifier}</protocArtifact>
-            <pluginId>grpc-java</pluginId>
-            <pluginArtifact>io.grpc:protoc-gen-grpc-java:${version.grpc}:exe:${os.detected.classifier}</pluginArtifact>
+            <protoc>${version.protobuf}</protoc>
+            <plugins>
+              <plugin kind="binary-maven">
+                <groupId>io.grpc</groupId>
+                <artifactId>protoc-gen-grpc-java</artifactId>
+                <version>${version.grpc}</version>
+              </plugin>
+            </plugins>
           </configuration>
           <executions>
             <execution>
               <goals>
-                <goal>compile</goal>
-                <goal>compile-custom</goal>
+                <goal>generate</goal>
               </goals>
             </execution>
           </executions>
