@@ -215,6 +215,25 @@ paths:
               schema:
                 $ref: '#/components/schemas/InvalidExtraKeysResult'
 
+  /invalid-no-enum/{id}:
+    get:
+      operationId: getInvalidNoEnum
+      summary: Extension present but enum missing
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNoEnumResult'
+
 components:
   schemas:
     # ── Valid schemas ────────────────────────────────────────
@@ -430,3 +449,19 @@ components:
         value:
           description: The value.
           $ref: '#/components/schemas/InvalidExtraKeysEnum'
+
+    InvalidNoEnumEnum:
+      description: Extension present but no enum property.
+      type: string
+      x-deprecated-enum-members:
+        - name: SOMETHING
+          deprecatedInVersion: "8.9.0"
+
+    InvalidNoEnumResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidNoEnumEnum'

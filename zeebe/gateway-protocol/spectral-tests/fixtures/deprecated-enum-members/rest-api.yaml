@@ -42,3 +42,6 @@ paths:
 
   /invalid-extra-keys/{id}:
     $ref: 'enums.yaml#/paths/~1invalid-extra-keys~1{id}'
+
+  /invalid-no-enum/{id}:
+    $ref: 'enums.yaml#/paths/~1invalid-no-enum~1{id}'
