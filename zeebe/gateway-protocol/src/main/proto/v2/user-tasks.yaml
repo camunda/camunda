@@ -503,7 +503,7 @@ components:
         - rootProcessInstanceKey
         - candidateGroups
         - candidateUsers
-        - customHeaders 
+        - customHeaders
         - tags
         - assignee
         - completionDate
@@ -589,7 +589,8 @@ components:
           description: The key of the element instance.
         processName:
           type: string
-          description: The name of the process definition.
+          description: The name of the process definition. `null` if the process has no name defined.
+          nullable: true
         processDefinitionKey:
           allOf:
             - $ref: 'keys.yaml#/components/schemas/ProcessDefinitionKey'
