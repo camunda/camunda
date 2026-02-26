@@ -10,7 +10,6 @@ import {useEffect} from 'react';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {processesStore} from 'modules/stores/processes/processes.migration';
 
 const elements = {
   checkPayment: {
@@ -219,18 +218,10 @@ type Props = {
   children?: React.ReactNode;
 };
 
-const SOURCE_PROCESS_DEFINITION_KEY = '1';
-
 const Wrapper = ({children}: Props) => {
-  processInstanceMigrationStore.enable();
-  processInstanceMigrationStore.setSourceProcessDefinitionKey(
-    SOURCE_PROCESS_DEFINITION_KEY,
-  );
-
   useEffect(() => {
     return () => {
       processInstanceMigrationStore.reset();
-      processesStore.reset();
     };
   }, []);
 
@@ -241,4 +232,4 @@ const Wrapper = ({children}: Props) => {
   );
 };
 
-export {elements, Wrapper, SOURCE_PROCESS_DEFINITION_KEY};
+export {elements, Wrapper};

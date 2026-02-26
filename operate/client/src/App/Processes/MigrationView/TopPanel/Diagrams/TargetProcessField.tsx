@@ -38,6 +38,9 @@ const TargetProcessField: React.FC = observer(() => {
         items={items}
         value={selectedKey}
         onChange={({selectedItem}) => {
+          if (selectedItem === undefined) {
+            return;
+          }
           const matchingDefinition = !selectedItem
             ? null
             : (availableDefinitions.find(

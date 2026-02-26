@@ -6,10 +6,12 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen} from 'modules/testing-library';
-import {mockProcessDefinitions, mockProcessXML} from 'modules/testUtils';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-
+import {render, screen, waitFor} from 'modules/testing-library';
+import {
+  createProcessDefinition,
+  mockProcessXML,
+  searchResult,
+} from 'modules/testUtils';
 import {Wrapper} from './mocks';
 import {Diagrams} from '..';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
@@ -17,47 +19,94 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
 import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
 
 describe('Target Diagram', () => {
-  it('should set correct targetProcessDefinitionKey', async () => {
-    mockSearchProcessDefinitions().withSuccess(mockProcessDefinitions);
+  it('should set correct targetProcessDefinition', async () => {
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess2',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 2,
+        }),
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess1',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 1,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(
+      searchResult([
+        createProcessDefinition({
+          processDefinitionKey: 'demoProcess3',
+          processDefinitionId: 'demoProcess',
+          name: 'New demo process',
+          version: 3,
+        }),
+      ]),
+    );
+    mockSearchProcessDefinitions().withSuccess(searchResult([]));
 
-    // This is mocked twice for source and target process definition xml.
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
 
-    await processesStore.fetchProcesses();
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({
+        processDefinitionKey: 'sourceKey',
+        processDefinitionId: 'sourceId',
+      }),
+    );
     const {user} = render(<Diagrams />, {wrapper: Wrapper});
 
-    await user.click(screen.getByRole('button', {name: /element mapping/i}));
+    await waitFor(() =>
+      expect(screen.getByRole('combobox', {name: 'Target'})).toBeEnabled(),
+    );
+    await user.click(screen.getByRole('button', {name: 'Element Mapping'}));
     await user.click(screen.getByRole('combobox', {name: 'Target'}));
     await user.click(screen.getByRole('option', {name: 'New demo process'}));
 
-    // expect latest version selected by default
-    expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
-      'demoProcess3',
-    );
+    expect(
+      processInstanceMigrationStore.state.targetProcessDefinition
+        ?.processDefinitionKey,
+    ).toBe('demoProcess3');
 
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
+    await waitFor(() =>
+      expect(
+        screen.getByRole('combobox', {name: 'Target Version'}),
+      ).toBeEnabled(),
+    );
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '2'}));
-    expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
-      'demoProcess2',
-    );
+    expect(
+      processInstanceMigrationStore.state.targetProcessDefinition
+        ?.processDefinitionKey,
+    ).toBe('demoProcess2');
 
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '1'}));
-    expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
-      'demoProcess1',
-    );
+    expect(
+      processInstanceMigrationStore.state.targetProcessDefinition
+        ?.processDefinitionKey,
+    ).toBe('demoProcess1');
 
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     mockFetchProcessDefinitionXml().withSuccess(mockProcessXML);
     await user.click(screen.getByRole('combobox', {name: 'Target Version'}));
     await user.click(screen.getByRole('option', {name: '3'}));
-    expect(processInstanceMigrationStore.state.targetProcessDefinitionKey).toBe(
-      'demoProcess3',
-    );
+    expect(
+      processInstanceMigrationStore.state.targetProcessDefinition
+        ?.processDefinitionKey,
+    ).toBe('demoProcess3');
   });
 });

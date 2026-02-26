@@ -15,12 +15,12 @@ import {
 } from 'modules/testing-library';
 import {BottomPanel} from '.';
 import {open} from 'modules/mocks/diagrams';
-import {elements, SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './tests/mocks';
+import {elements, Wrapper} from './tests/mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {searchResult} from 'modules/testUtils';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
+import {createProcessDefinition} from 'modules/testUtils';
 
+const SOURCE_PROCESS_DEFINITION_KEY = '1';
 const TARGET_PROCESS_DEFINITION_KEY = '2';
 
 const {
@@ -69,6 +69,21 @@ const {
 const HEADER_ROW_COUNT = 1;
 const CONTENT_ROW_COUNT = 53;
 
+const sourceDefinition = createProcessDefinition({
+  processDefinitionId: 'orderProcess',
+  processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+  version: 1,
+  name: 'orderProcess',
+  tenantId: '<default>',
+});
+const targetDefinition = createProcessDefinition({
+  processDefinitionId: 'orderProcess',
+  processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+  version: 2,
+  name: 'orderProcess',
+  tenantId: '<default>',
+});
+
 /**
  * Returns a custom matcher function which ignores all option elements from comboboxes.
  */
@@ -79,39 +94,15 @@ const getMatcherFunction = (flowNodeName: string): MatcherFunction => {
 };
 
 describe('MigrationView/BottomPanel', () => {
-  beforeEach(async () => {
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult([
-        {
-          processDefinitionId: 'orderProcess',
-          processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
-          version: 1,
-          name: 'orderProcess',
-          versionTag: '',
-          tenantId: '<default>',
-          hasStartForm: false,
-          resourceName: null,
-        },
-        {
-          processDefinitionId: 'orderProcess',
-          processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
-          version: 2,
-          name: 'orderProcess',
-          versionTag: '',
-          tenantId: '<default>',
-          hasStartForm: false,
-          resourceName: null,
-        },
-      ]),
-    );
+  beforeEach(() => {
     vi.stubGlobal('location', {
       ...window.location,
       search: '?process=orderProcess&version=1',
     });
 
-    await processesStore.fetchProcesses();
-    processesStore.setSelectedTargetProcess('{orderProcess}-{<default>}');
-    processesStore.setSelectedTargetVersion(2);
+    processInstanceMigrationStore.enable();
+    processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
+    processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
   });
   it('should render source flow nodes', async () => {
     mockFetchProcessDefinitionXml().withSuccess(open('instanceMigration.bpmn'));

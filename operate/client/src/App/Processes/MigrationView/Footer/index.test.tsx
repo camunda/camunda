@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {render, screen, within} from 'modules/testing-library';
+import {act, render, screen, within} from 'modules/testing-library';
 import {Footer} from './index';
 import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 import {useEffect} from 'react';
@@ -18,6 +18,7 @@ import {mockMigrateProcessInstancesBatchOperation} from 'modules/mocks/api/v2/pr
 import {mockQueryBatchOperations} from 'modules/mocks/api/v2/batchOperations/queryBatchOperations';
 import {panelStatesStore} from 'modules/stores/panelStates';
 import {notificationsStore} from 'modules/stores/notifications';
+import {createProcessDefinition} from 'modules/testUtils';
 
 type Props = {
   children?: React.ReactNode;
@@ -96,8 +97,10 @@ describe('Footer', () => {
     vi.resetAllMocks();
     vi.clearAllTimers();
     vi.useRealTimers();
-    processInstanceMigrationStore.reset();
-    panelStatesStore.reset();
+    act(() => {
+      processInstanceMigrationStore.reset();
+      panelStatesStore.reset();
+    });
   });
   it('should render correct buttons in each step', async () => {
     const {user} = render(<Footer />, {wrapper: Wrapper});
@@ -173,7 +176,9 @@ describe('Footer', () => {
 
   it('should track confirm button click', async () => {
     processInstanceMigrationStore.setBatchOperationQuery({});
-    processInstanceMigrationStore.setTargetProcessDefinitionKey('test-key');
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'test-key'}),
+    );
 
     const {user} = render(<Footer />, {wrapper: Wrapper});
 
@@ -196,11 +201,11 @@ describe('Footer', () => {
     processInstanceMigrationStore.setBatchOperationQuery({
       ids: ['1', '2'],
     });
-    processInstanceMigrationStore.setTargetProcessDefinitionKey(
-      'target-process-key',
+    processInstanceMigrationStore.setTargetProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'target-process-key'}),
     );
-    processInstanceMigrationStore.setSourceProcessDefinitionKey(
-      'source-process-key',
+    processInstanceMigrationStore.setSourceProcessDefinition(
+      createProcessDefinition({processDefinitionKey: 'source-process-key'}),
     );
 
     const {user} = render(<Footer />, {wrapper: Wrapper});
