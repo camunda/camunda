@@ -214,7 +214,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
 
   @Override
   public boolean isJobToUserTaskMigration() {
-    return jobToUserTaskMigration;
+    return false;
   }
 
   @Override
