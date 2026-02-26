@@ -15,6 +15,7 @@ import {
 } from '../http';
 import {defaultAssertionOptions} from '../constants';
 import {CREATE_CLUSTER_VARIABLE} from '../beans/requestBeans';
+import {validateResponse} from '../../json-body-assertions';
 
 /**
  * Creates a global cluster variable and stores the response fields in state
@@ -33,6 +34,10 @@ export async function createGlobalClusterVariable(
       data,
     });
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {path: '/cluster-variables/global', method: 'POST', status: '200'},
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;
@@ -62,6 +67,10 @@ export async function createTenantClusterVariable(
       },
     );
     await assertStatusCode(res, 200);
+    await validateResponse(
+      {path: '/cluster-variables/tenants/{tenantId}', method: 'POST', status: '200'},
+      res,
+    );
     await extractAndStoreIds(res, state);
     const json = await res.json();
     state[`${stateKey}Name`] = json.name;
@@ -131,50 +140,6 @@ export async function deleteTenantClusterVariable(
 }
 
 /**
- * Updates a global cluster variable
- */
-export async function updateGlobalClusterVariable(
-  request: APIRequestContext,
-  name: string,
-  value: unknown,
-): Promise<void> {
-  await expect(async () => {
-    const res = await request.put(
-      buildUrl('/cluster-variables/global/{name}', {name}),
-      {
-        headers: jsonHeaders(),
-        data: {value},
-      },
-    );
-    await assertStatusCode(res, 200);
-  }).toPass(defaultAssertionOptions);
-}
-
-/**
- * Updates a tenant-scoped cluster variable
- */
-export async function updateTenantClusterVariable(
-  request: APIRequestContext,
-  tenantId: string,
-  name: string,
-  value: unknown,
-): Promise<void> {
-  await expect(async () => {
-    const res = await request.put(
-      buildUrl('/cluster-variables/tenants/{tenantId}/{name}', {
-        tenantId,
-        name,
-      }),
-      {
-        headers: jsonHeaders(),
-        data: {value},
-      },
-    );
-    await assertStatusCode(res, 200);
-  }).toPass(defaultAssertionOptions);
-}
-
-/**
  * Asserts that a cluster variable exists in a search response
  */
 export function assertClusterVariableInResponse(
@@ -209,7 +174,18 @@ export async function assertClusterVariableUpdate(
       data: {value},
     });
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
+    
+    // Determine the correct path for validation based on scope
+    const path = expectedScope === 'GLOBAL' 
+      ? '/cluster-variables/global/{name}' as const
+      : '/cluster-variables/tenants/{tenantId}/{name}' as const;
+    
+    await validateResponse(
+      {path, method: 'PUT', status: '200'},
+      res,
+    );
+    
     const json = await res.json();
     expect(json.name).toBe(expectedName);
     expect(json.scope).toBe(expectedScope);

@@ -58,8 +58,6 @@ export {
   createGlobalClusterVariablesAndStoreResponseFields,
   deleteGlobalClusterVariable,
   deleteTenantClusterVariable,
-  updateGlobalClusterVariable,
-  updateTenantClusterVariable,
   assertClusterVariableInResponse,
   assertClusterVariableUpdate,
 } from './cluster-variable-requestHelpers';
