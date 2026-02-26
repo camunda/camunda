@@ -151,7 +151,7 @@ public class ProcessInstanceCreationHelper {
   public Either<Rejection, DeployedProcess> isAuthorized(
       final TypedRecord<ProcessInstanceCreationRecord> command,
       final DeployedProcess deployedProcess) {
-    // check if auth is disabled entirely
+    // skip authorization and multi-tenancy checks if all such checks are disabled
     if (authCheckBehavior.shouldSkipAllChecks()) {
       return Either.right(deployedProcess);
     }
