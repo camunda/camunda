@@ -12,7 +12,6 @@ import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -201,14 +200,14 @@ class SchemaManagerTest {
           .forEach(
               indexDescriptor ->
                   verify(searchEngineClient).createIndex(indexDescriptor, config.index()));
-      verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
     } else {
       // Verify schema upgrade was skipped - no upsert should happen for same version
       verify(searchEngineClient, never()).upsertDocument(anyString(), anyString(), any());
       verify(searchEngineClient, never()).createIndex(any(), any());
-      verify(searchEngineClient, never()).createIndexTemplate(any(), any(), anyBoolean());
     }
 
+    // Creating missing index templates is always invoked
+    verify(searchEngineClient).createIndexTemplate(testTemplateDescriptor, config.index(), true);
     // Settings and lifecycle policies should always be updated unless returning early
     Stream.of(metadataIndex, testIndexDescriptor, testTemplateDescriptor)
         .forEach(

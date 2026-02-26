@@ -82,6 +82,29 @@ public final class VersionUtil {
     return SemanticVersion.parse(getPreviousVersion());
   }
 
+  /**
+   * Overrides the cached version with the given value. This is intended for testing only, to allow
+   * setting a specific version without relying on environment variables or properties files.
+   *
+   * <p>Call {@link #resetVersionForTesting()} to clear the override and allow the version to be
+   * re-read from the normal sources.
+   */
+  @VisibleForTesting("Allow tests to override the version without setting env vars")
+  public static void overrideVersionForTesting(final String versionOverride) {
+    version = versionOverride;
+    versionLowerCase = null;
+  }
+
+  /**
+   * Resets the cached version so that the next call to {@link #getVersion()} will re-read it from
+   * the normal sources (env var, properties file, or package). This is intended for testing only.
+   */
+  @VisibleForTesting("Allow tests to reset the version after overriding it")
+  public static void resetVersionForTesting() {
+    version = null;
+    versionLowerCase = null;
+  }
+
   private static String readProperty(final String property) {
     try (final InputStream lastVersionFileStream =
         VersionUtil.class.getResourceAsStream(VERSION_PROPERTIES_PATH)) {
