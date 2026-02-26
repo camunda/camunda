@@ -11,7 +11,7 @@ global:
     camunda.cloud/managed-by: Helm
     camunda.cloud/source: argocd
     team: monorepo-devops
-  
+
   image:
     pullSecrets:
     - name: dockerhub-registry
@@ -42,6 +42,10 @@ global:
 
   # Camunda 8 Self-Managed global configurations
   elasticsearch:
+    # Required so the orchestration chart renders the `camunda.data.secondary-storage.elasticsearch`
+    # block (url, credentials, etc.). Without this, embedded Operate/Tasklist may fall back
+    # to their defaults (e.g. `http://localhost:9200`).
+    enabled: true
     # necessary due to name override bugs
     url:
       host: elasticsearch
@@ -204,6 +208,10 @@ camunda-platform:
         freeSpace:
           processing: 110MB
           replication: 10MB
+      secondaryStorage:
+        type: elasticsearch
+        elasticsearch:
+          url: http://elasticsearch:9200
     resources:
       limits:
         cpu: "1"
@@ -273,7 +281,7 @@ camunda-platform:
     enabled: true
     fullnameOverride: identity-keycloak
     extraEnvVars:
-    # Required as TLS is enabled 
+    # Required as TLS is enabled
     - name: KEYCLOAK_PROXY_ADDRESS_FORWARDING
       value: "true"
     resources:
