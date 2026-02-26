@@ -9,6 +9,7 @@ package io.camunda.it.rdbms.db;
 
 import io.camunda.db.rdbms.RdbmsService;
 import io.camunda.db.rdbms.write.RdbmsWriters;
+import io.camunda.it.rdbms.db.fixtures.DecisionInstanceFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessDefinitionFixtures;
 import io.camunda.it.rdbms.db.fixtures.ProcessInstanceFixtures;
 import io.camunda.it.rdbms.db.util.CamundaRdbmsInvocationContextProviderExtension;
@@ -36,6 +37,7 @@ public class PurgerIT {
 
     ProcessInstanceFixtures.createAndSaveRandomProcessInstances(rdbmsWriters);
     ProcessDefinitionFixtures.createAndSaveRandomProcessDefinitions(rdbmsWriters);
+    DecisionInstanceFixtures.createAndSaveRandomDecisionInstances(rdbmsWriters);
 
     rdbmsWriters.getRdbmsPurger().purgeRdbms();
 
