@@ -273,6 +273,27 @@ class TaskDetailsPage {
     throw new Error(`Active icon not visible after ${maxRetries} attempts.`);
   }
 
+  async detailsHeaderAssertion(): Promise<void> {
+    let retryCount = 0;
+    const maxRetries = 2;
+    while (retryCount < maxRetries) {
+      try {
+        await expect(this.detailsHeader).toBeVisible({
+          timeout: 45000,
+        });
+        return; // Exit the function if the expectation is met
+      } catch {
+        retryCount++;
+        console.log(`Attempt ${retryCount} failed. Retrying...`);
+        await this.page.reload();
+        await sleep(10000);
+      }
+    }
+    throw new Error(
+      `Task details header not visible after ${maxRetries} attempts.`,
+    );
+  }
+
   async assertVariableValue(
     variableName: string,
     variableValue: string,
