@@ -37,7 +37,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   private long operationReference;
   private ValueType valueType;
   private Intent intent;
-  private AuthInfo authorization = new AuthInfo();
+  private AuthInfo authorization;
 
   public ExecuteCommandRequest() {
     reset();
@@ -50,7 +50,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
     value.wrap(0, 0);
-    authorization = new AuthInfo();
+    authorization = null;
 
     return this;
   }
@@ -140,7 +140,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
   public ExecuteCommandRequest setAuthorization(final DirectBuffer buffer) {
     final var auth = new AuthInfo();
     auth.wrap(buffer);
-    this.authorization = auth;
+    authorization = auth;
     return this;
   }
 
@@ -173,7 +173,11 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
     final int authorizationLength = bodyDecoder.authorizationLength();
     offset += ExecuteCommandRequestDecoder.authorizationHeaderLength();
 
-    authorization.wrap(buffer, offset, authorizationLength);
+    if (authorizationLength > 0) {
+      final var auth = new AuthInfo();
+      auth.wrap(buffer, offset, authorizationLength);
+      authorization = auth;
+    }
     offset += authorizationLength;
 
     bodyDecoder.limit(offset);
@@ -193,7 +197,7 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         + ExecuteCommandRequestEncoder.valueHeaderLength()
         + value.capacity()
         + ExecuteCommandRequestEncoder.authorizationHeaderLength()
-        + authorization.getLength();
+        + (authorization != null ? authorization.getLength() : 0);
   }
 
   @Override
@@ -206,7 +210,10 @@ public final class ExecuteCommandRequest implements BufferReader, BufferWriter {
         .valueType(valueType)
         .intent(intent.value())
         .putValue(value, 0, value.capacity())
-        .putAuthorization(authorization.toDirectBuffer(), 0, authorization.getLength());
+        .putAuthorization(
+            authorization != null ? authorization.toDirectBuffer() : new UnsafeBuffer(0, 0),
+            0,
+            authorization != null ? authorization.getLength() : 0);
 
     return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }

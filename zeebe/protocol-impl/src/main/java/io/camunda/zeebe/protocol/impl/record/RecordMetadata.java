@@ -113,9 +113,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     final int authorizationLength = decoder.authorizationLength();
     if (authorizationLength > 0) {
+      final var auth = new AuthInfo();
       final DirectBuffer authBuffer = new UnsafeBuffer();
       decoder.wrapAuthorization(authBuffer);
-      authorization.wrap(authBuffer);
+      auth.wrap(authBuffer);
+      authorization = auth;
     } else {
       decoder.skipAuthorization();
     }
@@ -137,7 +139,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + authorization.getLength()
+        + (authorization != null ? authorization.getLength() : 0)
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0);
   }
@@ -167,11 +169,16 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+
+    if (authorization != null) {
     BufferUtil.writeLengthPrefixed(
         authorization,
         encoder,
         RecordMetadataEncoder.authorizationHeaderLength(),
         RecordMetadataEncoder.BYTE_ORDER);
+    } else {
+      encoder.putAuthorization(new UnsafeBuffer(0, 0), 0, 0);
+    }
 
     if (agent != null) {
       BufferUtil.writeLengthPrefixed(
@@ -272,7 +279,6 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   public RecordMetadata authorization(final DirectBuffer buffer) {
     final var auth = new AuthInfo();
     auth.wrap(buffer);
-    // set the auth only if parsing succeeds
     authorization = auth;
     return this;
   }
@@ -336,7 +342,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
-    authorization = new AuthInfo();
+    authorization = null;
     agent = null;
     brokerVersion = CURRENT_BROKER_VERSION;
     recordVersion = DEFAULT_RECORD_VERSION;
@@ -381,7 +387,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
-        && authorization.equals(that.authorization)
+        && Objects.equals(authorization, that.authorization)
         && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion
@@ -411,7 +417,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
       builder.append(", rejectionReason=").append(BufferUtil.bufferAsString(rejectionReason));
     }
 
-    if (!authorization.isEmpty()) {
+    if (authorization != null && !authorization.isEmpty()) {
       builder.append(", authorization=").append(authorization);
     }
     if (operationReference != RecordMetadataEncoder.operationReferenceNullValue()) {

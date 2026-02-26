@@ -32,7 +32,7 @@ public class AuthInfo extends UnpackedObject {
 
   private final StringProperty authDataProp = new StringProperty("authData", "").sanitized();
   private final DocumentProperty claimsProp = new DocumentProperty("claims").sanitized();
-  private transient Map<String, Object> cachedClaims;
+  private transient volatile Map<String, Object> cachedClaims;
 
   public AuthInfo() {
     super(3);
@@ -84,7 +84,7 @@ public class AuthInfo extends UnpackedObject {
 
   public static AuthInfo of(final AuthInfo info) {
     if (info == null) {
-      return null;
+      return new AuthInfo();
     }
 
     final var auth = new AuthInfo();
@@ -138,6 +138,12 @@ public class AuthInfo extends UnpackedObject {
   @JsonIgnore
   public int getLength() {
     return super.getLength();
+  }
+
+  @Override
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    super.wrap(buffer, offset, length);
+    cachedClaims = null;
   }
 
   public DirectBuffer toDirectBuffer() {
