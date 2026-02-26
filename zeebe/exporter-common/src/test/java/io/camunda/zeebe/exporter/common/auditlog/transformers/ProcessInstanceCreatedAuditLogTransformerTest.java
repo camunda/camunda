@@ -50,6 +50,7 @@ class ProcessInstanceCreatedAuditLogTransformerTest {
     assertThat(entity.getProcessDefinitionKey()).isEqualTo(456L);
     assertThat(entity.getProcessDefinitionId()).isEqualTo("test-process");
     assertThat(entity.getProcessInstanceKey()).isEqualTo(123L);
+    assertThat(entity.getEntityKey()).isEqualTo("123");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
     assertThat(entity.getRootProcessInstanceKey())
         .isPositive()
