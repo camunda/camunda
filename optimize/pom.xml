@@ -44,7 +44,6 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-    <project.previousVersion>8.8.0</project.previousVersion>
 
     <zeebe.version>${project.version}</zeebe.version>
     <!-- We use this for the Zeebe test container version only -->
