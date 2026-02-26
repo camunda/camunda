@@ -44,4 +44,19 @@ public record HistoryDeletionBatch(List<HistoryDeletionDbModel> historyDeletionM
         .map(HistoryDeletionDbModel::resourceKey)
         .toList();
   }
+
+  /**
+   * Gets models filtered by resource type and a set of resource keys.
+   *
+   * @param historyDeletionType The type of resource to filter by
+   * @param resourceKeys The specific resource keys to include
+   * @return List of models matching the type and the given resource keys
+   */
+  public List<HistoryDeletionDbModel> getModels(
+      final HistoryDeletionTypeDbModel historyDeletionType, final List<Long> resourceKeys) {
+    return historyDeletionModels.stream()
+        .filter(model -> model.resourceType().equals(historyDeletionType))
+        .filter(model -> resourceKeys.contains(model.resourceKey()))
+        .toList();
+  }
 }

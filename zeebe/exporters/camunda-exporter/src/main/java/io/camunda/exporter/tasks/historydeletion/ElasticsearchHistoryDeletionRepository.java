@@ -20,9 +20,15 @@ import io.camunda.exporter.tasks.util.ElasticsearchRepository;
 import io.camunda.webapps.schema.descriptors.IndexDescriptor;
 import io.camunda.webapps.schema.descriptors.index.AuditLogCleanupIndex;
 import io.camunda.webapps.schema.descriptors.index.HistoryDeletionIndex;
+import io.camunda.webapps.schema.descriptors.template.OperationTemplate;
 import io.camunda.webapps.schema.entities.HistoryDeletionEntity;
+import io.camunda.webapps.schema.entities.operation.OperationState;
 import io.camunda.zeebe.exporter.common.historydeletion.HistoryDeletionConfiguration;
+import java.time.InstantSource;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -41,6 +47,8 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
   private final IndexDescriptor auditLogCleanupIndex;
   private final int partitionId;
   private final HistoryDeletionConfiguration config;
+  private final InstantSource clock;
+  private final OperationTemplate operationIndexTemplateDescriptor;
 
   public ElasticsearchHistoryDeletionRepository(
       final ExporterResourceProvider resourceProvider,
@@ -48,7 +56,8 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
       final Executor executor,
       final Logger logger,
       final int partitionId,
-      final HistoryDeletionConfiguration config) {
+      final HistoryDeletionConfiguration config,
+      final InstantSource clock) {
     super(client, executor, logger);
     indexDescriptor =
         resourceProvider.getIndexDescriptors().stream()
@@ -62,8 +71,11 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
             .findFirst()
             .orElseThrow(
                 () -> new IllegalStateException("No AuditLogCleanupIndex descriptor found"));
+    operationIndexTemplateDescriptor =
+        resourceProvider.getIndexTemplateDescriptor(OperationTemplate.class);
     this.partitionId = partitionId;
     this.config = config;
+    this.clock = clock;
   }
 
   @Override
@@ -195,6 +207,44 @@ public class ElasticsearchHistoryDeletionRepository extends ElasticsearchReposit
                   entries.size(),
                   targetIndexName);
               return CompletableFuture.completedFuture(null);
+            },
+            executor);
+  }
+
+  @Override
+  public CompletableFuture<List<String>> completeOperations(final List<String> ids) {
+    final var bulkRequestBuilder = new BulkRequest.Builder();
+
+    final var fieldsToUpdate =
+        Map.of(
+            OperationTemplate.STATE,
+            OperationState.COMPLETED,
+            OperationTemplate.COMPLETED_DATE,
+            OffsetDateTime.ofInstant(clock.instant(), ZoneOffset.UTC));
+
+    ids.forEach(
+        id ->
+            bulkRequestBuilder.operations(
+                op ->
+                    op.update(
+                        u ->
+                            u.index(operationIndexTemplateDescriptor.getFullQualifiedName())
+                                .id(id)
+                                .action(a -> a.doc(fieldsToUpdate))
+                                .retryOnConflict(3))));
+
+    return client
+        .bulk(bulkRequestBuilder.build())
+        .thenComposeAsync(
+            response -> {
+              if (response.errors()) {
+                final var errorMessage =
+                    "Bulk updating operations by ids '%s' failed with errors: %s"
+                        .formatted(ids, response.items());
+                logger.error(errorMessage);
+                return CompletableFuture.failedFuture(new RuntimeException(errorMessage));
+              }
+              return CompletableFuture.completedFuture(ids);
             },
             executor);
   }

@@ -284,13 +284,25 @@ public final class BackgroundTaskManagerFactory {
   private OpenSearchHistoryDeletionRepository createHistoryDeletionRepository(
       final OpenSearchAsyncClient asyncClient) {
     return new OpenSearchHistoryDeletionRepository(
-        resourceProvider, asyncClient, executor, logger, partitionId, config.getHistoryDeletion());
+        resourceProvider,
+        asyncClient,
+        executor,
+        logger,
+        partitionId,
+        config.getHistoryDeletion(),
+        clock);
   }
 
   private ElasticsearchHistoryDeletionRepository createHistoryDeletionRepository(
       final ElasticsearchAsyncClient asyncClient) {
     return new ElasticsearchHistoryDeletionRepository(
-        resourceProvider, asyncClient, executor, logger, partitionId, config.getHistoryDeletion());
+        resourceProvider,
+        asyncClient,
+        executor,
+        logger,
+        partitionId,
+        config.getHistoryDeletion(),
+        clock);
   }
 
   private OpensearchAuditLogArchiverRepository createAuditLogArchiverRepository(

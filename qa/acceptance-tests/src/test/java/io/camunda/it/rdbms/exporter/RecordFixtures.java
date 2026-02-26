@@ -565,7 +565,7 @@ public class RecordFixtures {
         .build();
   }
 
-  public ImmutableRecord<RecordValue> getHistoryDeletionRecord(
+  public ImmutableRecord<RecordValue> getRejectedHistoryDeletionRecord(
       final HistoryDeletionIntent intent,
       final long resourceKey,
       final HistoryDeletionType deletionType) {
@@ -578,6 +578,7 @@ public class RecordFixtures {
         .withPosition(nextPosition())
         .withPartitionId(1)
         .withTimestamp(System.currentTimeMillis())
+        .withRejectionType(RejectionType.INVALID_STATE)
         .withValue(
             ImmutableHistoryDeletionRecordValue.builder()
                 .from((ImmutableHistoryDeletionRecordValue) recordValueRecord.getValue())

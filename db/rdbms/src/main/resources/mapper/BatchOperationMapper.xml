@@ -223,6 +223,17 @@
   </insert>
 
 
+  <update id="completeBatchOperationItems"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemsCompletionDto">
+    UPDATE ${prefix}BATCH_OPERATION_ITEM
+    SET STATE = 'COMPLETED',
+        PROCESSED_DATE = #{processedDate, jdbcType=TIMESTAMP}
+    WHERE
+    <foreach collection="items" item="item" separator=" OR " open="(" close=")">
+      (BATCH_OPERATION_KEY = #{item.batchOperationKey} AND ITEM_KEY = #{item.itemKey})
+    </foreach>
+  </update>
+
   <update id="updateItemsWithState"
     parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationItemStatusUpdateDto">
     UPDATE ${prefix}BATCH_OPERATION_ITEM
@@ -250,6 +261,13 @@
     UPDATE ${prefix}BATCH_OPERATION
     SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + 1
     WHERE BATCH_OPERATION_KEY = #{id}
+  </update>
+
+  <update id="bulkIncrementCompletedOperationsCount"
+    parameterType="io.camunda.db.rdbms.sql.BatchOperationMapper$BatchOperationUpdateTotalCountDto">
+    UPDATE ${prefix}BATCH_OPERATION
+    SET OPERATIONS_COMPLETED_COUNT = OPERATIONS_COMPLETED_COUNT + #{operationsTotalCount}
+    WHERE BATCH_OPERATION_KEY = #{batchOperationKey}
   </update>
 
   <select id="count" resultType="java.lang.Long">

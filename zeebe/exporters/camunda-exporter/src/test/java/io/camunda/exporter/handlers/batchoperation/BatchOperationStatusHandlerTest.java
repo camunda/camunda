@@ -611,6 +611,23 @@ class BatchOperationStatusHandlerTest {
     }
 
     @Override
+    @Test
+    void shouldHandleSuccessRecord() {
+      // We override the abstract test as this handler should not handle a success record.
+      final var record = createSuccessRecord();
+      assertThat(handler.handlesRecord(record)).isFalse();
+    }
+
+    @Override
+    @Test
+    void shouldUpdateEntityOnSuccess() {
+      // We don't want to test anything here. This handler is not supposed to handle the success
+      // record, and thus should not update the entity. Since the abstract test would fail, we need
+      // to override it with a NOOP implementation.
+      assert true;
+    }
+
+    @Override
     void shouldExtractCorrectItemKey() {
       final var record = createSuccessRecord();
       final var itemKey = handler.getItemKey(record);
@@ -667,6 +684,23 @@ class BatchOperationStatusHandlerTest {
 
     DecisionInstanceHistoryDeletionOperationHandlerTest() {
       super(new DecisionInstanceHistoryDeletionOperationHandler(indexName, batchOperationCache));
+    }
+
+    @Override
+    @Test
+    void shouldHandleSuccessRecord() {
+      // We override the abstract test as this handler should not handle a success record.
+      final var record = createSuccessRecord();
+      assertThat(handler.handlesRecord(record)).isFalse();
+    }
+
+    @Override
+    @Test
+    void shouldUpdateEntityOnSuccess() {
+      // We don't want to test anything here. This handler is not supposed to handle the success
+      // record, and thus should not update the entity. Since the abstract test would fail, we need
+      // to override it with a NOOP implementation.
+      assert true;
     }
 
     @Override
