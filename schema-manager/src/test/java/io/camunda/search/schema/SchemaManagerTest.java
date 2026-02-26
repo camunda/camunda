@@ -10,10 +10,12 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -31,6 +33,7 @@ import io.camunda.webapps.schema.descriptors.index.MetadataIndex;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -336,5 +339,115 @@ class SchemaManagerTest {
     when(searchEngineClient.getDocument(
             metadataIndex.getFullQualifiedName(), SCHEMA_VERSION_METADATA_ID))
         .thenReturn(versionDoc);
+  }
+
+  // ---- Tests for batch deletion / HTTP line length handling ----
+
+  @Test
+  void splitIntoBatches_emptyList_returnsEmptyBatches() {
+    final var batches = SchemaManager.splitIntoBatches(List.of(), 100);
+    assertThat(batches).isEmpty();
+  }
+
+  @Test
+  void splitIntoBatches_singleNameFitsInLimit_returnsSingleBatch() {
+    final var batches = SchemaManager.splitIntoBatches(List.of("index-one"), 100);
+    assertThat(batches).hasSize(1);
+    assertThat(batches.get(0)).containsExactly("index-one");
+  }
+
+  @Test
+  void splitIntoBatches_allNamesFitInOneBatch_returnsSingleBatch() {
+    final var names = List.of("index-a", "index-b", "index-c");
+    // combined: "index-a,index-b,index-c" = 23 chars
+    final var batches = SchemaManager.splitIntoBatches(names, 100);
+    assertThat(batches).hasSize(1);
+    assertThat(batches.get(0)).containsExactly("index-a", "index-b", "index-c");
+  }
+
+  @Test
+  void splitIntoBatches_manyNames_splitIntoMultipleBatches() {
+    // Each name is 10 chars, limit is 25:
+    // - Batch 1: "xxxxxxxxxx,xxxxxxxxxx" = 21 chars (fits within 25)
+    // - Batch 2: "xxxxxxxxxx,xxxxxxxxxx" = 21 chars (fits within 25)
+    final var names = List.of("xxxxxxxxxx", "xxxxxxxxxx", "xxxxxxxxxx", "xxxxxxxxxx"); // 4 names
+
+    final var batches = SchemaManager.splitIntoBatches(names, 25);
+    assertThat(batches).hasSize(2);
+    assertThat(batches.get(0)).hasSize(2);
+    assertThat(batches.get(1)).hasSize(2);
+  }
+
+  @Test
+  void splitIntoBatches_singleNameExceedsLimit_isSkippedWithWarning() {
+    final var tooLong = "a".repeat(101); // 101 chars, limit is 100
+    final var normal = "short-name"; // 10 chars
+
+    final var batches = SchemaManager.splitIntoBatches(List.of(tooLong, normal), 100);
+
+    // tooLong should be skipped; only 'normal' in a batch
+    assertThat(batches).hasSize(1);
+    assertThat(batches.get(0)).containsExactly(normal);
+  }
+
+  @Test
+  void deleteIndicesInBatches_emptyList_doesNotCallDeleteIndex() {
+    schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors,
+            templateDescriptors,
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    schemaManager.deleteIndicesInBatches(List.of());
+
+    verify(searchEngineClient, never()).deleteIndex(anyString());
+  }
+
+  @Test
+  void deleteIndicesInBatches_fewIndices_callsDeleteIndexOnceWithAllNames() {
+    schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors,
+            templateDescriptors,
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    final var indices = List.of("index-a", "index-b", "index-c");
+    schemaManager.deleteIndicesInBatches(indices);
+
+    verify(searchEngineClient, times(1)).deleteIndex("index-a,index-b,index-c");
+  }
+
+  @Test
+  void deleteIndicesInBatches_manyIndicesExceedingLimit_callsDeleteIndexInMultipleBatches() {
+    schemaManager =
+        new SchemaManager(
+            searchEngineClient,
+            indexDescriptors,
+            templateDescriptors,
+            config,
+            mock(IndexSchemaValidator.class),
+            "8.8.0",
+            null);
+
+    // Build indices whose names total well over MAX_HTTP_URL_PATH_LENGTH.
+    // "camunda-operate-list-view-8.3.0_0000" has 36 chars; with comma separators,
+    // 200 names × 36 chars + 199 commas ≈ 7399 chars total, well above 4000.
+    final var indices =
+        IntStream.range(0, 200)
+            .mapToObj(i -> String.format("camunda-operate-list-view-8.3.0_%04d", i))
+            .toList();
+
+    schemaManager.deleteIndicesInBatches(indices);
+
+    // Should have called deleteIndex at least twice since 200 * 37 > 4000
+    verify(searchEngineClient, atLeast(2)).deleteIndex(anyString());
   }
 }

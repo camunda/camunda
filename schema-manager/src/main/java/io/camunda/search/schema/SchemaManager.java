@@ -29,8 +29,10 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Com
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -47,6 +49,14 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+
+  /**
+   * Maximum URL path length for Elasticsearch/OpenSearch HTTP requests. The HTTP line limit is 4096
+   * bytes by default. We use a conservative limit to account for the HTTP method, path separator,
+   * and HTTP version string overhead.
+   */
+  @VisibleForTesting static final int MAX_HTTP_URL_PATH_LENGTH = 4000;
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -427,16 +437,93 @@ public class SchemaManager implements CloseableSilently {
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor::getFullQualifiedName)
             .collect(Collectors.toSet());
-    final String indexPatterns =
-        indexTemplateDescriptors.stream()
-            .map(IndexTemplateDescriptor::getIndexPattern)
-            .collect(Collectors.joining(","));
+    final List<String> patterns =
+        indexTemplateDescriptors.stream().map(IndexTemplateDescriptor::getIndexPattern).toList();
     final var archivedIndices =
-        searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
+        getMappingsInBatches(patterns).keySet().stream()
             .filter(index -> !liveIndices.contains(index))
             .toList();
-    archivedIndices.forEach(searchEngineClient::deleteIndex);
+    deleteIndicesInBatches(archivedIndices);
     LOG.debug("Deleted archived indices '{}'", archivedIndices);
+  }
+
+  /**
+   * Retrieves mappings for the given patterns, batching requests to avoid HTTP line length
+   * exceeding the limit.
+   */
+  private Map<String, IndexMapping> getMappingsInBatches(final List<String> patterns) {
+    final List<List<String>> batches = splitIntoBatches(patterns, MAX_HTTP_URL_PATH_LENGTH);
+    if (batches.size() > 1) {
+      LOG.info(
+          "Retrieving index mappings in {} batches to avoid exceeding the HTTP line length limit",
+          batches.size());
+    }
+    final Map<String, IndexMapping> result = new HashMap<>();
+    for (final List<String> batch : batches) {
+      result.putAll(searchEngineClient.getMappings(String.join(",", batch), MappingSource.INDEX));
+    }
+    return result;
+  }
+
+  /**
+   * Deletes the given indices, batching requests to avoid the HTTP line length limit.
+   *
+   * <p>If a single index name exceeds the limit on its own, it is skipped and a warning is logged.
+   */
+  @VisibleForTesting
+  void deleteIndicesInBatches(final List<String> indices) {
+    if (indices.isEmpty()) {
+      return;
+    }
+    final List<List<String>> batches = splitIntoBatches(indices, MAX_HTTP_URL_PATH_LENGTH);
+    if (batches.size() > 1) {
+      LOG.info(
+          "Deleting {} archived indices in {} batches to avoid exceeding the HTTP line length limit",
+          indices.size(),
+          batches.size());
+    }
+    for (final List<String> batch : batches) {
+      final String batchIndexNames = String.join(",", batch);
+      LOG.debug("Deleting batch of {} indices: {}", batch.size(), batchIndexNames);
+      searchEngineClient.deleteIndex(batchIndexNames);
+    }
+  }
+
+  /**
+   * Splits a list of names into batches where the combined length of each batch (names joined by
+   * commas) does not exceed {@code maxLength}. Names longer than {@code maxLength} on their own are
+   * skipped with a warning.
+   */
+  @VisibleForTesting
+  static List<List<String>> splitIntoBatches(final List<String> names, final int maxLength) {
+    final List<List<String>> batches = new ArrayList<>();
+    List<String> currentBatch = new ArrayList<>();
+    int currentLength = 0;
+
+    for (final String name : names) {
+      if (name.length() > maxLength) {
+        LOG.warn(
+            "Index name '{}' exceeds the maximum URL path length of {} characters and cannot be"
+                + " processed automatically. Manual intervention is required.",
+            name,
+            maxLength);
+        continue;
+      }
+      // Account for the comma separator between names
+      final int addLength = currentBatch.isEmpty() ? name.length() : name.length() + 1;
+      if (currentLength + addLength > maxLength && !currentBatch.isEmpty()) {
+        batches.add(currentBatch);
+        currentBatch = new ArrayList<>();
+        currentLength = 0;
+      }
+      currentBatch.add(name);
+      currentLength += addLength;
+    }
+
+    if (!currentBatch.isEmpty()) {
+      batches.add(currentBatch);
+    }
+    return batches;
   }
 
   private IndexConfiguration getIndexSettingsFromConfig(final String indexName) {
