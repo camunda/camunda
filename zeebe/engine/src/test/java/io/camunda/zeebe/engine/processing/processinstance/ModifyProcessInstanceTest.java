@@ -2210,8 +2210,8 @@ public class ModifyProcessInstanceTest {
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementIdIn("A", "B")
-                .limitToProcessInstanceTerminated())
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B"))
         .extracting(
             r ->
                 tuple(
@@ -2278,8 +2278,8 @@ public class ModifyProcessInstanceTest {
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementIdIn("subProcess", "A", "B")
-                .limitToProcessInstanceTerminated())
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("subProcess", "A", "B"))
         .extracting(
             r ->
                 tuple(
@@ -2382,8 +2382,8 @@ public class ModifyProcessInstanceTest {
                     ProcessInstanceIntent.ELEMENT_TERMINATED,
                     ProcessInstanceIntent.ELEMENT_ACTIVATED)
                 .withProcessInstanceKey(processInstanceKey)
-                .withElementIdIn("A", "B")
-                .limitToProcessInstanceTerminated())
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B"))
         .extracting(
             r ->
                 tuple(
