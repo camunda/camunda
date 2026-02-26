@@ -24,8 +24,8 @@ import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesSt
 import {useBatchModificationOverlayData} from 'modules/queries/processInstancesStatistics/useBatchModificationOverlayData';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 import {
-  getFlowNode,
-  getSubprocessOverlayFromIncidentFlowNodes,
+  getElement,
+  getSubprocessOverlayFromIncidentElements,
 } from 'modules/utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {parseProcessInstancesFilter} from 'modules/utils/filter/v2/processInstancesSearch';
@@ -133,7 +133,7 @@ const DiagramPanel: React.FC = observer(() => {
     (flowNodeId) => businessObjects?.[flowNodeId],
   );
 
-  const subprocessOverlays = getSubprocessOverlayFromIncidentFlowNodes(
+  const subprocessOverlays = getSubprocessOverlayFromIncidentElements(
     selectableFlowNodesWithIncidents,
     'statistics-incidents',
   );
@@ -180,9 +180,9 @@ const DiagramPanel: React.FC = observer(() => {
         return false;
       }
 
-      const flowNode = getFlowNode({
+      const flowNode = getElement({
         businessObjects: processDefinitionXML?.diagramModel.elementsById,
-        flowNodeId: selectedFlowNodeId,
+        elementId: selectedFlowNodeId,
       });
 
       return isMoveModificationTarget(flowNode);

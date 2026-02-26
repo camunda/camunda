@@ -12,7 +12,7 @@ import {type ModifyProcessInstanceRequestBody} from '@camunda/camunda-api-zod-sc
 import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProcessInstance';
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
-import {getFlowNodeName} from 'modules/utils/elements';
+import {getElementName} from 'modules/utils/elements';
 import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';
@@ -197,9 +197,9 @@ class Modifications {
           flowNode: {
             id: this.state.sourceFlowNodeIdForAddOperation,
             name:
-              getFlowNodeName({
+              getElementName({
                 businessObjects,
-                flowNodeId: this.state.sourceFlowNodeIdForAddOperation,
+                elementId: this.state.sourceFlowNodeIdForAddOperation,
               }) ?? '',
           },
           affectedTokenCount: 1,
@@ -669,7 +669,7 @@ class Modifications {
         operation: 'CANCEL_TOKEN',
         flowNode: {
           id: flowNodeId,
-          name: getFlowNodeName({businessObjects, flowNodeId}),
+          name: getElementName({businessObjects, elementId: flowNodeId}),
         },
         flowNodeInstanceKey,
         affectedTokenCount,
@@ -719,17 +719,17 @@ class Modifications {
         operation: 'MOVE_TOKEN',
         flowNode: {
           id: sourceFlowNodeId,
-          name: getFlowNodeName({
+          name: getElementName({
             businessObjects,
-            flowNodeId: sourceFlowNodeId,
+            elementId: sourceFlowNodeId,
           }),
         },
         flowNodeInstanceKey: sourceFlowNodeInstanceKey,
         targetFlowNode: {
           id: targetFlowNodeId,
-          name: getFlowNodeName({
+          name: getElementName({
             businessObjects,
-            flowNodeId: targetFlowNodeId,
+            elementId: targetFlowNodeId,
           }),
         },
         affectedTokenCount,
