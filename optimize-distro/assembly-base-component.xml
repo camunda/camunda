@@ -79,7 +79,7 @@
     <!-- upgrade directory -->
     <file>
       <source>
-        ${project.basedir}/../optimize/upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
+        ${project.basedir}/../optimize/upgrade/target/upgrade-optimize-to-${project.version}.jar
       </source>
       <outputDirectory>upgrade</outputDirectory>
     </file>
