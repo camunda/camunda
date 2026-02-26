@@ -9,6 +9,7 @@ package io.camunda.zeebe.protocol.impl.record.value.expression;
 
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -39,9 +40,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
       new ArrayProperty<>(WARNINGS_KEY, StringValue::new);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
-  private final BinaryProperty variablesProp =
-      new BinaryProperty(
-          VARIABLES_KEY, new UnsafeBuffer(MsgPackConverter.convertToMsgPack(Map.of())));
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
 
   public ExpressionRecord() {
     super(5);
