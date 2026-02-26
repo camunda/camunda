@@ -7,9 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {waitForAssertion} from '../../../../utils/waitForAssertion';
 import {
-  assertNotFoundRequest,
   assertInvalidArgument,
   assertStatusCode,
   assertUnauthorizedRequest,

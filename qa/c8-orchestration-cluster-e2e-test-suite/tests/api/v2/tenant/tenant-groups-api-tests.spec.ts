@@ -13,7 +13,6 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
-  paginatedResponseFields,
   assertPaginatedRequest,
   assertStatusCode,
 } from '../../../../utils/http';
@@ -240,6 +239,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
         buildUrl('/tenants/{tenantId}/groups/search', p),
         {headers: jsonHeaders(), data: {}},
       );
+      await assertStatusCode(res, 200);
 
       await validateResponse(
         {
@@ -303,6 +303,7 @@ test.describe.parallel('Tenant Groups API Tests', () => {
       {headers: jsonHeaders(), data: {}},
     );
     
+    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/tenants/{tenantId}/groups/search',

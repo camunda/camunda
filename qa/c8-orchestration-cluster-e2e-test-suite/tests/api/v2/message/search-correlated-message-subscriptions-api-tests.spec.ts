@@ -11,7 +11,6 @@ import {
   buildUrl,
   jsonHeaders,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertStatusCode,
   assertBadRequest,
   assertUnauthorizedRequest,
@@ -228,7 +227,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
@@ -423,6 +422,14 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         );
         await assertStatusCode(res, 200);
+        await validateResponse(
+        {
+          path: CORRELATED_MESSAGE_SUBSCRIPTION_SEARCH_ENDPOINT,
+          method: 'POST',
+          status: '200',
+        },
+        res,
+      );
         const json = await res.json();
         expect(json.page.totalItems).toBe(0);
       }).toPass(defaultAssertionOptions);
@@ -462,7 +469,7 @@ test.describe.serial('Correlated Message Subscriptions API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/correlated-message-subscriptions/search',

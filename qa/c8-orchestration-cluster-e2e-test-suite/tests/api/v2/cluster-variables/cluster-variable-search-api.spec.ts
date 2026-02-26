@@ -84,7 +84,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         data: {},
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -113,7 +113,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -144,7 +144,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -174,7 +174,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -205,7 +205,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -236,7 +236,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -265,7 +265,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -294,7 +294,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -326,7 +326,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -358,7 +358,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
         {
@@ -398,6 +398,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
           },
         },
       });
+
       await assertStatusCode(res, 200);
       const body = await res.json();
       validateResponseShape(
@@ -486,7 +487,7 @@ test.describe.parallel('Search Cluster Variables API Tests', () => {
         data: body,
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       const responseBody = await res.json();
       validateResponseShape(
         {
