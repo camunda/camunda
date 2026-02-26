@@ -167,6 +167,12 @@
       <artifactId>junit-jupiter-params</artifactId>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>zeebe-msgpack-core</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>
