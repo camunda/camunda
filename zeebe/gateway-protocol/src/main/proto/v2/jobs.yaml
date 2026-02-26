@@ -415,7 +415,9 @@ components:
         listenerEventType:
           $ref: '#/components/schemas/JobListenerEventTypeEnum'
         userTask:
-          description: User task properties, if the job is a user task. `null` if the job is not a user task.
+          description: |
+            User task properties, if the job is a user task.
+            This is `null` if the job is not a user task.
           nullable: true
           allOf:
             - $ref: '#/components/schemas/UserTaskProperties'
@@ -685,7 +687,9 @@ components:
             - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
           description: The element instance key associated with the job.
         endTime:
-          description: When the job ended. `null` if the job is not in an end state yet.
+          description: |
+            End date of the job.
+            This is `null` if the job is not in an end state yet.
           type: string
           format: date-time
           nullable: true
