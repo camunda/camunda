@@ -1210,7 +1210,7 @@ jobs:
         # we use the verify goal here as flaky test extraction is bound to the post-integration-test
         # phase of Maven https://maven.apache.org/guides/introduction/introduction-to-the-lifecycle.html#default-lifecycle
         run: >
-          ./mvnw -f dist --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
+          ./mvnw -pl dist/ --no-snapshot-updates -DskipChecks -Dassembly.skipAssembly=true
           -DskipUTs -Dit.test=*DockerIT -Dfailsafe.rerunFailingTestsCount=3
           -P parallel-tests,extract-flaky-tests
           -Dcamunda.docker.test.enabled=true
