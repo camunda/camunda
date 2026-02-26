@@ -7,8 +7,10 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.expression;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
+import io.camunda.zeebe.msgpack.property.DocumentProperty;
 import io.camunda.zeebe.msgpack.property.StringProperty;
 import io.camunda.zeebe.msgpack.value.StringValue;
 import io.camunda.zeebe.protocol.impl.encoding.MsgPackConverter;
@@ -16,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.UnifiedRecordValue;
 import io.camunda.zeebe.protocol.record.value.ExpressionRecordValue;
 import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
@@ -27,6 +30,7 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   private static final StringValue RESULT_VALUE_KEY = new StringValue("resultValue");
   private static final StringValue WARNINGS_KEY = new StringValue("warnings");
   private static final StringValue TENANT_ID_KEY = new StringValue("tenantId");
+  private static final StringValue VARIABLES_KEY = new StringValue("variables");
 
   private final StringProperty expressionProp = new StringProperty(EXPRESSION_KEY);
 
@@ -37,12 +41,15 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
       new ArrayProperty<>(WARNINGS_KEY, StringValue::new);
   private final StringProperty tenantIdProp = new StringProperty(TENANT_ID_KEY, "");
 
+  private final DocumentProperty variablesProp = new DocumentProperty(VARIABLES_KEY);
+
   public ExpressionRecord() {
-    super(4);
+    super(5);
     declareProperty(expressionProp)
         .declareProperty(resultValueProp)
         .declareProperty(warningsProp)
-        .declareProperty(tenantIdProp);
+        .declareProperty(tenantIdProp)
+        .declareProperty(variablesProp);
   }
 
   @Override
@@ -79,6 +86,21 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   public ExpressionRecord setResultValue(final DirectBuffer value) {
     resultValueProp.setValue(value);
     return this;
+  }
+
+  @Override
+  public Map<String, Object> getVariables() {
+    return MsgPackConverter.convertToMap(variablesProp.getValue());
+  }
+
+  public ExpressionRecord setVariables(final DirectBuffer variables) {
+    variablesProp.setValue(variables);
+    return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 
   @Override
