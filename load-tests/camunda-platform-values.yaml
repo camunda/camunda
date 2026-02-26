@@ -60,7 +60,7 @@ orchestration:
   fullnameOverride: camunda
   image:
     registry: registry.camunda.cloud
-    repository: team-zeebe/zeebe
+    repository: team-zeebe/camunda
     tag: "SNAPSHOT"
   ## @param core.clusterSize defines the amount of brokers (=replicas), which are deployed via helm
   clusterSize: "3"
