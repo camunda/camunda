@@ -1,6 +1,7 @@
 node_modules/
 /test-results/
 /jsonReports/
+/json-report/
 /playwright-report/
 /html-report/
 /json-report/
