@@ -31,7 +31,7 @@ public record PartitionBackupStatus(
     return switch (status) {
       case FAILED -> failedStatus(response);
       case DOES_NOT_EXIST -> notExistingStatus(response.getPartitionId());
-      case IN_PROGRESS, COMPLETED -> validStatus(response);
+      case IN_PROGRESS, COMPLETED, DELETED -> validStatus(response);
       default -> throw new IllegalArgumentException("Unknown backup status %s".formatted(status));
     };
   }
