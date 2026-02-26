@@ -78,6 +78,22 @@ public class ESClient implements DocumentClient {
   }
 
   @Override
+  public void deleteAllIndexTemplates(final String indexPrefix) throws IOException {
+    esClient.indices().deleteIndexTemplate(b -> b.name(indexPrefix + "*"));
+  }
+
+  @Override
+  public List<String> getIndexTemplates(final String indexPrefix) throws IOException {
+    return esClient
+        .indices()
+        .getIndexTemplate(b -> b.name(indexPrefix + "*"))
+        .indexTemplates()
+        .stream()
+        .map(t -> t.name())
+        .toList();
+  }
+
+  @Override
   public BackupRepository zeebeBackupRepository(
       final String repositoryName, final SnapshotNameProvider snapshotNameProvider) {
     return new ElasticsearchBackupRepository(
