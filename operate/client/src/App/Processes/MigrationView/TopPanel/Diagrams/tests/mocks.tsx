@@ -18,10 +18,8 @@ type Props = {
 
 const Wrapper = ({children}: Props) => {
   useEffect(() => {
-    return () => {
-      processInstanceMigrationStore.reset();
-    };
-  });
+    return () => processInstanceMigrationStore.reset();
+  }, []);
 
   return (
     <MemoryRouter>

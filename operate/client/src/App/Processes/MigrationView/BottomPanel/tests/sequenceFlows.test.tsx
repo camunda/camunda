@@ -9,44 +9,34 @@
 import {render, screen} from 'modules/testing-library';
 import {BottomPanel} from '../';
 import {open} from 'modules/mocks/diagrams';
-import {SOURCE_PROCESS_DEFINITION_KEY, Wrapper} from './mocks';
+import {Wrapper} from './mocks';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {processesStore} from 'modules/stores/processes/processes.migration';
-import {mockSearchProcessDefinitions} from 'modules/mocks/api/v2/processDefinitions/searchProcessDefinitions';
-import {searchResult} from 'modules/testUtils';
+import {createProcessDefinition} from 'modules/testUtils';
+import {processInstanceMigrationStore} from 'modules/stores/processInstanceMigration';
 
+const SOURCE_PROCESS_DEFINITION_KEY = '1';
 const TARGET_PROCESS_DEFINITION_KEY = '2';
 const HEADER_ROW_COUNT = 1;
 const MAPPABLE_ITEMS_ROW_COUNT = 13;
 const AUTO_MAPPABLE_ITEMS_ROW_COUNT = 3;
 
-describe('BottomPanel - sequence flow mappings', () => {
-  beforeEach(async () => {
-    mockSearchProcessDefinitions().withSuccess(
-      searchResult([
-        {
-          processDefinitionId: 'SequenceFlowMigration',
-          processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
-          version: 1,
-          name: 'SequenceFlowMigration',
-          versionTag: '',
-          tenantId: '<default>',
-          hasStartForm: false,
-          resourceName: null,
-        },
-        {
-          processDefinitionId: 'SequenceFlowMigration',
-          processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
-          version: 2,
-          name: 'SequenceFlowMigration',
-          versionTag: '',
-          tenantId: '<default>',
-          hasStartForm: false,
-          resourceName: null,
-        },
-      ]),
-    );
+const sourceDefinition = createProcessDefinition({
+  processDefinitionId: 'SequenceFlowMigration',
+  processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
+  version: 1,
+  name: 'SequenceFlowMigration',
+  tenantId: '<default>',
+});
+const targetDefinition = createProcessDefinition({
+  processDefinitionId: 'SequenceFlowMigration',
+  processDefinitionKey: TARGET_PROCESS_DEFINITION_KEY,
+  version: 2,
+  name: 'SequenceFlowMigration',
+  tenantId: '<default>',
+});
 
+describe('BottomPanel - sequence flow mappings', () => {
+  beforeEach(() => {
     mockFetchProcessDefinitionXml({
       processDefinitionKey: SOURCE_PROCESS_DEFINITION_KEY,
     }).withSuccess(open('SequenceFlowMigration_v1.bpmn'));
@@ -59,11 +49,9 @@ describe('BottomPanel - sequence flow mappings', () => {
       search: '?process=SequenceFlowMigration&version=1',
     });
 
-    await processesStore.fetchProcesses();
-    processesStore.setSelectedTargetProcess(
-      '{SequenceFlowMigration}-{<default>}',
-    );
-    processesStore.setSelectedTargetVersion(2);
+    processInstanceMigrationStore.enable();
+    processInstanceMigrationStore.setSourceProcessDefinition(sourceDefinition);
+    processInstanceMigrationStore.setTargetProcessDefinition(targetDefinition);
   });
 
   it('should show mappable sequence flows', async () => {
