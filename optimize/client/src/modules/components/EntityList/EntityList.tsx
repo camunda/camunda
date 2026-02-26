@@ -126,11 +126,13 @@ export default function EntityList({
           <div className="entityIcon">{row.icon}</div>
           <Stack gap={2} orientation="vertical">
             {row.link ? (
-              <Link title={row.name} className="cds--link" to={row.link}>
+              <Link title={row.name} className="cds--link entityName" to={row.link}>
                 {row.name}
               </Link>
             ) : (
-              <span className="rowName">{row.name}</span>
+              <span className="rowName" title={row.name}>
+                {row.name}
+              </span>
             )}
             <span>{row.type}</span>
           </Stack>
