@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.usertask;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -196,6 +197,8 @@ class UserTaskToolsTest extends ToolsTest {
       assertExampleUserTask(userTask);
 
       verify(userTaskServices).getByKey(5L);
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -214,7 +217,6 @@ class UserTaskToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -222,6 +224,8 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -309,6 +313,8 @@ class UserTaskToolsTest extends ToolsTest {
 
       assertThat(capturedQuery.page().size()).isEqualTo(25);
       assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -515,7 +521,6 @@ class UserTaskToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -523,6 +528,8 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
   }
 
@@ -666,7 +673,6 @@ class UserTaskToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -674,6 +680,8 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -745,6 +753,8 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -778,6 +788,8 @@ class UserTaskToolsTest extends ToolsTest {
               });
 
       verify(userTaskServices).searchUserTaskVariables(eq(5L), variableQueryCaptor.capture());
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -837,7 +849,6 @@ class UserTaskToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -845,6 +856,8 @@ class UserTaskToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
