@@ -56,13 +56,16 @@ export default function Breadcrumbs() {
             <Link to="/collections">{t('navigation.collections')}</Link>
           </BreadcrumbItem>
           {collection && (
-            <BreadcrumbItem>
-              <Link to={`/collection/${collection}/`}>{entityNames.collectionName}</Link>
+            <BreadcrumbItem title={entityNames.collectionName ?? undefined}>
+              <Link className="breadcrumbEntityName" to={`/collection/${collection}/`}>
+                {entityNames.collectionName}
+              </Link>
             </BreadcrumbItem>
           )}
           {report && dashboard && (
-            <BreadcrumbItem>
+            <BreadcrumbItem title={entityNames.dashboardName ?? undefined}>
               <Link
+                className="breadcrumbEntityName"
                 to={
                   collection
                     ? `/collection/${collection}/dashboard/${dashboard}/`
