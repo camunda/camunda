@@ -106,7 +106,7 @@ jobs:
         with:
           path: artifacts
       - name: Comment PR with profiling results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');
