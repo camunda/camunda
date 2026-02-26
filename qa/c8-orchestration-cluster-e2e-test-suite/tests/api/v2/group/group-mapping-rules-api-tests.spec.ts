@@ -105,7 +105,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
           data: {},
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/groups/{groupId}/mapping-rules/search',
@@ -145,7 +145,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
         data: {},
       },
     );
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/groups/{groupId}/mapping-rules/search',
@@ -187,7 +187,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
           data: {},
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/groups/{groupId}/mapping-rules/search',
