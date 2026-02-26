@@ -47,3 +47,7 @@ export function isValidEmail(email: string): boolean {
     email,
   );
 }
+
+export function isValidDate(date: string): boolean {
+  return !isNaN(Date.parse(date));
+}
