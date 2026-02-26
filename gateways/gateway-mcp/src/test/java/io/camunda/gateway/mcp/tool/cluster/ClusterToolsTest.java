@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.cluster;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
@@ -90,7 +91,6 @@ class ClusterToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -98,6 +98,8 @@ class ClusterToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+
+      assertTextContentFallback(result);
     }
   }
 
@@ -207,7 +209,6 @@ class ClusterToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -215,6 +216,8 @@ class ClusterToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.CONFLICT.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_STATE");
+
+      assertTextContentFallback(result);
     }
   }
 }
