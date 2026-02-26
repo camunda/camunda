@@ -44,7 +44,16 @@ module.exports = (input, _opts, context) => {
     return errors;
   }
 
-  const enumValues = Array.isArray(input.enum) ? new Set(input.enum) : new Set();
+  // 1b. Schema must have a non-empty `enum` array when extension is present.
+  if (!Array.isArray(input.enum) || input.enum.length === 0) {
+    errors.push({
+      message: `\`${EXTENSION_KEY}\` requires the schema to have a non-empty \`enum\` array.`,
+      path: [...context.path, 'enum'],
+    });
+    return errors;
+  }
+
+  const enumValues = new Set(input.enum);
   const seenNames = new Set();
 
   extension.forEach((entry, index) => {
@@ -77,7 +86,7 @@ module.exports = (input, _opts, context) => {
       });
     } else {
       // 3. `name` must exist in the enum values.
-      if (enumValues.size > 0 && !enumValues.has(entry.name)) {
+      if (!enumValues.has(entry.name)) {
         errors.push({
           message: `\`${EXTENSION_KEY}[${index}].name\` value "${entry.name}" is not listed in \`enum\`.`,
           path: [...entryPath, 'name'],

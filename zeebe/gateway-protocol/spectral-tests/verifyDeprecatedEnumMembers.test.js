@@ -138,4 +138,16 @@ describe('verifyDeprecatedEnumMembers', () => {
       assert.match(v[0].message, /unexpected keys.*reason/);
     });
   });
+
+  describe('invalid: extension present but enum missing', () => {
+    it('flags one violation', () => {
+      const v = filterByPathSegment(violations, 'InvalidNoEnumEnum');
+      assert.equal(v.length, 1);
+    });
+
+    it('reports the correct message', () => {
+      const v = filterByPathSegment(violations, 'InvalidNoEnumEnum');
+      assert.match(v[0].message, /requires the schema to have a non-empty `enum` array/);
+    });
+  });
 });
