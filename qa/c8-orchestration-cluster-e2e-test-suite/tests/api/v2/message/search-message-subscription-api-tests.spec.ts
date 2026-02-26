@@ -11,7 +11,7 @@ import {
   buildUrl,
   jsonHeaders,
   assertEqualsForKeys,
-  paginatedResponseFields,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -39,7 +39,7 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       },
     });
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/message-subscriptions/search',
@@ -72,7 +72,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         );
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/message-subscriptions/search',
@@ -126,7 +126,7 @@ test.describe('Search Message Subscription API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -159,7 +159,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -192,7 +192,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -236,7 +236,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -281,7 +281,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -314,7 +314,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -347,7 +347,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -380,7 +380,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -413,7 +413,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',
@@ -449,7 +449,7 @@ test.describe('Search Message Subscription API Tests', () => {
           },
         },
       );
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/message-subscriptions/search',

@@ -13,8 +13,8 @@ import {
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
-  paginatedResponseFields,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -78,7 +78,7 @@ test.describe.parallel('Role Groups API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -168,7 +168,7 @@ test.describe.parallel('Role Groups API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -182,7 +182,7 @@ test.describe.parallel('Role Groups API Tests', () => {
           },
         );
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/groups/{groupId}/roles/search',

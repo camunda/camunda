@@ -15,6 +15,7 @@ import {
   assertNotFoundRequest,
   assertUnauthorizedRequest,
   assertConflictRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -66,7 +67,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -172,7 +173,7 @@ test.describe.parallel('Group Mapping Rules API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

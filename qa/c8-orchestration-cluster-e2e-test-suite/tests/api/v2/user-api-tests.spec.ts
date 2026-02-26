@@ -16,6 +16,7 @@ import {
   assertBadRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
 import {
@@ -60,7 +61,7 @@ test.describe.parallel('Users API Tests', () => {
         data: user,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
       await validateResponse(
         {
           path: '/users',
@@ -98,7 +99,7 @@ test.describe.parallel('Users API Tests', () => {
           data: user,
         });
 
-        expect(res.status()).toBe(201);
+        await assertStatusCode(res, 201);
         await validateResponse(
           {
             path: '/users',
@@ -210,7 +211,7 @@ test.describe.parallel('Users API Tests', () => {
       data: body,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/users',
@@ -241,7 +242,7 @@ test.describe.parallel('Users API Tests', () => {
       data: body,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/users',
@@ -273,7 +274,7 @@ test.describe.parallel('Users API Tests', () => {
       data: body,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/users',
@@ -337,7 +338,7 @@ test.describe.parallel('Users API Tests', () => {
       const res = await request.get(buildUrl('/users/{username}', p), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/users/{username}',
@@ -383,7 +384,7 @@ test.describe.parallel('Users API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/users/{username}',
@@ -413,7 +414,7 @@ test.describe.parallel('Users API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/users/{username}',
@@ -443,7 +444,7 @@ test.describe.parallel('Users API Tests', () => {
         headers: jsonHeaders(),
         data: requestBody,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/users/{username}',
@@ -476,7 +477,7 @@ test.describe.parallel('Users API Tests', () => {
         data: body,
       });
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/users/{username}',
@@ -520,7 +521,7 @@ test.describe.parallel('Users API Tests', () => {
         const res = await request.delete(buildUrl('/users/{username}', p), {
           headers: jsonHeaders(),
         });
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

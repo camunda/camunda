@@ -14,6 +14,7 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -61,7 +62,7 @@ test.describe.parallel('Role Clients API Tests', () => {
         buildUrl('/roles/{roleId}/clients/{clientId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -73,7 +74,7 @@ test.describe.parallel('Role Clients API Tests', () => {
       buildUrl('/roles/{roleId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   });
 
   test('Assign Role To Client Non Existent Role Not Found', async ({
@@ -193,7 +194,7 @@ test.describe.parallel('Role Clients API Tests', () => {
           buildUrl('/roles/{roleId}/clients/{clientId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

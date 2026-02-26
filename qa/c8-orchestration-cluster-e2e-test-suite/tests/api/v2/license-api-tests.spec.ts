@@ -7,7 +7,7 @@
  */
 
 import {expect, test} from '@playwright/test';
-import {buildUrl, jsonHeaders} from '../../../utils/http';
+import {buildUrl, jsonHeaders, assertStatusCode} from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
 
 test.describe.parallel('License API Tests', () => {
@@ -16,7 +16,7 @@ test.describe.parallel('License API Tests', () => {
       const res = await request.get(buildUrl('/license'), {
         headers: jsonHeaders(),
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/license',
@@ -35,7 +35,7 @@ test.describe.parallel('License API Tests', () => {
   test('Get License Unauthorized', async ({request}) => {
     const res = await request.get(buildUrl('/license'), {headers: {}});
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/license',

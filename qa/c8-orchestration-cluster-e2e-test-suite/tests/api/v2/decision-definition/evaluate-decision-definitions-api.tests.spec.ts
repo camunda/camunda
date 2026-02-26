@@ -13,6 +13,7 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   assertUnauthorizedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {
@@ -84,7 +85,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -142,7 +143,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -200,7 +201,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -260,7 +261,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -338,7 +339,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -416,7 +417,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',
@@ -476,7 +477,7 @@ test.describe.parallel('Evaluate Decision Definitions API Tests', () => {
         },
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/evaluation',

@@ -15,6 +15,7 @@ import {
   assertEqualsForKeys,
   assertBadRequest,
   textXMLHeaders,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {defaultAssertionOptions} from '../../../../utils/constants';
 import {decisionDefinitionRequiredFields} from '../../../../utils/beans/requestBeans';
@@ -58,7 +59,7 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
         {headers: jsonHeaders()},
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/decision-definitions/{decisionDefinitionKey}',
@@ -122,7 +123,7 @@ test.describe.parallel('Get Decision Definitions API Tests', () => {
         {headers: textXMLHeaders()},
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       expect(await res.text()).toEqual(
         fs.readFileSync('./resources/simpleDecisionTable1.dmn', 'utf-8'),
       );

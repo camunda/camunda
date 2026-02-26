@@ -14,6 +14,7 @@ import {
   assertNotFoundRequest,
   assertConflictRequest,
   assertPaginatedRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -58,7 +59,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
         buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -73,7 +74,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
       buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   });
 
   test('Assign Client To Tenant Non Existent Tenant Not Found', async ({
@@ -195,7 +196,7 @@ test.describe.parallel('Tenant Clients API Tests', () => {
           buildUrl('/tenants/{tenantId}/clients/{clientId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
