@@ -8,6 +8,7 @@
 package io.camunda.gateway.mapping.http.validator;
 
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DATE_PARSING;
+import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_DURATION_PARSING;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_ILLEGAL_CHARACTER;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_ATTRIBUTE_VALUE;
 import static io.camunda.gateway.mapping.http.validator.ErrorMessages.ERROR_MESSAGE_INVALID_KEY_FORMAT;
@@ -16,6 +17,7 @@ import static io.camunda.zeebe.protocol.record.RejectionType.INVALID_ARGUMENT;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
 import io.camunda.gateway.mapping.http.util.KeyUtil;
 import io.camunda.gateway.protocol.model.Changeset;
+import java.time.Duration;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -52,6 +54,18 @@ public final class RequestValidator {
         return OffsetDateTime.parse(dateString);
       } catch (final DateTimeParseException ex) {
         violations.add(ERROR_MESSAGE_DATE_PARSING.formatted(attributeName, dateString));
+      }
+    }
+    return null;
+  }
+
+  public static Duration validateDuration(
+      final String durationString, final String attributeName, final List<String> violations) {
+    if (durationString != null && !durationString.isEmpty()) {
+      try {
+        return Duration.parse(durationString);
+      } catch (final DateTimeParseException ex) {
+        violations.add(ERROR_MESSAGE_DURATION_PARSING.formatted(attributeName, durationString));
       }
     }
     return null;
