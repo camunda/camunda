@@ -45,6 +45,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
   private final KeyGenerator keyGenerator;
   private final StateWriter stateWriter;
   private final MessageCorrelateBehavior correlateBehavior;
+  private final int maxNameFieldLength;
 
   private MessageRecord messageRecord;
   private long messageKey;
@@ -66,7 +67,8 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
       final EventTriggerBehavior eventTriggerBehavior,
       final BpmnStateBehavior stateBehavior,
       final AuthorizationCheckBehavior authCheckBehavior,
-      final RoutingInfo routingInfo) {
+      final RoutingInfo routingInfo,
+      final int maxNameFieldLength) {
     this.partitionId = partitionId;
     this.messageState = messageState;
     this.keyGenerator = keyGenerator;
@@ -75,6 +77,7 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     rejectionWriter = writers.rejection();
     this.authCheckBehavior = authCheckBehavior;
     this.routingInfo = routingInfo;
+    this.maxNameFieldLength = maxNameFieldLength;
     final var eventHandle =
         new EventHandle(
             keyGenerator,
@@ -115,6 +118,14 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
     }
 
     messageRecord = command.getValue();
+    if (messageRecord.getCorrelationKey().length() > maxNameFieldLength) {
+      final var reason =
+          "Expected correlation key to be at most %d characters long (configured max-name-length), but was %d characters."
+              .formatted(maxNameFieldLength, messageRecord.getCorrelationKey().length());
+      rejectionWriter.appendRejection(command, RejectionType.INVALID_ARGUMENT, reason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_ARGUMENT, reason);
+      return;
+    }
     if (routingInfo.partitionForCorrelationKey(messageRecord.getCorrelationKeyBuffer())
         != partitionId) {
       final var reason =

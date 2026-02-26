@@ -78,7 +78,8 @@ public final class MessageEventProcessors {
                 bpmnBehaviors.eventTriggerBehavior(),
                 bpmnBehaviors.stateBehavior(),
                 authCheckBehavior,
-                routingInfo))
+                routingInfo,
+                config.getMaxNameFieldLength()))
         .onCommand(
             ValueType.MESSAGE_BATCH,
             MessageBatchIntent.EXPIRE,
@@ -143,7 +144,8 @@ public final class MessageEventProcessors {
                 messageState,
                 subscriptionState,
                 subscriptionCommandSender,
-                authCheckBehavior))
+                authCheckBehavior,
+                config.getMaxNameFieldLength()))
         .withListener(
             new MessageTimeToLiveCheckScheduler(
                 config.getMessagesTtlCheckerInterval(),
