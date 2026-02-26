@@ -266,7 +266,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final String script =
           "if (ctx._source.batchOperationIds == null){"
               + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
-              + "} else {"
+              + "} else if (!ctx._source.batchOperationIds.contains(params.batchOperationId)) {"
               + "ctx._source.batchOperationIds.add(params.batchOperationId);"
               + "}";
       batchRequest.updateWithScript(
@@ -331,7 +331,7 @@ public class BatchOperationWriter implements io.camunda.operate.webapp.writer.Ba
       final var script =
           "if (ctx._source.batchOperationIds == null){"
               + "ctx._source.batchOperationIds = new String[]{params.batchOperationId};"
-              + "} else {"
+              + "} else if (!ctx._source.batchOperationIds.contains(params.batchOperationId)) {"
               + "ctx._source.batchOperationIds.add(params.batchOperationId);"
               + "}";
 
