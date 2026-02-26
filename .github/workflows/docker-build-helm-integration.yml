@@ -69,16 +69,6 @@ jobs:
       !contains(github.event.pull_request.labels.*.name, 'skip-always-green'))
     steps:
       - run: echo "Workflow conditions met, proceeding with build"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          job_name: docker-build-helm-integration-should-run
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   # Parallel frontend builds
   build-operate-frontend:
@@ -292,16 +282,6 @@ jobs:
           # Truncate to max 40 chars if needed (k8s namespace limit)
           IDENTIFIER="${IDENTIFIER:0:40}"
           echo "identifier=${IDENTIFIER}" >> "$GITHUB_OUTPUT"
-      - name: Observe build status
-        if: always()
-        continue-on-error: true
-        uses: ./.github/actions/observe-build-status
-        with:
-          build_status: ${{ job.status }}
-          job_name: docker-build-helm-integration-format-identifier
-          secret_vault_address: ${{ secrets.VAULT_ADDR }}
-          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
-          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
 
   helm-deploy:
     name: Helm chart Integration Tests
