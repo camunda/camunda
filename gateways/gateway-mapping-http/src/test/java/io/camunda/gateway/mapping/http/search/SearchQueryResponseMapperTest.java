@@ -119,7 +119,8 @@ class SearchQueryResponseMapperTest {
             ProcessInstanceState.ACTIVE, // state
             false, // hasIncident
             "tenant", // tenantId
-            null); // treePath
+            null, // treePath
+            null); // businessId
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);
@@ -147,7 +148,8 @@ class SearchQueryResponseMapperTest {
             ProcessInstanceState.ACTIVE, // state
             false, // hasIncident
             "tenant", // tenantId
-            null); // treePath
+            null, // treePath
+            null); // businessId
 
     // when
     final var response = SearchQueryResponseMapper.toProcessInstance(entity);

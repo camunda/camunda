@@ -743,7 +743,8 @@ public final class SearchQueryResponseMapper {
         .state(toProtocolState(p.state()))
         .hasIncident(p.hasIncident())
         .tenantId(p.tenantId())
-        .tags(p.tags());
+        .tags(p.tags())
+        .businessId(p.businessId());
   }
 
   public static List<BatchOperationResponse> toBatchOperations(

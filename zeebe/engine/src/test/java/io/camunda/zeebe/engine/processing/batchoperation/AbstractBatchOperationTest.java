@@ -339,7 +339,8 @@ abstract class AbstractBatchOperationTest {
         false,
         null,
         null,
-        Set.of());
+        Set.of(),
+        null);
   }
 
   protected IncidentEntity fakeIncidentEntity(

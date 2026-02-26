@@ -40,6 +40,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
   private final Boolean hasIncident;
   private final String tenantId;
   private final Set<String> tags;
+  private final String businessId;
 
   public ProcessInstanceImpl(final ProcessInstanceResult item) {
     processInstanceKey = ParseUtil.parseLongOrNull(item.getProcessInstanceKey());
@@ -57,6 +58,7 @@ public class ProcessInstanceImpl implements ProcessInstance {
     hasIncident = item.getHasIncident();
     tenantId = item.getTenantId();
     tags = item.getTags();
+    businessId = item.getBusinessId();
   }
 
   @Override
@@ -132,5 +134,10 @@ public class ProcessInstanceImpl implements ProcessInstance {
   @Override
   public Set<String> getTags() {
     return tags;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
   }
 }

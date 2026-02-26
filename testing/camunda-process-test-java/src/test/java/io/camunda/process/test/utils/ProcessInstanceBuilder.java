@@ -40,6 +40,7 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   private Boolean hasIncident;
   private String tenantId;
   private Set<String> tags;
+  private String businessId;
 
   @Override
   public Long getProcessInstanceKey() {
@@ -114,6 +115,16 @@ public class ProcessInstanceBuilder implements ProcessInstance {
   @Override
   public Set<String> getTags() {
     return tags;
+  }
+
+  @Override
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public ProcessInstanceBuilder setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
   }
 
   public ProcessInstanceBuilder setTags(final Set<String> tags) {

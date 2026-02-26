@@ -1213,6 +1213,7 @@ components:
         - parentElementInstanceKey
         - rootProcessInstanceKey
         - tags
+        - businessId
       properties:
         processDefinitionId:
           $ref: 'identifiers.yaml#/components/schemas/ProcessDefinitionId'
@@ -1272,6 +1273,11 @@ components:
             - $ref: 'keys.yaml#/components/schemas/ProcessInstanceKey'
         tags:
           $ref: 'identifiers.yaml#/components/schemas/TagSet'
+        businessId:
+          description: The business id associated with this process instance.
+          nullable: true
+          allOf:
+            - $ref: 'identifiers.yaml#/components/schemas/BusinessId'
 
     CancelProcessInstanceRequest:
       type: object
