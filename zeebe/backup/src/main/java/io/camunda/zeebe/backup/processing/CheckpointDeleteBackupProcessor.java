@@ -80,7 +80,7 @@ public final class CheckpointDeleteBackupProcessor {
     final var ranges = backupRangeState.getAllRanges();
     resultBuilder.appendPostCommitTask(
         () -> {
-          syncer.store(checkpoints, ranges);
+          syncer.store(record.getPartitionId(), checkpoints, ranges);
           return true;
         });
     resultBuilder.appendPostCommitTask(
