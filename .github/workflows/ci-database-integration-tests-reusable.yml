@@ -63,6 +63,7 @@ defaults:
 
 env:
   GHA_BEST_PRACTICES_LINTER: enabled
+  FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
 
 jobs:
   integration-tests:
@@ -110,7 +111,7 @@ jobs:
           -D maven.javadoc.skip=true
           -D skipUTs
           -D skipChecks
-          -D failsafe.rerunFailingTestsCount=3
+          -D failsafe.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -D flaky.test.reportDir=failsafe-reports
           -D test.integration.camunda.database.type=${{inputs.it-database-type}}
           -P parallel-tests,extract-flaky-tests,skipFrontendBuild,${{inputs.maven-profiles}}
