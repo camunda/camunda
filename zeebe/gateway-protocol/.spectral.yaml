@@ -8,6 +8,7 @@ functions:
   - verifyEventuallyConsistent
   - verifyRequiredPropertiesExist
   - verifyArrayPropertiesRequired
+  - verifyDeprecatedEnumMembers
 functionsDir: ./spectral-functions
 rules:
   # Tag validation
@@ -128,3 +129,11 @@ rules:
     then:
       function: verifyEventuallyConsistent
     message: "Command operations are synchronous writes and must not be marked as eventually consistent. Only query operations (search, statistics, get) should use x-eventually-consistent: true."
+
+  valid-deprecated-enum-members:
+    description: "`x-deprecated-enum-members` must be a valid array of {name, deprecatedInVersion} referencing existing enum values."
+    severity: error
+    given: "$.components.schemas[*]"
+    message: "{{error}}"
+    then:
+      function: verifyDeprecatedEnumMembers
