@@ -633,7 +633,7 @@ public final class ConditionalBoundaryEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerBoundaryOnlyForVariablesReferencedInCondition() {
+  public void shouldOnlyTriggerBoundaryForAutoDetectedVariableNames() {
     // given
     final String processId = helper.getBpmnProcessId();
     final BpmnModelInstance process =
