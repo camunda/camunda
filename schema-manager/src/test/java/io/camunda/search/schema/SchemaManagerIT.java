@@ -98,7 +98,7 @@ public class SchemaManagerIT {
             config,
             objectMapper);
 
-    schemaManager.initialiseResources();
+    initialiseResources(schemaManager);
 
     // when
     final var newProperties = new HashSet<IndexMappingProperty>();
@@ -134,7 +134,7 @@ public class SchemaManagerIT {
             objectMapper);
 
     // when
-    schemaManager.initialiseResources();
+    initialiseResources(schemaManager);
 
     // then
     final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -162,7 +162,7 @@ public class SchemaManagerIT {
             objectMapper);
 
     // when
-    schemaManager.initialiseResources();
+    initialiseResources(schemaManager);
 
     // then
     final var retrievedIndex = searchClientAdapter.getIndexAsNode(index.getFullQualifiedName());
@@ -184,7 +184,7 @@ public class SchemaManagerIT {
             config,
             objectMapper);
 
-    schemaManager.initialiseResources();
+    initialiseResources(schemaManager);
 
     // when
     indexTemplate.setMappingsClasspathFilename("/mappings-added-property.json");
@@ -1422,7 +1422,7 @@ public class SchemaManagerIT {
         new SchemaManager(
             searchEngineClient, Set.of(metadataIndex), Set.of(indexTemplate), config, objectMapper);
 
-    firstSchemaManager.initialiseResources();
+    initialiseResources(firstSchemaManager);
 
     // verify the first template was created
     verify(searchEngineClient, times(1)).createIndexTemplate(eq(indexTemplate), any(), eq(true));
@@ -1445,7 +1445,7 @@ public class SchemaManagerIT {
             config,
             objectMapper);
 
-    secondSchemaManager.initialiseResources();
+    initialiseResources(secondSchemaManager);
 
     // then - verify existing template was not recreated but new template was created
     verify(searchEngineClient, never()).createIndexTemplate(eq(indexTemplate), any(), eq(true));
@@ -1609,5 +1609,10 @@ public class SchemaManagerIT {
                 () -> new IllegalStateException("Could not find transition to 'deleted' state"));
 
     return deletedTransition.at("/conditions/min_index_age").asText();
+  }
+
+  private void initialiseResources(final SchemaManager schemaManager) {
+    schemaManager.initialiseIndexTemplates();
+    schemaManager.initialiseIndices();
   }
 }
