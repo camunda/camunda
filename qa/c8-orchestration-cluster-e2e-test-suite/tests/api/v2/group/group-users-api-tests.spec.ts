@@ -11,10 +11,10 @@ import {
   jsonHeaders,
   buildUrl,
   assertEqualsForKeys,
-  paginatedResponseFields,
   assertUnauthorizedRequest,
   assertNotFoundRequest,
   assertConflictRequest,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {CREATE_GROUP_USERS_EXPECTED_BODY_USING_GROUP} from '../../../../utils/beans/requestBeans';
@@ -83,7 +83,7 @@ test.describe.parallel('Group Users API Tests', () => {
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -116,7 +116,7 @@ test.describe.parallel('Group Users API Tests', () => {
         {headers: jsonHeaders()},
       );
 
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/groups/{groupId}/users/search',
@@ -149,7 +149,7 @@ test.describe.parallel('Group Users API Tests', () => {
       {headers: jsonHeaders()},
     );
 
-    expect(res.status()).toBe(200);
+    await assertStatusCode(res, 200);
     await validateResponse(
       {
         path: '/groups/{groupId}/users/search',
@@ -177,7 +177,7 @@ test.describe.parallel('Group Users API Tests', () => {
             headers: jsonHeaders(),
           },
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -192,7 +192,7 @@ test.describe.parallel('Group Users API Tests', () => {
             data: {},
           },
         );
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/groups/{groupId}/users/search',

@@ -17,6 +17,7 @@ import {
   assertBadRequest,
   assertNotFoundRequest,
   assertForbiddenRequest,
+  assertStatusCode,
 } from '../../../utils/http';
 import {validateResponse} from '../../../json-body-assertions';
 import {
@@ -52,7 +53,7 @@ test.describe.parallel('Document API Tests', () => {
         multipart: payload,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
       await validateResponse(
         {
           path: '/documents',
@@ -158,7 +159,7 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/documents',
@@ -185,7 +186,7 @@ test.describe.parallel('Document API Tests', () => {
       },
     );
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/documents',
@@ -210,7 +211,7 @@ test.describe.parallel('Document API Tests', () => {
       multipart: payload,
     });
 
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     await validateResponse(
       {
         path: '/documents',
@@ -235,7 +236,8 @@ test.describe.parallel('Document API Tests', () => {
         ),
         {headers: defaultHeaders()},
       );
-      expect(res.status()).toBe(200);
+      
+      await assertStatusCode(res, 200);
       const text = await res.text();
       expect(text).toBe(`Hello World ${state['name1']}!`);
     }).toPass(defaultAssertionOptions);
@@ -310,7 +312,7 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 
@@ -340,7 +342,7 @@ test.describe.parallel('Document API Tests', () => {
         multipart: payload,
       });
 
-      expect(res.status()).toBe(201);
+      await assertStatusCode(res, 201);
       await validateResponse(
         {
           path: '/documents/batch',

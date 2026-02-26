@@ -15,6 +15,7 @@ import {
   assertConflictRequest,
   assertPaginatedRequest,
   assertEqualsForKeys,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {defaultAssertionOptions} from '../../../../utils/constants';
@@ -75,7 +76,7 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
         buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   });
 
@@ -156,7 +157,7 @@ test.describe.parallel('Role Mapping Rules API Tests', () => {
           buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', p),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(204);
+        await assertStatusCode(res, 204);
       }).toPass(defaultAssertionOptions);
     });
 

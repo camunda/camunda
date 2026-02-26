@@ -158,7 +158,7 @@ test.describe.parallel('Job API Tests', () => {
           data: {},
         });
 
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await assertPaginatedRequest(res, {
           itemLengthGreaterThan: 3,
           totalItemGreaterThan: 3,

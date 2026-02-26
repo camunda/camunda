@@ -13,6 +13,7 @@ import {
   assertRequiredFields,
   assertEqualsForKeys,
   paginatedResponseFields,
+  assertStatusCode,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -91,7 +92,7 @@ test.describe('Correlate Message API Tests', () => {
         headers: jsonHeaders(),
         data: CORRELATE_MESSAGE,
       });
-      expect(res.status()).toBe(200);
+      await assertStatusCode(res, 200);
       await validateResponse(
         {
           path: '/messages/correlation',
@@ -125,7 +126,7 @@ test.describe('Correlate Message API Tests', () => {
             },
           },
         );
-        expect(res.status()).toBe(200);
+        await assertStatusCode(res, 200);
         await validateResponse(
           {
             path: '/message-subscriptions/search',
