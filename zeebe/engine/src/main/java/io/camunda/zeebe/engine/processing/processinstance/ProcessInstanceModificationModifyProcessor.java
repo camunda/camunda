@@ -492,7 +492,11 @@ public final class ProcessInstanceModificationModifyProcessor
           final boolean shouldActivate =
               miBodyAncestorKey < 0
                   || activatedMiBodyAncestorAndScopeKeys.add(
-                      miBodyAncestorKey + ":" + ancestorScopeKey);
+                      miBodyAncestorKey
+                          + ":"
+                          + ancestorScopeKey
+                          + ":"
+                          + moveInstruction.getTargetElementId());
           if (shouldActivate) {
             final var activateInstruction =
                 new ProcessInstanceModificationActivateInstruction()
