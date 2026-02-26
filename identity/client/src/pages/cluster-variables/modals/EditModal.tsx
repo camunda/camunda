@@ -14,17 +14,15 @@ import { beautify, isValid } from "src/utility/components/editor/jsonUtils.ts";
 import JSONEditor from "src/components/form/JSONEditor.tsx";
 import { useApiCall } from "src/utility/api";
 import {
-  ScopeType,
+  ClusterVariable,
   updateClusterVariable,
 } from "src/utility/api/cluster-variables";
 import { useNotifications } from "src/components/notifications";
 
-type ClusterVariableEntity = {
-  name: string;
-  value: string;
-  scope: ScopeType;
-  tenantId?: string;
-};
+type ClusterVariableEntity = Pick<
+  ClusterVariable,
+  "name" | "value" | "scope" | "tenantId"
+>;
 
 type FormData = {
   value: string;

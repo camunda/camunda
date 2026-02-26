@@ -16,8 +16,9 @@ import TextField from "src/components/form/TextField";
 import {
   createGlobalTaskListener,
   CreateGlobalTaskListenerParams,
+  GlobalTaskListener,
+  GlobalTaskListenerEventType,
   LISTENER_EVENT_TYPES,
-  ListenerEventType,
 } from "src/utility/api/global-task-listeners";
 import { useNotifications } from "src/components/notifications";
 import { LISTENER_TYPE_PATTERN } from "src/pages/global-task-listeners";
@@ -47,37 +48,31 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
 
   const eventTypes = watch("eventTypes");
 
-  const handleEventTypeChange = (selectedItems: ListenerEventType[]) => {
-    const individualTypes = LISTENER_EVENT_TYPES.filter(
-      (opt) => opt !== ListenerEventType.ALL,
-    );
+  const handleEventTypeChange = (
+    selectedItems: GlobalTaskListenerEventType[],
+  ) => {
+    const individualTypes = LISTENER_EVENT_TYPES.filter((opt) => opt !== "all");
 
     // If "all" was just checked, select all individual types too
-    if (
-      selectedItems.includes(ListenerEventType.ALL) &&
-      !eventTypes.includes(ListenerEventType.ALL)
-    ) {
+    if (selectedItems.includes("all") && !eventTypes.includes("all")) {
       setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
       return;
     }
 
     // If "all" was just unchecked, uncheck all individual types too
-    if (
-      !selectedItems.includes(ListenerEventType.ALL) &&
-      eventTypes.includes(ListenerEventType.ALL)
-    ) {
+    if (!selectedItems.includes("all") && eventTypes.includes("all")) {
       setValue("eventTypes", []);
       return;
     }
 
     // If an individual type was unchecked while "all" is checked, uncheck "all" too
     if (
-      eventTypes.includes(ListenerEventType.ALL) &&
+      eventTypes.includes("all") &&
       selectedItems.length < LISTENER_EVENT_TYPES.length
     ) {
       setValue(
         "eventTypes",
-        selectedItems.filter((item) => item !== ListenerEventType.ALL),
+        selectedItems.filter((item) => item !== "all"),
       );
       return;
     }
@@ -86,10 +81,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     const allIndividualSelected = individualTypes.every((type) =>
       selectedItems.includes(type),
     );
-    if (
-      allIndividualSelected &&
-      !selectedItems.includes(ListenerEventType.ALL)
-    ) {
+    if (allIndividualSelected && !selectedItems.includes("all")) {
       setValue("eventTypes", [...LISTENER_EVENT_TYPES]); // includes "all" and all individuals
       return;
     }
@@ -97,8 +89,10 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     setValue("eventTypes", selectedItems);
   };
 
-  const getEventTypeLabel = (eventType: ListenerEventType): string => {
-    const labels: Record<ListenerEventType, string> = {
+  const getEventTypeLabel = (
+    eventType: GlobalTaskListener["eventTypes"][number],
+  ): string => {
+    const labels: Record<GlobalTaskListener["eventTypes"][number], string> = {
       all: t("eventTypeAll"),
       creating: t("eventTypeCreating"),
       updating: t("eventTypeUpdating"),
@@ -110,9 +104,9 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
   };
 
   const onSubmit = async (data: CreateGlobalTaskListenerParams) => {
-    const eventTypes = data.eventTypes.includes(ListenerEventType.ALL)
-      ? [ListenerEventType.ALL]
-      : data.eventTypes.filter((type) => type !== ListenerEventType.ALL);
+    const eventTypes = data.eventTypes.includes("all")
+      ? ["all" as const]
+      : data.eventTypes.filter((type) => type !== "all");
 
     const { success } = await callCreateGlobalTaskListener({
       id: data.id,
@@ -202,7 +196,7 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
             titleText={t("eventType")}
             label={
               field.value.length > 0
-                ? field.value.includes(ListenerEventType.ALL)
+                ? field.value.includes("all")
                   ? t("eventTypeAll")
                   : field.value.map(getEventTypeLabel).join(", ")
                 : t("selectEventTypes")
@@ -212,11 +206,13 @@ const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
             onChange={({
               selectedItems,
             }: {
-              selectedItems: ListenerEventType[];
+              selectedItems: GlobalTaskListenerEventType[];
             }) => {
               handleEventTypeChange(selectedItems);
             }}
-            itemToString={(item: ListenerEventType) => getEventTypeLabel(item)}
+            itemToString={(item: GlobalTaskListenerEventType) =>
+              getEventTypeLabel(item)
+            }
             invalid={!!fieldState.error}
             invalidText={fieldState.error?.message}
           />

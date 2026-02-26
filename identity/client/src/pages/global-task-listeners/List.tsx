@@ -14,7 +14,6 @@ import Page, { PageHeader } from "src/components/layout/Page";
 import EntityList from "src/components/entityList";
 import {
   GlobalTaskListener,
-  ListenerEventType,
   searchGlobalTaskListeners,
 } from "src/utility/api/global-task-listeners";
 import { TranslatedErrorInlineNotification } from "src/components/notifications/InlineNotification";
@@ -78,7 +77,7 @@ const List: FC = () => {
     executionOrderDisplay: listener.afterNonGlobal
       ? t("executionOrderAfter")
       : t("executionOrderBefore"),
-    eventTypesDisplay: listener.eventTypes.includes(ListenerEventType.ALL)
+    eventTypesDisplay: listener.eventTypes.includes("all")
       ? t("eventTypeAll")
       : listener.eventTypes.join(", "),
   }));

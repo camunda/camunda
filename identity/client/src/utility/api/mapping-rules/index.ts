@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import type { QueryMappingRulesResponseBody } from "@camunda/camunda-api-zod-schemas/8.9";
+import type { MappingRuleResult } from "@camunda/camunda-api-zod-schemas/8.9";
 import {
   ApiDefinition,
   apiDelete,
@@ -15,7 +15,7 @@ import {
 } from "src/utility/api/request";
 import { SearchResponse } from "src/utility/api";
 
-export type MappingRule = QueryMappingRulesResponseBody["items"][number];
+export type MappingRule = MappingRuleResult;
 
 export const MAPPING_RULES_ENDPOINT = "/mapping-rules";
 

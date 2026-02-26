@@ -187,7 +187,9 @@ export const AddModal: FC<UseEntityModalProps<ResourceType>> = ({
                 label={t("selectOwnerType")}
                 titleText={t("ownerType")}
                 items={OWNER_TYPES.filter((ownerType) => {
-                  const excludedType = isOIDC ? [] : ["MAPPING_RULE", "CLIENT"];
+                  const excludedType = isOIDC
+                    ? ["UNSPECIFIED"]
+                    : ["MAPPING_RULE", "CLIENT", "UNSPECIFIED"];
 
                   return !excludedType.includes(ownerType);
                 })}

@@ -9,7 +9,7 @@
 import { FC } from "react";
 import {
   createClusterVariable,
-  ScopeType,
+  type ClusterVariableScope,
 } from "src/utility/api/cluster-variables";
 import { RadioButton, RadioButtonGroup, Stack } from "@carbon/react";
 import { Controller, useForm } from "react-hook-form";
@@ -27,7 +27,7 @@ import ClusterVariableTenantDropdown from "./ClusterVariableTenantDropdown.tsx";
 type FormData = {
   name: string;
   value: string;
-  scope: ScopeType;
+  scope: ClusterVariableScope;
   tenantId?: string;
 };
 
@@ -45,14 +45,14 @@ export const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
     defaultValues: {
       name: "",
       value: "",
-      scope: ScopeType.GLOBAL,
+      scope: "GLOBAL",
       tenantId: "",
     },
     mode: "all",
   });
 
   const watchedScope = watch("scope");
-  const isTenantScoped = watchedScope === ScopeType.TENANT;
+  const isTenantScoped = watchedScope === "TENANT";
 
   const onSubmit = async (data: FormData) => {
     const { success } = await callAddClusterVariable({
@@ -112,16 +112,16 @@ export const AddModal: FC<UseModalProps> = ({ open, onClose, onSuccess }) => {
               orientation="horizontal"
             >
               <RadioButton
-                value={ScopeType.GLOBAL as string}
-                checked={field.value === ScopeType.GLOBAL}
-                onClick={() => field.onChange(ScopeType.GLOBAL)}
+                value={"GLOBAL"}
+                checked={field.value === "GLOBAL"}
+                onClick={() => field.onChange("GLOBAL")}
                 labelText={<span>{t("clusterVariableScopeTypeGlobal")}</span>}
                 type="radio"
               />
               <RadioButton
-                value={ScopeType.TENANT as string}
-                checked={field.value === ScopeType.TENANT}
-                onClick={() => field.onChange(ScopeType.TENANT)}
+                value={"TENANT"}
+                checked={field.value === "TENANT"}
+                onClick={() => field.onChange("TENANT")}
                 labelText={<span>{t("clusterVariableScopeTypeTenant")}</span>}
                 disabled={isSaaS}
                 type="radio"

@@ -166,6 +166,7 @@ const Selection: FC<SelectionProps> = ({
           }
         />
       );
+    case "UNSPECIFIED":
     default:
       return null;
   }
