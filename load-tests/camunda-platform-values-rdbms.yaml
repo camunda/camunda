@@ -52,15 +52,6 @@ orchestration:
         zeebe.broker.flowControl.write.enabled: "true"
         zeebe.broker.flowControl.write.limit: 4000
         zeebe.broker.flowControl.write.throttling.enabled: "true"
-        # Disable the importers
-        # camunda.tasklist.importerEnabled: "false"
-        # camunda.operate.importerEnabled: "false"
-        # Schema management has been moved out of exporter - to be bootstrap at start; once
-        # camunda.data.secondary-storage.retention.enabled: "true"
-        # 0s causes ILM to move data asap - it is normally the default
-        # https://www.elastic.co/guide/en/elasticsearch/reference/current/ilm-index-lifecycle.html#ilm-phase-transitions
-        # camunda.data.secondary-storage.retention.minimum-age: "70m"
-        # camunda.database.retention.policyName: "camunda-retention-policy"
         #Metrics:
         camunda.flags.jfr.metrics: "true"
         # RocksDB memory limit setting, limits the overall RocksDB memory usage
