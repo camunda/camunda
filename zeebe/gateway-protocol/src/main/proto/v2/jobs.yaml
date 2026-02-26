@@ -685,9 +685,10 @@ components:
             - $ref: "keys.yaml#/components/schemas/ElementInstanceKey"
           description: The element instance key associated with the job.
         endTime:
-          description: When the job ended.
+          description: When the job ended. `null` if the job is not in an end state yet.
           type: string
           format: date-time
+          nullable: true
         errorCode:
           description: The error code provided for a failed job.
           type: string
