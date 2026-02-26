@@ -7,9 +7,7 @@
  */
 package io.camunda.zeebe.backup.api;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
-import io.camunda.zeebe.util.Optionals;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.OptionalLong;
@@ -66,10 +64,4 @@ public interface BackupDescriptor {
    * @return the type of the checkpoint that triggered the backup
    */
   CheckpointType checkpointType();
-
-  @JsonIgnore
-  default Optional<Interval<Long>> getLogPositionInterval() {
-    return Optionals.boxed(firstLogPosition())
-        .map(logPos -> new Interval<>(logPos, checkpointPosition()));
-  }
 }

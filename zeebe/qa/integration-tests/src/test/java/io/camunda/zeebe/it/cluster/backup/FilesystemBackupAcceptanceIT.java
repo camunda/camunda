@@ -7,18 +7,14 @@
  */
 package io.camunda.zeebe.it.cluster.backup;
 
-import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Filesystem;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.qa.util.cluster.TestCluster;
 import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.UUID;
-import org.junit.jupiter.api.AutoClose;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.io.TempDir;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -39,13 +35,6 @@ final class FilesystemBackupAcceptanceIT implements BackupAcceptance {
           .withEmbeddedGateway(false)
           .withBrokerConfig(this::configureBroker)
           .build();
-
-  @AutoClose private CamundaClient client;
-
-  @BeforeEach
-  void beforeEach(final @TempDir Path tempDir) throws IOException {
-    client = cluster.newClientBuilder().build();
-  }
 
   @Override
   public TestCluster getTestCluster() {

@@ -15,7 +15,6 @@ import io.camunda.configuration.Camunda;
 import io.camunda.management.backups.BackupInfo;
 import io.camunda.management.backups.StateCode;
 import io.camunda.management.backups.TakeBackupRuntimeResponse;
-import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.qa.util.actuator.BackupActuator;
 import io.camunda.zeebe.qa.util.actuator.PartitionsActuator;
 import io.camunda.zeebe.qa.util.cluster.TestRestoreApp;
@@ -87,9 +86,6 @@ public interface RestoreAcceptance {
             .start();
     restore.close();
   }
-
-  /** All configuration must be duplicated in configureBackupStore(UnifiedConfiguration) as well. */
-  void configureBackupStore(final BrokerCfg cfg);
 
   /** RestoreApp can only be configured via UnifiedConfiguration */
   void configureBackupStore(final Camunda cfg);
