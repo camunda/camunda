@@ -80,7 +80,7 @@ class BackupServiceImplTest {
 
   @BeforeEach
   void setup() {
-    backupService = new BackupServiceImpl(backupStore, logStreamWriter, null, null);
+    backupService = new BackupServiceImpl(backupStore, logStreamWriter, null, null, 1);
 
     lenient()
         .when(notExistingBackupStatus.statusCode())
@@ -528,7 +528,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
     when(backupRangeState.getAllRanges()).thenReturn(List.of());
 
     // when
@@ -548,7 +548,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
 
@@ -585,7 +585,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges())
         .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
@@ -617,7 +617,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
@@ -639,7 +639,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     final var firstMeta = mock(CheckpointMetadataValue.class);
@@ -663,7 +663,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(1L, 5L)));
     when(checkpointMetadataState.getCheckpoint(1L)).thenReturn(null);
@@ -686,7 +686,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges())
         .thenReturn(List.of(new BackupRange(1L, 3L), new BackupRange(5L, 8L)));
@@ -723,7 +723,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenThrow(new RuntimeException("DB error"));
 
@@ -744,7 +744,7 @@ class BackupServiceImplTest {
     final var checkpointMetadataState = mock(DbCheckpointMetadataState.class);
     final var service =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, 1);
 
     when(backupRangeState.getAllRanges()).thenReturn(List.of(new BackupRange(3L, 3L)));
 

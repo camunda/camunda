@@ -104,6 +104,7 @@ public final class BackupApiRequestHandler
       case DELETE -> handleDeleteBackupRequest(requestReader, responseWriter, errorWriter);
       case QUERY_STATE -> handleQueryStateRequest(responseWriter, errorWriter);
       case QUERY_RANGES -> handleQueryRangesRequest(responseWriter, errorWriter);
+      case SYNC_METADATA -> handleSyncMetadataRequest(responseWriter, errorWriter);
       default ->
           CompletableActorFuture.completed(unknownRequest(errorWriter, requestReader.type()));
     };
@@ -290,6 +291,35 @@ public final class BackupApiRequestHandler
         info.checkpointPosition(),
         info.checkpointType(),
         Instant.ofEpochMilli(info.checkpointTimestamp()));
+  }
+
+  private ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>>
+      handleSyncMetadataRequest(
+          final BackupApiResponseWriter responseWriter, final ErrorResponseWriter errorWriter) {
+    final ActorFuture<Either<ErrorResponseWriter, BackupApiResponseWriter>> result =
+        new CompletableActorFuture<>();
+    backupManager
+        .syncMetadata()
+        .onComplete(
+            (ranges, error) -> {
+              if (error == null) {
+                final var response = new BackupRangesResponse();
+                response.setRanges(
+                    ranges.stream()
+                        .map(
+                            r ->
+                                new PartitionBackupRange(
+                                    partitionId,
+                                    fromCheckpointInfo(r.first()),
+                                    fromCheckpointInfo(r.last())))
+                        .toList());
+                result.complete(Either.right(responseWriter.withBackupRanges(response)));
+              } else {
+                errorWriter.errorCode(ErrorCode.INTERNAL_ERROR).errorMessage(error.getMessage());
+                result.complete(Either.left(errorWriter));
+              }
+            });
+    return result;
   }
 
   private BackupListResponse buildBackupListResponse(final Collection<BackupStatus> backups) {
