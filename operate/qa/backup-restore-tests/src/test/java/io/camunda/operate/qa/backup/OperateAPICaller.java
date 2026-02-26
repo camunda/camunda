@@ -20,6 +20,7 @@ import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
+import java.util.Map;
 import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.ParameterizedTypeReference;
@@ -28,11 +29,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpStatusCodeException;
+import org.springframework.web.client.RestClientException;
 
 @Component
 public class OperateAPICaller {
-
   @Autowired private BiFunction<String, Integer, StatefulRestTemplate> statefulRestTemplateFactory;
 
   private StatefulRestTemplate restTemplate;
@@ -77,28 +77,16 @@ public class OperateAPICaller {
   }
 
   boolean createOperation(final Long processInstanceKey, final OperationType operationType) {
-    final String operationPath =
-        switch (operationType) {
-          case CANCEL_PROCESS_INSTANCE -> "/v2/process-instances/%d/cancellation";
-          case RESOLVE_INCIDENT -> "/v2/process-instances/%d/incident-resolution";
-          default ->
-              throw new IllegalArgumentException(
-                  "Unsupported operation type for backup data generator: " + operationType);
-        };
-    final URI url = restTemplate.getURL(operationPath.formatted(processInstanceKey));
+    final Map<String, Object> operationRequest = Map.of("operationType", operationType.name());
+    final URI url =
+        restTemplate.getURL("/api/process-instances/" + processInstanceKey + "/operation");
     try {
-      final ResponseEntity<String> operationResponse =
-          restTemplate.postForEntity(url, null, String.class);
-      return switch (operationType) {
-        case CANCEL_PROCESS_INSTANCE ->
-            operationResponse.getStatusCode().equals(HttpStatus.NO_CONTENT);
-        case RESOLVE_INCIDENT ->
-            operationResponse.getStatusCode().equals(HttpStatus.OK)
-                && operationResponse.getBody() != null
-                && operationResponse.getBody().contains("batchOperationKey");
-        default -> false;
-      };
-    } catch (final HttpStatusCodeException e) {
+      final ResponseEntity<Map> operationResponse =
+          restTemplate.postForEntity(url, operationRequest, Map.class);
+      return operationResponse.getStatusCode().equals(HttpStatus.OK)
+          && operationResponse.getBody() != null
+          && operationResponse.getBody().get("id") != null;
+    } catch (final RestClientException e) {
       return false;
     }
   }
