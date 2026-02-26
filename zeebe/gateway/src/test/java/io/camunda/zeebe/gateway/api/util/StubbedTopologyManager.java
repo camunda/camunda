@@ -20,11 +20,11 @@ public final class StubbedTopologyManager implements BrokerTopologyManager {
   private final TestBrokerClusterState clusterState;
   private final ClusterConfiguration clusterConfiguration;
 
-  StubbedTopologyManager() {
+  public StubbedTopologyManager() {
     this(8);
   }
 
-  StubbedTopologyManager(final int partitionsCount) {
+  public StubbedTopologyManager(final int partitionsCount) {
     clusterConfiguration = ClusterConfiguration.uninitialized();
     clusterState = new TestBrokerClusterState(partitionsCount);
     clusterState.addBroker(0, "localhost:26501");
