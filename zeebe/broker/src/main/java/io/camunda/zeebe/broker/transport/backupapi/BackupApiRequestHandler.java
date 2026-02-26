@@ -272,8 +272,7 @@ public final class BackupApiRequestHandler
                               new PartitionBackupRange(
                                   partitionId,
                                   fromCheckpointInfo(r.first()),
-                                  fromCheckpointInfo(r.last()),
-                                  r.missingCheckpoints()))
+                                  fromCheckpointInfo(r.last())))
                       .toList());
               result.complete(Either.right(responseWriter.withBackupRanges(response)));
             });

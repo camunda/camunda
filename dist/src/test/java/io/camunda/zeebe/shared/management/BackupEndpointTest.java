@@ -897,8 +897,8 @@ final class BackupEndpointTest {
               new BackupRangesResponse.PartitionBackupRange(
                   1,
                   new CheckpointInfo(1, 1L, 1L, CheckpointType.SCHEDULED_BACKUP, startTimestamp),
-                  new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, endTimestamp),
-                  Set.of())));
+                  new CheckpointInfo(
+                      10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, endTimestamp))));
 
       when(api.getCheckpointState()).thenReturn(CompletableFuture.completedFuture(stateResponse));
       when(api.getBackupRanges()).thenReturn(CompletableFuture.completedFuture(rangesResponse));
@@ -941,8 +941,8 @@ final class BackupEndpointTest {
                                       .firstLogPosition(100L)
                                       .checkpointType(BackupType.SCHEDULED_BACKUP)
                                       .checkpointTimestamp(
-                                          OffsetDateTime.ofInstant(endTimestamp, ZoneId.of("UTC"))))
-                              .missingCheckpoints(List.of()))));
+                                          OffsetDateTime.ofInstant(
+                                              endTimestamp, ZoneId.of("UTC")))))));
     }
 
     @Test

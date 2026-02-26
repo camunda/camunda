@@ -217,7 +217,6 @@ public final class BackupEndpoint {
     response.setPartitionId(range.partitionId());
     response.setStart(range.first() == null ? null : toBackupState(range.first()));
     response.setEnd(range.last() == null ? null : toBackupState(range.last()));
-    response.setMissingCheckpoints(range.missingCheckpoints().stream().toList());
     return response;
   }
 
