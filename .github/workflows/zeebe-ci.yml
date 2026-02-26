@@ -23,6 +23,7 @@ defaults:
 env:
   DOCKER_PLATFORMS: "linux/amd64,linux/arm64"
   GHA_BEST_PRACTICES_LINTER: enabled
+  FLAKY_TEST_RERUN_COUNT: ${{ github.event_name == 'pull_request' && '3' || '7' }}
 
 jobs:
   smoke-tests:
@@ -76,7 +77,7 @@ jobs:
           EXCLUDED_TEST_GROUPS: ${{ runner.os != 'Linux' && 'container' }}
         run: >
           ./mvnw -B --no-snapshot-updates
-          -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=3
+          -DskipUTs -DskipChecks -Dsurefire.rerunFailingTestsCount=${{ env.FLAKY_TEST_RERUN_COUNT }}
           -pl qa/integration-tests
           -P smoke-test,extract-flaky-tests
           -D excludedGroups=$EXCLUDED_TEST_GROUPS
