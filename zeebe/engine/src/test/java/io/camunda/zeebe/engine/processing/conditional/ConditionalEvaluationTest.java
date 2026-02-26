@@ -52,7 +52,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent("start")
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -102,11 +102,11 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent("start1")
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent("end1")
                     .moveToProcess(processId)
                     .startEvent("start2")
-                    .condition(c -> c.condition("=x < 500").zeebeVariableNames("x"))
+                    .condition(c -> c.condition("=x < 500"))
                     .endEvent("end2")
                     .done())
             .deploy();
@@ -160,11 +160,11 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent("start1")
-                    .condition(c -> c.condition("=x > 500").zeebeVariableNames("x"))
+                    .condition(c -> c.condition("=x > 500"))
                     .endEvent("end1")
                     .moveToProcess(processId)
                     .startEvent("start2")
-                    .condition(c -> c.condition("=y < 200").zeebeVariableNames("y"))
+                    .condition(c -> c.condition("=y < 200"))
                     .endEvent("end2")
                     .done())
             .deploy();
@@ -223,7 +223,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(process1)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -237,7 +237,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(process2)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -306,7 +306,7 @@ public class ConditionalEvaluationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .condition(c -> c.condition("=false").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=false"))
                 .endEvent()
                 .done())
         .deploy();
@@ -344,7 +344,7 @@ public class ConditionalEvaluationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .deploy();
@@ -383,7 +383,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y, z"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -435,7 +435,7 @@ public class ConditionalEvaluationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent()
-                .condition(c -> c.condition("=orderAmount > 500").zeebeVariableNames("orderAmount"))
+                .condition(c -> c.condition("=orderAmount > 500"))
                 .endEvent()
                 .done())
         .deploy();
@@ -474,10 +474,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .condition(
-                        c ->
-                            c.condition("=status = \"VIP\" and orderAmount > 500")
-                                .zeebeVariableNames("status, orderAmount"))
+                    .condition(c -> c.condition("=status = \"VIP\" and orderAmount > 500"))
                     .endEvent()
                     .done())
             .deploy();
@@ -530,7 +527,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .condition(c -> c.condition("=order.total > 50").zeebeVariableNames("order"))
+                    .condition(c -> c.condition("=order.total > 50"))
                     .endEvent()
                     .done())
             .deploy();
@@ -587,7 +584,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(process1Id)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -598,7 +595,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(process2Id)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -669,7 +666,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess("process-" + UUID.randomUUID())
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -680,7 +677,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess("process-" + UUID.randomUUID())
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();
@@ -773,7 +770,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(process1Id)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .withTenantId(tenant1)
@@ -787,7 +784,7 @@ public class ConditionalEvaluationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(process2Id)
                 .startEvent()
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .withTenantId(tenant2)
@@ -854,7 +851,7 @@ public class ConditionalEvaluationTest {
         .withXmlResource(
             Bpmn.createExecutableProcess(processId)
                 .startEvent("start")
-                .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                .condition(c -> c.condition("=x > y"))
                 .endEvent()
                 .done())
         .deploy();
@@ -893,7 +890,7 @@ public class ConditionalEvaluationTest {
             .withXmlResource(
                 Bpmn.createExecutableProcess(processId)
                     .startEvent()
-                    .condition(c -> c.condition("=x > y").zeebeVariableNames("x, y"))
+                    .condition(c -> c.condition("=x > y"))
                     .endEvent()
                     .done())
             .deploy();

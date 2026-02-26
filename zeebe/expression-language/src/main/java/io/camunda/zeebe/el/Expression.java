@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.el;
 
+import java.util.List;
 import java.util.Optional;
 
 /** A parsed expression. */
@@ -22,6 +23,17 @@ public interface Expression {
    *     of a single variable, otherwise empty
    */
   Optional<String> getVariableName();
+
+  /**
+   * Returns all top-level variable names referenced by this expression. For path expressions like
+   * {@code x.y}, only the root variable {@code x} is returned.
+   *
+   * @return an ordered list of distinct top-level variable names, or an empty list if none can be
+   *     determined (e.g. for static or invalid expressions)
+   */
+  default List<String> getVariableNames() {
+    return List.of();
+  }
 
   /**
    * @return {@code true} if it is a static expression that does not require additional context
