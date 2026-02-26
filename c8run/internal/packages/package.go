@@ -16,7 +16,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
-        "strings"
+	"strings"
 
 	"github.com/camunda/camunda/c8run/internal/archive"
 )
@@ -54,23 +54,23 @@ func setOsSpecificValues() (string, string, string, string, func(string, string)
 	var architecture string
 	var osType string = runtime.GOOS
 	var pkgName string
-        var finalOutputExtension string
+	var finalOutputExtension string
 	var extractFunc func(string, string) error
 
 	switch osType {
 	case "windows":
 		architecture = "x86_64"
 		pkgName = ".zip"
-                finalOutputExtension = ".zip"
+		finalOutputExtension = ".zip"
 		extractFunc = archive.UnzipSource
 		return osType, architecture, pkgName, finalOutputExtension, extractFunc, nil
 	case "linux", "darwin":
 		pkgName = ".tar.gz"
-                if osType == "linux" {
-                        finalOutputExtension = ".tar.gz"
-                } else {
-                        finalOutputExtension = ".zip"
-                }
+		if osType == "linux" {
+			finalOutputExtension = ".tar.gz"
+		} else {
+			finalOutputExtension = ".zip"
+		}
 		extractFunc = archive.ExtractTarGzArchive
 		if runtime.GOARCH == "amd64" {
 			architecture = "x86_64"
@@ -121,44 +121,44 @@ func getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camunda
 	return nil
 }
 
-func createTarGzArchive(filesToArchive []string, outputPath string) error {
+func createTarGzArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
 	outputArchive, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create empty archive file: %w\n%s", err, debug.Stack())
 	}
 	defer outputArchive.Close()
 
-	if err := archive.CreateTarGzArchive(filesToArchive, outputArchive); err != nil {
+	if err := archive.CreateTarGzArchive(filesToArchive, outputArchive, sourceRoot, targetRoot); err != nil {
 		return fmt.Errorf("failed to fill camunda archive: %w\n%s", err, debug.Stack())
 	}
 	return nil
 }
 
-func createZipArchive(filesToArchive []string, outputPath string) error {
-	if err := archive.ZipSource(filesToArchive, outputPath); err != nil {
+func createZipArchive(filesToArchive []string, outputPath, sourceRoot, targetRoot string) error {
+	if err := archive.ZipSource(filesToArchive, outputPath, sourceRoot, targetRoot); err != nil {
 		return fmt.Errorf("failed to create c8run package: %w\n%s", err, debug.Stack())
 	}
 	return nil
 }
 
 func BuildJavaScripts() error {
-        javaVersionCmd := exec.Command("javac", "JavaVersion.java")
-        var out strings.Builder
-        var stderr strings.Builder
-        javaVersionCmd.Stdout = &out
-        javaVersionCmd.Stderr = &stderr
-        err := javaVersionCmd.Run()
-        if err != nil {
-                return fmt.Errorf("failed to compile JavaVersion : %w", err)
-        }
-        javaHomeCmd := exec.Command("javac", "JavaHome.java")
-        javaHomeCmd.Stdout = &out
-        javaHomeCmd.Stderr = &stderr
-        err = javaHomeCmd.Run()
-        if err != nil {
-                return fmt.Errorf("failed to compile JavaHome : %w", err)
-        }
-        return nil
+	javaVersionCmd := exec.Command("javac", "JavaVersion.java")
+	var out strings.Builder
+	var stderr strings.Builder
+	javaVersionCmd.Stdout = &out
+	javaVersionCmd.Stderr = &stderr
+	err := javaVersionCmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to compile JavaVersion : %w", err)
+	}
+	javaHomeCmd := exec.Command("javac", "JavaHome.java")
+	javaHomeCmd.Stdout = &out
+	javaHomeCmd.Stderr = &stderr
+	err = javaHomeCmd.Run()
+	if err != nil {
+		return fmt.Errorf("failed to compile JavaHome : %w", err)
+	}
+	return nil
 }
 
 func New(camundaVersion string, elasticsearchVersion string, connectorsVersion string, composeTag string) error {
@@ -175,19 +175,18 @@ func New(camundaVersion string, elasticsearchVersion string, connectorsVersion s
 	connectorsFilePath := "connector-runtime-bundle-" + connectorsVersion + "-with-dependencies.jar"
 	connectorsUrl := "https://repository.nexus.camunda.cloud/content/groups/internal/io/camunda/connector/connector-runtime-bundle/" + connectorsVersion + "/" + connectorsFilePath
 
-        composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
+	composeUrl := "https://github.com/camunda/camunda-distributions/releases/download/docker-compose-" + composeTag + "/docker-compose-" + composeTag + ".zip"
 	composeFilePath := "docker-compose-" + composeTag + ".zip"
-        // just a file to check to see if it was already extracted
+	// just a file to check to see if it was already extracted
 	composeExtractionPath := "docker-compose-" + composeTag
 
 	authToken := os.Getenv("GH_TOKEN")
 
-
-        // build JavaVersion and JavaHome
-        err = BuildJavaScripts()
-        if err != nil {
-                return fmt.Errorf("failed to build JavaVersion: %w", err)
-        }
+	// build JavaVersion and JavaHome
+	err = BuildJavaScripts()
+	if err != nil {
+		return fmt.Errorf("failed to build JavaVersion: %w", err)
+	}
 
 	javaArtifactsToken, err := getJavaArtifactsToken()
 	if err != nil {
@@ -223,15 +222,17 @@ func New(camundaVersion string, elasticsearchVersion string, connectorsVersion s
 	}
 
 	filesToArchive := getFilesToArchive(osType, elasticsearchVersion, connectorsFilePath, camundaVersion, composeExtractionPath)
+	sourceRoot := "c8run"
+	archiveRoot := "c8run-" + camundaVersion
 	outputFileName := "camunda8-run-" + camundaVersion + "-" + osType + "-" + architecture + finalOutputExtension
-	outputPath := filepath.Join("c8run", outputFileName)
+	outputPath := filepath.Join(sourceRoot, outputFileName)
 
 	if osType == "linux" {
-		if err := createTarGzArchive(filesToArchive, outputPath); err != nil {
+		if err := createTarGzArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
 			return fmt.Errorf("Package %s: %w", osType, err)
 		}
 	} else {
-		if err := createZipArchive(filesToArchive, outputPath); err != nil {
+		if err := createZipArchive(filesToArchive, outputPath, sourceRoot, archiveRoot); err != nil {
 			return fmt.Errorf("Package %s: %w", osType, err)
 		}
 	}
