@@ -78,7 +78,8 @@ public final class BpmnTransformer {
     this(expressionLanguage, EngineConfiguration.DEFAULT_MAX_NAME_FIELD_LENGTH);
   }
 
-  public BpmnTransformer(final ExpressionLanguage expressionLanguage, final int maxNameFieldLength) {
+  public BpmnTransformer(
+      final ExpressionLanguage expressionLanguage, final int maxNameFieldLength) {
     this.expressionLanguage = expressionLanguage;
     this.maxNameFieldLength = maxNameFieldLength;
 
