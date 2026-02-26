@@ -1,7 +1,7 @@
 ---
 
 applyTo: ".vscode/mcp.json,.github/instructions/*.instructions.md,.github/copilot-instructions.md"
----
+--------------------------------------------------------------------------------------------------
 
 # CI/Release MCP Tooling — Agent Instructions
 
