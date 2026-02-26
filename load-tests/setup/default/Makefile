@@ -39,10 +39,10 @@ platform_values_stable := $(platform_values) -f values-stable.yaml
 all: install
 
 .PHONY: install
-install: install-storage install-platform install-load-test install-elasticsearch-exporter
+install: install-storage create-credentials install-platform install-load-test install-elasticsearch-exporter
 
 .PHONY: install-stable
-install-stable: install-storage install-platform-stable install-load-test install-elasticsearch-exporter
+install-stable: install-storage create-credentials install-platform-stable install-load-test install-elasticsearch-exporter
 
 # Install PostgreSQL database if secondary_storage is postgresql, or OpenSearch if secondary_storage is opensearch
 .PHONY: install-storage
@@ -62,6 +62,12 @@ else ifeq ($(secondary_storage),opensearch)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
+
+# Create camunda-credentials secret
+.PHONY: create-credentials
+create-credentials:
+	@echo "Creating camunda-credentials secret for namespace $(namespace)..."
+	./createCredsLoadTest.sh $(namespace)
 
 # Install Elasticsearch Prometheus exporter if secondary_storage is elasticsearch
 .PHONY: install-elasticsearch-exporter
