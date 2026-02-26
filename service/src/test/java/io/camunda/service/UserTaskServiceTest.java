@@ -109,7 +109,8 @@ public class UserTaskServiceTest {
     @Test
     public void shouldReturnUserTaskVariables() {
       // given
-      final var entity = Instancio.create(UserTaskEntity.class);
+      final var entity =
+          Instancio.of(UserTaskEntity.class).set(field(UserTaskEntity::userTaskKey), 3L).create();
       final var flowNodeInstanceEntity =
           Instancio.of(FlowNodeInstanceEntity.class)
               .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
@@ -122,6 +123,36 @@ public class UserTaskServiceTest {
           .thenReturn(flowNodeInstanceEntity);
       when(variableServices.search(
               variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L)))))
+          .thenReturn(SearchQueryResult.of(variable));
+
+      // when
+      final SearchQueryResult<VariableEntity> searchQueryResult =
+          services.searchUserTaskVariables(entity.userTaskKey(), variableSearchQuery().build());
+
+      // then
+      assertThat(searchQueryResult.items()).containsOnly(variable);
+    }
+
+    @Test
+    public void shouldIncludeUserTaskKeyScopeWhenMissingInTreePath() {
+      // given
+      final var entity =
+          Instancio.of(UserTaskEntity.class)
+              .set(field(UserTaskEntity::userTaskKey), 4L)
+              .set(field(UserTaskEntity::elementInstanceKey), 3L)
+              .create();
+      final var flowNodeInstanceEntity =
+          Instancio.of(FlowNodeInstanceEntity.class)
+              .set(field(FlowNodeInstanceEntity::flowNodeInstanceKey), entity.elementInstanceKey())
+              .set(field(FlowNodeInstanceEntity::treePath), "1/2/3")
+              .create();
+      final var variable = Instancio.create(VariableEntity.class);
+
+      when(client.getUserTask(any(Long.class))).thenReturn(entity);
+      when(elementInstanceServices.getByKey(eq(flowNodeInstanceEntity.flowNodeInstanceKey())))
+          .thenReturn(flowNodeInstanceEntity);
+      when(variableServices.search(
+              variableSearchQuery(q -> q.filter(f -> f.scopeKeys(1L, 2L, 3L, 4L)))))
           .thenReturn(SearchQueryResult.of(variable));
 
       // when

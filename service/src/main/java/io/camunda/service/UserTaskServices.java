@@ -40,6 +40,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskCompletionRequ
 import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -239,12 +240,16 @@ public final class UserTaskServices
         treePath != null
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
+    final var scopeKeys = new ArrayList<>(treePathList);
+    if (!scopeKeys.contains(userTask.userTaskKey())) {
+      scopeKeys.add(userTask.userTaskKey());
+    }
 
     // Create a variable query with an additional filter for the scope keys
     final var variableQueryWithTreePathFilter =
         variableSearchQuery(
             q ->
-                q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
+                q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(scopeKeys))
                     .sort(variableQuery.sort())
                     .page(variableQuery.page()));
 
