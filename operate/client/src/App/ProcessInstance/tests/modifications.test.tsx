@@ -205,7 +205,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: /add single flow node instance/i,
+        name: /add single element instance/i,
       }),
     );
 
@@ -218,7 +218,7 @@ describe('ProcessInstance - modification mode', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/Click "Apply" to proceed./i)).toBeInTheDocument();
 
-    expect(screen.getByText(/flow node modifications/i)).toBeInTheDocument();
+    expect(screen.getByText(/element modifications/i)).toBeInTheDocument();
 
     expect(
       screen.getByText('No planned variable modifications'),
@@ -290,7 +290,7 @@ describe('ProcessInstance - modification mode', () => {
 
     await user.click(
       await screen.findByRole('button', {
-        name: /add single flow node instance/i,
+        name: /add single element instance/i,
       }),
     );
 

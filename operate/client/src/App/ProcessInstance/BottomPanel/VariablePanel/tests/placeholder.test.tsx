@@ -33,22 +33,22 @@ const TestSelectionControls: React.FC = () => {
         type="button"
         onClick={() =>
           selectElement({
-            elementId: 'TEST_FLOW_NODE',
+            elementId: 'TEST_ELEMENT',
           })
         }
       >
-        select flow node
+        select element
       </button>
       <button
         type="button"
         onClick={() =>
           selectElementInstance({
-            elementId: 'TEST_FLOW_NODE',
+            elementId: 'TEST_ELEMENT',
             elementInstanceKey: '2',
           })
         }
       >
-        select flow node instance
+        select element instance
       </button>
     </>
   );
@@ -71,8 +71,8 @@ const getWrapper = (...args: Parameters<typeof getBaseWrapper>) => {
 
 const selectedElementInstance = {
   elementInstanceKey: '2',
-  elementId: 'TEST_FLOW_NODE',
-  elementName: 'Test Flow Node',
+  elementId: 'TEST_ELEMENT',
+  elementName: 'Test Element',
   type: 'SERVICE_TASK' as const,
   state: 'ACTIVE' as const,
   startDate: '2018-06-21',
@@ -93,7 +93,7 @@ describe('VariablePanel placeholders', () => {
 
     const statistics = [
       {
-        elementId: 'TEST_FLOW_NODE',
+        elementId: 'TEST_ELEMENT',
         active: 1,
         canceled: 0,
         incidents: 0,
@@ -191,13 +191,11 @@ describe('VariablePanel placeholders', () => {
 
       expect(await screen.findByTestId('variables-list')).toBeInTheDocument();
 
-      await user.click(
-        screen.getByRole('button', {name: /^select flow node$/i}),
-      );
+      await user.click(screen.getByRole('button', {name: /^select element$/i}));
 
       expect(
         await screen.findByText(
-          'To view the Variables, select a single Flow Node Instance in the Instance History.',
+          'To view the variables, select a single element instance in the instance history.',
         ),
       ).toBeInTheDocument();
       expect(
@@ -236,7 +234,7 @@ describe('VariablePanel placeholders', () => {
       mockSearchVariables().withServerError();
 
       await user.click(
-        screen.getByRole('button', {name: /^select flow node instance$/i}),
+        screen.getByRole('button', {name: /^select element instance$/i}),
       );
 
       expect(
@@ -278,7 +276,7 @@ describe('VariablePanel placeholders', () => {
       mockSearchVariables().withNetworkError();
 
       await user.click(
-        screen.getByRole('button', {name: /^select flow node instance$/i}),
+        screen.getByRole('button', {name: /^select element instance$/i}),
       );
 
       expect(
@@ -291,7 +289,7 @@ describe('VariablePanel placeholders', () => {
   );
 
   it.each([true, false])(
-    'should show failed placeholder if network error occurs while fetching selected flow node instance metadata - modification mode: %p',
+    'should show failed placeholder if network error occurs while fetching selected element instance metadata - modification mode: %p',
     async (enableModificationMode) => {
       if (enableModificationMode) {
         modificationsStore.enableModificationMode();
@@ -328,7 +326,7 @@ describe('VariablePanel placeholders', () => {
       });
 
       await user.click(
-        screen.getByRole('button', {name: /^select flow node instance$/i}),
+        screen.getByRole('button', {name: /^select element instance$/i}),
       );
 
       expect(

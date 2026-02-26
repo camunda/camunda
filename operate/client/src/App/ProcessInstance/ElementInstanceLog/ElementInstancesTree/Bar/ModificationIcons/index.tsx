@@ -46,14 +46,14 @@ const ModificationIcons: React.FC<Props> = observer(
                 </title>
               </WarningIcon>
               <AddIcon data-testid="add-icon">
-                <title>This flow node instance is planned to be added</title>
+                <title>This element instance is planned to be added</title>
               </AddIcon>
             </Stack>
           )}
 
           {hasCancelModification && !isPlaceholder && endDate === null && (
             <CancelIcon data-testid="cancel-icon">
-              <title>This flow node instance is planned to be canceled</title>
+              <title>This element instance is planned to be canceled</title>
             </CancelIcon>
           )}
         </>

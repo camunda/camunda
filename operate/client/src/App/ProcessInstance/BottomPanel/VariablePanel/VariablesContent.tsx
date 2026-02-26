@@ -47,8 +47,8 @@ const VariablesContent: React.FC = observer(() => {
     return (
       <EmptyMessageContainer>
         <EmptyMessage
-          message="To view the Variables, select a single Flow Node Instance in the
-          Instance History."
+          message="To view the variables, select a single element instance in the
+          instance history."
         />
       </EmptyMessageContainer>
     );
@@ -61,7 +61,7 @@ const VariablesContent: React.FC = observer(() => {
           <VariablesFinalForm scopeKey={scopeKey} />
         ) : (
           <EmptyMessageContainer>
-            <EmptyMessage message="The Flow Node has no Variables" />
+            <EmptyMessage message="The element has no variables" />
           </EmptyMessageContainer>
         )}
       </Content>

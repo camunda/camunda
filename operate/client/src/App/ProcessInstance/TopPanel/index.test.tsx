@@ -371,18 +371,18 @@ describe('TopPanel', () => {
     updateSearchParams({elementId: 'service-task-1'});
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
     expect(
-      await screen.findByTitle(/Add single flow node instance/),
+      await screen.findByTitle(/Add single element instance/),
     ).toBeInTheDocument();
     expect(
-      screen.getByTitle(/Cancel selected instance in this flow node/),
+      screen.getByTitle(/Cancel selected instance in this element/),
     ).toBeInTheDocument();
 
     expect(
       screen.getByTitle(
-        /Move selected instance in this flow node to another target/,
+        /Move selected instance in this element to another target/,
       ),
     ).toBeInTheDocument();
   });
@@ -399,23 +399,23 @@ describe('TopPanel', () => {
     });
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
 
     expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
+      screen.queryByText(/select the target element in the diagram/i),
     ).not.toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', {name: /move/i}));
 
     expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
+      await screen.findByText(/select the target element in the diagram/i),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', {name: 'Discard'}));
 
     expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
+      screen.queryByText(/select the target element in the diagram/i),
     ).not.toBeInTheDocument();
   });
 
@@ -466,13 +466,13 @@ describe('TopPanel', () => {
     });
 
     expect(
-      screen.queryByText(/select the target flow node in the diagram/i),
+      screen.queryByText(/select the target element in the diagram/i),
     ).not.toBeInTheDocument();
 
     await user.click(await screen.findByRole('button', {name: /move/i}));
 
     expect(
-      await screen.findByText(/select the target flow node in the diagram/i),
+      await screen.findByText(/select the target element in the diagram/i),
     ).toBeInTheDocument();
 
     await user.click(await screen.findByTestId('task-2'));
