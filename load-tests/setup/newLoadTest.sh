@@ -5,9 +5,33 @@
 
 set -exo pipefail
 
-if [ -z "$1" ]
-then
-  echo "Please provide a namespace name!"
+usage() {
+  cat <<'EOF'
+Usage: newLoadTest.sh <namespace> [secondaryStorage] [ttl_days] [enable_optimize]
+
+Arguments:
+  namespace          Base namespace name. Will be prefixed with "c8-" if missing.
+  secondaryStorage   Optional. One of: elasticsearch, opensearch, postgresql. Default: elasticsearch.
+  ttl_days           Optional. Positive integer for namespace TTL in days. Default: 7.
+  enable_optimize    Optional. true|false to enable Optimize. Default: false.
+
+Options:
+  -h, --help         Show this help message.
+
+Examples:
+  ./newLoadTest.sh demo
+  ./newLoadTest.sh perf opensearch 3 true
+EOF
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+  usage
+  exit 0
+fi
+
+if [ -z "$1" ]; then
+  echo "Error: Missing namespace name."
+  usage
   exit 1
 fi
 
