@@ -29,6 +29,7 @@ import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Com
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Incompatible;
 import io.camunda.zeebe.util.migration.VersionCompatibilityCheck.CheckResult.Indeterminate;
 import io.camunda.zeebe.util.retry.RetryDecorator;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,10 @@ import org.slf4j.LoggerFactory;
 public class SchemaManager implements CloseableSilently {
 
   public static final int INDEX_CREATION_TIMEOUT_SECONDS = 60;
+
+  /** Maximum length of a comma-delimited index-pattern string passed in a URL request. */
+  static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
+
   private static final Logger LOG = LoggerFactory.getLogger(SchemaManager.class);
   private final SearchEngineClient searchEngineClient;
   private final Collection<IndexDescriptor> allIndexDescriptors;
@@ -427,16 +432,41 @@ public class SchemaManager implements CloseableSilently {
         indexTemplateDescriptors.stream()
             .map(IndexDescriptor::getFullQualifiedName)
             .collect(Collectors.toSet());
-    final String indexPatterns =
-        indexTemplateDescriptors.stream()
-            .map(IndexTemplateDescriptor::getIndexPattern)
-            .collect(Collectors.joining(","));
+    final var indexPatterns =
+        indexTemplateDescriptors.stream().map(IndexTemplateDescriptor::getIndexPattern).toList();
     final var archivedIndices =
-        searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
+        batchIndexPatterns(indexPatterns).stream()
+            .flatMap(
+                batch ->
+                    searchEngineClient.getMappings(batch, MappingSource.INDEX).keySet().stream())
             .filter(index -> !liveIndices.contains(index))
             .toList();
     archivedIndices.forEach(searchEngineClient::deleteIndex);
     LOG.debug("Deleted archived indices '{}'", archivedIndices);
+  }
+
+  /**
+   * Splits the given list of index patterns into batches where each batch's comma-joined length
+   * does not exceed the maximum URL-safe request size of 4096 characters.
+   */
+  static List<String> batchIndexPatterns(final List<String> indexPatterns) {
+    final List<String> batches = new ArrayList<>();
+    final StringBuilder current = new StringBuilder();
+    for (final String pattern : indexPatterns) {
+      if (!current.isEmpty()
+          && current.length() + 1 + pattern.length() > MAX_INDEX_PATTERN_REQUEST_LENGTH) {
+        batches.add(current.toString());
+        current.setLength(0);
+      }
+      if (!current.isEmpty()) {
+        current.append(",");
+      }
+      current.append(pattern);
+    }
+    if (!current.isEmpty()) {
+      batches.add(current.toString());
+    }
+    return batches;
   }
 
   private IndexConfiguration getIndexSettingsFromConfig(final String indexName) {
