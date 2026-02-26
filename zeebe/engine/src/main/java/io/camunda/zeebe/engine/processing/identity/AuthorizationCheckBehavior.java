@@ -91,6 +91,15 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
+   * Returns true when both authorizations and multi-tenancy are disabled, meaning all
+   * authorization checks can be skipped entirely. This avoids expensive MsgPack deserialization of
+   * claims from the command.
+   */
+  public boolean shouldSkipAllChecks() {
+    return !authorizationsEnabled && !multiTenancyEnabled;
+  }
+
+  /**
    * @deprecated Please use {@link #isAuthorized(AuthorizationRequestMetadata)} instead. The {@link
    *     AuthorizationRequest} class will be refactored into a builder class.
    *     <p>Checks if a user is Authorized to perform an action on a resource. The user key is taken
@@ -121,6 +130,9 @@ public final class AuthorizationCheckBehavior {
    *     {@link Void} if the user is authorized
    */
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequestMetadata request) {
+    if (shouldSkipAllChecks()) {
+      return Either.right(null);
+    }
     try {
       return authorizationsCache.get(request);
     } catch (final ExecutionException e) {
@@ -132,6 +144,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Either<Rejection, Void> isAuthorizedOrInternalCommand(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return Either.right(null);
+    }
     final var command = request.command;
     if (isInternalCommand(command.hasRequestMetadata(), command.getBatchOperationReference())) {
       return Either.right(null);
@@ -558,6 +573,9 @@ public final class AuthorizationCheckBehavior {
    * @return true if assigned, false otherwise
    */
   public boolean isAssignedToTenant(final TypedRecord<?> command, final String tenantId) {
+    if (!multiTenancyEnabled) {
+      return true;
+    }
     return isAssignedToTenant(
         AuthorizationRequest.builder().command(command).tenantId(tenantId).build());
   }
@@ -570,6 +588,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   public AuthorizedTenants getAuthorizedTenantIds(final TypedRecord<?> command) {
+    if (shouldSkipAllChecks()) {
+      return AuthorizedTenants.DEFAULT_TENANTS;
+    }
     return getAuthorizedTenantIds(command.getAuthorizations());
   }
 
@@ -764,19 +785,10 @@ public final class AuthorizationCheckBehavior {
     }
 
     public AuthorizationRequestMetadata build() {
-      if (command != null) {
-        authorizationClaims = command.getAuthorizations();
-        return new AuthorizationRequestMetadata(
-            command.getAuthorizations(),
-            resourceType,
-            permissionType,
-            isNewResource,
-            isTenantOwnedResource,
-            tenantId,
-            Collections.unmodifiableSet(authorizationScopes));
-      }
+      final var claims =
+          command != null ? command.getAuthorizations() : authorizationClaims;
       return new AuthorizationRequestMetadata(
-          authorizationClaims,
+          claims,
           resourceType,
           permissionType,
           isNewResource,
