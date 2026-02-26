@@ -32,6 +32,10 @@ type Options = {
   refetchOnReconnect?: boolean;
 };
 
+// Selected variables are fetched by name and can include both root and local scope values.
+// Keep this high enough to avoid dropping scoped duplicates due pagination.
+const MAX_SELECTED_VARIABLES_LIMIT = 1000;
+
 function useSelectedVariables(params: Params, options: Options = {}) {
   const {userTaskKey, variableNames} = params;
 
@@ -49,7 +53,7 @@ function useSelectedVariables(params: Params, options: Options = {}) {
             },
           },
           page: {
-            limit: 1000,
+            limit: MAX_SELECTED_VARIABLES_LIMIT,
           },
         }),
       );
