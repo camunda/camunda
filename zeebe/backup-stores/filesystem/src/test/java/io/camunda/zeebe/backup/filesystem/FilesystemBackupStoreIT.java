@@ -103,8 +103,8 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
         .withMessageContaining(
             """
                 Cannot delete Backup with id \
-                'BackupId{node=1, partition=2, checkpoint=3}' \
-                while saving is in progress.""");
+                'BackupId{node=1, partition=2, checkpoint=3}'\
+                , must be marked as deleted.""");
   }
 
   @ParameterizedTest
@@ -130,6 +130,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
   void parentDirectoriesAreDeletedAfterDeletion(final Backup backup) {
     // given
     getStore().save(backup).join();
+    getStore().markDeleted(backup.id()).join();
 
     // when
     getStore().delete(backup.id()).join();
@@ -152,6 +153,7 @@ public class FilesystemBackupStoreIT implements BackupStoreTestKit {
     final var node2Backup = TestBackupProvider.simpleBackupWithId(node2BackupId);
 
     getStore().save(node1Backup).join();
+    getStore().markDeleted(node1Backup.id()).join();
     getStore().save(node2Backup).join();
 
     // when

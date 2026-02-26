@@ -76,4 +76,122 @@ final class ManifestStateCastingTest {
         .isInstanceOf(UnexpectedManifestState.class)
         .hasMessageContaining("but was in 'IN_PROGRESS'");
   }
+
+  @Test
+  void shouldFailOnAsDeletedWhenInProgress() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    // when expect thrown
+    assertThatThrownBy(manifest::asDeleted)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'IN_PROGRESS'");
+  }
+
+  @Test
+  void shouldFailOnAsDeletedWhenCompleted() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var completed = manifest.complete();
+
+    // when expect thrown
+    assertThatThrownBy(completed::asDeleted)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'COMPLETED'");
+  }
+
+  @Test
+  void shouldFailOnAsDeletedWhenFailed() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var failed = manifest.fail("failure reason");
+
+    // when expect thrown
+    assertThatThrownBy(failed::asDeleted)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'FAILED'");
+  }
+
+  @Test
+  void shouldFailOnAsInProgressWhenDeleted() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var deleted = manifest.delete();
+
+    // when expect thrown
+    assertThatThrownBy(deleted::asInProgress)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'DELETED'");
+  }
+
+  @Test
+  void shouldFailOnAsCompletedWhenDeleted() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var deleted = manifest.delete();
+
+    // when expect thrown
+    assertThatThrownBy(deleted::asCompleted)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'DELETED'");
+  }
+
+  @Test
+  void shouldFailOnAsFailedWhenDeleted() {
+    // given
+    final var manifest =
+        Manifest.createInProgress(
+            new BackupImpl(
+                new BackupIdentifierImpl(1, 2, 43),
+                new BackupDescriptorImpl(
+                    2345234L, 3, "1.2.0-SNAPSHOT", Instant.now(), CheckpointType.MANUAL_BACKUP),
+                null,
+                null));
+
+    final var deleted = manifest.delete();
+
+    // when expect thrown
+    assertThatThrownBy(deleted::asFailed)
+        .isInstanceOf(UnexpectedManifestState.class)
+        .hasMessageContaining("but was in 'DELETED'");
+  }
 }

@@ -22,10 +22,14 @@ import java.util.Optional;
 @JsonSubTypes({
   @Type(value = CompletedBackupManifest.class, name = "completed"),
   @Type(value = InProgressBackupManifest.class, name = "in_progress"),
-  @Type(value = FailedBackupManifest.class, name = "failed")
+  @Type(value = FailedBackupManifest.class, name = "failed"),
+  @Type(value = DeletedBackupManifest.class, name = "deleted")
 })
 public sealed interface ValidBackupManifest extends Manifest
-    permits InProgressBackupManifest, CompletedBackupManifest, FailedBackupManifest {
+    permits InProgressBackupManifest,
+        CompletedBackupManifest,
+        FailedBackupManifest,
+        DeletedBackupManifest {
 
   @Override
   BackupIdentifier id();
@@ -35,4 +39,6 @@ public sealed interface ValidBackupManifest extends Manifest
   Instant createdAt();
 
   Instant modifiedAt();
+
+  DeletedBackupManifest asDeleted();
 }

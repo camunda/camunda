@@ -16,10 +16,11 @@ import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.function.Function;
 
-public record CompletedBackupManifest(
+public record DeletedBackupManifest(
     BackupIdentifierImpl id,
-    BackupDescriptorImpl descriptor,
+    Optional<BackupDescriptorImpl> descriptor,
     @JsonAlias("snapshotFileNames") FileSet snapshotFiles,
     @JsonAlias("segmentFileNames") FileSet segmentFiles,
     Instant createdAt,
@@ -28,14 +29,14 @@ public record CompletedBackupManifest(
 
   @Override
   public BackupStatusCode statusCode() {
-    return BackupStatusCode.COMPLETED;
+    return BackupStatusCode.DELETED;
   }
 
   @Override
   public BackupStatus toStatus() {
     return new BackupStatusImpl(
         id,
-        Optional.of(descriptor),
+        descriptor.map(Function.identity()),
         statusCode(),
         Optional.empty(),
         Optional.of(createdAt),
@@ -45,23 +46,16 @@ public record CompletedBackupManifest(
   @Override
   public FailedBackupManifest asFailed(final String failureReason) {
     return new FailedBackupManifest(
-        id,
-        Optional.of(descriptor),
-        failureReason,
-        snapshotFiles,
-        segmentFiles,
-        createdAt,
-        Instant.now());
+        id, descriptor, failureReason, snapshotFiles, segmentFiles, createdAt, Instant.now());
   }
 
   @Override
   public Optional<BackupDescriptor> backupDescriptor() {
-    return Optional.of(descriptor);
+    return descriptor.map(Function.identity());
   }
 
   @Override
   public DeletedBackupManifest asDeleted() {
-    return new DeletedBackupManifest(
-        id, Optional.of(descriptor), snapshotFiles, segmentFiles, createdAt, Instant.now());
+    return this;
   }
 }

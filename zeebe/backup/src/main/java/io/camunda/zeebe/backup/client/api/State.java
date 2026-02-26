@@ -11,6 +11,7 @@ public enum State {
   DOES_NOT_EXIST,
   INCOMPLETE,
   FAILED,
+  DELETED,
   IN_PROGRESS,
   COMPLETED
 }

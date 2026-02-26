@@ -31,6 +31,7 @@
       <validValue name="IN_PROGRESS">1</validValue>
       <validValue name="COMPLETED">2</validValue>
       <validValue name="FAILED">3</validValue>
+      <validValue name="DELETED">4</validValue>
     </enum>
 
     <composite name="largeGroupSizeEncoding">
