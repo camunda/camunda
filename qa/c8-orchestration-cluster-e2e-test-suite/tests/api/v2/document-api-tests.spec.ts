@@ -326,7 +326,7 @@ test.describe.parallel('Document API Tests', () => {
           }),
           {headers: jsonHeaders()},
         );
-        expect(res.status()).toBe(404);
+        await assertNotFoundRequest(res, `Document with id '${state.documentId2}' not found`);
       }).toPass(defaultAssertionOptions);
     });
   });

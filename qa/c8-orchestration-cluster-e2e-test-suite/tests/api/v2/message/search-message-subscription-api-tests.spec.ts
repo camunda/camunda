@@ -12,6 +12,7 @@ import {
   jsonHeaders,
   assertEqualsForKeys,
   assertStatusCode,
+  assertUnauthorizedRequest,
 } from '../../../../utils/http';
 import {validateResponse} from '../../../../json-body-assertions';
 import {
@@ -58,7 +59,7 @@ test.describe('Search Message Subscription API Tests', () => {
       headers: {},
       data: {filter: {name: state.name}},
     });
-    expect(res.status()).toBe(401);
+    await assertUnauthorizedRequest(res);
   });
 
   test('Search Message Flow', async ({request}) => {
