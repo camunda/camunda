@@ -2424,6 +2424,260 @@ public class ModifyProcessInstanceTest {
   }
 
   @Test
+  public void shouldMoveAllOutsideOfMiSubprocessForDifferentTargets() {
+    // given - a multi-instance sub-process with a parallel split inside, so tasks A and B are
+    // active simultaneously in each MI iteration
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("subProcess")
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..3 return i")
+                            .multiInstanceDone())
+                .embeddedSubProcess()
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent("endA")
+                .moveToLastGateway()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent("endB")
+                .subProcessDone()
+                .userTask("C")
+                .zeebeUserTask()
+                .userTask("D")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - issue a single modification with two move instructions: A and B are different
+    // elements both inside the same MI body, moved to different target elements
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "C")
+        .moveElements("B", "D")
+        .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - both C and D should each be activated exactly once
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B", "C", "D"))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            // A and B are each activated three times during initial MI sub-process start
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // all three MI instances of A and B are terminated by the modification
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            // C and D are each activated exactly once despite 3 matching MI instances
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // C and D are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldMoveAllOutsideOfMiSubprocessForSameTargetMultipleTimes() {
+    // given - a multi-instance sub-process with a parallel split inside, so tasks A and B are
+    // active simultaneously in each MI iteration
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("subProcess")
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..3 return i")
+                            .multiInstanceDone())
+                .embeddedSubProcess()
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .zeebeUserTask()
+                .endEvent("endA")
+                .moveToLastGateway()
+                .userTask("B")
+                .zeebeUserTask()
+                .endEvent("endB")
+                .subProcessDone()
+                .userTask("C")
+                .zeebeUserTask()
+                .userTask("D")
+                .zeebeUserTask()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - issue a single modification with two move instructions: A and B are different
+    // elements both inside the same MI body, moved to different target elements
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElements("A", "C")
+        .moveElements("B", "C")
+        .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - C should be activated twice (once for A and once for B), D should not be activated
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B", "C", "D"))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            // A and B are each activated three times during initial MI sub-process start
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // all three MI instances of A and B are terminated by the modification
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            // C is activated twice despite 3 matching MI instances and two move instructions
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // All C's are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
+  public void shouldMoveAllInsideMiSubprocessForDifferentTargets() {
+    // given - a multi-instance sub-process with a parallel split inside, so tasks A and B are
+    // active simultaneously in each MI iteration
+    ENGINE
+        .deployment()
+        .withXmlResource(
+            Bpmn.createExecutableProcess(PROCESS_ID)
+                .startEvent()
+                .subProcess("subProcess")
+                .multiInstance(
+                    mi ->
+                        mi.parallel()
+                            .zeebeInputCollectionExpression("=for i in 1..3 return i")
+                            .multiInstanceDone())
+                .embeddedSubProcess()
+                .startEvent()
+                .parallelGateway("fork")
+                .userTask("A")
+                .zeebeUserTask()
+                .userTask("C")
+                .zeebeUserTask()
+                .endEvent("endAC")
+                .moveToLastGateway()
+                .userTask("B")
+                .zeebeUserTask()
+                .userTask("D")
+                .zeebeUserTask()
+                .endEvent("endBD")
+                .subProcessDone()
+                .endEvent()
+                .done())
+        .deploy();
+    final long processInstanceKey = ENGINE.processInstance().ofBpmnProcessId(PROCESS_ID).create();
+
+    // when - issue a single modification with two move instructions: A and B are different
+    // elements both inside the same MI body, moved to different target elements
+    ENGINE
+        .processInstance()
+        .withInstanceKey(processInstanceKey)
+        .modification()
+        .moveElementsWithSourceParentScope("A", "C")
+        .moveElementsWithSourceParentScope("B", "D")
+        .modify();
+    ENGINE.processInstance().withInstanceKey(processInstanceKey).cancel();
+
+    // then - C should be activated twice (once for A and once for B), D should not be activated
+    assertThat(
+            RecordingExporter.processInstanceRecords()
+                .withIntents(
+                    ProcessInstanceIntent.ELEMENT_TERMINATED,
+                    ProcessInstanceIntent.ELEMENT_ACTIVATED)
+                .withProcessInstanceKey(processInstanceKey)
+                .limitToProcessInstanceTerminated()
+                .withElementIdIn("A", "B", "C", "D"))
+        .extracting(
+            r ->
+                tuple(
+                    r.getValue().getBpmnElementType(), r.getValue().getElementId(), r.getIntent()))
+        .containsExactly(
+            // A and B are each activated three times during initial MI sub-process start
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // all three MI instances of A and B are terminated by the modification
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "B", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "A", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            // C and D are each activated 3 times, matching sibling MI instances
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_ACTIVATED),
+            // C and D are terminated by the cancel
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "D", ProcessInstanceIntent.ELEMENT_TERMINATED),
+            tuple(BpmnElementType.USER_TASK, "C", ProcessInstanceIntent.ELEMENT_TERMINATED));
+  }
+
+  @Test
   public void shouldMoveElementInstanceBySourceElementInstanceKey() {
     // given
     ENGINE
