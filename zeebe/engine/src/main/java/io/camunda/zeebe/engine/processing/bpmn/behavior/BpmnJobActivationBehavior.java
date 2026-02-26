@@ -161,6 +161,9 @@ public class BpmnJobActivationBehavior {
 
   private boolean isAuthorized(
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
+    if (authorizationCheckBehavior.shouldSkipAllChecks()) {
+      return true;
+    }
 
     final var ownerTenantId = jobRecord.getTenantId();
     final var tenantIds = jobActivationProperties.tenantIds().stream().toList();
@@ -177,8 +180,7 @@ public class BpmnJobActivationBehavior {
                 .resourceType(AuthorizationResourceType.PROCESS_DEFINITION)
                 .permissionType(PermissionType.UPDATE_PROCESS_INSTANCE)
                 .addAuthorizationScope(AuthorizationScope.id(jobRecord.getBpmnProcessId()))
-                .tenantId(ownerTenantId)
-                .build())
+                .tenantId(ownerTenantId))
         .isRight(); // we only care if the job stream is authorized, not why it isn't
   }
 

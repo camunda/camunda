@@ -95,19 +95,21 @@ public final class MessagePublishProcessor implements TypedRecordProcessor<Messa
 
   @Override
   public void processRecord(final TypedRecord<MessageRecord> command) {
-    final var authRequest =
-        new AuthorizationRequest(
-            command,
-            AuthorizationResourceType.MESSAGE,
-            PermissionType.CREATE,
-            command.getValue().getTenantId(),
-            true);
-    final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
-    if (isAuthorized.isLeft()) {
-      final var rejection = isAuthorized.getLeft();
-      rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
-      responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
-      return;
+    if (!authCheckBehavior.shouldSkipAllChecks()) {
+      final var authRequest =
+          new AuthorizationRequest(
+              command,
+              AuthorizationResourceType.MESSAGE,
+              PermissionType.CREATE,
+              command.getValue().getTenantId(),
+              true);
+      final var isAuthorized = authCheckBehavior.isAuthorizedOrInternalCommand(authRequest);
+      if (isAuthorized.isLeft()) {
+        final var rejection = isAuthorized.getLeft();
+        rejectionWriter.appendRejection(command, rejection.type(), rejection.reason());
+        responseWriter.writeRejectionOnCommand(command, rejection.type(), rejection.reason());
+        return;
+      }
     }
 
     messageRecord = command.getValue();

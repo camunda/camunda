@@ -91,9 +91,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   /**
-   * Returns true when both authorizations and multi-tenancy are disabled, meaning all
-   * authorization checks can be skipped entirely. This avoids expensive MsgPack deserialization of
-   * claims from the command.
+   * Returns true when both authorizations and multi-tenancy are disabled, meaning all authorization
+   * checks can be skipped entirely. This avoids expensive MsgPack deserialization of claims from
+   * the command.
    */
   public boolean shouldSkipAllChecks() {
     return !authorizationsEnabled && !multiTenancyEnabled;
@@ -114,6 +114,9 @@ public final class AuthorizationCheckBehavior {
    */
   @Deprecated(forRemoval = true, since = "8.8.0")
   public Either<Rejection, Void> isAuthorized(final AuthorizationRequest requestBuilder) {
+    if (shouldSkipAllChecks()) {
+      return Either.right(null);
+    }
     return isAuthorized(requestBuilder.build());
   }
 
@@ -442,6 +445,9 @@ public final class AuthorizationCheckBehavior {
   }
 
   public Set<AuthorizationScope> getAllAuthorizedScopes(final AuthorizationRequest request) {
+    if (shouldSkipAllChecks()) {
+      return Set.of(AuthorizationScope.WILDCARD);
+    }
     return getAllAuthorizedScopes(request.build());
   }
 
@@ -785,8 +791,7 @@ public final class AuthorizationCheckBehavior {
     }
 
     public AuthorizationRequestMetadata build() {
-      final var claims =
-          command != null ? command.getAuthorizations() : authorizationClaims;
+      final var claims = command != null ? command.getAuthorizations() : authorizationClaims;
       return new AuthorizationRequestMetadata(
           claims,
           resourceType,

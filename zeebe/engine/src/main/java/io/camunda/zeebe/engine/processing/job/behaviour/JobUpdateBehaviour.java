@@ -63,6 +63,9 @@ public class JobUpdateBehaviour {
 
   public Either<Rejection, JobRecord> isAuthorized(
       final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (authCheckBehavior.shouldSkipAllChecks()) {
+      return Either.right(job);
+    }
     final var authRequest =
         new AuthorizationRequest(
                 command,

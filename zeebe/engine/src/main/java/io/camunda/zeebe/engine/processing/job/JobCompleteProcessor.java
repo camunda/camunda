@@ -487,6 +487,9 @@ public final class JobCompleteProcessor implements TypedRecordProcessor<JobRecor
 
   private Either<Rejection, JobRecord> checkAuthorization(
       final TypedRecord<JobRecord> command, final JobRecord job) {
+    if (authCheckBehavior.shouldSkipAllChecks()) {
+      return Either.right(job);
+    }
     final var request =
         AuthorizationRequest.builder()
             .command(command)
