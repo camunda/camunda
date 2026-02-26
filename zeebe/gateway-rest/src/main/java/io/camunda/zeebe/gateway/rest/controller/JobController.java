@@ -24,6 +24,8 @@ import io.camunda.gateway.protocol.model.JobErrorRequest;
 import io.camunda.gateway.protocol.model.JobFailRequest;
 import io.camunda.gateway.protocol.model.JobSearchQuery;
 import io.camunda.gateway.protocol.model.JobSearchQueryResult;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQuery;
+import io.camunda.gateway.protocol.model.JobTimeSeriesStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQuery;
 import io.camunda.gateway.protocol.model.JobTypeStatisticsQueryResult;
 import io.camunda.gateway.protocol.model.JobUpdateRequest;
@@ -138,6 +140,14 @@ public class JobController {
         .fold(RestErrorMapper::mapProblemToResponse, this::getWorkerStatistics);
   }
 
+  @RequiresSecondaryStorage
+  @CamundaPostMapping(path = "/statistics/time-series")
+  public ResponseEntity<JobTimeSeriesStatisticsQueryResult> getJobTimeSeriesStatistics(
+      @RequestBody final JobTimeSeriesStatisticsQuery request) {
+    return SearchQueryRequestMapper.toJobTimeSeriesStatisticsQuery(request)
+        .fold(RestErrorMapper::mapProblemToResponse, this::getTimeSeriesStatistics);
+  }
+
   private CompletableFuture<ResponseEntity<Object>> activateJobs(
       final ActivateJobsRequest activationRequest) {
     final var result = new CompletableFuture<ResponseEntity<Object>>();
@@ -248,6 +258,20 @@ public class JobController {
               .withAuthentication(authenticationProvider.getCamundaAuthentication())
               .getJobWorkerStatistics(query);
       return ResponseEntity.ok(SearchQueryResponseMapper.toJobWorkerStatisticsQueryResult(result));
+    } catch (final Exception e) {
+      return mapErrorToResponse(e);
+    }
+  }
+
+  private ResponseEntity<JobTimeSeriesStatisticsQueryResult> getTimeSeriesStatistics(
+      final io.camunda.search.query.JobTimeSeriesStatisticsQuery query) {
+    try {
+      final var result =
+          jobServices
+              .withAuthentication(authenticationProvider.getCamundaAuthentication())
+              .getJobTimeSeriesStatistics(query);
+      return ResponseEntity.ok(
+          SearchQueryResponseMapper.toJobTimeSeriesStatisticsQueryResult(result));
     } catch (final Exception e) {
       return mapErrorToResponse(e);
     }
