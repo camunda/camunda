@@ -16,6 +16,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -67,6 +68,29 @@ public class JWSKeySelectorFactory {
     final var jwkSource = createJWKSource(url);
     final var jwsAlgorithms = getJWSAlgorithms();
     return new JWSVerificationKeySelector<>(jwsAlgorithms, jwkSource);
+  }
+
+  /**
+   * Creates a {@link JWSKeySelector} for the given list of JWK Set URIs. If only one URI is
+   * provided, this delegates to {@link #createJWSKeySelector(String)}. If multiple URIs are
+   * provided, a {@link FallbackJWKSource} is used that tries each source in order.
+   *
+   * @param jwkSetUris the list of JWK Set URIs
+   * @return a {@link JWSKeySelector} configured with the allowed algorithms
+   * @throws IllegalArgumentException if the list is empty or any URI is malformed
+   */
+  public JWSKeySelector<SecurityContext> createJWSKeySelector(final List<String> jwkSetUris) {
+    if (jwkSetUris == null || jwkSetUris.isEmpty()) {
+      throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
+    }
+
+    if (jwkSetUris.size() == 1) {
+      return createJWSKeySelector(jwkSetUris.getFirst());
+    }
+
+    final var jwkSources = jwkSetUris.stream().map(this::toURL).map(this::createJWKSource).toList();
+    final var fallbackSource = new FallbackJWKSource(jwkSources);
+    return new JWSVerificationKeySelector<>(getJWSAlgorithms(), fallbackSource);
   }
 
   /**

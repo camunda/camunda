@@ -711,8 +711,10 @@ public class WebSecurityConfig {
     @Bean
     public OidcAccessTokenDecoderFactory accessTokenDecoderFactory(
         final JWSKeySelectorFactory jwsKeySelectorFactory,
-        final TokenValidatorFactory tokenValidatorFactory) {
-      return new OidcAccessTokenDecoderFactory(jwsKeySelectorFactory, tokenValidatorFactory);
+        final TokenValidatorFactory tokenValidatorFactory,
+        final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
+      return new OidcAccessTokenDecoderFactory(
+          jwsKeySelectorFactory, tokenValidatorFactory, oidcConfigRepository);
     }
 
     @Bean

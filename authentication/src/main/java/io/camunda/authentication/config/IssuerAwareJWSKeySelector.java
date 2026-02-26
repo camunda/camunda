@@ -35,13 +35,16 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
 
   private final List<ClientRegistration> clientRegistrations;
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
+  private final OidcAuthenticationConfigurationRepository oidcConfigRepository;
   private final Map<String, JWSKeySelector<SecurityContext>> selectors;
 
   public IssuerAwareJWSKeySelector(
       final List<ClientRegistration> clientRegistrations,
-      final JWSKeySelectorFactory jwsKeySelectorFactory) {
+      final JWSKeySelectorFactory jwsKeySelectorFactory,
+      final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
     this.clientRegistrations = List.copyOf(clientRegistrations);
     this.jwsKeySelectorFactory = jwsKeySelectorFactory;
+    this.oidcConfigRepository = oidcConfigRepository;
     selectors = new ConcurrentHashMap<>();
   }
 
@@ -83,8 +86,13 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
    */
   private JWSKeySelector<SecurityContext> createJWSKeySelector(final String issuer) {
     final var clientRegistration = getClientRegistrationByIssuer(issuer);
-    final var providerDetails = clientRegistration.getProviderDetails();
-    final var jwkSetUri = providerDetails.getJwkSetUri();
+    final var config =
+        oidcConfigRepository.getOidcAuthenticationConfigurationById(
+            clientRegistration.getRegistrationId());
+    if (config != null && !config.getAdditionalJwkSetUris().isEmpty()) {
+      return jwsKeySelectorFactory.createJWSKeySelector(config.getAllJwkSetUris());
+    }
+    final var jwkSetUri = clientRegistration.getProviderDetails().getJwkSetUri();
     return jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri);
   }
 }

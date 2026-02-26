@@ -16,6 +16,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.proc.ConfigurableJWTProcessor;
 import com.nimbusds.jwt.proc.DefaultJWTProcessor;
 import com.nimbusds.jwt.proc.JWTProcessor;
+import io.camunda.security.configuration.OidcAuthenticationConfiguration;
 import java.util.List;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -47,12 +48,15 @@ public class OidcAccessTokenDecoderFactory {
       "OIDC Provider '%s' is missing a valid 'jwk-set-uri'. Issuer URI: %s";
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
   private final TokenValidatorFactory tokenValidatorFactory;
+  private final OidcAuthenticationConfigurationRepository oidcConfigRepository;
 
   public OidcAccessTokenDecoderFactory(
       final JWSKeySelectorFactory jwsKeySelectorFactory,
-      final TokenValidatorFactory tokenValidatorFactory) {
+      final TokenValidatorFactory tokenValidatorFactory,
+      final OidcAuthenticationConfigurationRepository oidcConfigRepository) {
     this.jwsKeySelectorFactory = jwsKeySelectorFactory;
     this.tokenValidatorFactory = tokenValidatorFactory;
+    this.oidcConfigRepository = oidcConfigRepository;
   }
 
   /**
@@ -131,6 +135,25 @@ public class OidcAccessTokenDecoderFactory {
   }
 
   /**
+   * Returns all JWK Set URIs for the given client registration, including the primary URI and any
+   * additional URIs configured in the {@link OidcAuthenticationConfiguration}.
+   *
+   * @param clientRegistration the client registration
+   * @return a list of all JWK Set URIs
+   * @throws IllegalArgumentException if no JWK Set URI is configured
+   */
+  protected List<String> getAllJwkSetUris(final ClientRegistration clientRegistration) {
+    final var primaryJwkSetUri = getJWKSetUri(clientRegistration);
+    final var config =
+        oidcConfigRepository.getOidcAuthenticationConfigurationById(
+            clientRegistration.getRegistrationId());
+    if (config != null && !config.getAdditionalJwkSetUris().isEmpty()) {
+      return config.getAllJwkSetUris();
+    }
+    return List.of(primaryJwkSetUri);
+  }
+
+  /**
    * Creates a {@link NimbusJwtDecoder} using the given processor and validator.
    *
    * @param jwtProcessor the JWT processor
@@ -157,7 +180,8 @@ public class OidcAccessTokenDecoderFactory {
   protected ConfigurableJWTProcessor<SecurityContext> createIssuerAwareJwtProcessor(
       final List<ClientRegistration> clientRegistrations) {
     final var jwsKeySelector =
-        new IssuerAwareJWSKeySelector(clientRegistrations, jwsKeySelectorFactory);
+        new IssuerAwareJWSKeySelector(
+            clientRegistrations, jwsKeySelectorFactory, oidcConfigRepository);
     return createAndCustomizeJwtProcessor(
         processor -> processor.setJWTClaimsSetAwareJWSKeySelector(jwsKeySelector));
   }
@@ -170,8 +194,8 @@ public class OidcAccessTokenDecoderFactory {
    */
   protected ConfigurableJWTProcessor<SecurityContext> createJwtProcessor(
       final ClientRegistration clientRegistration) {
-    final var jwkSetUri = getJWKSetUri(clientRegistration);
-    final var jwsKeySelector = jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri);
+    final var allJwkSetUris = getAllJwkSetUris(clientRegistration);
+    final var jwsKeySelector = jwsKeySelectorFactory.createJWSKeySelector(allJwkSetUris);
     return createAndCustomizeJwtProcessor(processor -> processor.setJWSKeySelector(jwsKeySelector));
   }
 
