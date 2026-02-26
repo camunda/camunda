@@ -353,7 +353,8 @@ public final class BackupRequestHandler implements BackupApi {
     }
     if ((statuses.contains(BackupStatusCode.IN_PROGRESS)
             || statuses.contains(BackupStatusCode.COMPLETED))
-        && statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
+        && (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)
+            || statuses.contains(BackupStatusCode.DELETED))) {
       return State.INCOMPLETE;
     }
     if (statuses.contains(BackupStatusCode.IN_PROGRESS)) {
@@ -362,6 +363,10 @@ public final class BackupRequestHandler implements BackupApi {
 
     if (statuses.contains(BackupStatusCode.DOES_NOT_EXIST)) {
       return State.DOES_NOT_EXIST;
+    }
+
+    if (statuses.contains(BackupStatusCode.DELETED)) {
+      return State.DELETED;
     }
 
     if (statuses.size() == 1 && statuses.contains(BackupStatusCode.COMPLETED)) {
