@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.variable;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -130,6 +131,8 @@ class VariableToolsTest extends ToolsTest {
       assertExampleVariable(variable);
 
       verify(variableServices).getByKey(123L);
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -148,7 +151,6 @@ class VariableToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -156,6 +158,8 @@ class VariableToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -227,6 +231,8 @@ class VariableToolsTest extends ToolsTest {
                 assertThat(variable.getIsTruncated()).isFalse();
                 assertThat(variable.getValue()).isEqualTo(FULL_VALUE);
               });
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -292,6 +298,8 @@ class VariableToolsTest extends ToolsTest {
 
       assertThat(capturedQuery.page().size()).isEqualTo(25);
       assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -307,13 +315,14 @@ class VariableToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
 
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
   }
 }

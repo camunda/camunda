@@ -7,7 +7,9 @@
  */
 package io.camunda.gateway.mcp.mapper;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.camunda.gateway.mapping.http.GatewayErrorMapper;
+import io.camunda.gateway.mcp.config.McpObjectMapperUtilities;
 import io.camunda.zeebe.util.Either;
 import io.modelcontextprotocol.spec.McpSchema.CallToolResult;
 import java.util.concurrent.CompletableFuture;
@@ -17,7 +19,10 @@ import org.springframework.http.ProblemDetail;
 public class CallToolResultMapper {
 
   public static CallToolResult from(final Object content) {
-    return CallToolResult.builder().structuredContent(content).build();
+    return CallToolResult.builder()
+        .structuredContent(content)
+        .addTextContent(structuredContentAsJson(content))
+        .build();
   }
 
   public static <T> CallToolResult from(
@@ -62,10 +67,22 @@ public class CallToolResultMapper {
   }
 
   public static CallToolResult mapProblemToResult(final ProblemDetail problemDetail) {
-    return CallToolResult.builder().structuredContent(problemDetail).isError(true).build();
+    return CallToolResult.builder()
+        .structuredContent(problemDetail)
+        .addTextContent(structuredContentAsJson(problemDetail))
+        .isError(true)
+        .build();
   }
 
   public static CallToolResult mapErrorToResult(final Throwable error) {
     return mapProblemToResult(GatewayErrorMapper.mapErrorToProblem(error));
+  }
+
+  private static String structuredContentAsJson(final Object object) {
+    try {
+      return McpObjectMapperUtilities.getObjectMapper().writeValueAsString(object);
+    } catch (final JsonProcessingException ex) {
+      throw new RuntimeException("Failed to convert structuredContent to JSON representation", ex);
+    }
   }
 }
