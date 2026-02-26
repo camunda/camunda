@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.protocol.impl.record.value.expression;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.camunda.zeebe.msgpack.property.ArrayProperty;
 import io.camunda.zeebe.msgpack.property.BinaryProperty;
 import io.camunda.zeebe.msgpack.property.DocumentProperty;
@@ -95,6 +96,11 @@ public class ExpressionRecord extends UnifiedRecordValue implements ExpressionRe
   public ExpressionRecord setVariables(final DirectBuffer variables) {
     variablesProp.setValue(variables);
     return this;
+  }
+
+  @JsonIgnore
+  public DirectBuffer getVariablesBuffer() {
+    return variablesProp.getValue();
   }
 
   @Override
