@@ -17,7 +17,7 @@
   > .cds--popover > .popoverContent {
     @include theme.theme(themes.$g10);
     padding: spacing.$spacing-05;
-
+    overflow-wrap: break-word;
     &.scrollable {
       @include scrollable;
     }
