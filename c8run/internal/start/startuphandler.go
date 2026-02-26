@@ -93,11 +93,18 @@ func isNetworkUnsupported(err error) bool {
 }
 
 func (s *StartupHandler) startApplication(cmd *exec.Cmd, pid string, logPath string, stop context.CancelFunc) error {
-	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE, 0644)
+	logFile, err := os.OpenFile(logPath, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		log.Err(err).Msg("Failed to open file: " + logPath)
 		return err
 	}
+
+	defer func() {
+		if cerr := logFile.Close(); cerr != nil {
+			log.Err(cerr).Msg("Failed to close file: " + logPath)
+		}
+	}()
+
 	cmd.Stdout = logFile
 	cmd.Stderr = logFile
 	err = cmd.Start()
