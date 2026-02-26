@@ -500,7 +500,7 @@ public class ConditionalEventSubprocessStartEventTriggerTest {
   }
 
   @Test
-  public void shouldTriggerEventSubprocessStartEventOnlyForVariablesReferencedInCondition() {
+  public void shouldOnlyTriggerEventSubprocessStartEventForAutoDetectedVariableNames() {
     // given
     final String processId = helper.getBpmnProcessId();
     engine
