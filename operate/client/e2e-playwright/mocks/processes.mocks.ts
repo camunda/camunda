@@ -153,9 +153,17 @@ function mockResponses({
 
       let matchingDefinitions = processDefinitions;
       if (query.filter?.processDefinitionId) {
-        matchingDefinitions = processDefinitions.filter(
-          (d) => d.processDefinitionId === query.filter?.processDefinitionId,
-        );
+        matchingDefinitions = processDefinitions.filter((d) => {
+          if (typeof query.filter?.processDefinitionId === 'string') {
+            return d.processDefinitionId === query.filter?.processDefinitionId;
+          }
+          if (query.filter?.processDefinitionId?.$neq) {
+            return (
+              d.processDefinitionId !== query.filter?.processDefinitionId?.$neq
+            );
+          }
+          return true;
+        });
       }
       if (query.filter?.version !== undefined) {
         matchingDefinitions = matchingDefinitions.filter(
@@ -719,7 +727,7 @@ const mockProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] = [
     hasStartForm: false,
   },
   {
-    processDefinitionKey: '2251799813686145',
+    processDefinitionKey: '2251799813686146',
     name: 'Lots Of Tasks',
     version: 2,
     processDefinitionId: 'LotsOfTasks',
@@ -1830,7 +1838,7 @@ const mockProcessInstancesWithOperationError: QueryProcessInstancesResponseBody 
 const mockOrderProcessDefinitions: QueryProcessDefinitionsResponseBody['items'] =
   [
     {
-      processDefinitionKey: '2251799813686114',
+      processDefinitionKey: '2251799813686115',
       name: 'Order process',
       version: 2,
       processDefinitionId: 'orderProcess',
