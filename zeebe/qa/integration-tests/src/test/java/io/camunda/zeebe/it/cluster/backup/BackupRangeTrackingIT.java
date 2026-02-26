@@ -19,8 +19,11 @@ import io.camunda.zeebe.qa.util.cluster.TestStandaloneBroker;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.util.asserts.TopologyAssert;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -175,6 +178,64 @@ final class BackupRangeTrackingIT {
                   .describedAs("Range should end with the latest checkpoint")
                   .isEqualTo(lastBackupAfterLeaderChange.getCheckpointId());
             });
+  }
+
+  @Test
+  void shouldReCreateMetadataAfterSync() throws IOException {
+    // given
+    final var actuator = BackupActuator.of(cluster.availableGateway());
+    executor.scheduleAtFixedRate(this::generateLoad, 0, 100, TimeUnit.MILLISECONDS);
+
+    Awaitility.await("Until each partition has a backup range")
+        .atMost(Duration.ofSeconds(30))
+        .untilAsserted(
+            () -> {
+              final var states = actuator.state();
+              assertThat(states.getRanges())
+                  .extracting(PartitionBackupRange::getPartitionId)
+                  .containsExactlyInAnyOrder(1, 2, 3);
+            });
+
+    // Sync metadata to ensure files are written to the backup store
+    actuator.syncMetadata();
+
+    final var metadataDir = tempDir.resolve("metadata");
+    Awaitility.await("Until metadata files exist for all partitions")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(findMetadataFiles(metadataDir))
+                    .describedAs("Each partition should have a metadata file")
+                    .hasSize(3));
+
+    // when -- delete all metadata files and verify they are gone
+    for (final var file : findMetadataFiles(metadataDir)) {
+      Files.delete(file);
+    }
+    assertThat(findMetadataFiles(metadataDir))
+        .describedAs("All metadata files should have been deleted")
+        .isEmpty();
+
+    // Force a sync to re-create the metadata files
+    actuator.syncMetadata();
+
+    // then -- metadata files should be re-created
+    Awaitility.await("Until metadata files are re-created after sync")
+        .atMost(Duration.ofSeconds(10))
+        .untilAsserted(
+            () ->
+                assertThat(findMetadataFiles(metadataDir))
+                    .describedAs("Metadata files should be re-created after sync")
+                    .hasSize(3));
+  }
+
+  private List<Path> findMetadataFiles(final Path metadataDir) throws IOException {
+    if (!Files.exists(metadataDir)) {
+      return List.of();
+    }
+    try (final var stream = Files.walk(metadataDir)) {
+      return stream.filter(p -> p.getFileName().toString().equals("metadata.json")).toList();
+    }
   }
 
   private void generateLoad() {

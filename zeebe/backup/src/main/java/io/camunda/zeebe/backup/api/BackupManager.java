@@ -74,4 +74,7 @@ public interface BackupManager {
    * @return all backup ranges for the partition
    */
   ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus();
+
+  /** Force-write the backup metadata file for this partition. */
+  ActorFuture<Collection<BackupRangeStatus>> syncMetadata();
 }
