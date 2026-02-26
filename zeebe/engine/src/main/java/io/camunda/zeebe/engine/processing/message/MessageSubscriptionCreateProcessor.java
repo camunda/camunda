@@ -66,7 +66,6 @@ public final class MessageSubscriptionCreateProcessor
   @Override
   public void processRecord(final TypedRecord<MessageSubscriptionRecord> record) {
     subscriptionRecord = record.getValue();
-
     if (subscriptionState.existSubscriptionForElementInstance(
         subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageNameBuffer())) {
       sendAcknowledgeCommand();
