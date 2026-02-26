@@ -128,6 +128,13 @@ jobs:
 
       - name: Start Tasklist
         env:
+          SPRING_PROFILES_ACTIVE: e2e-test,dev,tasklist,consolidated-auth,broker
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_CLASSNAME: io.camunda.exporter.CamundaExporter
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_CONNECT_URL: http://localhost:9200
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_BULK_SIZE: 100
+          ZEEBE_BROKER_EXPORTERS_CAMUNDAEXPORTER_ARGS_INDEX_SHOULDWAITFORIMPORTERS: false
+          CAMUNDA_DATA_SECONDARYSTORAGE_ELASTICSEARCH_WAITFORIMPORTERS: false
+          ZEEBE_BROKER_BACKPRESSURE_ENABLED: false
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_USERNAME: demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_PASSWORD: demo
           CAMUNDA_SECURITY_INITIALIZATION_USERS_0_NAME: Demo
@@ -135,13 +142,13 @@ jobs:
           CAMUNDA_SECURITY_INITIALIZATION_DEFAULTROLES_ADMIN_USERS_0: demo
           CAMUNDA_SECURITY_AUTHENTICATION_UNPROTECTEDAPI: true
           CAMUNDA_SECURITY_AUTHORIZATIONS_ENABLED: false
+          CAMUNDA_TASKLIST_CSRF_PREVENTION_ENABLED: false
           CAMUNDA_TASKLIST_V2_MODE_ENABLED: ${{ matrix.tasklist_mode == 'v2' && 'true' || 'false' }}
         run: >
           ./mvnw -q -B spring-boot:start -pl dist
           -Dspring-boot.run.main-class=io.camunda.application.StandaloneCamunda
           -Dspring-boot.run.fork=true
-          -Dspring-boot.run.jvmArguments="--add-opens=java.base/java.io=ALL-UNNAMED -Dspring.profiles.active=e2e-test,dev,tasklist,consolidated-auth,broker -Dzeebe.broker.exporters.camundaexporter.classname=io.camunda.exporter.CamundaExporter -Dzeebe.broker.exporters.camundaexporter.args.connect.url=http://localhost:9200 -Dzeebe.broker.exporters.camundaexporter.args.bulk.size=100 -Dzeebe.broker.exporters.camundaexporter.args.index.shouldWaitForImporters=false -Dcamunda.data.secondary-storage.elasticsearch.wait-for-importers=false -Dzeebe.broker.backpressure.enabled=false"
-          -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616 --camunda.tasklist.csrfPreventionEnabled=false"
+          -Dspring-boot.run.arguments="--camunda.tasklist.cloud.clusterId=449ac2ad-d3c6-4c73-9c68-7752e39ae616"
 
       - name: Python setup
         if: always()
