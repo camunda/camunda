@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.process.definition;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
@@ -117,6 +118,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
       final var processDefinition =
           objectMapper.convertValue(result.structuredContent(), ProcessDefinitionResult.class);
       assertExampleProcessDefinitionResult(processDefinition);
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -198,6 +201,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
 
       assertThat(capturedQuery.page().size()).isEqualTo(25);
       assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -216,7 +221,6 @@ class ProcessDefinitionToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -224,6 +228,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -295,6 +301,8 @@ class ProcessDefinitionToolsTest extends ToolsTest {
           .isEqualTo("The BPMN XML for this process definition is not available.");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
   }
 }

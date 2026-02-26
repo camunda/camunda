@@ -7,6 +7,7 @@
  */
 package io.camunda.gateway.mcp.tool.process.instance;
 
+import static io.camunda.gateway.mcp.tool.CallToolResultAssertions.assertTextContentFallback;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
@@ -150,6 +151,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertExampleProcessInstance(processInstance);
 
       verify(processInstanceServices).getByKey(123L);
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -168,7 +171,6 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
       assertThat(result.structuredContent()).isNotNull();
 
       final var problemDetail =
@@ -176,6 +178,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -292,6 +296,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       assertThat(capturedQuery.page().size()).isEqualTo(25);
       assertThat(capturedQuery.page().after()).isEqualTo("WzEwMjRd");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -326,13 +332,14 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
 
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.NOT_FOUND.value());
       assertThat(problemDetail.getTitle()).isEqualTo("NOT_FOUND");
+
+      assertTextContentFallback(result);
     }
   }
 
@@ -391,6 +398,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getTenantId()).isEqualTo("<default>");
       assertThat(actualResult.getVariables()).isEmpty();
       assertThat(actualResult.getTags()).isEmpty();
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -448,6 +457,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getTenantId()).isEqualTo("<default>");
       assertThat(actualResult.getVariables()).isEmpty();
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -510,6 +521,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getVariables())
           .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -572,6 +585,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getVariables())
           .containsExactly(entry("foo", "bar"), entry("nested", Map.of("x", 1)));
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -592,13 +607,14 @@ class ProcessInstanceToolsTest extends ToolsTest {
 
       // then
       assertThat(result.isError()).isTrue();
-      assertThat(result.content()).isEmpty();
 
       final var problemDetail =
           objectMapper.convertValue(result.structuredContent(), ProblemDetail.class);
       assertThat(problemDetail.getDetail()).isEqualTo("Expected failure");
       assertThat(problemDetail.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST.value());
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -617,6 +633,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(problemDetail.getDetail())
           .contains("At least one of [processDefinitionId, processDefinitionKey] is required");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -639,6 +657,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getTitle()).isEqualTo("INVALID_ARGUMENT");
       assertThat(problemDetail.getDetail())
           .contains("Only one of [processDefinitionId, processDefinitionKey] is allowed");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -695,6 +715,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
       assertThat(actualResult.getVariables()).isEmpty();
       assertThat(actualResult.getTags()).isEmpty();
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -754,6 +776,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(actualResult.getTenantId()).isEqualTo("tenant-a");
       assertThat(actualResult.getVariables()).isEmpty();
       assertThat(actualResult.getTags()).containsExactly("mcp-tool:abc");
+
+      assertTextContentFallback(result);
     }
 
     @ParameterizedTest
@@ -785,7 +809,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
     }
 
     @Test
-    void shouldFailCreateProcessInstanceWhenMultiTenancyEnabledButNoTenantProvided() {
+    void shouldFailCreateProcessInstanceWhenMultiTenancyEnabledButNoTenantProvided()
+        throws Exception {
       // given
       when(multiTenancyConfiguration.isChecksEnabled()).thenReturn(true);
 
@@ -807,6 +832,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
       assertThat(problemDetail.getDetail())
           .contains(
               "Expected to handle request Create Process Instance with multi-tenancy enabled, but no tenant identifier was provided.");
+
+      assertTextContentFallback(result);
     }
 
     @Test
@@ -849,6 +876,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
           objectMapper.convertValue(result.structuredContent(), CreateProcessInstanceResult.class);
       assertThat(actualResult.getProcessInstanceKey()).isEqualTo("456");
       assertThat(actualResult.getBusinessId()).isEqualTo(businessId);
+
+      assertTextContentFallback(result);
     }
   }
 }
