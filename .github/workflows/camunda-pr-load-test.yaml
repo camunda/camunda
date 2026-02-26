@@ -76,6 +76,7 @@ jobs:
     needs: [sanitize-branch-name,create-benchmark, create-benchmark-rdbms]
     if: >
       always() &&
+      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
       (needs.create-benchmark.result == 'success' || needs.create-benchmark-rdbms.result == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -96,7 +97,10 @@ jobs:
   run-profiling:
     name: Run Profiling
     needs: [sanitize-branch-name, await-benchmark]
-    if: always() && needs.await-benchmark.result == 'success'
+    if: >
+      always() &&
+      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
+      needs.await-benchmark.result == 'success'
     uses: ./.github/workflows/profile-load-test.yml
     secrets: inherit
     with:
@@ -106,7 +110,10 @@ jobs:
   comment-pr:
     name: Comment on PR with profiling results
     needs: [sanitize-branch-name, run-profiling]
-    if: always() && needs.run-profiling.result == 'success'
+    if: >
+      always() &&
+      !(github.event.action == 'unlabeled' && (github.event.label.name == 'benchmark' || github.event.label.name == 'benchmark-rdbms')) &&
+      needs.run-profiling.result == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
