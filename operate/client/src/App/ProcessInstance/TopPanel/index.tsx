@@ -303,7 +303,7 @@ const TopPanel: React.FC = observer(() => {
       {modificationsStore.state.status === 'moving-token' &&
         businessObjects && (
           <ModificationInfoBanner
-            text="Select the target flow node in the diagram"
+            text="Select the target element in the diagram"
             button={{
               onClick: () =>
                 finishMovingToken(
@@ -390,7 +390,7 @@ const TopPanel: React.FC = observer(() => {
                 highlightedFlowNodeIds={highlightedSequenceFlowIds}
                 nonSelectableNodeTooltipText={
                   isModificationModeEnabled
-                    ? 'Modification is not supported for this flow node.'
+                    ? 'Modification is not supported for this element.'
                     : undefined
                 }
                 hasOuterBorderOnSelection={

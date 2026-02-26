@@ -69,13 +69,13 @@ describe('<ModificationIcons />', () => {
   it('should show correct icons for modifications planning to be added', () => {
     render(
       <ModificationIcons
-        elementId="some-flow-node-id"
+        elementId="some-element-id"
         endDate={null}
         isPlaceholder={true}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -90,20 +90,20 @@ describe('<ModificationIcons />', () => {
     ).toBeInTheDocument();
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be added'),
+      screen.getByTitle('This element instance is planned to be added'),
     ).toBeInTheDocument();
   });
 
-  it('should show modification planned to be canceled icon if all the running tokens on the flow node is canceled', async () => {
+  it('should show modification planned to be canceled icon if all the running tokens on the element is canceled', async () => {
     render(
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
         endDate={null}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -112,26 +112,26 @@ describe('<ModificationIcons />', () => {
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled'),
+      screen.queryByTitle('This element instance is planned to be canceled'),
     ).not.toBeInTheDocument();
 
     act(() => cancelAllTokens('user_task', 0, 0, {}));
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled'),
+      screen.getByTitle('This element instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
-  it('should show modification planned to be canceled icon if one of the running tokens on the flow node is canceled', async () => {
+  it('should show modification planned to be canceled icon if one of the running tokens on the element is canceled', async () => {
     render(
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
         endDate={null}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -140,24 +140,24 @@ describe('<ModificationIcons />', () => {
     );
 
     act(() =>
-      modificationsStore.cancelToken('user_task', 'some-flow-node-id', {}),
+      modificationsStore.cancelToken('user_task', 'some-element-id', {}),
     );
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled'),
+      screen.getByTitle('This element instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
-  it('should not show modification planned to be canceled icon if one of the other running tokens on the flow node is canceled', async () => {
+  it('should not show modification planned to be canceled icon if one of the other running tokens on the element is canceled', async () => {
     render(
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
         endDate={null}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -166,28 +166,24 @@ describe('<ModificationIcons />', () => {
     );
 
     act(() =>
-      modificationsStore.cancelToken(
-        'user_task',
-        'some-other-flow-node-id',
-        {},
-      ),
+      modificationsStore.cancelToken('user_task', 'some-other-element-id', {}),
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled'),
+      screen.queryByTitle('This element instance is planned to be canceled'),
     ).not.toBeInTheDocument();
   });
 
-  it('should show modification planned to be canceled icon if one of the parent running tokens on the flow node is canceled', async () => {
+  it('should show modification planned to be canceled icon if one of the parent running tokens on the element is canceled', async () => {
     render(
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
         endDate={null}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -196,28 +192,24 @@ describe('<ModificationIcons />', () => {
     );
 
     act(() =>
-      modificationsStore.cancelToken(
-        'user_task',
-        'some-parent-flow-node-id',
-        {},
-      ),
+      modificationsStore.cancelToken('user_task', 'some-parent-element-id', {}),
     );
 
     expect(
-      screen.getByTitle('This flow node instance is planned to be canceled'),
+      screen.getByTitle('This element instance is planned to be canceled'),
     ).toBeInTheDocument();
   });
 
-  it('should show modification planned to be canceled icon if one of the other parent running tokens on the flow node is canceled', async () => {
+  it('should show modification planned to be canceled icon if one of the other parent running tokens on the element is canceled', async () => {
     render(
       <ModificationIcons
         elementId="user_task"
         isPlaceholder={false}
         endDate={null}
         scopeKeyHierarchy={[
-          'some-other-parent-flow-node-id',
-          'some-parent-flow-node-id',
-          'some-flow-node-id',
+          'some-other-parent-element-id',
+          'some-parent-element-id',
+          'some-element-id',
         ]}
       />,
       {
@@ -228,13 +220,13 @@ describe('<ModificationIcons />', () => {
     act(() =>
       modificationsStore.cancelToken(
         'user_task',
-        'some-second-parent-flow-node-id',
+        'some-second-parent-element-id',
         {},
       ),
     );
 
     expect(
-      screen.queryByTitle('This flow node instance is planned to be canceled'),
+      screen.queryByTitle('This element instance is planned to be canceled'),
     ).not.toBeInTheDocument();
   });
 });

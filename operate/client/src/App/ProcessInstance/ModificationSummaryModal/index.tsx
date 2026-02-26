@@ -185,9 +185,9 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
         {areModificationsInvalid && <Error />}
         {hasOrphanedVariables && <OrphanedVariablesError />}
 
-        <Title>Flow Node Modifications</Title>
+        <Title>Element Modifications</Title>
         {modificationsStore.flowNodeModifications.length === 0 ? (
-          <EmptyMessage>No planned flow node modifications</EmptyMessage>
+          <EmptyMessage>No planned element modifications</EmptyMessage>
         ) : (
           <DataTable
             ref={flowNodeModificationsTableRef}
@@ -200,7 +200,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                 width: '25%',
               },
               {
-                header: 'Flow Node',
+                header: 'Element',
                 key: 'flowNode',
                 width: '25%',
               },
@@ -273,8 +273,8 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                   delete: (
                     <Button
                       kind="danger--ghost"
-                      title="Delete flow node modification"
-                      aria-label="Delete flow node modification"
+                      title="Delete element modification"
+                      aria-label="Delete element modification"
                       size="sm"
                       onClick={() => {
                         modificationsStore.removeFlowNodeModification(

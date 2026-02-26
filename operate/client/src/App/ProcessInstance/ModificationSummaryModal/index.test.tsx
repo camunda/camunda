@@ -101,7 +101,7 @@ describe('Modification Summary Modal', () => {
     });
 
     expect(
-      await screen.findByText('No planned flow node modifications'),
+      await screen.findByText('No planned element modifications'),
     ).toBeInTheDocument();
     expect(
       screen.getByText('No planned variable modifications'),
@@ -115,8 +115,8 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       createAddVariableModification({
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flow node 1',
+        scopeId: 'element-1',
+        flowNodeName: 'element 1',
         name: 'test',
         value: '123',
       });
@@ -139,7 +139,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.getByRole('cell', {
-        name: /flow node 1/i,
+        name: /element 1/i,
       }),
     ).toBeInTheDocument();
 
@@ -166,8 +166,8 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       createAddVariableModification({
-        scopeId: 'flow-node-1',
-        flowNodeName: 'flow node 1',
+        scopeId: 'element-1',
+        flowNodeName: 'element 1',
         name: 'test',
         value: '123',
       });
@@ -183,13 +183,13 @@ describe('Modification Summary Modal', () => {
     expect(modificationsStore.variableModifications).toEqual([]);
   });
 
-  it('should render flow node modifications', async () => {
+  it('should render element modifications', async () => {
     modificationsStore.addModification({
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
-        targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
+        flowNode: {id: 'element-1', name: 'element 1'},
+        targetFlowNode: {id: 'element-2', name: 'element 2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
@@ -214,7 +214,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.getByRole('columnheader', {
-        name: /flow node/i,
+        name: /element/i,
       }),
     ).toBeInTheDocument();
 
@@ -226,7 +226,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.getByRole('cell', {
-        name: /flow node 1 → flow node 2/i,
+        name: /element 1 → element 2/i,
       }),
     ).toBeInTheDocument();
 
@@ -244,7 +244,7 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       modificationsStore.removeLastModification();
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1', {});
+      modificationsStore.cancelToken('element-1', 'some-instance-key-1', {});
     });
 
     expect(
@@ -261,9 +261,9 @@ describe('Modification Summary Modal', () => {
     act(() => {
       modificationsStore.removeLastModification();
       modificationsStore.addMoveModification({
-        sourceFlowNodeId: 'flow-node-1',
+        sourceFlowNodeId: 'element-1',
         sourceFlowNodeInstanceKey: 'some-instance-key-2',
-        targetFlowNodeId: 'flow-node-2',
+        targetFlowNodeId: 'element-2',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         newScopeCount: 1,
@@ -284,13 +284,13 @@ describe('Modification Summary Modal', () => {
     ).toBeInTheDocument();
   });
 
-  it('should delete flow node modifications', async () => {
+  it('should delete element modifications', async () => {
     modificationsStore.addModification({
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
-        targetFlowNode: {id: 'flow-node-2', name: 'flow node 2'},
+        flowNode: {id: 'element-1', name: 'element 1'},
+        targetFlowNode: {id: 'element-2', name: 'element 2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
@@ -310,17 +310,17 @@ describe('Modification Summary Modal', () => {
     );
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'}),
+      screen.getByRole('button', {name: 'Delete element modification'}),
     );
 
     expect(
-      screen.getByText('No planned flow node modifications'),
+      screen.getByText('No planned element modifications'),
     ).toBeInTheDocument();
     expect(modificationsStore.flowNodeModifications).toEqual([]);
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
 
-  it('should delete cancel token modification applied on a single flow node instance key', async () => {
+  it('should delete cancel token modification applied on a single element instance key', async () => {
     const {user} = render(
       <ModificationSummaryModal open setOpen={() => {}} />,
       {
@@ -329,8 +329,8 @@ describe('Modification Summary Modal', () => {
     );
 
     act(() => {
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-1', {});
-      modificationsStore.cancelToken('flow-node-1', 'some-instance-key-2', {});
+      modificationsStore.cancelToken('element-1', 'some-instance-key-1', {});
+      modificationsStore.cancelToken('element-1', 'some-instance-key-2', {});
     });
 
     await waitFor(() =>
@@ -338,7 +338,7 @@ describe('Modification Summary Modal', () => {
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
-      name: 'Delete flow node modification',
+      name: 'Delete element modification',
     });
 
     await user.click(deleteFirstModification!);
@@ -347,20 +347,20 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByText('some-instance-key-2')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'}),
+      screen.getByRole('button', {name: 'Delete element modification'}),
     );
     expect(screen.queryByText('some-instance-key-2')).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('No planned flow node modifications'),
+      screen.getByText('No planned element modifications'),
     ).toBeInTheDocument();
   });
 
-  it('should delete move token modification applied on a single flow node instance key', async () => {
+  it('should delete move token modification applied on a single element instance key', async () => {
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'flow-node-1',
+      sourceFlowNodeId: 'element-1',
       sourceFlowNodeInstanceKey: 'some-instance-key-1',
-      targetFlowNodeId: 'flow-node-2',
+      targetFlowNodeId: 'element-2',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -369,9 +369,9 @@ describe('Modification Summary Modal', () => {
     });
 
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'flow-node-1',
+      sourceFlowNodeId: 'element-1',
       sourceFlowNodeInstanceKey: 'some-instance-key-2',
-      targetFlowNodeId: 'flow-node-2',
+      targetFlowNodeId: 'element-2',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -391,7 +391,7 @@ describe('Modification Summary Modal', () => {
     );
 
     const [deleteFirstModification] = screen.getAllByRole('button', {
-      name: 'Delete flow node modification',
+      name: 'Delete element modification',
     });
 
     await user.click(deleteFirstModification!);
@@ -400,12 +400,12 @@ describe('Modification Summary Modal', () => {
     expect(screen.getByText('some-instance-key-2')).toBeInTheDocument();
 
     await user.click(
-      screen.getByRole('button', {name: 'Delete flow node modification'}),
+      screen.getByRole('button', {name: 'Delete element modification'}),
     );
     expect(screen.queryByText('some-instance-key-2')).not.toBeInTheDocument();
 
     expect(
-      screen.getByText('No planned flow node modifications'),
+      screen.getByText('No planned element modifications'),
     ).toBeInTheDocument();
   });
 
@@ -433,8 +433,8 @@ describe('Modification Summary Modal', () => {
 
   it.skip('should display variable content details on modal icon click', async () => {
     createAddVariableModification({
-      scopeId: 'flow-node-1',
-      flowNodeName: 'flow node 1',
+      scopeId: 'element-1',
+      flowNodeName: 'element 1',
       name: 'test',
       value: '123',
     });
@@ -443,8 +443,8 @@ describe('Modification Summary Modal', () => {
       type: 'variable',
       payload: {
         operation: 'EDIT_VARIABLE',
-        scopeId: 'flow-node-2',
-        flowNodeName: 'flow node 2',
+        scopeId: 'element-2',
+        flowNodeName: 'element 2',
         id: '1',
         name: 'anotherVariable',
         oldValue: '"someOldValue"',
@@ -568,7 +568,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        flowNode: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -609,7 +609,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        flowNode: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -651,7 +651,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'flow-node-1', name: 'flow node 1'},
+        flowNode: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -720,7 +720,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+        'The planned modifications will cancel all remaining running element instances. Applying these modifications will cancel the entire process instance.',
       ),
     ).not.toBeInTheDocument();
 
@@ -735,7 +735,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+        'The planned modifications will cancel all remaining running element instances. Applying these modifications will cancel the entire process instance.',
       ),
     ).not.toBeInTheDocument();
 
@@ -750,7 +750,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       await screen.findByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+        'The planned modifications will cancel all remaining running element instances. Applying these modifications will cancel the entire process instance.',
       ),
     ).toBeInTheDocument();
 
@@ -770,7 +770,7 @@ describe('Modification Summary Modal', () => {
 
     expect(
       screen.queryByText(
-        'The planned modifications will cancel all remaining running flow node instances. Applying these modifications will cancel the entire process instance.',
+        'The planned modifications will cancel all remaining running element instances. Applying these modifications will cancel the entire process instance.',
       ),
     ).not.toBeInTheDocument();
   });
@@ -866,7 +866,7 @@ describe('Modification Summary Modal', () => {
     act(() => {
       createAddVariableModification({
         scopeId: 'orphaned-scope',
-        flowNodeName: 'some flow node',
+        flowNodeName: 'some element',
         name: 'myVar',
         value: '"hello"',
       });
@@ -888,7 +888,7 @@ describe('Modification Summary Modal', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: 'orphaned-scope',
-          flowNode: {id: 'some-flow-node', name: 'some flow node'},
+          flowNode: {id: 'some-element', name: 'some element'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: {},

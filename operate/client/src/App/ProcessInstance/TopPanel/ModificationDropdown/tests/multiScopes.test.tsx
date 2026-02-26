@@ -181,7 +181,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     ]);
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() => screen.queryByTitle(/loading/i));
@@ -231,7 +231,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
     ]);
 
     expect(
-      await screen.findByText(/Flow Node Modifications/),
+      await screen.findByText(/Element Modifications/),
     ).toBeInTheDocument();
 
     await waitForElementToBeRemoved(() => screen.queryByTitle(/loading/i));
