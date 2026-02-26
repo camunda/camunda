@@ -208,7 +208,6 @@ const EntityList = <D extends EntityData>({
       sortRow={() => {
         return 0;
       }}
-      stickyHeader
     >
       {({ rows, getHeaderProps, getToolbarProps, getTableProps }) => (
         <StyledTableContainer {...tableContainerProps}>
