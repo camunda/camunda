@@ -94,7 +94,7 @@ jobs:
         - version: 8.9
           host: ${{ needs.deploy-8-9.outputs.host-name }}
           run: ${{ needs.deploy-8-9.result == 'success' }}
-        - version: 8.9
+        - version: 8.10
           host: ${{ needs.deploy-8-10.outputs.host-name }}
           run: ${{ needs.deploy-8-10.result == 'success' }}
         exclude:
