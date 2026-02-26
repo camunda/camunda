@@ -483,6 +483,7 @@ jobs:
           sarif_file: ./hadolint.sarif
       - uses: ./.github/actions/setup-build
         with:
+          maven-cache-key-modifier: docker-checks
           dockerhub-readonly: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
