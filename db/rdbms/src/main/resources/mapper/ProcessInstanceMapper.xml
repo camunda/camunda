@@ -27,6 +27,7 @@
            pi.PARENT_ELEMENT_INSTANCE_KEY,
            pi.VERSION AS PROCESS_DEFINITION_VERSION,
            pi.TREE_PATH,
+           pi.BUSINESS_ID,
            pd.NAME        AS PROCESS_DEFINITION_NAME,
            pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG,
            pit.TAG_VALUE AS TAG_VALUE
@@ -66,6 +67,7 @@
     pif.PARENT_ELEMENT_INSTANCE_KEY,
     pif.PROCESS_DEFINITION_VERSION,
     pif.TREE_PATH,
+    pif.BUSINESS_ID,
     pif.PROCESS_DEFINITION_NAME,
     pif.PROCESS_DEFINITION_VERSION_TAG,
     pit.TAG_VALUE AS TAG_VALUE
@@ -88,6 +90,7 @@
     pi.PARENT_ELEMENT_INSTANCE_KEY,
     pi.VERSION PROCESS_DEFINITION_VERSION,
     pi.TREE_PATH,
+    pi.BUSINESS_ID,
     pd.NAME AS PROCESS_DEFINITION_NAME,
     pd.VERSION_TAG AS PROCESS_DEFINITION_VERSION_TAG
     FROM ${prefix}PROCESS_INSTANCE pi
@@ -366,6 +369,7 @@
       <arg column="HAS_INCIDENT" javaType="java.lang.Boolean"/>
       <arg column="TENANT_ID" javaType="java.lang.String"/>
       <arg column="TREE_PATH" javaType="java.lang.String"/>
+      <arg column="BUSINESS_ID" javaType="java.lang.String"/>
     </constructor>
     <collection property="tags" ofType="java.lang.String" javaType="java.util.Set">
       <id column="TAG_VALUE"/>
