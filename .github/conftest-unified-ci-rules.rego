@@ -24,7 +24,7 @@ warn[msg] {
     count(get_jobs_with_timeoutminutes_higher_than(input.jobs, 30)) > 0
 
     msg := sprintf("There are GitHub Actions jobs with too high (>30) timeout-minutes! Affected job IDs: %s",
-        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 15))])
+        [concat(", ", get_jobs_with_timeoutminutes_higher_than(input.jobs, 30))])
 }
 
 deny[msg] {
