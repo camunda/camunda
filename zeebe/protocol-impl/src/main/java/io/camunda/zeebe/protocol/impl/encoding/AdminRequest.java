@@ -47,7 +47,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .brokerId(brokerId)
@@ -58,6 +58,7 @@ public class AdminRequest implements BufferReader, BufferWriter {
     if (hasPayload) {
       bodyEncoder.putPayload(payload, 0, payload.length);
     }
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   public int getBrokerId() {

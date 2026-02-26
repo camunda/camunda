@@ -53,22 +53,24 @@ export class OperateFiltersPanelPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.activeCheckbox = this.page.getByRole('checkbox', {name: 'Active'});
-    this.incidentsCheckbox = this.page.getByRole('checkbox', {
-      name: 'Incidents',
-    });
-    this.runningInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Running Instances',
-    });
-    this.completedCheckbox = this.page.getByRole('checkbox', {
-      name: 'Completed',
-    });
-    this.canceledCheckbox = this.page.getByRole('checkbox', {
-      name: 'Canceled',
-    });
-    this.finishedInstancesCheckbox = this.page.getByRole('checkbox', {
-      name: 'Finished Instances',
-    });
+     this.runningInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Running' });
+    this.activeCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Active' });
+    this.incidentsCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Incidents' });
+    this.completedCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Completed' });
+    this.canceledCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Canceled' });
+    this.finishedInstancesCheckbox = this.page
+      .locator('label')
+      .filter({ hasText: 'Finished' });
     this.processNameFilter = this.page.getByRole('combobox', {
       name: 'Name',
     });
@@ -212,7 +214,7 @@ export class OperateFiltersPanelPage {
     await expect(this.dateFilterDialog).toBeVisible();
 
     const date = new Date();
-    const monthName = date.toLocaleString('default', {month: 'long'});
+    const monthName = date.toLocaleString('default', { month: 'long' });
     const year = date.getFullYear();
 
     await this.fromDateInput.click();
@@ -240,6 +242,10 @@ export class OperateFiltersPanelPage {
     await this.errorMessageFilter.fill(errorMessage);
   }
 
+  async fillOperationIdFilter(operationId: string) {
+    await this.operationIdFilter.fill(operationId);
+  }
+
   async clickJsonEditorModal() {
     await this.jsonEditorModalButton.click();
   }
@@ -249,6 +255,29 @@ export class OperateFiltersPanelPage {
   }
 
   async clickMultipleVariablesSwitch() {
-    await this.multipleVariablesSwitch.click({force: true});
+    await this.multipleVariablesSwitch.click({ force: true });
+  }
+
+  async clickRunningInstancesCheckbox(): Promise<void> {
+    await this.runningInstancesCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickActiveInstancesCheckbox(): Promise<void> {
+    await this.activeCheckbox.click();
+  }
+
+  async clickIncidentsInstancesCheckbox(): Promise<void> {
+    await this.incidentsCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickFinishedInstancesCheckbox(): Promise<void> {
+    await this.finishedInstancesCheckbox.click({ timeout: 60000 });
+  }
+
+  async clickCompletedInstancesCheckbox(): Promise<void> {
+    await this.completedCheckbox.click({ timeout: 60000 });
+  }
+  async clickCanceledInstancesCheckbox(): Promise<void> {
+    await this.canceledCheckbox.click({ timeout: 60000 });
   }
 }

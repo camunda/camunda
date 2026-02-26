@@ -1,0 +1,22 @@
+<!--
+  ~ Copyright Camunda Services GmbH and/or licensed to Camunda Services GmbH under
+  ~ one or more contributor license agreements. See the NOTICE file distributed
+  ~ with this work for additional information regarding copyright ownership.
+  ~ Licensed under the Camunda License 1.0. You may not use this file
+  ~ except in compliance with the Camunda License 1.0.
+  -->
+<cache xmlns="http://maven.apache.org/BUILD-CACHE-CONFIG/1.2.0">
+  <configuration>
+    <enabled>false</enabled>
+    <hashAlgorithm>XX</hashAlgorithm>
+    <validateXml>true</validateXml>
+    <local>
+      <maxBuildsCached>5</maxBuildsCached>
+    </local>
+  </configuration>
+  <input>
+    <global>
+      <glob>{*.java,*.xml,*.properties, *.proto, resources/api/*.xml, rest-api*.yml }</glob>
+    </global>
+  </input>
+</cache>

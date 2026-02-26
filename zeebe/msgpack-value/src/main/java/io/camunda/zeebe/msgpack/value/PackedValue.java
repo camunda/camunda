@@ -46,8 +46,8 @@ public class PackedValue extends BaseValue {
   }
 
   @Override
-  public void write(final MsgPackWriter writer) {
-    writer.writeRaw(buffer);
+  public int write(final MsgPackWriter writer) {
+    return writer.writeRaw(buffer);
   }
 
   @Override

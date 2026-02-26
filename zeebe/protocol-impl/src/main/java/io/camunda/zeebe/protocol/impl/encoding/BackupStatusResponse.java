@@ -232,8 +232,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
-
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     bodyEncoder.wrapAndApplyHeader(buffer, offset, headerEncoder);
     bodyEncoder
         .backupId(backupId)
@@ -247,6 +246,7 @@ public class BackupStatusResponse implements BufferReader, BufferWriter {
         .putBrokerVersion(encodedBrokerVersion, 0, encodedBrokerVersion.length)
         .putCreatedAt(encodedCreatedAt, 0, encodedCreatedAt.length)
         .putLastUpdated(encodedLastUpdated, 0, encodedLastUpdated.length);
+    return headerEncoder.encodedLength() + bodyEncoder.encodedLength();
   }
 
   private byte[] encodeString(final String value, final String charsetName) {

@@ -40,6 +40,7 @@ APPLE_PASS="$4"
 APPLE_TEAM="$5"
 
 # Ensure c8run exists
+C8RUN_BASENAME="$(basename "$C8RUN_DIR")"
 if [ ! -d "$C8RUN_DIR" ]; then
   echo "Error: '$C8RUN_DIR' is not a directory."
   exit 1
@@ -65,7 +66,7 @@ echo "=== Step A: Excluding top-level items that begin with: ${EXCLUDE_PREFIXES[
 find "$C8RUN_DIR" -maxdepth 1 \( -type f -o -type d \) -print0 | while IFS= read -r -d '' item; do
   base="$(basename "$item")"
   # Skip if it's c8run itself or hidden
-  if [ "$base" = "$(basename "$C8RUN_DIR")" ] || [[ "$base" == .* ]]; then
+  if [ "$base" = "$C8RUN_BASENAME" ] || [[ "$base" == .* ]]; then
     continue
   fi
 
@@ -165,7 +166,7 @@ sign_jars_in_folder() {
 ##############################################
 # C) Sign c8run
 ##############################################
-echo "=== Step B: Signing leftover c8run content ==="
+echo "=== Step B: Signing leftover ${C8RUN_BASENAME} content ==="
 sign_macho_in_folder "$C8RUN_DIR"
 sign_jars_in_folder "$C8RUN_DIR"
 
@@ -175,7 +176,7 @@ sign_jars_in_folder "$C8RUN_DIR"
 echo "=== Step C: Creating c8run_signed.zip with ditto (excluding removed items) ==="
 (
   cd "$(dirname "$C8RUN_DIR")"
-  /usr/bin/ditto -c -k --keepParent "$(basename "$C8RUN_DIR")" c8run_signed.zip
+  /usr/bin/ditto -c -k --keepParent "$C8RUN_BASENAME" c8run_signed.zip
 )
 SIGNED_ZIP_PATH="$(cd "$(dirname "$C8RUN_DIR")" && pwd -P)/c8run_signed.zip"
 echo "Created: $SIGNED_ZIP_PATH"
@@ -200,17 +201,17 @@ mkdir -p "$TMP_NOTARIZE_DIR/notarized"
 unzip -q "$SIGNED_ZIP_PATH" -d "$TMP_NOTARIZE_DIR/notarized"
 
 # Move excluded items back into c8run
-echo "  -> Re-inserting excluded items into c8run"
+echo "  -> Re-inserting excluded items into ${C8RUN_BASENAME}"
 find "$TMP_EXCLUDE_DIR" -mindepth 1 -maxdepth 1 -print0 | while IFS= read -r -d '' excluded; do
   base="$(basename "$excluded")"
   echo "    -> $base"
-  rsync --ignore-existing -ar "$excluded" "$TMP_NOTARIZE_DIR/notarized/c8run/"
+  rsync --ignore-existing -ar "$excluded" "$TMP_NOTARIZE_DIR/notarized/$C8RUN_BASENAME/"
 done
 
 # Build c8run_complete.zip
 (
   cd "$TMP_NOTARIZE_DIR/notarized"
-  /usr/bin/ditto -c -k --keepParent c8run c8run_complete.zip
+  /usr/bin/ditto -c -k --keepParent "$C8RUN_BASENAME" c8run_complete.zip
 )
 FINAL_ZIP="$(dirname "$C8RUN_DIR")/c8run_complete.zip"
 mv "$TMP_NOTARIZE_DIR/notarized/c8run_complete.zip" "$FINAL_ZIP"
@@ -226,4 +227,3 @@ cat <<EOM
 Note: c8run_complete.zip includes the previously excluded items, which remain
 unsigned/unnotarized if they contain Mach-O. Apple only notarized c8run_signed.zip.
 EOM
-

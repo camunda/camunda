@@ -64,17 +64,17 @@ public record DbTenantAwareKey<WrappedKey extends DbKey>(
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     switch (placementType) {
       case PREFIX -> {
-        tenantKey.write(buffer, offset);
-        final var tenantKeyLength = tenantKey.getLength();
-        wrappedKey.write(buffer, offset + tenantKeyLength);
+        int written = tenantKey.write(buffer, offset);
+        written += wrappedKey.write(buffer, offset + written);
+        return written;
       }
       case SUFFIX -> {
-        wrappedKey.write(buffer, offset);
-        final var wrappedKeyLength = wrappedKey.getLength();
-        tenantKey.write(buffer, offset + wrappedKeyLength);
+        int written = wrappedKey.write(buffer, offset);
+        written += tenantKey.write(buffer, offset + written);
+        return written;
       }
       default -> throw new IllegalStateException("Unexpected value: " + placementType);
     }

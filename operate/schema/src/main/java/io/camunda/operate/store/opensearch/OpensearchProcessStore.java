@@ -7,6 +7,7 @@
  */
 package io.camunda.operate.store.opensearch;
 
+import static io.camunda.operate.schema.indices.ProcessIndex.BPMN_XML;
 import static io.camunda.operate.schema.templates.FlowNodeInstanceTemplate.TREE_PATH;
 import static io.camunda.operate.schema.templates.ListViewTemplate.*;
 import static io.camunda.operate.store.opensearch.client.sync.OpenSearchRetryOperation.UPDATE_RETRY_COUNT;
@@ -95,7 +96,8 @@ public class OpensearchProcessStore implements ProcessStore {
   public ProcessEntity getProcessByKey(final Long processDefinitionKey) {
     final var searchRequestBuilder =
         searchRequestBuilder(processIndex.getAlias())
-            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)));
+            .query(withTenantCheck(term(ProcessIndex.KEY, processDefinitionKey)))
+            .source(sourceExclude(BPMN_XML));
 
     return richOpenSearchClient
         .doc()

@@ -50,7 +50,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .putStreamType(streamType, 0, streamType.capacity());
@@ -67,6 +67,7 @@ public final class AddStreamRequest implements BufferReader, BufferWriter {
           .high(streamId.getMostSignificantBits())
           .low(streamId.getLeastSignificantBits());
     }
+    return getLength();
   }
 
   public DirectBuffer streamType() {

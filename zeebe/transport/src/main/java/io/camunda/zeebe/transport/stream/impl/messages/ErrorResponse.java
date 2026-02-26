@@ -69,7 +69,7 @@ public final class ErrorResponse implements StreamResponse {
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, final int offset) {
+  public int write(final MutableDirectBuffer buffer, final int offset) {
     messageEncoder
         .wrapAndApplyHeader(buffer, offset, headerEncoder)
         .code(code)
@@ -81,6 +81,7 @@ public final class ErrorResponse implements StreamResponse {
                 .next()
                 .code(detail.code())
                 .putMessage(detail.messageBuffer(), 0, detail.messageBuffer().capacity()));
+    return getLength();
   }
 
   @Override

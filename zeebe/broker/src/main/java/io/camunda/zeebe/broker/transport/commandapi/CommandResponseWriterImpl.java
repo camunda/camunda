@@ -118,7 +118,7 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
   }
 
   @Override
-  public void write(final MutableDirectBuffer buffer, int offset) {
+  public int write(final MutableDirectBuffer buffer, int offset) {
     // protocol header
     messageHeaderEncoder
         .wrap(buffer, offset)
@@ -151,6 +151,8 @@ public final class CommandResponseWriterImpl implements CommandResponseWriter, B
 
     responseEncoder.limit(offset);
     responseEncoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
+
+    return getLength();
   }
 
   private void reset() {

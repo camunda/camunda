@@ -35,8 +35,9 @@ public final class DbBytes implements DbKey, DbValue {
   }
 
   @Override
-  public void write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
+  public int write(final MutableDirectBuffer mutableDirectBuffer, final int offset) {
     mutableDirectBuffer.putBytes(offset, bytes, 0, bytes.capacity());
+    return getLength();
   }
 
   public byte[] getBytes() {
