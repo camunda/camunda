@@ -48,11 +48,12 @@ import org.springframework.web.context.WebApplicationContext;
     properties = {
       TasklistProperties.PREFIX + ".enterprise=true",
       TasklistProperties.PREFIX + ".zeebe.compatibility.enabled = true",
-      "CAMUNDA_TASKLIST_CLOUD_ORGANIZATIONID=organizationId",
-      // CAMUNDA_TASKLIST_CLOUD_CLUSTERID=clusterId  -- leave out to test for null values
-      "CAMUNDA_TASKLIST_CLOUD_STAGE=stage",
-      "CAMUNDA_TASKLIST_CLOUD_MIXPANELTOKEN=i-am-a-token",
-      "CAMUNDA_TASKLIST_CLOUD_MIXPANELAPIHOST=https://fake.mixpanel.com",
+      TasklistProperties.PREFIX + ".cloud.organizationId=organizationId",
+      // TasklistProperties.PREFIX + ".cloud.clusterId=clusterId" -- leave out to test for null
+      // values
+      TasklistProperties.PREFIX + ".cloud.stage=stage",
+      TasklistProperties.PREFIX + ".cloud.mixpanelToken=i-am-a-token",
+      TasklistProperties.PREFIX + ".cloud.mixpanelAPIHost=https://fake.mixpanel.com",
       "management.endpoint.health.group.readiness.include=readinessState"
     },
     webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -95,8 +96,6 @@ public class ClientConfigRestServiceIT {
                 + "\"stage\":\"stage\","
                 + "\"mixpanelToken\":\"i-am-a-token\","
                 + "\"mixpanelAPIHost\":\"https://fake.mixpanel.com\","
-                + "\"isResourcePermissionsEnabled\":false,"
-                + "\"isUserAccessRestrictionsEnabled\":true,"
                 + "\"maxRequestSize\":10485760};");
   }
 }
