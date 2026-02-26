@@ -97,12 +97,8 @@ kubectl label namespace "$namespace" registry=harbor --overwrite
 # Copy default folder to new namespace folder
 cp -rv default/ $namespace
 
-# Copy camunda-platform-values*.yaml files to the new folder
-cp -v ../camunda-platform-values*.yaml $namespace/
-cp -v ../secondary-storage-values*.yaml $namespace/
-
-# Copy Prometheus ElasticSearch Exporter values.yaml to the new folder
-cp -v ../prometheus-elasticsearch-exporter-values.yaml $namespace/
+# Copy all *.yaml files to the new folder
+cp -v ../*.yaml $namespace/
 
 # Copy secrets creation script to the new folder
 cp -v ./createCredsLoadTest.sh $namespace/
