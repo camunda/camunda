@@ -108,7 +108,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setProcessVersion(recordValue.getVersion())
         .setProcessName(
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
-        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()));
+        .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
+        .setBusinessId(recordValue.getBusinessId());
 
     if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
       piEntity.setTags(recordValue.getTags());
@@ -179,6 +180,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
     }
     if (entity.getTags() != null && !entity.getTags().isEmpty()) {
       updateFields.put(ListViewTemplate.TAGS, entity.getTags());
+    }
+    if (entity.getBusinessId() != null && !entity.getBusinessId().isEmpty()) {
+      updateFields.put(ListViewTemplate.BUSINESS_ID, entity.getBusinessId());
     }
 
     batchRequest.upsert(indexName, entity.getId(), entity, updateFields);
