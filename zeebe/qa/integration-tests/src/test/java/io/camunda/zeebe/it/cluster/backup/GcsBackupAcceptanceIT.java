@@ -8,7 +8,6 @@
 package io.camunda.zeebe.it.cluster.backup;
 
 import com.google.cloud.storage.BucketInfo;
-import io.camunda.client.CamundaClient;
 import io.camunda.configuration.Gcs;
 import io.camunda.configuration.PrimaryStorageBackup;
 import io.camunda.zeebe.backup.gcs.GcsBackupConfig;
@@ -20,9 +19,7 @@ import io.camunda.zeebe.qa.util.junit.ZeebeIntegration;
 import io.camunda.zeebe.qa.util.junit.ZeebeIntegration.TestZeebe;
 import io.camunda.zeebe.test.testcontainers.GcsContainer;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
@@ -59,8 +56,6 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
           .withNodeConfig(this::configureNode)
           .build();
 
-  @AutoClose private CamundaClient client;
-
   @BeforeAll
   static void beforeAll() throws Exception {
     final var config =
@@ -73,11 +68,6 @@ final class GcsBackupAcceptanceIT implements BackupAcceptance {
     try (final var client = GcsBackupStore.buildClient(config)) {
       client.create(BucketInfo.of(BUCKET_NAME));
     }
-  }
-
-  @BeforeEach
-  void beforeEach() {
-    client = cluster.newClientBuilder().build();
   }
 
   @Override

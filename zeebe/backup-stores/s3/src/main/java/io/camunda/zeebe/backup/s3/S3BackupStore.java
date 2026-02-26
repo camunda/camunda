@@ -17,7 +17,6 @@ import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -39,7 +38,6 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -320,39 +318,6 @@ public final class S3BackupStore implements BackupStore {
   }
 
   @Override
-  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    final var prefix = rangeMarkersPrefix(partitionId);
-    return client
-        .listObjectsV2(req -> req.bucket(config.bucketName()).prefix(prefix))
-        .thenApply(
-            response ->
-                response.contents().stream()
-                    .map(S3Object::key)
-                    .map(key -> key.substring(prefix.length()))
-                    .map(BackupRangeMarker::fromName)
-                    .filter(Objects::nonNull)
-                    .toList());
-  }
-
-  @Override
-  public CompletableFuture<Void> storeRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
-    return client
-        .putObject(req -> req.bucket(config.bucketName()).key(key), AsyncRequestBody.empty())
-        .thenApply(resp -> null);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    final var key = rangeMarkersPrefix(partitionId) + BackupRangeMarker.toName(marker);
-    return client
-        .deleteObject(req -> req.bucket(config.bucketName()).key(key))
-        .thenApply(resp -> null);
-  }
-
-  @Override
   public CompletableFuture<Void> storeBackupMetadata(final int partitionId, final byte[] content) {
     final var key = backupMetadataKey(partitionId);
     return client
@@ -381,10 +346,6 @@ public final class S3BackupStore implements BackupStore {
   public CompletableFuture<Void> closeAsync() {
     client.close();
     return CompletableFuture.completedFuture(null);
-  }
-
-  private String rangeMarkersPrefix(final int partitionId) {
-    return config.basePath().map(base -> base + "/").orElse("") + "ranges/" + partitionId + "/";
   }
 
   private String backupMetadataKey(final int partitionId) {

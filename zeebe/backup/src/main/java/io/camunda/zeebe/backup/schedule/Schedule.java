@@ -18,7 +18,6 @@ import java.time.ZoneId;
 import java.time.chrono.ChronoZonedDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
-import java.util.function.Supplier;
 
 /** Represents a schedule which can be either a CRON expression or an ISO8601 duration interval. */
 public sealed interface Schedule {
@@ -29,14 +28,6 @@ public sealed interface Schedule {
    * Provide the next execution of the scheduler
    */
   Optional<Instant> nextExecution(Instant from);
-
-  /*
-   * Provide the next execution of the scheduler, using the provided interval supplier if needed
-   */
-  default Optional<Instant> nextExecution(
-      final Instant from, final Supplier<Duration> intervalSupplier) {
-    return nextExecution(from);
-  }
 
   /*
    * In reality the previous execution will be acquired from the checkpoint state

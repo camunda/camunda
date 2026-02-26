@@ -10,7 +10,6 @@ package io.camunda.zeebe.restore;
 import io.camunda.zeebe.backup.api.Backup;
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard;
-import io.camunda.zeebe.backup.api.BackupRangeMarker;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -22,7 +21,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
@@ -34,8 +32,6 @@ final class TestRestorableBackupStore implements BackupStore {
 
   final Map<BackupIdentifier, Backup> backups = new ConcurrentHashMap<>();
   final Map<BackupIdentifier, CompletableFuture<Backup>> waiters = new ConcurrentHashMap<>();
-  final Map<Integer, Collection<BackupRangeMarker>> rangeMarkersByPartition =
-      new ConcurrentHashMap<>();
   final Map<Integer, byte[]> metadataByPartition = new ConcurrentHashMap<>();
 
   /**
@@ -128,41 +124,6 @@ final class TestRestorableBackupStore implements BackupStore {
   @Override
   public CompletableFuture<BackupStatusCode> markDeleted(final BackupIdentifier id) {
     return CompletableFuture.completedFuture(BackupStatusCode.DELETED);
-  }
-
-  @Override
-  public CompletableFuture<Collection<BackupRangeMarker>> rangeMarkers(final int partitionId) {
-    return CompletableFuture.completedFuture(
-        rangeMarkersByPartition.getOrDefault(partitionId, List.of()));
-  }
-
-  @Override
-  public CompletableFuture<Void> storeRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    rangeMarkersByPartition.compute(
-        partitionId,
-        (k, v) -> {
-          if (v == null) {
-            return List.of(marker);
-          }
-          final var markers = new java.util.ArrayList<>(v);
-          markers.add(marker);
-          return markers;
-        });
-    return CompletableFuture.completedFuture(null);
-  }
-
-  @Override
-  public CompletableFuture<Void> deleteRangeMarker(
-      final int partitionId, final BackupRangeMarker marker) {
-    rangeMarkersByPartition.computeIfPresent(
-        partitionId,
-        (k, v) -> {
-          final var markers = new java.util.ArrayList<>(v);
-          markers.remove(marker);
-          return markers;
-        });
-    return CompletableFuture.completedFuture(null);
   }
 
   @Override
