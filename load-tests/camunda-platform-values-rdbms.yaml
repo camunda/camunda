@@ -30,9 +30,8 @@ orchestration:
           minHistoryCleanupInterval: PT1S
           maxHistoryCleanupInterval: PT1M
 
-  # We set extra configuration to configure additional settings for Broker and Gateway, that are part
-  # of the orchestration cluster.
-  # This allows adding configurations without the need of overwriting all environment variables from the Platform chart.
+  # Overriding the extraConfiguration for the Platform chart
+  # to disable Camunda Exporter usage and make use of the RDBMS exporter instead, as well as to set some additional configuration for Camunda application
   extraConfiguration:
     - file: application.yml
       content: |
