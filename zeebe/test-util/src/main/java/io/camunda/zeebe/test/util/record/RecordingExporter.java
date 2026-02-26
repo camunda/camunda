@@ -836,6 +836,11 @@ public final class RecordingExporter implements Exporter {
                     temporarily reduce the wait time of the exporter and prevent the short-circuiting failure.
                     Please be aware that doing this will set the maximum wait time to 200ms. It cannot guarantee
                     the record won't be exported after this.
+
+                  If you did add a limit and the test still fails please consider:
+                  - Do you limit at the right place? If you added filters before the limit, maybe the
+                    record you are limiting on is filtered out of the stream. In this case simply move
+                     the limit before the filters.
                   """);
             }
           } catch (final InterruptedException ignored) {
