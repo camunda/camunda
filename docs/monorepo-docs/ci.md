@@ -134,8 +134,8 @@ GitHub Actions pipeline code should should be de-duplicated for the same task an
 
 Workflows that seek inclusion to the Unified CI (and thus GitHub required status checks) need to fulfill the following criteria and best practices:
 
-* runtime of at most 10 minutes
-  * set `timeout-minutes: 10` on the job level
+* runtime of at most 30 minutes
+  * set `timeout-minutes: 30` on the job level
   * parallelize lengthy tasks and/or use bigger runners for compute intensive tasks
 * instrumented to emit [CI health metrics](#ci-health-metrics)
 * high stability (low flakiness)
@@ -171,7 +171,7 @@ To include a workflow [fitting the criteria](#workflow-inclusion-criteria) into 
        if: needs.detect-changes.outputs.descriptive-job-name == 'true'
        needs: [detect-changes]
        runs-on: ubuntu-latest  # or other
-       timeout-minutes: 10  # or less
+       timeout-minutes: 30  # or less
        permissions: {}  # unless GITHUB_TOKEN is needed
        steps:
          - uses: actions/checkout@v4
