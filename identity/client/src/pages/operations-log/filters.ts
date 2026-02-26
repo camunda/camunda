@@ -8,16 +8,16 @@
 
 import {
   buildArrayParam,
-  createQuerySync,
+  createSearchParamsSync,
   parseArrayParam,
-} from "src/utility/filters/queryFilters.ts";
+} from "src/utility/filters/searchParamsFilters";
 import {
   AuditLogEntityType,
   AuditLogOperationType,
   AuditLogResult,
   auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
-import { isValidDate } from "src/utility/validate.ts";
+import { isValidDate } from "src/utility/validate";
 
 export type AuditLogFilters = {
   operationType: AuditLogOperationType[];
@@ -50,7 +50,7 @@ export const ALLOWED_RESULT_TYPES = [
   ...auditLogResultSchema.options,
 ] as const;
 
-const auditLogQuerySync = createQuerySync<AuditLogFilters>({
+const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
   operationType: {
     parse: (params) => {
       return parseArrayParam<AuditLogOperationType>(
@@ -134,4 +134,4 @@ const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   },
 });
 
-export { auditLogQuerySync };
+export { auditLogSearchParamsSync };

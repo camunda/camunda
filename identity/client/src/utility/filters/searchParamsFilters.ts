@@ -21,7 +21,7 @@ type FieldParser<V> = {
   serialize: (value: V, params: URLSearchParams) => void;
 };
 
-export function createQuerySync<T>(config: {
+export function createSearchParamsSync<T>(config: {
   [K in keyof T]: FieldParser<T[K]>;
 }) {
   function parse(search: string): T {

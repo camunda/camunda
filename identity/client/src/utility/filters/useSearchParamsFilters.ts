@@ -6,19 +6,21 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import { createQuerySync } from "src/utility/filters/queryFilters.ts";
+import { createSearchParamsSync } from "src/utility/filters/searchParamsFilters";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useMemo } from "react";
 
-function useQueryFilters<T>(querySync: ReturnType<typeof createQuerySync<T>>) {
+function useSearchParamsFilters<T>(
+  querySync: ReturnType<typeof createSearchParamsSync<T>>,
+) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const queryFilters = useMemo(() => {
+  const searchParamsFilters = useMemo(() => {
     return querySync.parse(location.search);
   }, [location.search, querySync]);
 
-  const setQueryFilters = (next: T) => {
+  const setSearchParamsFilters = (next: T) => {
     const nextSearch = querySync.serialize(next);
     if (nextSearch === location.search) {
       return;
@@ -27,7 +29,7 @@ function useQueryFilters<T>(querySync: ReturnType<typeof createQuerySync<T>>) {
     void navigate({ search: querySync.serialize(next) }, { replace: true });
   };
 
-  return { queryFilters, setQueryFilters };
+  return { searchParamsFilters, setSearchParamsFilters };
 }
 
-export { useQueryFilters };
+export { useSearchParamsFilters };

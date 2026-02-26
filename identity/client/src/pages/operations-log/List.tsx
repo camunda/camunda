@@ -44,9 +44,9 @@ import {
   ALLOWED_OPERATION_TYPES,
   ALLOWED_RESULT_TYPES,
   AuditLogFilters,
-  auditLogQuerySync,
+  auditLogSearchParamsSync,
 } from "src/pages/operations-log/filters";
-import { useQueryFilters } from "src/utility/filters/useQueryFilters.ts";
+import { useSearchParamsFilters } from "src/utility/filters/useSearchParamsFilters";
 import { useUpdateEffect } from "src/utility/hooks/useUpdateEffect.ts";
 
 type AuditLogSort = { field: string; order: "asc" | "desc" };
@@ -61,15 +61,16 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
   const { t: tComponents } = useTranslate();
-  const { queryFilters, setQueryFilters } = useQueryFilters(auditLogQuerySync);
+  const { searchParamsFilters, setSearchParamsFilters } =
+    useSearchParamsFilters(auditLogSearchParamsSync);
 
   const { watch, setValue, reset } = useForm<AuditLogFilters>({
-    values: queryFilters,
+    values: searchParamsFilters,
   });
   const filters = watch();
 
   useUpdateEffect(() => {
-    setQueryFilters(filters);
+    setSearchParamsFilters(filters);
   }, [filters]);
 
   const debounce = useDebounce();
