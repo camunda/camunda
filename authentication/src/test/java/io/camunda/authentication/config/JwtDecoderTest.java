@@ -38,6 +38,7 @@ import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import java.util.Date;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -66,7 +67,7 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
     static WireMockExtension wireMock =
         WireMockExtension.newInstance().configureStaticDsl(true).build();
 
-    @Autowired private JwtDecoder decoder;
+    @Autowired JwtDecoder decoder;
 
     @ParameterizedTest
     @MethodSource("basicAlgTestParameters")
@@ -146,7 +147,7 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
                       WireMock.jsonResponse(authServerResponseBody, HttpStatus.OK.value())));
     }
 
-    private static class JwtKeys {
+    static class JwtKeys {
       JWK jwk;
       String serializedJwt;
       String publicKey;
@@ -268,4 +269,5 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
                   .willReturn(WireMock.jsonResponse(response, HttpStatus.OK.value())));
     }
   }
+
 }
