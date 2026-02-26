@@ -940,7 +940,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       flakyTests: ${{ steps.analyze-test-run.outputs.flakyTests }}
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions:
       security-events: write
     services:
