@@ -7,11 +7,11 @@
  */
 
 import {makeAutoObservable} from 'mobx';
-import type {ElementInstance as FlowNodeInstance} from 'modules/types/operate';
+import type {ElementInstancePlaceholder} from 'modules/types/operate';
 import type {ElementModification} from './modifications';
 
 type ModificationPlaceholder = {
-  flowNodeInstance: FlowNodeInstance;
+  elementInstancePlaceholder: ElementInstancePlaceholder;
   parentFlowNodeId?: string;
   operation: ElementModification['payload']['operation'];
   parentInstanceId?: string;
@@ -32,11 +32,13 @@ class InstanceHistoryModification {
     makeAutoObservable(this);
   }
 
-  addExpandedFlowNodeInstanceIds = (id: FlowNodeInstance['id']) => {
+  addExpandedFlowNodeInstanceIds = (id: ElementInstancePlaceholder['id']) => {
     this.state.expandedFlowNodeInstanceIds.push(id);
   };
 
-  removeFromExpandedFlowNodeInstanceIds = (id: FlowNodeInstance['id']) => {
+  removeFromExpandedFlowNodeInstanceIds = (
+    id: ElementInstancePlaceholder['id'],
+  ) => {
     this.state.expandedFlowNodeInstanceIds =
       this.state.expandedFlowNodeInstanceIds.filter(
         (expandedFlowNodeInstanceId) => expandedFlowNodeInstanceId !== id,
