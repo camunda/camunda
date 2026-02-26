@@ -33,17 +33,16 @@ import {
   Stack,
   TextInput,
 } from "@carbon/react";
-import {
-  AuditLogEntityType,
-  AuditLogOperationType,
-  auditLogResultSchema,
-} from "@camunda/camunda-api-zod-schemas/8.9";
+import { auditLogResultSchema } from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
 import { useForm } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
 import { User } from "@carbon/react/icons";
 import { DateRangeField } from "src/components/form/DateRangeField";
 import {
+  ALLOWED_ENTITY_TYPES,
+  ALLOWED_OPERATION_TYPES,
+  ALLOWED_RESULT_TYPES,
   AuditLogFilters,
   auditLogQuerySync,
 } from "src/pages/operations-log/filters";
@@ -58,23 +57,6 @@ const ORDER_MAP: Record<SortConfig["order"], AuditLogSort["order"]> = {
   ASC: "asc",
   DESC: "desc",
 };
-
-const ALLOWED_OPERATION_TYPES: AuditLogOperationType[] = [
-  "CREATE",
-  "ASSIGN",
-  "UNASSIGN",
-  "DELETE",
-  "UPDATE",
-] as const;
-
-const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
-  "AUTHORIZATION",
-  "ROLE",
-  "USER",
-  "GROUP",
-  "MAPPING_RULE",
-  "TENANT",
-] as const;
 
 const List: FC = () => {
   const { t } = useTranslate("operationsLog");
@@ -216,7 +198,7 @@ const List: FC = () => {
                       : auditLogResultSchema.parse(selectedItem),
                   );
                 }}
-                items={["all", ...auditLogResultSchema.options]}
+                items={[...ALLOWED_RESULT_TYPES]}
                 itemToString={(item) =>
                   item === "all"
                     ? t("selectAll")

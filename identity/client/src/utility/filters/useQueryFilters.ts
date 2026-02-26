@@ -8,15 +8,23 @@
 
 import { createQuerySync } from "src/utility/filters/queryFilters.ts";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
 
 function useQueryFilters<T>(querySync: ReturnType<typeof createQuerySync<T>>) {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const queryFilters = querySync.parse(location.search);
+  const queryFilters = useMemo(() => {
+    return querySync.parse(location.search);
+  }, [location.search, querySync]);
 
   const setQueryFilters = (next: T) => {
-    void navigate({ search: querySync.serialize(next) });
+    const nextSearch = querySync.serialize(next);
+    if (nextSearch === location.search) {
+      return;
+    }
+
+    void navigate({ search: querySync.serialize(next) }, { replace: true });
   };
 
   return { queryFilters, setQueryFilters };

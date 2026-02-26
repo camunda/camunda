@@ -15,7 +15,9 @@ import {
   AuditLogEntityType,
   AuditLogOperationType,
   AuditLogResult,
+  auditLogResultSchema,
 } from "@camunda/camunda-api-zod-schemas/8.9";
+import { isValidDate } from "src/utility/validate.ts";
 
 export type AuditLogFilters = {
   operationType: AuditLogOperationType[];
@@ -26,10 +28,35 @@ export type AuditLogFilters = {
   timestampTo: string;
 };
 
+export const ALLOWED_OPERATION_TYPES: AuditLogOperationType[] = [
+  "CREATE",
+  "ASSIGN",
+  "UNASSIGN",
+  "DELETE",
+  "UPDATE",
+] as const;
+
+export const ALLOWED_ENTITY_TYPES: AuditLogEntityType[] = [
+  "AUTHORIZATION",
+  "ROLE",
+  "USER",
+  "GROUP",
+  "MAPPING_RULE",
+  "TENANT",
+] as const;
+
+export const ALLOWED_RESULT_TYPES = [
+  "all",
+  ...auditLogResultSchema.options,
+] as const;
+
 const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   operationType: {
-    parse: (params) =>
-      parseArrayParam<AuditLogOperationType>(params.get("operationType")),
+    parse: (params) => {
+      return parseArrayParam<AuditLogOperationType>(
+        params.get("operationType"),
+      ).filter((item) => ALLOWED_OPERATION_TYPES.includes(item));
+    },
     serialize: (value, params) => {
       const v = buildArrayParam(value);
       if (v) params.set("operationType", v);
@@ -37,8 +64,11 @@ const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   },
 
   entityType: {
-    parse: (params) =>
-      parseArrayParam<AuditLogEntityType>(params.get("entityType")),
+    parse: (params) => {
+      return parseArrayParam<AuditLogEntityType>(
+        params.get("entityType"),
+      ).filter((item) => ALLOWED_ENTITY_TYPES.includes(item));
+    },
     serialize: (value, params) => {
       const v = buildArrayParam(value);
       if (v) params.set("entityType", v);
@@ -46,7 +76,15 @@ const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   },
 
   result: {
-    parse: (params) => (params.get("result") as AuditLogResult) ?? "all",
+    parse: (params) => {
+      const result = params.get("result") as AuditLogResult;
+
+      if (result && ALLOWED_RESULT_TYPES.includes(result)) {
+        return result;
+      }
+
+      return "all";
+    },
     serialize: (value, params) => {
       if (value !== "all") {
         params.set("result", value);
@@ -62,7 +100,15 @@ const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   },
 
   timestampFrom: {
-    parse: (params) => params.get("timestampFrom") ?? "",
+    parse: (params) => {
+      const timestampFrom = params.get("timestampFrom");
+
+      if (timestampFrom && isValidDate(timestampFrom)) {
+        return timestampFrom;
+      }
+
+      return "";
+    },
     serialize: (value, params) => {
       if (value) {
         params.set("timestampFrom", value);
@@ -71,7 +117,15 @@ const auditLogQuerySync = createQuerySync<AuditLogFilters>({
   },
 
   timestampTo: {
-    parse: (params) => params.get("timestampTo") ?? "",
+    parse: (params) => {
+      const timestampTo = params.get("timestampTo");
+
+      if (timestampTo && isValidDate(timestampTo)) {
+        return timestampTo;
+      }
+
+      return "";
+    },
     serialize: (value, params) => {
       if (value) {
         params.set("timestampTo", value);
