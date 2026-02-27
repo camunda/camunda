@@ -10,6 +10,7 @@ package io.camunda.zeebe.protocol.impl.record;
 import io.camunda.zeebe.protocol.Protocol;
 import io.camunda.zeebe.protocol.impl.encoding.AgentInfo;
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.record.MessageHeaderDecoder;
 import io.camunda.zeebe.protocol.record.MessageHeaderEncoder;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
@@ -36,6 +37,14 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
 
   public static final VersionInfo CURRENT_BROKER_VERSION =
       VersionInfo.parse(VersionUtil.getVersion());
+
+  /**
+   * Shared immutable empty sentinel used for serialization when no authorization is set. This
+   * avoids allocating a new AuthInfo on every reset() while preserving a stable wire format: a null
+   * authorization is serialized identically to an empty one. Mutation attempts (wrap/reset) throw
+   * {@link UnsupportedOperationException}.
+   */
+  private static final AuthInfo EMPTY_AUTH = new EmptyAuthInfo();
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
@@ -139,7 +148,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         + RecordMetadataEncoder.rejectionReasonHeaderLength()
         + rejectionReason.capacity()
         + RecordMetadataEncoder.authorizationHeaderLength()
-        + (authorization != null ? authorization.getLength() : 0)
+        + authorizationOrEmpty().getLength()
         + RecordMetadataEncoder.agentHeaderLength()
         + (agent != null ? agent.getLength() : 0);
   }
@@ -170,15 +179,11 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
     // working with variable-length fields
     encoder.putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
 
-    if (authorization != null) {
     BufferUtil.writeLengthPrefixed(
-        authorization,
+        authorizationOrEmpty(),
         encoder,
         RecordMetadataEncoder.authorizationHeaderLength(),
         RecordMetadataEncoder.BYTE_ORDER);
-    } else {
-      encoder.putAuthorization(new UnsafeBuffer(0, 0), 0, 0);
-    }
 
     if (agent != null) {
       BufferUtil.writeLengthPrefixed(
@@ -284,7 +289,15 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public AuthInfo getAuthorization() {
-    return authorization;
+    return authorizationOrEmpty();
+  }
+
+  /**
+   * Returns the authorization if set, or the shared empty sentinel. This is used for serialization
+   * so that the wire format is preserved regardless of whether authorization is null internally.
+   */
+  private AuthInfo authorizationOrEmpty() {
+    return authorization != null ? authorization : EMPTY_AUTH;
   }
 
   public AgentInfo getAgent() {
@@ -361,7 +374,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         requestStreamId,
         rejectionType,
         rejectionReason,
-        authorization,
+        authorizationOrEmpty(),
         protocolVersion,
         brokerVersion,
         recordVersion,
@@ -387,7 +400,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
         && recordType == that.recordType
         && rejectionType == that.rejectionType
         && rejectionReason.equals(that.rejectionReason)
-        && Objects.equals(authorization, that.authorization)
+        && authorizationOrEmpty().equals(that.authorizationOrEmpty())
         && Objects.equals(agent, that.agent)
         && brokerVersion.equals(that.brokerVersion)
         && recordVersion == that.recordVersion

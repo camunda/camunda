@@ -84,7 +84,7 @@ public class AuthInfo extends UnpackedObject {
 
   public static AuthInfo of(final AuthInfo info) {
     if (info == null) {
-      return new AuthInfo();
+      return null;
     }
 
     final var auth = new AuthInfo();
