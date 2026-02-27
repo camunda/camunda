@@ -27,10 +27,14 @@ public class UserRequestValidator {
     return validate(
         () ->
             userValidator.validateCreateRequest(
-                request.getUsername(), request.getPassword(), request.getEmail()));
+                request.getUsername(),
+                request.getPassword(),
+                request.getName(),
+                request.getEmail()));
   }
 
   public Optional<ProblemDetail> validateUpdateRequest(final UserUpdateRequest request) {
-    return validate(() -> userValidator.validateUpdateRequest(request.getEmail()));
+    return validate(
+        () -> userValidator.validateUpdateRequest(request.getName(), request.getEmail()));
   }
 }
