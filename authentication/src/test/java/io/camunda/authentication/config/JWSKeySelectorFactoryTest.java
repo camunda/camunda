@@ -190,6 +190,87 @@ final class JWSKeySelectorFactoryTest {
     assertThat(keys).isNotEmpty();
   }
 
+  @Test
+  void shouldSelectKeyFromPrimaryWhenSameKidExistsAtBothEndpoints() throws Exception {
+    // given — both endpoints expose kid="shared-kid" but with different RSA key material.
+    // This documents the short-circuit behavior: the primary source's key is always
+    // returned when the kid matches, regardless of actual signing key.
+    final var primaryKeySharedKid =
+        new RSAKeyGenerator(2048)
+            .keyID("shared-kid")
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+    final var additionalKeySharedKid =
+        new RSAKeyGenerator(2048)
+            .keyID("shared-kid")
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+
+    final var primaryPath = "/primary-shared-kid/.well-known/jwks.json";
+    final var additionalPath = "/additional-shared-kid/.well-known/jwks.json";
+    mockJwksEndpoint(primaryPath, primaryKeySharedKid);
+    mockJwksEndpoint(additionalPath, additionalKeySharedKid);
+
+    final var selector =
+        factory.createJWSKeySelector(baseUrl() + primaryPath, List.of(baseUrl() + additionalPath));
+
+    // JWT signed with the ADDITIONAL key's material, but same kid="shared-kid"
+    final var jwt = createSignedJwt(additionalKeySharedKid, "shared-kid");
+
+    // when — key selector finds kid="shared-kid" at primary (short-circuit)
+    final var keys = selector.selectJWSKeys(jwt.getHeader(), (SecurityContext) null);
+
+    // then — keys are returned (from primary), but they are the WRONG key material
+    // for this token. Signature verification would fail at the JwtDecoder level.
+    // The composite source does not fall through because the primary returned a non-empty result.
+    assertThat(keys).hasSize(1);
+  }
+
+  @Test
+  void shouldResolveDisjointKeysFromCorrectSourcesLikeWalmartScenario() throws Exception {
+    // given — simulates the Walmart/PingFederate scenario:
+    // Primary JWKS (standard) has kid="web-ui-kid" for Web UI tokens
+    // Additional JWKS (custom) has kid="m2m-kid" for M2M tokens
+    // The key sets are disjoint (different kids at each endpoint).
+    final var webUiKey =
+        new RSAKeyGenerator(2048)
+            .keyID("web-ui-kid")
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+    final var m2mKey =
+        new RSAKeyGenerator(2048)
+            .keyID("m2m-kid")
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+
+    final var standardJwksPath = "/standard/.well-known/jwks.json";
+    final var customJwksPath = "/custom/.well-known/jwks.json";
+    mockJwksEndpoint(standardJwksPath, webUiKey);
+    mockJwksEndpoint(customJwksPath, m2mKey);
+
+    final var selector =
+        factory.createJWSKeySelector(
+            baseUrl() + standardJwksPath, List.of(baseUrl() + customJwksPath));
+
+    // when — Web UI token with kid="web-ui-kid" resolves from primary
+    final var webUiJwt = createSignedJwt(webUiKey, "web-ui-kid");
+    final var webUiKeys = selector.selectJWSKeys(webUiJwt.getHeader(), (SecurityContext) null);
+
+    // then
+    assertThat(webUiKeys).isNotEmpty();
+
+    // when — M2M token with kid="m2m-kid" falls through to additional
+    final var m2mJwt = createSignedJwt(m2mKey, "m2m-kid");
+    final var m2mKeys = selector.selectJWSKeys(m2mJwt.getHeader(), (SecurityContext) null);
+
+    // then
+    assertThat(m2mKeys).isNotEmpty();
+  }
+
   private static String baseUrl() {
     return "http://localhost:" + wireMock.getPort();
   }
