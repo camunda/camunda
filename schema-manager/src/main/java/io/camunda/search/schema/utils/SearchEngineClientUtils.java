@@ -14,6 +14,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +24,13 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.IOUtils;
 
 public class SearchEngineClientUtils {
+
+  /**
+   * Maximum length of a comma-delimited index-pattern string passed in a URL request. Requests
+   * exceeding this limit may be rejected by the search engine.
+   */
+  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
+
   private final ObjectMapper objectMapper;
 
   public SearchEngineClientUtils(final ObjectMapper objectMapper) {
@@ -36,6 +45,38 @@ public class SearchEngineClientUtils {
 
   public static <T, U> U convertValue(final T fromValue, final Function<T, U> converter) {
     return fromValue != null ? converter.apply(fromValue) : null;
+  }
+
+  /**
+   * Splits a comma-separated index-pattern string into batches where each batch's length does not
+   * exceed {@link #MAX_INDEX_PATTERN_REQUEST_LENGTH}. A single pattern that is itself longer than
+   * the limit is placed in its own batch.
+   *
+   * @param namePattern comma-separated index patterns, e.g. {@code "index-a*,index-b*"}
+   * @return ordered list of comma-joined batches
+   */
+  public static List<String> batchPatterns(final String namePattern) {
+    if (namePattern == null || namePattern.isEmpty()) {
+      return Collections.emptyList();
+    }
+    final String[] patterns = namePattern.split(",");
+    final List<String> batches = new ArrayList<>();
+    final StringBuilder current = new StringBuilder();
+    for (final String pattern : patterns) {
+      if (current.length() > 0
+          && current.length() + 1 + pattern.length() > MAX_INDEX_PATTERN_REQUEST_LENGTH) {
+        batches.add(current.toString());
+        current.setLength(0);
+      }
+      if (current.length() > 0) {
+        current.append(",");
+      }
+      current.append(pattern);
+    }
+    if (current.length() > 0) {
+      batches.add(current.toString());
+    }
+    return batches;
   }
 
   public <T> T mapToSettings(
