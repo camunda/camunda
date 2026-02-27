@@ -124,7 +124,7 @@ public final class MockTypedRecord<T extends UnifiedRecordValue> implements Type
   @Override
   public Map<String, Object> getAuthorizations() {
     final var auth = metadata.getAuthorization();
-    return auth != null ? auth.getClaims() : Map.of();
+    return auth != null ? auth.toDecodedMap() : Map.of();
   }
 
   @Override
