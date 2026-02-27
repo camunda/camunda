@@ -246,6 +246,7 @@ public record JobEntity(
 
   public enum ListenerEventType {
     ASSIGNING,
+    CANCEL,
     CANCELING,
     COMPLETING,
     CREATING,

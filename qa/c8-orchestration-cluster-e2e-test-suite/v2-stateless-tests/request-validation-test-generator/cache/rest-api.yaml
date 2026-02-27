@@ -1973,7 +1973,11 @@ paths:
         - Process instance
       operationId: cancelProcessInstance
       summary: Cancel process instance
-      description: Cancels a running process instance. As a cancelation includes more than just the removal of the process instance resource, the cancelation resource must be posted.
+      description: >-
+        Cancels a running process instance. As a cancelation includes more than
+        just the removal of the process instance resource, the cancelation
+        resource must be posted. If the process definition has cancel execution
+        listeners, termination is blocked until all cancel listener jobs complete.
       parameters:
         - name: processInstanceKey
           in: path
@@ -10260,9 +10264,15 @@ components:
         - AD_HOC_SUB_PROCESS
     JobListenerEventTypeEnum:
       example: UNSPECIFIED
-      description: The listener event type of the job.
+      description: >-
+        The listener event type of the job. Execution listener event types are
+        `START`, `END`, and `CANCEL`. Task listener event types are `CREATING`,
+        `ASSIGNING`, `UPDATING`, `COMPLETING`, and `CANCELING`. `CANCEL` indicates
+        the process element is reaching ELEMENT_TERMINATING state (e.g. explicit
+        cancellation), while `CANCELING` indicates a user task is being canceled.
       enum:
         - ASSIGNING
+        - CANCEL
         - CANCELING
         - COMPLETING
         - CREATING

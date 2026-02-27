@@ -197,6 +197,8 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
           case ELEMENT_COMPLETING ->
               onEndExecutionListenerComplete((ExecutableFlowNode) element, processor, context)
                   .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+          case ELEMENT_TERMINATING ->
+              onCancelExecutionListenerComplete((ExecutableFlowNode) element, processor, context);
           default ->
               throw new BpmnProcessingException(
                   context, String.format("Unexpected element state: '%s'", elementState));
@@ -287,6 +289,26 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
         context,
         ExecutableFlowNode::getEndExecutionListeners,
         processor::finalizeCompletion);
+  }
+
+  public void onCancelExecutionListenerComplete(
+      final ExecutableFlowNode element,
+      final BpmnElementProcessor<ExecutableFlowElement> processor,
+      final BpmnElementContext context) {
+    mergeVariablesOfExecutionListener(context, false);
+
+    final List<ExecutionListener> listeners = element.getCancelExecutionListeners();
+    final int currentListenerIndex =
+        stateBehavior.getElementInstance(context).getExecutionListenerIndex();
+    final Optional<ExecutionListener> nextListener =
+        findNextExecutionListener(listeners, currentListenerIndex);
+
+    if (nextListener.isPresent()) {
+      createExecutionListenerJob(context, nextListener.get())
+          .ifLeft(failure -> incidentBehavior.createIncident(failure, context));
+    } else {
+      processor.finalizeTermination(element, context);
+    }
   }
 
   private Either<Failure, ?> onExecutionListenerComplete(

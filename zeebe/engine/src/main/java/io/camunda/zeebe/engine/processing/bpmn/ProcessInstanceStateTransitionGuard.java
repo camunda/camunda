@@ -77,14 +77,16 @@ public final class ProcessInstanceStateTransitionGuard {
               context,
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
               ProcessInstanceIntent.ELEMENT_ACTIVATED,
-              ProcessInstanceIntent.ELEMENT_COMPLETING);
+              ProcessInstanceIntent.ELEMENT_COMPLETING,
+              ProcessInstanceIntent.ELEMENT_TERMINATING);
       case CONTINUE_TERMINATING_ELEMENT ->
           hasElementInstanceWithState(context, ProcessInstanceIntent.ELEMENT_TERMINATING);
       case COMPLETE_EXECUTION_LISTENER ->
           hasElementInstanceWithState(
               context,
               ProcessInstanceIntent.ELEMENT_ACTIVATING,
-              ProcessInstanceIntent.ELEMENT_COMPLETING);
+              ProcessInstanceIntent.ELEMENT_COMPLETING,
+              ProcessInstanceIntent.ELEMENT_TERMINATING);
       default -> Either.left(UNSUPPORTED_INTENT_MESSAGE.formatted(context.getIntent()));
     };
   }

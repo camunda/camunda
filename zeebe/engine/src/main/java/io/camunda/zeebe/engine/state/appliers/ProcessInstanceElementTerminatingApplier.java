@@ -26,6 +26,10 @@ final class ProcessInstanceElementTerminatingApplier
   @Override
   public void applyState(final long key, final ProcessInstanceRecord value) {
     elementInstanceState.updateInstance(
-        key, instance -> instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING));
+        key,
+        instance -> {
+          instance.setState(ProcessInstanceIntent.ELEMENT_TERMINATING);
+          instance.resetExecutionListenerIndex();
+        });
   }
 }

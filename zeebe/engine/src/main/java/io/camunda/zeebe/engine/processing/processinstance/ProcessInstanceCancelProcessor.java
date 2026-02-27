@@ -18,6 +18,8 @@ import io.camunda.zeebe.engine.processing.streamprocessor.writers.TypedResponseW
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.Writers;
 import io.camunda.zeebe.engine.state.immutable.AsyncRequestState;
 import io.camunda.zeebe.engine.state.immutable.ElementInstanceState;
+import io.camunda.zeebe.engine.state.immutable.JobState;
+import io.camunda.zeebe.engine.state.immutable.JobState.State;
 import io.camunda.zeebe.engine.state.immutable.ProcessingState;
 import io.camunda.zeebe.engine.state.instance.ElementInstance;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceRecord;
@@ -25,9 +27,13 @@ import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.ValueType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
 import io.camunda.zeebe.protocol.record.value.AuthorizationResourceType;
+import io.camunda.zeebe.protocol.record.value.JobKind;
+import io.camunda.zeebe.protocol.record.value.JobListenerEventType;
 import io.camunda.zeebe.protocol.record.value.PermissionType;
 import io.camunda.zeebe.stream.api.records.TypedRecord;
+import java.util.EnumSet;
 import java.util.Optional;
+import java.util.Set;
 
 public final class ProcessInstanceCancelProcessor
     implements TypedRecordProcessor<ProcessInstanceRecord> {
@@ -45,6 +51,9 @@ public final class ProcessInstanceCancelProcessor
   private static final String PROCESS_CANCEL_IN_PROGRESS_MESSAGE =
       MESSAGE_PREFIX + "a cancel request is already in progress";
 
+  private static final Set<State> CANCELABLE_STATES =
+      EnumSet.of(State.ACTIVATABLE, State.ACTIVATED, State.FAILED, State.ERROR_THROWN);
+
   private final ElementInstanceState elementInstanceState;
   private final AsyncRequestState asyncRequestState;
   private final TypedResponseWriter responseWriter;
@@ -53,6 +62,7 @@ public final class ProcessInstanceCancelProcessor
   private final TypedRejectionWriter rejectionWriter;
   private final AsyncRequestBehavior asyncRequestBehavior;
   private final AuthorizationCheckBehavior authCheckBehavior;
+  private final JobState jobState;
 
   public ProcessInstanceCancelProcessor(
       final ProcessingState processingState,
@@ -61,6 +71,7 @@ public final class ProcessInstanceCancelProcessor
       final AuthorizationCheckBehavior authCheckBehavior) {
     elementInstanceState = processingState.getElementInstanceState();
     asyncRequestState = processingState.getAsyncRequestState();
+    jobState = processingState.getJobState();
     responseWriter = writers.response();
     commandWriter = writers.command();
     stateWriter = writers.state();
@@ -77,21 +88,37 @@ public final class ProcessInstanceCancelProcessor
       return;
     }
 
-    asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
-
     final ProcessInstanceRecord value = elementInstance.getValue();
-    stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.CANCELING, value);
-    commandWriter.appendFollowUpCommand(
-        command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
-    responseWriter.writeEventOnCommand(
-        command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
+
+    if (elementInstance.isTerminating()) {
+      // Only force-cancel when a cancel execution listener job is active.
+      // Otherwise reject — the instance is terminating normally (e.g., waiting for children).
+      if (hasActiveCancelListenerJob(elementInstance)) {
+        commandWriter.appendFollowUpCommand(
+            command.getKey(), ProcessInstanceIntent.CONTINUE_TERMINATING_ELEMENT, value);
+        responseWriter.writeEventOnCommand(
+            command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
+      } else {
+        final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+        enrichRejectionCommand(command, value);
+        rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+      }
+    } else {
+      asyncRequestBehavior.writeAsyncRequestReceived(command.getKey(), command);
+      stateWriter.appendFollowUpEvent(command.getKey(), ProcessInstanceIntent.CANCELING, value);
+      commandWriter.appendFollowUpCommand(
+          command.getKey(), ProcessInstanceIntent.TERMINATE_ELEMENT, value);
+      responseWriter.writeEventOnCommand(
+          command.getKey(), ProcessInstanceIntent.ELEMENT_TERMINATING, value, command);
+    }
   }
 
   private boolean validateCommand(
       final TypedRecord<ProcessInstanceRecord> command, final ElementInstance elementInstance) {
 
     if (elementInstance == null
-        || !elementInstance.canTerminate()
+        || (!elementInstance.canTerminate() && !elementInstance.isTerminating())
         || elementInstance.getParentKey() > 0) {
       rejectionWriter.appendRejection(
           command,
@@ -145,15 +172,20 @@ public final class ProcessInstanceCancelProcessor
       return false;
     }
 
-    final var existingAsyncRequest =
-        asyncRequestState.findRequest(
-            command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
-    if (existingAsyncRequest.isPresent()) {
-      final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
-      enrichRejectionCommand(command, elementInstance.getValue());
-      rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
-      responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
-      return false;
+    // Reject duplicate cancel when element is not yet in terminating state (follow-ups from
+    // the first cancel haven't been processed yet). When the element IS terminating (e.g.,
+    // cancel ELs are blocking), allow through for force-cancel.
+    if (!elementInstance.isTerminating()) {
+      final var existingAsyncRequest =
+          asyncRequestState.findRequest(
+              command.getKey(), ValueType.PROCESS_INSTANCE, ProcessInstanceIntent.CANCEL);
+      if (existingAsyncRequest.isPresent()) {
+        final String reason = String.format(PROCESS_CANCEL_IN_PROGRESS_MESSAGE, command.getKey());
+        enrichRejectionCommand(command, elementInstance.getValue());
+        rejectionWriter.appendRejection(command, RejectionType.INVALID_STATE, reason);
+        responseWriter.writeRejectionOnCommand(command, RejectionType.INVALID_STATE, reason);
+        return false;
+      }
     }
 
     return true;
@@ -189,5 +221,19 @@ public final class ProcessInstanceCancelProcessor
       }
     }
     return Optional.empty();
+  }
+
+  private boolean hasActiveCancelListenerJob(final ElementInstance elementInstance) {
+    final long jobKey = elementInstance.getJobKey();
+    if (jobKey <= 0) {
+      return false;
+    }
+    final State state = jobState.getState(jobKey);
+    if (!CANCELABLE_STATES.contains(state)) {
+      return false;
+    }
+    final var job = jobState.getJob(jobKey);
+    return job.getJobKind() == JobKind.EXECUTION_LISTENER
+        && job.getJobListenerEventType() == JobListenerEventType.CANCEL;
   }
 }

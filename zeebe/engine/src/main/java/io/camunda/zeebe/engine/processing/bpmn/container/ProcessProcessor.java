@@ -99,6 +99,9 @@ public final class ProcessProcessor
   @Override
   public TransitionOutcome onTerminate(
       final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    final boolean forceCancel =
+        element.hasExecutionListeners() && jobBehavior.hasActiveCancelListenerJob(context);
+
     if (element.hasExecutionListeners()) {
       jobBehavior.cancelJob(context);
     }
@@ -110,15 +113,20 @@ public final class ProcessProcessor
     final var noActiveChildInstances = stateTransitionBehavior.terminateChildInstances(context);
 
     if (noActiveChildInstances) {
-      transitionTo(
-          element,
-          context,
-          terminating ->
-              Either.right(
-                  stateTransitionBehavior.transitionToTerminated(
-                      terminating, element.getEventType(), getAsyncRequest(context))));
+      final var cancelListeners = element.getCancelExecutionListeners();
+      if (!cancelListeners.isEmpty() && !forceCancel) {
+        createCancelExecutionListenerJob(context, cancelListeners.getFirst());
+      } else {
+        transitionTo(
+            element,
+            context,
+            terminating ->
+                Either.right(
+                    stateTransitionBehavior.transitionToTerminated(
+                        terminating, element.getEventType(), getAsyncRequest(context))));
+      }
     }
-    return TransitionOutcome.CONTINUE;
+    return TransitionOutcome.AWAIT;
   }
 
   private AsyncRequest getAsyncRequest(final BpmnElementContext context) {
@@ -200,15 +208,52 @@ public final class ProcessProcessor
     } else if (stateBehavior.canBeTerminated(childContext)) {
       if (flowScopeInstance.isTerminating()) {
         // the process instance was canceled, or interrupted by a parent process instance
-        transitionTo(
-            element,
-            flowScopeContext,
-            context ->
-                Either.right(
-                    stateTransitionBehavior.transitionToTerminated(
-                        context, element.getEventType(), getAsyncRequest(context))));
+        final var cancelListeners = element.getCancelExecutionListeners();
+        final boolean forceCancel =
+            !cancelListeners.isEmpty() && jobBehavior.hasActiveCancelListenerJob(flowScopeContext);
+        if (!cancelListeners.isEmpty() && !forceCancel) {
+          createCancelExecutionListenerJob(flowScopeContext, cancelListeners.getFirst());
+        } else {
+          if (forceCancel) {
+            jobBehavior.cancelJob(flowScopeContext);
+          }
+          transitionTo(
+              element,
+              flowScopeContext,
+              context ->
+                  Either.right(
+                      stateTransitionBehavior.transitionToTerminated(
+                          context, element.getEventType(), getAsyncRequest(context))));
+        }
       }
     }
+  }
+
+  @Override
+  public void finalizeTermination(
+      final ExecutableFlowElementContainer element, final BpmnElementContext context) {
+    // Cancel any active cancel-EL job (e.g., during force-cancel). No-op if no active job.
+    jobBehavior.cancelJob(context);
+    incidentBehavior.resolveIncidents(context);
+    transitionTo(
+        element,
+        context,
+        terminating ->
+            Either.right(
+                stateTransitionBehavior.transitionToTerminated(
+                    terminating, element.getEventType(), getAsyncRequest(context))));
+  }
+
+  private void createCancelExecutionListenerJob(
+      final BpmnElementContext context,
+      final io.camunda.zeebe.engine.processing.deployment.model.element.ExecutionListener
+          listener) {
+    jobBehavior
+        .evaluateJobExpressions(listener.getJobWorkerProperties(), context)
+        .ifRightOrLeft(
+            elJobProperties ->
+                jobBehavior.createNewExecutionListenerJob(context, elJobProperties, listener),
+            failure -> incidentBehavior.createIncident(failure, context));
   }
 
   private Either<Failure, ?> transitionTo(

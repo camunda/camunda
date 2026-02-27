@@ -38,6 +38,7 @@ public class ZeebeExecutionListenersValidationTest {
   private static final String SERVICE_TASK_TYPE = "service_task_job";
   private static final String START_EL_TYPE = "start_execution_listener_job";
   private static final String END_EL_TYPE = "end_execution_listener_job";
+  private static final String CANCEL_EL_TYPE = "cancel_execution_listener_job";
 
   @Test
   @DisplayName("element with ExecutionListeners defined without job `type`")
@@ -197,5 +198,44 @@ public class ZeebeExecutionListenersValidationTest {
             ZeebeExecutionListeners.class,
             "Found '2' duplicates based on eventType[start] and type[type_A], these combinations should be unique."),
         expect(ZeebeExecutionListener.class, "Attribute 'type' must be present and not empty"));
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on process element should pass validation")
+  void testCancelExecutionListenerOnProcessElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .zeebeCancelExecutionListener(CANCEL_EL_TYPE)
+            .startEvent()
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessIsValid(process);
+  }
+
+  @Test
+  @DisplayName("cancel execution listener on service task should fail validation")
+  void testCancelExecutionListenerOnServiceTaskElement() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .serviceTask(
+                "task",
+                task ->
+                    task.zeebeJobType(SERVICE_TASK_TYPE)
+                        .zeebeCancelExecutionListener(CANCEL_EL_TYPE))
+            .endEvent()
+            .done();
+
+    // when/then
+    ProcessValidationUtil.assertThatProcessHasViolations(
+        process,
+        expect(
+            ZeebeExecutionListeners.class,
+            "The 'cancel' execution listener event type is not supported for the 'serviceTask'"
+                + " element. The 'cancel' event type is only supported on the 'process' element."));
   }
 }

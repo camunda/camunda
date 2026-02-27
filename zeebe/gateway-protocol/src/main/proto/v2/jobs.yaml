@@ -1013,10 +1013,16 @@ components:
 
     JobListenerEventTypeEnum:
       example: UNSPECIFIED
-      description: The listener event type of the job.
+      description: >-
+        The listener event type of the job. Execution listener event types are
+        `START`, `END`, and `CANCEL`. Task listener event types are `CREATING`,
+        `ASSIGNING`, `UPDATING`, `COMPLETING`, and `CANCELING`. `CANCEL` indicates
+        the process element is reaching ELEMENT_TERMINATING state (e.g. explicit
+        cancellation), while `CANCELING` indicates a user task is being canceled.
       type: string
       enum:
         - ASSIGNING
+        - CANCEL
         - CANCELING
         - COMPLETING
         - CREATING

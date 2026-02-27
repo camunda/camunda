@@ -14,6 +14,7 @@ public enum ListenerEventType {
   // Execution Listener event types
   START,
   END,
+  CANCEL,
 
   // User Task Listener event types
   CREATING,
