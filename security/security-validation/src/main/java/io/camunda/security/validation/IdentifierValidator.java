@@ -25,7 +25,6 @@ public class IdentifierValidator {
 
   private static final String DEFAULT_TENANT_ID = "<default>";
 
-  private static final int MAX_LENGTH = 256;
   private static final int TENANT_ID_MAX_LENGTH = 31;
 
   private final Pattern idPattern;
@@ -74,7 +73,13 @@ public class IdentifierValidator {
       final String propertyName,
       final List<String> violations,
       final Function<String, Boolean> alternativeCheck) {
-    validateIdInternal(id, propertyName, violations, idPattern, alternativeCheck, MAX_LENGTH);
+    validateIdInternal(
+        id,
+        propertyName,
+        violations,
+        idPattern,
+        alternativeCheck,
+        ValidationConstants.MAX_FIELD_LENGTH);
   }
 
   public void validateTenantId(final String id, final List<String> violations) {
@@ -88,7 +93,13 @@ public class IdentifierValidator {
   }
 
   public void validateGroupId(final String id, final List<String> violations) {
-    validateIdInternal(id, "groupId", violations, groupIdPattern, s -> false, MAX_LENGTH);
+    validateIdInternal(
+        id,
+        "groupId",
+        violations,
+        groupIdPattern,
+        s -> false,
+        ValidationConstants.MAX_FIELD_LENGTH);
   }
 
   private static void validateIdInternal(
