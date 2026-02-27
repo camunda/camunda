@@ -11,6 +11,8 @@ import io.camunda.authentication.config.OidcAccessTokenDecoderFactory;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.CamundaAuthenticationConverter;
 import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,16 +39,35 @@ public class OidcUserAuthenticationConverter
   private final TokenClaimsConverter tokenClaimsConverter;
   private final HttpServletRequest request;
   private final Map<String, JwtDecoder> jwtDecoders;
+  private final Map<String, List<String>> additionalJwkSetUrisByIssuer;
 
   public OidcUserAuthenticationConverter(
       final OAuth2AuthorizedClientRepository authorizedClientRepository,
       final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
       final TokenClaimsConverter tokenClaimsConverter,
       final HttpServletRequest request) {
+    this(
+        authorizedClientRepository,
+        accessTokenDecoderFactory,
+        tokenClaimsConverter,
+        request,
+        Collections.emptyMap());
+  }
+
+  public OidcUserAuthenticationConverter(
+      final OAuth2AuthorizedClientRepository authorizedClientRepository,
+      final OidcAccessTokenDecoderFactory accessTokenDecoderFactory,
+      final TokenClaimsConverter tokenClaimsConverter,
+      final HttpServletRequest request,
+      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
     this.authorizedClientRepository = authorizedClientRepository;
     this.accessTokenDecoderFactory = accessTokenDecoderFactory;
     this.tokenClaimsConverter = tokenClaimsConverter;
     this.request = request;
+    this.additionalJwkSetUrisByIssuer =
+        additionalJwkSetUrisByIssuer != null
+            ? additionalJwkSetUrisByIssuer
+            : Collections.emptyMap();
     jwtDecoders = new ConcurrentHashMap<>();
   }
 
@@ -114,7 +135,12 @@ public class OidcUserAuthenticationConverter
     final var clientRegistrationId = clientRegistration.getRegistrationId();
     return jwtDecoders.computeIfAbsent(
         clientRegistrationId,
-        k -> accessTokenDecoderFactory.createAccessTokenDecoder(clientRegistration));
+        k -> {
+          final var issuerUri = clientRegistration.getProviderDetails().getIssuerUri();
+          final var additionalUris = additionalJwkSetUrisByIssuer.get(issuerUri);
+          return accessTokenDecoderFactory.createAccessTokenDecoder(
+              clientRegistration, additionalUris);
+        });
   }
 
   protected Map<String, Object> getIdTokenClaims(
