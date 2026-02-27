@@ -19,7 +19,7 @@ import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
 import {useEffect, useRef} from 'react';
-import {useSelectedFlowNodeName} from 'modules/hooks/elementSelection';
+import {useSelectedElementName} from 'modules/hooks/elementSelection';
 import {useVariables} from 'modules/queries/variables/useVariables';
 
 type Props = {
@@ -32,7 +32,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
 
   const {currentName, currentValue, currentId, areFormFieldsValid} =
     useVariableFormFields(variableName);
-  const selectedFlowNodeName = useSelectedFlowNodeName() || '';
+  const selectedElementName = useSelectedElementName() || '';
   const inputRef = useRef<HTMLInputElement>(null);
   const {data: variablesData} = useVariables();
   const allVariables =
@@ -79,7 +79,7 @@ const Name: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
-                selectedFlowNodeName,
+                selectedFlowNodeName: selectedElementName,
               });
             }}
           />

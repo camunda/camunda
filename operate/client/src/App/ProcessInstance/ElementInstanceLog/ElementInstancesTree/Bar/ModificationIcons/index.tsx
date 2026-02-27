@@ -10,7 +10,7 @@ import React from 'react';
 import {observer} from 'mobx-react';
 import {Container, AddIcon, CancelIcon, WarningIcon} from './styled';
 import {Stack} from '@carbon/react';
-import {useModificationsByFlowNode} from 'modules/hooks/modifications';
+import {useModificationsByElement} from 'modules/hooks/modifications';
 import {hasPendingCancelOrMoveModification} from 'modules/utils/modifications';
 
 type Props = {
@@ -22,15 +22,15 @@ type Props = {
 
 const ModificationIcons: React.FC<Props> = observer(
   ({elementId, isPlaceholder = false, endDate, scopeKeyHierarchy}) => {
-    const modificationsByFlowNode = useModificationsByFlowNode();
+    const modificationsByElement = useModificationsByElement();
 
     const hasCancelModification =
-      modificationsByFlowNode[elementId]?.areAllTokensCanceled ||
+      modificationsByElement[elementId]?.areAllTokensCanceled ||
       scopeKeyHierarchy.some((flowNodeInstanceKey) =>
         hasPendingCancelOrMoveModification({
           flowNodeId: elementId,
           flowNodeInstanceKey,
-          modificationsByFlowNode,
+          modificationsByFlowNode: modificationsByElement,
         }),
       );
 

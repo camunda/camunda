@@ -21,7 +21,7 @@ import {Maximize} from '@carbon/react/icons';
 import {useVariableFormFields} from './useVariableFormFields';
 import {createModification} from './createModification';
 import {Layer} from '@carbon/react';
-import {useSelectedFlowNodeName} from 'modules/hooks/elementSelection';
+import {useSelectedElementName} from 'modules/hooks/elementSelection';
 
 type Props = {
   variableName: string;
@@ -33,7 +33,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
   const form = useForm();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const valueFieldName = createNewVariableFieldName(variableName, 'value');
-  const selectedFlowNodeName = useSelectedFlowNodeName() || '';
+  const selectedElementName = useSelectedElementName() || '';
 
   const {
     currentName,
@@ -79,7 +79,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: currentValue,
-                selectedFlowNodeName,
+                selectedFlowNodeName: selectedElementName,
               });
             }}
           />
@@ -107,7 +107,7 @@ const Value: React.FC<Props> = ({variableName, scopeId}) => {
                 id: currentId,
                 name: currentName,
                 value: value,
-                selectedFlowNodeName,
+                selectedFlowNodeName: selectedElementName,
               });
             }
           }}

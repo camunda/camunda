@@ -11,8 +11,8 @@ import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
 import {
-  useModificationsByFlowNode,
-  useWillAllFlowNodesBeCanceled,
+  useModificationsByElement,
+  useWillAllElementsBeCanceled,
   useNewScopeKeyForElement,
   useAvailableModifications,
 } from './modifications';
@@ -54,7 +54,7 @@ const getWrapper = () => {
 };
 
 describe('modifications hooks', () => {
-  describe('useWillAllFlowNodesBeCanceled', () => {
+  describe('useWillAllElementsBeCanceled', () => {
     beforeEach(() => {
       modificationsStore.reset();
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
@@ -85,7 +85,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -111,7 +111,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -143,7 +143,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -175,7 +175,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -188,7 +188,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useWillAllFlowNodesBeCanceled(), {
+      const {result} = renderHook(() => useWillAllElementsBeCanceled(), {
         wrapper: getWrapper(),
       });
 
@@ -196,7 +196,7 @@ describe('modifications hooks', () => {
     });
   });
 
-  describe('useModificationsByFlowNode', () => {
+  describe('useModificationsByElement', () => {
     beforeEach(() => {
       mockFetchProcessInstance().withSuccess(mockProcessInstance);
     });
@@ -218,7 +218,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 
@@ -248,7 +248,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 
@@ -281,7 +281,7 @@ describe('modifications hooks', () => {
         mockProcessWithInputOutputMappingsXML,
       );
 
-      const {result} = renderHook(() => useModificationsByFlowNode(), {
+      const {result} = renderHook(() => useModificationsByElement(), {
         wrapper: getWrapper(),
       });
 

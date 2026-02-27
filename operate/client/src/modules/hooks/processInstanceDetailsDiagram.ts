@@ -17,60 +17,60 @@ import {
   hasSingleScope,
 } from 'modules/utils/processInstanceDetailsDiagram';
 
-const useFlowNodes = () => {
+const useElements = () => {
   const {data: statistics} = useElementInstancesStatistics();
-  const {data: totalRunningInstancesByFlowNode} =
+  const {data: totalRunningInstancesByElement} =
     useTotalRunningInstancesByElement();
   const {data: businessObjects} = useBusinessObjects();
 
-  return Object.values(businessObjects ?? {}).map((flowNode) => {
-    const firstMultiInstanceParent = getFirstMultiInstanceParent(flowNode);
-    const flowNodeState = statistics?.items.find(
-      ({elementId}) => elementId === flowNode.id,
+  return Object.values(businessObjects ?? {}).map((element) => {
+    const firstMultiInstanceParent = getFirstMultiInstanceParent(element);
+    const elementState = statistics?.items.find(
+      ({elementId}) => elementId === element.id,
     );
 
     return {
-      id: flowNode.id,
+      id: element.id,
       isCancellable:
-        flowNodeState !== undefined &&
-        (flowNodeState.active > 0 || flowNodeState.incidents > 0),
-      isMoveModificationTarget: isMoveModificationTarget(flowNode),
+        elementState !== undefined &&
+        (elementState.active > 0 || elementState.incidents > 0),
+      isMoveModificationTarget: isMoveModificationTarget(element),
       firstMultiInstanceParent,
       hasMultipleScopes: hasMultipleScopes(
-        flowNode.$parent,
-        totalRunningInstancesByFlowNode,
+        element.$parent,
+        totalRunningInstancesByElement,
       ),
       hasSingleScope:
         !firstMultiInstanceParent ||
-        hasSingleScope(flowNode.$parent, totalRunningInstancesByFlowNode),
+        hasSingleScope(element.$parent, totalRunningInstancesByElement),
     };
   });
 };
 
-const useAppendableFlowNodes = () => {
-  const flowNodes = useFlowNodes();
+const useAppendableElements = () => {
+  const elements = useElements();
   const {
     state: {status, sourceFlowNodeIdForMoveOperation},
     isMoveAllOperation,
   } = modificationsStore;
 
-  const sourceMultiInstanceParent = flowNodes.find(
+  const sourceMultiInstanceParent = elements.find(
     ({id}) => id === sourceFlowNodeIdForMoveOperation,
   )?.firstMultiInstanceParent;
 
-  return flowNodes
-    .filter((flowNode) => {
-      if (!flowNode.isMoveModificationTarget) {
+  return elements
+    .filter((element) => {
+      if (!element.isMoveModificationTarget) {
         return false;
       }
 
       // Add token
       if (status !== 'moving-token') {
-        return flowNode.hasSingleScope && !flowNode.hasMultipleScopes;
+        return element.hasSingleScope && !element.hasMultipleScopes;
       }
 
       // Moving token is allowed for 1 scope
-      if (flowNode.hasSingleScope) {
+      if (element.hasSingleScope) {
         return true;
       }
 
@@ -80,7 +80,7 @@ const useAppendableFlowNodes = () => {
       }
 
       // Moving to/from different multi-instance parents is not allowed
-      if (sourceMultiInstanceParent !== flowNode.firstMultiInstanceParent) {
+      if (sourceMultiInstanceParent !== element.firstMultiInstanceParent) {
         return false;
       }
 
@@ -89,41 +89,38 @@ const useAppendableFlowNodes = () => {
     .map(({id}) => id);
 };
 
-const useCancellableFlowNodes = () => {
-  return useFlowNodes()
-    .filter((flowNode) => flowNode.isCancellable)
+const useCancellableElements = () => {
+  return useElements()
+    .filter((element) => element.isCancellable)
     .map(({id}) => id);
 };
 
-const useModifiableFlowNodes = () => {
-  const appendableFlowNodes = useAppendableFlowNodes();
-  const cancellableFlowNodes = useCancellableFlowNodes();
+const useModifiableElements = () => {
+  const appendableElements = useAppendableElements();
+  const cancellableElements = useCancellableElements();
 
   if (modificationsStore.state.status === 'moving-token') {
-    return appendableFlowNodes.filter(
-      (flowNodeId) =>
-        flowNodeId !==
-        modificationsStore.state.sourceFlowNodeIdForMoveOperation,
+    return appendableElements.filter(
+      (elementId) =>
+        elementId !== modificationsStore.state.sourceFlowNodeIdForMoveOperation,
     );
   } else {
-    return Array.from(
-      new Set([...appendableFlowNodes, ...cancellableFlowNodes]),
-    );
+    return Array.from(new Set([...appendableElements, ...cancellableElements]));
   }
 };
 
-const useNonModifiableFlowNodes = () => {
-  const flowNodes = useFlowNodes();
-  const modifiableFlowNodes = useModifiableFlowNodes();
+const useNonModifiableElements = () => {
+  const elements = useElements();
+  const modifiableElements = useModifiableElements();
 
-  return flowNodes
-    .filter((flowNode) => !modifiableFlowNodes.includes(flowNode.id))
+  return elements
+    .filter((element) => !modifiableElements.includes(element.id))
     .map(({id}) => id);
 };
 
 export {
-  useAppendableFlowNodes,
-  useCancellableFlowNodes,
-  useModifiableFlowNodes,
-  useNonModifiableFlowNodes,
+  useAppendableElements,
+  useCancellableElements,
+  useModifiableElements,
+  useNonModifiableElements,
 };
