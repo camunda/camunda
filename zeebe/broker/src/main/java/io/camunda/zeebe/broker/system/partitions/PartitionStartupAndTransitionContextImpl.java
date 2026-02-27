@@ -21,6 +21,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -111,6 +112,7 @@ public class PartitionStartupAndTransitionContextImpl
   private final HealthTreeMetrics healthGraphMetrics;
   private final BrokerHealthCheckService brokerHealthCheckService;
   private volatile boolean migrationsPerformed = false;
+  private ClusterConfigurationService clusterConfigurationService;
 
   public PartitionStartupAndTransitionContextImpl(
       final int nodeId,
@@ -394,6 +396,17 @@ public class PartitionStartupAndTransitionContextImpl
   @Override
   public ComponentTreeListener getComponentTreeListener() {
     return healthGraphMetrics;
+  }
+
+  @Override
+  public ClusterConfigurationService getClusterConfigurationService() {
+    return clusterConfigurationService;
+  }
+
+  @Override
+  public void setClusterConfigurationService(
+      final ClusterConfigurationService clusterConfigurationService) {
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   @Override
