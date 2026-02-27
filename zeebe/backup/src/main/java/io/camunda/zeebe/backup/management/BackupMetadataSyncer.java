@@ -34,7 +34,7 @@ import org.slf4j.LoggerFactory;
  * Syncs checkpoint metadata and backup ranges from RocksDB column families to a per-partition JSON
  * file in the backup store.
  */
-public final class BackupMetadataSyncer {
+public final class BackupMetadataSyncer implements AutoCloseable {
 
   static final ObjectMapper MAPPER =
       new ObjectMapper()
@@ -85,6 +85,7 @@ public final class BackupMetadataSyncer {
               });
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to serialize backup metadata", e);
+      timer.close();
       metrics.recordFailedSync(partitionId);
       return CompletableFuture.failedFuture(e);
     }
@@ -139,5 +140,10 @@ public final class BackupMetadataSyncer {
               LOG.warn("Failed to load backup metadata", error);
               return Optional.empty();
             });
+  }
+
+  @Override
+  public void close() {
+    metrics.close();
   }
 }
