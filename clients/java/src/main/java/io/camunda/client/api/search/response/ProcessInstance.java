@@ -59,4 +59,6 @@ public interface ProcessInstance {
   String getTenantId();
 
   Set<String> getTags();
+
+  String getBusinessId();
 }

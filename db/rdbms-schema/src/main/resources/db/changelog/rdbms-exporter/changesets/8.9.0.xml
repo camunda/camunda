@@ -62,6 +62,7 @@
       <column name="PARTITION_ID" type="NUMBER"/>
       <column name="TREE_PATH" type="VARCHAR(${treePathSize})"/>
       <column name="HISTORY_CLEANUP_DATE" type="TIMESTAMP WITH TIME ZONE(3)"/>
+      <column name="BUSINESS_ID" type="VARCHAR(${userCharColumnSize})"/>
     </createTable>
 
     <createIndex tableName="${prefix}PROCESS_INSTANCE" indexName="${prefix}IDX_PROCESS_INSTANCE_HIST">

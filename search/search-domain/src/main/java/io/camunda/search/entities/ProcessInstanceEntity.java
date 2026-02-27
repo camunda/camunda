@@ -29,7 +29,8 @@ public record ProcessInstanceEntity(
     Boolean hasIncident,
     String tenantId,
     String treePath,
-    Set<String> tags)
+    Set<String> tags,
+    String businessId)
     implements TenantOwnedEntity {
 
   public ProcessInstanceEntity {
@@ -54,7 +55,8 @@ public record ProcessInstanceEntity(
       final ProcessInstanceState state,
       final Boolean hasIncident,
       final String tenantId,
-      final String treePath) {
+      final String treePath,
+      final String businessId) {
 
     this(
         processInstanceKey,
@@ -72,7 +74,8 @@ public record ProcessInstanceEntity(
         hasIncident,
         tenantId,
         treePath,
-        null);
+        null,
+        businessId);
   }
 
   public enum ProcessInstanceState {

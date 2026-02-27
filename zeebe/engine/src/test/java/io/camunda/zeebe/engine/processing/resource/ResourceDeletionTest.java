@@ -1561,7 +1561,8 @@ public class ResourceDeletionTest {
         false,
         null,
         null,
-        Set.of());
+        Set.of(),
+        null);
   }
 
   private DecisionInstanceEntity createDecisionInstanceEntity(final long decisionInstanceKey) {

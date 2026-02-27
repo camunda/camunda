@@ -64,6 +64,11 @@ public class ProcessInstanceForListViewEntity
   @JsonInclude(JsonInclude.Include.NON_NULL)
   private Long rootProcessInstanceKey;
 
+  /** Attention! This field will be filled in only for data imported after v. 8.9.0. */
+  @SinceVersion(value = "8.9.0", requireDefault = false)
+  @JsonInclude(JsonInclude.Include.NON_NULL)
+  private String businessId;
+
   @JsonIgnore private Object[] sortValues;
 
   @Override
@@ -282,6 +287,15 @@ public class ProcessInstanceForListViewEntity
     return this;
   }
 
+  public String getBusinessId() {
+    return businessId;
+  }
+
+  public ProcessInstanceForListViewEntity setBusinessId(final String businessId) {
+    this.businessId = businessId;
+    return this;
+  }
+
   @Override
   public int hashCode() {
     return Objects.hash(
@@ -305,7 +319,8 @@ public class ProcessInstanceForListViewEntity
         joinRelation,
         position,
         tags,
-        rootProcessInstanceKey);
+        rootProcessInstanceKey,
+        businessId);
   }
 
   @Override
@@ -337,6 +352,7 @@ public class ProcessInstanceForListViewEntity
         && Objects.equals(tenantId, that.tenantId)
         && Objects.equals(joinRelation, that.joinRelation)
         && Objects.equals(position, that.position)
-        && Objects.equals(tags, that.tags);
+        && Objects.equals(tags, that.tags)
+        && Objects.equals(businessId, that.businessId);
   }
 }

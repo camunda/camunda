@@ -29,7 +29,8 @@ public record ProcessInstanceDbModel(
     int partitionId,
     String treePath,
     OffsetDateTime historyCleanupDate,
-    Set<String> tags)
+    Set<String> tags,
+    String businessId)
     implements DbModel<ProcessInstanceDbModel> {
 
   @Override
@@ -54,7 +55,8 @@ public record ProcessInstanceDbModel(
                 .partitionId(partitionId)
                 .treePath(treePath)
                 .historyCleanupDate(historyCleanupDate)
-                .tags(tags))
+                .tags(tags)
+                .businessId(businessId))
         .build();
   }
 
@@ -77,6 +79,7 @@ public record ProcessInstanceDbModel(
     private String treePath;
     private OffsetDateTime historyCleanupDate;
     private Set<String> tags;
+    private String businessId;
 
     // Public constructor to initialize the builder
     public ProcessInstanceDbModelBuilder() {}
@@ -168,6 +171,11 @@ public record ProcessInstanceDbModel(
       return this;
     }
 
+    public ProcessInstanceDbModelBuilder businessId(final String businessId) {
+      this.businessId = businessId;
+      return this;
+    }
+
     @Override
     public ProcessInstanceDbModel build() {
       return new ProcessInstanceDbModel(
@@ -186,7 +194,8 @@ public record ProcessInstanceDbModel(
           partitionId,
           treePath,
           historyCleanupDate,
-          tags);
+          tags,
+          businessId);
     }
   }
 }
