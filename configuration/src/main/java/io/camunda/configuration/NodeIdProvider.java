@@ -105,7 +105,9 @@ public class NodeIdProvider {
 
     /**
      * If a lease has been expired for longer than this threshold, treat it as if the previous node
-     * gracefully shut down.
+     * gracefully shut down. This timeout avoid copying the data folder from the previous version,
+     * reducing I/O and making the startup faster. However, it should be high enough so that the
+     * previous node is terminated or removed from the RAFT replication group.
      */
     private Duration expiredLeaseThreshold = Duration.ofMinutes(2);
 
