@@ -61,7 +61,12 @@ public final class BackupService extends Actor implements BackupManager {
     metrics = new BackupManagerMetrics(partitionRegistry);
     internalBackupManager =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, partitionId);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            partitionId,
+            partitionRegistry);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }

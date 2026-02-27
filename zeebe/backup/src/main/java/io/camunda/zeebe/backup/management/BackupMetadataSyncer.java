@@ -17,8 +17,10 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
+import io.camunda.zeebe.backup.metrics.BackupMetadataSyncerMetrics;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
@@ -41,9 +43,11 @@ public final class BackupMetadataSyncer {
           .disable(WRITE_DATES_AS_TIMESTAMPS);
   private static final Logger LOG = LoggerFactory.getLogger(BackupMetadataSyncer.class);
   private final BackupStore backupStore;
+  private final BackupMetadataSyncerMetrics metrics;
 
-  public BackupMetadataSyncer(final BackupStore backupStore) {
+  public BackupMetadataSyncer(final BackupStore backupStore, final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
+    metrics = new BackupMetadataSyncerMetrics(meterRegistry);
   }
 
   /**
@@ -60,7 +64,7 @@ public final class BackupMetadataSyncer {
       final int partitionId,
       final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
-
+    final var timer = metrics.startSyncTimer(partitionId);
     final var manifest =
         new BackupMetadata(
             BackupMetadata.VERSION,
@@ -82,18 +86,23 @@ public final class BackupMetadataSyncer {
 
     try {
       final var content = MAPPER.writeValueAsBytes(manifest);
+      final var serializedSize = content.length;
       return backupStore
           .storeBackupMetadata(partitionId, content)
           .whenComplete(
               (result, error) -> {
+                timer.close();
                 if (error != null) {
                   LOG.warn("Failed to sync backup metadata", error);
+                  metrics.recordFailedSync(partitionId);
                 } else {
                   LOG.debug("Synced backup metadata");
+                  metrics.recordSuccessfulSync(partitionId, serializedSize);
                 }
               });
     } catch (final JsonProcessingException e) {
       LOG.error("Failed to serialize backup metadata", e);
+      metrics.recordFailedSync(partitionId);
       return CompletableFuture.failedFuture(e);
     }
   }

@@ -67,7 +67,7 @@ public final class CheckpointRecordsProcessor
       final MeterRegistry registry) {
     this.backupManager = backupManager;
     metrics = new CheckpointMetrics(registry);
-    syncer = new BackupMetadataSyncer(backupStore);
+    syncer = new BackupMetadataSyncer(backupStore, registry);
   }
 
   public void setScalingInProgressSupplier(final ScalingStatusSupplier scalingInProgressSupplier) {

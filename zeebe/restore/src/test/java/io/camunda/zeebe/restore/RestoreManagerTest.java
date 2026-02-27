@@ -98,7 +98,7 @@ final class RestoreManagerTest {
     final var to = from.plusSeconds(300);
 
     // Partition 1: checkpoints 1-3, range [1, 3]
-    final var metadataSyncer = new BackupMetadataSyncer(backupStore);
+    final var metadataSyncer = new BackupMetadataSyncer(backupStore, new SimpleMeterRegistry());
     metadataSyncer
         .store(
             1,
