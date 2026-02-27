@@ -133,6 +133,10 @@ public interface BackupActuator {
   @Headers({"Content-Type: application/json", "Accept: application/json"})
   CheckpointState state();
 
+  @RequestLine("POST /state/sync")
+  @Headers({"Content-Type: application/json", "Accept: application/json"})
+  CheckpointState syncMetadata();
+
   /**
    * Custom error handler, mapping errors with body to custom types for easier
    * verification/handling. This is somewhat verbose, so any suggestions for improvements are

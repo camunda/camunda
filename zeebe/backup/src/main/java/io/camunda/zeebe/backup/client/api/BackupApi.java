@@ -15,6 +15,7 @@ import java.util.concurrent.CompletionStage;
 public interface BackupApi {
   String WILDCARD = "*";
   String STATE = "state";
+  String SYNC = "sync";
 
   /**
    * Triggers backup on all partitions. Returned future is completed successfully after all
@@ -79,4 +80,7 @@ public interface BackupApi {
    * @param backupId id of the backup to delete
    */
   CompletionStage<Void> deleteBackup(long backupId);
+
+  /** Force-write backup metadata for all partitions. */
+  CompletionStage<BackupRangesResponse> syncMetadata();
 }

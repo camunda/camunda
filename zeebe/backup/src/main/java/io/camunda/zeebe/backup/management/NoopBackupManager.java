@@ -89,4 +89,10 @@ public class NoopBackupManager implements BackupManager {
     return CompletableActorFuture.completedExceptionally(
         new UnsupportedOperationException(errorMessage));
   }
+
+  @Override
+  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata() {
+    return CompletableActorFuture.completedExceptionally(
+        new UnsupportedOperationException(errorMessage));
+  }
 }
