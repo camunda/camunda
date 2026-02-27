@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.0.47
+
+### 🚀 Enhancements
+
+- add `relatedEntityKey` filter to Audit Log ([#45201](https://github.com/camunda/camunda/issues/45201))
+
+### ❤️ Contributors
+
+- Luca Arienti ([@arienzIT](https://github.com/arienzIT))
+
 ## v0.0.46
 
 ### 🚀 Enhancements
