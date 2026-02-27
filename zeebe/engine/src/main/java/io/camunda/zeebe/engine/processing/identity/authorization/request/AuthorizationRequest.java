@@ -63,7 +63,7 @@ public record AuthorizationRequest(
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private final Set<String> resourceIds;
+    private Set<String> resourceIds;
     private String tenantId;
     private boolean isNewResource;
 
@@ -121,12 +121,16 @@ public record AuthorizationRequest(
       final var isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
       final var isTriggeredByInternalCommand = command != null && command.isInternalCommand();
 
+      if (resourceIds instanceof HashSet<String>) {
+        resourceIds = Collections.unmodifiableSet(resourceIds);
+      }
+
       return new AuthorizationRequest(
           claims,
           resourceType,
           permissionType,
           tenantId,
-          Collections.unmodifiableSet(resourceIds),
+          resourceIds,
           isNewResource,
           isTenantOwnedResource,
           isTriggeredByInternalCommand);
