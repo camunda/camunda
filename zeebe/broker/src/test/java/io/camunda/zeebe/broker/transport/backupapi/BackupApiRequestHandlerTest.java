@@ -24,6 +24,8 @@ import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
+import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
+import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;
 import io.camunda.zeebe.logstreams.log.WriteContext;
@@ -80,6 +82,8 @@ final class BackupApiRequestHandlerTest {
 
   @Mock BackupManager backupManager;
   @Mock CheckpointState checkpointState;
+  @Mock DbCheckpointMetadataState checkpointMetadataState;
+  @Mock DbBackupRangeState backupRangeState;
 
   BackupApiRequestHandler handler;
   private ResponseReader serverOutput;
@@ -89,7 +93,14 @@ final class BackupApiRequestHandlerTest {
   void setup() {
     handler =
         new BackupApiRequestHandler(
-            transport, logStreamWriter, backupManager, checkpointState, 1, true);
+            transport,
+            logStreamWriter,
+            backupManager,
+            checkpointState,
+            checkpointMetadataState,
+            backupRangeState,
+            1,
+            true);
     scheduler.submitActor(handler);
     scheduler.workUntilDone();
 
@@ -591,7 +602,7 @@ final class BackupApiRequestHandlerTest {
     final var request =
         new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
 
-    when(backupManager.syncMetadata())
+    when(backupManager.syncMetadata(any(), any()))
         .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
 
     // when
@@ -615,7 +626,7 @@ final class BackupApiRequestHandlerTest {
     final var request =
         new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
 
-    when(backupManager.syncMetadata())
+    when(backupManager.syncMetadata(any(), any()))
         .thenReturn(
             CompletableActorFuture.completedExceptionally(new RuntimeException("sync failed")));
 

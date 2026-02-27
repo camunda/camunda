@@ -20,7 +20,6 @@ import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.api.BackupRange;
-import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupDescriptorImpl;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.Event;
 import io.camunda.zeebe.backup.processing.MockProcessingResult.MockProcessingResultBuilder;
@@ -39,6 +38,7 @@ import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.RejectionType;
 import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.camunda.zeebe.scheduler.future.CompletableActorFuture;
 import io.camunda.zeebe.stream.api.ProcessingResultBuilder;
 import io.camunda.zeebe.stream.api.ReadonlyStreamProcessorContext;
 import io.camunda.zeebe.stream.api.StreamClock;
@@ -49,7 +49,6 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.time.InstantSource;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -90,7 +89,7 @@ final class CheckpointRecordsProcessorTest {
     final RecordProcessorContextImpl context = createContext(executor, zeebedb);
 
     resultBuilder = new MockProcessingResultBuilder();
-    processor = new CheckpointRecordsProcessor(backupManager, null, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
 
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(() -> (int) dynamicPartitionCount.get());
@@ -355,7 +354,7 @@ final class CheckpointRecordsProcessorTest {
   void shouldNotifyListenerOnInit() {
     // given
     final RecordProcessorContextImpl context = createContext(null, zeebedb);
-    processor = new CheckpointRecordsProcessor(backupManager, null, context.getMeterRegistry());
+    processor = new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
     processor.setScalingInProgressSupplier(scalingInProgress::get);
     processor.setPartitionCountSupplier(dynamicPartitionCount::get);
     final long checkpointId = 3;
@@ -910,14 +909,13 @@ final class CheckpointRecordsProcessorTest {
 
   @Test
   void shouldScheduleSyncPostCommitTaskOnConfirmBackup() {
-    // given — a processor with a real backup store
-    final var backupStore = mock(BackupStore.class);
-    when(backupStore.storeBackupMetadata(any(int.class), any()))
-        .thenReturn(CompletableFuture.completedFuture(null));
+    // given — a processor with a backup manager that supports sync
+    when(backupManager.syncMetadata(any(), any()))
+        .thenReturn(CompletableActorFuture.completed(null));
 
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, backupStore, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);
@@ -943,18 +941,17 @@ final class CheckpointRecordsProcessorTest {
     // when — the post-commit task is executed
     final var success = result.executePostCommitTasks();
 
-    // then — task succeeds (fire-and-forget) and store metadata is called
+    // then — task succeeds (fire-and-forget) and sync metadata is called
     assertThat(success).isTrue();
-    verify(backupStore).storeBackupMetadata(eq(1), any());
+    verify(backupManager).syncMetadata(any(), any());
   }
 
   @Test
   void shouldNotScheduleSyncPostCommitTaskOnRejection() {
-    // given — a processor with a backup store and an existing newer backup
-    final var backupStore = mock(BackupStore.class);
+    // given — a processor with a backup manager and an existing newer backup
     final var context = createContext(executor, zeebedb);
     final var syncProcessor =
-        new CheckpointRecordsProcessor(backupManager, backupStore, context.getMeterRegistry());
+        new CheckpointRecordsProcessor(backupManager, context.getMeterRegistry());
     syncProcessor.setScalingInProgressSupplier(scalingInProgress::get);
     syncProcessor.setPartitionCountSupplier(dynamicPartitionCount::get);
     syncProcessor.init(context);

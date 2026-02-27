@@ -192,7 +192,7 @@ final class BackupMetadataSyncerTest {
         """;
 
     final BackupStore store = mock(BackupStore.class);
-    final BackupMetadataSyncer syncer = new BackupMetadataSyncer(store);
+    final BackupMetadataSyncer syncer = new BackupMetadataSyncer(store, new SimpleMeterRegistry());
     when(store.loadBackupMetadata(anyInt()))
         .thenReturn(CompletableFuture.completedFuture(Optional.of(metadata.getBytes())));
 

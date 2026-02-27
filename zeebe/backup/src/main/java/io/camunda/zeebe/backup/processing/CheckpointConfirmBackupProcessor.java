@@ -7,7 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing;
 
-import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
+import io.camunda.zeebe.backup.api.BackupManager;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
@@ -26,20 +26,20 @@ public class CheckpointConfirmBackupProcessor {
 
   private static final Logger LOG = LoggerFactory.getLogger(CheckpointConfirmBackupProcessor.class);
   private final CheckpointState checkpointState;
-  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
   private final DbCheckpointMetadataState checkpointMetadataState;
   private final DbBackupRangeState backupRangeState;
-  private final BackupMetadataSyncer syncer;
+  private final CheckpointBackupConfirmedApplier backupConfirmedApplier;
+  private final BackupManager backupManager;
 
   public CheckpointConfirmBackupProcessor(
       final CheckpointState checkpointState,
       final DbCheckpointMetadataState checkpointMetadataState,
       final DbBackupRangeState backupRangeState,
-      final BackupMetadataSyncer syncer) {
+      final BackupManager backupManager) {
     this.checkpointState = checkpointState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.backupRangeState = backupRangeState;
-    this.syncer = syncer;
+    this.backupManager = backupManager;
     backupConfirmedApplier =
         new CheckpointBackupConfirmedApplier(
             checkpointState, checkpointMetadataState, backupRangeState);
@@ -65,7 +65,7 @@ public class CheckpointConfirmBackupProcessor {
       final var ranges = backupRangeState.getAllRanges();
       resultBuilder.appendPostCommitTask(
           () -> {
-            syncer.store(record.getPartitionId(), checkpoints, ranges);
+            backupManager.syncMetadata(checkpoints, ranges);
             return true;
           });
     } else {
