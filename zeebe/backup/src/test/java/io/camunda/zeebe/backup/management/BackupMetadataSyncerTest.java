@@ -14,13 +14,12 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupMetadata;
-import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.metrics.BackupMetadataSyncerMetricsDoc;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
@@ -53,8 +52,7 @@ final class BackupMetadataSyncerTest {
   void shouldSerializeCheckpointsAndRanges() throws Exception {
     // given
     final var checkpointEntry =
-        new DbCheckpointMetadataState.CheckpointEntry(
-            10L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+        new Checkpoint(CheckpointType.SCHEDULED_BACKUP, 10L, 1000L, 100L, 50L);
     final var range = new BackupRange(10L, 20L);
 
     final var contentCaptor = ArgumentCaptor.forClass(byte[].class);
@@ -98,13 +96,13 @@ final class BackupMetadataSyncerTest {
     // given
     final var checkpoints =
         List.of(
-            new CheckpointEntry(
+            new BackupMetadata.CheckpointEntry(
                 1L,
                 100L,
                 Instant.ofEpochMilli(1000),
                 CheckpointType.SCHEDULED_BACKUP,
                 OptionalLong.of(50L)),
-            new CheckpointEntry(
+            new BackupMetadata.CheckpointEntry(
                 2L,
                 200L,
                 Instant.ofEpochMilli(2000),
@@ -135,8 +133,7 @@ final class BackupMetadataSyncerTest {
   @Test
   void shouldSerializeMarkerWithoutFirstLogPosition() throws IOException {
     // given
-    final var checkpointEntry =
-        new DbCheckpointMetadataState.CheckpointEntry(10L, 100L, 1000L, CheckpointType.MARKER, -1L);
+    final var checkpointEntry = new Checkpoint(CheckpointType.MARKER, 10L, 1000L, 100L, -1L);
     final var range = new BackupRange(10L, 20L);
 
     final var contentCaptor = ArgumentCaptor.forClass(byte[].class);
@@ -355,9 +352,8 @@ final class BackupMetadataSyncerTest {
       assertThat(timer.count()).isEqualTo(1);
     }
 
-    private DbCheckpointMetadataState.CheckpointEntry sampleCheckpoint() {
-      return new DbCheckpointMetadataState.CheckpointEntry(
-          10L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    private Checkpoint sampleCheckpoint() {
+      return new Checkpoint(CheckpointType.SCHEDULED_BACKUP, 10L, 1000L, 100L, 50L);
     }
 
     private BackupRange sampleRange() {

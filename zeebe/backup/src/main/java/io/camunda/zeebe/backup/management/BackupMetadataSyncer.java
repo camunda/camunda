@@ -13,13 +13,12 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupMetadata;
-import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.metrics.BackupMetadataSyncerMetrics;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.micrometer.core.instrument.MeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
@@ -63,7 +62,7 @@ public final class BackupMetadataSyncer {
    */
   public CompletableFuture<Void> store(
       final int partitionId,
-      final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
+      final SequencedCollection<Checkpoint> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
     final var timer = metrics.startSyncTimer(partitionId);
     final var metadata = createMetadata(partitionId, checkpoints, ranges);
@@ -93,7 +92,7 @@ public final class BackupMetadataSyncer {
 
   private static @NonNull BackupMetadata createMetadata(
       final int partitionId,
-      @NonNull final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
+      @NonNull final SequencedCollection<Checkpoint> checkpoints,
       @NonNull final SequencedCollection<BackupRange> ranges) {
     return new BackupMetadata(
         BackupMetadata.VERSION,
@@ -102,7 +101,7 @@ public final class BackupMetadataSyncer {
         checkpoints.stream()
             .map(
                 entry ->
-                    new CheckpointEntry(
+                    new BackupMetadata.CheckpointEntry(
                         entry.checkpointId(),
                         entry.checkpointPosition(),
                         Instant.ofEpochMilli(entry.checkpointTimestamp()),
