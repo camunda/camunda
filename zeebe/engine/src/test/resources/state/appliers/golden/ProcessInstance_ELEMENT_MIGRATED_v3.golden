@@ -61,6 +61,8 @@ final class ProcessInstanceElementMigratedV3Applier
           value.getProcessInstanceKey(), previousProcessDefinitionKey.get());
       elementInstanceState.insertProcessInstanceKeyByDefinitionKey(
           value.getProcessInstanceKey(), value.getProcessDefinitionKey());
+
+      migrateBusinessIdIndex(value, previousProcessDefinitionKey.get());
     }
   }
 
@@ -106,5 +108,26 @@ final class ProcessInstanceElementMigratedV3Applier
 
   private boolean isCorrelationKeyAbsent(final DirectBuffer correlationKey) {
     return correlationKey == null || correlationKey.capacity() == 0;
+  }
+
+  private void migrateBusinessIdIndex(
+      final ProcessInstanceRecord value, final long previousProcessDefinitionKey) {
+    final String businessId = value.getBusinessId();
+    if (businessId.isEmpty()) {
+      return;
+    }
+    if (value.hasParentProcessInstance()) {
+      return;
+    }
+    elementInstanceState.deleteProcessInstanceKeyMappingByBusinessId(
+        businessId,
+        previousProcessDefinitionKey,
+        value.getTenantId(),
+        value.getProcessInstanceKey());
+    elementInstanceState.insertProcessInstanceKeyByBusinessId(
+        businessId,
+        value.getProcessDefinitionKey(),
+        value.getTenantId(),
+        value.getProcessInstanceKey());
   }
 }
