@@ -49,6 +49,10 @@ public final class MappingRuleValidator {
   private static List<String> validateName(final String name) {
     if (name == null || name.isBlank()) {
       return List.of(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("name"));
+    } else if (name.length() > ValidationConstants.MAX_FIELD_LENGTH) {
+      return List.of(
+          ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              name, ValidationConstants.MAX_FIELD_LENGTH));
     }
     return new ArrayList<>();
   }
@@ -57,9 +61,18 @@ public final class MappingRuleValidator {
     final List<String> violations = new ArrayList<>();
     if (claimName == null || claimName.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimName"));
+    } else if (claimName.length() > ValidationConstants.MAX_FIELD_LENGTH) {
+      return List.of(
+          ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              claimName, ValidationConstants.MAX_FIELD_LENGTH));
     }
+
     if (claimValue == null || claimValue.isBlank()) {
       violations.add(ERROR_MESSAGE_EMPTY_ATTRIBUTE.formatted("claimValue"));
+    } else if (claimValue.length() > ValidationConstants.MAX_FIELD_LENGTH) {
+      return List.of(
+          ErrorMessages.ERROR_MESSAGE_TOO_MANY_CHARACTERS.formatted(
+              claimValue, ValidationConstants.MAX_FIELD_LENGTH));
     }
     return violations;
   }
