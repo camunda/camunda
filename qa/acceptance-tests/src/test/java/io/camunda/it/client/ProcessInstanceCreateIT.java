@@ -61,6 +61,7 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getVersion()).isEqualTo(process.getVersion());
     assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
     assertThat(processInstanceCreation.getTags()).isEqualTo(TAGS);
+    assertThat(processInstanceCreation.getBusinessId()).isNull();
 
     waitForProcessInstance(
         camundaClient,
@@ -111,6 +112,7 @@ public class ProcessInstanceCreateIT {
     assertThat(processInstanceCreation.getTenantId()).isEqualTo(process.getTenantId());
     assertThat(processInstanceCreation.getVariablesAsMap()).isEqualTo(variables);
     assertThat(processInstanceCreation.getTags()).isEqualTo(TAGS);
+    assertThat(processInstanceCreation.getBusinessId()).isNull();
 
     waitForProcessInstance(
         camundaClient,

@@ -264,7 +264,7 @@ public final class RequestMapper extends RequestUtil {
         .setVariables(ensureJsonSet(grpcRequest.getVariables()))
         .setStartInstructions(grpcRequest.getStartInstructionsList())
         .setTags(Set.copyOf(grpcRequest.getTagsList()))
-        .setBusinessId(grpcRequest.getBusinessId());
+        .setBusinessId(grpcRequest.hasBusinessId() ? grpcRequest.getBusinessId() : "");
 
     if (grpcRequest.hasOperationReference()) {
       brokerRequest.setOperationReference(grpcRequest.getOperationReference());

@@ -191,15 +191,20 @@ public final class ResponseMapper {
 
   public static CreateProcessInstanceResponse toCreateProcessInstanceResponse(
       final long key, final ProcessInstanceCreationRecord brokerResponse) {
-    return CreateProcessInstanceResponse.newBuilder()
-        .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
-        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
-        .setVersion(brokerResponse.getVersion())
-        .setTenantId(brokerResponse.getTenantId())
-        .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
-        .addAllTags(brokerResponse.getTags())
-        .setBusinessId(brokerResponse.getBusinessId())
-        .build();
+    final var builder =
+        CreateProcessInstanceResponse.newBuilder()
+            .setProcessDefinitionKey(brokerResponse.getProcessDefinitionKey())
+            .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessIdBuffer()))
+            .setVersion(brokerResponse.getVersion())
+            .setTenantId(brokerResponse.getTenantId())
+            .setProcessInstanceKey(brokerResponse.getProcessInstanceKey())
+            .addAllTags(brokerResponse.getTags());
+    if (brokerResponse.hasBusinessId()) {
+      builder.setBusinessId(brokerResponse.getBusinessId());
+    } else {
+      builder.clearBusinessId();
+    }
+    return builder.build();
   }
 
   public static CreateProcessInstanceWithResultResponse toCreateProcessInstanceWithResultResponse(
