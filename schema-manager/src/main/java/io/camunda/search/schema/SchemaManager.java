@@ -434,7 +434,7 @@ public class SchemaManager implements CloseableSilently {
     final var archivedIndices =
         searchEngineClient.getMappings(indexPatterns, MappingSource.INDEX).keySet().stream()
             .filter(index -> !liveIndices.contains(index))
-            .toList();
+            .collect(Collectors.toSet());
     archivedIndices.forEach(searchEngineClient::deleteIndex);
     LOG.debug("Deleted archived indices '{}'", archivedIndices);
   }
