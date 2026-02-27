@@ -657,7 +657,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+                $ref: '#/components/schemas/RoleMappingRuleSearchResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -919,6 +919,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RoleGroupSearchQuerySortRequest'
+
+    RoleMappingRuleSearchResult:
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleResult'
 
     RoleGroupSearchQuerySortRequest:
       type: object
