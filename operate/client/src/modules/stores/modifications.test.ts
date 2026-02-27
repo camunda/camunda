@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {modificationsStore, type FlowNodeModification} from './modifications';
+import {modificationsStore, type ElementModification} from './modifications';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
 import {
   createAddVariableModification,
@@ -23,7 +23,7 @@ import {http} from 'msw';
 import {endpoints} from '@camunda/camunda-api-zod-schemas/8.9';
 
 type AddModificationPayload = Extract<
-  FlowNodeModification['payload'],
+  ElementModification['payload'],
   {operation: 'ADD_TOKEN'}
 >;
 

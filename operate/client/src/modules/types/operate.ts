@@ -18,7 +18,7 @@ type OperationEntityType =
   | 'MIGRATE_PROCESS_INSTANCE'
   | 'MOVE_TOKEN';
 
-type FlowNodeState = 'active' | 'incidents' | 'canceled' | 'completed';
+type ElementState = 'active' | 'incidents' | 'canceled' | 'completed';
 
 type InstanceEntityState =
   | 'ACTIVE'
@@ -72,7 +72,7 @@ interface ProcessInstanceEntity {
   tenantId: string;
 }
 
-type FlowNodeInstanceDto = {
+type ElementInstancePlaceholder = {
   id: string;
   type: string;
   state?: InstanceEntityState;
@@ -81,16 +81,15 @@ type FlowNodeInstanceDto = {
   endDate: null | string;
   treePath: string;
   sortValues: [string, string] | [];
+  isPlaceholder?: boolean;
 };
-
-type FlowNodeInstance = FlowNodeInstanceDto & {isPlaceholder?: boolean};
 
 export type {
   OperationEntityType,
-  FlowNodeState,
+  ElementState,
   InstanceEntityState,
   OperationEntity,
   InstanceOperationEntity,
   ProcessInstanceEntity,
-  FlowNodeInstance,
+  ElementInstancePlaceholder,
 };

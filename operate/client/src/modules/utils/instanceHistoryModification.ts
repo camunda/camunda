@@ -11,7 +11,6 @@ import type {
   BusinessObjects,
 } from 'bpmn-js/lib/NavigatedViewer';
 import {isMultiInstance} from 'modules/bpmn-js/utils/isMultiInstance';
-import type {FlowNodeInstance} from 'modules/types/operate';
 import {
   instanceHistoryModificationStore,
   type ModificationPlaceholder,
@@ -19,10 +18,10 @@ import {
 
 import {
   modificationsStore,
-  type FlowNodeModification,
+  type ElementModification,
 } from 'modules/stores/modifications';
 
-const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
+const getScopeIds = (modificationPayload: ElementModification['payload']) => {
   const {operation} = modificationPayload;
 
   switch (operation) {
@@ -36,7 +35,7 @@ const getScopeIds = (modificationPayload: FlowNodeModification['payload']) => {
 };
 
 const generateParentPlaceholders = (
-  modificationPayload: FlowNodeModification['payload'],
+  modificationPayload: ElementModification['payload'],
   processDefinitionId?: string,
   processInstanceKey?: string,
   flowNode?: BusinessObject,
@@ -63,7 +62,7 @@ const generateParentPlaceholders = (
       parentFlowNode,
     ),
     {
-      flowNodeInstance: {
+      elementInstancePlaceholder: {
         flowNodeId: flowNode.id,
         id: scopeId,
         type: 'SUB_PROCESS',
@@ -86,7 +85,7 @@ const generateParentPlaceholders = (
 };
 
 const getParentInstanceIdForPlaceholder = (
-  modificationPayload: FlowNodeModification['payload'],
+  modificationPayload: ElementModification['payload'],
   processDefinitionId?: string,
   processInstanceKey?: string,
   parentFlowNodeId?: string,
@@ -122,7 +121,7 @@ const createModificationPlaceholders = ({
   processDefinitionId,
   processInstanceKey,
 }: {
-  modificationPayload: FlowNodeModification['payload'];
+  modificationPayload: ElementModification['payload'];
   flowNode: BusinessObject;
   processDefinitionId?: string;
   processInstanceKey?: string;
@@ -137,7 +136,7 @@ const createModificationPlaceholders = ({
   }
 
   return getScopeIds(modificationPayload).map((scopeId) => ({
-    flowNodeInstance: {
+    elementInstancePlaceholder: {
       flowNodeId: flowNode.id,
       id: scopeId,
       type: isMultiInstance(flowNode) ? 'MULTI_INSTANCE_BODY' : flowNode.$type,
@@ -203,8 +202,8 @@ const getModificationPlaceholders = (
 };
 
 const getVisibleChildPlaceholders = (
-  id: FlowNodeInstance['id'],
-  flowNodeId: FlowNodeInstance['flowNodeId'],
+  scopeKey: string,
+  elementId: string,
   businessObjects: BusinessObjects,
   processDefinitionId?: string,
   processInstanceKey?: string,
@@ -213,7 +212,7 @@ const getVisibleChildPlaceholders = (
   if (
     isPlaceholder &&
     !instanceHistoryModificationStore.state.expandedFlowNodeInstanceIds.includes(
-      id,
+      scopeKey,
     )
   ) {
     return [];
@@ -224,8 +223,8 @@ const getVisibleChildPlaceholders = (
     processDefinitionId,
     processInstanceKey,
   )
-    .filter(({parentInstanceId}) => parentInstanceId === id)
-    .map(({flowNodeInstance}) => flowNodeInstance);
+    .filter(({parentInstanceId}) => parentInstanceId === scopeKey)
+    .map(({elementInstancePlaceholder}) => elementInstancePlaceholder);
 
   if (placeholders.length > 0) {
     return placeholders;
@@ -238,13 +237,13 @@ const getVisibleChildPlaceholders = (
   )
     .filter(
       ({parentInstanceId, parentFlowNodeId}) =>
-        parentInstanceId === undefined && parentFlowNodeId === flowNodeId,
+        parentInstanceId === undefined && parentFlowNodeId === elementId,
     )
-    .map(({flowNodeInstance}) => flowNodeInstance);
+    .map(({elementInstancePlaceholder}) => elementInstancePlaceholder);
 };
 
 const hasChildPlaceholders = (
-  id: FlowNodeInstance['id'],
+  scopeKey: string,
   businessObjects: BusinessObjects,
   processDefinitionId?: string,
   processInstanceKey?: string,
@@ -253,7 +252,7 @@ const hasChildPlaceholders = (
     businessObjects,
     processDefinitionId,
     processInstanceKey,
-  ).some(({parentInstanceId}) => parentInstanceId === id);
+  ).some(({parentInstanceId}) => parentInstanceId === scopeKey);
 };
 
 export {hasChildPlaceholders, getVisibleChildPlaceholders};

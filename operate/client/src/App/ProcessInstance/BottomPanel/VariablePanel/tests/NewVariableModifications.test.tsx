@@ -20,7 +20,7 @@ import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {createVariable} from 'modules/testUtils';
 import {
   modificationsStore,
-  type FlowNodeModification,
+  type ElementModification,
 } from 'modules/stores/modifications';
 import {useEffect} from 'react';
 import {Paths} from 'modules/Routes';
@@ -41,7 +41,7 @@ import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinit
  * Variables can only be added and modified in the root if a pending add/move token modification exists.
  * Tests need to queue this modification first, before they can make changes to the root variables.
  */
-const INITIAL_ADD_MODIFICATION: FlowNodeModification = {
+const INITIAL_ADD_MODIFICATION: ElementModification = {
   type: 'token',
   payload: {
     affectedTokenCount: 1,

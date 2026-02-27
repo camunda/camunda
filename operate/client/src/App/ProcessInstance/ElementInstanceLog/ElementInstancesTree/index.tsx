@@ -34,7 +34,7 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {VirtualBar} from './Bar/VirtualBar';
 import {useBatchOperationItems} from 'modules/queries/batch-operations/useBatchOperationItems';
 import {tracking} from 'modules/tracking';
-import type {FlowNodeInstance} from 'modules/types/operate';
+import type {ElementInstancePlaceholder} from 'modules/types/operate';
 import {TreeView} from '@carbon/react';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 
@@ -57,19 +57,20 @@ type VirtualElementInstance = {
 };
 
 function convertToVirtualElementInstance(params: {
-  flowNodeInstances: FlowNodeInstance[];
+  elementInstancePlaceholders: ElementInstancePlaceholder[];
   businessObjects: BusinessObjects;
 }): VirtualElementInstance[] {
-  const {flowNodeInstances, businessObjects} = params;
+  const {elementInstancePlaceholders, businessObjects} = params;
 
-  return flowNodeInstances.map((flowNodeInstance) => {
-    const businessObject = businessObjects[flowNodeInstance.flowNodeId];
+  return elementInstancePlaceholders.map((elementInstancePlaceholder) => {
+    const businessObject =
+      businessObjects[elementInstancePlaceholder.flowNodeId];
     return {
       isVirtual: true,
-      elementId: flowNodeInstance.flowNodeId,
+      elementId: elementInstancePlaceholder.flowNodeId,
       elementName: businessObject?.name,
       type: businessObject?.$type,
-      elementInstanceKey: flowNodeInstance.id,
+      elementInstanceKey: elementInstancePlaceholder.id,
     };
   });
 }
@@ -348,7 +349,7 @@ const FoldableVirtualElementInstanceNode: React.FC<FoldableVirtualElementInstanc
             isMultiInstanceBody: isMultiInstance(businessObject),
           });
       const virtualChildren = convertToVirtualElementInstance({
-        flowNodeInstances: getVisibleChildPlaceholders(
+        elementInstancePlaceholders: getVisibleChildPlaceholders(
           scopeKey,
           elementId,
           businessObjects,
@@ -507,7 +508,7 @@ const FoldableElementInstancesNode: React.FC<FoldableElementInstancesNodeProps> 
 
       const virtualChildren = modificationsStore.isModificationModeEnabled
         ? convertToVirtualElementInstance({
-            flowNodeInstances: getVisibleChildPlaceholders(
+            elementInstancePlaceholders: getVisibleChildPlaceholders(
               scopeKey,
               elementId,
               businessObjects,

@@ -18,7 +18,7 @@ import {StateOverlay} from 'modules/components/StateOverlay';
 import {useProcessInstancesOverlayData} from 'modules/queries/processInstancesStatistics/useOverlayData';
 import {getMigrationProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 import {useMigrationSourceXml} from 'modules/queries/processDefinitions/useMigrationSourceXml';
-import type {FlowNodeState} from 'modules/types/operate';
+import type {ElementState} from 'modules/types/operate';
 
 const SourceDiagram: React.FC = observer(() => {
   const {processName, version} = processesStore.getSelectedProcessDetails();
@@ -90,7 +90,7 @@ const SourceDiagram: React.FC = observer(() => {
             {processInstanceMigrationStore.isSummaryStep &&
               statisticsOverlays.map((overlay) => {
                 const payload = overlay.payload as {
-                  flowNodeState: FlowNodeState;
+                  flowNodeState: ElementState;
                   count: number;
                 };
 
