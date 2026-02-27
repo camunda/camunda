@@ -413,6 +413,8 @@ public class RestoreManager implements CloseableSilently {
   @Override
   public void close() {
     try {
+      backupStore.closeAsync().join();
+      metadataSyncer.close();
       executor.shutdown();
       if (!executor.awaitTermination(30, TimeUnit.SECONDS)) {
         executor.shutdownNow();

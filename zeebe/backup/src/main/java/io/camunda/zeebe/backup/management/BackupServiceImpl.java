@@ -78,6 +78,7 @@ final class BackupServiceImpl {
         .setMessage("Closing backup service")
         .log();
     backupsInProgress.forEach(InProgressBackup::close);
+    metadataSyncer.close();
   }
 
   ActorFuture<Void> takeBackup(
