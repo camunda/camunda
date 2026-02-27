@@ -16,6 +16,10 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
+env:
+  CLUSTER: camunda-benchmark-prod
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
+
 jobs:
   sanitize-branch-name:
     name: Sanitize Branch Name
@@ -171,14 +175,20 @@ jobs:
       contents: 'read'
       id-token: 'write'
     steps:
-      - uses: google-github-actions/auth@v3
+      - name: Checkout
+        uses: actions/checkout@v6
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
         with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v3.0.0
+          version: 17.2.2
+
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
         with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
+
       - name: Delete benchmarks
         run: |
           kubectl delete ns "${{ needs.sanitize-branch-name.outputs.sanitized-name }}"
