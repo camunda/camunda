@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {BusinessObject} from 'bpmn-js/lib/NavigatedViewer';
 import {isMoveModificationTarget} from 'modules/bpmn-js/utils/isMoveModificationTarget';
 import {getFirstMultiInstanceParent} from 'modules/bpmn-js/utils/isWithinMultiInstance';
 import {useElementInstancesStatistics} from 'modules/queries/elementInstancesStatistics/useElementInstancesStatistics';
@@ -17,60 +18,49 @@ import {
   hasSingleScope,
 } from 'modules/utils/processInstanceDetailsDiagram';
 
-const useElements = () => {
-  const {data: statistics} = useElementInstancesStatistics();
-  const {data: totalRunningInstancesByElement} =
-    useTotalRunningInstancesByElement();
-  const {data: businessObjects} = useBusinessObjects();
-
-  return Object.values(businessObjects ?? {}).map((element) => {
-    const firstMultiInstanceParent = getFirstMultiInstanceParent(element);
-    const elementState = statistics?.items.find(
-      ({elementId}) => elementId === element.id,
-    );
-
-    return {
-      id: element.id,
-      isCancellable:
-        elementState !== undefined &&
-        (elementState.active > 0 || elementState.incidents > 0),
-      isMoveModificationTarget: isMoveModificationTarget(element),
-      firstMultiInstanceParent,
-      hasMultipleScopes: hasMultipleScopes(
-        element.$parent,
-        totalRunningInstancesByElement,
-      ),
-      hasSingleScope:
-        !firstMultiInstanceParent ||
-        hasSingleScope(element.$parent, totalRunningInstancesByElement),
-    };
-  });
+const useElementBusinessObjects = () => {
+  const {data} = useBusinessObjects();
+  return Object.values(data ?? {});
 };
 
+function useScopeProperties() {
+  const {data: totalRunningInstancesByElement} =
+    useTotalRunningInstancesByElement();
+
+  return {
+    hasMultipleScopes: (element: BusinessObject) =>
+      hasMultipleScopes(element?.$parent, totalRunningInstancesByElement),
+    hasEffectiveSingleScope: (element: BusinessObject) =>
+      !getFirstMultiInstanceParent(element) ||
+      hasSingleScope(element?.$parent, totalRunningInstancesByElement),
+  };
+}
+
 const useAppendableElements = () => {
-  const elements = useElements();
   const {
     state: {status, sourceFlowNodeIdForMoveOperation},
     isMoveAllOperation,
   } = modificationsStore;
 
-  const sourceMultiInstanceParent = elements.find(
+  const elements = useElementBusinessObjects();
+  const {hasEffectiveSingleScope, hasMultipleScopes} = useScopeProperties();
+  const sourceElement = elements.find(
     ({id}) => id === sourceFlowNodeIdForMoveOperation,
-  )?.firstMultiInstanceParent;
+  );
 
   return elements
     .filter((element) => {
-      if (!element.isMoveModificationTarget) {
+      if (!isMoveModificationTarget(element)) {
         return false;
       }
 
       // Add token
       if (status !== 'moving-token') {
-        return element.hasSingleScope && !element.hasMultipleScopes;
+        return hasEffectiveSingleScope(element) && !hasMultipleScopes(element);
       }
 
       // Moving token is allowed for 1 scope
-      if (element.hasSingleScope) {
+      if (hasEffectiveSingleScope(element)) {
         return true;
       }
 
@@ -80,7 +70,10 @@ const useAppendableElements = () => {
       }
 
       // Moving to/from different multi-instance parents is not allowed
-      if (sourceMultiInstanceParent !== element.firstMultiInstanceParent) {
+      if (
+        getFirstMultiInstanceParent(sourceElement) !==
+        getFirstMultiInstanceParent(element)
+      ) {
         return false;
       }
 
@@ -90,8 +83,20 @@ const useAppendableElements = () => {
 };
 
 const useCancellableElements = () => {
-  return useElements()
-    .filter((element) => element.isCancellable)
+  const elements = useElementBusinessObjects();
+  const {data: statistics} = useElementInstancesStatistics();
+  const elementState = (element: BusinessObject) =>
+    statistics?.items.find(({elementId}) => elementId === element.id);
+
+  return elements
+    .filter((element) => {
+      const state = elementState(element);
+      if (!state) {
+        return false;
+      }
+
+      return state.active > 0 || state.incidents > 0;
+    })
     .map(({id}) => id);
 };
 
@@ -110,7 +115,7 @@ const useModifiableElements = () => {
 };
 
 const useNonModifiableElements = () => {
-  const elements = useElements();
+  const elements = useElementBusinessObjects();
   const modifiableElements = useModifiableElements();
 
   return elements
