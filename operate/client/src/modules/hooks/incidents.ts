@@ -6,7 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {getFlowNodeName} from '../utils/elements';
+import {getElementName} from '../utils/elements';
 import {useBusinessObjects} from 'modules/queries/processDefinitions/useBusinessObjects';
 import {
   queryIncidentsRequestBodySchema,
@@ -49,9 +49,9 @@ const useEnhancedIncidents = (incidents: Incident[]): EnhancedIncident[] => {
   return incidents.map((incident) => {
     return {
       ...incident,
-      elementName: getFlowNodeName({
+      elementName: getElementName({
         businessObjects,
-        flowNodeId: incident.elementId,
+        elementId: incident.elementId,
       }),
       isSelected: isSelected({
         elementId: incident.elementId,
