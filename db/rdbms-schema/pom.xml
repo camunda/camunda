@@ -30,11 +30,6 @@
       <artifactId>spring-core</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.github.vertical-blank</groupId>
-      <artifactId>sql-formatter</artifactId>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
       <groupId>org.apache.commons</groupId>
       <artifactId>commons-lang3</artifactId>
     </dependency>
