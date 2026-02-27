@@ -129,5 +129,5 @@
   "msw": {
     "workerDirectory": "public"
   },
-  "packageManager": "npm@11.10.0"
+  "packageManager": "npm@11.11.0"
 }
