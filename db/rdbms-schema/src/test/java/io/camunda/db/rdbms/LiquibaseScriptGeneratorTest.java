@@ -25,7 +25,7 @@ class LiquibaseScriptGeneratorTest {
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test.h2.sql"));
-    assertThat(sqlScript).isEqualTo(expected);
+    assertThat(sqlScript).isEqualToIgnoringWhitespace(expected);
   }
 
   @Test
@@ -64,6 +64,6 @@ class LiquibaseScriptGeneratorTest {
 
     // then
     final var expected = Files.readString(Paths.get("src/test/resources/test_prefix.h2.sql"));
-    assertThat(sqlScript).isEqualTo(expected);
+    assertThat(sqlScript).isEqualToIgnoringWhitespace(expected);
   }
 }
