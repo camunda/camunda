@@ -9,9 +9,6 @@ package io.camunda.operate.qa.backup;
 
 import io.camunda.operate.qa.util.TestContext;
 import io.camunda.operate.testhelpers.StatefulRestTemplate;
-import io.camunda.operate.webapp.api.v1.entities.ProcessInstance;
-import io.camunda.operate.webapp.api.v1.entities.Query;
-import io.camunda.operate.webapp.api.v1.entities.Results;
 import io.camunda.operate.webapp.reader.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.reader.dto.listview.ListViewResponseDto;
 import io.camunda.webapps.backup.GetBackupStateResponseDto;
@@ -20,11 +17,11 @@ import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.RequestEntity;
@@ -46,18 +43,13 @@ public class OperateAPICaller {
   }
 
   public ListViewResponseDto getProcessInstances() {
-    return searchProcessInstances(new Query<ProcessInstance>().setSize(1000));
+    return searchProcessInstances(new ProcessInstancesSearchRequest(1000, null));
   }
 
   public ListViewResponseDto getIncidentProcessInstances() {
-    final Query<ProcessInstance> query =
-        new Query<ProcessInstance>()
-            .setSize(1000)
-            .setFilter(
-                new ProcessInstance()
-                    .setState(ProcessInstanceState.ACTIVE.name())
-                    .setIncident(true));
-    return searchProcessInstances(query);
+    return searchProcessInstances(
+        new ProcessInstancesSearchRequest(
+            1000, new ProcessInstanceSearchFilter(ProcessInstanceState.ACTIVE.name(), true)));
   }
 
   public String[] getSequenceFlows(final String processInstanceId) {
@@ -65,11 +57,11 @@ public class OperateAPICaller {
         restTemplate.getForObject(
             restTemplate.getURL("/v2/process-instances/" + processInstanceId + "/sequence-flows"),
             ProcessInstanceSequenceFlowsQueryResult.class);
-    if (response == null || response.getItems() == null) {
+    if (response == null || response.items() == null) {
       return new String[0];
     }
-    return response.getItems().stream()
-        .map(ProcessInstanceSequenceFlowResult::getSequenceFlowId)
+    return response.items().stream()
+        .map(ProcessInstanceSequenceFlowResult::sequenceFlowId)
         .toArray(String[]::new);
   }
 
@@ -99,55 +91,65 @@ public class OperateAPICaller {
     }
   }
 
-  private ListViewResponseDto searchProcessInstances(final Query<ProcessInstance> query) {
-    final RequestEntity<Query<ProcessInstance>> request =
-        RequestEntity.post(restTemplate.getURL("/v1/process-instances/search"))
+  private ListViewResponseDto searchProcessInstances(final ProcessInstancesSearchRequest query) {
+    final Map<String, Object> requestBody = new HashMap<>();
+    requestBody.put("page", Map.of("limit", query.size()));
+    final ProcessInstanceSearchFilter filter = query.filter();
+    if (filter != null) {
+      final Map<String, Object> filterBody = new HashMap<>();
+      if (filter.state() != null) {
+        filterBody.put("state", filter.state());
+      }
+      if (filter.hasIncident() != null) {
+        filterBody.put("hasIncident", filter.hasIncident());
+      }
+      if (!filterBody.isEmpty()) {
+        requestBody.put("filter", filterBody);
+      }
+    }
+
+    final RequestEntity<Map<String, Object>> request =
+        RequestEntity.post(restTemplate.getURL("/v2/process-instances/search"))
             .headers(restTemplate.getHeaders())
             .contentType(MediaType.APPLICATION_JSON)
-            .body(query);
-    final ResponseEntity<Results<ProcessInstance>> response =
-        restTemplate.exchange(
-            request, new ParameterizedTypeReference<Results<ProcessInstance>>() {});
-    final Results<ProcessInstance> results = response.getBody();
+            .body(requestBody);
+    final ResponseEntity<ProcessInstanceSearchQueryResult> response =
+        restTemplate.exchange(request, ProcessInstanceSearchQueryResult.class);
+    final ProcessInstanceSearchQueryResult results = response.getBody();
 
     final ListViewResponseDto listViewResponse = new ListViewResponseDto();
-    if (results == null || results.getItems() == null) {
+    if (results == null || results.items() == null) {
       return listViewResponse;
     }
 
-    listViewResponse.setTotalCount(results.getTotal());
+    if (results.page() != null && results.page().totalItems() != null) {
+      listViewResponse.setTotalCount(results.page().totalItems());
+    }
     listViewResponse.setProcessInstances(
-        results.getItems().stream()
+        results.items().stream()
             .map(
                 processInstance ->
                     new ListViewProcessInstanceDto()
-                        .setId(String.valueOf(processInstance.getKey()))
-                        .setBpmnProcessId(processInstance.getBpmnProcessId()))
+                        .setId(String.valueOf(processInstance.processInstanceKey()))
+                        .setBpmnProcessId(processInstance.processDefinitionId()))
             .toList());
     return listViewResponse;
   }
 
-  private static final class ProcessInstanceSequenceFlowsQueryResult {
-    private List<ProcessInstanceSequenceFlowResult> items;
+  private record ProcessInstancesSearchRequest(int size, ProcessInstanceSearchFilter filter) {}
 
-    public List<ProcessInstanceSequenceFlowResult> getItems() {
-      return items;
-    }
+  private record ProcessInstanceSearchFilter(String state, Boolean hasIncident) {}
 
-    public void setItems(final List<ProcessInstanceSequenceFlowResult> items) {
-      this.items = items;
-    }
-  }
+  private record ProcessInstanceSearchQueryResult(
+      List<ProcessInstanceSearchResultItem> items, ProcessInstanceSearchPage page) {}
 
-  private static final class ProcessInstanceSequenceFlowResult {
-    private String sequenceFlowId;
+  private record ProcessInstanceSearchResultItem(
+      Long processInstanceKey, String processDefinitionId) {}
 
-    public String getSequenceFlowId() {
-      return sequenceFlowId;
-    }
+  private record ProcessInstanceSearchPage(Long totalItems) {}
 
-    public void setSequenceFlowId(final String sequenceFlowId) {
-      this.sequenceFlowId = sequenceFlowId;
-    }
-  }
+  private record ProcessInstanceSequenceFlowsQueryResult(
+      List<ProcessInstanceSequenceFlowResult> items) {}
+
+  private record ProcessInstanceSequenceFlowResult(String sequenceFlowId) {}
 }
