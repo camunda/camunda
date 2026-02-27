@@ -9,9 +9,9 @@ package io.camunda.zeebe.restore;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.camunda.zeebe.backup.api.BackupRange;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.management.BackupMetadataSyncer;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
-import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState.CheckpointEntry;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -98,20 +98,20 @@ final class RestoreManagerTest {
     final var to = from.plusSeconds(300);
 
     // Partition 1: checkpoints 1-3, range [1, 3]
-    final var metadataSyncer = new BackupMetadataSyncer(backupStore);
+    final var metadataSyncer = new BackupMetadataSyncer(backupStore, new SimpleMeterRegistry());
     metadataSyncer
         .store(
             1,
             List.of(
-                new CheckpointEntry(
-                    1, 100, from.minusSeconds(60).toEpochMilli(), CheckpointType.MANUAL_BACKUP, 1),
-                new CheckpointEntry(
-                    2, 200, from.plusSeconds(60).toEpochMilli(), CheckpointType.MANUAL_BACKUP, 101),
-                new CheckpointEntry(
-                    3,
-                    300,
-                    from.plusSeconds(120).toEpochMilli(),
+                new Checkpoint(
+                    CheckpointType.MANUAL_BACKUP, 1, from.minusSeconds(60).toEpochMilli(), 100, 1),
+                new Checkpoint(
+                    CheckpointType.MANUAL_BACKUP, 2, from.plusSeconds(60).toEpochMilli(), 200, 101),
+                new Checkpoint(
                     CheckpointType.MANUAL_BACKUP,
+                    3,
+                    from.plusSeconds(120).toEpochMilli(),
+                    300,
                     201)),
             List.of(new BackupRange(1, 3)))
         .join();
@@ -120,12 +120,12 @@ final class RestoreManagerTest {
     metadataSyncer.store(
         2,
         List.of(
-            new CheckpointEntry(
-                4, 400, from.minusSeconds(30).toEpochMilli(), CheckpointType.MANUAL_BACKUP, 301),
-            new CheckpointEntry(
-                5, 500, from.plusSeconds(180).toEpochMilli(), CheckpointType.MANUAL_BACKUP, 401),
-            new CheckpointEntry(
-                6, 600, from.plusSeconds(240).toEpochMilli(), CheckpointType.MANUAL_BACKUP, 501)),
+            new Checkpoint(
+                CheckpointType.MANUAL_BACKUP, 4, from.minusSeconds(30).toEpochMilli(), 400, 301),
+            new Checkpoint(
+                CheckpointType.MANUAL_BACKUP, 5, from.plusSeconds(180).toEpochMilli(), 500, 401),
+            new Checkpoint(
+                CheckpointType.MANUAL_BACKUP, 6, from.plusSeconds(240).toEpochMilli(), 600, 501)),
         List.of(new BackupRange(4, 6)));
 
     try (final var restoreManager =

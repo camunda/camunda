@@ -9,10 +9,12 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupDescriptor;
 import io.camunda.zeebe.backup.api.BackupManager;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupIdentifierImpl;
 import io.camunda.zeebe.backup.common.BackupStatusImpl;
 import io.camunda.zeebe.backup.metrics.BackupManagerMetrics;
@@ -28,6 +30,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.SequencedCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +64,12 @@ public final class BackupService extends Actor implements BackupManager {
     metrics = new BackupManagerMetrics(partitionRegistry);
     internalBackupManager =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, partitionId);
+            backupStore,
+            logStreamWriter,
+            backupRangeState,
+            checkpointMetadataState,
+            partitionId,
+            partitionRegistry);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }
@@ -219,8 +227,10 @@ public final class BackupService extends Actor implements BackupManager {
   }
 
   @Override
-  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata() {
-    return internalBackupManager.syncMetadata(actor);
+  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      final SequencedCollection<Checkpoint> checkpoints,
+      final SequencedCollection<BackupRange> ranges) {
+    return internalBackupManager.syncMetadata(checkpoints, ranges, actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
