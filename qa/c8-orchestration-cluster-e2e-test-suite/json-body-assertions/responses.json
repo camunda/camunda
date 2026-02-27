@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "a10bb5b34c3d34fa432bd856142bf136b8629258",
-    "generatedAt": "2026-02-25T13:09:08.097Z",
+    "commit": "d97131885fd07295ca77c84430266981ac1f7615",
+    "generatedAt": "2026-02-27T12:26:34.329Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "195577de47d16a714c11b79cd94536877e71e7cc5823011285bc7ac717d2e765"
+    "specSha256": "cf6795ea64d7016a82512a5f32aac132188c5dcb4a647738505b18e0fa7e012a"
   },
   "responses": [
     {
@@ -113,6 +113,7 @@
                     "DECISION",
                     "GROUP",
                     "INCIDENT",
+                    "JOB",
                     "MAPPING_RULE",
                     "PROCESS_INSTANCE",
                     "RESOURCE",
@@ -332,6 +333,7 @@
               "DECISION",
               "GROUP",
               "INCIDENT",
+              "JOB",
               "MAPPING_RULE",
               "PROCESS_INSTANCE",
               "RESOURCE",
@@ -870,7 +872,8 @@
                 },
                 {
                   "name": "endDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "operationsCompletedCount",
@@ -886,7 +889,8 @@
                 },
                 {
                   "name": "startDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "state",
@@ -1011,7 +1015,8 @@
           },
           {
             "name": "endDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "operationsCompletedCount",
@@ -1027,7 +1032,8 @@
           },
           {
             "name": "startDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "state",
@@ -1486,6 +1492,10 @@
             "children": {
               "required": [
                 {
+                  "name": "decisionDefinitionType",
+                  "type": "string"
+                },
+                {
                   "name": "evaluatedInputs",
                   "type": "array<items>",
                   "children": {
@@ -1568,10 +1578,6 @@
                 },
                 {
                   "name": "decisionDefinitionName",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionDefinitionType",
                   "type": "string"
                 },
                 {
@@ -4049,6 +4055,7 @@
                 {
                   "name": "userTask",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -4232,7 +4239,8 @@
                 },
                 {
                   "name": "endTime",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "errorCode",
@@ -4433,114 +4441,6 @@
                 {
                   "name": "workers",
                   "type": "number"
-                }
-              ],
-              "optional": []
-            }
-          },
-          {
-            "name": "page",
-            "type": "object",
-            "children": {
-              "required": [
-                {
-                  "name": "totalItems",
-                  "type": "number"
-                }
-              ],
-              "optional": [
-                {
-                  "name": "endCursor",
-                  "type": "string",
-                  "nullable": true
-                },
-                {
-                  "name": "hasMoreTotalItems",
-                  "type": "boolean"
-                },
-                {
-                  "name": "startCursor",
-                  "type": "string",
-                  "nullable": true
-                }
-              ]
-            }
-          }
-        ],
-        "optional": []
-      }
-    },
-    {
-      "path": "/jobs/statistics/by-workers",
-      "method": "POST",
-      "status": "200",
-      "schema": {
-        "required": [
-          {
-            "name": "items",
-            "type": "array<object>",
-            "children": {
-              "required": [
-                {
-                  "name": "completed",
-                  "type": "failed",
-                  "rawRefName": "failed",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "count",
-                        "type": "number"
-                      },
-                      {
-                        "name": "lastUpdatedAt",
-                        "type": "string",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
-                  "name": "created",
-                  "type": "failed",
-                  "rawRefName": "failed",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "count",
-                        "type": "number"
-                      },
-                      {
-                        "name": "lastUpdatedAt",
-                        "type": "string",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
-                  "name": "failed",
-                  "type": "failed",
-                  "rawRefName": "failed",
-                  "children": {
-                    "required": [
-                      {
-                        "name": "count",
-                        "type": "number"
-                      },
-                      {
-                        "name": "lastUpdatedAt",
-                        "type": "string",
-                        "nullable": true
-                      }
-                    ],
-                    "optional": []
-                  }
-                },
-                {
-                  "name": "worker",
-                  "type": "string"
                 }
               ],
               "optional": []
@@ -6013,6 +5913,7 @@
           {
             "name": "batchOperation",
             "type": "schema",
+            "nullable": true,
             "children": {
               "required": [],
               "optional": [
@@ -7136,7 +7037,8 @@
                 },
                 {
                   "name": "processName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "state",
@@ -7297,7 +7199,8 @@
           },
           {
             "name": "processName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "state",
@@ -7434,6 +7337,7 @@
                     "DECISION",
                     "GROUP",
                     "INCIDENT",
+                    "JOB",
                     "MAPPING_RULE",
                     "PROCESS_INSTANCE",
                     "RESOURCE",
