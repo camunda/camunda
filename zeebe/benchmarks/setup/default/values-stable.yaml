@@ -1,13 +1,13 @@
 # Additional values file to run Zeebe on stable VMs
 zeebe:
-  # Require n2-standard-2 to ensure the broker is the only application running on its node
+  # Require n2-standard-4-stable to ensure the broker is the only application running on its node
   nodeSelector:
-    cloud.google.com/gke-nodepool: n2-standard-2-stable
+    cloud.google.com/gke-nodepool: n2-standard-4-stable
 
   tolerations:
   - key: nodepool
     operator: Equal
-    value: n2-standard-2-stable
+    value: n2-standard-4-stable
     effect: NoSchedule
 
 # Support of 10.x camunda platform
@@ -27,5 +27,5 @@ zeebeGateway:
   tolerations:
   - key: nodepool
     operator: Equal
-    value: n2-standard-2-stable
+    value: n2-standard-4-stable
     effect: NoSchedule
