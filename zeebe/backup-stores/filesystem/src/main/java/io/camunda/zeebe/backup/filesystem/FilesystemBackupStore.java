@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -201,7 +202,12 @@ public final class FilesystemBackupStore implements BackupStore {
           final var metadataPath = metadataDir.resolve(METADATA_FILE);
           try {
             FileUtil.ensureDirectoryExists(metadataDir);
-            Files.write(metadataPath, content);
+            Files.write(
+                metadataPath,
+                content,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.SYNC,
+                StandardOpenOption.TRUNCATE_EXISTING);
             FileUtil.flushDirectory(metadataDir);
           } catch (final IOException e) {
             throw new UncheckedIOException(e);

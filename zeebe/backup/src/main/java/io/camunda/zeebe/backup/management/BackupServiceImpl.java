@@ -415,7 +415,7 @@ final class BackupServiceImpl {
               }
               final var first = toCheckpointInfo(range.start(), firstMeta);
               final var last = toCheckpointInfo(range.end(), lastMeta);
-              result.add(new BackupRangeStatus.Complete(first, last));
+              result.add(new BackupRangeStatus(first, last));
             }
             future.complete(result);
           } catch (final Exception e) {

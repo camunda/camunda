@@ -19,10 +19,8 @@ import io.camunda.zeebe.util.buffer.BufferWriter;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.collections.LongHashSet;
 
 public final class BackupRangesResponse implements BufferReader, BufferWriter {
 
@@ -36,19 +34,10 @@ public final class BackupRangesResponse implements BufferReader, BufferWriter {
 
   @Override
   public int getLength() {
-    int rangesLength = 0;
-    for (final var range : ranges) {
-      rangesLength +=
-          RangesEncoder.sbeBlockLength()
-              + RangesEncoder.MissingCheckpointsEncoder.HEADER_SIZE
-              + (range.missingCheckpoints().size()
-                  * RangesEncoder.MissingCheckpointsEncoder.sbeBlockLength());
-    }
-
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
         + RangesEncoder.HEADER_SIZE
-        + rangesLength;
+        + RangesEncoder.sbeBlockLength() * ranges.size();
   }
 
   @Override
@@ -61,11 +50,6 @@ public final class BackupRangesResponse implements BufferReader, BufferWriter {
       rangeEncoder.partitionId(range.partitionId());
       writeCheckpointInfo(range.first(), rangeEncoder.first());
       writeCheckpointInfo(range.last(), rangeEncoder.last());
-      final var missingCheckpointsEncoder =
-          rangesEncoder.missingCheckpointsCount(range.missingCheckpoints().size());
-      for (final var checkpointId : range.missingCheckpoints()) {
-        missingCheckpointsEncoder.next().checkpointId(checkpointId);
-      }
     }
     return bodyEncoder.encodedLength() + headerEncoder.encodedLength();
   }
@@ -89,12 +73,6 @@ public final class BackupRangesResponse implements BufferReader, BufferWriter {
     final var rangesDecoder = bodyDecoder.ranges();
     ranges = new ArrayList<>(rangesDecoder.count());
     for (final var range : rangesDecoder) {
-      final var missingCheckpointsDecoder = range.missingCheckpoints();
-      final var missingCheckpoints = new LongHashSet(missingCheckpointsDecoder.count());
-      for (final var missingCheckpoint : missingCheckpointsDecoder) {
-        missingCheckpoints.add(missingCheckpoint.checkpointId());
-      }
-
       final var first = range.first();
       final var last = range.last();
       ranges.add(
@@ -111,8 +89,7 @@ public final class BackupRangesResponse implements BufferReader, BufferWriter {
                   last.firstLogPosition(),
                   last.checkpointPosition(),
                   CheckpointType.valueOf(last.checkpointType()),
-                  Instant.ofEpochMilli(last.checkpointTimestamp())),
-              missingCheckpoints));
+                  Instant.ofEpochMilli(last.checkpointTimestamp()))));
     }
   }
 
@@ -131,6 +108,5 @@ public final class BackupRangesResponse implements BufferReader, BufferWriter {
       CheckpointType checkpointType,
       Instant checkpointTimestamp) {}
 
-  public record PartitionBackupRange(
-      int partitionId, CheckpointInfo first, CheckpointInfo last, Set<Long> missingCheckpoints) {}
+  public record PartitionBackupRange(int partitionId, CheckpointInfo first, CheckpointInfo last) {}
 }
