@@ -11,7 +11,62 @@ All guides are targeted at a Linux system.
 
 ## Requirements
 
-Make sure you have the following installed: docker, gcloud, kubectl, kubens and helm
+Make sure you have the following installed:
+
+* gcloud https://cloud.google.com/sdk/install
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* docker https://docs.docker.com/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+* OPTIONAL go https://golang.org/doc/install
+
+### Initial Setup
+
+Some initial setup steps are required to connect to the Zeebe GKE cluster:
+
+```sh
+## Init gcloud
+gcloud init
+gcloud config set project zeebe-io
+gcloud container clusters get-credentials zeebe-cluster --zone europe-west1-b --project zeebe-io
+
+## to use google cloud docker registry
+gcloud auth configure-docker
+
+## install kubectl via gcloud cli
+gcloud components install kubectl
+
+## install helm
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
+chmod 700 get_helm.sh
+./get_helm.sh
+
+## add zeebe as helm repo
+helm version
+helm repo add zeebe https://helm.camunda.io
+helm repo add stable https://charts.helm.sh/stable
+helm repo update
+
+## install kubens
+curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
+install kubens /usr/local/bin/
+```
+
+### Windows
+
+Running the load tests with Windows is possible, with the help of the [Windows Subsystem for Linux](https://docs.microsoft.com/en-us/windows/wsl/install-win10).
+The setup changes slightly compared to the Linux setup.
+
+These are the components to install on Windows:
+* Docker
+
+These are the components to install within the WSL:
+* gcloud https://cloud.google.com/sdk/install?hl=de
+* Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
+* Helm 3.*  https://helm.sh/docs/intro/install/
+* kubens/kubectx https://github.com/ahmetb/kubectx
+
+When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
 
 ## Load testing Self-Managed Zeebe Cluster
 
@@ -122,6 +177,19 @@ make template-stable
 ```
 
 The `clean` job works regardless and will clean up both the platform and load test deployments.
+
+## Installing via Helm chart directly
+
+As an alternative to the `newLoadTest.sh` script, you can install the load test using the [camunda-load-tests](https://github.com/camunda/camunda-load-tests-helm) Helm chart directly. The chart repository contains a [detailed guide](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/README.md).
+
+```shell
+# Add the load test chart to the local repository
+helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
+# Install a new Helm Chart release to the current namespace
+helm install this-is-a-load-test camunda-load-tests/camunda-load-tests
+```
+
+To apply configuration changes, either edit the existing [values](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml) file in the repository (and apply them via `-f`) or set configurations via the `--set` flag. For more information, see also the [related Helm documentation](https://helm.sh/docs/chart_template_guide/values_files/).
 
 ## Load testing Camunda Cloud SaaS
 
