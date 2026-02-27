@@ -445,6 +445,9 @@ components:
         - LITERAL_EXPRESSION
         - UNSPECIFIED
         - UNKNOWN
+      x-deprecated-enum-members:
+        - name: UNSPECIFIED
+          deprecatedInVersion: "8.9.0"
 
     DecisionInstanceStateEnum:
       description: The state of the decision instance. UNSPECIFIED and UNKNOWN are deprecated and should not be used anymore, for removal in 8.10
@@ -454,6 +457,11 @@ components:
         - FAILED
         - UNSPECIFIED
         - UNKNOWN
+      x-deprecated-enum-members:
+        - name: UNSPECIFIED
+          deprecatedInVersion: "8.9.0"
+        - name: UNKNOWN
+          deprecatedInVersion: "8.9.0"
 
     ## Filters
 
