@@ -64,6 +64,7 @@ describe('<BatchItemsTable />', () => {
     render(
       <BatchItemsTable
         batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
         isLoading={false}
       />,
       {
@@ -83,6 +84,7 @@ describe('<BatchItemsTable />', () => {
     render(
       <BatchItemsTable
         batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
         isLoading={false}
       />,
       {
@@ -114,6 +116,7 @@ describe('<BatchItemsTable />', () => {
     render(
       <BatchItemsTable
         batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
         isLoading={false}
       />,
       {
@@ -150,6 +153,7 @@ describe('<BatchItemsTable />', () => {
     render(
       <BatchItemsTable
         batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
         isLoading={false}
       />,
       {
@@ -183,6 +187,7 @@ describe('<BatchItemsTable />', () => {
     render(
       <BatchItemsTable
         batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="CANCEL_PROCESS_INSTANCE"
         isLoading={false}
       />,
       {
@@ -195,5 +200,176 @@ describe('<BatchItemsTable />', () => {
     );
     expect(screen.getByText('Failure reason:')).toBeInTheDocument();
     expect(screen.getByText('Error processing item 1')).toBeInTheDocument();
+  });
+
+  it('should show a Decision Instance Key column with a link', async () => {
+    const items: BatchOperationItem[] = [
+      {
+        batchOperationKey: BATCH_OPERATION_KEY,
+        itemKey: 'decision-key-1',
+        processInstanceKey: '2251799813685250',
+        rootProcessInstanceKey: null,
+        state: 'COMPLETED',
+        operationType: 'DELETE_DECISION_INSTANCE',
+        processedDate: '2023-11-22T09:03:29.564+0100',
+        errorMessage: null,
+      },
+    ];
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="DELETE_DECISION_INSTANCE"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /decision instance key/i}),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole('columnheader', {name: /process instance key/i}),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole('link', {
+        name: /view decision instance decision-key-1/i,
+      }),
+    ).toHaveAttribute('href', '/decisions/decision-key-1');
+  });
+
+  it('should show "No decision instance" when there is no associated decision instance', async () => {
+    const items: BatchOperationItem[] = [
+      {
+        batchOperationKey: BATCH_OPERATION_KEY,
+        itemKey: '-1',
+        processInstanceKey: '2251799813685250',
+        rootProcessInstanceKey: null,
+        state: 'COMPLETED',
+        operationType: 'DELETE_DECISION_INSTANCE',
+        processedDate: '2023-11-22T09:03:29.564+0100',
+        errorMessage: null,
+      },
+    ];
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="DELETE_DECISION_INSTANCE"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getAllByText('No decision instance').length).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it('should show an Incident Key column', async () => {
+    const items: BatchOperationItem[] = [
+      {
+        batchOperationKey: BATCH_OPERATION_KEY,
+        itemKey: 'incident-key-1',
+        processInstanceKey: '2251799813685250',
+        rootProcessInstanceKey: null,
+        state: 'COMPLETED',
+        operationType: 'RESOLVE_INCIDENT',
+        processedDate: '2023-11-22T09:03:29.564+0100',
+        errorMessage: null,
+      },
+    ];
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="RESOLVE_INCIDENT"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(
+      screen.getByRole('columnheader', {name: /incident key/i}),
+    ).toBeInTheDocument();
+    expect(screen.getByText('incident-key-1')).toBeInTheDocument();
+  });
+
+  it('should show "No incident" when there is no associated incident', async () => {
+    const items: BatchOperationItem[] = [
+      {
+        batchOperationKey: BATCH_OPERATION_KEY,
+        itemKey: '-1',
+        processInstanceKey: '2251799813685250',
+        rootProcessInstanceKey: null,
+        state: 'COMPLETED',
+        operationType: 'RESOLVE_INCIDENT',
+        processedDate: '2023-11-22T09:03:29.564+0100',
+        errorMessage: null,
+      },
+    ];
+    mockQueryBatchOperationItems().withSuccess({
+      items,
+      page: {
+        totalItems: 1,
+        startCursor: null,
+        endCursor: null,
+        hasMoreTotalItems: false,
+      },
+    });
+
+    render(
+      <BatchItemsTable
+        batchOperationKey={BATCH_OPERATION_KEY}
+        batchOperationType="RESOLVE_INCIDENT"
+        isLoading={false}
+      />,
+      {wrapper: Wrapper},
+    );
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryAllByTestId('data-table-skeleton'),
+    );
+
+    expect(screen.getAllByText('No incident').length).toBeGreaterThan(0);
   });
 });

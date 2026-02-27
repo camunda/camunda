@@ -167,6 +167,7 @@ const BatchOperation: React.FC = () => {
         </TilesContainer>
         <BatchItemsTable
           batchOperationKey={batchOperationKey}
+          batchOperationType={batchOperationType}
           isLoading={isLoading}
         />
       </ContentContainer>
