@@ -39,6 +39,7 @@ public class OidcAuthenticationConfiguration {
   private String redirectUri;
   private List<String> scope = Arrays.asList("openid", "profile");
   private String jwkSetUri;
+  private List<String> additionalJwkSetUris;
   private String authorizationUri;
   private String tokenUri;
   private AuthorizeRequestConfiguration authorizeRequestConfiguration =
@@ -138,6 +139,14 @@ public class OidcAuthenticationConfiguration {
 
   public void setJwkSetUri(final String jwkSetUri) {
     this.jwkSetUri = jwkSetUri;
+  }
+
+  public List<String> getAdditionalJwkSetUris() {
+    return additionalJwkSetUris;
+  }
+
+  public void setAdditionalJwkSetUris(final List<String> additionalJwkSetUris) {
+    this.additionalJwkSetUris = additionalJwkSetUris;
   }
 
   public String getAuthorizationUri() {
@@ -260,6 +269,7 @@ public class OidcAuthenticationConfiguration {
         || redirectUri != null
         || !Arrays.asList("openid", "profile").equals(scope)
         || jwkSetUri != null
+        || additionalJwkSetUris != null
         || authorizationUri != null
         || tokenUri != null
         || authorizeRequestConfiguration == null
@@ -296,6 +306,7 @@ public class OidcAuthenticationConfiguration {
     private String redirectUri;
     private List<String> scope = Arrays.asList("openid", "profile");
     private String jwkSetUri;
+    private List<String> additionalJwkSetUris;
     private String authorizationUri;
     private String tokenUri;
     private AuthorizeRequestConfiguration authorizeRequestConfiguration =
@@ -353,6 +364,11 @@ public class OidcAuthenticationConfiguration {
 
     public Builder jwkSetUri(final String jwkSetUri) {
       this.jwkSetUri = jwkSetUri;
+      return this;
+    }
+
+    public Builder additionalJwkSetUris(final List<String> additionalJwkSetUris) {
+      this.additionalJwkSetUris = additionalJwkSetUris;
       return this;
     }
 
@@ -434,6 +450,7 @@ public class OidcAuthenticationConfiguration {
       config.setRedirectUri(redirectUri);
       config.setScope(scope);
       config.setJwkSetUri(jwkSetUri);
+      config.setAdditionalJwkSetUris(additionalJwkSetUris);
       config.setAuthorizationUri(authorizationUri);
       config.setTokenUri(tokenUri);
       config.setAuthorizeRequest(authorizeRequestConfiguration);
