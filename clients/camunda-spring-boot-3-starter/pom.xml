@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>io.camunda</groupId>
+    <artifactId>camunda-library-parent</artifactId>
+    <version>8.7.24-SNAPSHOT</version>
+    <relativePath>../../library-parent/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>camunda-spring-boot-3-starter</artifactId>
+
+  <name>Camunda Spring Boot 3 Starter</name>
+  <description>Camunda Spring Boot Starter for Spring Boot 3.x</description>
+
+  <licenses>
+    <license>
+      <name>Apache License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <version.java>17</version.java>
+    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
+  </properties>
+
+  <dependencies>
+    <!-- Base Spring Boot 3.x starter - will be shaded into this artifact -->
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>spring-boot-starter-camunda-sdk</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.1</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <createDependencyReducedPom>true</createDependencyReducedPom>
+              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
+              <artifactSet>
+                <includes>
+                  <!-- Only include the base starter module in the shaded jar -->
+                  <include>io.camunda:spring-boot-starter-camunda-sdk</include>
+                </includes>
+              </artifactSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <configuration>
+          <ignoredUsedUndeclaredDependencies>
+            <dependency>*</dependency>
+          </ignoredUsedUndeclaredDependencies>
+          <ignoredNonTestScopedDependencies>
+            <dependency>*</dependency>
+          </ignoredNonTestScopedDependencies>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

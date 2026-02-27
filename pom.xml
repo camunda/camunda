@@ -32,6 +32,7 @@
     <module>service</module>
     <module>clients/java</module>
     <module>clients/spring-boot-starter-camunda-sdk</module>
+    <module>clients/camunda-spring-boot-3-starter</module>
     <module>clients/camunda-spring-boot-4-starter</module>
     <module>testing/camunda-process-test-java</module>
     <module>testing/camunda-process-test-spring</module>
