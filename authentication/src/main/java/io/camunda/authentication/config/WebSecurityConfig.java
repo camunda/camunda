@@ -631,9 +631,14 @@ public class WebSecurityConfig {
         final OAuth2AuthorizedClientRepository authorizedClientRepository,
         final OidcAccessTokenDecoderFactory oidcAccessTokenDecoderFactory,
         final TokenClaimsConverter tokenClaimsConverter,
-        final HttpServletRequest request) {
+        final HttpServletRequest request,
+        final OidcAuthenticationConfigurationRepository oidcProviderRepository) {
       return new OidcUserAuthenticationConverter(
-          authorizedClientRepository, oidcAccessTokenDecoderFactory, tokenClaimsConverter, request);
+          authorizedClientRepository,
+          oidcAccessTokenDecoderFactory,
+          tokenClaimsConverter,
+          request,
+          buildAdditionalJwkSetUrisByIssuer(oidcProviderRepository));
     }
 
     @Bean
