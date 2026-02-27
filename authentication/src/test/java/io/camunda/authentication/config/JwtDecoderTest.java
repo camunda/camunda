@@ -544,6 +544,65 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
       assertThatCode(() -> decoder.decode(jwt2)).doesNotThrowAnyException();
     }
 
+    @Test
+    void shouldFailWhenSameKidExistsAtBothEndpointsAndTokenSignedWithAdditionalKey()
+        throws JOSEException {
+      // given — both endpoints expose kid="shared-kid" but with different RSA key material.
+      // This documents a known limitation of short-circuit key selection:
+      // the decoder picks the primary key (wrong material) and signature verification fails.
+      final var primaryKeySharedKid =
+          new RSAKeyGenerator(2048)
+              .keyID("shared-kid")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+      final var additionalKeySharedKid =
+          new RSAKeyGenerator(2048)
+              .keyID("shared-kid")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", primaryKeySharedKid.toPublicJWK().toJSONString());
+      mockJwksEndpoint("/additional/jwks", additionalKeySharedKid.toPublicJWK().toJSONString());
+
+      // JWT signed with the ADDITIONAL key's material, but same kid="shared-kid"
+      final var jwt = signAndSerialize(additionalKeySharedKid, "shared-kid");
+
+      // when // then — decoder fails because primary key material is selected (short-circuit)
+      // and signature verification fails with the wrong key
+      assertThatThrownBy(() -> decoder.decode(jwt)).isInstanceOf(JwtException.class);
+    }
+
+    @Test
+    void shouldDecodeTokenWhenSameKidExistsAtBothEndpointsAndTokenSignedWithPrimaryKey()
+        throws JOSEException {
+      // given — same kid at both endpoints, but token signed with the PRIMARY key.
+      // This succeeds because the primary key is selected first (short-circuit) and
+      // it matches the signing key.
+      final var primaryKeySharedKid =
+          new RSAKeyGenerator(2048)
+              .keyID("shared-kid-ok")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+      final var additionalKeySharedKid =
+          new RSAKeyGenerator(2048)
+              .keyID("shared-kid-ok")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", primaryKeySharedKid.toPublicJWK().toJSONString());
+      mockJwksEndpoint("/additional/jwks", additionalKeySharedKid.toPublicJWK().toJSONString());
+
+      // JWT signed with the PRIMARY key
+      final var jwt = signAndSerialize(primaryKeySharedKid, "shared-kid-ok");
+
+      // when // then — succeeds: primary key is selected and matches
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
     private String signAndSerialize(final RSAKey key, final String kid) throws JOSEException {
       final var jwt =
           new SignedJWT(
