@@ -27,6 +27,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
+import org.jspecify.annotations.NonNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,27 +66,10 @@ public final class BackupMetadataSyncer {
       final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
       final SequencedCollection<BackupRange> ranges) {
     final var timer = metrics.startSyncTimer(partitionId);
-    final var manifest =
-        new BackupMetadata(
-            BackupMetadata.VERSION,
-            partitionId,
-            Instant.now(),
-            checkpoints.stream()
-                .map(
-                    entry ->
-                        new CheckpointEntry(
-                            entry.checkpointId(),
-                            entry.checkpointPosition(),
-                            Instant.ofEpochMilli(entry.checkpointTimestamp()),
-                            entry.checkpointType(),
-                            entry.firstLogPosition() > 0
-                                ? OptionalLong.of(entry.firstLogPosition())
-                                : OptionalLong.empty()))
-                .toList(),
-            ranges.stream().map(range -> new RangeEntry(range.start(), range.end())).toList());
+    final var metadata = createMetadata(partitionId, checkpoints, ranges);
 
     try {
-      final var content = MAPPER.writeValueAsBytes(manifest);
+      final var content = MAPPER.writeValueAsBytes(metadata);
       final var serializedSize = content.length;
       return backupStore
           .storeBackupMetadata(partitionId, content)
@@ -105,6 +89,29 @@ public final class BackupMetadataSyncer {
       metrics.recordFailedSync(partitionId);
       return CompletableFuture.failedFuture(e);
     }
+  }
+
+  private static @NonNull BackupMetadata createMetadata(
+      final int partitionId,
+      @NonNull final SequencedCollection<DbCheckpointMetadataState.CheckpointEntry> checkpoints,
+      @NonNull final SequencedCollection<BackupRange> ranges) {
+    return new BackupMetadata(
+        BackupMetadata.VERSION,
+        partitionId,
+        Instant.now(),
+        checkpoints.stream()
+            .map(
+                entry ->
+                    new CheckpointEntry(
+                        entry.checkpointId(),
+                        entry.checkpointPosition(),
+                        Instant.ofEpochMilli(entry.checkpointTimestamp()),
+                        entry.checkpointType(),
+                        entry.firstLogPosition() > 0
+                            ? OptionalLong.of(entry.firstLogPosition())
+                            : OptionalLong.empty()))
+            .toList(),
+        ranges.stream().map(range -> new RangeEntry(range.start(), range.end())).toList());
   }
 
   /**
