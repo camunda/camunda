@@ -14,6 +14,7 @@ import com.nimbusds.jose.proc.SecurityContext;
 import com.nimbusds.jwt.JWTClaimsSet;
 import com.nimbusds.jwt.proc.JWTClaimsSetAwareJWSKeySelector;
 import java.security.Key;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -35,13 +36,25 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
 
   private final List<ClientRegistration> clientRegistrations;
   private final JWSKeySelectorFactory jwsKeySelectorFactory;
+  private final Map<String, List<String>> additionalJwkSetUrisByIssuer;
   private final Map<String, JWSKeySelector<SecurityContext>> selectors;
 
   public IssuerAwareJWSKeySelector(
       final List<ClientRegistration> clientRegistrations,
       final JWSKeySelectorFactory jwsKeySelectorFactory) {
+    this(clientRegistrations, jwsKeySelectorFactory, Collections.emptyMap());
+  }
+
+  public IssuerAwareJWSKeySelector(
+      final List<ClientRegistration> clientRegistrations,
+      final JWSKeySelectorFactory jwsKeySelectorFactory,
+      final Map<String, List<String>> additionalJwkSetUrisByIssuer) {
     this.clientRegistrations = List.copyOf(clientRegistrations);
     this.jwsKeySelectorFactory = jwsKeySelectorFactory;
+    this.additionalJwkSetUrisByIssuer =
+        additionalJwkSetUrisByIssuer != null
+            ? Map.copyOf(additionalJwkSetUrisByIssuer)
+            : Collections.emptyMap();
     selectors = new ConcurrentHashMap<>();
   }
 
@@ -85,6 +98,7 @@ public class IssuerAwareJWSKeySelector implements JWTClaimsSetAwareJWSKeySelecto
     final var clientRegistration = getClientRegistrationByIssuer(issuer);
     final var providerDetails = clientRegistration.getProviderDetails();
     final var jwkSetUri = providerDetails.getJwkSetUri();
-    return jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri);
+    final var additionalUris = additionalJwkSetUrisByIssuer.get(issuer);
+    return jwsKeySelectorFactory.createJWSKeySelector(jwkSetUri, additionalUris);
   }
 }
