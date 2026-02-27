@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 import {FieldContainer, Label} from './styled';
 import {useMemo} from 'react';
 import {observer} from 'mobx-react';
@@ -33,16 +34,16 @@ const TargetVersionField: React.FC = observer(() => {
         hideLabel
         type="inline"
         onChange={({selectedItem}) => {
-          const matchingDefinition =
-            selectedItem === null
-              ? null
-              : (availableDefinitions?.find(
-                  (d) => d.version === selectedItem,
-                ) ?? null);
+          let matchingDefinition: ProcessDefinition | undefined;
+          if (selectedItem) {
+            matchingDefinition = availableDefinitions?.find(
+              (d) => d.version === selectedItem,
+            );
+          }
 
           processInstanceMigrationStore.resetElementMapping();
           processInstanceMigrationStore.setTargetProcessDefinition(
-            matchingDefinition,
+            matchingDefinition ?? null,
           );
         }}
         disabled={selectedVersion === null && versions.length === 0}
