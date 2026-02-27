@@ -8,6 +8,7 @@
 package io.camunda.zeebe.stream.api;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -54,7 +55,7 @@ public record FollowUpCommandMetadata(
       return new FollowUpCommandMetadata(
           operationReference,
           batchOperationReference,
-          authInfo != null ? authInfo : new AuthInfo());
+          authInfo != null ? authInfo : EmptyAuthInfo.getInstance());
     }
   }
 }
