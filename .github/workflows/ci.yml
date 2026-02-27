@@ -191,6 +191,42 @@ jobs:
           secret_vault_address: ${{ secrets.VAULT_ADDR }}
           secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
 
+  dependency-cycle-check:
+    if: needs.detect-changes.outputs.java-code-changes == 'true'
+    name: "Dependency Cycle Check"
+    needs: [ detect-changes ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions: { }  # GITHUB_TOKEN unused in this job
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-build
+        with:
+          maven-cache-key-modifier: dependency-cycle-check
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+      - uses: ./.github/actions/adjust-pom-for-license-analysis
+      - name: Check for dependency cycles
+        run: |
+          ./mvnw com.github.ferstl:depgraph-maven-plugin:4.0.1:aggregate \
+            -DgraphFormat=text \
+            -DmergeScopes \
+            -DreduceEdges=false \
+            -DshowVersions=true \
+            -DshowGroupIds=true \
+            -DshowOptional=true \
+            -DrepeatTransitiveDependenciesInTextGraph=true
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+
   build-platform-frontend:
     if: needs.detect-changes.outputs.frontend-changes == 'true'
     needs: [ detect-changes ]
@@ -1465,6 +1501,11 @@ jobs:
       - build-platform-frontend
       - client-components
       - commitlint
+<<<<<<< HEAD
+=======
+      - database-integration-tests
+      - dependency-cycle-check
+>>>>>>> b1698a35 (ci: add dependency cycle check to unified CI workflow)
       - detect-changes
       - docker-checks
       - elasticsearch-integration-tests

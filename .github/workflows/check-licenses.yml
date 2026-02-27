@@ -94,23 +94,7 @@ jobs:
 
     - name: Adjust pom.xml files for FOSSA
       if: contains(fromJson('["optimize", "single-app"]'), matrix.project.name)
-      run: |
-        # The bom/pom.xml must be the actual root, otherwise, FOSSA won't detect the hierarchy correctly
-        yq -i \
-          '.project.modules.module += "./.."' \
-          parent/pom.xml
-        yq -i \
-          '.project.modules.module += "./../parent"' \
-          bom/pom.xml
-        # Remove bom and parent from the list of modules of ./pom.xml
-        yq -i \
-          'del(.project.modules.module[] | select(. == "bom" or . == "parent"))' \
-          pom.xml
-        # Remove optimize/qa module as a bug in FOSSA prevents scope filtering
-        # TODO remove this workaround once FOSSA is fixed
-        yq -i \
-          'del(.project.modules.module[] | select(. == "qa"))' \
-          optimize/pom.xml
+      uses: ./.github/actions/adjust-pom-for-license-analysis
 
     - name: Analyze project
       uses: camunda/infra-global-github-actions/fossa/analyze@ddce99387a10a4d578e4d7d8e6c6626dcd3d8fd3
