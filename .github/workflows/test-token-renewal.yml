@@ -84,13 +84,41 @@ jobs:
             echo "✅ PASS: Tokens are different - renewal generated a new token"
           fi
 
+      - name: Debug git extraheaders before override (sanitized)
+        run: |
+          sanitize() {
+            sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
+          }
+
+          {
+            echo "--- host-scoped extraheader ---"
+            git config --local --show-origin --get-all http.https://github.com/.extraheader || true
+            echo "--- repo-scoped extraheader ---"
+            git config --local --show-origin --get-all http.https://github.com/camunda/camunda/.extraheader || true
+          } | sanitize
+
       - name: Override git auth with renewed token (extraheader)
         env:
           FRESH_TOKEN: ${{ steps.github-token-fresh.outputs.token }}
         run: |
           echo "::add-mask::$FRESH_TOKEN"
           AUTH_HEADER=$(printf "x-access-token:%s" "$FRESH_TOKEN" | base64 | tr -d '\n')
-          git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $AUTH_HEADER"
+          git config --local --unset-all http.https://github.com/.extraheader || true
+          git config --local --unset-all http.https://github.com/camunda/camunda/.extraheader || true
+          git config --local --add http.https://github.com/camunda/camunda/.extraheader "AUTHORIZATION: basic $AUTH_HEADER"
+
+      - name: Debug git extraheaders after override (sanitized)
+        run: |
+          sanitize() {
+            sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
+          }
+
+          {
+            echo "--- host-scoped extraheader ---"
+            git config --local --show-origin --get-all http.https://github.com/.extraheader || true
+            echo "--- repo-scoped extraheader ---"
+            git config --local --show-origin --get-all http.https://github.com/camunda/camunda/.extraheader || true
+          } | sanitize
 
       - name: Sample git branch lifecycle with renewed token (extraheader)
         run: |
@@ -106,3 +134,4 @@ jobs:
           echo "✅ Fresh token: deleted remote branch: $BRANCH_NAME"
 
           git config --local --unset-all http.https://github.com/.extraheader || true
+          git config --local --unset-all http.https://github.com/camunda/camunda/.extraheader || true
