@@ -86,6 +86,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   private final Timer archiverSearchTimer;
   private final Timer archiverDeleteTimer;
+  private final Counter archiverDeletedDocs;
+  private final Counter archiverReindexedDocs;
   private final Timer archiverReindexTimer;
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
@@ -193,6 +195,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tags("type", "delete")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    archiverDeletedDocs =
+        Counter.builder(meterName("archiver.docs")).tags("type", "delete").register(meterRegistry);
     archiverReindexTimer =
         Timer.builder(meterName("archiver.request.duration"))
             .description(
@@ -200,6 +204,8 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .tags("type", "reindex")
             .publishPercentileHistogram()
             .register(meterRegistry);
+    archiverReindexedDocs =
+        Counter.builder(meterName("archiver.docs")).tags("type", "reindex").register(meterRegistry);
     archivingDuration =
         Timer.builder(meterName("archiver.duration"))
             .description(
@@ -395,11 +401,17 @@ public class CamundaExporterMetrics implements AutoCloseable {
     return NAMESPACE + "." + name;
   }
 
-  public void measureArchiverDelete(final Sample timer) {
+  public void measureArchiverDelete(final Long docsDeleted, final Sample timer) {
+    if (docsDeleted != null) {
+      archiverDeletedDocs.increment(docsDeleted);
+    }
     timer.stop(archiverDeleteTimer);
   }
 
-  public void measureArchiverReindex(final Sample timer) {
+  public void measureArchiverReindex(final Long docsReindexed, final Sample timer) {
+    if (docsReindexed != null) {
+      archiverReindexedDocs.increment(docsReindexed);
+    }
     timer.stop(archiverReindexTimer);
   }
 
@@ -417,7 +429,9 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(batchOperationsArchiving);
     meterRegistry.remove(archiverSearchTimer);
     meterRegistry.remove(archiverDeleteTimer);
+    meterRegistry.remove(archiverDeletedDocs);
     meterRegistry.remove(archiverReindexTimer);
+    meterRegistry.remove(archiverReindexedDocs);
     meterRegistry.remove(archivingDuration);
     meterRegistry.remove(bulkSize);
     meterRegistry.remove(flushDuration);
