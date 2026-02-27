@@ -1,10 +1,16 @@
 # description: This GitHub workflow deploys a load test with a camunda cluster under test.
 # We use this workflow to start ad-hoc load tests or weekly medic load tests.
 # The health of the cluster and results of the load tests are monitored by Core team's regularly.
-# https://grafana.dev.zeebe.io/login
+# https://dashboard.benchmark.camunda.cloud/
 # called by: zeebe-medic-benchmarks.yml, zeebe-pr-benchmark.yaml
 # type: CI
 # owner: camunda/orchestration-cluster-team
+#
+# Infos from Infra:
+# - Using the infra benchmark prod cluster requires to use Teleport to authenticate.
+# - Camunda images are pushed to registry.camunda.cloud/team-zeebe and pulled from there.
+#   To use them in a namespace, the namespace must be labeled with "registry=harbor"
+#   You must also set the image pull secret to "harbor-registry" in the helm values.
 name: Camunda load test
 on:
   workflow_dispatch:
@@ -102,7 +108,12 @@ on:
         default: false
 
 env:
+  CLUSTER: camunda-benchmark-prod  # change this to "camunda-benchmark-dev" when experimenting
+  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe  # change this to "infra-benchmark-dev-github-action-zeebe" when experimenting
   HELM_CHART: camunda-platform-8.6
+  # Namespaces MUST start with c8 due to access policy
+  NAMESPACE: c8-${{ inputs.name }}
+  IMAGE_REPOSITORY: registry.camunda.cloud/team-zeebe
 
 defaults:
   run:
@@ -150,6 +161,7 @@ jobs:
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
@@ -173,22 +185,10 @@ jobs:
         id: build-camunda
         with:
           maven-extra-args: -PskipFrontendBuild -P\!include-optimize
-      - uses: google-github-actions/auth@v2
-        id: auth
-        with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Login to GCR
-        uses: docker/login-action@v3
-        with:
-          registry: gcr.io
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
-          repository: 'gcr.io/zeebe-io/zeebe'
+          repository: '${{ env.IMAGE_REPOSITORY }}/zeebe'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
@@ -220,30 +220,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
-        id: auth
-        with:
-          token_format: 'access_token'
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - name: Login to GAR
-        uses: docker/login-action@v3
-        with:
-          registry: us-docker.pkg.dev
-          username: oauth2accesstoken
-          password: ${{ steps.auth.outputs.access_token }}
       - uses: ./.github/actions/setup-build
         with:
           dockerhub-readonly: true
+          harbor: true
           vault-address: ${{ secrets.VAULT_ADDR }}
           vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
           vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
       - run: ./mvnw -B -D skipTests -D skipChecks -P\!include-optimize -pl zeebe/benchmarks/project -am install
       - name: Build Starter Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -P\!include-optimize -D image="gcr.io/zeebe-io/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P starter -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/starter:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Build Worker Image
-        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -P\!include-optimize -D image="gcr.io/zeebe-io/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
+        run: ./mvnw -pl zeebe/benchmarks/project jib:build -P worker -P\!include-optimize -D image="${{ env.IMAGE_REPOSITORY }}/worker:${{ needs.calculate-image-tag.outputs.image-tag }}"
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -276,31 +264,36 @@ jobs:
         with:
           repository: 'camunda/camunda-platform-helm'
           ref: 'main'
-      - uses: google-github-actions/auth@v2
+      # Authenticate with Teleport
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
         with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+          version: 17.2.2
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
         with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
       - name: Create namespace if not exists
         run: |
-          if ! kubectl get namespace ${{ inputs.name }} >/dev/null 2>&1; then
-            kubectl create namespace ${{ inputs.name }}
+          if ! kubectl get namespace ${{ env.NAMESPACE }} >/dev/null 2>&1; then
+            kubectl create namespace ${{ env.NAMESPACE }}
           else
-            echo "Namespace '${{ inputs.name }}' already exists"
+            echo "Namespace '${{ env.NAMESPACE }}' already exists"
           fi
-      - name: Label namespace with creator
-        run: >
-          kubectl label namespace ${{ inputs.name }} created-by=${{ github.actor }} --overwrite
-      - name: Label namespace with deadline
+      - name: Label namespace
         run: |
+          kubectl label namespace ${{ env.NAMESPACE }} created-by=${{ github.actor }} --overwrite
+          kubectl label namespace ${{ env.NAMESPACE }} registry=harbor --overwrite
           # Calculate deadline date with the TTL days from now
-          # Use basic ISO date format (YYYY-MM-DD), as it is compatible with kubectl label values
-          # Must use minus (-) instead of / to be compatible with kubectl label value restrictions
           deadlineDate=$(date -d "+${{ inputs.ttl }} days" +%Y-%m-%d)
-          kubectl label namespace ${{ inputs.name }} deadline-date="$deadlineDate" --overwrite
+          kubectl label namespace ${{ env.NAMESPACE }} deadline-date="$deadlineDate" --overwrite
+      - name: Annotate namespace
+        run: |
+          kubectl annotate namespace ${{ env.NAMESPACE }} \
+            "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --overwrite
       - name: Add Camunda Helm repo
         run: |
           helm repo add camunda https://helm.camunda.io/
@@ -308,22 +301,21 @@ jobs:
       - name: Find previous Helm chart release version
         id: find-chart-release
         run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ env.NAMESPACE }} ${{ env.NAMESPACE }} | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
       - name: Build dependencies of Camunda Platform
         run: helm dependency build charts/${{ env.HELM_CHART }}/
       - name: Install latest Camunda Platform
         run: >
-          helm upgrade --install ${{ inputs.name }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
+          helm upgrade --install ${{ env.NAMESPACE }} charts/${{ env.HELM_CHART }}/ --wait --timeout 35m0s
+          --namespace ${{ env.NAMESPACE }}
           --reset-then-reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
+          --set global.image.pullSecrets[0].name=harbor-registry
+          --set zeebe.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || ''}}
-          --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'gcr.io/zeebe-io/zeebe' }}
+          --set zeebeGateway.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || ''}}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.stable-vms && format('-f https://raw.githubusercontent.com/camunda/camunda/{0}/zeebe/benchmarks/setup/default/values-stable.yaml', github.ref) || '' }}
@@ -333,9 +325,9 @@ jobs:
         if: success()
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
-            ## Camunda platform \`${{ inputs.name }}\` values
+            ## Camunda platform \`${{ env.NAMESPACE }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name }} -n ${{ inputs.name }})
+            $(helm get values ${{ env.NAMESPACE }} -n ${{ env.NAMESPACE }})
             \`\`\`
           EOF
       - name: Observe build status
@@ -371,14 +363,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ inputs.ref }}
-      - uses: google-github-actions/auth@v2
+      # Authenticate with Teleport
+      - name: Set up Teleport
+        uses: teleport-actions/setup@v1
         with:
-          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
-          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
-      - uses: google-github-actions/get-gke-credentials@v2.3.5
+          version: 17.2.2
+      - name: Authenticate to Cluster using Teleport
+        uses: teleport-actions/auth-k8s@v2
         with:
-          cluster_name: zeebe-cluster
-          location: europe-west1-b
+          proxy: camunda.teleport.sh:443
+          token: ${{ env.TELEPORT_JOIN_TOKEN }}
+          kubernetes-cluster: ${{ env.CLUSTER }}
       - name: Add Load test Helm repo
         run: |
           helm repo add camunda-load-tests https://camunda.github.io/camunda-load-tests-helm/
@@ -386,24 +381,26 @@ jobs:
       - name: Find previous Helm chart release version
         id: find-chart-release
         run: |
-          echo "chart-release=$(helm get metadata -o json --namespace ${{ inputs.name }} ${{ inputs.name }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
+          echo "chart-release=$(helm get metadata -o json --namespace ${{ env.NAMESPACE }} ${{ env.NAMESPACE }}-test | jq --raw-output .version)" >> "$GITHUB_OUTPUT"
       - name: Install load test
         run: >
-          helm upgrade --install ${{ inputs.name }}-test camunda-load-tests/camunda-load-tests
+          helm upgrade --install ${{ env.NAMESPACE }}-test camunda-load-tests/camunda-load-tests
           --wait --timeout 35m0s
-          --namespace ${{ inputs.name }}
+          --namespace ${{ env.NAMESPACE }}
           --reuse-values
           --render-subchart-notes
           --set global.connect.serviceName=zeebe-gateway
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
+          --set global.image.repository=${{ env.IMAGE_REPOSITORY }}
+          --set global.image.pullSecrets[0].name=harbor-registry
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
           ${{ inputs.realistic && '-f https://raw.githubusercontent.com/camunda/camunda-load-tests-helm/refs/heads/main/charts/camunda-load-tests/values-realistic-benchmark.yaml' || '' }}
           ${{ inputs.load-test-load }}
       - name: Setup leader balancing
         run: |
-          if ! kubectl get cronjob leader-balancer --namespace ${{ inputs.name }} &>/dev/null; then
+          if ! kubectl get cronjob leader-balancer --namespace ${{ env.NAMESPACE }} &>/dev/null; then
             kubectl create cronjob leader-balancer \
-              --namespace ${{ inputs.name }} \
+              --namespace ${{ env.NAMESPACE }} \
               --image=curlimages/curl:7.87.0 \
               --schedule="*/10 * * * *" \
               -- curl -L -v -X POST http://zeebe-gateway:9600/actuator/rebalance
@@ -415,10 +412,10 @@ jobs:
         run: |
           cat >> "$GITHUB_STEP_SUMMARY" <<EOF
             # Load test
-            The test has been set up successfully. You can observe it [here](https://grafana.dev.zeebe.io/d/zeebe-dashboard/zeebe?var-namespace=${{ inputs.name }})
-            ## Load test \`${{ inputs.name }}\` values
+            The test has been set up successfully. You can observe it [here](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?var-namespace=${{ env.NAMESPACE }})
+            ## Load test \`${{ env.NAMESPACE }}\` values
             \`\`\`yaml
-            $(helm get values ${{ inputs.name }}-test -n ${{ inputs.name }})
+            $(helm get values ${{ env.NAMESPACE }}-test -n ${{ env.NAMESPACE }})
             \`\`\`
           EOF
       - name: Observe build status
