@@ -72,7 +72,8 @@ echo "$RELEASES" | jq -c '.' | while read -r release; do
     fi
     
     # Check if release comment already exists
-    COMMENT_EXISTS=$(gh api repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments \
+    COMMENT_EXISTS=$(gh api "repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100" \
+      --paginate \
       --jq ".[] | select(.body | contains(\"This has been released in version [$TAG_NAME]\")) | .id" | head -n 1 || true)
     
     if [ -n "$COMMENT_EXISTS" ]; then
