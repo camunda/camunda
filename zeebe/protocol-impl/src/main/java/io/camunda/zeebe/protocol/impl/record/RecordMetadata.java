@@ -277,7 +277,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
   }
 
   public RecordMetadata authorization(final AuthInfo authorization) {
-    this.authorization = Objects.requireNonNull(authorization, "authorization can't be null");
+    this.authorization = authorization;
     return this;
   }
 
