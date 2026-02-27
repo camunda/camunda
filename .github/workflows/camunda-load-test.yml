@@ -183,7 +183,7 @@ jobs:
       - uses: ./.github/actions/build-platform-docker
         name: Build Camunda Docker Image
         with:
-          repository: '${{ env.IMAGE_REPOSITORY }}/zeebe'
+          repository: '${{ env.IMAGE_REPOSITORY }}/camunda'
           revision: ${{ inputs.ref }}
           push: true
           version: ${{ needs.calculate-image-tag.outputs.image-tag }}
