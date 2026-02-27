@@ -22,6 +22,7 @@ import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.SequencedCollection;
 import java.util.concurrent.CompletableFuture;
 import org.slf4j.Logger;
@@ -73,7 +74,9 @@ public final class BackupMetadataSyncer {
                             entry.checkpointPosition(),
                             Instant.ofEpochMilli(entry.checkpointTimestamp()),
                             entry.checkpointType(),
-                            entry.firstLogPosition()))
+                            entry.firstLogPosition() > 0
+                                ? OptionalLong.of(entry.firstLogPosition())
+                                : OptionalLong.empty()))
                 .toList(),
             ranges.stream().map(range -> new RangeEntry(range.start(), range.end())).toList());
 
