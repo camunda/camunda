@@ -134,6 +134,62 @@ final class JWSKeySelectorFactoryTest {
     assertThat(keys).isNotEmpty();
   }
 
+  @Test
+  void shouldThrowWhenAdditionalUriIsMalformed() {
+    // given
+    final var primaryPath = "/primary-malformed/.well-known/jwks.json";
+    mockJwksEndpoint(primaryPath, primaryKey);
+
+    // when // then
+    assertThatThrownBy(
+            () -> factory.createJWSKeySelector(baseUrl() + primaryPath, List.of("not-a-valid-url")))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldThrowWhenAdditionalUriIsBlank() {
+    // given
+    final var primaryPath = "/primary-blank/.well-known/jwks.json";
+    mockJwksEndpoint(primaryPath, primaryKey);
+
+    // when // then
+    assertThatThrownBy(() -> factory.createJWSKeySelector(baseUrl() + primaryPath, List.of("")))
+        .isInstanceOf(IllegalArgumentException.class);
+  }
+
+  @Test
+  void shouldResolveKeyFromSecondAdditionalSourceWithMultipleAdditionalUris() throws Exception {
+    // given — primary + 2 additional sources, key only at second additional
+    final var primaryPath = "/primary-multi/.well-known/jwks.json";
+    final var additional1Path = "/additional1-multi/.well-known/jwks.json";
+    final var additional2Path = "/additional2-multi/.well-known/jwks.json";
+
+    final var additional2Key =
+        new RSAKeyGenerator(2048)
+            .keyID("additional2-kid")
+            .keyUse(KeyUse.SIGNATURE)
+            .algorithm(JWSAlgorithm.RS256)
+            .generate();
+
+    mockJwksEndpoint(primaryPath, primaryKey);
+    mockJwksEndpoint(additional1Path, additionalKey);
+    mockJwksEndpoint(additional2Path, additional2Key);
+
+    final var selector =
+        factory.createJWSKeySelector(
+            baseUrl() + primaryPath,
+            List.of(baseUrl() + additional1Path, baseUrl() + additional2Path));
+
+    // JWT signed with the second additional key's kid
+    final var jwt = createSignedJwt(additional2Key, "additional2-kid");
+
+    // when
+    final var keys = selector.selectJWSKeys(jwt.getHeader(), (SecurityContext) null);
+
+    // then
+    assertThat(keys).isNotEmpty();
+  }
+
   private static String baseUrl() {
     return "http://localhost:" + wireMock.getPort();
   }
