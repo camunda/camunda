@@ -1,0 +1,130 @@
+# This GitHub Actions workflow automates the CI build process for the 'optimize' service.
+# It triggers on a `workflow_call` event and accepts inputs for branch name[required], Java version[optional]
+#
+# It consists of a several steps:
+# 1. Setup: Checks out the branch, defines environment variables, fetches the main branch, reads Java/Maven project info, logs into the Harbor registry, and sets up Maven.
+# 2. Build: Generates a production .tar.gz file using Maven and builds a Docker image with appropriate tags.
+# 3. Upload: Pushes the Docker image to the Harbor registry tagged for the pull request.
+#
+# Environment variables are used to define the image tags used for Docker builds.
+# This workflow is designed to provide a comprehensive, automated CI process that ensures code quality, handles secrets securely,
+# and enables detailed reporting of test results.
+# description: Reuseable workflow for building Optimize and a docker image
+# test location: /optimize
+# called by:
+# type: CI
+# owner: @camunda/core-features
+
+name: Optimize CI Reusable
+
+on:
+  workflow_call:
+    inputs:
+      branch:
+        description: "The branch name to be used for the workflow"
+        required: true
+        type: string
+      pushDocker:
+        description: "Whether the built docker images are pushed to camunda registry"
+        type: boolean
+        default: false
+      version:
+        description: "Custom Docker image tag (defaults to pr-<commit-hash>)"
+        required: false
+        type: string
+
+defaults:
+  run:
+    # use bash shell by default to ensure pipefail behavior is the default
+    # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
+    shell: bash
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      # Setup: checkout branch
+      - name: Checkout '${{ inputs.branch }}' branch
+        uses: actions/checkout@v6
+        with:
+          ref: refs/heads/${{ inputs.branch }}
+          fetch-depth: 0 # fetches all history for all branches and tags
+
+      #########################################################################
+      # Setup: define env variables
+      - name: Set GitHub environment variables
+        env:
+          BRANCH: ${{ inputs.branch }}
+          VERSION: ${{ inputs.version }}
+          REGISTRY: registry.camunda.cloud/team-camunda/optimize
+        run: |
+          GIT_COMMIT_HASH=$(git rev-parse "$BRANCH")
+          TAG="${VERSION:-pr-$GIT_COMMIT_HASH}"
+          echo "GIT_COMMIT_HASH=$GIT_COMMIT_HASH" >> "$GITHUB_ENV"
+          echo "IMAGE_TAG=$REGISTRY:$TAG" >> "$GITHUB_ENV"
+
+      #########################################################################
+      # Setup: read java version from pom
+      - name: "Read Java / Version Info"
+        id: pom-info
+        uses: YunaBraska/java-info-action@9e90973c6c874b3b35811a4d141d117538b94698 # 2.1.95
+        with:
+          work-dir: ./optimize
+
+      #########################################################################
+      # Setup and configure Maven
+      - name: Setup Maven
+        uses: ./.github/actions/setup-build
+        with:
+          harbor: true
+          maven-cache-key-modifier: optimize
+          time-zone: Europe/Berlin
+          vault-address: ${{ secrets.VAULT_ADDR }}
+          vault-role-id: ${{ secrets.VAULT_ROLE_ID }}
+          vault-secret-id: ${{ secrets.VAULT_SECRET_ID }}
+          minimus: true
+
+      #########################################################################
+      # Build Optimize frontend
+      - name: Build frontend
+        uses: ./.github/actions/build-frontend
+        with:
+          directory: ./optimize/client
+
+      - uses: ./.github/actions/build-zeebe
+        id: build-camunda
+        with:
+          maven-extra-args: -PskipFrontendBuild
+
+      #########################################################################
+      # Build optimize dependencies
+      - name: Build optimize dependencies
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml -pl backend -am install -DskipITs -T1
+
+      #########################################################################
+      # Build Optimize
+      - name: Generate production .tar.gz
+        uses: ./.github/actions/run-maven
+        with:
+          parameters: -f optimize/pom.xml install -DskipITs -Dskip.docker -P skipFrontendBuild,runAssembly -T 1
+
+      #########################################################################
+      # Build Docker image
+      - name: Build and push Docker image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
+          DOCKER_BUILD_RECORD_UPLOAD: false
+        with:
+          context: .
+          file: optimize.Dockerfile
+          provenance: false
+          build-args: |
+            VERSION=${{ steps.pom-info.outputs.project_version }}
+            REVISION=${{ env.GIT_COMMIT_HASH }}
+          tags: ${{ env.IMAGE_TAG }}
+          push: ${{ inputs.pushDocker }}
