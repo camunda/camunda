@@ -16,6 +16,7 @@ import io.camunda.zeebe.broker.PartitionRaftListener;
 import io.camunda.zeebe.broker.clustering.ClusterServices;
 import io.camunda.zeebe.broker.exporter.repo.ExporterRepository;
 import io.camunda.zeebe.broker.logstreams.state.StatePositionSupplier;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManagerImpl;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.BrokerHealthCheckService;
@@ -104,8 +105,7 @@ public final class ZeebePartitionFactory {
   private final SearchClientsProxy searchClientsProxy;
   private final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter;
   private final SharedRocksDbResources sharedRocksDbResources;
-  private final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
-      clusterConfigurationService;
+  private final ClusterConfigurationService clusterConfigurationService;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -126,8 +126,7 @@ public final class ZeebePartitionFactory {
       final SearchClientsProxy searchClientsProxy,
       final BrokerRequestAuthorizationConverter brokerRequestAuthorizationConverter,
       final SharedRocksDbResources sharedRocksDbResources,
-      final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
-          clusterConfigurationService) {
+      final ClusterConfigurationService clusterConfigurationService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
