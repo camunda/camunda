@@ -1,0 +1,2 @@
+This is a test generic resource file.
+It contains arbitrary text content.
