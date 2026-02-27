@@ -306,6 +306,30 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
   }
 
   @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withElementInstancePath(List.of(List.of(111L)))
+            .withProcessDefinitionPath(List.of(222L))
+            .withBusinessId("")
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
+  }
+
+  @Test
   public void shouldUpdateTreePathFromRecordWithCallActivity() {
     // given
     final long processDefinitionKey1 = 999L;

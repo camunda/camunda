@@ -34,7 +34,11 @@ public class ProcessInstanceEntityTransformer
         source.getTenantId(),
         source.getTreePath(),
         source.getTags(),
-        source.getBusinessId());
+        emptyToNull(source.getBusinessId()));
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   private ProcessInstanceState toState(

@@ -744,7 +744,7 @@ public final class SearchQueryResponseMapper {
         .hasIncident(p.hasIncident())
         .tenantId(p.tenantId())
         .tags(p.tags())
-        .businessId(p.businessId());
+        .businessId(emptyToNull(p.businessId()));
   }
 
   public static List<BatchOperationResponse> toBatchOperations(
@@ -1623,6 +1623,10 @@ public final class SearchQueryResponseMapper {
       return Optional.empty();
     }
     return Optional.of(value);
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 
   private record RuleIdentifier(String ruleId, int ruleIndex) {}
