@@ -16,5 +16,8 @@
   "reset": "Reset filters",
   "errorCode": "Error code",
   "owner": "Owner",
-  "assignee": "Assignee"
+  "assignee": "Assignee",
+  "ownerType": "Owner type",
+  "ownerKey": "Owner ID",
+  "ownerKeyPlaceholder": "Enter owner ID"
 }
