@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "a10bb5b34c3d34fa432bd856142bf136b8629258",
-    "generatedAt": "2026-02-25T13:09:08.097Z",
+    "commit": "89fd3db77ece80b872cc0631f82f425fb4a8f0fc",
+    "generatedAt": "2026-02-27T14:20:28.877Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "195577de47d16a714c11b79cd94536877e71e7cc5823011285bc7ac717d2e765"
+    "specSha256": "bcb077a076753ccfd9bbdc078455c1549c1184b3f8c773667d8751e058713618"
   },
   "responses": [
     {
@@ -113,6 +113,7 @@
                     "DECISION",
                     "GROUP",
                     "INCIDENT",
+                    "JOB",
                     "MAPPING_RULE",
                     "PROCESS_INSTANCE",
                     "RESOURCE",
@@ -332,6 +333,7 @@
               "DECISION",
               "GROUP",
               "INCIDENT",
+              "JOB",
               "MAPPING_RULE",
               "PROCESS_INSTANCE",
               "RESOURCE",
@@ -870,7 +872,8 @@
                 },
                 {
                   "name": "endDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "operationsCompletedCount",
@@ -886,7 +889,8 @@
                 },
                 {
                   "name": "startDate",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "state",
@@ -1011,7 +1015,8 @@
           },
           {
             "name": "endDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "operationsCompletedCount",
@@ -1027,7 +1032,8 @@
           },
           {
             "name": "startDate",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "state",
@@ -1486,6 +1492,10 @@
             "children": {
               "required": [
                 {
+                  "name": "decisionDefinitionType",
+                  "type": "string"
+                },
+                {
                   "name": "evaluatedInputs",
                   "type": "array<items>",
                   "children": {
@@ -1568,10 +1578,6 @@
                 },
                 {
                   "name": "decisionDefinitionName",
-                  "type": "string"
-                },
-                {
-                  "name": "decisionDefinitionType",
                   "type": "string"
                 },
                 {
@@ -3460,6 +3466,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -3497,6 +3528,27 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
@@ -4049,6 +4101,7 @@
                 {
                   "name": "userTask",
                   "type": "object",
+                  "nullable": true,
                   "children": {
                     "required": [
                       {
@@ -4232,7 +4285,8 @@
                 },
                 {
                   "name": "endTime",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "errorCode",
@@ -6013,6 +6067,7 @@
           {
             "name": "batchOperation",
             "type": "schema",
+            "nullable": true,
             "children": {
               "required": [],
               "optional": [
@@ -6275,6 +6330,31 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
@@ -6681,6 +6761,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6718,6 +6823,27 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
@@ -7136,7 +7262,8 @@
                 },
                 {
                   "name": "processName",
-                  "type": "string"
+                  "type": "string",
+                  "nullable": true
                 },
                 {
                   "name": "state",
@@ -7297,7 +7424,8 @@
           },
           {
             "name": "processName",
-            "type": "string"
+            "type": "string",
+            "nullable": true
           },
           {
             "name": "state",
@@ -7434,6 +7562,7 @@
                     "DECISION",
                     "GROUP",
                     "INCIDENT",
+                    "JOB",
                     "MAPPING_RULE",
                     "PROCESS_INSTANCE",
                     "RESOURCE",
