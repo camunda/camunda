@@ -37,6 +37,14 @@
     </foreach>
   </insert>
 
+  <insert id="insertEventTypes" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="eventTypes" item="eventType">
+      INTO ${prefix}GLOBAL_LISTENER_EVENT_TYPE (GLOBAL_LISTENER_ID, EVENT_TYPE) VALUES (#{id}, #{eventType})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
   <update id="update" parameterType="io.camunda.db.rdbms.write.domain.GlobalListenerDbModel">
     UPDATE ${prefix}GLOBAL_LISTENER
     SET LISTENER_ID = #{listenerId},

@@ -139,6 +139,15 @@
     </foreach>
   </insert>
 
+  <insert id="insert" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="permissionTypes" item="permissionType">
+      INTO ${prefix}AUTHORIZATIONS (AUTHORIZATION_KEY, OWNER_ID, OWNER_TYPE, RESOURCE_TYPE, RESOURCE_MATCHER, RESOURCE_ID, RESOURCE_PROPERTY_NAME, PERMISSION_TYPE)
+      VALUES (#{authorizationKey}, #{ownerId}, #{ownerType}, #{resourceType}, #{resourceMatcher}, #{resourceId}, #{resourcePropertyName}, #{permissionType})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
   <delete id="delete" parameterType="io.camunda.db.rdbms.write.domain.AuthorizationDbModel">
     DELETE
     FROM ${prefix}AUTHORIZATIONS
