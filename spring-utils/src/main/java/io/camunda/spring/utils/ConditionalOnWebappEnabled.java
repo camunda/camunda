@@ -5,9 +5,9 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration.conditions;
+package io.camunda.spring.utils;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled.OnWebappEnabledCondition;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled.OnWebappEnabledCondition;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

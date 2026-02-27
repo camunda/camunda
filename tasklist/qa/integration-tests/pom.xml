@@ -60,6 +60,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.camunda</groupId>
+      <artifactId>camunda-spring-utils</artifactId>
+      <scope>test</scope>
+    </dependency>
+
     <!-- TEST CONTAINERS -->
     <dependency>
       <groupId>org.testcontainers</groupId>

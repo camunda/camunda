@@ -5,12 +5,12 @@
  * Licensed under the Camunda License 1.0. You may not use this file
  * except in compliance with the Camunda License 1.0.
  */
-package io.camunda.configuration.conditions;
+package io.camunda.spring.utils;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled.OnWebappUiEnabledCondition;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled.OnWebappEnabledCondition;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,21 +18,20 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.env.Environment;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
-public class ConditionalOnWebappUiEnabledTest {
+public class ConditionalOnWebappEnabledTest {
 
   private static final String TEST_WEBAPP_NAME = "testwebapp";
   private static final String LEGACY_PROPERTY = "camunda." + TEST_WEBAPP_NAME + ".webapp-enabled";
   private static final String UNIFIED_PROPERTY = "camunda.webapps." + TEST_WEBAPP_NAME + ".enabled";
-  private static final String UI_PROPERTY = "camunda.webapps." + TEST_WEBAPP_NAME + ".ui-enabled";
 
-  private OnWebappUiEnabledCondition condition;
+  private OnWebappEnabledCondition condition;
   private ConditionContext context;
   private Environment environment;
   private AnnotatedTypeMetadata metadata;
 
   @BeforeEach
   void setup() {
-    condition = new OnWebappUiEnabledCondition();
+    condition = new OnWebappEnabledCondition();
     context = mock(ConditionContext.class);
     environment = mock(Environment.class);
     metadata = mock(AnnotatedTypeMetadata.class);
@@ -43,11 +42,10 @@ public class ConditionalOnWebappUiEnabledTest {
   }
 
   @Test
-  void testShouldMatchWhenAllPropertiesAreTrue() {
+  void testShouldMatchwhenAllPropertiesAreTrue() {
     // given
     when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(true);
     when(environment.getProperty(UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
-    when(environment.getProperty(UI_PROPERTY, Boolean.class, true)).thenReturn(true);
 
     // when
     final boolean result = condition.matches(context, metadata);
@@ -59,9 +57,8 @@ public class ConditionalOnWebappUiEnabledTest {
   @Test
   void testShouldNotMatchWhenLegacyPropertyIsFalse() {
     // given
-    when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(false);
     when(environment.getProperty(UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
-    when(environment.getProperty(UI_PROPERTY, Boolean.class, true)).thenReturn(true);
+    when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(false);
 
     // when
     final boolean result = condition.matches(context, metadata);
@@ -73,23 +70,8 @@ public class ConditionalOnWebappUiEnabledTest {
   @Test
   void testShouldNotMatchWhenUnifiedPropertyIsFalse() {
     // given
-    when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(true);
     when(environment.getProperty(UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(false);
-    when(environment.getProperty(UI_PROPERTY, Boolean.class, true)).thenReturn(true);
-
-    // when
-    final boolean result = condition.matches(context, metadata);
-
-    // then
-    assertThat(result).isFalse();
-  }
-
-  @Test
-  void testShouldNotMatchWhenUIPropertyIsFalse() {
-    // given
     when(environment.getProperty(LEGACY_PROPERTY, Boolean.class, true)).thenReturn(true);
-    when(environment.getProperty(UNIFIED_PROPERTY, Boolean.class, true)).thenReturn(true);
-    when(environment.getProperty(UI_PROPERTY, Boolean.class, true)).thenReturn(false);
 
     // when
     final boolean result = condition.matches(context, metadata);

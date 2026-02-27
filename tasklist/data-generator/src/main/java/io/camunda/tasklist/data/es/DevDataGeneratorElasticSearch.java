@@ -8,7 +8,7 @@
 package io.camunda.tasklist.data.es;
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.ElasticSearchCondition;

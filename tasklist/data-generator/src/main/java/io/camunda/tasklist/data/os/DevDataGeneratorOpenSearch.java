@@ -7,7 +7,7 @@
  */
 package io.camunda.tasklist.data.os;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.tasklist.data.DataGenerator;
 import io.camunda.tasklist.data.DevDataGeneratorAbstract;
 import io.camunda.tasklist.data.conditionals.OpenSearchCondition;
