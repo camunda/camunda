@@ -161,9 +161,6 @@ public class BpmnJobActivationBehavior {
 
   private boolean isAuthorized(
       final JobActivationProperties jobActivationProperties, final JobRecord jobRecord) {
-    if (authorizationCheckBehavior.shouldSkipAllChecks()) {
-      return true;
-    }
 
     final var ownerTenantId = jobRecord.getTenantId();
     final var isTenantAuthorized =
