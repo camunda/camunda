@@ -8,6 +8,7 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -17,9 +18,11 @@ import io.camunda.zeebe.backup.api.BackupStore;
 import io.camunda.zeebe.backup.common.BackupMetadata;
 import io.camunda.zeebe.backup.common.BackupMetadata.CheckpointEntry;
 import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
+import io.camunda.zeebe.backup.metrics.BackupMetadataSyncerMetricsDoc;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
@@ -27,6 +30,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -42,7 +46,7 @@ final class BackupMetadataSyncerTest {
 
   @BeforeEach
   void setUp() {
-    syncer = new BackupMetadataSyncer(backupStore);
+    syncer = new BackupMetadataSyncer(backupStore, new SimpleMeterRegistry());
   }
 
   @Test
@@ -221,6 +225,143 @@ final class BackupMetadataSyncerTest {
       return BackupMetadataSyncer.MAPPER.writeValueAsBytes(manifest);
     } catch (final Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  @Nested
+  final class MetricsTest {
+
+    private static final int PARTITION_ID = 1;
+
+    @Mock private BackupStore backupStore;
+
+    private SimpleMeterRegistry registry;
+    private BackupMetadataSyncer syncer;
+
+    @BeforeEach
+    void setUp() {
+      registry = new SimpleMeterRegistry();
+      syncer = new BackupMetadataSyncer(backupStore, registry);
+    }
+
+    @Test
+    void shouldIncrementCompletedCounterOnSuccess() {
+      // given
+      when(backupStore.storeBackupMetadata(anyInt(), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      syncer.store(PARTITION_ID, List.of(sampleCheckpoint()), List.of(sampleRange())).join();
+
+      // then
+      final var counter =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_TOTAL.getName())
+              .tag("result", "completed")
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .counter();
+      assertThat(counter).isNotNull();
+      assertThat(counter.count()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRecordUploadDurationOnSuccess() {
+      // given
+      when(backupStore.storeBackupMetadata(anyInt(), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      syncer.store(PARTITION_ID, List.of(sampleCheckpoint()), List.of(sampleRange())).join();
+
+      // then
+      final var timer =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_DURATION.getName())
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .timer();
+      assertThat(timer).isNotNull();
+      assertThat(timer.count()).isEqualTo(1);
+    }
+
+    @Test
+    void shouldRecordSerializedSizeOnSuccess() {
+      // given
+      when(backupStore.storeBackupMetadata(anyInt(), any()))
+          .thenReturn(CompletableFuture.completedFuture(null));
+
+      // when
+      syncer.store(PARTITION_ID, List.of(sampleCheckpoint()), List.of(sampleRange())).join();
+
+      // then
+      final var gauge =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_SERIALIZED_SIZE.getName())
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .gauge();
+      assertThat(gauge).isNotNull();
+      assertThat(gauge.value()).isGreaterThan(0);
+    }
+
+    @Test
+    void shouldIncrementFailedCounterOnUploadFailure() {
+      // given
+      when(backupStore.storeBackupMetadata(anyInt(), any()))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("upload error")));
+
+      // when
+      syncer
+          .store(PARTITION_ID, List.of(sampleCheckpoint()), List.of(sampleRange()))
+          .exceptionally(e -> null)
+          .join();
+
+      // then
+      final var failedCounter =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_TOTAL.getName())
+              .tag("result", "failed")
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .counter();
+      assertThat(failedCounter).isNotNull();
+      assertThat(failedCounter.count()).isEqualTo(1);
+
+      // and no completed counter was recorded
+      final var completedCounter =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_TOTAL.getName())
+              .tag("result", "completed")
+              .counter();
+      assertThat(completedCounter).isNull();
+    }
+
+    @Test
+    void shouldRecordDurationOnUploadFailure() {
+      // given
+      when(backupStore.storeBackupMetadata(anyInt(), any()))
+          .thenReturn(CompletableFuture.failedFuture(new RuntimeException("upload error")));
+
+      // when
+      syncer
+          .store(PARTITION_ID, List.of(sampleCheckpoint()), List.of(sampleRange()))
+          .exceptionally(e -> null)
+          .join();
+
+      // then
+      final var timer =
+          registry
+              .find(BackupMetadataSyncerMetricsDoc.METADATA_SYNC_DURATION.getName())
+              .tag("partition", String.valueOf(PARTITION_ID))
+              .timer();
+      assertThat(timer).isNotNull();
+      assertThat(timer.count()).isEqualTo(1);
+    }
+
+    private DbCheckpointMetadataState.CheckpointEntry sampleCheckpoint() {
+      return new DbCheckpointMetadataState.CheckpointEntry(
+          10L, 100L, 1000L, CheckpointType.SCHEDULED_BACKUP, 50L);
+    }
+
+    private BackupRange sampleRange() {
+      return new BackupRange(10L, 20L);
     }
   }
 }

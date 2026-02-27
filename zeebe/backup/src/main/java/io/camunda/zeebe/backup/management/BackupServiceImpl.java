@@ -31,6 +31,7 @@ import io.camunda.zeebe.protocol.record.intent.management.CheckpointIntent;
 import io.camunda.zeebe.scheduler.ConcurrencyControl;
 import io.camunda.zeebe.scheduler.future.ActorFuture;
 import io.camunda.zeebe.util.Either;
+import io.micrometer.core.instrument.MeterRegistry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -60,13 +61,14 @@ final class BackupServiceImpl {
       final LogStreamWriter logStreamWriter,
       final DbBackupRangeState backupRangeState,
       final DbCheckpointMetadataState checkpointMetadataState,
-      final int partitionId) {
+      final int partitionId,
+      final MeterRegistry meterRegistry) {
     this.backupStore = backupStore;
     this.logStreamWriter = logStreamWriter;
     this.backupRangeState = backupRangeState;
     this.checkpointMetadataState = checkpointMetadataState;
     this.partitionId = partitionId;
-    metadataSyncer = new BackupMetadataSyncer(backupStore);
+    metadataSyncer = new BackupMetadataSyncer(backupStore, meterRegistry);
   }
 
   void close() {
