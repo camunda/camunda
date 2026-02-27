@@ -114,7 +114,7 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'UserTask', name: 'User Task'},
+          element: {id: 'UserTask', name: 'User Task'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: {
@@ -180,8 +180,8 @@ describe('ElementInstancesTree - Nested Subprocesses', () => {
         payload: {
           operation: 'MOVE_TOKEN',
           scopeIds: [generateUniqueID(), generateUniqueID()],
-          flowNode: {id: 'StartEvent_1', name: 'Start Event 1'},
-          targetFlowNode: {id: 'UserTask', name: 'User Task'},
+          element: {id: 'StartEvent_1', name: 'Start Event 1'},
+          targetElement: {id: 'UserTask', name: 'User Task'},
           affectedTokenCount: 2,
           visibleAffectedTokenCount: 2,
           parentScopeIds: {

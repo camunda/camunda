@@ -92,8 +92,8 @@ const TopPanel: React.FC = observer(() => {
   } = useProcessInstanceElementSelection();
   const {processInstanceId = ''} = useProcessInstancePageParams();
   const {
-    sourceFlowNodeIdForMoveOperation,
-    sourceFlowNodeInstanceKeyForMoveOperation,
+    sourceElementIdForMoveOperation,
+    sourceElementInstanceKeyForMoveOperation,
   } = modificationsStore.state;
   const [isInTransition, setIsInTransition] = useState(false);
   const {data: statistics} = useElementStatistics();
@@ -104,18 +104,18 @@ const TopPanel: React.FC = observer(() => {
   const {data: businessObjects} = useBusinessObjects();
   const {data: totalMoveOperationRunningInstances} =
     useTotalRunningInstancesForElement(
-      sourceFlowNodeIdForMoveOperation || undefined,
+      sourceElementIdForMoveOperation || undefined,
     );
   const {data: totalMoveOperationRunningInstancesVisible} =
     useTotalRunningInstancesVisibleForElement(
-      sourceFlowNodeIdForMoveOperation || undefined,
+      sourceElementIdForMoveOperation || undefined,
     );
   const {data: processInstance} = useProcessInstance();
   const modificationsByElement = useModificationsByElement();
-  const affectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
+  const affectedTokenCount = sourceElementInstanceKeyForMoveOperation
     ? 1
     : totalMoveOperationRunningInstances || 1;
-  const visibleAffectedTokenCount = sourceFlowNodeInstanceKeyForMoveOperation
+  const visibleAffectedTokenCount = sourceElementInstanceKeyForMoveOperation
     ? 1
     : totalMoveOperationRunningInstancesVisible || 1;
 
@@ -343,7 +343,7 @@ const TopPanel: React.FC = observer(() => {
                   if (modificationsStore.state.status === 'moving-token') {
                     const ancestorScopeType = getAncestorScopeType(
                       businessObjects,
-                      sourceFlowNodeIdForMoveOperation ?? '',
+                      sourceElementIdForMoveOperation ?? '',
                       flowNodeId ?? '',
                       totalRunningInstancesByFlowNode,
                     );
@@ -411,9 +411,9 @@ const TopPanel: React.FC = observer(() => {
                       count={payload.count}
                       container={overlay.container}
                       isFaded={hasPendingCancelOrMoveModification({
-                        flowNodeId: overlay.flowNodeId,
-                        flowNodeInstanceKey: undefined,
-                        modificationsByFlowNode: modificationsByElement,
+                        elementId: overlay.flowNodeId,
+                        elementInstanceKey: undefined,
+                        modificationsByElement: modificationsByElement,
                       })}
                       title={
                         payload.flowNodeState === 'completed'

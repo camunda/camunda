@@ -45,7 +45,7 @@ const INITIAL_ADD_MODIFICATION: ElementModification = {
   type: 'token',
   payload: {
     affectedTokenCount: 1,
-    flowNode: {
+    element: {
       id: 'element_0',
       name: 'element 0',
     },
@@ -354,7 +354,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '123',
@@ -375,7 +375,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '123',
@@ -498,7 +498,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -518,7 +518,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -535,7 +535,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -546,7 +546,7 @@ describe('New Variable Modifications', () => {
       },
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2-updated',
           newValue: '12345',
@@ -572,7 +572,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -583,7 +583,7 @@ describe('New Variable Modifications', () => {
       },
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2-updated',
           newValue: '12345',
@@ -594,7 +594,7 @@ describe('New Variable Modifications', () => {
       },
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2-updated',
           newValue: '12345678',
@@ -621,7 +621,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -632,7 +632,7 @@ describe('New Variable Modifications', () => {
       },
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2-updated',
           newValue: '12345',
@@ -698,7 +698,7 @@ describe('New Variable Modifications', () => {
       INITIAL_ADD_MODIFICATION,
       {
         payload: {
-          flowNodeName: 'someProcessName',
+          elementName: 'someProcessName',
           id: expect.any(String),
           name: 'test2',
           newValue: '12345',
@@ -903,7 +903,7 @@ describe('New Variable Modifications', () => {
       type: 'token',
       payload: {
         operation: 'ADD_TOKEN',
-        flowNode: {
+        element: {
           id: 'element-that-has-not-run-yet',
           name: 'some-element',
         },

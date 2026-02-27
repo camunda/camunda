@@ -13,7 +13,7 @@ import {modifyProcessInstance} from 'modules/api/v2/processInstances/modifyProce
 import {logger} from 'modules/logger';
 import {tracking} from 'modules/tracking';
 import {getElementName} from 'modules/utils/elements';
-import {getFlowNodesInBetween} from 'modules/utils/processInstanceDetailsDiagram';
+import {getElementsInBetween} from 'modules/utils/processInstanceDetailsDiagram';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {generateParentScopeIds} from 'modules/utils/modifications';
 
@@ -40,38 +40,38 @@ type AncestorScopeType =
   | Extract<AncestorScopeTypes, 'inferred' | 'sourceParent'>
   | undefined;
 
-type FlowNodeModificationPayload =
+type ElementModificationPayload =
   | {
       operation: 'ADD_TOKEN';
       scopeId: string;
-      flowNode: {id: string; name: string};
+      element: {id: string; name: string};
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
       ancestorElement?: {
         instanceKey: string;
-        flowNodeId: string;
+        elementId: string;
       };
       parentScopeIds: {
-        [flowNodeId: string]: string;
+        [elementId: string]: string;
       };
     }
   | {
       operation: 'CANCEL_TOKEN';
-      flowNode: {id: string; name: string};
-      flowNodeInstanceKey?: string;
+      element: {id: string; name: string};
+      elementInstanceKey?: string;
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
     }
   | {
       operation: 'MOVE_TOKEN';
-      flowNode: {id: string; name: string};
-      flowNodeInstanceKey?: string;
+      element: {id: string; name: string};
+      elementInstanceKey?: string;
       affectedTokenCount: number;
       visibleAffectedTokenCount: number;
-      targetFlowNode: {id: string; name: string};
+      targetElement: {id: string; name: string};
       scopeIds: string[];
       parentScopeIds: {
-        [flowNodeId: string]: string;
+        [elementId: string]: string;
       };
       ancestorScopeType?: AncestorScopeType;
     };
@@ -80,7 +80,7 @@ type VariableModificationPayload = {
   operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE';
   id: string;
   scopeId: string;
-  flowNodeName: string;
+  elementName: string;
   name: string;
   oldValue?: string;
   newValue: string;
@@ -88,7 +88,7 @@ type VariableModificationPayload = {
 
 type ElementModification = {
   type: 'token';
-  payload: FlowNodeModificationPayload;
+  payload: ElementModificationPayload;
 };
 
 type VariableModification = {
@@ -113,17 +113,17 @@ type State = {
         source: RemovedModificationSource;
       }
     | undefined;
-  sourceFlowNodeIdForMoveOperation: string | null;
-  sourceFlowNodeInstanceKeyForMoveOperation: string | null;
-  sourceFlowNodeIdForAddOperation: string | null;
+  sourceElementIdForMoveOperation: string | null;
+  sourceElementInstanceKeyForMoveOperation: string | null;
+  sourceElementIdForAddOperation: string | null;
 };
 
 const DEFAULT_STATE: State = {
   status: 'disabled',
   modifications: [],
-  sourceFlowNodeIdForMoveOperation: null,
-  sourceFlowNodeInstanceKeyForMoveOperation: null,
-  sourceFlowNodeIdForAddOperation: null,
+  sourceElementIdForMoveOperation: null,
+  sourceElementInstanceKeyForMoveOperation: null,
+  sourceElementIdForAddOperation: null,
   lastRemovedModification: undefined,
 };
 
@@ -144,36 +144,36 @@ class Modifications {
   }
 
   startMovingToken = (
-    sourceFlowNodeId: string,
-    sourceFlowNodeInstanceKey?: string,
+    sourceElementId: string,
+    sourceElementInstanceKey?: string,
   ) => {
     this.setStatus('moving-token');
-    this.setSourceFlowNodeIdForMoveOperation(sourceFlowNodeId);
-    this.setSourceFlowNodeInstanceKeyForMoveOperation(
-      sourceFlowNodeInstanceKey ?? null,
+    this.setSourceElementIdForMoveOperation(sourceElementId);
+    this.setSourceElementInstanceKeyForMoveOperation(
+      sourceElementInstanceKey ?? null,
     );
   };
 
-  startAddingToken = (sourceFlowNodeId: string) => {
+  startAddingToken = (sourceElementId: string) => {
     this.setStatus('adding-token');
-    this.state.sourceFlowNodeIdForAddOperation = sourceFlowNodeId;
+    this.state.sourceElementIdForAddOperation = sourceElementId;
   };
 
   generateScopeIdsInBetween = (
-    targetFlowNodeId: string,
-    ancestorFlowNodeId: string,
+    targetElementId: string,
+    ancestorElementId: string,
     businessObjects: BusinessObjects,
   ) => {
-    const flowNodesInBetween = getFlowNodesInBetween(
+    const elementsInBetween = getElementsInBetween(
       businessObjects,
-      targetFlowNodeId,
-      ancestorFlowNodeId,
+      targetElementId,
+      ancestorElementId,
     );
 
-    return flowNodesInBetween.reduce<{[flowNodeId: string]: string}>(
-      (flowNodeScopes, flowNodeId) => {
-        flowNodeScopes[flowNodeId] = generateUniqueID();
-        return flowNodeScopes;
+    return elementsInBetween.reduce<{[elementId: string]: string}>(
+      (elementScopes, elementId) => {
+        elementScopes[elementId] = generateUniqueID();
+        return elementScopes;
       },
       {},
     );
@@ -187,29 +187,29 @@ class Modifications {
     if (
       ancestorElementInstanceKey !== undefined &&
       ancestorElementId !== undefined &&
-      this.state.sourceFlowNodeIdForAddOperation !== null
+      this.state.sourceElementIdForAddOperation !== null
     ) {
       this.addModification({
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {
-            id: this.state.sourceFlowNodeIdForAddOperation,
+          element: {
+            id: this.state.sourceElementIdForAddOperation,
             name:
               getElementName({
                 businessObjects,
-                elementId: this.state.sourceFlowNodeIdForAddOperation,
+                elementId: this.state.sourceElementIdForAddOperation,
               }) ?? '',
           },
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           ancestorElement: {
             instanceKey: ancestorElementInstanceKey,
-            flowNodeId: ancestorElementId,
+            elementId: ancestorElementId,
           },
           parentScopeIds: this.generateScopeIdsInBetween(
-            this.state.sourceFlowNodeIdForAddOperation,
+            this.state.sourceElementIdForAddOperation,
             ancestorElementId,
             businessObjects,
           ),
@@ -218,22 +218,22 @@ class Modifications {
     }
 
     this.setStatus('enabled');
-    this.state.sourceFlowNodeIdForAddOperation = null;
+    this.state.sourceElementIdForAddOperation = null;
   };
 
   setStatus = (status: State['status']) => {
     this.state.status = status;
   };
 
-  setSourceFlowNodeIdForMoveOperation = (sourceFlowNodeId: string | null) => {
-    this.state.sourceFlowNodeIdForMoveOperation = sourceFlowNodeId;
+  setSourceElementIdForMoveOperation = (sourceElementId: string | null) => {
+    this.state.sourceElementIdForMoveOperation = sourceElementId;
   };
 
-  setSourceFlowNodeInstanceKeyForMoveOperation = (
-    sourceFlowNodeInstanceKey: string | null,
+  setSourceElementInstanceKeyForMoveOperation = (
+    sourceElementInstanceKey: string | null,
   ) => {
-    this.state.sourceFlowNodeInstanceKeyForMoveOperation =
-      sourceFlowNodeInstanceKey;
+    this.state.sourceElementInstanceKeyForMoveOperation =
+      sourceElementInstanceKey;
   };
 
   enableModificationMode = () => {
@@ -262,17 +262,17 @@ class Modifications {
     };
   };
 
-  removeFlowNodeModification = (
-    flowNodeModification: FlowNodeModificationPayload,
+  removeElementModification = (
+    elementModification: ElementModificationPayload,
   ) => {
-    if (flowNodeModification.operation === 'ADD_TOKEN') {
+    if (elementModification.operation === 'ADD_TOKEN') {
       this.state.modifications = this.state.modifications.filter(
         ({type, payload}) =>
           !(
             type === 'token' &&
-            payload.flowNode.id === flowNodeModification.flowNode.id &&
-            payload.operation === flowNodeModification.operation &&
-            payload.scopeId === flowNodeModification.scopeId
+            payload.element.id === elementModification.element.id &&
+            payload.operation === elementModification.operation &&
+            payload.scopeId === elementModification.scopeId
           ),
       );
     } else {
@@ -280,10 +280,10 @@ class Modifications {
         ({type, payload}) =>
           !(
             type === 'token' &&
-            payload.flowNode.id === flowNodeModification.flowNode.id &&
-            payload.operation === flowNodeModification.operation &&
-            payload.flowNodeInstanceKey ===
-              flowNodeModification.flowNodeInstanceKey
+            payload.element.id === elementModification.element.id &&
+            payload.operation === elementModification.operation &&
+            payload.elementInstanceKey ===
+              elementModification.elementInstanceKey
           ),
       );
     }
@@ -331,7 +331,7 @@ class Modifications {
   get isMoveAllOperation() {
     return (
       this.state.status === 'moving-token' &&
-      this.state.sourceFlowNodeInstanceKeyForMoveOperation === null
+      this.state.sourceElementInstanceKeyForMoveOperation === null
     );
   }
 
@@ -364,8 +364,8 @@ class Modifications {
     return Object.values(latestVariableModifications);
   }
 
-  get flowNodeModifications() {
-    function isFlowNodeModification(
+  get elementModifications() {
+    function isElementModification(
       modification: Modification,
     ): modification is ElementModification {
       const {type} = modification;
@@ -374,19 +374,19 @@ class Modifications {
     }
 
     return this.state.modifications
-      .filter(isFlowNodeModification)
+      .filter(isElementModification)
       .map(({payload}) => payload);
   }
 
   getLastVariableModification = (
-    flowNodeInstanceId: string | null,
+    elementInstanceId: string | null,
     id: string,
     operation: 'ADD_VARIABLE' | 'EDIT_VARIABLE',
   ) => {
     return this.variableModifications.find(
       (modification) =>
         modification.operation === operation &&
-        modification.scopeId === flowNodeInstanceId &&
+        modification.scopeId === elementInstanceId &&
         modification.id === id,
     );
   };
@@ -446,20 +446,20 @@ class Modifications {
   }
 
   #getScopeMapForModification(
-    modification: FlowNodeModificationPayload,
+    modification: ElementModificationPayload,
   ): ScopeMap {
     switch (modification.operation) {
       case 'ADD_TOKEN': {
         return this.#getScopeMap(
           [modification.scopeId],
-          modification.flowNode.id,
+          modification.element.id,
           modification.parentScopeIds,
         );
       }
       case 'MOVE_TOKEN': {
         return this.#getScopeMap(
           modification.scopeIds,
-          modification.targetFlowNode.id,
+          modification.targetElement.id,
           modification.parentScopeIds,
         );
       }
@@ -487,13 +487,13 @@ class Modifications {
     let moveInstructions: MoveInstruction[] = [];
     let terminateInstructions: TerminateInstruction[] = [];
 
-    for (const modification of this.flowNodeModifications) {
+    for (const modification of this.elementModifications) {
       switch (modification.operation) {
         case 'CANCEL_TOKEN': {
           const instruction: TerminateInstruction =
-            modification.flowNodeInstanceKey === undefined
-              ? {elementId: modification.flowNode.id}
-              : {elementInstanceKey: modification.flowNodeInstanceKey};
+            modification.elementInstanceKey === undefined
+              ? {elementId: modification.element.id}
+              : {elementInstanceKey: modification.elementInstanceKey};
 
           terminateInstructions.push(instruction);
           break;
@@ -502,7 +502,7 @@ class Modifications {
           const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: ActivateInstruction = {
-            elementId: modification.flowNode.id,
+            elementId: modification.element.id,
             ancestorElementInstanceKey:
               modification.ancestorElement?.instanceKey,
             variableInstructions:
@@ -516,16 +516,16 @@ class Modifications {
           const scopeMap = this.#getScopeMapForModification(modification);
 
           const instruction: MoveInstruction = {
-            sourceElementInstruction: modification.flowNodeInstanceKey
+            sourceElementInstruction: modification.elementInstanceKey
               ? {
                   sourceType: 'byKey',
-                  sourceElementInstanceKey: modification.flowNodeInstanceKey,
+                  sourceElementInstanceKey: modification.elementInstanceKey,
                 }
               : {
                   sourceType: 'byId',
-                  sourceElementId: modification.flowNode.id,
+                  sourceElementId: modification.element.id,
                 },
-            targetElementId: modification.targetFlowNode.id,
+            targetElementId: modification.targetElement.id,
             ancestorScopeInstruction: modification.ancestorScopeType
               ? {ancestorScopeType: modification.ancestorScopeType}
               : undefined,
@@ -615,7 +615,7 @@ class Modifications {
     let allPendingScopeIds = new Set<string>();
     let hasAddOrMoveToken = false;
 
-    for (const modification of this.flowNodeModifications) {
+    for (const modification of this.elementModifications) {
       const operation = modification.operation;
       if (operation !== 'ADD_TOKEN' && operation !== 'MOVE_TOKEN') {
         continue;
@@ -638,27 +638,27 @@ class Modifications {
     });
   };
 
-  getParentScopeId = (flowNodeId: string) => {
-    const parentScope = this.flowNodeModifications.find(
+  getParentScopeId = (elementId: string) => {
+    const parentScope = this.elementModifications.find(
       (modification) =>
         modification.operation !== 'CANCEL_TOKEN' &&
-        modification.parentScopeIds[flowNodeId] !== undefined,
+        modification.parentScopeIds[elementId] !== undefined,
     );
 
     if (parentScope !== undefined && 'parentScopeIds' in parentScope) {
-      return parentScope.parentScopeIds[flowNodeId];
+      return parentScope.parentScopeIds[elementId];
     }
   };
 
   addCancelModification = ({
-    flowNodeId,
-    flowNodeInstanceKey,
+    elementId,
+    elementInstanceKey,
     affectedTokenCount,
     visibleAffectedTokenCount,
     businessObjects,
   }: {
-    flowNodeId: string;
-    flowNodeInstanceKey?: string;
+    elementId: string;
+    elementInstanceKey?: string;
     affectedTokenCount: number;
     visibleAffectedTokenCount: number;
     businessObjects: BusinessObjects;
@@ -667,11 +667,11 @@ class Modifications {
       type: 'token',
       payload: {
         operation: 'CANCEL_TOKEN',
-        flowNode: {
-          id: flowNodeId,
-          name: getElementName({businessObjects, elementId: flowNodeId}),
+        element: {
+          id: elementId,
+          name: getElementName({businessObjects, elementId: elementId}),
         },
-        flowNodeInstanceKey,
+        elementInstanceKey,
         affectedTokenCount,
         visibleAffectedTokenCount,
       },
@@ -679,13 +679,13 @@ class Modifications {
   };
 
   cancelToken = (
-    flowNodeId: string,
-    flowNodeInstanceKey: string,
+    elementId: string,
+    elementInstanceKey: string,
     businessObjects: BusinessObjects,
   ) => {
     this.addCancelModification({
-      flowNodeId,
-      flowNodeInstanceKey,
+      elementId,
+      elementInstanceKey,
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       businessObjects,
@@ -693,9 +693,9 @@ class Modifications {
   };
 
   addMoveModification = ({
-    sourceFlowNodeId,
-    sourceFlowNodeInstanceKey,
-    targetFlowNodeId,
+    sourceElementId,
+    sourceElementInstanceKey,
+    targetElementId,
     newScopeCount,
     affectedTokenCount,
     visibleAffectedTokenCount,
@@ -703,9 +703,9 @@ class Modifications {
     bpmnProcessId,
     ancestorScopeType,
   }: {
-    sourceFlowNodeId: string;
-    sourceFlowNodeInstanceKey?: string;
-    targetFlowNodeId: string;
+    sourceElementId: string;
+    sourceElementInstanceKey?: string;
+    targetElementId: string;
     newScopeCount: number;
     affectedTokenCount: number;
     visibleAffectedTokenCount: number;
@@ -717,19 +717,19 @@ class Modifications {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {
-          id: sourceFlowNodeId,
+        element: {
+          id: sourceElementId,
           name: getElementName({
             businessObjects,
-            elementId: sourceFlowNodeId,
+            elementId: sourceElementId,
           }),
         },
-        flowNodeInstanceKey: sourceFlowNodeInstanceKey,
-        targetFlowNode: {
-          id: targetFlowNodeId,
+        elementInstanceKey: sourceElementInstanceKey,
+        targetElement: {
+          id: targetElementId,
           name: getElementName({
             businessObjects,
-            elementId: targetFlowNodeId,
+            elementId: targetElementId,
           }),
         },
         affectedTokenCount,
@@ -739,7 +739,7 @@ class Modifications {
         }).map(() => generateUniqueID()),
         parentScopeIds: generateParentScopeIds(
           businessObjects,
-          targetFlowNodeId,
+          targetElementId,
           bpmnProcessId,
         ),
         ancestorScopeType,

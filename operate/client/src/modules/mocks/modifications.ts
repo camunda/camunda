@@ -11,13 +11,13 @@ import {modificationsStore} from '../stores/modifications';
 
 const createEditVariableModification = ({
   scopeId,
-  flowNodeName = 'flow-node-name',
+  elementName = 'flow-node-name',
   name,
   oldValue,
   newValue,
 }: {
   scopeId: string;
-  flowNodeName?: string;
+  elementName?: string;
   name: string;
   oldValue: string;
   newValue: string;
@@ -28,7 +28,7 @@ const createEditVariableModification = ({
       operation: 'EDIT_VARIABLE',
       id: name,
       scopeId,
-      flowNodeName,
+      elementName,
       name,
       oldValue,
       newValue,
@@ -39,13 +39,13 @@ const createEditVariableModification = ({
 const createAddVariableModification = ({
   id,
   scopeId,
-  flowNodeName = 'flow-node-name',
+  elementName = 'flow-node-name',
   name,
   value,
 }: {
   id?: string;
   scopeId: string;
-  flowNodeName?: string;
+  elementName?: string;
   name: string;
   value: string;
 }) => {
@@ -55,7 +55,7 @@ const createAddVariableModification = ({
       operation: 'ADD_VARIABLE',
       id: id ?? generateUniqueID(),
       scopeId,
-      flowNodeName,
+      elementName,
       name,
       newValue: value,
     },

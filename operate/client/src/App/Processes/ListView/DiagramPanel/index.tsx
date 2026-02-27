@@ -281,8 +281,8 @@ const DiagramPanel: React.FC = observer(() => {
       </DiagramShell>
       {batchModificationStore.state.isEnabled && (
         <BatchModificationNotification
-          sourceFlowNodeId={flowNodeId}
-          targetFlowNodeId={selectedTargetElementId || undefined}
+          sourceElementId={flowNodeId}
+          targetElementId={selectedTargetElementId || undefined}
           onUndoClick={() => batchModificationStore.selectTargetElement(null)}
         />
       )}

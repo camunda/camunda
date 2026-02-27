@@ -26,7 +26,7 @@ const INITIAL_ADD_MODIFICATION: ElementModification = {
   type: 'token',
   payload: {
     affectedTokenCount: 1,
-    flowNode: {
+    element: {
       id: 'flow_node_0',
       name: 'flow node 0',
     },

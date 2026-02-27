@@ -67,8 +67,8 @@ describe('BatchModificationNotification', () => {
 
     render(
       <BatchModificationNotification
-        sourceFlowNodeId="userTask"
-        targetFlowNodeId="endEvent"
+        sourceElementId="userTask"
+        targetElementId="endEvent"
       />,
       {
         wrapper: getWrapper(),
@@ -96,8 +96,8 @@ describe('BatchModificationNotification', () => {
 
     const {user} = render(
       <BatchModificationNotification
-        sourceFlowNodeId="userTask"
-        targetFlowNodeId="endEvent"
+        sourceElementId="userTask"
+        targetElementId="endEvent"
         onUndoClick={undoMock}
       />,
       {
@@ -128,7 +128,7 @@ describe('BatchModificationNotification', () => {
       ],
     });
 
-    render(<BatchModificationNotification sourceFlowNodeId="userTask" />, {
+    render(<BatchModificationNotification sourceElementId="userTask" />, {
       wrapper: getWrapper(),
     });
 

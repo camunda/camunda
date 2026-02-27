@@ -116,7 +116,7 @@ describe('Modification Summary Modal', () => {
     act(() => {
       createAddVariableModification({
         scopeId: 'element-1',
-        flowNodeName: 'element 1',
+        elementName: 'element 1',
         name: 'test',
         value: '123',
       });
@@ -167,7 +167,7 @@ describe('Modification Summary Modal', () => {
     act(() => {
       createAddVariableModification({
         scopeId: 'element-1',
-        flowNodeName: 'element 1',
+        elementName: 'element 1',
         name: 'test',
         value: '123',
       });
@@ -188,8 +188,8 @@ describe('Modification Summary Modal', () => {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'element-1', name: 'element 1'},
-        targetFlowNode: {id: 'element-2', name: 'element 2'},
+        element: {id: 'element-1', name: 'element 1'},
+        targetElement: {id: 'element-2', name: 'element 2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
@@ -261,9 +261,9 @@ describe('Modification Summary Modal', () => {
     act(() => {
       modificationsStore.removeLastModification();
       modificationsStore.addMoveModification({
-        sourceFlowNodeId: 'element-1',
-        sourceFlowNodeInstanceKey: 'some-instance-key-2',
-        targetFlowNodeId: 'element-2',
+        sourceElementId: 'element-1',
+        sourceElementInstanceKey: 'some-instance-key-2',
+        targetElementId: 'element-2',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         newScopeCount: 1,
@@ -289,8 +289,8 @@ describe('Modification Summary Modal', () => {
       type: 'token',
       payload: {
         operation: 'MOVE_TOKEN',
-        flowNode: {id: 'element-1', name: 'element 1'},
-        targetFlowNode: {id: 'element-2', name: 'element 2'},
+        element: {id: 'element-1', name: 'element 1'},
+        targetElement: {id: 'element-2', name: 'element 2'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         scopeIds: ['1'],
@@ -316,7 +316,7 @@ describe('Modification Summary Modal', () => {
     expect(
       screen.getByText('No planned element modifications'),
     ).toBeInTheDocument();
-    expect(modificationsStore.flowNodeModifications).toEqual([]);
+    expect(modificationsStore.elementModifications).toEqual([]);
     expect(screen.getByRole('button', {name: 'Apply'})).toBeDisabled();
   });
 
@@ -358,9 +358,9 @@ describe('Modification Summary Modal', () => {
 
   it('should delete move token modification applied on a single element instance key', async () => {
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'element-1',
-      sourceFlowNodeInstanceKey: 'some-instance-key-1',
-      targetFlowNodeId: 'element-2',
+      sourceElementId: 'element-1',
+      sourceElementInstanceKey: 'some-instance-key-1',
+      targetElementId: 'element-2',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -369,9 +369,9 @@ describe('Modification Summary Modal', () => {
     });
 
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: 'element-1',
-      sourceFlowNodeInstanceKey: 'some-instance-key-2',
-      targetFlowNodeId: 'element-2',
+      sourceElementId: 'element-1',
+      sourceElementInstanceKey: 'some-instance-key-2',
+      targetElementId: 'element-2',
       affectedTokenCount: 1,
       visibleAffectedTokenCount: 1,
       newScopeCount: 1,
@@ -434,7 +434,7 @@ describe('Modification Summary Modal', () => {
   it.skip('should display variable content details on modal icon click', async () => {
     createAddVariableModification({
       scopeId: 'element-1',
-      flowNodeName: 'element 1',
+      elementName: 'element 1',
       name: 'test',
       value: '123',
     });
@@ -444,7 +444,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'EDIT_VARIABLE',
         scopeId: 'element-2',
-        flowNodeName: 'element 2',
+        elementName: 'element 2',
         id: '1',
         name: 'anotherVariable',
         oldValue: '"someOldValue"',
@@ -524,7 +524,7 @@ describe('Modification Summary Modal', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {
+          element: {
             id: 'multi-instance-subprocess',
             name: 'multi instance subprocess',
           },
@@ -536,7 +536,7 @@ describe('Modification Summary Modal', () => {
       });
 
       modificationsStore.addCancelModification({
-        flowNodeId: 'multi-instance-subprocess',
+        elementId: 'multi-instance-subprocess',
         affectedTokenCount: 7,
         visibleAffectedTokenCount: 7,
         businessObjects: {},
@@ -568,7 +568,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'element-1', name: 'element 1'},
+        element: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -609,7 +609,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'element-1', name: 'element 1'},
+        element: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -651,7 +651,7 @@ describe('Modification Summary Modal', () => {
       payload: {
         operation: 'ADD_TOKEN',
         scopeId: '123',
-        flowNode: {id: 'element-1', name: 'element 1'},
+        element: {id: 'element-1', name: 'element 1'},
         affectedTokenCount: 3,
         visibleAffectedTokenCount: 3,
         parentScopeIds: {},
@@ -726,7 +726,7 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       modificationsStore.addCancelModification({
-        flowNodeId: 'service-task-2',
+        elementId: 'service-task-2',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         businessObjects: {},
@@ -741,7 +741,7 @@ describe('Modification Summary Modal', () => {
 
     act(() => {
       modificationsStore.addCancelModification({
-        flowNodeId: 'service-task-3',
+        elementId: 'service-task-3',
         affectedTokenCount: 1,
         visibleAffectedTokenCount: 1,
         businessObjects: {},
@@ -759,7 +759,7 @@ describe('Modification Summary Modal', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {id: 'service-task-3', name: 'service-task-3'},
+          element: {id: 'service-task-3', name: 'service-task-3'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           scopeId: 'some-scope-id',
@@ -866,7 +866,7 @@ describe('Modification Summary Modal', () => {
     act(() => {
       createAddVariableModification({
         scopeId: 'orphaned-scope',
-        flowNodeName: 'some element',
+        elementName: 'some element',
         name: 'myVar',
         value: '"hello"',
       });
@@ -888,7 +888,7 @@ describe('Modification Summary Modal', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: 'orphaned-scope',
-          flowNode: {id: 'some-element', name: 'some element'},
+          element: {id: 'some-element', name: 'some element'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: {},

@@ -50,12 +50,12 @@ const useElements = () => {
 const useAppendableElements = () => {
   const elements = useElements();
   const {
-    state: {status, sourceFlowNodeIdForMoveOperation},
+    state: {status, sourceElementIdForMoveOperation},
     isMoveAllOperation,
   } = modificationsStore;
 
   const sourceMultiInstanceParent = elements.find(
-    ({id}) => id === sourceFlowNodeIdForMoveOperation,
+    ({id}) => id === sourceElementIdForMoveOperation,
   )?.firstMultiInstanceParent;
 
   return elements
@@ -102,7 +102,7 @@ const useModifiableElements = () => {
   if (modificationsStore.state.status === 'moving-token') {
     return appendableElements.filter(
       (elementId) =>
-        elementId !== modificationsStore.state.sourceFlowNodeIdForMoveOperation,
+        elementId !== modificationsStore.state.sourceElementIdForMoveOperation,
     );
   } else {
     return Array.from(new Set([...appendableElements, ...cancellableElements]));

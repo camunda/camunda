@@ -13,10 +13,10 @@ import {modificationsStore} from 'modules/stores/modifications';
 import {tracking} from 'modules/tracking';
 
 const TOKEN_TEMPLATES = {
-  ADD_TOKEN: (flowNode: string) => `Add "${flowNode}"`,
-  CANCEL_TOKEN: (flowNode: string) => `Cancel "${flowNode}"`,
-  MOVE_TOKEN: (sourceFlowNode: string, targetFlowNode: string) =>
-    `Move "${sourceFlowNode}" to "${targetFlowNode}"`,
+  ADD_TOKEN: (element: string) => `Add "${element}"`,
+  CANCEL_TOKEN: (element: string) => `Cancel "${element}"`,
+  MOVE_TOKEN: (sourceElement: string, targetElement: string) =>
+    `Move "${sourceElement}" to "${targetElement}"`,
 };
 
 const VARIABLE_TEMPLATES = {
@@ -41,13 +41,13 @@ const LastModification: React.FC = observer(() => {
             {type === 'token' &&
               payload.operation === 'MOVE_TOKEN' &&
               TOKEN_TEMPLATES[payload.operation](
-                payload.flowNode.name,
-                payload.targetFlowNode.name,
+                payload.element.name,
+                payload.targetElement.name,
               )}
             {type === 'token' &&
               (payload.operation === 'ADD_TOKEN' ||
                 payload.operation === 'CANCEL_TOKEN') &&
-              TOKEN_TEMPLATES[payload.operation](payload.flowNode.name)}
+              TOKEN_TEMPLATES[payload.operation](payload.element.name)}
             {type === 'variable' &&
               VARIABLE_TEMPLATES[payload.operation](payload.name)}
           </>

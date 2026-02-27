@@ -271,7 +271,7 @@ describe('VariablePanel element states', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {
+          element: {
             id: 'Activity_0qtp1k6',
             name: 'Element with running tokens',
           },
@@ -293,9 +293,9 @@ describe('VariablePanel element states', () => {
     ).not.toBeInTheDocument();
 
     act(() => {
-      modificationsStore.removeFlowNodeModification({
+      modificationsStore.removeElementModification({
         operation: 'CANCEL_TOKEN',
-        flowNode: {
+        element: {
           id: 'Activity_0qtp1k6',
           name: 'Element with running tokens',
         },
@@ -405,7 +405,7 @@ describe('VariablePanel element states', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {
+          element: {
             id: 'element-without-running-tokens',
             name: 'Element without running tokens',
           },
@@ -440,7 +440,7 @@ describe('VariablePanel element states', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {
+          element: {
             id: 'element-without-running-tokens',
             name: 'Element without running tokens',
           },
@@ -551,7 +551,7 @@ describe('VariablePanel element states', () => {
         type: 'token',
         payload: {
           operation: 'ADD_TOKEN',
-          flowNode: {
+          element: {
             id: 'Activity_0qtp1k6',
             name: 'Element with finished tokens',
           },
