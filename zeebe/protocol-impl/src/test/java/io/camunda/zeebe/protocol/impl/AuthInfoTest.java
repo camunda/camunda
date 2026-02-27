@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.protocol.impl;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.test.util.junit.RegressionTest;
 import java.util.Map;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -132,6 +134,51 @@ final class AuthInfoTest {
 
       // when / then
       assertThat(authInfo.hasAnyClaims()).isTrue();
+    }
+  }
+
+  @Nested
+  class EmptyAuthInfoTests {
+    @Test
+    void shouldThrowOnWrap() {
+      final var empty = new EmptyAuthInfo();
+      final var buffer = new UnsafeBuffer(new byte[0]);
+
+      assertThatThrownBy(() -> empty.wrap(buffer, 0, 0))
+          .isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldThrowOnReset() {
+      final var empty = new EmptyAuthInfo();
+
+      assertThatThrownBy(empty::reset).isInstanceOf(UnsupportedOperationException.class);
+    }
+
+    @Test
+    void shouldReturnEmptyClaims() {
+      final var empty = new EmptyAuthInfo();
+
+      assertThat(empty.getClaims()).isEmpty();
+      assertThat(empty.toDecodedMap()).isEmpty();
+      assertThat(empty.hasAnyClaims()).isFalse();
+    }
+
+    @Test
+    void shouldSerializeIdenticallyToNewAuthInfo() {
+      final var empty = new EmptyAuthInfo();
+      final var regular = new AuthInfo();
+
+      assertThat(empty.getLength()).isEqualTo(regular.getLength());
+      assertThat(empty.toDirectBuffer()).isEqualTo(regular.toDirectBuffer());
+    }
+
+    @Test
+    void shouldBeEqualToNewAuthInfo() {
+      final var empty = new EmptyAuthInfo();
+      final var regular = new AuthInfo();
+
+      assertThat(empty).isEqualTo(regular);
     }
   }
 
