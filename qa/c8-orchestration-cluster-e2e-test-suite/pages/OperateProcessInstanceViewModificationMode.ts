@@ -87,18 +87,18 @@ export class OperateProcessInstanceViewModificationModePage {
     this.modifyModeHeader = page
       .getByText('Process Instance Modification Mode')
       .first();
-    this.flowNodeModificationsPopup = page.getByText('Flow Node Modifications');
+    this.flowNodeModificationsPopup = page.getByText('Element Modifications');
     this.addModificationButtononPopup = page.getByTitle(
-      'Add single flow node instance',
+      'Add single element instance',
     );
     this.moveAllButtononPopup = page.getByTitle(
-      'Move all running instances in this flow node to another target',
+      'Move all running instances in this element to another target',
     );
     this.cancelButtonPopup = page.getByTitle(
-      'Cancel selected instance in this flow node',
+      'Cancel selected instance in this element',
     );
     this.cancelAllButtonPopup = page.getByTitle(
-      'Cancel all running flow node instances in this flow node',
+      'Cancel all running element instances in this element',
     );
     this.reviewModificationsButton = page.getByTestId(
       'review-modifications-button',
@@ -111,7 +111,7 @@ export class OperateProcessInstanceViewModificationModePage {
       .getByRole('dialog')
       .getByRole('button', {name: 'Apply'});
     this.moveTokensMessage = page.getByText(
-      'Select the target flow node in the diagram',
+      'Select the target element in the diagram',
     );
     this.diagram = this.page.getByTestId('diagram');
     this.multipleInstancesAlert = page
@@ -123,10 +123,10 @@ export class OperateProcessInstanceViewModificationModePage {
 
     this.continueButton = page.getByRole('button', {name: 'Continue'});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
-      name: 'Add single flow node instance',
+      name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this flow node to another target',
+      name: 'Move selected instance in this element to another target',
     });
     this.modificationModeText = page.getByText(
       'Process Instance Modification Mode',
@@ -141,7 +141,7 @@ export class OperateProcessInstanceViewModificationModePage {
       name: /add variable/i,
     });
     this.modalDialog = page.getByRole('dialog');
-    this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
+    this.noVariablesText = page.getByText(/The element has no variables/i);
     this.newVariableByIndex = (index: number) => ({
       name: this.page
         .getByTestId(`variable-newVariables[${index}]`)
@@ -292,7 +292,7 @@ export class OperateProcessInstanceViewModificationModePage {
         .nth(index)
         .getByRole('cell')
         .nth(5)
-        .getByRole('button', {name: 'Delete flow node modification'}),
+        .getByRole('button', {name: 'Delete element modification'}),
     });
     this.applyModificationDialogVariableModificationRowByIndex = (
       index: number,
