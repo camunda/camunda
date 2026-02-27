@@ -40,7 +40,7 @@ export async function createComponentAuthorization(
     data: body,
   });
 
-  expect(res.status()).toBe(201);
+  await assertStatusCode(res, 201);
   await validateResponse(
     {
       path: '/authorizations',

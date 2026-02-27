@@ -15,6 +15,7 @@ import {
 import {
   assertEqualsForKeys,
   assertRequiredFields,
+  assertStatusCode,
   buildUrl,
   jsonHeaders,
 } from '../http';
@@ -37,7 +38,7 @@ export async function createRole(
     data: body,
   });
 
-  expect(res.status()).toBe(201);
+  await assertStatusCode(res, 201);
   const json = await res.json();
   assertRequiredFields(json, roleRequiredFields);
   await validateResponse(
@@ -85,7 +86,7 @@ export async function createMappingRule(
       },
       res,
     );
-    expect(res.status()).toBe(201);
+    await assertStatusCode(res, 201);
     if (state && key) {
       const json = await res.json();
       state[`mappingRuleId${key}`] = json.mappingRuleId;
@@ -115,7 +116,7 @@ export async function assignRolesToMappingRules(
         buildUrl('/roles/{roleId}/mapping-rules/{mappingRuleId}', p),
         {headers: jsonHeaders()},
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -136,7 +137,7 @@ export async function assignClientsToRole(
       buildUrl('/roles/{roleId}/clients/{clientId}', p),
       {headers: jsonHeaders()},
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     state[`client${roleId}${i}`] = clientId;
   }
 }
@@ -165,7 +166,7 @@ export async function assignGroupsToRole(
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
   }
 }
 
