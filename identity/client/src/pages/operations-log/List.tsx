@@ -34,7 +34,10 @@ import {
   Stack,
   TextInput,
 } from "@carbon/react";
-import { auditLogResultSchema } from "@camunda/camunda-api-zod-schemas/8.9";
+import {
+  AuditLogEntityType,
+  auditLogResultSchema,
+} from "@camunda/camunda-api-zod-schemas/8.9";
 import useDebounce from "react-debounced";
 import { useForm } from "react-hook-form";
 import { CellProperty } from "src/pages/operations-log/CellProperty";
@@ -74,8 +77,10 @@ const List: FC = () => {
     setSearchParamsFilters(filters);
   }, [filters]);
 
-  const debounce = useDebounce();
-  const [debouncedActor, setDebouncedActor] = useState<string>();
+  const debounce = useDebounce(500);
+  const [debouncedActor, setDebouncedActor] = useState<string>(filters.actor);
+  const [debouncedRelatedEntityKey, setDebouncedRelatedEntityKey] =
+    useState<string>(filters.relatedEntityKey);
 
   const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
     useState<boolean>(false);
@@ -117,11 +122,14 @@ const List: FC = () => {
         filters.operationType && filters.operationType.length > 0
           ? { $in: filters.operationType }
           : undefined,
-      entityType:
-        filters.entityType && filters.entityType.length > 0
-          ? { $in: filters.entityType }
-          : undefined,
-      actorId: debouncedActor,
+      entityType: filters.entityType ? { $eq: filters.entityType } : undefined,
+      relatedEntityType: filters.relatedEntityType
+        ? { $eq: filters.relatedEntityType }
+        : undefined,
+      relatedEntityKey: debouncedRelatedEntityKey
+        ? debouncedRelatedEntityKey
+        : undefined,
+      actorId: debouncedActor ? debouncedActor : undefined,
       timestamp:
         filters.timestampFrom && filters.timestampTo
           ? {
@@ -171,22 +179,65 @@ const List: FC = () => {
                 }}
                 size="sm"
               />
-              <MultiSelect
+              <Dropdown
                 id="entityType"
                 items={ALLOWED_ENTITY_TYPES}
                 titleText={t("entityType")}
-                label={t("multiSelectLabel")}
-                selectedItems={filters.entityType}
+                label={t("selectLabel")}
+                selectedItem={filters.entityType ? filters.entityType : ""}
                 itemToString={(selectedItem) =>
-                  spaceAndCapitalize(selectedItem)
+                  selectedItem ? spaceAndCapitalize(selectedItem) : ""
                 }
-                onChange={({ selectedItems }) => {
-                  if (selectedItems !== null) {
-                    setValue("entityType", selectedItems);
+                onChange={({
+                  selectedItem,
+                }: {
+                  selectedItem: AuditLogEntityType;
+                }) => {
+                  setValue("entityType", selectedItem);
+
+                  if (selectedItem !== "AUTHORIZATION") {
+                    setValue("relatedEntityType", undefined);
+                    setValue("relatedEntityKey", "");
+                    setDebouncedRelatedEntityKey("");
                   }
                 }}
                 size="sm"
               />
+              {filters.entityType === "AUTHORIZATION" && (
+                <>
+                  <Dropdown
+                    id="relatedEntityType"
+                    items={ALLOWED_ENTITY_TYPES}
+                    titleText={t("ownerType")}
+                    label={t("selectLabel")}
+                    selectedItem={
+                      filters.relatedEntityType ? filters.relatedEntityType : ""
+                    }
+                    itemToString={(selectedItem) =>
+                      selectedItem ? spaceAndCapitalize(selectedItem) : ""
+                    }
+                    onChange={({
+                      selectedItem,
+                    }: {
+                      selectedItem: AuditLogEntityType;
+                    }) => {
+                      setValue("relatedEntityType", selectedItem);
+                    }}
+                  />
+                  <TextInput
+                    id="relatedEntityKey"
+                    labelText={t("ownerKey")}
+                    placeholder={t("ownerKeyPlaceholder")}
+                    value={filters.relatedEntityKey}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const value = e.target.value.trim();
+                      setValue("relatedEntityKey", value);
+                      debounce(() => setDebouncedRelatedEntityKey(value ?? ""));
+                    }}
+                    size="sm"
+                  />
+                </>
+              )}
               <Dropdown
                 label={t("selectLabel")}
                 aria-label={t("selectLabel")}
@@ -219,7 +270,7 @@ const List: FC = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const value = e.target.value.trim();
                   setValue("actor", value);
-                  debounce(() => setDebouncedActor(value ? value : undefined));
+                  debounce(() => setDebouncedActor(value ?? ""));
                 }}
                 size="sm"
               />
@@ -244,7 +295,7 @@ const List: FC = () => {
                   size="sm"
                   disabled={
                     filters.operationType.length === 0 &&
-                    filters.entityType.length === 0 &&
+                    !filters.entityType &&
                     filters.result === "all" &&
                     !filters.actor &&
                     !filters.timestampFrom &&
@@ -254,13 +305,16 @@ const List: FC = () => {
                   onClick={() => {
                     reset({
                       operationType: [],
-                      entityType: [],
+                      entityType: undefined,
+                      relatedEntityType: undefined,
+                      relatedEntityKey: "",
                       result: "all",
                       actor: "",
                       timestampFrom: "",
                       timestampTo: "",
                     });
-                    setDebouncedActor(undefined);
+                    setDebouncedActor("");
+                    setDebouncedRelatedEntityKey("");
                   }}
                 >
                   {t("reset")}

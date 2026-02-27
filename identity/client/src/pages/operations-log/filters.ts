@@ -21,7 +21,9 @@ import { isValidDate } from "src/utility/validate";
 
 export type AuditLogFilters = {
   operationType: AuditLogOperationType[];
-  entityType: AuditLogEntityType[];
+  entityType?: AuditLogEntityType;
+  relatedEntityType?: AuditLogEntityType;
+  relatedEntityKey: string;
   result: AuditLogResult | "all";
   actor: string;
   timestampFrom: string;
@@ -65,13 +67,34 @@ const auditLogSearchParamsSync = createSearchParamsSync<AuditLogFilters>({
 
   entityType: {
     parse: (params) => {
-      return parseArrayParam<AuditLogEntityType>(
-        params.get("entityType"),
-      ).filter((item) => ALLOWED_ENTITY_TYPES.includes(item));
+      const entityType = params.get("entityType") as AuditLogEntityType;
+
+      return ALLOWED_ENTITY_TYPES.includes(entityType) ? entityType : undefined;
     },
     serialize: (value, params) => {
-      const v = buildArrayParam(value);
-      if (v) params.set("entityType", v);
+      if (value) params.set("entityType", value);
+    },
+  },
+
+  relatedEntityType: {
+    parse: (params) => {
+      const relatedEntityType = params.get(
+        "relatedEntityType",
+      ) as AuditLogEntityType;
+
+      return ALLOWED_ENTITY_TYPES.includes(relatedEntityType)
+        ? relatedEntityType
+        : undefined;
+    },
+    serialize: (value, params) => {
+      if (value) params.set("relatedEntityType", value);
+    },
+  },
+
+  relatedEntityKey: {
+    parse: (params) => params.get("relatedEntityKey") ?? "",
+    serialize: (value, params) => {
+      if (value) params.set("relatedEntityKey", value);
     },
   },
 
