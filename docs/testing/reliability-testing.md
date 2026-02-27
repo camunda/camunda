@@ -89,9 +89,20 @@ Depending on the test variant, different process models are created and executed
 
 All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GKE) cluster (`camunda-benchmark-prod`). Access is managed via [Teleport](https://camunda.teleport.sh). Container images are stored in `registry.camunda.cloud/team-zeebe`. Details about the benchmark cluster infrastructure can be found in the [infra-core repository](https://github.com/camunda/infra-core/), and specifically in the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
 
-For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Broker and Zeebe Gateways were deployed standalone.
+For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Brokers and Zeebe Gateways were deployed standalone.
 
 ![setup](assets/setup.png)
+
+#### Secondary Storage Options
+
+Load tests can be configured with different secondary storage backends to validate Camunda's performance and reliability across various deployment scenarios:
+
+* **Elasticsearch** (default): Deploys a three-node Elasticsearch cluster. This is the standard configuration used to validate exporter performance and archiving throughput.
+* **OpenSearch**: Deploys an OpenSearch cluster as an alternative to Elasticsearch.
+* **PostgreSQL**: Deploys a PostgreSQL database for RDBMS-based secondary storage testing.
+* **None**: Runs load tests without any secondary storage. This is useful for testing the core orchestration engine performance in isolation, without the overhead of exporting data to a secondary database. In this mode, Camunda exporters are disabled.
+
+The secondary storage type can be specified when creating a load test via the `newLoadTest.sh` script or the GitHub workflow inputs.
 
 ### Endurance test variants
 
