@@ -23,8 +23,6 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
-else # default is elasticsearch
-platform_values += -f camunda-platform-values-elasticsearch.yaml
 endif
 
 # Add Optimize values if enabled
@@ -49,16 +47,16 @@ install-stable: install-storage create-credentials install-platform-stable insta
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
-		-f secondary-storage-values-postgresql.yaml
+		$(platform_values)
 else ifeq ($(secondary_storage),opensearch)
 	@echo "Installing OpenSearch cluster for namespace $(namespace)..."
 	helm upgrade --install opensearch opensearch/opensearch \
 		--version "2.31.0" \
 		--namespace $(namespace) \
-		-f secondary-storage-values-opensearch.yaml
+		$(platform_values)
 else
 	@echo "Skipping secondary storage installation (secondary_storage=$(secondary_storage))"
 endif
