@@ -30,6 +30,7 @@ import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse;
+import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceResponse.Builder;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultRequest;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.CreateProcessInstanceWithResultResponse;
 import io.camunda.zeebe.gateway.protocol.GatewayOuterClass.DecisionMetadata;
@@ -521,15 +522,21 @@ public final class RecordingGatewayService extends GatewayImplBase {
       final String businessId) {
     addRequestHandler(
         CreateProcessInstanceRequest.class,
-        request ->
-            CreateProcessInstanceResponse.newBuilder()
-                .setProcessDefinitionKey(processDefinitionKey)
-                .setBpmnProcessId(bpmnProcessId)
-                .setVersion(version)
-                .setProcessInstanceKey(processInstanceKey)
-                .addAllTags(tags)
-                .setBusinessId(businessId)
-                .build());
+        request -> {
+          final Builder builder =
+              CreateProcessInstanceResponse.newBuilder()
+                  .setProcessDefinitionKey(processDefinitionKey)
+                  .setBpmnProcessId(bpmnProcessId)
+                  .setVersion(version)
+                  .setProcessInstanceKey(processInstanceKey)
+                  .addAllTags(tags);
+          if (!businessId.isEmpty()) {
+            builder.setBusinessId(businessId);
+          } else {
+            builder.clearBusinessId();
+          }
+          return builder.build();
+        });
   }
 
   public void onEvaluateDecisionRequest(final EvaluateDecisionResponse evaluateDecisionResponse) {

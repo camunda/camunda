@@ -75,7 +75,7 @@ public interface ProcessInstanceResult {
   /**
    * The business id of this process instance.
    *
-   * @return the business id, or an empty string if not set
+   * @return the business id, or null if not set
    */
   String getBusinessId();
 }
