@@ -31,8 +31,8 @@ the JWK source layer, avoiding modifications to the higher-level Spring Security
 The integration path is:
 
 1. **Configuration**: Add `additionalJwkSetUris` (type `List<String>`) to
-   `OidcAuthenticationConfiguration`. The property is optional and defaults to an empty list,
-   preserving full backward compatibility.
+   `OidcAuthenticationConfiguration`. The property is optional and remains `null` (unset) unless
+   explicitly configured, preserving full backward compatibility.
 
 2. **CompositeJWKSource**: A new `JWKSource<SecurityContext>` implementation that wraps multiple
    `RemoteJWKSet` instances. Key selection iterates through delegates in order, returning keys from

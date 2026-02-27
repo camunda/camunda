@@ -768,8 +768,16 @@ public class WebSecurityConfig {
           .collect(
               toMap(
                   OidcAuthenticationConfiguration::getIssuerUri,
-                  OidcAuthenticationConfiguration::getAdditionalJwkSetUris,
-                  (a, b) -> a));
+                  config -> List.copyOf(config.getAdditionalJwkSetUris()),
+                  (a, b) -> {
+                    if (!a.equals(b)) {
+                      throw new IllegalStateException(
+                          "Multiple OIDC providers share the same issuer URI with different"
+                              + " additional JWKS URIs. Ensure each issuer has a consistent"
+                              + " configuration.");
+                    }
+                    return a;
+                  }));
     }
 
     @Bean
