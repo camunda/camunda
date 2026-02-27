@@ -33,6 +33,7 @@ import org.agrona.DirectBuffer;
 class DefaultResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
+  private static final Either<Failure, Void> SUCCESS = Either.right(null);
 
   protected final KeyGenerator keyGenerator;
   protected final StateWriter stateWriter;
@@ -69,14 +70,17 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
     return parseResourceId(deploymentResource)
-        .map(
-            resourceId -> {
-              final ResourceMetadataRecord resourceMetadataRecord =
-                  deployment.resourceMetadata().add();
-              appendMetadataToResourceRecord(
-                  resourceMetadataRecord, resourceId, deploymentResource, deployment);
-              return null;
-            });
+        .flatMap(
+            resourceId ->
+                checkForDuplicateResourceId(resourceId.id(), deploymentResource, deployment)
+                    .flatMap(
+                        ignored -> {
+                          final ResourceMetadataRecord resourceMetadataRecord =
+                              deployment.resourceMetadata().add();
+                          appendMetadataToResourceRecord(
+                              resourceMetadataRecord, resourceId, deploymentResource, deployment);
+                          return SUCCESS;
+                        }));
   }
 
   @Override
@@ -112,6 +116,25 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         new ResourceRecord().wrap(resourceMetadataRecord, resource.getResource()));
   }
 
+  private Either<Failure, Void> checkForDuplicateResourceId(
+      final String resourceId,
+      final DeploymentResource resource,
+      final DeploymentRecord deployment) {
+    return deployment.getResourceMetadata().stream()
+        .filter(metadata -> metadata.getResourceId().equals(resourceId))
+        .findFirst()
+        .map(
+            dupeResource -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the resource ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      resourceId, dupeResource.getResourceName(), resource.getResourceName());
+              return Either.<Failure, Void>left(new Failure(failureMessage));
+            })
+        .orElse(SUCCESS);
+  }
+
   private void appendMetadataToResourceRecord(
       final ResourceMetadataRecord resourceMetadataRecord,
       final ResourceId resourceId,
@@ -133,13 +156,8 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .findLatestResourceById(id, tenantId)
         .ifPresentOrElse(
             latestResource -> {
-              final boolean isDuplicate =
-                  latestResource.getChecksum().equals(resourceMetadataRecord.getChecksumBuffer())
-                      && latestResource
-                          .getResourceName()
-                          .equals(resourceMetadataRecord.getResourceNameBuffer());
-
-              if (isDuplicate) {
+              if (resourceMetadataRecord.isDuplicateOf(
+                  latestResource.getChecksum(), latestResource.getResourceName())) {
                 resourceMetadataRecord
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())

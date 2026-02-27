@@ -112,6 +112,10 @@ public class FormMetadataRecord extends UnifiedRecordValue implements FormMetada
     return isDuplicateProp.getValue();
   }
 
+  public boolean isDuplicateOf(final DirectBuffer checksum, final DirectBuffer resourceName) {
+    return getChecksumBuffer().equals(checksum) && getResourceNameBuffer().equals(resourceName);
+  }
+
   public FormMetadataRecord setDuplicate(final boolean isDuplicate) {
     isDuplicateProp.setValue(isDuplicate);
     return this;

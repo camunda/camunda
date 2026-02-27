@@ -60,7 +60,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     return parseForm(resource)
         .flatMap(
             form ->
-                checkForFormIdLength(form.id, resource)
+                checkForDuplicateFormId(form.id, resource, deployment)
+                    .flatMap(valid -> checkForFormIdLength(form.id, resource))
                     .map(
                         valid -> {
                           final FormMetadataRecord formRecord = deployment.formMetadata().add();
@@ -111,6 +112,23 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
     }
   }
 
+  private Either<Failure, ?> checkForDuplicateFormId(
+      final String formId, final DeploymentResource resource, final DeploymentRecord record) {
+    return record.getFormMetadata().stream()
+        .filter(metadata -> metadata.getFormId().equals(formId))
+        .findFirst()
+        .map(
+            duplicatedForm -> {
+              final var failureMessage =
+                  String.format(
+                      "Expected the form ids to be unique within a deployment"
+                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                      formId, duplicatedForm.getResourceName(), resource.getResourceName());
+              return Either.left(new Failure(failureMessage));
+            })
+        .orElse(NO_VALIDATION_ERROR);
+  }
+
   private Either<Failure, ?> checkForFormIdLength(
       final String formId, final DeploymentResource resource) {
 
@@ -144,11 +162,8 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findLatestFormById(formRecord.getFormId(), tenantId)
         .ifPresentOrElse(
             latestForm -> {
-              final boolean isDuplicate =
-                  latestForm.getChecksum().equals(formRecord.getChecksumBuffer())
-                      && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
-
-              if (isDuplicate) {
+              if (formRecord.isDuplicateOf(
+                  latestForm.getChecksum(), latestForm.getResourceName())) {
                 formRecord
                     .setFormKey(latestForm.getFormKey())
                     .setVersion(latestForm.getVersion())
