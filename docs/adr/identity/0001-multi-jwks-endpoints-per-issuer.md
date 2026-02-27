@@ -58,3 +58,4 @@ The integration path is:
   source and subsequent sources must be queried.
 - Operators must ensure that the additional JWKS endpoints are reachable and trusted, as there is no
   automatic discovery mechanism for additional endpoints.
+
