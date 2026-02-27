@@ -30,11 +30,13 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AutoClose;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Timeout;
@@ -58,51 +60,53 @@ public class DynamicNodeIdScalingIT {
           .withEnv("LS_LOG", "info");
 
   @AutoClose private static S3Client s3Client;
-  private static final String BUCKET_NAME = UUID.randomUUID().toString();
   private static final Duration LEASE_DURATION = Duration.ofSeconds(10);
   private static final int INITIAL_CLUSTER_SIZE = 1;
   private static final int PARTITIONS_COUNT = 3;
   private static final int TARGET_CLUSTER_SIZE = 3;
-
   private static final String CLUSTER_NAME = "dynamic-node-id-scaling-test";
-
+  private final String bucketName = UUID.randomUUID().toString();
   private final List<AutoCloseable> resourcesToClose = new java.util.ArrayList<>();
 
-  @AfterEach
-  void cleanup() throws Exception {
-    final var objects = s3Client.listObjects(b -> b.bucket(BUCKET_NAME));
-    objects.contents().parallelStream()
-        .forEach(obj -> s3Client.deleteObject(b -> b.bucket(BUCKET_NAME).key(obj.key())));
-
-    for (final var autoCloseable : resourcesToClose) {
-      autoCloseable.close();
-    }
-  }
-
   @BeforeAll
-  static void setupAll() {
+  static void beforeAll() {
     s3Client =
         S3NodeIdRepository.buildClient(
             new S3ClientConfig(
                 Optional.of(new S3ClientConfig.Credentials(S3.getAccessKey(), S3.getSecretKey())),
                 Optional.of(Region.of(S3.getRegion())),
                 Optional.of(S3.getEndpoint())));
-
-    s3Client.createBucket(b -> b.bucket(BUCKET_NAME));
   }
 
-  private static void configureBroker(final Camunda cfg) {
+  @BeforeEach
+  void setup() {
+    s3Client.createBucket(b -> b.bucket(bucketName));
+  }
+
+  @AfterEach
+  void cleanup() throws Exception {
+    final var objects = s3Client.listObjects(b -> b.bucket(bucketName));
+    objects.contents().parallelStream()
+        .forEach(obj -> s3Client.deleteObject(b -> b.bucket(bucketName).key(obj.key())));
+    s3Client.deleteBucket(b -> b.bucket(bucketName));
+
+    for (final var autoCloseable : resourcesToClose) {
+      autoCloseable.close();
+    }
+  }
+
+  private void configureBroker(final Camunda cfg) {
     cfg.getData().getSecondaryStorage().setType(SecondaryStorageType.none);
 
     cfg.getCluster().setSize(INITIAL_CLUSTER_SIZE);
     configureS3NodeIdProvider(cfg);
   }
 
-  private static void configureS3NodeIdProvider(final Camunda cfg) {
+  private void configureS3NodeIdProvider(final Camunda cfg) {
     cfg.getCluster().getNodeIdProvider().setType(Type.S3);
     final S3 s3 = cfg.getCluster().getNodeIdProvider().s3();
     s3.setTaskId(UUID.randomUUID().toString());
-    s3.setBucketName(BUCKET_NAME);
+    s3.setBucketName(bucketName);
     s3.setLeaseDuration(LEASE_DURATION);
     s3.setEndpoint(S3.getEndpoint().toString());
     s3.setRegion(S3.getRegion());
@@ -112,7 +116,7 @@ public class DynamicNodeIdScalingIT {
 
   private int getLeasesCount() {
     return (int)
-        s3Client.listObjects(b -> b.bucket(BUCKET_NAME)).contents().stream()
+        s3Client.listObjects(b -> b.bucket(bucketName)).contents().stream()
             .map(S3Object::key)
             .filter(key -> key.matches("\\d+\\.json"))
             .count();
@@ -132,7 +136,7 @@ public class DynamicNodeIdScalingIT {
                 app ->
                     app.withProperty(
                             "camunda.data.secondary-storage.type", SecondaryStorageType.none.name())
-                        .withUnifiedConfig(DynamicNodeIdScalingIT::configureBroker))
+                        .withUnifiedConfig(DynamicNodeIdScalingIT.this::configureBroker))
             .build();
 
     @Test
@@ -155,8 +159,9 @@ public class DynamicNodeIdScalingIT {
 
       // Start in a separate thread as start() is blocking because node-id-provider cannot acquire a
       // lease until scale api is called.
-      final var thread1 = Thread.ofVirtual().start(secondBroker::start);
-      final var thread2 = Thread.ofVirtual().start(thirdBroker::start);
+      final var newBrokersStarted = new AtomicInteger();
+      startBroker(secondBroker, newBrokersStarted);
+      startBroker(thirdBroker, newBrokersStarted);
 
       // send scale request using ClusterActuator
       final var clusterActuator = ClusterActuator.of(firstBroker);
@@ -196,8 +201,22 @@ public class DynamicNodeIdScalingIT {
                 }
               });
 
-      assertThat(thread1.isAlive()).describedAs("Startup of secondBroker completes").isFalse();
-      assertThat(thread2.isAlive()).describedAs("Startup of thirdBroker completes").isFalse();
+      Awaitility.await("Start up of new brokers completes")
+          .untilAsserted(
+              () ->
+                  assertThat(newBrokersStarted.get())
+                      .describedAs("Two brokers have started")
+                      .isEqualTo(2));
+    }
+
+    private static void startBroker(
+        final TestStandaloneBroker secondBroker, final AtomicInteger newBrokersStarted) {
+      Thread.ofVirtual()
+          .start(
+              () -> {
+                secondBroker.start();
+                newBrokersStarted.getAndIncrement();
+              });
     }
 
     private TestStandaloneBroker getAdditionalBroker(final String initialContactPoint) {
