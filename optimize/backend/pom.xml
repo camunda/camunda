@@ -256,6 +256,15 @@
           <artifactId>slf4j-api</artifactId>
           <groupId>org.slf4j</groupId>
         </exclusion>
+        <!-- Excluding to resolve CVE-2026-27830, CVE-2026-27727 -->
+        <exclusion>
+          <groupId>com.mchange</groupId>
+          <artifactId>c3p0</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>com.mchange</groupId>
+          <artifactId>mchange-commons-java</artifactId>
+        </exclusion>
       </exclusions>
     </dependency>
 
