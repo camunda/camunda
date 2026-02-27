@@ -32,7 +32,6 @@ export const DateInput = forwardRef<HTMLDivElement, Props>(
           <DatePickerInput
             {...props}
             size="sm"
-            value={field.value ?? ""}
             onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               field.onChange(event.target.value);
               onChange?.();
