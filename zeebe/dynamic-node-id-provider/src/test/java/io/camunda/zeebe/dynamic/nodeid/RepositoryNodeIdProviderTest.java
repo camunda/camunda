@@ -55,6 +55,7 @@ class RepositoryNodeIdProviderTest {
             EXPIRY_DURATION,
             Duration.ofSeconds(30),
             Duration.ofSeconds(60),
+            Duration.ofSeconds(12),
             TASK_ID,
             () -> leaseFailedFlag.set(true));
   }

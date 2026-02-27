@@ -41,6 +41,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
   private volatile StoredLease.Initialized currentLease;
   private final Duration leaseDuration;
   private final Duration readinessCheckTimeout;
+  private final Duration expiredLeaseThreshold;
   private final String taskId;
   private final Runnable onLeaseFailure;
   private final ScheduledExecutorService executor;
@@ -60,6 +61,7 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
       final Duration expiryDuration,
       final Duration leaseAcquireMaxDelay,
       final Duration readinessCheckTimeout,
+      final Duration expiredLeaseThreshold,
       final String taskId,
       final Runnable onLeaseFailure) {
     this.nodeIdRepository =
@@ -68,6 +70,8 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     leaseDuration = Objects.requireNonNull(expiryDuration, "expiryDuration cannot be null");
     this.readinessCheckTimeout =
         Objects.requireNonNull(readinessCheckTimeout, "readinessCheckTimeout cannot be null");
+    this.expiredLeaseThreshold =
+        Objects.requireNonNull(expiredLeaseThreshold, "expiredLeaseThreshold cannot be null");
     this.taskId = Objects.requireNonNull(taskId, "taskId cannot be null");
     this.onLeaseFailure = Objects.requireNonNull(onLeaseFailure, "onLeaseFailure cannot be null");
     backoff = new ExponentialBackoffRetryDelay(leaseAcquireMaxDelay, Duration.ofSeconds(1));
@@ -260,7 +264,15 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
           "Acquired lease w/ nodeId={}.  {}", currentLease.lease().nodeInstance(), currentLease);
       // storedLease should always be non-null as currentLease is not null.
       if (storedLease != null) {
-        previousNodeGracefullyShutdown.complete(!storedLease.isInitialized());
+        final var gracefullyShutdown =
+            switch (storedLease) {
+              case StoredLease.Uninitialized u -> true;
+              case StoredLease.Initialized initialized ->
+                  initialized
+                      .lease()
+                      .isExpiredBeyondThreshold(clock.instant(), expiredLeaseThreshold);
+            };
+        previousNodeGracefullyShutdown.complete(gracefullyShutdown);
       }
       backoff.reset();
     } else {

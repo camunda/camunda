@@ -60,6 +60,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 class RepositoryNodeIdProviderIT {
 
   private static final Duration EXPIRY_DURATION = Duration.ofSeconds(5);
+  private static final Duration EXPIRED_LEASE_THRESHOLD = Duration.ofMinutes(2);
 
   @Container
   private static final LocalStackContainer S3 =
@@ -416,6 +417,28 @@ class RepositoryNodeIdProviderIT {
   }
 
   @Test
+  public void shouldReturnTrueWhenPreviousLeaseExpiredBeyondThreshold() {
+    // given
+    clusterSize = 3;
+    repository.initialize(clusterSize);
+
+    // Acquire a lease that will expire
+    createExpiredLeaseForNodeId(0);
+
+    // Advance clock beyond the expired lease threshold
+    clock.advance(EXPIRED_LEASE_THRESHOLD);
+
+    // when - new provider acquires the expired lease
+    nodeIdProvider = ofSize(clusterSize);
+    assertLeaseIsReady();
+
+    // then - lease expired beyond threshold, treat as gracefully released
+    assertThat(nodeIdProvider.previousNodeGracefullyShutdown())
+        .succeedsWithin(Duration.ofSeconds(1))
+        .isEqualTo(true);
+  }
+
+  @Test
   void shouldMarkReadyIfPreviousLeaseWasGracefullyReleased() {
     // given
     clusterSize = 3;
@@ -477,6 +500,13 @@ class RepositoryNodeIdProviderIT {
   }
 
   RepositoryNodeIdProvider ofSize(final int clusterSize, final boolean awaitInitialization) {
+    return ofSize(clusterSize, awaitInitialization, EXPIRED_LEASE_THRESHOLD);
+  }
+
+  RepositoryNodeIdProvider ofSize(
+      final int clusterSize,
+      final boolean awaitInitialization,
+      final Duration expiredLeaseThreshold) {
     final var provider =
         new RepositoryNodeIdProvider(
             repository,
@@ -484,6 +514,7 @@ class RepositoryNodeIdProviderIT {
             EXPIRY_DURATION,
             Duration.ofSeconds(30),
             Duration.ofSeconds(60),
+            expiredLeaseThreshold,
             taskId,
             () -> leaseFailed = true);
     resourcesToClose.add(provider);
