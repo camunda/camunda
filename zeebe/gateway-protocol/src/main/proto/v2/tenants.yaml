@@ -541,7 +541,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+                $ref: '#/components/schemas/TenantRoleSearchResult'
 
   /tenants/{tenantId}/roles/{roleId}:
     put:
@@ -1016,3 +1016,17 @@ components:
           type: array
           items:
             $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleResult'
+
+    TenantRoleSearchResult:
+      description: Tenant role search response.
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching roles.
+          type: array
+          items:
+            $ref: 'roles.yaml#/components/schemas/RoleResult'
