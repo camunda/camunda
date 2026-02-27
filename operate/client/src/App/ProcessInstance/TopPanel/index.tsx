@@ -63,6 +63,7 @@ import {incidentsPanelStore} from 'modules/stores/incidentsPanel';
 import {isInstanceRunning} from 'modules/utils/instance';
 import {useProcessInstanceElementSelection} from 'modules/hooks/useProcessInstanceElementSelection';
 import {getAncestorScopeType} from 'modules/utils/processInstanceDetailsDiagram';
+import {IS_NEW_PROCESS_INSTANCE_PAGE} from 'modules/feature-flags';
 
 const OVERLAY_TYPE_STATE = 'flowNodeState';
 const OVERLAY_TYPE_MODIFICATIONS_BADGE = 'modificationsBadge';
@@ -280,7 +281,7 @@ const TopPanel: React.FC = observer(() => {
 
   return (
     <Container>
-      {incidentsCount > 0 && (
+      {incidentsCount > 0 && !IS_NEW_PROCESS_INSTANCE_PAGE && (
         <IncidentsBanner
           processInstanceKey={processInstanceId}
           incidentsCount={incidentsCount}
@@ -381,7 +382,8 @@ const TopPanel: React.FC = observer(() => {
                   isModificationModeEnabled ? (
                     <ModificationDropdown />
                   ) : (
-                    !isIncidentBarOpen && <MetadataPopover />
+                    !isIncidentBarOpen &&
+                    !IS_NEW_PROCESS_INSTANCE_PAGE && <MetadataPopover />
                   )
                 }
                 highlightedSequenceFlows={highlightedSequenceFlows}
@@ -436,7 +438,7 @@ const TopPanel: React.FC = observer(() => {
               </Diagram>
             )}
         </DiagramShell>
-        {processInstance?.hasIncident && (
+        {processInstance?.hasIncident && !IS_NEW_PROCESS_INSTANCE_PAGE && (
           <IncidentsWrapper
             setIsInTransition={setIsInTransition}
             processInstance={processInstance}
