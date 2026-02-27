@@ -48,7 +48,9 @@ public class CCSMRequestAdjustmentFilter implements Filter {
 
     /* transform /external/api -> /api/external */
     if (requestURI.startsWith("/external/api/")) {
-      final String rewrittenURI = requestURI.replaceFirst("/external/api/", "/api/external/");
+      final String rewrittenURI =
+          httpRequest.getContextPath()
+              + requestURI.replaceFirst("/external/api/", "/api/external/");
       chain.doFilter(new PathRewritingRequestWrapper(httpRequest, rewrittenURI), response);
       return;
     }
