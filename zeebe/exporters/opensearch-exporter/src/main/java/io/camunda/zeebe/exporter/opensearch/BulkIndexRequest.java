@@ -85,6 +85,7 @@ final class BulkIndexRequest {
   // The property of the ES record template to store the sequence of the record.
   private static final String RECORD_SEQUENCE_PROPERTY = "sequence";
   private static final String RECORD_AUTHORIZATIONS_PROPERTY = "authorizations";
+  private static final String RECORD_AGENT_PROPERTY = "agent";
   private static final String RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY =
       "decisionEvaluationInstanceKey";
   private static final String AUTH_INFO_PROPERTY = "authInfo";
@@ -217,7 +218,7 @@ final class BulkIndexRequest {
   }
 
   @JsonAppend(attrs = {@JsonAppend.Attr(value = RECORD_SEQUENCE_PROPERTY)})
-  @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY})
+  @JsonIgnoreProperties({RECORD_AUTHORIZATIONS_PROPERTY, RECORD_AGENT_PROPERTY})
   private static final class RecordSequenceMixin {}
 
   @JsonIgnoreProperties({RECORD_DECISION_EVALUATION_INSTANCE_KEY_PROPERTY})

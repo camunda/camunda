@@ -30,8 +30,10 @@ import org.testcontainers.containers.SocatContainer;
 final class FaultToleranceIT {
 
   private final OpensearchExporterConfiguration config = new OpensearchExporterConfiguration();
-  // omit authorizations since they are removed from the records during serialization
-  private final ProtocolFactory factory = new ProtocolFactory(b -> b.withAuthorizations(Map.of()));
+  // omit authorizations and agent since they are removed from the records during serialization
+  private final ProtocolFactory factory =
+      new ProtocolFactory(b -> b.withAuthorizations(Map.of()))
+          .registerRandomizer(field -> "agent".equals(field.getName()), random -> null);
   private final ExporterTestController controller = new ExporterTestController();
   private final OpensearchExporter exporter = new OpensearchExporter();
   private final RecordIndexRouter indexRouter = new RecordIndexRouter(config.index);
