@@ -14,6 +14,7 @@ import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
 import io.camunda.zeebe.backup.api.BackupStore;
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
@@ -456,14 +457,15 @@ final class BackupServiceImpl {
         });
   }
 
-  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(final ConcurrencyControl executor) {
+  ActorFuture<Collection<BackupRangeStatus>> syncMetadata(
+      final SequencedCollection<Checkpoint> checkpoints,
+      final SequencedCollection<BackupRange> ranges,
+      final ConcurrencyControl executor) {
     LOG.atDebug().setMessage("Syncing backup metadata").log();
     final var future = executor.<Collection<BackupRangeStatus>>createFuture();
     executor.run(
         () -> {
           try {
-            final var checkpoints = checkpointMetadataState.getAllCheckpoints();
-            final var ranges = backupRangeState.getAllRanges();
             metadataSyncer
                 .store(partitionId, checkpoints, ranges)
                 .whenComplete(
