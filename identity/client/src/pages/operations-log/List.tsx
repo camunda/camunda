@@ -78,9 +78,9 @@ const List: FC = () => {
   }, [filters]);
 
   const debounce = useDebounce(500);
-  const [debouncedActor, setDebouncedActor] = useState<string>();
+  const [debouncedActor, setDebouncedActor] = useState<string>(filters.actor);
   const [debouncedRelatedEntityKey, setDebouncedRelatedEntityKey] =
-    useState<string>();
+    useState<string>(filters.relatedEntityKey);
 
   const [isDateRangeModalOpen, setIsDateRangeModalOpen] =
     useState<boolean>(false);
@@ -126,8 +126,10 @@ const List: FC = () => {
       relatedEntityType: filters.relatedEntityType
         ? { $eq: filters.relatedEntityType }
         : undefined,
-      relatedEntityKey: debouncedRelatedEntityKey,
-      actorId: debouncedActor,
+      relatedEntityKey: debouncedRelatedEntityKey
+        ? debouncedRelatedEntityKey
+        : undefined,
+      actorId: debouncedActor ? debouncedActor : undefined,
       timestamp:
         filters.timestampFrom && filters.timestampTo
           ? {
@@ -196,7 +198,7 @@ const List: FC = () => {
                   if (selectedItem !== "AUTHORIZATION") {
                     setValue("relatedEntityType", undefined);
                     setValue("relatedEntityKey", "");
-                    setDebouncedRelatedEntityKey(undefined);
+                    setDebouncedRelatedEntityKey("");
                   }
                 }}
                 size="sm"
@@ -230,9 +232,7 @@ const List: FC = () => {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                       const value = e.target.value.trim();
                       setValue("relatedEntityKey", value);
-                      debounce(() =>
-                        setDebouncedRelatedEntityKey(value ? value : undefined),
-                      );
+                      debounce(() => setDebouncedRelatedEntityKey(value ?? ""));
                     }}
                     size="sm"
                   />
@@ -270,7 +270,7 @@ const List: FC = () => {
                 onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
                   const value = e.target.value.trim();
                   setValue("actor", value);
-                  debounce(() => setDebouncedActor(value ? value : undefined));
+                  debounce(() => setDebouncedActor(value ?? ""));
                 }}
                 size="sm"
               />
@@ -313,8 +313,8 @@ const List: FC = () => {
                       timestampFrom: "",
                       timestampTo: "",
                     });
-                    setDebouncedActor(undefined);
-                    setDebouncedRelatedEntityKey(undefined);
+                    setDebouncedActor("");
+                    setDebouncedRelatedEntityKey("");
                   }}
                 >
                   {t("reset")}
