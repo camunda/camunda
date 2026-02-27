@@ -1,10 +1,10 @@
 {
   "metadata": {
     "sourceRepo": "https://github.com/camunda/camunda",
-    "commit": "d97131885fd07295ca77c84430266981ac1f7615",
-    "generatedAt": "2026-02-27T12:26:34.329Z",
+    "commit": "b70a116abfc26353022da5f1399bb62f279dc6a4",
+    "generatedAt": "2026-02-27T14:10:27.166Z",
     "specPath": "zeebe/gateway-protocol/src/main/proto/v2/rest-api.yaml",
-    "specSha256": "cf6795ea64d7016a82512a5f32aac132188c5dcb4a647738505b18e0fa7e012a"
+    "specSha256": "3f155c235edf44f8b319bbe4a5b48c4dd5576cdaeb29358246c8f1d444e5c747"
   },
   "responses": [
     {
@@ -3466,6 +3466,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -3503,6 +3528,27 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
@@ -6177,6 +6223,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6582,6 +6653,31 @@
       "schema": {
         "required": [
           {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "claimName",
+                  "type": "string"
+                },
+                {
+                  "name": "claimValue",
+                  "type": "string"
+                },
+                {
+                  "name": "mappingRuleId",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          {
             "name": "page",
             "type": "object",
             "children": {
@@ -6619,6 +6715,27 @@
       "status": "200",
       "schema": {
         "required": [
+          {
+            "name": "items",
+            "type": "array<schema>",
+            "children": {
+              "required": [],
+              "optional": [
+                {
+                  "name": "description",
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "roleId",
+                  "type": "string"
+                }
+              ]
+            }
+          },
           {
             "name": "page",
             "type": "object",
