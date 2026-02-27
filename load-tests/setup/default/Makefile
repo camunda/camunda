@@ -47,7 +47,7 @@ install-stable: install-storage create-credentials install-platform-stable insta
 install-storage:
 ifeq ($(secondary_storage),postgresql)
 	@echo "Installing PostgreSQL database for namespace $(namespace)..."
-	# Install Postgres database - all configuration in secondary-storage-values-postgresql.yaml
+	# Install Postgres database - configuration provided via camunda-platform-values.yaml and camunda-platform-values-rdbms.yaml
 	helm upgrade --install postgres oci://registry-1.docker.io/bitnamicharts/postgresql \
 		--namespace $(namespace) \
 		$(platform_values)
