@@ -314,7 +314,7 @@ jobs:
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set global.image.pullSecrets[0].name=harbor-registry
           --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
-          --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/zeebe' }}
+          --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/camunda' }}
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
