@@ -81,13 +81,11 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
         .findFirst()
         .ifPresent(
             metadata -> {
-              var key = metadata.getFormKey();
               if (metadata.isDuplicate()) {
                 // create new version as the deployment contains at least one other non-duplicate
                 // resource and all resources in a deployment should be versioned together
-                key = keyGenerator.nextKey();
                 metadata
-                    .setFormKey(key)
+                    .setFormKey(keyGenerator.nextKey())
                     .setVersion(
                         formState.getNextFormVersion(metadata.getFormId(), metadata.getTenantId()))
                     .setDuplicate(false)
@@ -169,10 +167,9 @@ public final class FormResourceTransformer implements DeploymentResourceTransfor
                       && latestForm.getResourceName().equals(formRecord.getResourceNameBuffer());
 
               if (isDuplicate) {
-                final int latestVersion = latestForm.getVersion();
                 formRecord
                     .setFormKey(latestForm.getFormKey())
-                    .setVersion(latestVersion)
+                    .setVersion(latestForm.getVersion())
                     .setDeploymentKey(latestForm.getDeploymentKey())
                     .setDuplicate(true);
               } else {
