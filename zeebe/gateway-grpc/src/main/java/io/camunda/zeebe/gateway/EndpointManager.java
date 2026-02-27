@@ -8,7 +8,7 @@
 package io.camunda.zeebe.gateway;
 
 import io.atomix.utils.net.Address;
-import io.camunda.security.configuration.MultiTenancyConfiguration;
+import io.camunda.security.configuration.SecurityConfiguration;
 import io.camunda.zeebe.auth.Authorization;
 import io.camunda.zeebe.broker.client.api.BrokerClient;
 import io.camunda.zeebe.broker.client.api.BrokerClusterState;
@@ -88,18 +88,22 @@ public final class EndpointManager {
   private final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler;
   private final RequestRetryHandler requestRetryHandler;
   private final StreamJobsHandler streamJobsHandler;
+  private final boolean authorizationEmbeddingEnabled;
 
   public EndpointManager(
       final BrokerClient brokerClient,
       final ActivateJobsHandler<ActivateJobsResponse> activateJobsHandler,
       final StreamJobsHandler streamJobsHandler,
-      final MultiTenancyConfiguration multiTenancy) {
+      final SecurityConfiguration securityConfiguration) {
     this.brokerClient = brokerClient;
     this.activateJobsHandler = activateJobsHandler;
     this.streamJobsHandler = streamJobsHandler;
     topologyManager = brokerClient.getTopologyManager();
     requestRetryHandler = new RequestRetryHandler(brokerClient, topologyManager);
-    RequestMapper.setMultiTenancyEnabled(multiTenancy.isChecksEnabled());
+    RequestMapper.setMultiTenancyEnabled(securityConfiguration.getMultiTenancy().isChecksEnabled());
+    authorizationEmbeddingEnabled =
+        securityConfiguration.getAuthorizations().isEnabled()
+            || securityConfiguration.getMultiTenancy().isChecksEnabled();
   }
 
   private void addBrokerInfo(
@@ -172,7 +176,8 @@ public final class EndpointManager {
       final ServerCallStreamObserver<ActivatedJob> responseObserver) {
     try {
       final JobActivationProperties brokerRequest =
-          RequestMapper.toJobActivationProperties(request, getClaims());
+          RequestMapper.toJobActivationProperties(
+              request, authorizationEmbeddingEnabled ? getClaims() : Map.of());
 
       streamJobsHandler.handle(request.getType(), brokerRequest, responseObserver);
     } catch (final Exception e) {
@@ -503,7 +508,9 @@ public final class EndpointManager {
 
     final BrokerRequest<BrokerResponseT> brokerRequest = requestMapper.apply(grpcRequest);
 
-    brokerRequest.setAuthorization(getClaims());
+    if (authorizationEmbeddingEnabled) {
+      brokerRequest.setAuthorization(getClaims());
+    }
 
     return brokerRequest;
   }
