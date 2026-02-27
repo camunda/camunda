@@ -197,7 +197,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .publishPercentileHistogram()
             .register(meterRegistry);
     archiverDeletedDocs =
-        Counter.builder(meterName("archiver.docs")).tags("type", "delete").register(meterRegistry);
+        Counter.builder(meterName("archiver.docs"))
+            .tags("type", "delete")
+            .description("Count of how many documents the archiver has deleted from old indices.")
+            .register(meterRegistry);
     archiverReindexTimer =
         Timer.builder(meterName("archiver.request.duration"))
             .description(
@@ -206,7 +209,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .publishPercentileHistogram()
             .register(meterRegistry);
     archiverReindexedDocs =
-        Counter.builder(meterName("archiver.docs")).tags("type", "reindex").register(meterRegistry);
+        Counter.builder(meterName("archiver.docs"))
+            .tags("type", "reindex")
+            .description(
+                "Count of how many documents the archiver has reindexed to copy over to the dated indices, from old indices.")
+            .register(meterRegistry);
     archivingDuration =
         Timer.builder(meterName("archiver.duration"))
             .description(
@@ -234,7 +241,11 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description("How many items were exported in one bulk request")
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
             .register(meterRegistry);
-    bulkOperations = Counter.builder(meterName("bulk.operations")).register(meterRegistry);
+    bulkOperations =
+        Counter.builder(meterName("bulk.operations"))
+            .description(
+                "Count of many secondary storage operations have been done via exporter bulk requests")
+            .register(meterRegistry);
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
             .description("Flush duration of bulk exporters in seconds")
