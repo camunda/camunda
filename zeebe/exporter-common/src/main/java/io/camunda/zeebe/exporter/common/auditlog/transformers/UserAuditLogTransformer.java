@@ -21,6 +21,6 @@ public class UserAuditLogTransformer implements AuditLogTransformer<UserRecordVa
   @Override
   public void transform(final Record<UserRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
-    log.setEntityKey(value.getUsername());
+    log.setEntityKey(value.getUsername()).setEntityDescription(value.getName());
   }
 }

@@ -22,6 +22,7 @@ public class RoleEntityAuditLogTransformer implements AuditLogTransformer<RoleRe
   public void transform(final Record<RoleRecordValue> record, final AuditLogEntry log) {
     final var value = record.getValue();
     log.setEntityKey(value.getRoleId())
+        .setEntityDescription(value.getName())
         .setRelatedEntityKey(value.getEntityId())
         .setRelatedEntityType(
             AuditLogTransformerConfigs.mapEntityTypeToAuditLogEntityType(value.getEntityType()));
