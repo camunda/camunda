@@ -124,6 +124,9 @@ get_jobs_without_cihealth(jobInput) = jobs_without_cihealth {
         job_id != "test-summary"
         job_id != "get-concurrency-group-dynamically"
         job_id != "get-snapshot-docker-version-tag"
+        # temporary for docker-build-helm-integration.yml workflow from alwaysgreen
+        job_id != "format-identifier"
+        job_id != "should-run"
 
         # not enforced on jobs that invoke other reusable workflows (instead enforced there)
         not job.uses
