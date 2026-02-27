@@ -39,7 +39,7 @@ export async function assignUsersToGroup(
         headers: jsonHeaders(),
       },
     );
-    expect(res.status()).toBe(204);
+    await assertStatusCode(res, 204);
     state[`username${groupId}${i}`] = user;
   }
 }
@@ -67,7 +67,7 @@ export async function assignMappingToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -91,7 +91,7 @@ export async function assignRoleToGroups(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
     }).toPass(defaultAssertionOptions);
   }
 }
@@ -114,7 +114,7 @@ export async function assignClientToGroup(
           headers: jsonHeaders(),
         },
       );
-      expect(res.status()).toBe(204);
+      await assertStatusCode(res, 204);
       state[`clientId${groupId}${i}`] = clientId;
     }).toPass(defaultAssertionOptions);
   }
