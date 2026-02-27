@@ -9,6 +9,7 @@ package io.camunda.zeebe.backup.management;
 
 import io.camunda.zeebe.backup.api.BackupIdentifier;
 import io.camunda.zeebe.backup.api.BackupIdentifierWildcard.CheckpointPattern;
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.api.BackupRangeStatus;
 import io.camunda.zeebe.backup.api.BackupStatus;
 import io.camunda.zeebe.backup.api.BackupStatusCode;
@@ -17,7 +18,6 @@ import io.camunda.zeebe.backup.common.BackupIdentifierWildcardImpl;
 import io.camunda.zeebe.backup.processing.state.CheckpointMetadataValue;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.logstreams.log.LogAppendEntry;
 import io.camunda.zeebe.logstreams.log.LogStreamWriter;

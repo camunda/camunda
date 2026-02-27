@@ -7,9 +7,9 @@
  */
 package io.camunda.zeebe.backup.processing;
 
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.backup.processing.state.CheckpointState;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState;
-import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.impl.record.value.management.CheckpointRecord;
 import org.slf4j.Logger;

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import io.camunda.zeebe.backup.api.BackupRange;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -169,7 +170,4 @@ public final class DbBackupRangeState {
     rangeEndValue.wrapLong(oldEnd);
     rangesColumnFamily.insert(rangeStartKey, rangeEndValue);
   }
-
-  /** Immutable representation of a backup range [start, end]. */
-  public record BackupRange(long start, long end) {}
 }

@@ -7,6 +7,7 @@
  */
 package io.camunda.zeebe.backup.processing.state;
 
+import io.camunda.zeebe.backup.api.Checkpoint;
 import io.camunda.zeebe.db.ColumnFamily;
 import io.camunda.zeebe.db.TransactionContext;
 import io.camunda.zeebe.db.ZeebeDb;
@@ -79,16 +80,16 @@ public final class DbCheckpointMetadataState {
   }
 
   /** Returns all checkpoint entries, ordered by checkpoint ID ascending. */
-  public List<CheckpointEntry> getAllCheckpoints() {
-    final var result = new ArrayList<CheckpointEntry>();
+  public List<Checkpoint> getAllCheckpoints() {
+    final var result = new ArrayList<Checkpoint>();
     checkpointsColumnFamily.forEach(
         (key, value) ->
             result.add(
-                new CheckpointEntry(
-                    key.getValue(),
-                    value.getCheckpointPosition(),
-                    value.getCheckpointTimestamp(),
+                new Checkpoint(
                     value.getCheckpointType(),
+                    key.getValue(),
+                    value.getCheckpointTimestamp(),
+                    value.getCheckpointPosition(),
                     value.getFirstLogPosition())));
     return result;
   }
@@ -159,12 +160,4 @@ public final class DbCheckpointMetadataState {
           }
         });
   }
-
-  /** Immutable snapshot of a checkpoint entry for external consumption. */
-  public record CheckpointEntry(
-      long checkpointId,
-      long checkpointPosition,
-      long checkpointTimestamp,
-      CheckpointType checkpointType,
-      long firstLogPosition) {}
 }
