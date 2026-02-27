@@ -460,6 +460,14 @@
       </foreach>
   </insert>
 
+  <insert id="insertTags" parameterType="io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="tags" item="tag">
+      INTO ${prefix}PROCESS_INSTANCE_TAG (PROCESS_INSTANCE_KEY, TAG_VALUE) VALUES (#{processInstanceKey}, #{tag})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
   <update id="updateHistoryCleanupDate">
     UPDATE ${prefix}PROCESS_INSTANCE
     SET HISTORY_CLEANUP_DATE = #{historyCleanupDate, jdbcType=TIMESTAMP}

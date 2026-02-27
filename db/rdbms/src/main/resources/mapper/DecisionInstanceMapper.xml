@@ -268,6 +268,15 @@
     </foreach>
   </insert>
 
+  <insert id="insertInput" parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel" databaseId="oracle">
+    INSERT ALL
+    <foreach collection="evaluatedInputs" item="item">
+      INTO ${prefix}DECISION_INSTANCE_INPUT (DECISION_INSTANCE_ID, INPUT_ID, INPUT_NAME, INPUT_VALUE)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value})
+    </foreach>
+    SELECT 1 FROM DUAL
+  </insert>
+
   <!-- create select statement for decision instance input -->
   <select id="loadInputs" parameterType="list"
     resultMap="io.camunda.db.rdbms.sql.DecisionInstanceMapper.evaluatedInputResultMap">
@@ -299,6 +308,17 @@
       (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId},
       #{item.ruleIndex})
     </foreach>
+  </insert>
+
+  <insert id="insertOutput"
+    parameterType="io.camunda.db.rdbms.write.domain.DecisionInstanceDbModel"
+    databaseId="oracle">
+    INSERT ALL
+    <foreach collection="evaluatedOutputs" item="item">
+      INTO ${prefix}DECISION_INSTANCE_OUTPUT (DECISION_INSTANCE_ID, OUTPUT_ID, OUTPUT_NAME, OUTPUT_VALUE, RULE_ID, RULE_INDEX)
+      VALUES (#{decisionInstanceId}, #{item.id}, #{item.name}, #{item.value}, #{item.ruleId}, #{item.ruleIndex})
+    </foreach>
+    SELECT 1 FROM DUAL
   </insert>
 
   <select id="loadOutputs" parameterType="list"
