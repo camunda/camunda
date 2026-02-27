@@ -86,7 +86,8 @@ class ProcessInstanceToolsTest extends ToolsTest {
           false,
           "tenant",
           "PI_123",
-          Set.of("tag1", "tag2"));
+          Set.of("tag1", "tag2"),
+          null);
 
   static final SearchQueryResult<ProcessInstanceEntity> SEARCH_QUERY_RESULT =
       new Builder<ProcessInstanceEntity>()

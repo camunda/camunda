@@ -89,7 +89,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
           false,
           "tenant",
           "PI_123",
-          Set.of("tag1", "tag2"));
+          Set.of("tag1", "tag2"),
+          "biz-id");
   private static final String PROCESS_INSTANCE_ENTITY_JSON =
       """
             {
@@ -107,7 +108,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
             "state": "ACTIVE",
             "hasIncident": false,
             "tenantId": "tenant",
-            "tags": ["tag1", "tag2"]
+            "tags": ["tag1", "tag2"],
+            "businessId": "biz-id"
           }
           """;
   private static final String EXPECTED_SEARCH_RESPONSE =
@@ -129,7 +131,8 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
                   "state": "ACTIVE",
                   "hasIncident": false,
                   "tenantId": "tenant",
-                  "tags": ["tag1", "tag2"]
+                  "tags": ["tag1", "tag2"],
+                  "businessId": "biz-id"
                 }
               ],
               "page": {
@@ -654,6 +657,67 @@ public class ProcessInstanceQueryControllerTest extends RestControllerTest {
 
     // Verify that the service was called with the valid key
     verify(processInstanceServices).getByKey(validProcesInstanceKey);
+  }
+
+  @Test
+  public void shouldReturnProcessInstanceWithNullBusinessId() {
+    // given
+    final var processInstanceKey = 456L;
+    final var entityWithNullBusinessId =
+        new ProcessInstanceEntity(
+            processInstanceKey,
+            processInstanceKey,
+            "demoProcess",
+            "Demo Process",
+            1,
+            null,
+            789L,
+            null,
+            null,
+            OffsetDateTime.parse("2024-01-01T00:00:00Z"),
+            null,
+            ProcessInstanceState.ACTIVE,
+            false,
+            "tenant",
+            "PI_456",
+            null,
+            null);
+    when(processInstanceServices.getByKey(processInstanceKey)).thenReturn(entityWithNullBusinessId);
+
+    final var expectedJson =
+        """
+            {
+              "processInstanceKey": "456",
+              "rootProcessInstanceKey": "456",
+              "processDefinitionId": "demoProcess",
+              "processDefinitionName": "Demo Process",
+              "processDefinitionVersion": 1,
+              "processDefinitionVersionTag": null,
+              "processDefinitionKey": "789",
+              "parentProcessInstanceKey": null,
+              "parentElementInstanceKey": null,
+              "startDate": "2024-01-01T00:00:00.000Z",
+              "endDate": null,
+              "state": "ACTIVE",
+              "hasIncident": false,
+              "tenantId": "tenant",
+              "tags": [],
+              "businessId": null
+            }
+            """;
+
+    // when / then
+    webClient
+        .get()
+        .uri(PROCESS_INSTANCES_BY_KEY_URL, processInstanceKey)
+        .accept(MediaType.APPLICATION_JSON)
+        .exchange()
+        .expectStatus()
+        .isOk()
+        .expectBody()
+        .consumeWith(result -> assertJsonNonExtensible(expectedJson, result.getResponseBody()));
+
+    verify(processInstanceServices).getByKey(processInstanceKey);
   }
 
   @Test

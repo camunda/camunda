@@ -12,6 +12,7 @@ import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import io.camunda.db.rdbms.write.domain.ProcessInstanceDbModel;
 import io.camunda.db.rdbms.write.service.HistoryCleanupService;
 import io.camunda.db.rdbms.write.service.ProcessInstanceWriter;
 import io.camunda.exporter.rdbms.utils.TreePath;
@@ -24,6 +25,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceRecordValue;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 class ProcessInstanceExportHandlerTest {
@@ -154,6 +156,61 @@ class ProcessInstanceExportHandlerTest {
     verifyNoInteractions(historyCleanupService);
   }
 
+  @Test
+  void shouldMapBusinessIdOnCreate() {
+    // given
+    final var record =
+        TestRecordFactory.rootProcessWithBusinessId(
+            ProcessInstanceIntent.ELEMENT_ACTIVATING, "my-business-id");
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().businessId()).isEqualTo("my-business-id");
+    }
+  }
+
+  @Test
+  void shouldMapNullBusinessIdOnCreate() {
+    // given
+    final var record =
+        TestRecordFactory.rootProcessWithBusinessId(ProcessInstanceIntent.ELEMENT_ACTIVATING, null);
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().businessId()).isNull();
+    }
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNullOnCreate() {
+    // given
+    final var record =
+        TestRecordFactory.rootProcessWithBusinessId(ProcessInstanceIntent.ELEMENT_ACTIVATING, "");
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().businessId()).isNull();
+    }
+  }
+
   // Helper factory for test records
   static class TestRecordFactory {
     static Record<ProcessInstanceRecordValue> simpleProcess() {
@@ -161,12 +218,18 @@ class ProcessInstanceExportHandlerTest {
     }
 
     static Record<ProcessInstanceRecordValue> rootProcess(final ProcessInstanceIntent intent) {
+      return rootProcessWithBusinessId(intent, null);
+    }
+
+    static Record<ProcessInstanceRecordValue> rootProcessWithBusinessId(
+        final ProcessInstanceIntent intent, final String businessId) {
       final var value = mock(ProcessInstanceRecordValue.class);
       when(value.getElementInstancePath()).thenReturn(List.of(List.of(1L)));
       when(value.getProcessDefinitionPath()).thenReturn(List.of(10L));
       when(value.getCallingElementPath()).thenReturn(List.of(0));
       when(value.getProcessInstanceKey()).thenReturn(ROOT_PROCESS_INSTANCE_KEY);
       when(value.getRootProcessInstanceKey()).thenReturn(ROOT_PROCESS_INSTANCE_KEY);
+      when(value.getBusinessId()).thenReturn(businessId);
       return mockRecord(value, intent);
     }
 

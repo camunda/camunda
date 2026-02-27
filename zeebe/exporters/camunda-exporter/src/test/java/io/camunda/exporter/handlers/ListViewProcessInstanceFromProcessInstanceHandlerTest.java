@@ -168,7 +168,8 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
             .setEndDate(OffsetDateTime.now())
             .setState(ProcessInstanceState.ACTIVE)
             .setTreePath("PI_111")
-            .setTags(Set.of("businessKey:123", "priority:high"));
+            .setTags(Set.of("businessKey:123", "priority:high"))
+            .setBusinessId("my-business-id");
     final BatchRequest mockRequest = mock(BatchRequest.class);
 
     final Map<String, Object> expectedUpdateFields = new LinkedHashMap<>();
@@ -182,6 +183,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     expectedUpdateFields.put(ListViewTemplate.START_DATE, inputEntity.getStartDate());
     expectedUpdateFields.put(ListViewTemplate.END_DATE, inputEntity.getEndDate());
     expectedUpdateFields.put(ListViewTemplate.TAGS, inputEntity.getTags());
+    expectedUpdateFields.put(ListViewTemplate.BUSINESS_ID, "my-business-id");
     expectedUpdateFields.put(PARTITION_ID, 12);
     expectedUpdateFields.put(POSITION, 123L);
 
@@ -294,11 +296,37 @@ public class ListViewProcessInstanceFromProcessInstanceHandlerTest {
     assertThat(processInstanceForListViewEntity.getRootProcessInstanceKey())
         .isPositive()
         .isEqualTo(processInstanceRecordValue.getRootProcessInstanceKey());
+    assertThat(processInstanceForListViewEntity.getBusinessId())
+        .isEqualTo(processInstanceRecordValue.getBusinessId());
 
     // process name and version tag is read from the cache
     assertThat(processInstanceForListViewEntity.getProcessName()).isEqualTo("test-process-name");
     assertThat(processInstanceForListViewEntity.getProcessVersionTag())
         .isEqualTo("test-version-tag");
+  }
+
+  @Test
+  void shouldMapEmptyBusinessIdToNull() {
+    // given
+    final ProcessInstanceRecordValue processInstanceRecordValue =
+        ImmutableProcessInstanceRecordValue.builder()
+            .from(factory.generateObject(ProcessInstanceRecordValue.class))
+            .withBpmnElementType(BpmnElementType.PROCESS)
+            .withElementInstancePath(List.of(List.of(111L)))
+            .withProcessDefinitionPath(List.of(222L))
+            .withBusinessId("")
+            .build();
+    final Record<ProcessInstanceRecordValue> processInstanceRecord =
+        factory.generateRecord(
+            ValueType.PROCESS_INSTANCE,
+            r -> r.withIntent(ELEMENT_ACTIVATING).withValue(processInstanceRecordValue));
+
+    // when
+    final ProcessInstanceForListViewEntity entity = new ProcessInstanceForListViewEntity();
+    underTest.updateEntity(processInstanceRecord, entity);
+
+    // then
+    assertThat(entity.getBusinessId()).isNull();
   }
 
   @Test
