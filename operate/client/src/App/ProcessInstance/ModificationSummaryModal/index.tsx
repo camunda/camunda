@@ -28,8 +28,8 @@ import {VariableModification} from './VariableModification';
 import {beautifyJSON} from 'modules/utils/editor/beautifyJSON';
 import {notificationsStore} from 'modules/stores/notifications';
 import {
-  useModificationsByFlowNode,
-  useWillAllFlowNodesBeCanceled,
+  useModificationsByElement,
+  useWillAllElementsBeCanceled,
 } from 'modules/hooks/modifications';
 import {useProcessInstance} from 'modules/queries/processInstance/useProcessInstance';
 import {getProcessDefinitionName} from 'modules/utils/instance';
@@ -66,8 +66,8 @@ const DiffEditor = lazy(async () => {
 
 const ModificationSummaryModal: React.FC<StateProps> = observer(
   ({open, setOpen}) => {
-    const willAllFlowNodesBeCanceled = useWillAllFlowNodesBeCanceled();
-    const modificationsByFlowNode = useModificationsByFlowNode();
+    const willAllElementsBeCanceled = useWillAllElementsBeCanceled();
+    const modificationsByElement = useModificationsByElement();
     const {data: processInstance} = useProcessInstance();
     const flowNodeModificationsTableRef = useRef<HTMLDivElement>(null);
     const variableModificationsTableRef = useRef<HTMLDivElement>(null);
@@ -107,7 +107,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
     const hasParentProcess = !!processInstance.parentProcessInstanceKey;
 
     const areModificationsInvalid =
-      willAllFlowNodesBeCanceled && hasParentProcess;
+      willAllElementsBeCanceled && hasParentProcess;
 
     const hasOrphanedVariables =
       modificationsStore.hasOrphanedVariableModifications(processInstanceId);
@@ -144,7 +144,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
             editVariable: modificationsStore.variableModifications.filter(
               ({operation}) => operation === 'EDIT_VARIABLE',
             ).length,
-            isProcessCanceled: willAllFlowNodesBeCanceled,
+            isProcessCanceled: willAllElementsBeCanceled,
           });
 
           modificationsStore.applyModifications({
@@ -181,7 +181,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
           )} - ${processInstanceId}". Click "Apply" to proceed.`}
         </p>
 
-        {willAllFlowNodesBeCanceled && !hasParentProcess && <Warning />}
+        {willAllElementsBeCanceled && !hasParentProcess && <Warning />}
         {areModificationsInvalid && <Error />}
         {hasOrphanedVariables && <OrphanedVariablesError />}
 
@@ -265,7 +265,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                     <span data-testid="affected-token-count">
                       {modification.operation === 'CANCEL_TOKEN'
                         ? modification.visibleAffectedTokenCount +
-                          (modificationsByFlowNode[flowNodeId]
+                          (modificationsByElement[flowNodeId]
                             ?.cancelledChildTokens ?? 0)
                         : modification.affectedTokenCount}
                     </span>
