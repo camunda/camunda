@@ -13,6 +13,7 @@ import io.camunda.configuration.SecondaryStorage;
 import io.camunda.configuration.SecondaryStorage.SecondaryStorageType;
 import io.camunda.configuration.SecondaryStorageSecurity;
 import io.camunda.configuration.UnifiedConfiguration;
+import io.camunda.configuration.beans.LegacySearchEngineConnectProperties;
 import io.camunda.operate.conditions.DatabaseType;
 import io.camunda.operate.property.BackupProperties;
 import io.camunda.operate.property.OperateProperties;
@@ -42,12 +43,15 @@ public class OperatePropertiesOverride {
   private static final Logger LOGGER = LoggerFactory.getLogger(OperatePropertiesOverride.class);
   private final UnifiedConfiguration unifiedConfiguration;
   private final LegacyOperateProperties legacyOperateProperties;
+  private final LegacySearchEngineConnectProperties connectProperties;
 
   public OperatePropertiesOverride(
       final UnifiedConfiguration unifiedConfiguration,
+      final LegacySearchEngineConnectProperties connectProperties,
       final LegacyOperateProperties legacyOperateProperties) {
     this.unifiedConfiguration = unifiedConfiguration;
     this.legacyOperateProperties = legacyOperateProperties;
+    this.connectProperties = connectProperties;
   }
 
   @Bean
@@ -123,6 +127,7 @@ public class OperatePropertiesOverride {
     override.getOpensearch().setClusterName(database.getOpensearch().getClusterName());
     override.getOpensearch().setIndexPrefix(database.getOpensearch().getIndexPrefix());
     override.getOpensearch().setDateFormat(database.getOpensearch().getDateFormat());
+    override.getOpensearch().setAwsEnabled(connectProperties.isAwsEnabled());
     final var osProxy = new ProxyProperties();
     BeanUtils.copyProperties(database.getOpensearch().getProxy(), osProxy);
     override.getOpensearch().setProxy(osProxy);
