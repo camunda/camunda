@@ -24,9 +24,11 @@ import io.camunda.it.rdbms.db.util.CamundaRdbmsTestApplication;
 import io.camunda.search.entities.GlobalJobStatisticsEntity;
 import io.camunda.search.entities.GlobalJobStatisticsEntity.StatusMetric;
 import io.camunda.search.entities.JobTypeStatisticsEntity;
+import io.camunda.search.entities.JobWorkerStatisticsEntity;
 import io.camunda.search.filter.Operation;
 import io.camunda.search.query.GlobalJobStatisticsQuery;
 import io.camunda.search.query.JobTypeStatisticsQuery;
+import io.camunda.search.query.JobWorkerStatisticsQuery;
 import io.camunda.security.reader.AuthorizationCheck;
 import io.camunda.security.reader.ResourceAccessChecks;
 import io.camunda.security.reader.TenantCheck;
@@ -61,19 +63,6 @@ public class JobMetricsBatchIT {
    */
   private OffsetDateTime toUtc(final OffsetDateTime timestamp) {
     return timestamp == null ? null : timestamp.withOffsetSameInstant(UTC);
-  }
-
-  /**
-   * Normalizes a JobTypeStatisticsEntity to have all timestamps in UTC for comparison across
-   * different database types.
-   */
-  private JobTypeStatisticsEntity normalizeToUtc(final JobTypeStatisticsEntity entity) {
-    return new JobTypeStatisticsEntity(
-        entity.jobType(),
-        new StatusMetric(entity.created().count(), toUtc(entity.created().lastUpdatedAt())),
-        new StatusMetric(entity.completed().count(), toUtc(entity.completed().lastUpdatedAt())),
-        new StatusMetric(entity.failed().count(), toUtc(entity.failed().lastUpdatedAt())),
-        entity.workers());
   }
 
   private OffsetDateTime getMinStartTime(final List<JobMetricsBatchDbModel> metrics) {
@@ -128,31 +117,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - verify aggregation of both metrics
-    assertThat(actual.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
-    assertThat(toUtc(actual.created().lastUpdatedAt()))
-        .isEqualTo(
-            metrics.stream()
-                .map(JobMetricsBatchDbModel::lastCreatedAt)
-                .max(OffsetDateTime::compareTo)
-                .orElseThrow());
-    assertThat(actual.completed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
-    assertThat(toUtc(actual.completed().lastUpdatedAt()))
-        .isEqualTo(
-            metrics.stream()
-                .map(JobMetricsBatchDbModel::lastCompletedAt)
-                .max(OffsetDateTime::compareTo)
-                .orElseThrow());
-    assertThat(actual.failed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
-    assertThat(toUtc(actual.failed().lastUpdatedAt()))
-        .isEqualTo(
-            metrics.stream()
-                .map(JobMetricsBatchDbModel::lastFailedAt)
-                .max(OffsetDateTime::compareTo)
-                .orElseThrow());
-    assertThat(actual.isIncomplete()).isFalse();
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -177,12 +142,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - verify aggregation across tenants
-    assertThat(actual.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
-    assertThat(actual.completed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
-    assertThat(actual.failed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -207,12 +167,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - verify aggregation across job types
-    assertThat(actual.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
-    assertThat(actual.completed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
-    assertThat(actual.failed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -239,12 +194,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - verify aggregation across workers
-    assertThat(actual.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
-    assertThat(actual.completed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
-    assertThat(actual.failed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -275,12 +225,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - only middle batch data
-    assertThat(actual.created().count()).isEqualTo(metricMiddle.createdCount());
-    assertThat(actual.completed().count()).isEqualTo(metricMiddle.completedCount());
-    assertThat(actual.failed().count()).isEqualTo(metricMiddle.failedCount());
-    assertThat(toUtc(actual.created().lastUpdatedAt())).isEqualTo(metricMiddle.lastCreatedAt());
-    assertThat(toUtc(actual.completed().lastUpdatedAt())).isEqualTo(metricMiddle.lastCompletedAt());
-    assertThat(toUtc(actual.failed().lastUpdatedAt())).isEqualTo(metricMiddle.lastFailedAt());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metricMiddle);
   }
 
   @TestTemplate
@@ -308,13 +253,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - only JOB_TYPE_A data
-    assertThat(actual.created().count()).isEqualTo(metricJobTypeA.createdCount());
-    assertThat(actual.completed().count()).isEqualTo(metricJobTypeA.completedCount());
-    assertThat(actual.failed().count()).isEqualTo(metricJobTypeA.failedCount());
-    assertThat(toUtc(actual.created().lastUpdatedAt())).isEqualTo(metricJobTypeA.lastCreatedAt());
-    assertThat(toUtc(actual.completed().lastUpdatedAt()))
-        .isEqualTo(metricJobTypeA.lastCompletedAt());
-    assertThat(toUtc(actual.failed().lastUpdatedAt())).isEqualTo(metricJobTypeA.lastFailedAt());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metricJobTypeA);
   }
 
   @TestTemplate
@@ -338,25 +277,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then - should return max timestamps
-    final var expectedMaxCreatedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastCreatedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-    final var expectedMaxCompletedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastCompletedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-    final var expectedMaxFailedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastFailedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-
-    assertThat(toUtc(actual.created().lastUpdatedAt())).isEqualTo(expectedMaxCreatedAt);
-    assertThat(toUtc(actual.completed().lastUpdatedAt())).isEqualTo(expectedMaxCompletedAt);
-    assertThat(toUtc(actual.failed().lastUpdatedAt())).isEqualTo(expectedMaxFailedAt);
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -450,9 +371,7 @@ public class JobMetricsBatchIT {
                 AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT1))));
 
     // then - only TENANT1 data
-    assertThat(actual.created().count()).isEqualTo(metricTenant1.createdCount());
-    assertThat(actual.completed().count()).isEqualTo(metricTenant1.completedCount());
-    assertThat(actual.failed().count()).isEqualTo(metricTenant1.failedCount());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metricTenant1);
   }
 
   @TestTemplate
@@ -537,9 +456,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then
-    assertThat(actual.created().count()).isEqualTo(metric.createdCount());
-    assertThat(actual.completed().count()).isEqualTo(metric.completedCount());
-    assertThat(actual.failed().count()).isEqualTo(metric.failedCount());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
   @TestTemplate
@@ -561,13 +478,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then
-    assertThat(actual.created().count()).isEqualTo(metric.createdCount());
-    assertThat(toUtc(actual.created().lastUpdatedAt())).isEqualTo(metric.lastCreatedAt());
-    assertThat(actual.completed().count()).isEqualTo(metric.completedCount());
-    assertThat(toUtc(actual.completed().lastUpdatedAt())).isEqualTo(metric.lastCompletedAt());
-    assertThat(actual.failed().count()).isEqualTo(metric.failedCount());
-    assertThat(toUtc(actual.failed().lastUpdatedAt())).isEqualTo(metric.lastFailedAt());
-    assertThat(actual.isIncomplete()).isEqualTo(metric.incompleteBatch());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
   @TestTemplate
@@ -613,8 +524,7 @@ public class JobMetricsBatchIT {
                             f.from(getMinStartTime(metrics).minusMinutes(1))
                                 .to(getMaxEndTime(metrics).plusMinutes(1)))),
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
-    assertThat(actual.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metrics);
   }
 
   @TestTemplate
@@ -635,13 +545,7 @@ public class JobMetricsBatchIT {
             ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
 
     // then
-    assertThat(actual.isIncomplete()).isTrue();
-    assertThat(actual.created().count()).isEqualTo(metric.createdCount());
-    assertThat(toUtc(actual.created().lastUpdatedAt())).isEqualTo(metric.lastCreatedAt());
-    assertThat(actual.completed().count()).isEqualTo(metric.completedCount());
-    assertThat(toUtc(actual.completed().lastUpdatedAt())).isEqualTo(metric.lastCompletedAt());
-    assertThat(actual.failed().count()).isEqualTo(metric.failedCount());
-    assertThat(toUtc(actual.failed().lastUpdatedAt())).isEqualTo(metric.lastFailedAt());
+    JobMetricsBatchFixtures.assertGlobalStats(actual, metric);
   }
 
   @TestTemplate
@@ -820,25 +724,8 @@ public class JobMetricsBatchIT {
     assertThat(actual.items().get(0).jobType()).isEqualTo(JOB_TYPE_A);
     assertThat(actual.items().get(1).jobType()).isEqualTo(JOB_TYPE_B);
 
-    final var jobTypeA = normalizeToUtc(actual.items().get(0));
-    assertThat(jobTypeA.jobType()).isEqualTo(JOB_TYPE_A);
-    assertThat(jobTypeA.created().count()).isEqualTo(metricJobTypeA.createdCount());
-    assertThat(jobTypeA.created().lastUpdatedAt()).isEqualTo(metricJobTypeA.lastCreatedAt());
-    assertThat(jobTypeA.completed().count()).isEqualTo(metricJobTypeA.completedCount());
-    assertThat(jobTypeA.completed().lastUpdatedAt()).isEqualTo(metricJobTypeA.lastCompletedAt());
-    assertThat(jobTypeA.failed().count()).isEqualTo(metricJobTypeA.failedCount());
-    assertThat(jobTypeA.failed().lastUpdatedAt()).isEqualTo(metricJobTypeA.lastFailedAt());
-    assertThat(jobTypeA.workers()).isEqualTo(1);
-
-    final var jobTypeB = normalizeToUtc(actual.items().get(1));
-    assertThat(jobTypeB.jobType()).isEqualTo(JOB_TYPE_B);
-    assertThat(jobTypeB.created().count()).isEqualTo(metricJobTypeB.createdCount());
-    assertThat(jobTypeB.created().lastUpdatedAt()).isEqualTo(metricJobTypeB.lastCreatedAt());
-    assertThat(jobTypeB.completed().count()).isEqualTo(metricJobTypeB.completedCount());
-    assertThat(jobTypeB.completed().lastUpdatedAt()).isEqualTo(metricJobTypeB.lastCompletedAt());
-    assertThat(jobTypeB.failed().count()).isEqualTo(metricJobTypeB.failedCount());
-    assertThat(jobTypeB.failed().lastUpdatedAt()).isEqualTo(metricJobTypeB.lastFailedAt());
-    assertThat(jobTypeB.workers()).isEqualTo(1);
+    JobMetricsBatchFixtures.assertJobTypeStats(actual.items().get(0), metricJobTypeA);
+    JobMetricsBatchFixtures.assertJobTypeStats(actual.items().get(1), metricJobTypeB);
   }
 
   @TestTemplate
@@ -867,37 +754,8 @@ public class JobMetricsBatchIT {
     // then - aggregated across both batches
     assertThat(actual.total()).isEqualTo(1);
     assertThat(actual.items()).hasSize(1);
-
-    final var stats = normalizeToUtc(actual.items().get(0));
-    assertThat(stats.jobType()).isEqualTo(JOB_TYPE_A);
-    assertThat(stats.created().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::createdCount).sum());
-    assertThat(stats.completed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::completedCount).sum());
-    assertThat(stats.failed().count())
-        .isEqualTo(metrics.stream().mapToLong(JobMetricsBatchDbModel::failedCount).sum());
-
-    final var expectedLastCreatedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastCreatedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-    final var expectedLastCompletedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastCompletedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-    final var expectedLastFailedAt =
-        metrics.stream()
-            .map(JobMetricsBatchDbModel::lastFailedAt)
-            .max(OffsetDateTime::compareTo)
-            .orElseThrow();
-
-    assertThat(stats.created().lastUpdatedAt()).isEqualTo(expectedLastCreatedAt);
-    assertThat(stats.completed().lastUpdatedAt()).isEqualTo(expectedLastCompletedAt);
-    assertThat(stats.failed().lastUpdatedAt()).isEqualTo(expectedLastFailedAt);
-    final var workersNb = metrics.stream().map(JobMetricsBatchDbModel::worker).distinct().count();
-    assertThat(stats.workers()).isEqualTo(workersNb);
+    assertThat(actual.items().get(0).jobType()).isEqualTo(JOB_TYPE_A);
+    JobMetricsBatchFixtures.assertJobTypeStats(actual.items().get(0), metrics);
   }
 
   @TestTemplate
@@ -990,17 +848,7 @@ public class JobMetricsBatchIT {
     // then - only JOB_TYPE_A
     assertThat(actual.items()).hasSize(1);
     assertThat(actual.items().getFirst().jobType()).isEqualTo(JOB_TYPE_A);
-    assertThat(actual.items().getFirst().created().count())
-        .isEqualTo(metricJobTypeA.createdCount());
-    assertThat(actual.items().getFirst().completed().count())
-        .isEqualTo(metricJobTypeA.completedCount());
-    assertThat(actual.items().getFirst().failed().count()).isEqualTo(metricJobTypeA.failedCount());
-    assertThat(toUtc(actual.items().getFirst().completed().lastUpdatedAt()))
-        .isEqualTo(metricJobTypeA.lastCompletedAt());
-    assertThat(toUtc(actual.items().getFirst().created().lastUpdatedAt()))
-        .isEqualTo(metricJobTypeA.lastCreatedAt());
-    assertThat(toUtc(actual.items().getFirst().failed().lastUpdatedAt()))
-        .isEqualTo(metricJobTypeA.lastFailedAt());
+    JobMetricsBatchFixtures.assertJobTypeStats(actual.items().getFirst(), metricJobTypeA);
   }
 
   @TestTemplate
@@ -1071,5 +919,324 @@ public class JobMetricsBatchIT {
     assertThat(actual.items()).hasSize(2);
     final var jobTypes = actual.items().stream().map(JobTypeStatisticsEntity::jobType).toList();
     assertThat(jobTypes).containsExactly(JOB_TYPE_A, JOB_TYPE_B);
+  }
+
+  // ==========================================================================
+  // Job Worker Statistics Tests
+  // ==========================================================================
+
+  @TestTemplate
+  public void shouldAggregateJobStatisticsByWorker() {
+    // given
+    final var metricWorker1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metricWorker2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_2));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metricWorker1, metricWorker2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.total()).isEqualTo(2);
+    assertThat(actual.items()).hasSize(2);
+
+    // Results are ordered by WORKER ASC from SQL
+    final var workers = actual.items().stream().map(JobWorkerStatisticsEntity::worker).toList();
+    assertThat(workers).containsExactly(WORKER_1, WORKER_2);
+
+    JobMetricsBatchFixtures.assertWorkerStats(
+        actual.items().stream().filter(e -> WORKER_1.equals(e.worker())).findFirst().orElseThrow(),
+        metricWorker1);
+
+    JobMetricsBatchFixtures.assertWorkerStats(
+        actual.items().stream().filter(e -> WORKER_2.equals(e.worker())).findFirst().orElseThrow(),
+        metricWorker2);
+  }
+
+  @TestTemplate
+  public void shouldAggregateWorkerStatsAcrossMultipleBatches() {
+    // given - multiple batches for same worker
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metric3 =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metric1, metric2, metric3);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then - all batches aggregated into one worker entry
+    assertThat(actual.total()).isEqualTo(1);
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
+    JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
+  }
+
+  @TestTemplate
+  public void shouldFilterWorkerStatsByJobType() {
+    // given - workers for different job types
+    final var metricWorkerA =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metricWorkerB =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_B).worker(WORKER_2));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metricWorkerA, metricWorkerB);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when - filter by JOB_TYPE_A only
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then - only WORKER_1 (from JOB_TYPE_A)
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
+    JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metricWorkerA);
+  }
+
+  @TestTemplate
+  public void shouldFilterWorkerStatsByTimeRange() {
+    // given
+    final var metricOld =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.jobType(JOB_TYPE_A)
+                    .worker(WORKER_1)
+                    .startTime(NOW.minusMinutes(30))
+                    .endTime(NOW.minusMinutes(20)));
+
+    final var metricRecent =
+        JobMetricsBatchFixtures.createRandomized(
+            b ->
+                b.jobType(JOB_TYPE_A)
+                    .worker(WORKER_2)
+                    .startTime(NOW.minusMinutes(10))
+                    .endTime(NOW));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metricOld, metricRecent);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when - filter to only get the recent batch
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metricRecent.startTime().minusSeconds(1))
+                                .to(metricRecent.endTime().plusSeconds(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then - only WORKER_2 (recent batch)
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_2);
+  }
+
+  @TestTemplate
+  public void shouldFilterWorkerStatsByAuthorizedTenants() {
+    // given
+    final var metricTenant1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metricTenant2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT2).jobType(JOB_TYPE_A).worker(WORKER_2));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metricTenant1, metricTenant2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when - only authorize TENANT1
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(
+                AuthorizationCheck.disabled(), TenantCheck.enabled(List.of(TENANT1))));
+
+    // then - only WORKER_1 (TENANT1)
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
+    JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metricTenant1);
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyWorkerStatsWhenNoMetricsMatchFilter() {
+    // given
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when - query for a different time range
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(NOW.plusMinutes(1))
+                                .to(NOW.plusMinutes(10))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+    assertThat(actual.total()).isZero();
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyWorkerStatsWhenJobTypeDoesNotMatch() {
+    // given
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when - query for a different job type
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusMinutes(1))
+                                .to(metric.endTime().plusMinutes(1))
+                                .jobType(JOB_TYPE_B))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+    assertThat(actual.total()).isZero();
+  }
+
+  @TestTemplate
+  public void shouldReturnEmptyWorkerStatsWhenNoAuthorizedTenants() {
+    // given
+    final var metric =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1));
+    JobMetricsBatchFixtures.createAndSaveMetric(rdbmsWriters, metric);
+
+    // when - authorize no tenants
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(metric.startTime().minusMinutes(1))
+                                .to(metric.endTime().plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.enabled(List.of())));
+
+    // then
+    assertThat(actual.items()).isEmpty();
+    assertThat(actual.total()).isZero();
+  }
+
+  @TestTemplate
+  public void shouldReturnMaxLastUpdatedAtForWorkerStats() {
+    // given - multiple batches for the same worker
+    final var metric1 =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metric2 =
+        JobMetricsBatchFixtures.createRandomized(b -> b.jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metric1, metric2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then - should return max timestamps across both batches
+    assertThat(actual.items()).hasSize(1);
+    JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
+  }
+
+  @TestTemplate
+  public void shouldAggregateWorkerStatsAcrossMultipleTenants() {
+    // given - same worker, same job type, different tenants
+    final var metricTenant1 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT1).jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final var metricTenant2 =
+        JobMetricsBatchFixtures.createRandomized(
+            b -> b.tenantId(TENANT2).jobType(JOB_TYPE_A).worker(WORKER_1));
+
+    final List<JobMetricsBatchDbModel> metrics = List.of(metricTenant1, metricTenant2);
+    JobMetricsBatchFixtures.createAndSaveMetrics(rdbmsWriters, metrics);
+
+    // when - both tenants authorized
+    final var actual =
+        jobMetricsBatchReader.getJobWorkerStatistics(
+            JobWorkerStatisticsQuery.of(
+                q ->
+                    q.filter(
+                        f ->
+                            f.from(getMinStartTime(metrics).minusMinutes(1))
+                                .to(getMaxEndTime(metrics).plusMinutes(1))
+                                .jobType(JOB_TYPE_A))),
+            ResourceAccessChecks.of(AuthorizationCheck.disabled(), TenantCheck.disabled()));
+
+    // then - WORKER_1 with combined counts from both tenants
+    assertThat(actual.items()).hasSize(1);
+    assertThat(actual.items().getFirst().worker()).isEqualTo(WORKER_1);
+    JobMetricsBatchFixtures.assertWorkerStats(actual.items().getFirst(), metrics);
   }
 }
