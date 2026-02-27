@@ -5,7 +5,7 @@ all: benchmark
 
 .PHONY: benchmark
 benchmark:
-	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml --skip-crds
+	helm install --namespace $(namespace) $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml -f values-preemptible.yaml --skip-crds
 
 # To deploy the Zeebe pods on stable nodes, use this job
 .PHONY: benchmark-stable
@@ -16,7 +16,7 @@ benchmark-stable:
 # To apply the templates use k apply -f zeebe-benchmark/templates/
 .PHONY: template
 template:
-	helm template $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml --skip-crds --output-dir .
+	helm template $(namespace) zeebe-benchmark/zeebe-benchmark -f values.yaml -f values-preemptible.yaml --skip-crds --output-dir .
 
 .PHONY: template-stable
 template-stable:
