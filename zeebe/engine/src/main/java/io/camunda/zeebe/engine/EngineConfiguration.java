@@ -40,7 +40,7 @@ public final class EngineConfiguration {
   public static final int DEFAULT_JOB_METRICS_MAX_TYPE_LENGTH = 100;
   public static final int DEFAULT_JOB_METRICS_MAX_TENANT_ID_LENGTH = 30;
   public static final int DEFAULT_JOB_METRICS_MAX_UNIQUE_KEYS = 9500;
-  public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = true;
+  public static final boolean DEFAULT_JOB_METRICS_EXPORT_ENABLED = false;
 
   public static final Duration DEFAULT_BATCH_OPERATION_SCHEDULER_INTERVAL = Duration.ofSeconds(1);
   // reasonable size of a chunk record to avoid too many or too large records
