@@ -412,6 +412,7 @@ components:
 
     EvaluatedDecisionResult:
       required:
+        - decisionDefinitionType
         - evaluatedInputs
         - matchedRules
       x-semantic-provider:
