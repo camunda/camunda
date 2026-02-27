@@ -1,0 +1,133 @@
+# description: Phase 1 PoC for workflow-failure signaling option (incident.io GHA)
+# type: CI
+# owner: TODO
+---
+name: Incident Signal Phase 1 PoC
+
+on:
+  workflow_dispatch:
+    inputs:
+      failure-stage:
+        description: "Synthetic failure stage label"
+        type: choice
+        options:
+          - helm-update
+          - kubectl-operations
+          - build-artifact
+        default: helm-update
+        required: true
+      deduplication-suffix:
+        description: "Optional suffix appended to deduplication keys"
+        type: string
+        default: ""
+        required: false
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  simulate-deploy-failure:
+    name: Simulate deploy failure
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    outputs:
+      failure_stage: ${{ steps.simulate.outputs.failure_stage }}
+      run_url: ${{ steps.simulate.outputs.run_url }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Simulate deployment pipeline failure
+        id: simulate
+        run: |
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo "failure_stage=${{ inputs.failure-stage }}" >> "$GITHUB_OUTPUT"
+          echo "run_url=${run_url}" >> "$GITHUB_OUTPUT"
+
+          {
+            echo "## Phase 1 PoC - forced failure"
+            echo "- Stage: ${{ inputs.failure-stage }}"
+            echo "- Run URL: ${run_url}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "Simulating failure to mirror deploy workflow failure signaling."
+          exit 1
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "phase1-poc/simulate-deploy-failure"
+
+  notify-incident-io-gha:
+    name: Notify via incident.io GHA
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    needs: simulate-deploy-failure
+    if: |
+      always() &&
+      needs.simulate-deploy-failure.result == 'failure'
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Import secrets from Vault
+        id: secrets
+        uses: hashicorp/vault-action@4c06c5ccf5c0761b6029f56cfb1dcf5565918a3b # v3.4.0
+        with:
+          url: ${{ secrets.VAULT_ADDR }}
+          method: approle
+          roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secretId: ${{ secrets.VAULT_SECRET_ID }}
+          exportEnv: false
+          secrets: |
+            secret/data/products/camunda/ci/github-actions INCIDENT_IO_API_KEY | incident_io_api_key;
+            secret/data/products/camunda/ci/github-actions INCIDENT_IO_ALERT_SOURCE_ID | incident_io_alert_source_id;
+
+      - name: Dispatch incident alert
+        id: incident-alert
+        uses: incident-io/github-action@v0
+        with:
+          api-key: ${{ steps.secrets.outputs.incident_io_api_key }}
+          alert-source-id: ${{ steps.secrets.outputs.incident_io_alert_source_id }}
+          alert-title: "Phase 1 PoC workflow failure - ${{ needs.simulate-deploy-failure.outputs.failure_stage }}"
+          alert-description: |
+            **Phase:** 1 workflow-failure signaling PoC
+            **Option:** incident.io GHA
+            **Failure Stage:** ${{ needs.simulate-deploy-failure.outputs.failure_stage }}
+            **Repository:** ${{ github.repository }}
+            **Workflow:** ${{ github.workflow }}
+            **Run URL:** ${{ needs.simulate-deploy-failure.outputs.run_url }}
+            **Actor:** ${{ github.actor }}
+          severity: "high"
+          deduplication-key: "${{ github.repository }}-${{ github.workflow }}-${{ github.ref_name }}-${{ needs.simulate-deploy-failure.outputs.failure_stage }}-${{ inputs.deduplication-suffix }}"
+          source-url: ${{ needs.simulate-deploy-failure.outputs.run_url }}
+
+      - name: Record incident.io evidence
+        if: always()
+        run: |
+          {
+            echo "## Option A evidence (incident.io GHA)"
+            echo "- Alert ID: ${{ steps.incident-alert.outputs.alert-id }}"
+            echo "- Alert URL: ${{ steps.incident-alert.outputs.alert-url }}"
+            echo "- Job status: ${{ job.status }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Observe build status
+        if: always()
+        continue-on-error: true
+        uses: ./.github/actions/observe-build-status
+        with:
+          build_status: ${{ job.status }}
+          job_name: "phase1-poc/incident-io-gha"
+          secret_vault_address: ${{ secrets.VAULT_ADDR }}
+          secret_vault_roleId: ${{ secrets.VAULT_ROLE_ID }}
+          secret_vault_secretId: ${{ secrets.VAULT_SECRET_ID }}
+          user_description: "phase1-poc/incident-io-gha"
