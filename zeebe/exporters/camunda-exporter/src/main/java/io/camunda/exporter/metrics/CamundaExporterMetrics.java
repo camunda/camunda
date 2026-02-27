@@ -92,6 +92,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
   private Timer.Sample flushLatencyMeasurement;
   private final Timer archivingDuration;
   private final DistributionSummary bulkSize;
+  private final Counter bulkOperations;
   private final Timer flushDuration;
   private final Counter failedFlush;
   private final Timer recordExportDuration;
@@ -233,6 +234,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
             .description("How many items were exported in one bulk request")
             .serviceLevelObjectives(10, 100, 1_000, 10_000, 100_000)
             .register(meterRegistry);
+    bulkOperations = Counter.builder(meterName("bulk.operations")).register(meterRegistry);
     flushDuration =
         Timer.builder(meterName("flush.duration.seconds"))
             .description("Flush duration of bulk exporters in seconds")
@@ -284,6 +286,10 @@ public class CamundaExporterMetrics implements AutoCloseable {
 
   public void recordBulkSize(final int bulkSize) {
     this.bulkSize.record(bulkSize);
+  }
+
+  public void recordBulkOperations(final int operations) {
+    bulkOperations.increment(operations);
   }
 
   public void recordFailedFlush() {
@@ -434,6 +440,7 @@ public class CamundaExporterMetrics implements AutoCloseable {
     meterRegistry.remove(archiverReindexedDocs);
     meterRegistry.remove(archivingDuration);
     meterRegistry.remove(bulkSize);
+    meterRegistry.remove(bulkOperations);
     meterRegistry.remove(flushDuration);
     meterRegistry.remove(failedFlush);
     meterRegistry.remove(recordExportDuration);
