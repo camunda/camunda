@@ -11,7 +11,7 @@ import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-ap
 import {getStatisticsByElement} from 'modules/utils/statistics/elementInstances';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
-import type {FlowNodeState} from 'modules/types/operate';
+import type {ElementState} from 'modules/types/operate';
 
 const statisticsByElementParser =
   (businessObjects?: BusinessObjects) =>
@@ -33,7 +33,7 @@ const statisticsByElementParser =
         {
           id: string;
           count: number;
-          elementState: FlowNodeState | 'completedEndEvents';
+          elementState: ElementState | 'completedEndEvents';
         }[]
       >((states, elementState) => {
         const count = statistic?.[elementState] ?? 0;

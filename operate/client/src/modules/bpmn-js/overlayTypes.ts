@@ -7,7 +7,7 @@
  */
 
 import type {OverlayPosition} from 'bpmn-js/lib/NavigatedViewer';
-import type {FlowNodeState} from 'modules/types/operate';
+import type {ElementState} from 'modules/types/operate';
 
 type OverlayData = {
   payload?: unknown;
@@ -18,7 +18,7 @@ type OverlayData = {
 };
 
 type StatisticsPayload = {
-  flowNodeState: FlowNodeState;
+  flowNodeState: ElementState;
   count: number;
 };
 
