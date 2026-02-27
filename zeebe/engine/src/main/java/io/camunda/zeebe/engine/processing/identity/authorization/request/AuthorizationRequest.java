@@ -16,71 +16,19 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public final class AuthorizationRequest {
-
-  private final Map<String, Object> claims;
-  private final AuthorizationResourceType resourceType;
-  private final PermissionType permissionType;
-  private final String tenantId;
-  private final Set<String> resourceIds;
-  private final boolean isNewResource;
-  private final boolean isTenantOwnedResource;
-  private final boolean isTriggeredByInternalCommand;
-
-  // private constructor to enforce the use of the builder
-  private AuthorizationRequest(
-      final Map<String, Object> claims,
-      final AuthorizationResourceType resourceType,
-      final PermissionType permissionType,
-      final String tenantId,
-      final Set<String> resourceIds,
-      final boolean isNewResource,
-      final boolean isTenantOwnedResource,
-      final boolean isTriggeredByInternalCommand) {
-    this.claims = claims;
-    this.resourceType = resourceType;
-    this.permissionType = permissionType;
-    this.tenantId = tenantId;
-    this.resourceIds = resourceIds;
-    this.isNewResource = isNewResource;
-    this.isTenantOwnedResource = isTenantOwnedResource;
-    this.isTriggeredByInternalCommand = isTriggeredByInternalCommand;
-  }
-
-  public Map<String, Object> claims() {
-    return claims;
-  }
-
-  public AuthorizationResourceType resourceType() {
-    return resourceType;
-  }
-
-  public PermissionType permissionType() {
-    return permissionType;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public Set<String> resourceIds() {
-    return resourceIds;
-  }
-
-  public boolean isNewResource() {
-    return isNewResource;
-  }
-
-  public boolean isTenantOwnedResource() {
-    return isTenantOwnedResource;
-  }
-
-  public boolean isTriggeredByInternalCommand() {
-    return isTriggeredByInternalCommand;
-  }
+public record AuthorizationRequest(
+    Map<String, Object> claims,
+    AuthorizationResourceType resourceType,
+    PermissionType permissionType,
+    String tenantId,
+    Set<String> resourceIds,
+    boolean isNewResource,
+    boolean isTenantOwnedResource,
+    boolean isTriggeredByInternalCommand) {
 
   public String getForbiddenErrorMessage() {
     if (resourceIds.isEmpty()) {
@@ -115,7 +63,7 @@ public final class AuthorizationRequest {
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private Set<String> resourceIds;
+    private final Set<String> resourceIds;
     private String tenantId;
     private boolean isNewResource;
 
@@ -169,22 +117,25 @@ public final class AuthorizationRequest {
     }
 
     public AuthorizationRequest build() {
-      final Map<String, Object> claims =
-          command != null ? command.getAuthorizations() : authorizationClaims;
-      final boolean isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
-      final boolean triggeredByInternalCommand = command != null && command.isInternalCommand();
+      final var claims = resolveClaims();
+      final var isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
+      final var isTriggeredByInternalCommand = command != null && command.isInternalCommand();
 
       return new AuthorizationRequest(
-          Collections.unmodifiableMap(claims),
+          claims,
           resourceType,
           permissionType,
           tenantId,
           Collections.unmodifiableSet(resourceIds),
           isNewResource,
           isTenantOwnedResource,
-          triggeredByInternalCommand);
+          isTriggeredByInternalCommand);
     }
 
-    public void resu() {}
+    private Map<String, Object> resolveClaims() {
+      final var claims = command != null ? command.getAuthorizations() : authorizationClaims;
+      return Collections.unmodifiableMap(
+          Objects.requireNonNullElse(claims, Collections.emptyMap()));
+    }
   }
 }
