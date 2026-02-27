@@ -290,6 +290,11 @@ jobs:
       - name: Label namespace with registry
         run: >
           kubectl label namespace ${{ env.NAMESPACE }} registry=harbor --overwrite
+      - name: Annotate namespace with workflow run URL
+        run: >
+          kubectl annotate namespace ${{ env.NAMESPACE }}
+          "github.com/workflow-run-url=${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          --overwrite
       - name: Add Camunda Helm repo
         run: |
           helm repo add camunda https://helm.camunda.io/
@@ -307,8 +312,9 @@ jobs:
           --reset-then-reuse-values
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set global.image.repository=${{ env.IMAGE_REPOSITORY }}
           --set global.image.pullSecrets[0].name=harbor-registry
+          --set orchestration.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
+          --set orchestration.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/zeebe' }}
           --set orchestration.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
