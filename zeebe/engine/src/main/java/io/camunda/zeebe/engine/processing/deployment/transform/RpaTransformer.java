@@ -12,7 +12,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.camunda.zeebe.engine.processing.common.Failure;
 import io.camunda.zeebe.engine.processing.deployment.ChecksumGenerator;
-import io.camunda.zeebe.engine.processing.deployment.transform.AbstractResourceTransformer.ResourceId;
 import io.camunda.zeebe.engine.processing.streamprocessor.writers.StateWriter;
 import io.camunda.zeebe.engine.state.immutable.ResourceState;
 import io.camunda.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
@@ -20,7 +19,7 @@ import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
 import java.io.IOException;
 
-public class RpaTransformer extends AbstractResourceTransformer {
+public class RpaTransformer extends DefaultResourceTransformer {
 
   private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 

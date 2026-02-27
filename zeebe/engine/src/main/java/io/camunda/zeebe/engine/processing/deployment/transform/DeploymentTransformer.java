@@ -27,6 +27,7 @@ import io.camunda.zeebe.util.Either;
 import io.camunda.zeebe.util.FeatureFlags;
 import java.time.InstantSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -81,7 +82,7 @@ public final class DeploymentTransformer {
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
     genericResourceTransformer =
-        new GenericResourceTransformer(
+        new DefaultResourceTransformer(
             keyGenerator, stateWriter, checksumGenerator, processingState.getResourceState());
 
     resourceTransformers =
@@ -123,6 +124,11 @@ public final class DeploymentTransformer {
             createMetadata(
                 deploymentResource, deploymentEvent, new DeploymentResourceContext() {}, errors);
       }
+    }
+
+    // step 1.5: check for duplicate IDs across all accumulated metadata
+    if (success) {
+      success = checkForDuplicateIds(deploymentEvent, errors);
     }
 
     // intermediate step (for BPMN resources only): validate process elements that use deployment
@@ -220,6 +226,108 @@ public final class DeploymentTransformer {
         .map(Entry::getValue)
         .findFirst()
         .orElse(genericResourceTransformer);
+  }
+
+  private boolean checkForDuplicateIds(
+      final DeploymentRecord deployment, final StringBuilder errors) {
+    boolean success = true;
+
+    // Check for duplicate process IDs (BPMN)
+    final var seenProcessIds = new HashMap<String, String>();
+    for (final var metadata : deployment.getProcessesMetadata()) {
+      final var id = metadata.getBpmnProcessId();
+      final var previousResourceName = seenProcessIds.put(id, metadata.getResourceName());
+      if (previousResourceName != null) {
+        errors
+            .append("\n")
+            .append(
+                String.format(
+                    "Duplicated process id in resources '%s' and '%s'",
+                    previousResourceName, metadata.getResourceName()));
+        success = false;
+      }
+    }
+
+    // Check for duplicate form IDs
+    final var seenFormIds = new HashMap<String, String>();
+    for (final var metadata : deployment.getFormMetadata()) {
+      final var id = metadata.getFormId();
+      final var previousResourceName = seenFormIds.put(id, metadata.getResourceName());
+      if (previousResourceName != null) {
+        errors
+            .append("\n")
+            .append(
+                String.format(
+                    "Expected the form ids to be unique within a deployment"
+                        + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                    id, previousResourceName, metadata.getResourceName()));
+        success = false;
+      }
+    }
+
+    // Check for duplicate decision requirements IDs (DMN)
+    final var seenDrgIds = new HashMap<String, String>();
+    for (final var metadata : deployment.getDecisionRequirementsMetadata()) {
+      final var id = metadata.getDecisionRequirementsId();
+      final var previousResourceName = seenDrgIds.put(id, metadata.getResourceName());
+      if (previousResourceName != null) {
+        errors
+            .append("\n")
+            .append(
+                String.format(
+                    "Expected the decision requirements ids to be unique within a deployment"
+                        + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                    id, previousResourceName, metadata.getResourceName()));
+        success = false;
+      }
+    }
+
+    // Check for duplicate decision IDs (DMN) — resource name looked up via DRG
+    final var seenDecisionIds = new HashMap<String, Long>();
+    for (final var metadata : deployment.getDecisionsMetadata()) {
+      final var id = metadata.getDecisionId();
+      final var previousDrgKey = seenDecisionIds.put(id, metadata.getDecisionRequirementsKey());
+      if (previousDrgKey != null) {
+        errors
+            .append("\n")
+            .append(
+                String.format(
+                    "Expected the decision ids to be unique within a deployment"
+                        + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                    id,
+                    findDrgResourceName(deployment, previousDrgKey),
+                    findDrgResourceName(deployment, metadata.getDecisionRequirementsKey())));
+        success = false;
+      }
+    }
+
+    // Check for duplicate resource IDs (Rpa/Generic)
+    final var seenResourceIds = new HashMap<String, String>();
+    for (final var metadata : deployment.getResourceMetadata()) {
+      final var id = metadata.getResourceId();
+      final var previousResourceName = seenResourceIds.put(id, metadata.getResourceName());
+      if (previousResourceName != null) {
+        errors
+            .append("\n")
+            .append(
+                String.format(
+                    "Expected the resource ids to be unique within a deployment"
+                        + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
+                    id, previousResourceName, metadata.getResourceName()));
+        success = false;
+      }
+    }
+
+    return success;
+  }
+
+  private String findDrgResourceName(
+      final DeploymentRecord deployment, final long decisionRequirementsKey) {
+    return deployment.getDecisionRequirementsMetadata().stream()
+        .filter(drg -> drg.getDecisionRequirementsKey() == decisionRequirementsKey)
+        .map(drg -> drg.getResourceName())
+        .findFirst()
+        .orElse("<?>");
   }
 
   private static void handleUnexpectedError(

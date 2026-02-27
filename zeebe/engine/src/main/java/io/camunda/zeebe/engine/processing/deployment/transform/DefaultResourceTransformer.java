@@ -18,17 +18,19 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import java.util.Optional;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
 
 /**
- * Abstract base class for transformers that deploy resources stored in the {@link ResourceState}.
+ * Default transformer for resources stored in the {@link ResourceState}.
  *
- * <p>Handles the common logic for versioning, duplicate detection, and writing resource records.
- * Subclasses only need to implement {@link #parseResourceId(DeploymentResource)} to resolve the
- * resource ID (and optional version tag) from the raw deployment resource bytes.
+ * <p>Handles the common logic for versioning and writing resource records. By default, the resource
+ * name (filename) is used as the resource ID. Subclasses can override {@link
+ * #parseResourceId(DeploymentResource)} to resolve the resource ID (and optional version tag) from
+ * the raw resource content.
  */
-abstract class AbstractResourceTransformer implements DeploymentResourceTransformer {
+class DefaultResourceTransformer implements DeploymentResourceTransformer {
 
   private static final int INITIAL_VERSION = 1;
 
@@ -37,7 +39,7 @@ abstract class AbstractResourceTransformer implements DeploymentResourceTransfor
   protected final ChecksumGenerator checksumGenerator;
   protected final ResourceState resourceState;
 
-  AbstractResourceTransformer(
+  DefaultResourceTransformer(
       final KeyGenerator keyGenerator,
       final StateWriter stateWriter,
       final ChecksumGenerator checksumGenerator,
@@ -51,10 +53,15 @@ abstract class AbstractResourceTransformer implements DeploymentResourceTransfor
   /**
    * Parses the deployment resource to extract the resource identity (ID and optional version tag).
    *
+   * <p>The default implementation uses the resource name (filename) as the resource ID. Subclasses
+   * can override this method to parse a structured resource ID from the resource content.
+   *
    * @param resource the raw deployment resource
    * @return either the parsed {@link ResourceId}, or a {@link Failure} if the resource is invalid
    */
-  protected abstract Either<Failure, ResourceId> parseResourceId(DeploymentResource resource);
+  protected Either<Failure, ResourceId> parseResourceId(final DeploymentResource resource) {
+    return Either.right(ResourceId.of(resource.getResourceName()));
+  }
 
   @Override
   public final Either<Failure, Void> createMetadata(
@@ -62,17 +69,14 @@ abstract class AbstractResourceTransformer implements DeploymentResourceTransfor
       final DeploymentRecord deployment,
       final DeploymentResourceContext context) {
     return parseResourceId(deploymentResource)
-        .flatMap(
-            resourceId ->
-                checkForDuplicateResourceId(resourceId.id(), deploymentResource, deployment)
-                    .map(
-                        noDuplicates -> {
-                          final ResourceMetadataRecord resourceMetadataRecord =
-                              deployment.resourceMetadata().add();
-                          appendMetadataToResourceRecord(
-                              resourceMetadataRecord, resourceId, deploymentResource, deployment);
-                          return null;
-                        }));
+        .map(
+            resourceId -> {
+              final ResourceMetadataRecord resourceMetadataRecord =
+                  deployment.resourceMetadata().add();
+              appendMetadataToResourceRecord(
+                  resourceMetadataRecord, resourceId, deploymentResource, deployment);
+              return null;
+            });
   }
 
   @Override
@@ -155,39 +159,20 @@ abstract class AbstractResourceTransformer implements DeploymentResourceTransfor
                     .setDeploymentKey(deploymentRecord.getDeploymentKey()));
   }
 
-  private Either<Failure, ?> checkForDuplicateResourceId(
-      final String resourceId,
-      final DeploymentResource resource,
-      final DeploymentRecord deployment) {
-    return deployment.getResourceMetadata().stream()
-        .filter(metadata -> metadata.getResourceId().equals(resourceId))
-        .findFirst()
-        .map(
-            dupeResource -> {
-              final var failureMessage =
-                  String.format(
-                      "Expected the resource ids to be unique within a deployment"
-                          + " but found a duplicated id '%s' in the resources '%s' and '%s'.",
-                      resourceId, dupeResource.getResourceName(), resource.getResourceName());
-              return Either.<Failure, Void>left(new Failure(failureMessage));
-            })
-        .orElse(Either.right(null));
-  }
-
   /**
    * Holds the parsed identity of a deployment resource: its unique ID and an optional version tag.
    *
    * @param id the resource identifier (must not be null or blank)
    * @param versionTag an optional version tag
    */
-  record ResourceId(String id, java.util.Optional<String> versionTag) {
+  record ResourceId(String id, Optional<String> versionTag) {
 
     static ResourceId of(final String id) {
-      return new ResourceId(id, java.util.Optional.empty());
+      return new ResourceId(id, Optional.empty());
     }
 
     static ResourceId of(final String id, final String versionTag) {
-      return new ResourceId(id, java.util.Optional.ofNullable(versionTag));
+      return new ResourceId(id, Optional.ofNullable(versionTag));
     }
   }
 }
