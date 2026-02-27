@@ -32,7 +32,7 @@ class PathRewritingRequestWrapperTest {
     void returnsRewrittenURI() {
       // given — no forward attribute set (normal REQUEST dispatch)
       final HttpServletRequest original = mock(HttpServletRequest.class);
-      final PathRewritingRequestWrapper wrapper =
+      final HttpServletRequest wrapper =
           new PathRewritingRequestWrapper(original, "/api/some-endpoint");
 
       // when / then
@@ -47,7 +47,7 @@ class PathRewritingRequestWrapperTest {
       when(original.getServerName()).thenReturn("example.com");
       when(original.getServerPort()).thenReturn(443);
 
-      final PathRewritingRequestWrapper wrapper =
+      final HttpServletRequest wrapper =
           new PathRewritingRequestWrapper(original, "/api/some-endpoint");
 
       // when / then
@@ -61,8 +61,7 @@ class PathRewritingRequestWrapperTest {
       final HttpServletRequest original = mock(HttpServletRequest.class);
       when(original.getServletPath()).thenReturn("/original/servlet/path");
 
-      final PathRewritingRequestWrapper wrapper =
-          new PathRewritingRequestWrapper(original, "/rewritten");
+      final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/rewritten");
 
       // when / then — getServletPath must NOT be overridden
       assertThat(wrapper.getServletPath()).isEqualTo("/original/servlet/path");
@@ -123,7 +122,7 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/index.html")).thenReturn(expectedDispatcher);
 
-      final PathRewritingRequestWrapper wrapper = new PathRewritingRequestWrapper(original, "/");
+      final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/");
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("index.html");
@@ -140,8 +139,7 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/api/resource.html")).thenReturn(expectedDispatcher);
 
-      final PathRewritingRequestWrapper wrapper =
-          new PathRewritingRequestWrapper(original, "/api/endpoint");
+      final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/api/endpoint");
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("resource.html");
@@ -158,7 +156,7 @@ class PathRewritingRequestWrapperTest {
       final RequestDispatcher expectedDispatcher = mock(RequestDispatcher.class);
       when(original.getRequestDispatcher("/absolute/path")).thenReturn(expectedDispatcher);
 
-      final PathRewritingRequestWrapper wrapper = new PathRewritingRequestWrapper(original, "/");
+      final HttpServletRequest wrapper = new PathRewritingRequestWrapper(original, "/");
 
       // when
       final RequestDispatcher result = wrapper.getRequestDispatcher("/absolute/path");
