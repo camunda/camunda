@@ -26,6 +26,8 @@ import io.camunda.client.api.statistics.response.IncidentProcessInstanceStatisti
 import io.camunda.client.api.statistics.response.JobStatusMetric;
 import io.camunda.client.api.statistics.response.JobTypeStatistics;
 import io.camunda.client.api.statistics.response.JobTypeStatisticsItem;
+import io.camunda.client.api.statistics.response.JobWorkerStatistics;
+import io.camunda.client.api.statistics.response.JobWorkerStatisticsItem;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionInstanceVersionStatistics;
 import io.camunda.client.api.statistics.response.ProcessDefinitionMessageSubscriptionStatistics;
@@ -38,6 +40,7 @@ import io.camunda.client.impl.util.ParseUtil;
 import io.camunda.client.protocol.rest.GlobalJobStatisticsQueryResult;
 import io.camunda.client.protocol.rest.IncidentProcessInstanceStatisticsByErrorQueryResult;
 import io.camunda.client.protocol.rest.JobTypeStatisticsQueryResult;
+import io.camunda.client.protocol.rest.JobWorkerStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionElementStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceStatisticsQueryResult;
 import io.camunda.client.protocol.rest.ProcessDefinitionInstanceVersionStatisticsQueryResult;
@@ -203,5 +206,23 @@ public class StatisticsResponseMapper {
     final OffsetDateTime lastUpdatedAt =
         ParseUtil.parseOffsetDateTimeOrNull(metric.getLastUpdatedAt());
     return new JobStatusMetricImpl(ofNullable(metric.getCount()).orElse(0L), lastUpdatedAt);
+  }
+
+  public static JobWorkerStatistics toJobWorkerStatisticsResponse(
+      final JobWorkerStatisticsQueryResult response) {
+    final SearchResponsePage page = toSearchResponsePage(response.getPage());
+    final List<JobWorkerStatisticsItem> items =
+        toSearchResponseInstances(
+            response.getItems(), StatisticsResponseMapper::toJobWorkerStatisticsItem);
+    return new JobWorkerStatisticsImpl(items, page);
+  }
+
+  private static JobWorkerStatisticsItem toJobWorkerStatisticsItem(
+      final io.camunda.client.protocol.rest.JobWorkerStatisticsItem item) {
+    return new JobWorkerStatisticsItemImpl(
+        item.getWorker(),
+        toJobStatusMetric(item.getCreated()),
+        toJobStatusMetric(item.getCompleted()),
+        toJobStatusMetric(item.getFailed()));
   }
 }

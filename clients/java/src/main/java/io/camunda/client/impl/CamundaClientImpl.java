@@ -192,6 +192,7 @@ import io.camunda.client.api.statistics.request.GlobalJobStatisticsRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequest;
 import io.camunda.client.api.statistics.request.IncidentProcessInstanceStatisticsByErrorRequest;
 import io.camunda.client.api.statistics.request.JobTypeStatisticsRequest;
+import io.camunda.client.api.statistics.request.JobWorkerStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionElementStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceStatisticsRequest;
 import io.camunda.client.api.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequest;
@@ -366,6 +367,7 @@ import io.camunda.client.impl.statistics.request.GlobalJobStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByDefinitionRequestImpl;
 import io.camunda.client.impl.statistics.request.IncidentProcessInstanceStatisticsByErrorRequestImpl;
 import io.camunda.client.impl.statistics.request.JobTypeStatisticsRequestImpl;
+import io.camunda.client.impl.statistics.request.JobWorkerStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionElementStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceStatisticsRequestImpl;
 import io.camunda.client.impl.statistics.request.ProcessDefinitionInstanceVersionStatisticsRequestImpl;
@@ -941,6 +943,13 @@ public final class CamundaClientImpl implements CamundaClient {
   public JobTypeStatisticsRequest newJobTypeStatisticsRequest(
       final OffsetDateTime from, final OffsetDateTime to) {
     return new JobTypeStatisticsRequestImpl(httpClient, config.getJsonMapper(), from, to);
+  }
+
+  @Override
+  public JobWorkerStatisticsRequest newJobWorkerStatisticsRequest(
+      final OffsetDateTime from, final OffsetDateTime to, final String jobType) {
+    return new JobWorkerStatisticsRequestImpl(
+        httpClient, config.getJsonMapper(), from, to, jobType);
   }
 
   @Override
