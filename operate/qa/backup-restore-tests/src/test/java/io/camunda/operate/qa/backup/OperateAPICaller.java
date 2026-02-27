@@ -20,6 +20,7 @@ import io.camunda.webapps.backup.TakeBackupResponseDto;
 import io.camunda.webapps.schema.entities.listview.ProcessInstanceState;
 import io.camunda.webapps.schema.entities.operation.OperationType;
 import java.net.URI;
+import java.util.List;
 import java.util.Map;
 import java.util.function.BiFunction;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,9 +61,16 @@ public class OperateAPICaller {
   }
 
   public String[] getSequenceFlows(final String processInstanceId) {
-    return restTemplate.getForObject(
-        restTemplate.getURL("/v1/process-instances/" + processInstanceId + "/sequence-flows"),
-        String[].class);
+    final ProcessInstanceSequenceFlowsQueryResult response =
+        restTemplate.getForObject(
+            restTemplate.getURL("/v2/process-instances/" + processInstanceId + "/sequence-flows"),
+            ProcessInstanceSequenceFlowsQueryResult.class);
+    if (response == null || response.getItems() == null) {
+      return new String[0];
+    }
+    return response.getItems().stream()
+        .map(ProcessInstanceSequenceFlowResult::getSequenceFlowId)
+        .toArray(String[]::new);
   }
 
   public TakeBackupResponseDto backup(final Long backupId) {
@@ -117,5 +125,29 @@ public class OperateAPICaller {
                         .setBpmnProcessId(processInstance.getBpmnProcessId()))
             .toList());
     return listViewResponse;
+  }
+
+  private static final class ProcessInstanceSequenceFlowsQueryResult {
+    private List<ProcessInstanceSequenceFlowResult> items;
+
+    public List<ProcessInstanceSequenceFlowResult> getItems() {
+      return items;
+    }
+
+    public void setItems(final List<ProcessInstanceSequenceFlowResult> items) {
+      this.items = items;
+    }
+  }
+
+  private static final class ProcessInstanceSequenceFlowResult {
+    private String sequenceFlowId;
+
+    public String getSequenceFlowId() {
+      return sequenceFlowId;
+    }
+
+    public void setSequenceFlowId(final String sequenceFlowId) {
+      this.sequenceFlowId = sequenceFlowId;
+    }
   }
 }
