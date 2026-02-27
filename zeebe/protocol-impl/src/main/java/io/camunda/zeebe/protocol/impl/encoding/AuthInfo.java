@@ -45,6 +45,7 @@ public class AuthInfo extends UnpackedObject {
     final var auth = new AuthInfo();
     auth.formatProp.setValue(AuthDataFormat.UNKNOWN);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
     return auth;
   }
 
@@ -66,12 +67,14 @@ public class AuthInfo extends UnpackedObject {
     auth.formatProp.setValue(AuthDataFormat.JWT);
     auth.authDataProp.setValue(token);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
     return auth;
   }
 
   public static AuthInfo preAuthorized() {
     final var auth = new AuthInfo();
     auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
+    auth.cachedDecodedMap = Map.of();
     return auth;
   }
 
@@ -79,6 +82,7 @@ public class AuthInfo extends UnpackedObject {
     final var auth = new AuthInfo();
     auth.formatProp.setValue(AuthDataFormat.PRE_AUTHORIZED);
     auth.claimsProp.setValue(new UnsafeBuffer(MsgPackConverter.convertToMsgPack(claims)));
+    auth.cachedDecodedMap = Collections.unmodifiableMap(claims);
     return auth;
   }
 
