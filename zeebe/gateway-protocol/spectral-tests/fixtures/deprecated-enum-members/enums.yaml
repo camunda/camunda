@@ -1,0 +1,467 @@
+# Domain file for deprecated-enum-members tests.
+# Contains valid and invalid enum schemas with x-deprecated-enum-members.
+
+paths:
+  # ── Valid cases ──────────────────────────────────────────────
+
+  /valid-no-extension/{id}:
+    get:
+      operationId: getValidNoExtension
+      summary: Enum without extension (valid, extension is optional)
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidNoExtensionResult'
+
+  /valid-with-extension/{id}:
+    get:
+      operationId: getValidWithExtension
+      summary: Enum with valid single deprecated member
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidWithExtensionResult'
+
+  /valid-multiple-deprecated/{id}:
+    get:
+      operationId: getValidMultipleDeprecated
+      summary: Enum with valid multiple deprecated members
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidMultipleDeprecatedResult'
+
+  # ── Invalid cases ───────────────────────────────────────────
+
+  /invalid-not-array/{id}:
+    get:
+      operationId: getInvalidNotArray
+      summary: Extension is not an array
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNotArrayResult'
+
+  /invalid-empty-array/{id}:
+    get:
+      operationId: getInvalidEmptyArray
+      summary: Extension is an empty array
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidEmptyArrayResult'
+
+  /invalid-missing-name/{id}:
+    get:
+      operationId: getInvalidMissingName
+      summary: Entry without name
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidMissingNameResult'
+
+  /invalid-missing-version/{id}:
+    get:
+      operationId: getInvalidMissingVersion
+      summary: Entry without deprecatedInVersion
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidMissingVersionResult'
+
+  /invalid-bad-semver/{id}:
+    get:
+      operationId: getInvalidBadSemver
+      summary: deprecatedInVersion is not valid semver
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidBadSemverResult'
+
+  /invalid-name-not-in-enum/{id}:
+    get:
+      operationId: getInvalidNameNotInEnum
+      summary: Deprecated name does not exist in enum
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNameNotInEnumResult'
+
+  /invalid-duplicate-name/{id}:
+    get:
+      operationId: getInvalidDuplicateName
+      summary: Duplicate name entries
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidDuplicateNameResult'
+
+  /invalid-extra-keys/{id}:
+    get:
+      operationId: getInvalidExtraKeys
+      summary: Entry with unexpected extra keys
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidExtraKeysResult'
+
+  /invalid-no-enum/{id}:
+    get:
+      operationId: getInvalidNoEnum
+      summary: Extension present but enum missing
+      tags: [Test]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InvalidNoEnumResult'
+
+components:
+  schemas:
+    # ── Valid schemas ────────────────────────────────────────
+
+    ValidNoExtensionEnum:
+      description: A plain enum without x-deprecated-enum-members.
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+
+    ValidNoExtensionResult:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          description: The status value.
+          $ref: '#/components/schemas/ValidNoExtensionEnum'
+
+    ValidWithExtensionEnum:
+      description: An enum with a properly deprecated member.
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - LEGACY_MODE
+      x-deprecated-enum-members:
+        - name: LEGACY_MODE
+          deprecatedInVersion: "8.9.0"
+
+    ValidWithExtensionResult:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          description: The status value.
+          $ref: '#/components/schemas/ValidWithExtensionEnum'
+
+    ValidMultipleDeprecatedEnum:
+      description: An enum with multiple deprecated members.
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - OLD_FORMAT
+        - LEGACY_MODE
+      x-deprecated-enum-members:
+        - name: OLD_FORMAT
+          deprecatedInVersion: "8.9.0"
+        - name: LEGACY_MODE
+          deprecatedInVersion: "8.10.0"
+
+    ValidMultipleDeprecatedResult:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          description: The status value.
+          $ref: '#/components/schemas/ValidMultipleDeprecatedEnum'
+
+    # ── Invalid schemas ──────────────────────────────────────
+
+    InvalidNotArrayEnum:
+      description: x-deprecated-enum-members is not an array.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        name: A
+        deprecatedInVersion: "8.9.0"
+
+    InvalidNotArrayResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidNotArrayEnum'
+
+    InvalidEmptyArrayEnum:
+      description: x-deprecated-enum-members is empty.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members: []
+
+    InvalidEmptyArrayResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidEmptyArrayEnum'
+
+    InvalidMissingNameEnum:
+      description: Entry is missing the name field.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - deprecatedInVersion: "8.9.0"
+
+    InvalidMissingNameResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidMissingNameEnum'
+
+    InvalidMissingVersionEnum:
+      description: Entry is missing deprecatedInVersion.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - name: A
+
+    InvalidMissingVersionResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidMissingVersionEnum'
+
+    InvalidBadSemverEnum:
+      description: deprecatedInVersion is not valid semver.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - name: A
+          deprecatedInVersion: "8.9"
+
+    InvalidBadSemverResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidBadSemverEnum'
+
+    InvalidNameNotInEnumEnum:
+      description: Deprecated name does not exist in enum.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - name: NONEXISTENT
+          deprecatedInVersion: "8.9.0"
+
+    InvalidNameNotInEnumResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidNameNotInEnumEnum'
+
+    InvalidDuplicateNameEnum:
+      description: Duplicate name entries.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - name: A
+          deprecatedInVersion: "8.9.0"
+        - name: A
+          deprecatedInVersion: "8.10.0"
+
+    InvalidDuplicateNameResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidDuplicateNameEnum'
+
+    InvalidExtraKeysEnum:
+      description: Entry with unexpected extra keys.
+      type: string
+      enum:
+        - A
+        - B
+      x-deprecated-enum-members:
+        - name: A
+          deprecatedInVersion: "8.9.0"
+          reason: "no longer used"
+
+    InvalidExtraKeysResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidExtraKeysEnum'
+
+    InvalidNoEnumEnum:
+      description: Extension present but no enum property.
+      type: string
+      x-deprecated-enum-members:
+        - name: SOMETHING
+          deprecatedInVersion: "8.9.0"
+
+    InvalidNoEnumResult:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          description: The value.
+          $ref: '#/components/schemas/InvalidNoEnumEnum'

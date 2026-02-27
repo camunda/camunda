@@ -12,7 +12,19 @@ const FIXTURES_DIR = path.join(__dirname, 'fixtures');
  * Returns the parsed JSON results array.
  */
 function lintFixture(fixtureName) {
-  const specFile = path.join(FIXTURES_DIR, fixtureName, 'rest-api.yaml');
+  return lintFixtureFile(fixtureName, 'rest-api.yaml');
+}
+
+/**
+ * Runs Spectral lint on a specific file within a fixture directory using the
+ * production ruleset. Mirrors the CI *file-level pass* that lints each domain
+ * YAML independently (needed for rules whose `given` targets
+ * `$.components.schemas[*]` which only matches when linting the file that
+ * defines the schemas).
+ * Returns the parsed JSON results array.
+ */
+function lintFixtureFile(fixtureName, fileName) {
+  const specFile = path.join(FIXTURES_DIR, fixtureName, fileName);
   const cmd = `spectral lint "${specFile}" --ruleset "${RULESET_FILE}" --format json`;
 
   try {
@@ -49,4 +61,4 @@ function filterByPathSegment(violations, segment) {
   );
 }
 
-module.exports = { lintFixture, filterByRule, filterByPathSegment };
+module.exports = { lintFixture, lintFixtureFile, filterByRule, filterByPathSegment };
