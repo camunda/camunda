@@ -79,7 +79,7 @@ const createModification = ({
         operation: 'EDIT_VARIABLE',
         id: name,
         scopeId,
-        flowNodeName: selectedElementName,
+        elementName: selectedElementName,
         name,
         oldValue,
         newValue,

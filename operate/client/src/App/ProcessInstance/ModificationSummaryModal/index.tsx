@@ -129,13 +129,13 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
         onRequestSubmit={() => {
           tracking.track({
             eventName: 'apply-modifications',
-            addToken: modificationsStore.flowNodeModifications.filter(
+            addToken: modificationsStore.elementModifications.filter(
               ({operation}) => operation === 'ADD_TOKEN',
             ).length,
-            cancelToken: modificationsStore.flowNodeModifications.filter(
+            cancelToken: modificationsStore.elementModifications.filter(
               ({operation}) => operation === 'CANCEL_TOKEN',
             ).length,
-            moveToken: modificationsStore.flowNodeModifications.filter(
+            moveToken: modificationsStore.elementModifications.filter(
               ({operation}) => operation === 'MOVE_TOKEN',
             ).length,
             addVariable: modificationsStore.variableModifications.filter(
@@ -186,7 +186,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
         {hasOrphanedVariables && <OrphanedVariablesError />}
 
         <Title>Element Modifications</Title>
-        {modificationsStore.flowNodeModifications.length === 0 ? (
+        {modificationsStore.elementModifications.length === 0 ? (
           <EmptyMessage>No planned element modifications</EmptyMessage>
         ) : (
           <DataTable
@@ -201,7 +201,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
               },
               {
                 header: 'Element',
-                key: 'flowNode',
+                key: 'element',
                 width: '25%',
               },
               {
@@ -220,31 +220,31 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                 width: '5%',
               },
             ]}
-            rows={modificationsStore.flowNodeModifications.map(
+            rows={modificationsStore.elementModifications.map(
               (modification, index) => {
                 const flowNodeId =
                   modification.operation === 'MOVE_TOKEN'
-                    ? modification.targetFlowNode.id
-                    : modification.flowNode.id;
+                    ? modification.targetElement.id
+                    : modification.element.id;
                 return {
                   id: index.toString(),
                   emptyCell: <EmptyCell />,
                   operation: OPERATION_DISPLAY_NAME[modification.operation],
-                  flowNode: (
+                  element: (
                     <TruncatedValueContainer>
                       {modification.operation === 'MOVE_TOKEN' ? (
                         <>
                           <TruncatedValue $hasMultipleTruncatedValue>
-                            {modification.flowNode.name}
+                            {modification.element.name}
                           </TruncatedValue>
                           &nbsp;→&nbsp;
                           <TruncatedValue $hasMultipleTruncatedValue>
-                            {modification.targetFlowNode.name}
+                            {modification.targetElement.name}
                           </TruncatedValue>
                         </>
                       ) : (
                         <TruncatedValue>
-                          {modification.flowNode.name}
+                          {modification.element.name}
                         </TruncatedValue>
                       )}
                     </TruncatedValueContainer>
@@ -252,9 +252,9 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                   instanceKey: (
                     <TruncatedValueContainer>
                       {modification.operation !== 'ADD_TOKEN' &&
-                      modification.flowNodeInstanceKey !== undefined ? (
+                      modification.elementInstanceKey !== undefined ? (
                         <TruncatedValue>
-                          {modification.flowNodeInstanceKey}
+                          {modification.elementInstanceKey}
                         </TruncatedValue>
                       ) : (
                         <>--</>
@@ -277,7 +277,7 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
                       aria-label="Delete element modification"
                       size="sm"
                       onClick={() => {
-                        modificationsStore.removeFlowNodeModification(
+                        modificationsStore.removeElementModification(
                           modification,
                         );
                       }}
@@ -352,11 +352,11 @@ const ModificationSummaryModal: React.FC<StateProps> = observer(
               },
             ]}
             rows={modificationsStore.variableModifications.map(
-              ({operation, flowNodeName, name, newValue, scopeId, id}) => {
+              ({operation, elementName, name, newValue, scopeId, id}) => {
                 return {
                   id: `${scopeId}/${id}`,
                   operation: OPERATION_DISPLAY_NAME[operation],
-                  scope: <TruncatedValue>{flowNodeName}</TruncatedValue>,
+                  scope: <TruncatedValue>{elementName}</TruncatedValue>,
                   nameValue: (
                     <VariableModification name={name} newValue={newValue} />
                   ),

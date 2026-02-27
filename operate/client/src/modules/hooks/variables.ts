@@ -40,10 +40,10 @@ const useVariableScopeKey = (fallback?: string | null) => {
 
   // In modification mode, if selecting from diagram, check for pending ADD_TOKEN
   if (modificationsStore.state.status === 'enabled' && selectedElementId) {
-    const addTokenModification = modificationsStore.flowNodeModifications.find(
+    const addTokenModification = modificationsStore.elementModifications.find(
       (modification) =>
         modification.operation === TOKEN_OPERATIONS.ADD_TOKEN &&
-        modification.flowNode.id === selectedElementId,
+        modification.element.id === selectedElementId,
     );
 
     if (addTokenModification && 'scopeId' in addTokenModification) {

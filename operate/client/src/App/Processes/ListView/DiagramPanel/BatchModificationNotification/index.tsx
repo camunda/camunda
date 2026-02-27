@@ -16,13 +16,13 @@ import {getElementName} from 'modules/utils/elements';
 import {getSelectedProcessInstancesFilter} from 'modules/queries/processInstancesStatistics/filters';
 
 type Props = {
-  sourceFlowNodeId?: string;
-  targetFlowNodeId?: string;
+  sourceElementId?: string;
+  targetElementId?: string;
   onUndoClick?: () => void;
 };
 
 const BatchModificationNotification: React.FC<Props> = observer(
-  ({sourceFlowNodeId, targetFlowNodeId, onUndoClick}) => {
+  ({sourceElementId, targetElementId, onUndoClick}) => {
     const processDefinitionKey = useProcessDefinitionKeyContext();
 
     const {data: processDefinitionData} = useListViewXml({
@@ -37,17 +37,17 @@ const BatchModificationNotification: React.FC<Props> = observer(
         },
       },
       processDefinitionKey,
-      sourceFlowNodeId,
+      sourceElementId,
     );
 
     const sourceFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      elementId: sourceFlowNodeId,
+      elementId: sourceElementId,
     });
 
     const targetFlowNodeName = getElementName({
       businessObjects: processDefinitionData?.diagramModel.elementsById,
-      elementId: targetFlowNodeId,
+      elementId: targetElementId,
     });
 
     return (
@@ -66,7 +66,7 @@ const BatchModificationNotification: React.FC<Props> = observer(
                 )} from “${sourceFlowNodeName}” to “${targetFlowNodeName}”. Press “Review Modification” button to confirm.`
           }
         />
-        {targetFlowNodeId && onUndoClick && (
+        {targetElementId && onUndoClick && (
           <Button kind="ghost" size="sm" onClick={onUndoClick}>
             Undo
           </Button>

@@ -47,7 +47,7 @@ const startEventModification: ElementModification = {
   payload: {
     operation: 'ADD_TOKEN',
     scopeId: generateUniqueID(),
-    flowNode: {id: 'startEvent_1', name: 'Start Event 1'},
+    element: {id: 'startEvent_1', name: 'Start Event 1'},
     affectedTokenCount: 1,
     visibleAffectedTokenCount: 1,
     parentScopeIds: {},
@@ -58,8 +58,8 @@ const endEvent1Modification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'MOVE_TOKEN',
-    targetFlowNode: {id: 'endEvent_1', name: 'End Event 1'},
-    flowNode: {id: 'startEvent_1', name: 'Start Event 1'},
+    targetElement: {id: 'endEvent_1', name: 'End Event 1'},
+    element: {id: 'startEvent_1', name: 'Start Event 1'},
     affectedTokenCount: 2,
     visibleAffectedTokenCount: 2,
     scopeIds: [generateUniqueID(), generateUniqueID()],
@@ -71,7 +71,7 @@ const endEvent2Modification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'CANCEL_TOKEN',
-    flowNode: {id: 'endEvent_2', name: 'End Event 2'},
+    element: {id: 'endEvent_2', name: 'End Event 2'},
     affectedTokenCount: 1,
     visibleAffectedTokenCount: 1,
   },
@@ -81,8 +81,8 @@ const subprocessModification: ElementModification = {
   type: 'token',
   payload: {
     operation: 'MOVE_TOKEN',
-    targetFlowNode: {id: 'endEvent_1', name: 'End Event 1'},
-    flowNode: {id: 'subprocess_1', name: 'Sub Process 1'},
+    targetElement: {id: 'endEvent_1', name: 'End Event 1'},
+    element: {id: 'subprocess_1', name: 'Sub Process 1'},
     affectedTokenCount: 5,
     visibleAffectedTokenCount: 5,
     scopeIds: [generateUniqueID()],
@@ -145,13 +145,11 @@ describe('stores/instanceHistoryModification', () => {
       },
     ]);
 
-    modificationsStore.removeFlowNodeModification(
+    modificationsStore.removeElementModification(
       startEventModification.payload,
     );
 
-    modificationsStore.removeFlowNodeModification(
-      endEvent2Modification.payload,
-    );
+    modificationsStore.removeElementModification(endEvent2Modification.payload);
 
     expect(
       getVisibleChildPlaceholders('id', 'process_1', businessObjects),

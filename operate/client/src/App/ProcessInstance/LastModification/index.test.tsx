@@ -44,7 +44,7 @@ describe('LastModification', () => {
         payload: {
           operation: 'ADD_TOKEN',
           scopeId: generateUniqueID(),
-          flowNode: {id: 'service-task-1', name: 'service-task-1'},
+          element: {id: 'service-task-1', name: 'service-task-1'},
           affectedTokenCount: 1,
           visibleAffectedTokenCount: 1,
           parentScopeIds: {},
@@ -70,8 +70,8 @@ describe('LastModification', () => {
         type: 'token',
         payload: {
           operation: 'MOVE_TOKEN',
-          flowNode: {id: 'service-task-3', name: 'service-task-3'},
-          targetFlowNode: {id: 'service-task-4', name: 'service-task-4'},
+          element: {id: 'service-task-3', name: 'service-task-3'},
+          targetElement: {id: 'service-task-4', name: 'service-task-4'},
           affectedTokenCount: 2,
           visibleAffectedTokenCount: 2,
           scopeIds: [generateUniqueID(), generateUniqueID()],
@@ -88,7 +88,7 @@ describe('LastModification', () => {
       createAddVariableModification({
         id: '1',
         scopeId: '5',
-        flowNodeName: 'service-task-5',
+        elementName: 'service-task-5',
         name: 'variableName1',
         value: 'variableValue1',
       });
@@ -104,7 +104,7 @@ describe('LastModification', () => {
         oldValue: 'variableValue2',
         newValue: 'editedVariableValue2',
         scopeId: '5',
-        flowNodeName: 'flowNode6',
+        elementName: 'flowNode6',
       });
     });
 

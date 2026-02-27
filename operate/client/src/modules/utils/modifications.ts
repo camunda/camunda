@@ -15,18 +15,18 @@ import {
 import {tracking} from 'modules/tracking';
 import {generateUniqueID} from './generateUniqueID';
 import {TOKEN_OPERATIONS} from 'modules/constants';
-import {getFlowNodeParents} from './processInstanceDetailsDiagram';
+import {getElementParents} from './processInstanceDetailsDiagram';
 
 const cancelAllTokens = (
-  flowNodeId: string,
-  totalRunningInstancesForFlowNode: number,
-  totalRunningInstancesVisibleForFlowNode: number,
+  elementId: string,
+  totalRunningInstancesForElement: number,
+  totalRunningInstancesVisibleForElement: number,
   businessObjects: BusinessObjects,
 ) => {
   modificationsStore.addCancelModification({
-    flowNodeId,
-    affectedTokenCount: totalRunningInstancesForFlowNode,
-    visibleAffectedTokenCount: totalRunningInstancesVisibleForFlowNode,
+    elementId,
+    affectedTokenCount: totalRunningInstancesForElement,
+    visibleAffectedTokenCount: totalRunningInstancesVisibleForElement,
     businessObjects,
   });
 };
@@ -36,7 +36,7 @@ const finishMovingToken = (
   visibleAffectedTokenCount: number,
   businessObjects: BusinessObjects,
   bpmnProcessId?: string,
-  targetFlowNodeId?: string,
+  targetElementId?: string,
   ancestorScopeType?: AncestorScopeType,
 ) => {
   tracking.track({
@@ -46,27 +46,27 @@ const finishMovingToken = (
   let newScopeCount = 1;
 
   const {
-    sourceFlowNodeIdForMoveOperation,
-    sourceFlowNodeInstanceKeyForMoveOperation,
+    sourceElementIdForMoveOperation,
+    sourceElementInstanceKeyForMoveOperation,
   } = modificationsStore.state;
 
   if (
-    targetFlowNodeId !== undefined &&
-    sourceFlowNodeIdForMoveOperation !== null
+    targetElementId !== undefined &&
+    sourceElementIdForMoveOperation !== null
   ) {
-    if (sourceFlowNodeInstanceKeyForMoveOperation === null) {
+    if (sourceElementInstanceKeyForMoveOperation === null) {
       newScopeCount = isMultiInstance(
-        businessObjects[sourceFlowNodeIdForMoveOperation],
+        businessObjects[sourceElementIdForMoveOperation],
       )
         ? 1
         : affectedTokenCount;
     }
 
     modificationsStore.addMoveModification({
-      sourceFlowNodeId: sourceFlowNodeIdForMoveOperation,
-      sourceFlowNodeInstanceKey:
-        sourceFlowNodeInstanceKeyForMoveOperation ?? undefined,
-      targetFlowNodeId,
+      sourceElementId: sourceElementIdForMoveOperation,
+      sourceElementInstanceKey:
+        sourceElementInstanceKeyForMoveOperation ?? undefined,
+      targetElementId: targetElementId,
       affectedTokenCount,
       visibleAffectedTokenCount,
       newScopeCount,
@@ -77,50 +77,50 @@ const finishMovingToken = (
   }
 
   modificationsStore.setStatus('enabled');
-  modificationsStore.setSourceFlowNodeIdForMoveOperation(null);
-  modificationsStore.setSourceFlowNodeInstanceKeyForMoveOperation(null);
+  modificationsStore.setSourceElementIdForMoveOperation(null);
+  modificationsStore.setSourceElementInstanceKeyForMoveOperation(null);
 };
 
 const generateParentScopeIds = (
   businessObjects: BusinessObjects,
-  targetFlowNodeId: string,
+  targetElementId: string,
   bpmnProcessId?: string,
-  totalRunningInstancesByFlowNode?: Record<string, number>,
+  totalRunningInstancesByElement?: Record<string, number>,
 ) => {
-  const parentFlowNodeIds = getFlowNodeParents(
+  const parentElementIds = getElementParents(
     businessObjects,
-    targetFlowNodeId,
+    targetElementId,
     bpmnProcessId,
   );
 
-  return parentFlowNodeIds.reduce<{[flowNodeId: string]: string}>(
-    (parentFlowNodeScopes, flowNodeId) => {
+  return parentElementIds.reduce<{[elementId: string]: string}>(
+    (parentElementScopes, elementId) => {
       const hasExistingParentScopeId =
-        modificationsStore.flowNodeModifications.some(
+        modificationsStore.elementModifications.some(
           (modification) =>
             (modification.operation === TOKEN_OPERATIONS.ADD_TOKEN ||
               modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN) &&
-            Object.keys(modification.parentScopeIds).includes(flowNodeId),
-        ) || totalRunningInstancesByFlowNode?.[flowNodeId] === 1;
+            Object.keys(modification.parentScopeIds).includes(elementId),
+        ) || totalRunningInstancesByElement?.[elementId] === 1;
 
       if (!hasExistingParentScopeId) {
-        parentFlowNodeScopes[flowNodeId] = generateUniqueID();
+        parentElementScopes[elementId] = generateUniqueID();
       }
 
-      return parentFlowNodeScopes;
+      return parentElementScopes;
     },
     {},
   );
 };
 
 const hasPendingCancelOrMoveModification = ({
-  flowNodeId,
-  flowNodeInstanceKey,
-  modificationsByFlowNode,
+  elementId,
+  elementInstanceKey,
+  modificationsByElement,
 }: {
-  flowNodeId: string;
-  flowNodeInstanceKey?: string;
-  modificationsByFlowNode?: {
+  elementId: string;
+  elementInstanceKey?: string;
+  modificationsByElement?: {
     [key: string]: {
       newTokens: number;
       cancelledTokens: number;
@@ -130,19 +130,19 @@ const hasPendingCancelOrMoveModification = ({
     };
   };
 }) => {
-  if (flowNodeInstanceKey !== undefined) {
-    return modificationsStore.flowNodeModifications.some(
+  if (elementInstanceKey !== undefined) {
+    return modificationsStore.elementModifications.some(
       (modification) =>
         modification.operation !== TOKEN_OPERATIONS.ADD_TOKEN &&
-        modification.flowNodeInstanceKey === flowNodeInstanceKey,
+        modification.elementInstanceKey === elementInstanceKey,
     );
   }
 
-  return (modificationsByFlowNode?.[flowNodeId]?.cancelledTokens ?? 0) > 0;
+  return (modificationsByElement?.[elementId]?.cancelledTokens ?? 0) > 0;
 };
 
 const hasPendingAddOrMoveModification = () => {
-  return modificationsStore.flowNodeModifications.some(
+  return modificationsStore.elementModifications.some(
     (modification) =>
       modification.operation === TOKEN_OPERATIONS.ADD_TOKEN ||
       modification.operation === TOKEN_OPERATIONS.MOVE_TOKEN,

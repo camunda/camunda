@@ -26,11 +26,11 @@ const ModificationIcons: React.FC<Props> = observer(
 
     const hasCancelModification =
       modificationsByElement[elementId]?.areAllTokensCanceled ||
-      scopeKeyHierarchy.some((flowNodeInstanceKey) =>
+      scopeKeyHierarchy.some((elementInstanceKey) =>
         hasPendingCancelOrMoveModification({
-          flowNodeId: elementId,
-          flowNodeInstanceKey,
-          modificationsByFlowNode: modificationsByElement,
+          elementId,
+          elementInstanceKey,
+          modificationsByElement,
         }),
       );
 

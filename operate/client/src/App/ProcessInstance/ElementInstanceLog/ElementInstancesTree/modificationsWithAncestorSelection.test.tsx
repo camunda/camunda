@@ -527,7 +527,7 @@ describe.todo(
           type: 'token',
           payload: {
             operation: 'ADD_TOKEN',
-            flowNode: {id: 'parent_sub_process', name: 'parent_sub_process'},
+            element: {id: 'parent_sub_process', name: 'parent_sub_process'},
             affectedTokenCount: 1,
             visibleAffectedTokenCount: 1,
             scopeId: generateUniqueID(),
