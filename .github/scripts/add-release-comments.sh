@@ -5,27 +5,24 @@
 
 set -euo pipefail
 
-RELEASES_FILE=$(mktemp)
-trap 'rm -f "$RELEASES_FILE"' EXIT
-
-CUTOFF_DATE=$(gdate -d "-${DAYS_BACK} days" --iso-8601)
+CUTOFF_DATE=$(date -d "-${DAYS_BACK} days" --iso-8601)
 echo "Looking for releases since: $CUTOFF_DATE"
 
-# Fetch releases from GitHub API into a temp file to preserve control characters
-gh api repos/$REPOSITORY/releases \
+# Fetch releases from GitHub API
+RELEASES=$(gh api repos/$REPOSITORY/releases \
   --jq ".[] | select(.published_at > \"$CUTOFF_DATE\") | {tag_name, html_url, published_at, body}" \
-  --paginate > "$RELEASES_FILE"
+  --paginate)
 
-if [ ! -s "$RELEASES_FILE" ]; then
+if [ -z "$RELEASES" ]; then
   echo "No releases found since $CUTOFF_DATE"
   exit 0
 fi
 
 echo "Found releases:"
-jq -r '.tag_name + " - " + .published_at' "$RELEASES_FILE"
+echo "$RELEASES" | jq -r '.tag_name + " - " + .published_at'
 
 # Process each release
-jq -c '.' "$RELEASES_FILE" | while read -r release; do
+echo "$RELEASES" | jq -c '.' | while read -r release; do
   TAG_NAME=$(echo "$release" | jq -r '.tag_name')
   RELEASE_URL=$(echo "$release" | jq -r '.html_url')
   PUBLISHED_AT=$(echo "$release" | jq -r '.published_at')
@@ -75,7 +72,7 @@ jq -c '.' "$RELEASES_FILE" | while read -r release; do
     fi
     
     # Check if release comment already exists
-    COMMENT_EXISTS=$(gh api repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments \
+    COMMENT_EXISTS=$(gh api "repos/$REPOSITORY/issues/$ISSUE_NUMBER/comments?per_page=100" \
       --paginate \
       --jq ".[] | select(.body | contains(\"This has been released in version [$TAG_NAME]\")) | .id" | head -n 1 || true)
     
