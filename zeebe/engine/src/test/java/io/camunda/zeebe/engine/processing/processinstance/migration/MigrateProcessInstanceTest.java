@@ -12,6 +12,7 @@ import static io.camunda.zeebe.protocol.record.Assertions.assertThat;
 
 import io.camunda.zeebe.engine.util.EngineRule;
 import io.camunda.zeebe.model.bpmn.Bpmn;
+import io.camunda.zeebe.model.bpmn.builder.AbstractUserTaskBuilder;
 import io.camunda.zeebe.protocol.impl.record.value.processinstance.ProcessInstanceMigrationMappingInstruction;
 import io.camunda.zeebe.protocol.record.RecordType;
 import io.camunda.zeebe.protocol.record.intent.ProcessInstanceIntent;
@@ -205,5 +206,65 @@ public class MigrateProcessInstanceTest {
             "Expect that process definition path changed to contain new process definition key")
         .hasProcessDefinitionPath(List.of(v2ProcessDefinitionKey))
         .hasCallingElementPath(List.of());
+  }
+
+  @Test
+  public void shouldMigrateWhenBusinessIdAlreadyInUseButUniquenessDisabled() {
+    final String sourceProcessId = helper.getBpmnProcessId() + "_source";
+    final String targetProcessId = helper.getBpmnProcessId() + "_target";
+    final String businessId = "biz-123";
+
+    // given two process definitions with different process ids
+    final var deployment =
+        ENGINE
+            .deployment()
+            .withXmlResource(
+                Bpmn.createExecutableProcess(sourceProcessId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .withXmlResource(
+                Bpmn.createExecutableProcess(targetProcessId)
+                    .startEvent()
+                    .userTask("task", AbstractUserTaskBuilder::zeebeUserTask)
+                    .endEvent()
+                    .done())
+            .deploy();
+    final long targetProcessDefinitionKey =
+        deployment.getValue().getProcessesMetadata().stream()
+            .filter(p -> p.getBpmnProcessId().equals(targetProcessId))
+            .findFirst()
+            .orElseThrow()
+            .getProcessDefinitionKey();
+
+    // and an active process instance with a business id for the target process definition
+    ENGINE.processInstance().ofBpmnProcessId(targetProcessId).withBusinessId(businessId).create();
+
+    // and an active process instance with the same business id for the source process definition
+    final var processInstanceKey =
+        ENGINE
+            .processInstance()
+            .ofBpmnProcessId(sourceProcessId)
+            .withBusinessId(businessId)
+            .withTags("secondInstance")
+            .create();
+
+    // when - try to migrate the source instance to the target process definition
+    final var event =
+        ENGINE
+            .processInstance()
+            .withInstanceKey(processInstanceKey)
+            .migration()
+            .withTargetProcessDefinitionKey(targetProcessDefinitionKey)
+            .addMappingInstruction("task", "task")
+            .migrate();
+
+    // then - migration should succeed and write a migrated event, even though the business id is
+    // not unique across the two process definitions
+    assertThat(event)
+        .hasKey(processInstanceKey)
+        .hasRecordType(RecordType.EVENT)
+        .hasIntent(ProcessInstanceMigrationIntent.MIGRATED);
   }
 }
