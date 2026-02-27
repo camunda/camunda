@@ -10,11 +10,9 @@ package io.camunda.search.schema;
 import static io.camunda.search.schema.SchemaMetadataStore.SCHEMA_VERSION_METADATA_ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.ID;
 import static io.camunda.webapps.schema.descriptors.index.MetadataIndex.VALUE;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
@@ -342,63 +340,6 @@ class SchemaManagerTest {
   }
 
   @Nested
-  class BatchIndexPatternsTest {
-
-    @Test
-    void shouldReturnSingleBatchWhenPatternsWithinLimit() {
-      // given
-      final var patterns = List.of("index-a*", "index-b*", "index-c*");
-
-      // when
-      final var batches = SchemaManager.batchIndexPatterns(patterns);
-
-      // then
-      assertThat(batches).hasSize(1);
-      assertThat(batches.get(0)).isEqualTo("index-a*,index-b*,index-c*");
-    }
-
-    @Test
-    void shouldReturnEmptyListWhenNoPatternsGiven() {
-      // when
-      final var batches = SchemaManager.batchIndexPatterns(List.of());
-
-      // then
-      assertThat(batches).isEmpty();
-    }
-
-    @Test
-    void shouldSplitIntoBatchesWhenPatternsExceedMaxLength() {
-      // given
-      // Create patterns that together exceed the max request length
-      final var longPattern = "a".repeat(2000) + "*";
-      final var patterns = List.of(longPattern, longPattern, longPattern);
-
-      // when
-      final var batches = SchemaManager.batchIndexPatterns(patterns);
-
-      // then
-      assertThat(batches).hasSizeGreaterThan(1);
-      // Each batch must not exceed the configured max length
-      batches.forEach(
-          batch ->
-              assertThat(batch.length())
-                  .isLessThanOrEqualTo(SchemaManager.MAX_INDEX_PATTERN_REQUEST_LENGTH));
-      // All patterns must appear across batches
-      final var allPatterns = batches.stream().flatMap(b -> Stream.of(b.split(","))).toList();
-      assertThat(allPatterns).containsExactlyInAnyOrderElementsOf(patterns);
-    }
-
-    @Test
-    void shouldPutEachOversizedPatternInItsOwnBatch() {
-      // A single pattern longer than the limit should still be included alone
-      final var largePattern = "x".repeat(SchemaManager.MAX_INDEX_PATTERN_REQUEST_LENGTH) + "*";
-      final var batches = SchemaManager.batchIndexPatterns(List.of(largePattern));
-      assertThat(batches).hasSize(1);
-      assertThat(batches.get(0)).isEqualTo(largePattern);
-    }
-  }
-
-  @Nested
   class DeleteArchivedIndicesTest {
 
     @Test
@@ -429,43 +370,6 @@ class SchemaManagerTest {
       // then
       verify(searchEngineClient, never()).deleteIndex(liveIndexName);
       verify(searchEngineClient).deleteIndex(archivedIndexName);
-    }
-
-    @Test
-    void shouldBatchGetMappingsCallsWhenIndexPatternsExceedMaxLength() {
-      // given
-      // Build many template descriptors whose combined index patterns exceed 4096 chars
-      final List<IndexTemplateDescriptor> manyTemplates =
-          Stream.iterate(0, i -> i + 1)
-              .limit(5)
-              .map(
-                  i ->
-                      (IndexTemplateDescriptor)
-                          new TestTemplateDescriptor(
-                              config.connect().getIndexPrefix(),
-                              true,
-                              "a".repeat(1000) + "_template_" + i,
-                              "mappings.json"))
-              .toList();
-
-      schemaManager =
-          new SchemaManager(
-              searchEngineClient,
-              indexDescriptors,
-              manyTemplates,
-              config,
-              mock(IndexSchemaValidator.class),
-              "8.8.0",
-              null);
-
-      when(searchEngineClient.getMappings(anyString(), any())).thenReturn(Map.of());
-
-      // when
-      schemaManager.deleteArchivedIndices();
-
-      // then
-      // Combined pattern length exceeds 4096, so getMappings must be called more than once
-      verify(searchEngineClient, atLeast(2)).getMappings(anyString(), any());
     }
   }
 }
