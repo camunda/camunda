@@ -7,9 +7,11 @@
  */
 package io.camunda.zeebe.broker.transport.adminapi;
 
+import io.atomix.cluster.MemberId;
 import io.atomix.raft.RaftServer.Role;
 import io.atomix.raft.partition.RaftPartition;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.system.configuration.FlowControlCfg;
 import io.camunda.zeebe.broker.transport.AsyncApiRequestHandler;
 import io.camunda.zeebe.broker.transport.ErrorResponseWriter;
@@ -27,16 +29,22 @@ public class AdminApiRequestHandler
   private final AtomixServerTransport transport;
   private final PartitionAdminAccess adminAccess;
   private final RaftPartition raftPartition;
+  private final ClusterConfigurationService clusterConfigurationService;
+  private final int nodeId;
 
   public AdminApiRequestHandler(
       final AtomixServerTransport transport,
       final PartitionAdminAccess adminAccess,
-      final RaftPartition raftPartition) {
+      final RaftPartition raftPartition,
+      final ClusterConfigurationService clusterConfigurationService,
+      final int nodeId) {
     super(ApiRequestReader::new, ApiResponseWriter::new);
     this.transport = transport;
     this.adminAccess = adminAccess;
 
     this.raftPartition = raftPartition;
+    this.clusterConfigurationService = clusterConfigurationService;
+    this.nodeId = nodeId;
   }
 
   @Override
@@ -266,12 +274,50 @@ public class AdminApiRequestHandler
       final ApiResponseWriter responseWriter,
       final int partitionId,
       final ErrorResponseWriter errorWriter) {
-    if (raftPartition.getRole() == Role.LEADER) {
-      raftPartition.stepDownIfNotPrimary();
-    } else {
+    if (raftPartition.getRole() != Role.LEADER) {
       errorWriter.partitionLeaderMismatch(partitionId);
       return Either.left(errorWriter);
     }
+
+    // Fire-and-forget: return success immediately, then process asynchronously
+    actor.run(
+        () -> {
+          final MemberId currentMemberId = MemberId.from(String.valueOf(nodeId));
+          clusterConfigurationService
+              .getLatestClusterConfiguration()
+              .onComplete(
+                  (config, error) -> {
+                    if (error != null) {
+                      LOG.error(
+                          "Failed to retrieve cluster configuration for step-down check on partition {}",
+                          partitionId,
+                          error);
+                      return;
+                    }
+
+                    final var primaryMember = config.getPrimaryMemberForPartition(partitionId);
+                    if (primaryMember.isEmpty()) {
+                      LOG.debug(
+                          "No primary member found for partition {}, skipping step-down",
+                          partitionId);
+                      return;
+                    }
+
+                    if (!primaryMember.get().equals(currentMemberId)) {
+                      LOG.info(
+                          "Node {} is not primary for partition {} (primary is {}), initiating step-down",
+                          currentMemberId,
+                          partitionId,
+                          primaryMember.get());
+                      raftPartition.stepDownForLeaderBalancing();
+                    } else {
+                      LOG.debug(
+                          "Node {} is primary for partition {}, not stepping down",
+                          currentMemberId,
+                          partitionId);
+                    }
+                  });
+        });
 
     return Either.right(responseWriter);
   }
