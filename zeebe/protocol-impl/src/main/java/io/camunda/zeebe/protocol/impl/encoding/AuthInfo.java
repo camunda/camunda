@@ -106,14 +106,6 @@ public class AuthInfo extends UnpackedObject {
     return BufferUtil.bufferAsString(authDataProp.getValue());
   }
 
-  /**
-   * Returns the raw claims from the msgpack document property. Prefer {@link #toDecodedMap()} which
-   * handles both JWT and non-JWT formats and caches the result.
-   */
-  public Map<String, Object> getClaims() {
-    return Collections.unmodifiableMap(MsgPackConverter.convertToMap(claimsProp.getValue()));
-  }
-
   @Override
   public void reset() {
     formatProp.setValue(AuthDataFormat.UNKNOWN);
@@ -135,15 +127,15 @@ public class AuthInfo extends UnpackedObject {
   }
 
   @Override
-  @JsonIgnore
-  public int getLength() {
-    return super.getLength();
-  }
-
-  @Override
   public void wrap(final DirectBuffer buffer, final int offset, final int length) {
     super.wrap(buffer, offset, length);
     cachedDecodedMap = null;
+  }
+
+  @Override
+  @JsonIgnore
+  public int getLength() {
+    return super.getLength();
   }
 
   public DirectBuffer toDirectBuffer() {
@@ -155,6 +147,13 @@ public class AuthInfo extends UnpackedObject {
   }
 
   /**
+   * Returns the stored claims from the msgpack document property. The returned map is unmodifiable.
+   */
+  public Map<String, Object> getClaims() {
+    return Collections.unmodifiableMap(MsgPackConverter.convertToMap(claimsProp.getValue()));
+  }
+
+  /**
    * Returns the decoded claims map, lazily computed and cached on first access. For JWT format,
    * decodes the token. For other formats, deserializes from msgpack. The returned map is
    * unmodifiable.
@@ -162,8 +161,8 @@ public class AuthInfo extends UnpackedObject {
   public Map<String, Object> toDecodedMap() {
     if (cachedDecodedMap == null) {
       if (getFormat() == AuthDataFormat.JWT) {
-        final String token = getAuthData();
-        cachedDecodedMap = Collections.unmodifiableMap(new JwtDecoder(token).decode().getClaims());
+        cachedDecodedMap =
+            Collections.unmodifiableMap(new JwtDecoder(getAuthData()).decode().getClaims());
       } else {
         cachedDecodedMap = getClaims();
       }

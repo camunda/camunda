@@ -22,19 +22,18 @@ public final class EmptyAuthInfo extends AuthInfo {
 
   private static final Map<String, Object> EMPTY_MAP = Map.of();
   private final DirectBuffer cachedBuffer;
+  private final int length;
 
   private EmptyAuthInfo() {
     super();
+    // length must be set before cachedBuffer, because toDirectBuffer() calls getLength()
+    // via virtual dispatch, and our override returns this field
+    length = super.getLength();
     cachedBuffer = super.toDirectBuffer();
   }
 
   public static AuthInfo getInstance() {
     return INSTANCE;
-  }
-
-  @Override
-  public Map<String, Object> getClaims() {
-    return EMPTY_MAP;
   }
 
   @Override
@@ -48,8 +47,18 @@ public final class EmptyAuthInfo extends AuthInfo {
   }
 
   @Override
+  public int getLength() {
+    return length;
+  }
+
+  @Override
   public DirectBuffer toDirectBuffer() {
     return cachedBuffer;
+  }
+
+  @Override
+  public Map<String, Object> getClaims() {
+    return EMPTY_MAP;
   }
 
   @Override
