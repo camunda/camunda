@@ -26,10 +26,12 @@ import org.apache.commons.io.IOUtils;
 public class SearchEngineClientUtils {
 
   /**
-   * Maximum length of a comma-delimited index-pattern string passed in a URL request. Requests
-   * exceeding this limit may be rejected by the search engine.
+   * Conservative maximum length of the comma-delimited index-pattern portion of a URL request. The
+   * full URL also includes the path prefix, query parameters, and other overhead that are not
+   * counted here, so this limit is kept below the 4096-character DB maximum to leave room for those
+   * additional bytes.
    */
-  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 4096;
+  public static final int MAX_INDEX_PATTERN_REQUEST_LENGTH = 3500;
 
   private final ObjectMapper objectMapper;
 
