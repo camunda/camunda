@@ -17,7 +17,6 @@ import static io.camunda.webapps.schema.descriptors.template.IncidentTemplate.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.opensearch.client.opensearch._types.SortOrder.Asc;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappEnabled;
 import io.camunda.operate.conditions.OpensearchCondition;
 import io.camunda.operate.exceptions.OperateRuntimeException;
 import io.camunda.operate.store.NotFoundException;
@@ -30,6 +29,7 @@ import io.camunda.operate.webapp.rest.dto.VariableRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewProcessInstanceDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewRequestDto;
 import io.camunda.operate.webapp.rest.dto.listview.ListViewResponseDto;
+import io.camunda.spring.utils.ConditionalOnWebappEnabled;
 import io.camunda.webapps.schema.descriptors.index.DecisionIndex;
 import io.camunda.webapps.schema.descriptors.template.DecisionInstanceTemplate;
 import io.camunda.webapps.schema.descriptors.template.FlowNodeInstanceTemplate;

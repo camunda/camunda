@@ -7,7 +7,7 @@
  */
 package io.camunda.identity.webapp.controllers;
 
-import io.camunda.configuration.conditions.ConditionalOnWebappUiEnabled;
+import io.camunda.spring.utils.ConditionalOnWebappUiEnabled;
 import io.camunda.webapps.controllers.WebappsRequestForwardManager;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.http.HttpServletRequest;
