@@ -88,6 +88,8 @@ public final class ZeebePartitionFactory {
   private final TopologyManagerImpl topologyManager;
   private final FeatureFlags featureFlags;
   private final List<PartitionRaftListener> partitionRaftListeners;
+  private final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+      clusterConfigurationService;
 
   public ZeebePartitionFactory(
       final ActorSchedulingService actorSchedulingService,
@@ -102,7 +104,9 @@ public final class ZeebePartitionFactory {
       final List<PartitionListener> partitionListeners,
       final List<PartitionRaftListener> partitionRaftListeners,
       final TopologyManagerImpl topologyManager,
-      final FeatureFlags featureFlags) {
+      final FeatureFlags featureFlags,
+      final io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService
+          clusterConfigurationService) {
     this.actorSchedulingService = actorSchedulingService;
     this.brokerCfg = brokerCfg;
     this.localBroker = localBroker;
@@ -116,6 +120,7 @@ public final class ZeebePartitionFactory {
     this.partitionRaftListeners = partitionRaftListeners;
     this.topologyManager = topologyManager;
     this.featureFlags = featureFlags;
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public ZeebePartition constructPartition(
@@ -156,6 +161,7 @@ public final class ZeebePartitionFactory {
             partitionMeterRegistry,
             brokerHealthCheckService);
     context.setDynamicPartitionConfig(initialPartitionConfig);
+    context.setClusterConfigurationService(clusterConfigurationService);
 
     final PartitionTransition newTransitionBehavior =
         new PartitionTransitionImpl(generateTransitionSteps());

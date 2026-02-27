@@ -113,7 +113,8 @@ public final class PartitionManagerImpl implements PartitionManager, PartitionCh
             listeners,
             partitionRaftListeners,
             topologyManager,
-            featureFlags);
+            featureFlags,
+            clusterConfigurationService);
     managementService =
         new DefaultPartitionManagementService(
             clusterServices.getMembershipService(), clusterServices.getCommunicationService());

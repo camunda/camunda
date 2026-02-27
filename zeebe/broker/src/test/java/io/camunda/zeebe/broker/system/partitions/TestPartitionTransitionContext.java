@@ -20,6 +20,7 @@ import io.camunda.zeebe.broker.exporter.stream.ExporterDirector;
 import io.camunda.zeebe.broker.exporter.stream.ExporterPhase;
 import io.camunda.zeebe.broker.logstreams.AtomixLogStorage;
 import io.camunda.zeebe.broker.partitioning.PartitionAdminAccess;
+import io.camunda.zeebe.broker.partitioning.topology.ClusterConfigurationService;
 import io.camunda.zeebe.broker.partitioning.topology.TopologyManager;
 import io.camunda.zeebe.broker.system.configuration.BrokerCfg;
 import io.camunda.zeebe.broker.system.monitoring.DiskSpaceUsageMonitor;
@@ -87,6 +88,7 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   private String brokerVersion = PartitionTransitionContext.super.getBrokerVersion();
   private boolean migrationsPerformed;
   private final ComponentTreeListener healthMetrics;
+  private ClusterConfigurationService clusterConfigurationService;
 
   public TestPartitionTransitionContext() {
     transitionMeterRegistry = MicrometerUtil.wrap(startupMeterRegistry, PartitionKeyNames.tags(1));
@@ -361,6 +363,17 @@ public class TestPartitionTransitionContext implements PartitionTransitionContex
   @Override
   public ComponentTreeListener getComponentTreeListener() {
     return healthMetrics;
+  }
+
+  @Override
+  public ClusterConfigurationService getClusterConfigurationService() {
+    return clusterConfigurationService;
+  }
+
+  @Override
+  public void setClusterConfigurationService(
+      final ClusterConfigurationService clusterConfigurationService) {
+    this.clusterConfigurationService = clusterConfigurationService;
   }
 
   public void setGatewayBrokerTransport(final AtomixServerTransport gatewayBrokerTransport) {
