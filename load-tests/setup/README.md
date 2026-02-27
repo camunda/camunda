@@ -13,7 +13,7 @@ All guides are targeted at a Linux system.
 
 Make sure you have the following installed:
 
-* gcloud https://cloud.google.com/sdk/install
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
 * Helm 3.*  https://helm.sh/docs/intro/install/
 * docker https://docs.docker.com/install/
@@ -22,30 +22,23 @@ Make sure you have the following installed:
 
 ### Initial Setup
 
-Some initial setup steps are required to connect to the Zeebe GKE cluster:
+Cluster access is managed via [Teleport](https://goteleport.com/). Install the `tsh` CLI and log in to connect `kubectl` to the cluster:
 
 ```sh
-## Init gcloud
-gcloud init
-gcloud config set project zeebe-io
-gcloud container clusters get-credentials zeebe-cluster --zone europe-west1-b --project zeebe-io
+## Log in to Teleport and configure kubectl for the benchmark cluster
+tsh login --proxy=camunda.teleport.sh:443
+tsh kube login camunda-benchmark-prod
 
-## to use google cloud docker registry
-gcloud auth configure-docker
+## Verify kubectl is connected
+kubectl get namespaces
 
-## install kubectl via gcloud cli
-gcloud components install kubectl
+## to use the Harbor docker registry
+docker login registry.camunda.cloud
 
 ## install helm
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
 chmod 700 get_helm.sh
 ./get_helm.sh
-
-## add zeebe as helm repo
-helm version
-helm repo add zeebe https://helm.camunda.io
-helm repo add stable https://charts.helm.sh/stable
-helm repo update
 
 ## install kubens
 curl -LO https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
@@ -61,7 +54,7 @@ These are the components to install on Windows:
 * Docker
 
 These are the components to install within the WSL:
-* gcloud https://cloud.google.com/sdk/install?hl=de
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
 * Helm 3.*  https://helm.sh/docs/intro/install/
 * kubens/kubectx https://github.com/ahmetb/kubectx
