@@ -15,6 +15,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import io.camunda.db.rdbms.sql.VariableMapper;
+import io.camunda.search.entities.VariableEntity;
 import io.camunda.search.query.VariableQuery;
 import io.camunda.security.auth.Authorization;
 import io.camunda.security.reader.AuthorizationCheck;
@@ -63,5 +64,50 @@ class VariableDbReaderTest {
     assertThat(result.total()).isEqualTo(21L);
     assertThat(result.items()).isEmpty();
     verify(variableMapper, times(0)).search(any());
+  }
+
+  @Test
+  void shouldDeduplicateByNameAndKeepClosestScope() {
+    when(variableMapper.search(any()))
+        .thenReturn(
+            List.of(
+                new VariableEntity(1L, "vehicleModel", "\"X5\"", "\"X5\"", false, 1L, 11L, 11L, "pd", "t1"),
+                new VariableEntity(
+                    2L,
+                    "vehicleModel",
+                    "\"X5 M Competition\"",
+                    "\"X5 M Competition\"",
+                    false,
+                    3L,
+                    11L,
+                    11L,
+                    "pd",
+                    "t1"),
+                new VariableEntity(
+                    3L,
+                    "instructions",
+                    "\"Use official lookup\"",
+                    "\"Use official lookup\"",
+                    false,
+                    3L,
+                    11L,
+                    11L,
+                    "pd",
+                    "t1")));
+
+    final VariableQuery query =
+        VariableQuery.of(
+            b ->
+                b.filter(f -> f.scopeKeys(List.of(1L, 2L, 3L)))
+                    .sort(s -> s.name().asc())
+                    .page(p -> p.from(0).size(10)));
+
+    final var result = variableDbReader.search(query, ResourceAccessChecks.disabled());
+
+    assertThat(result.total()).isEqualTo(2L);
+    assertThat(result.items())
+        .extracting(VariableEntity::name)
+        .containsExactly("instructions", "vehicleModel");
+    assertThat(result.items().get(1).scopeKey()).isEqualTo(3L);
   }
 }

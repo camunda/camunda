@@ -24,8 +24,6 @@ import io.camunda.search.query.SearchQueryResult;
 import io.camunda.search.query.UserTaskQuery;
 import io.camunda.search.query.UserTaskQuery.Builder;
 import io.camunda.search.query.VariableQuery;
-import io.camunda.search.sort.FieldSorting;
-import io.camunda.search.sort.SortOrder;
 import io.camunda.security.auth.BrokerRequestAuthorizationConverter;
 import io.camunda.security.auth.CamundaAuthentication;
 import io.camunda.security.auth.SecurityContext;
@@ -43,10 +41,7 @@ import io.camunda.zeebe.gateway.impl.broker.request.BrokerUserTaskUpdateRequest;
 import io.camunda.zeebe.protocol.impl.record.value.usertask.UserTaskRecord;
 import io.camunda.zeebe.protocol.record.intent.UserTaskIntent;
 import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -243,53 +238,21 @@ public final class UserTaskServices
         treePath != null
             ? Arrays.stream(treePath.split("/")).map(Long::valueOf).toList()
             : Collections.emptyList();
-    final var scopePriorities = createScopePriorities(treePathList);
 
     // Create a variable query with an additional filter for the scope keys
     final var variableQueryWithTreePathFilter =
         variableSearchQuery(
             q ->
                 q.filter(f -> f.copyFrom(variableQuery.filter()).scopeKeys(treePathList))
-                    .unlimited());
+                    .sort(variableQuery.sort())
+                    .page(variableQuery.page()));
 
     // Execute the search
-    final var variables =
-        executeSearchRequest(
-            () ->
-                variableServices
-                    .withAuthentication(CamundaAuthentication.anonymous())
-                    .search(variableQueryWithTreePathFilter));
-    final var variablesByName = new HashMap<String, VariableEntity>();
-    variables
-        .items()
-        .forEach(
-            variable ->
-                variablesByName.merge(
-                    variable.name(),
-                    variable,
-                    (existing, candidate) ->
-                        isCloserScope(candidate, existing, scopePriorities) ? candidate : existing));
-
-    final var deduplicatedVariables = new ArrayList<VariableEntity>(variablesByName.size());
-    deduplicatedVariables.addAll(variablesByName.values());
-    final var sortingComparator = createSortingComparator(variableQuery.sort().orderings());
-    if (sortingComparator != null) {
-      deduplicatedVariables.sort(sortingComparator);
-    }
-
-    final int from = variableQuery.page().from();
-    final int to = Math.min(from + variableQuery.page().size(), deduplicatedVariables.size());
-    final var items =
-        from >= deduplicatedVariables.size()
-            ? List.<VariableEntity>of()
-            : deduplicatedVariables.subList(from, to);
-    return SearchQueryResult.of(
-        result ->
-            result
-                .total(deduplicatedVariables.size(), false)
-                .items(items)
-                .startCursor(null)
-                .endCursor(null));
+    return executeSearchRequest(
+        () ->
+            variableServices
+                .withAuthentication(CamundaAuthentication.anonymous())
+                .search(variableQueryWithTreePathFilter));
   }
 
   public SearchQueryResult<AuditLogEntity> searchUserTaskAuditLogs(
@@ -319,70 +282,5 @@ public final class UserTaskServices
                     .withAuthentication(CamundaAuthentication.anonymous())
                     .getByKey(flowNodeInstanceKey))
         .treePath();
-  }
-
-  private Map<Long, Integer> createScopePriorities(final List<Long> scopeKeys) {
-    final Map<Long, Integer> priorities = new HashMap<>();
-    for (int i = 0; i < scopeKeys.size(); i++) {
-      priorities.put(scopeKeys.get(i), scopeKeys.size() - i);
-    }
-    return priorities;
-  }
-
-  private boolean isCloserScope(
-      final VariableEntity candidate,
-      final VariableEntity existing,
-      final Map<Long, Integer> scopePriorities) {
-    final int candidatePriority = scopePriorities.getOrDefault(candidate.scopeKey(), 0);
-    final int existingPriority = scopePriorities.getOrDefault(existing.scopeKey(), 0);
-    if (candidatePriority == existingPriority) {
-      // Use variable key as deterministic fallback in equal scopes.
-      final var candidateKey = candidate.variableKey();
-      final var existingKey = existing.variableKey();
-      if (candidateKey == null) {
-        return false;
-      }
-      if (existingKey == null) {
-        return true;
-      }
-      return candidateKey > existingKey;
-    }
-    return candidatePriority > existingPriority;
-  }
-
-  private Comparator<VariableEntity> createSortingComparator(final List<FieldSorting> sortings) {
-    if (sortings == null || sortings.isEmpty()) {
-      return null;
-    }
-
-    Comparator<VariableEntity> comparator = null;
-    for (final var sorting : sortings) {
-      final Comparator<VariableEntity> fieldComparator =
-          switch (sorting.field()) {
-            case "variableKey" ->
-                Comparator.comparing(
-                    VariableEntity::variableKey, Comparator.nullsFirst(Long::compareTo));
-            case "name" ->
-                Comparator.comparing(VariableEntity::name, Comparator.nullsFirst(String::compareTo));
-            case "value" ->
-                Comparator.comparing(VariableEntity::value, Comparator.nullsFirst(String::compareTo));
-            case "scopeKey" ->
-                Comparator.comparing(
-                    VariableEntity::scopeKey, Comparator.nullsFirst(Long::compareTo));
-            case "processInstanceKey" ->
-                Comparator.comparing(
-                    VariableEntity::processInstanceKey, Comparator.nullsFirst(Long::compareTo));
-            case "tenantId" ->
-                Comparator.comparing(
-                    VariableEntity::tenantId, Comparator.nullsFirst(String::compareTo));
-            default ->
-                throw new IllegalArgumentException("Unknown sort field for variables: " + sorting.field());
-          };
-      final var orderedComparator =
-          sorting.order() == SortOrder.DESC ? fieldComparator.reversed() : fieldComparator;
-      comparator =
-          comparator == null ? orderedComparator : comparator.thenComparing(orderedComparator);
-    }
-    return comparator;
   }
 }
