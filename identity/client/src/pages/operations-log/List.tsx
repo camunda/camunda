@@ -22,6 +22,7 @@ import {
   ColumnRightPadding,
   CenteredRow,
   StickySection,
+  EntityListStickyWrapper,
 } from "./components/styled";
 import {
   Button,
@@ -269,56 +270,62 @@ const List: FC = () => {
           </StickySection>
         </ColumnRightPadding>
         <Column sm={4} md={5} lg={12} xlg={13}>
-          <EntityList
-            data={
-              auditLogs?.items.map((log) => ({
-                id: log.auditLogKey,
-                result:
-                  log.result === "SUCCESS" ? (
-                    <SuccessIcon size={20} />
-                  ) : (
-                    <ErrorIcon size={20} />
+          <EntityListStickyWrapper>
+            <EntityList
+              data={
+                auditLogs?.items.map((log) => ({
+                  id: log.auditLogKey,
+                  result:
+                    log.result === "SUCCESS" ? (
+                      <SuccessIcon size={20} />
+                    ) : (
+                      <ErrorIcon size={20} />
+                    ),
+                  operationType: (
+                    <OperationLogName>
+                      {spaceAndCapitalize(log.operationType)}
+                    </OperationLogName>
                   ),
-                operationType: (
-                  <OperationLogName>
-                    {spaceAndCapitalize(log.operationType)}
-                  </OperationLogName>
-                ),
-                entityType: spaceAndCapitalize(log.entityType),
-                reference: (
-                  <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
-                ),
-                property: <CellProperty item={log} />,
-                actorId: log.actorId ? (
-                  <OperationLogName>
-                    <User /> {log.actorId}
-                  </OperationLogName>
-                ) : (
-                  "-"
-                ),
-                timestamp: new Date(log.timestamp).toLocaleString(),
-              })) || []
-            }
-            headers={[
-              { header: "", key: "result" },
-              {
-                header: t("operationType"),
-                key: "operationType",
-                isSortable: true,
-              },
-              { header: t("entityType"), key: "entityType", isSortable: true },
-              { header: t("reference"), key: "reference" },
-              { header: t("property"), key: "property" },
-              { header: t("actor"), key: "actorId", isSortable: true },
-              { header: t("date"), key: "timestamp", isSortable: true },
-            ]}
-            loading={loading}
-            setSort={handleSort}
-            page={{ ...page, ...auditLogs?.page }}
-            pageSizes={[50, 100, 200]}
-            setPageNumber={setPageNumber}
-            setPageSize={setPageSize}
-          />
+                  entityType: spaceAndCapitalize(log.entityType),
+                  reference: (
+                    <CodeSnippet type="inline">{log.entityKey}</CodeSnippet>
+                  ),
+                  property: <CellProperty item={log} />,
+                  actorId: log.actorId ? (
+                    <OperationLogName>
+                      <User /> {log.actorId}
+                    </OperationLogName>
+                  ) : (
+                    "-"
+                  ),
+                  timestamp: new Date(log.timestamp).toLocaleString(),
+                })) || []
+              }
+              headers={[
+                { header: "", key: "result" },
+                {
+                  header: t("operationType"),
+                  key: "operationType",
+                  isSortable: true,
+                },
+                {
+                  header: t("entityType"),
+                  key: "entityType",
+                  isSortable: true,
+                },
+                { header: t("reference"), key: "reference" },
+                { header: t("property"), key: "property" },
+                { header: t("actor"), key: "actorId", isSortable: true },
+                { header: t("date"), key: "timestamp", isSortable: true },
+              ]}
+              loading={loading}
+              setSort={handleSort}
+              page={{ ...page, ...auditLogs?.page }}
+              pageSizes={[50, 100, 200]}
+              setPageNumber={setPageNumber}
+              setPageSize={setPageSize}
+            />
+          </EntityListStickyWrapper>
         </Column>
       </Grid>
       {!loading && !success && (
