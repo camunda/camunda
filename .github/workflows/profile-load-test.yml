@@ -39,9 +39,6 @@ defaults:
     # see https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#exit-codes-and-error-action-preference
     shell: bash
 
-env:
-  CLUSTER: camunda-benchmark-prod
-  TELEPORT_JOIN_TOKEN: infra-benchmark-prod-github-action-zeebe
 
 jobs:
   profile-all-pods:
@@ -64,18 +61,14 @@ jobs:
             event: alloc
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+      - uses: google-github-actions/auth@v3
         with:
-          version: 17.2.2
-
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v3.0.0
         with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
-
+          cluster_name: 'zeebe-cluster'
+          location: europe-west1-b
       - name: Set right namespace
         run: |
           kubectl config set-context --current --namespace=${{ inputs.name }}
@@ -114,17 +107,14 @@ jobs:
       id-token: 'write'
     steps:
       - uses: actions/checkout@v6
-      - name: Set up Teleport
-        uses: teleport-actions/setup@v1
+      - uses: google-github-actions/auth@v3
         with:
-          version: 17.2.2
-
-      - name: Authenticate to Cluster using Teleport
-        uses: teleport-actions/auth-k8s@v2
+          workload_identity_provider: 'projects/628707732411/locations/global/workloadIdentityPools/zeebe-gh-actions/providers/gha-provider'
+          service_account: 'zeebe-gh-actions@zeebe-io.iam.gserviceaccount.com'
+      - uses: google-github-actions/get-gke-credentials@v3.0.0
         with:
-          proxy: camunda.teleport.sh:443
-          token: ${{ env.TELEPORT_JOIN_TOKEN }}
-          kubernetes-cluster: ${{ env.CLUSTER }}
+          cluster_name: 'zeebe-cluster'
+          location: europe-west1-b
       - name: Set right namespace
         run: |
           kubectl config set-context --current --namespace=${{ inputs.name }}
