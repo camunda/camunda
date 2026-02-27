@@ -34,4 +34,6 @@ public interface ClusterConfigurationService extends AsyncClosable {
   ClusterConfiguration getInitialClusterConfiguration();
 
   ClusterChangeExecutor getClusterChangeExecutor();
+
+  ActorFuture<ClusterConfiguration> getLatestClusterConfiguration();
 }
