@@ -412,11 +412,11 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Select the newly added token from the Instance History and verify the Add Variable button is visible in the Variables panel for the selected token (element level).', async () => {
-      const newNestedParentName = `${activityFirstSubprocess}, this flow node instance is planned to be added`;
+      const newNestedParentName = `${activityFirstSubprocess}, this element instance is planned to be added`;
       await operateProcessInstancePage.expandTreeItemInHistory(
         newNestedParentName,
       );
-      const addedTokenInHistory = `${activityCollectMoney}, this flow node instance is planned to be added`;
+      const addedTokenInHistory = `${activityCollectMoney}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
 
       await expect(
@@ -765,7 +765,7 @@ test.describe('Process Instance Modifications', () => {
     });
 
     await test.step('Navigate to different flow node and undo', async () => {
-      const addedTokenInHistory = `${neverFailsHistoryItem}, this flow node instance is planned to be added`;
+      const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
 
       await expect(operateProcessInstancePage.noVariablesText).toBeVisible();
@@ -819,7 +819,7 @@ test.describe('Process Instance Modifications', () => {
         '1',
       );
 
-      const addedTokenInHistory = `${neverFailsHistoryItem}, this flow node instance is planned to be added`;
+      const addedTokenInHistory = `${neverFailsHistoryItem}, this element instance is planned to be added`;
       await operateProcessInstancePage.clickTreeItem(addedTokenInHistory);
       await expect(
         page.getByText(/The Flow Node has no Variables/i),

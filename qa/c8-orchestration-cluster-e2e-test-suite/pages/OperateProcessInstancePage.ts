@@ -135,7 +135,7 @@ class OperateProcessInstancePage {
       .getByRole('treeitem')
       .getByTestId('INCIDENT-icon');
     this.variablePanelEmptyText = page.getByText(
-      'to view the variables, select a single flow node instance in the instance history',
+      'to view the variables, select a single element instance in the instance history',
     );
     this.addVariableButton = page.getByRole('button', {name: 'Add variable'});
     this.saveVariableButton = page.getByRole('button', {name: 'Save variable'});
@@ -170,10 +170,10 @@ class OperateProcessInstancePage {
     });
     this.applyButton = page.getByRole('button', {name: 'Apply', exact: true});
     this.addSingleFlowNodeInstanceButton = page.getByRole('button', {
-      name: 'Add single flow node instance',
+      name: 'Add single element instance',
     });
     this.moveSelectedInstanceButton = page.getByRole('button', {
-      name: 'Move selected instance in this flow node to another target',
+      name: 'Move selected instance in this element to another target',
     });
     this.executionListenerText = page.getByText('Execution listener');
     this.taskListenerText = page.getByText('Task listener');
@@ -205,7 +205,7 @@ class OperateProcessInstancePage {
       name: /add variable/i,
     });
     this.modalDialog = page.getByRole('dialog');
-    this.noVariablesText = page.getByText(/The Flow Node has no Variables/i);
+    this.noVariablesText = page.getByText(/The element has no variables/i);
 
     this.variableCellByName = (name) =>
       this.variablesList.getByRole('cell', {name});
