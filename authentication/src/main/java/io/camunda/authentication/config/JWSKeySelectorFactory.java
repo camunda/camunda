@@ -16,6 +16,8 @@ import com.nimbusds.jose.proc.SecurityContext;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -67,6 +69,36 @@ public class JWSKeySelectorFactory {
     final var jwkSource = createJWKSource(url);
     final var jwsAlgorithms = getJWSAlgorithms();
     return new JWSVerificationKeySelector<>(jwsAlgorithms, jwkSource);
+  }
+
+  /**
+   * Creates a {@link JWSKeySelector} for the given primary JWK Set URI and optional additional
+   * URIs. When additional URIs are provided, a {@link CompositeJWKSource} is used to aggregate keys
+   * from all sources.
+   *
+   * @param jwkSetUri the primary JWK Set URI
+   * @param additionalJwkSetUris additional JWK Set URIs to query for key resolution
+   * @return a {@link JWSVerificationKeySelector} configured with the allowed algorithms
+   * @throws IllegalArgumentException if the primary URI is malformed
+   */
+  public JWSKeySelector<SecurityContext> createJWSKeySelector(
+      final String jwkSetUri, final List<String> additionalJwkSetUris) {
+    if (additionalJwkSetUris == null || additionalJwkSetUris.isEmpty()) {
+      return createJWSKeySelector(jwkSetUri);
+    }
+
+    if (jwkSetUri == null || jwkSetUri.isBlank()) {
+      throw new IllegalArgumentException(ERROR_MISSING_JWK_SET_URI);
+    }
+
+    final var sources = new ArrayList<JWKSource<SecurityContext>>();
+    sources.add(createJWKSource(toURL(jwkSetUri)));
+    for (final String uri : additionalJwkSetUris) {
+      sources.add(createJWKSource(toURL(uri)));
+    }
+
+    final var compositeSource = new CompositeJWKSource<>(sources);
+    return new JWSVerificationKeySelector<>(getJWSAlgorithms(), compositeSource);
   }
 
   /**

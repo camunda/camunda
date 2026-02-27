@@ -11,6 +11,7 @@ import static com.nimbusds.jose.JOSEObjectType.JWT;
 import static io.camunda.authentication.config.OidcAccessTokenDecoderFactory.AT_JWT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
 import com.github.tomakehurst.wiremock.client.WireMock;
@@ -38,6 +39,7 @@ import io.camunda.authentication.config.controllers.WebSecurityOidcTestContext;
 import java.util.Date;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,6 +49,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
+import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -266,6 +269,167 @@ public class JwtDecoderTest extends AbstractWebSecurityConfigTest {
               WireMock.get(
                       WireMock.urlMatching(".*/" + realm + "/.well-known/openid-configuration"))
                   .willReturn(WireMock.jsonResponse(response, HttpStatus.OK.value())));
+    }
+  }
+
+  @Nested
+  @TestPropertySource(
+      properties = {
+        "camunda.security.authentication.unprotected-api=false",
+        "camunda.security.authentication.method=oidc",
+        "camunda.security.authentication.oidc.client-id=example",
+        "camunda.security.authentication.oidc.redirect-uri=redirect.example.com",
+        "camunda.security.authentication.oidc.authorization-uri=authorization.example.com",
+        "camunda.security.authentication.oidc.token-uri=token.example.com",
+      })
+  class SingleOidcProviderWithAdditionalJwks {
+
+    @RegisterExtension
+    static WireMockExtension wireMock =
+        WireMockExtension.newInstance().configureStaticDsl(true).build();
+
+    @Autowired private JwtDecoder decoder;
+
+    @DynamicPropertySource
+    static void registerWireMockProperties(final DynamicPropertyRegistry registry) {
+      final var issuerUri = "http://localhost:" + wireMock.getPort() + "/issuer";
+      registry.add("camunda.security.authentication.oidc.issuer-uri", () -> issuerUri);
+      registry.add(
+          "camunda.security.authentication.oidc.jwk-set-uri",
+          () -> "http://localhost:" + wireMock.getPort() + "/primary/jwks");
+      registry.add(
+          "camunda.security.authentication.oidc.additional-jwk-set-uris[0]",
+          () -> "http://localhost:" + wireMock.getPort() + "/additional/jwks");
+
+      // mock OIDC discovery endpoint so Spring can resolve the issuer during context startup
+      final var openidConfig =
+          "{\"issuer\": \""
+              + issuerUri
+              + "\","
+              + "\"token_endpoint\": \"token.example.com\","
+              + "\"jwks_uri\": \"http://localhost:"
+              + wireMock.getPort()
+              + "/primary/jwks\","
+              + "\"subject_types_supported\": [\"public\"]"
+              + "}";
+      wireMock
+          .getRuntimeInfo()
+          .getWireMock()
+          .register(
+              WireMock.get(WireMock.urlMatching(".*/issuer/.well-known/openid-configuration"))
+                  .willReturn(WireMock.jsonResponse(openidConfig, HttpStatus.OK.value())));
+    }
+
+    @Test
+    void shouldDecodeTokenSignedWithPrimaryJwksKey() throws JOSEException {
+      // given
+      final var primaryKey =
+          new RSAKeyGenerator(2048)
+              .keyID("primary-a1")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", primaryKey.toPublicJWK().toJSONString());
+      mockJwksEndpoint("/additional/jwks", "{\"keys\":[]}");
+
+      final var jwt = signAndSerialize(primaryKey, "primary-a1");
+
+      // when // then
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldDecodeTokenSignedWithAdditionalJwksKey() throws JOSEException {
+      // given
+      final var additionalKey =
+          new RSAKeyGenerator(2048)
+              .keyID("additional-b1")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", "{\"keys\":[]}");
+      mockJwksEndpoint("/additional/jwks", additionalKey.toPublicJWK().toJSONString());
+
+      final var jwt = signAndSerialize(additionalKey, "additional-b1");
+
+      // when // then
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldFailForUnknownKid() throws JOSEException {
+      // given
+      final var unknownKey =
+          new RSAKeyGenerator(2048)
+              .keyID("unknown-kid")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      mockJwksEndpoint("/primary/jwks", "{\"keys\":[]}");
+      mockJwksEndpoint("/additional/jwks", "{\"keys\":[]}");
+
+      final var jwt = signAndSerialize(unknownKey, "unknown-kid");
+
+      // when // then
+      assertThatThrownBy(() -> decoder.decode(jwt)).isInstanceOf(JwtException.class);
+    }
+
+    @Test
+    void shouldFallThroughToAdditionalWhenPrimaryHasNoMatchingKey() throws JOSEException {
+      // given
+      final var primaryKey =
+          new RSAKeyGenerator(2048)
+              .keyID("primary-only")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+      final var additionalKey =
+          new RSAKeyGenerator(2048)
+              .keyID("additional-only")
+              .keyUse(KeyUse.SIGNATURE)
+              .algorithm(JWSAlgorithm.RS256)
+              .generate();
+
+      // primary exposes primaryKey, additional exposes additionalKey
+      mockJwksEndpoint("/primary/jwks", primaryKey.toPublicJWK().toJSONString());
+      mockJwksEndpoint("/additional/jwks", additionalKey.toPublicJWK().toJSONString());
+
+      // JWT signed with the additional key
+      final var jwt = signAndSerialize(additionalKey, "additional-only");
+
+      // when // then
+      assertThatCode(() -> decoder.decode(jwt)).doesNotThrowAnyException();
+    }
+
+    private void mockJwksEndpoint(final String path, final String keyJson) {
+      final String body;
+      if (keyJson.startsWith("{\"keys\"")) {
+        body = keyJson;
+      } else {
+        body = "{\"keys\":[" + keyJson + "]}";
+      }
+      wireMock
+          .getRuntimeInfo()
+          .getWireMock()
+          .register(
+              WireMock.get(WireMock.urlEqualTo(path))
+                  .willReturn(WireMock.jsonResponse(body, HttpStatus.OK.value())));
+    }
+
+    private String signAndSerialize(final RSAKey key, final String kid) throws JOSEException {
+      final var jwt =
+          new SignedJWT(
+              new JWSHeader.Builder(JWSAlgorithm.RS256).type(JWT).keyID(kid).build(),
+              new Builder()
+                  .subject("alice")
+                  .issuer("http://localhost:" + wireMock.getPort() + "/issuer")
+                  .expirationTime(new Date(new Date().getTime() + 60 * 1000))
+                  .build());
+      jwt.sign(new RSASSASigner(key));
+      return jwt.serialize();
     }
   }
 }
