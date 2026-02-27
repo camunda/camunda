@@ -6,6 +6,7 @@
  * except in compliance with the Camunda License 1.0.
  */
 
+import type {ProcessDefinition} from '@camunda/camunda-api-zod-schemas/8.9';
 import {Label} from './styled';
 import {observer} from 'mobx-react';
 import {Stack} from '@carbon/react';
@@ -41,15 +42,17 @@ const TargetProcessField: React.FC = observer(() => {
           if (selectedItem === undefined) {
             return;
           }
-          const matchingDefinition = !selectedItem
-            ? null
-            : (availableDefinitions.find(
-                (d) => d.processDefinitionKey === selectedItem.id,
-              ) ?? null);
+
+          let matchingDefinition: ProcessDefinition | undefined;
+          if (selectedItem) {
+            matchingDefinition = availableDefinitions.find(
+              (d) => d.processDefinitionKey === selectedItem.id,
+            );
+          }
 
           processInstanceMigrationStore.resetElementMapping();
           processInstanceMigrationStore.setTargetProcessDefinition(
-            matchingDefinition,
+            matchingDefinition ?? null,
           );
         }}
       />
