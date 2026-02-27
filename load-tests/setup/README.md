@@ -31,6 +31,19 @@ will be created with the given name. If you used `.` before `./newLoadTest.sh`
 the script will also change your directory after running, so you can directly start
 to configure your load test.
 
+#### Secondary storage options
+
+You can specify a secondary storage type as the second argument:
+
+```
+. ./newLoadTest.sh my-load-test-name elasticsearch  # Default - uses Elasticsearch
+. ./newLoadTest.sh my-load-test-name opensearch     # Uses OpenSearch
+. ./newLoadTest.sh my-load-test-name postgresql     # Uses PostgreSQL (RDBMS)
+. ./newLoadTest.sh my-load-test-name none           # No secondary storage
+```
+
+The `none` option runs load tests without any secondary storage, which disables Camunda exporters. This is useful for testing the core orchestration engine performance in isolation.
+
 ### How to configure a load test
 
 The load test configuration is done via the `camunda-platform-values.yaml` file (copied to your namespace folder).
