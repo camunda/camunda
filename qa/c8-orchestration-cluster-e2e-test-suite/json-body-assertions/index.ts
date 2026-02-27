@@ -266,11 +266,6 @@ export const RESPONSE_INDEX = {
       '200': 1
     }
   },
-  '/jobs/statistics/by-workers': {
-    'POST': {
-      '200': 1
-    }
-  },
   '/license': {
     'GET': {
       '200': 1
