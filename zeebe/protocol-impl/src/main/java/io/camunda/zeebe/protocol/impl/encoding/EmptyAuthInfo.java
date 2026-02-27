@@ -18,17 +18,23 @@ import org.agrona.DirectBuffer;
  */
 public final class EmptyAuthInfo extends AuthInfo {
 
+  private static final EmptyAuthInfo INSTANCE = new EmptyAuthInfo();
+
   private static final Map<String, Object> EMPTY_MAP = Map.of();
   private final DirectBuffer cachedBuffer;
 
-  public EmptyAuthInfo() {
+  private EmptyAuthInfo() {
     super();
     cachedBuffer = super.toDirectBuffer();
   }
 
+  public static AuthInfo getInstance() {
+    return INSTANCE;
+  }
+
   @Override
-  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
-    throw new UnsupportedOperationException("EmptyAuthInfo is immutable");
+  public Map<String, Object> getClaims() {
+    return EMPTY_MAP;
   }
 
   @Override
@@ -37,8 +43,13 @@ public final class EmptyAuthInfo extends AuthInfo {
   }
 
   @Override
-  public Map<String, Object> getClaims() {
-    return EMPTY_MAP;
+  public void wrap(final DirectBuffer buffer, final int offset, final int length) {
+    throw new UnsupportedOperationException("EmptyAuthInfo is immutable");
+  }
+
+  @Override
+  public DirectBuffer toDirectBuffer() {
+    return cachedBuffer;
   }
 
   @Override
@@ -49,10 +60,5 @@ public final class EmptyAuthInfo extends AuthInfo {
   @Override
   public boolean hasAnyClaims() {
     return false;
-  }
-
-  @Override
-  public DirectBuffer toDirectBuffer() {
-    return cachedBuffer;
   }
 }

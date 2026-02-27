@@ -44,7 +44,7 @@ public final class RecordMetadata implements BufferWriter, BufferReader {
    * authorization is serialized identically to an empty one. Mutation attempts (wrap/reset) throw
    * {@link UnsupportedOperationException}.
    */
-  private static final AuthInfo EMPTY_AUTH = new EmptyAuthInfo();
+  private static final AuthInfo EMPTY_AUTH = EmptyAuthInfo.getInstance();
 
   private final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   private final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();

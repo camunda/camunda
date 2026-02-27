@@ -141,7 +141,7 @@ final class AuthInfoTest {
   class EmptyAuthInfoTests {
     @Test
     void shouldThrowOnWrap() {
-      final var empty = new EmptyAuthInfo();
+      final var empty = EmptyAuthInfo.getInstance();
       final var buffer = new UnsafeBuffer(new byte[0]);
 
       assertThatThrownBy(() -> empty.wrap(buffer, 0, 0))
@@ -150,14 +150,14 @@ final class AuthInfoTest {
 
     @Test
     void shouldThrowOnReset() {
-      final var empty = new EmptyAuthInfo();
+      final var empty = EmptyAuthInfo.getInstance();
 
       assertThatThrownBy(empty::reset).isInstanceOf(UnsupportedOperationException.class);
     }
 
     @Test
     void shouldReturnEmptyClaims() {
-      final var empty = new EmptyAuthInfo();
+      final var empty = EmptyAuthInfo.getInstance();
 
       assertThat(empty.getClaims()).isEmpty();
       assertThat(empty.toDecodedMap()).isEmpty();
@@ -166,7 +166,7 @@ final class AuthInfoTest {
 
     @Test
     void shouldSerializeIdenticallyToNewAuthInfo() {
-      final var empty = new EmptyAuthInfo();
+      final var empty = EmptyAuthInfo.getInstance();
       final var regular = new AuthInfo();
 
       assertThat(empty.getLength()).isEqualTo(regular.getLength());
@@ -175,7 +175,7 @@ final class AuthInfoTest {
 
     @Test
     void shouldBeEqualToNewAuthInfo() {
-      final var empty = new EmptyAuthInfo();
+      final var empty = EmptyAuthInfo.getInstance();
       final var regular = new AuthInfo();
 
       assertThat(empty).isEqualTo(regular);

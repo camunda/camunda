@@ -8,8 +8,8 @@
 package io.camunda.zeebe.engine.processing.streamprocessor;
 
 import io.camunda.zeebe.protocol.impl.encoding.AuthInfo;
+import io.camunda.zeebe.protocol.impl.encoding.EmptyAuthInfo;
 import io.camunda.zeebe.protocol.record.RecordMetadataDecoder;
-import java.util.Map;
 import java.util.function.Consumer;
 
 /**
@@ -82,17 +82,12 @@ public record FollowUpEventMetadata(
       return this;
     }
 
-    public Builder claims(final Map<String, Object> claims) {
-      authInfo = AuthInfo.withClaims(claims);
-      return this;
-    }
-
     public FollowUpEventMetadata build() {
       return new FollowUpEventMetadata(
           operationReference,
           batchOperationReference,
           recordVersion,
-          authInfo != null ? authInfo : new AuthInfo());
+          authInfo != null ? authInfo : EmptyAuthInfo.getInstance());
     }
   }
 }
