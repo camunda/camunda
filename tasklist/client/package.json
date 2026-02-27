@@ -105,7 +105,7 @@
     "rollup-plugin-sbom": "3.0.5",
     "serve": "14.2.5",
     "source-map-explorer": "2.5.3",
-    "stylelint": "17.3.0",
+    "stylelint": "17.4.0",
     "stylelint-prettier": "5.0.3",
     "ts-toolbelt": "9.6.0",
     "typescript": "5.9.3",
