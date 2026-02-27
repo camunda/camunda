@@ -2,7 +2,8 @@ services:
   optimize:
     profiles: ["", "elasticsearch"]
     container_name: optimize
-    image: camunda/optimize:8-latest
+    image: europe-docker.pkg.dev/camunda-saas-registry/zeebe-io/optimize:8.9.0-SNAPSHOT-MEG-OAUTH
+    platform: linux/amd64
     depends_on:
       - elasticsearch
       - identity
@@ -28,12 +29,11 @@ services:
       # This should only be set if you plan to use JWTs for the public API rather than a statically configured token
       - SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=http://keycloak:8080/auth/realms/camunda-platform/protocol/openid-connect/certs
       - OPTIMIZE_LOG_LEVEL=DEBUG
-      - JAVA_TOOL_OPTIONS=-XX:UseSVE=0
     networks:
       - optimize
       - identity-network
   optimize-opensearch:
-    profiles: [ "opensearch" ]
+    profiles: ["opensearch"]
     container_name: optimize-opensearch
     image: camunda/optimize:8-latest
     depends_on:
@@ -67,7 +67,7 @@ services:
   keycloak:
     container_name: keycloak
     image: camunda/keycloak:quay-26@sha256:3eba2912da4668619c8a7b6cdc00138d20a1f293ce3fcba980ce70ec2ed7f8d0
-    command: [ start ]
+    command: [start]
     ports:
       - "18080:8080"
     environment:
@@ -93,7 +93,7 @@ services:
       - keycloak
     restart: on-failure
     container_name: identity
-    image: camunda/identity:latest
+    image: camunda/identity:8.8.7
     ports:
       - "8081:8081"
     environment:
@@ -132,7 +132,11 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:9200/_cat/health | grep -q green",
+        ]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -140,7 +144,7 @@ services:
       - optimize
   zeebe:
     profiles: ["", "elasticsearch"]
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.8.13
     container_name: zeebe
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
@@ -158,13 +162,15 @@ services:
   tasklist:
     profiles: ["", "elasticsearch"]
     container_name: tasklist
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:8.8.13
     ports:
       - "8082:8080"
     environment:
       - camunda.tasklist.elasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebeElasticsearch.url=http://elasticsearch:9200
       - camunda.tasklist.zeebe.gatewayAddress=zeebe:26500
+      - CAMUNDA_DATABASE_URL=http://elasticsearch:9200
+      - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - spring.profiles.active=dev,dev-data,auth
       - JAVA_OPTS=-XX:UseSVE=0
     depends_on:
@@ -176,12 +182,14 @@ services:
   # We include Operate here to use its data generator, via the SPRING_PROFILES_ACTIVE property
   operate:
     profiles: ["", "elasticsearch"]
-    image: camunda/operate:latest
+    image: camunda/operate:8.8.13
     container_name: operate
     environment:
       - CAMUNDA_OPERATE_ZEEBE_GATEWAYADDRESS=zeebe:26500
       - CAMUNDA_OPERATE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ZEEBEELASTICSEARCH_URL=http://elasticsearch:9200
+      - CAMUNDA_DATABASE_URL=http://elasticsearch:9200
+      - CAMUNDA_DATA_SECONDARY_STORAGE_ELASTICSEARCH_URL=http://elasticsearch:9200
       - CAMUNDA_OPERATE_ARCHIVER_WAITPERIODBEFOREARCHIVING=1m
       - SPRING_PROFILES_ACTIVE=dev-data
       - CAMUNDA_OPERATE_IDENTITY_ISSUER_URL=http://localhost:18080/auth/realms/camunda-platform
@@ -203,7 +211,7 @@ services:
     restart: always
   opensearch:
     image: opensearchproject/opensearch:${OS_VERSION:-2.19.4}
-    profiles: [ "opensearch" ]
+    profiles: ["opensearch"]
     container_name: opensearch
     environment:
       - cluster.name=opensearch-cluster
@@ -228,16 +236,20 @@ services:
     cpu_count: 4
     mem_limit: 2g
     healthcheck:
-      test: [ "CMD-SHELL", "curl -f http://localhost:9200/_cat/health | grep -q green" ]
+      test:
+        [
+          "CMD-SHELL",
+          "curl -f http://localhost:9200/_cat/health | grep -q green",
+        ]
       interval: 30s
       timeout: 10s
       retries: 5
     networks:
       - optimize
   zeebe-opensearch:
-    profiles: [ "opensearch" ]
+    profiles: ["opensearch"]
     container_name: zeebe-opensearch
-    image: camunda/zeebe:latest
+    image: camunda/zeebe:8.8.13
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_EXPORTER_CLASS_NAME=io.camunda.zeebe.exporter.opensearch.OpensearchExporter
@@ -254,8 +266,8 @@ services:
     networks:
       - optimize
   operate-opensearch:
-    profiles: [ "opensearch" ]
-    image: camunda/operate:latest
+    profiles: ["opensearch"]
+    image: camunda/operate:8.8.13
     container_name: operate-opensearch
     environment:
       - SERVER_PORT=8080
@@ -282,9 +294,9 @@ services:
       - optimize
     restart: always
   tasklist-opensearch:
-    profiles: [ "opensearch" ]
+    profiles: ["opensearch"]
     container_name: tasklist-opensearch
-    image: camunda/tasklist:latest
+    image: camunda/tasklist:8.8.13
     ports:
       - "8082:8080"
     environment:
@@ -300,5 +312,5 @@ services:
       - optimize
     restart: always
 networks:
-  optimize: { }
-  identity-network: { }
+  optimize: {}
+  identity-network: {}
