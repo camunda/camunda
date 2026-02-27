@@ -8,7 +8,6 @@
 package io.camunda.exporter.handlers;
 
 import io.camunda.exporter.ExporterMetadata;
-import io.camunda.exporter.cache.form.CachedFormEntity;
 import io.camunda.exporter.store.BatchRequest;
 import io.camunda.exporter.utils.ExporterUtil;
 import io.camunda.webapps.schema.descriptors.template.TaskTemplate;
@@ -39,7 +38,8 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
   private static final Logger LOGGER = LoggerFactory.getLogger(UserTaskHandler.class);
   private static final Set<UserTaskIntent> SUPPORTED_INTENTS =
       EnumSet.of(
-          UserTaskIntent.CREATING,
+          // CREATING intent is handled in UserTaskCreatingHandler to support completely overwriting
+          // user task documents which is needed for user task process instance migration
           UserTaskIntent.CREATED,
           UserTaskIntent.COMPLETING,
           UserTaskIntent.COMPLETED,
@@ -56,19 +56,15 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
           UserTaskIntent.COMPLETION_DENIED);
   private static final String UNMAPPED_USER_TASK_ATTRIBUTE_WARNING =
       "Attribute update not mapped while importing ZEEBE_USER_TASKS: {}";
-
   private final String indexName;
-  private final ExporterEntityCache<String, CachedFormEntity> formCache;
   private final ExporterEntityCache<Long, CachedProcessEntity> processCache;
   private final ExporterMetadata exporterMetadata;
 
   public UserTaskHandler(
       final String indexName,
-      final ExporterEntityCache<String, CachedFormEntity> formCache,
       final ExporterEntityCache<Long, CachedProcessEntity> processCache,
       final ExporterMetadata exporterMetadata) {
     this.indexName = indexName;
-    this.formCache = formCache;
     this.processCache = processCache;
     this.exporterMetadata = exporterMetadata;
   }
@@ -90,10 +86,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
 
   @Override
   public List<String> generateIds(final Record<UserTaskRecordValue> record) {
-    if (record.getIntent().equals(UserTaskIntent.CREATING)) {
-      exporterMetadata.setFirstUserTaskKey(TaskImplementation.ZEEBE_USER_TASK, record.getKey());
-    }
-
     if (refersToPreviousVersionRecord(record.getKey())) {
       return List.of(String.valueOf(record.getKey()));
     }
@@ -112,9 +104,9 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     entity.setKey(record.getKey());
 
     switch ((UserTaskIntent) record.getIntent()) {
-      case UserTaskIntent.CREATING -> createTaskEntity(entity, record);
       case UserTaskIntent.CREATED, UserTaskIntent.ASSIGNED, UserTaskIntent.UPDATED -> {
         entity.setState(TaskState.CREATED);
+        entity.setCompletionTime(null);
         updateChangedAttributes(record, entity);
       }
       case UserTaskIntent.COMPLETED -> handleCompletion(record, entity);
@@ -178,7 +170,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     if (entity.getCompletionTime() != null) {
       updateFields.put(TaskTemplate.COMPLETION_TIME, entity.getCompletionTime());
     }
-
     if (entity.getChangedAttributes() != null && !entity.getChangedAttributes().isEmpty()) {
       updateFields.put(TaskTemplate.CHANGED_ATTRIBUTES, entity.getChangedAttributes());
     }
@@ -206,48 +197,6 @@ public class UserTaskHandler implements ExportHandler<TaskEntity, UserTaskRecord
     }
 
     return updateFields;
-  }
-
-  private void createTaskEntity(final TaskEntity entity, final Record<UserTaskRecordValue> record) {
-    final var taskValue = record.getValue();
-    final var formKey = taskValue.getFormKey() > 0 ? String.valueOf(taskValue.getFormKey()) : null;
-
-    entity
-        .setImplementation(TaskImplementation.ZEEBE_USER_TASK)
-        .setState(TaskState.CREATING)
-        .setFlowNodeInstanceId(String.valueOf(taskValue.getElementInstanceKey()))
-        .setProcessInstanceId(String.valueOf(taskValue.getProcessInstanceKey()))
-        .setFlowNodeBpmnId(taskValue.getElementId())
-        .setName(
-            ProcessCacheUtil.getFlowNodeName(
-                    processCache, taskValue.getProcessDefinitionKey(), taskValue.getElementId())
-                .orElse(null))
-        .setBpmnProcessId(taskValue.getBpmnProcessId())
-        .setProcessDefinitionId(String.valueOf(taskValue.getProcessDefinitionKey()))
-        .setProcessDefinitionVersion(taskValue.getProcessDefinitionVersion())
-        .setFormKey(!ExporterUtil.isEmpty(formKey) ? formKey : null)
-        .setExternalFormReference(
-            ExporterUtil.isEmpty(taskValue.getExternalFormReference())
-                ? null
-                : taskValue.getExternalFormReference())
-        .setCustomHeaders(taskValue.getCustomHeaders())
-        .setPartitionId(record.getPartitionId())
-        .setTenantId(taskValue.getTenantId())
-        .setPosition(record.getPosition())
-        .setAction(ExporterUtil.isEmpty(taskValue.getAction()) ? null : taskValue.getAction())
-        .setCreationTime(
-            ExporterUtil.toZonedOffsetDateTime(Instant.ofEpochMilli(record.getTimestamp())))
-        .setDueDate(ExporterUtil.toOffsetDateTime(taskValue.getDueDate()))
-        .setFollowUpDate(ExporterUtil.toOffsetDateTime(taskValue.getFollowUpDate()))
-        .setPriority(taskValue.getPriority())
-        .setCandidateGroups(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateGroupsList()))
-        .setCandidateUsers(ExporterUtil.toStringArrayOrNull(taskValue.getCandidateUsersList()));
-
-    if (!ExporterUtil.isEmpty(formKey)) {
-      formCache
-          .get(formKey)
-          .ifPresent(c -> entity.setFormId(c.formId()).setFormVersion(c.formVersion()));
-    }
   }
 
   private boolean refersToPreviousVersionRecord(final long key) {
