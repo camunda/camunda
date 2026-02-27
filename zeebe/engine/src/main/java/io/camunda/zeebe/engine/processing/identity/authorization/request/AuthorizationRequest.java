@@ -20,7 +20,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 
-public final class AuthorizationRequest {
+public record AuthorizationRequest(
+    Map<String, Object> claims,
+    AuthorizationResourceType resourceType,
+    PermissionType permissionType,
+    String tenantId,
+    Set<String> resourceIds,
+    ResourceAuthorizationProperties resourceProperties,
+    boolean isNewResource,
+    boolean isTenantOwnedResource,
+    boolean isTriggeredByInternalCommand) {
 
   private static final String FORBIDDEN_ERROR_MESSAGE =
       "Insufficient permissions to perform operation '%s' on resource '%s'";
@@ -37,80 +46,8 @@ public final class AuthorizationRequest {
   private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s', but no resource was found for tenant '%s'";
 
-  private final Map<String, Object> claims;
-  private final AuthorizationResourceType resourceType;
-  private final PermissionType permissionType;
-  private final String tenantId;
-  private final Set<String> resourceIds;
-  private final ResourceAuthorizationProperties resourceProperties;
-  private final boolean isNewResource;
-  private final boolean isTenantOwnedResource;
-  private final boolean isTriggeredByInternalCommand;
-
-  private AuthorizationRequest(final Builder builder) {
-    claims = resolveClaims(builder);
-    resourceType = builder.resourceType;
-    permissionType = builder.permissionType;
-    tenantId = builder.tenantId;
-    resourceIds = Collections.unmodifiableSet(builder.resourceIds);
-    resourceProperties = builder.resourceProperties;
-    isNewResource = builder.isNewResource;
-    isTenantOwnedResource = deriveTenantOwnedResource(builder);
-    isTriggeredByInternalCommand = deriveTriggeredByInternalCommand(builder);
-  }
-
-  private static Map<String, Object> resolveClaims(final Builder builder) {
-    final var claims =
-        builder.command != null ? builder.command.getAuthorizations() : builder.authorizationClaims;
-    return Collections.unmodifiableMap(Objects.requireNonNullElse(claims, Collections.emptyMap()));
-  }
-
-  private static boolean deriveTenantOwnedResource(final Builder builder) {
-    return builder.tenantId != null && !builder.tenantId.isEmpty();
-  }
-
-  private static boolean deriveTriggeredByInternalCommand(final Builder builder) {
-    return builder.command != null && builder.command.isInternalCommand();
-  }
-
-  public Map<String, Object> claims() {
-    return claims;
-  }
-
-  public AuthorizationResourceType resourceType() {
-    return resourceType;
-  }
-
-  public PermissionType permissionType() {
-    return permissionType;
-  }
-
-  public String tenantId() {
-    return tenantId;
-  }
-
-  public Set<String> resourceIds() {
-    return resourceIds;
-  }
-
-  public ResourceAuthorizationProperties resourceProperties() {
-    return resourceProperties;
-  }
-
   public boolean hasResourceProperties() {
     return resourceProperties != null && resourceProperties.hasProperties();
-  }
-
-  public boolean isNewResource() {
-    return isNewResource;
-  }
-
-  public boolean isTenantOwnedResource() {
-    return isTenantOwnedResource;
-  }
-
-  public boolean isTriggeredByInternalCommand() {
-    return isTriggeredByInternalCommand;
   }
 
   public String getForbiddenErrorMessage() {
@@ -231,7 +168,26 @@ public final class AuthorizationRequest {
         throw new IllegalStateException("command and authorizationClaims are mutually exclusive");
       }
 
-      return new AuthorizationRequest(this);
+      final var claims = resolveClaims();
+      final var isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
+      final var isTriggeredByInternalCommand = command != null && command.isInternalCommand();
+
+      return new AuthorizationRequest(
+          claims,
+          resourceType,
+          permissionType,
+          tenantId,
+          Collections.unmodifiableSet(resourceIds),
+          resourceProperties,
+          isNewResource,
+          isTenantOwnedResource,
+          isTriggeredByInternalCommand);
+    }
+
+    private Map<String, Object> resolveClaims() {
+      final var claims = command != null ? command.getAuthorizations() : authorizationClaims;
+      return Collections.unmodifiableMap(
+          Objects.requireNonNullElse(claims, Collections.emptyMap()));
     }
   }
 }
