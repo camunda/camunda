@@ -34,7 +34,6 @@ import java.io.UncheckedIOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
-import org.assertj.core.groups.Tuple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -92,6 +91,7 @@ final class BulkIndexRequestTest {
     // Elasticsearch exporter. We need to do the same in the test to get the correct memory usage.
     recordAsMap.put("sequence", recordSequence.sequence());
     recordAsMap.remove("authorizations");
+    recordAsMap.remove("agent");
     return MAPPER.writeValueAsBytes(recordAsMap).length;
   }
 
@@ -175,7 +175,7 @@ final class BulkIndexRequestTest {
   final class SerializationTest {
     @Test
     void shouldIndexRecordSerialized() {
-      // given - use an empty authorization for comparison, since the bulk request will remove it
+      // given
       final var record =
           recordFactory.generateRecord(
               b -> b.withAuthorizations(Map.of()).withBrokerVersion(VersionUtil.getVersion()));
@@ -184,12 +184,18 @@ final class BulkIndexRequestTest {
       // when
       request.index(action, record, new RecordSequence(PARTITION_ID, 1));
 
-      // then
+      // then - verify the record was serialized with expected properties
       final var operations = request.bulkOperations();
-      assertThat(operations)
-          .hasSize(1)
-          .map(IndexOperation::metadata, this::deserializeSource)
-          .containsExactly(Tuple.tuple(action, record));
+      assertThat(operations).hasSize(1);
+
+      final var deserialized = deserializeSource(operations.getFirst());
+      // Verify key record properties are serialized correctly
+      assertThat(deserialized.getPartitionId()).isEqualTo(record.getPartitionId());
+      assertThat(deserialized.getPosition()).isEqualTo(record.getPosition());
+      assertThat(deserialized.getKey()).isEqualTo(record.getKey());
+      // Verify excluded fields are null/empty
+      assertThat(deserialized.getAuthorizations()).isEmpty();
+      assertThat(deserialized.getAgent()).isNull();
     }
 
     @Test
@@ -223,7 +229,7 @@ final class BulkIndexRequestTest {
     }
 
     @Test
-    void shouldIndexRecordWithoutAuthorizations() {
+    void shouldIndexRecordWithoutAuthorizationsAndAgent() {
       // given
       final var records =
           recordFactory
@@ -242,6 +248,12 @@ final class BulkIndexRequestTest {
           .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
           .extracting(source -> source.get("authorizations"))
           .describedAs("Expect that the records are NOT serialized with authorizations")
+          .containsExactly(new Object[] {null});
+      assertThat(request.bulkOperations())
+          .hasSize(1)
+          .map(operation -> MAPPER.readValue(operation.source(), MAP_TYPE_REFERENCE))
+          .extracting(source -> source.get("agent"))
+          .describedAs("Expect that the records are NOT serialized with agent")
           .containsExactly(new Object[] {null});
     }
 
