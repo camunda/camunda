@@ -90,12 +90,29 @@ jobs:
             sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
           }
 
-          {
-            echo "--- host-scoped extraheader ---"
-            git config --local --show-origin --get-all http.https://github.com/.extraheader || true
-            echo "--- repo-scoped extraheader ---"
-            git config --local --show-origin --get-all http.https://github.com/camunda/camunda/.extraheader || true
-          } | sanitize
+          inspect_key() {
+            local key="$1"
+            local label="$2"
+            mapfile -t lines < <(git config --local --show-origin --get-all "$key" 2>/dev/null || true)
+            local count="${#lines[@]}"
+
+            echo "--- ${label} ---"
+            echo "key=${key}"
+            echo "count=${count}"
+
+            if (( count == 0 )); then
+              echo "values=(none)"
+            else
+              printf '%s\n' "${lines[@]}" | sanitize
+            fi
+
+            if (( count > 1 )); then
+              echo "warning=duplicate-entries-detected"
+            fi
+          }
+
+          inspect_key "http.https://github.com/.extraheader" "host-scoped extraheader"
+          inspect_key "http.https://github.com/camunda/camunda/.extraheader" "repo-scoped extraheader"
 
       - name: Override git auth with renewed token (extraheader)
         env:
@@ -113,12 +130,29 @@ jobs:
             sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
           }
 
-          {
-            echo "--- host-scoped extraheader ---"
-            git config --local --show-origin --get-all http.https://github.com/.extraheader || true
-            echo "--- repo-scoped extraheader ---"
-            git config --local --show-origin --get-all http.https://github.com/camunda/camunda/.extraheader || true
-          } | sanitize
+          inspect_key() {
+            local key="$1"
+            local label="$2"
+            mapfile -t lines < <(git config --local --show-origin --get-all "$key" 2>/dev/null || true)
+            local count="${#lines[@]}"
+
+            echo "--- ${label} ---"
+            echo "key=${key}"
+            echo "count=${count}"
+
+            if (( count == 0 )); then
+              echo "values=(none)"
+            else
+              printf '%s\n' "${lines[@]}" | sanitize
+            fi
+
+            if (( count > 1 )); then
+              echo "warning=duplicate-entries-detected"
+            fi
+          }
+
+          inspect_key "http.https://github.com/.extraheader" "host-scoped extraheader"
+          inspect_key "http.https://github.com/camunda/camunda/.extraheader" "repo-scoped extraheader"
 
       - name: Sample git branch lifecycle with renewed token (extraheader)
         run: |
