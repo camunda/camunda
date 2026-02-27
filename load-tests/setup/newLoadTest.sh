@@ -18,6 +18,12 @@ fi
 helm_chart="camunda-platform-8.9"
 namespace="$1"
 
+# Add c8- prefix if not present
+if [[ ! "$namespace" =~ ^c8- ]]; then
+  namespace="c8-$namespace"
+  echo "Namespace prefix added: $namespace"
+fi
+
 # Validate secondaryStorage value
 secondaryStorage="${2:-elasticsearch}"
 if [[ "$secondaryStorage" != "elasticsearch" && "$secondaryStorage" != "opensearch" && "$secondaryStorage" != "postgresql" ]]; then
@@ -84,6 +90,9 @@ else
   deadline_date="unknown"
 fi
 kubectl label namespace $namespace deadline-date="${deadline_date}" --overwrite
+
+# Label namespace with registry (required to inject image pull secrets)
+kubectl label namespace "$namespace" registry=harbor --overwrite
 
 # Copy default folder to new namespace folder
 cp -rv default/ $namespace

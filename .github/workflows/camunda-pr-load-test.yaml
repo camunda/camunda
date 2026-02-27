@@ -27,13 +27,13 @@ jobs:
     timeout-minutes: 5
     permissions: {}
     outputs:
-      sanitized-name: ${{ steps.sanitize.outputs.branch_name }}
+      sanitized-name: c8-${{ steps.sanitize.outputs.branch_name }}
     steps:
       - id: sanitize
         uses: camunda/infra-global-github-actions/sanitize-branch-name@main
         with:
           branch: ${{ github.event.pull_request.head.ref }}
-          max_length: 53
+          max_length: 50  # reduced to account for load-test prefix "c8-"" and potential suffixes for uniqueness
       - name: Observe build status
         if: always()
         continue-on-error: true
@@ -106,7 +106,7 @@ jobs:
         with:
           path: artifacts
       - name: Comment PR with profiling results
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             const fs = require('fs');

@@ -87,7 +87,7 @@ Our [load test Helm Chart](https://github.com/camunda/camunda-load-tests-helm) d
 
 Depending on the test variant, different process models are created and executed by the Starter and Worker applications. They only differ in configurations, which can be done by the respective [camunda-load-test](https://github.com/camunda/camunda-load-tests-helm) Helm chart, and their [values files](https://github.com/camunda/camunda-load-tests-helm/blob/main/charts/camunda-load-tests/values.yaml).
 
-All of this is deployed in a Zeebe-maintained (as of now; 16 Jun 2025) Google Kubernetes Engine (GKE) cluster (zeebe-cluster), in its own zeebe-io Google Cloud Project (GCP). Details of the general infrastructure, which is deployed related to observability (Prometheus), can be found in the [Zeebe infrastructure repository](https://github.com/camunda/zeebe-infra).
+All of this is deployed in an Infra-team-maintained Google Kubernetes Engine (GKE) cluster (`camunda-benchmark-prod`). Access is managed via [Teleport](https://camunda.teleport.sh). Container images are stored in `registry.camunda.cloud/team-zeebe`. Details about the benchmark cluster infrastructure can be found in the [infra-core repository](https://github.com/camunda/infra-core/), and specifically in the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
 
 For posterity, the deployment between 8.8 and pre-8.8 differs slightly. The Platform Helm  Chart will now deploy a single Camunda application (replicated), whereas previously, the Zeebe Broker and Zeebe Gateways were deployed standalone.
 
@@ -162,7 +162,7 @@ Similar to the stress test from above, we ran the artificial (normal) process mo
 
 Observability plays a vital role in running such kind of tests. Since the beginning of our load testing practices, the Zeebe team, spent significant efforts in adding metrics into the system and building Grafana dashboards to support them.
 
-The metrics exported by our applications are stored in a self-hosted Prometheus instance and can be observed with a self-hosted [Grafana instance](https://grafana.dev.zeebe.io/?orgId=1). To log in, a GitHub account must be used, which must be part of the mono repository.
+The metrics exported by our applications are stored in a [Prometheus instance](https://monitor.benchmark.camunda.cloud/) and can be observed with the [Grafana instance](https://dashboard.benchmark.camunda.cloud/?orgId=1). These applications sit behind a vouch-enabled proxy, so only Okta login is required to access them.
 
 A general Grafana dashboard, covering all sorts of metrics, is the [Zeebe Dashboard](https://github.com/camunda/camunda/blob/main/monitor/grafana/zeebe.json). There are more tailored dashboards that exist in the corresponding monitoring folder.
 
@@ -180,7 +180,7 @@ For every [supported/maintained](https://confluence.camunda.com/pages/viewpage.a
 
 **Goal:** Validating the reliability of our releases and detecting earlier issues, especially with alpha versions and updates.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
+**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
 As of today (16 Jun 2025), we have load tests running:
 
@@ -217,7 +217,6 @@ An example payload looks like this:
     "inputs": {
       "name": benchmark_name,
       "ref": zeebe_ref_name,
-      "cluster": "zeebe-cluster",
       "stable-vms": stable_vms
     }
 }
@@ -240,22 +239,22 @@ In addition to our release tests, we ran weekly load tests for all [endurance te
 
 **Goal:** Validating the reliability of our current main, and detecting earlier issues, allowing us to detect newly introduced instabilities and potential memory leaks or performance degradation.
 
-**Validation:** The tailored [Zeebe Medic Dashboard](https://grafana.dev.zeebe.io/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
+**Validation:** The tailored [Zeebe Medic Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-medic-benchmark/zeebe-medic-benchmarks?orgId=1&refresh=1m), can be used to observe and validate the performance of the different load tests
 
 As an example, we have the following tests running:
 
 * medic-y-2025-cw-22-a60d64da-test-latency
-* medic-y-2025-cw-22-a60d64da-test-mixed
+* medic-y-2025-cw-22-a60d64da-test-realistic
 * medic-y-2025-cw-22-a60d64da-test-typical
 * medic-y-2025-cw-23-a799b041-test-typical
 * medic-y-2025-cw-23-a799b041-test-latency
-* medic-y-2025-cw-23-a799b041-test-mixed
+* medic-y-2025-cw-23-a799b041-test-realistic
 * medic-y-2025-cw-24-0c3f2664-test-typical
 * medic-y-2025-cw-24-0c3f2664-test-latency
-* medic-y-2025-cw-24-0c3f2664-test-mixed
+* medic-y-2025-cw-24-0c3f2664-test-realistic
 * medic-y-2025-cw-25-59a095c4-test-typical
 * medic-y-2025-cw-25-59a095c4-test-latency
-* medic-y-2025-cw-25-59a095c4-test-mixed
+* medic-y-2025-cw-25-59a095c4-test-realistic
 
 #### Daily load tests
 
@@ -277,9 +276,9 @@ On top of the previous scenarios, we support running ad-hoc load tests. They can
 
 **Goal:** The goal of these ad-hoc load tests is to have a quick way to validate certain changes (reducing the feedback loop). The intentions can be manifold, may it be stability/reliability, performance, or something else.
 
-**Validation:** The more general [Zeebe Dashboard](https://grafana.dev.zeebe.io/d/zeebe-dashboard/zeebe?orgId=1), should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://grafana.dev.zeebe.io/d/camunda-benchmarks/camunda-performance?orgId=1) Dashboard.
+**Validation:** The more general [Zeebe Dashboard](https://dashboard.benchmark.camunda.cloud/d/zeebe-dashboard/zeebe?orgId=1), should be used to observe and validate the performance of the different load tests. If performance is the motivator of such a test, it might be helpful to use the [Camunda Performance](https://dashboard.benchmark.camunda.cloud/d/camunda-benchmarks/camunda-performance?orgId=1) Dashboard.
 
-**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary.
+**Requirement:** Please make sure that load test namespaces are always prefixed with your initials, to allow us to identify who created the tests and reach out if necessary. Note that the `c8-` namespace prefix is added implicitly by the tooling (due to cluster access policies). For example, a name like `pp-stable-vms-october` will result in the Kubernetes namespace `c8-pp-stable-vms-october`.
 
 ##### Labeling a PR
 
@@ -335,26 +334,26 @@ To set up a load test from your local machine you need to have several tools ins
 
 Follow these guide's to install each of them:
 
-* gcloud https://cloud.google.com/sdk/install
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
 * Helm 3.*  https://helm.sh/docs/intro/install/
 * docker https://docs.docker.com/install/
 * kubens/kubectx https://github.com/ahmetb/kubectx
 * OPTIONAL go https://golang.org/doc/install
 
+For detailed instructions on accessing the benchmark cluster, see the [benchmark cluster access guide](https://github.com/camunda/infra-core/blob/stage/docs/kubernetes-cluster/benchmark-cluster-access.md).
+
 Some of the necessary steps you need to do are:
 
 ```sh
-## Init gcloud
-gcloud init
-gcloud config set project zeebe-io
-gcloud container clusters get-credentials zeebe-cluster --zone europe-west1-b --project zeebe-io
+## Authenticate to the benchmark cluster via Teleport
+tsh login --proxy=camunda.teleport.sh:443
+tsh kube login camunda-benchmark-prod
 
-## to use google cloud docker registry
-gcloud auth configure-docker
-
-## install kubectl via gcloud cli
-gcloud components install kubectl
+## Log in to the Harbor container registry
+## Zeebe team members have push access by default.
+## If you don't have access, request it in the #ask-infra Slack channel.
+docker login registry.camunda.cloud
 
 ## install helm
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
@@ -381,12 +380,12 @@ These are the components to install on Windows:
 * Docker
 
 These are the components to install within the WSL:
-* gcloud https://cloud.google.com/sdk/install?hl=de
+* tsh (Teleport CLI) https://goteleport.com/docs/installation/
 * Kubectl https://kubernetes.io/de/docs/tasks/tools/install-kubectl/
 * Helm 3.*  https://helm.sh/docs/intro/install/
 * kubens/kubectx https://github.com/ahmetb/kubectx
 
-When following the instructions above, execute all commands that deal with Docker in a Windows shell, and exeucte all other commands in the WSL shell.
+When following the instructions above, execute all commands that deal with Docker in a Windows shell, and execute all other commands in the WSL shell.
 
 ###### Installing manually
 
