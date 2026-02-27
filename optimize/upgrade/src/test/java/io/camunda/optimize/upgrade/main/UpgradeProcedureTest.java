@@ -21,7 +21,6 @@ import static org.mockito.Mockito.when;
 import io.camunda.optimize.service.db.DatabaseClient;
 import io.camunda.optimize.service.db.schema.IndexLookupUtil;
 import io.camunda.optimize.service.db.schema.OptimizeIndexNameService;
-import io.camunda.optimize.service.metadata.PreviousVersion;
 import io.camunda.optimize.service.metadata.Version;
 import io.camunda.optimize.service.util.configuration.DatabaseType;
 import io.camunda.optimize.upgrade.db.SchemaUpgradeClient;
@@ -33,6 +32,7 @@ import io.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import io.camunda.optimize.upgrade.service.UpgradeStepLogService;
 import io.camunda.optimize.upgrade.service.UpgradeValidationService;
 import io.camunda.optimize.upgrade.steps.schema.CreateIndexStep;
+import io.camunda.optimize.upgrade.util.VersionUtil;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,7 +52,8 @@ public class UpgradeProcedureTest {
 
   public static final UserTestIndex USER_TEST_INDEX = new UserTestIndexES(1);
   private static final String TARGET_VERSION = Version.VERSION;
-  private static final String FROM_VERSION = PreviousVersion.PREVIOUS_VERSION;
+  private static final String FROM_VERSION =
+      VersionUtil.previousMinorVersion(Version.VERSION).orElseThrow() + ".0";
   private static MockedStatic<IndexLookupUtil> indexLookupUtil;
   @Spy private final CreateIndexStep createIndexStep = new CreateIndexStep(USER_TEST_INDEX);
   @Mock private SchemaUpgradeClient<?, ?, ?> schemaUpgradeClient;
