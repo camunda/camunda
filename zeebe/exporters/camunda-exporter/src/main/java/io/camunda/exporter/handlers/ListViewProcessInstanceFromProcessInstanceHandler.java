@@ -109,7 +109,7 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
         .setProcessName(
             getProcessName(piEntity.getProcessDefinitionKey(), recordValue.getBpmnProcessId()))
         .setProcessVersionTag(getVersionTag(piEntity.getProcessDefinitionKey()))
-        .setBusinessId(recordValue.getBusinessId());
+        .setBusinessId(emptyToNull(recordValue.getBusinessId()));
 
     if (recordValue.getTags() != null && recordValue.getTags().size() > 0) {
       piEntity.setTags(recordValue.getTags());
@@ -278,5 +278,9 @@ public class ListViewProcessInstanceFromProcessInstanceHandler
       treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
     }
     return treePath;
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }

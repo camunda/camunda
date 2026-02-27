@@ -193,6 +193,24 @@ class ProcessInstanceExportHandlerTest {
     }
   }
 
+  @Test
+  void shouldMapEmptyBusinessIdToNullOnCreate() {
+    // given
+    final var record =
+        TestRecordFactory.rootProcessWithBusinessId(ProcessInstanceIntent.ELEMENT_ACTIVATING, "");
+    try (final var mocked = Mockito.mockStatic(ProcessCacheUtil.class)) {
+      mocked
+          .when(() -> ProcessCacheUtil.getCallActivityIds(any(), any()))
+          .thenReturn(List.of(List.of(100L)));
+      // when
+      handler.export(record);
+      // then
+      final var captor = ArgumentCaptor.forClass(ProcessInstanceDbModel.class);
+      verify(processInstanceWriter).create(captor.capture());
+      assertThat(captor.getValue().businessId()).isNull();
+    }
+  }
+
   // Helper factory for test records
   static class TestRecordFactory {
     static Record<ProcessInstanceRecordValue> simpleProcess() {

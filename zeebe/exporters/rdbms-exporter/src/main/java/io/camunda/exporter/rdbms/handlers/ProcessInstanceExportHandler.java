@@ -108,7 +108,7 @@ public class ProcessInstanceExportHandler
         .partitionId(record.getPartitionId())
         .treePath(createTreePath(record).toTruncatedString())
         .tags(value.getTags())
-        .businessId(value.getBusinessId())
+        .businessId(emptyToNull(value.getBusinessId()))
         .build();
   }
 
@@ -155,5 +155,9 @@ public class ProcessInstanceExportHandler
       treePath.appendFlowNodeInstance(String.valueOf(keysWithinOnePI.getLast()));
     }
     return treePath;
+  }
+
+  private static String emptyToNull(final String value) {
+    return value == null || value.isEmpty() ? null : value;
   }
 }
