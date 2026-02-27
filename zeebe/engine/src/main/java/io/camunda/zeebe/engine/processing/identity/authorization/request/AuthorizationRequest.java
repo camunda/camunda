@@ -35,12 +35,11 @@ public record AuthorizationRequest(
       "Insufficient permissions to perform operation '%s' on resource '%s'";
   private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS =
       FORBIDDEN_ERROR_MESSAGE + ", required resource identifiers are one of '[*, %s]'";
-  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES =
-      FORBIDDEN_ERROR_MESSAGE + ", resource did not match property constraints '[%s]'";
   private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS_AND_PROPERTIES =
       FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_IDS
           + " or resource must match property constraints '[%s]'";
-
+  private static final String FORBIDDEN_ERROR_MESSAGE_WITH_RESOURCE_PROPERTIES =
+      FORBIDDEN_ERROR_MESSAGE + ", resource did not match property constraints '[%s]'";
   private static final String FORBIDDEN_FOR_TENANT_ERROR_MESSAGE =
       "Expected to perform operation '%s' on resource '%s' for tenant '%s', but user is not assigned to this tenant";
   private static final String NOT_FOUND_FOR_TENANT_ERROR_MESSAGE =
@@ -97,7 +96,7 @@ public record AuthorizationRequest(
     private Map<String, Object> authorizationClaims;
     private AuthorizationResourceType resourceType;
     private PermissionType permissionType;
-    private final Set<String> resourceIds = new HashSet<>();
+    private Set<String> resourceIds = new HashSet<>();
     private ResourceAuthorizationProperties resourceProperties;
     private String tenantId;
     private boolean isNewResource;
@@ -172,12 +171,16 @@ public record AuthorizationRequest(
       final var isTenantOwnedResource = tenantId != null && !tenantId.isEmpty();
       final var isTriggeredByInternalCommand = command != null && command.isInternalCommand();
 
+      if (resourceIds instanceof HashSet<String>) {
+        resourceIds = Collections.unmodifiableSet(resourceIds);
+      }
+
       return new AuthorizationRequest(
           claims,
           resourceType,
           permissionType,
           tenantId,
-          Collections.unmodifiableSet(resourceIds),
+          resourceIds,
           resourceProperties,
           isNewResource,
           isTenantOwnedResource,
