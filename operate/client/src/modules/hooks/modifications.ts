@@ -264,7 +264,7 @@ type UseAvailableModificationsParams = {
   elementId?: string;
   isSpecificElementInstanceSelected?: boolean;
   isMultiInstanceBody?: boolean;
-  isElementInstanceKeyAvailable?: boolean;
+  isSingleRunningInstanceResolved?: boolean;
 };
 
 const useAvailableModifications = ({
@@ -272,7 +272,7 @@ const useAvailableModifications = ({
   elementId,
   isSpecificElementInstanceSelected,
   isMultiInstanceBody,
-  isElementInstanceKeyAvailable,
+  isSingleRunningInstanceResolved,
 }: UseAvailableModificationsParams) => {
   const options: ModificationOption[] = [];
   const appendableFlowNodes = useAppendableFlowNodes();
@@ -300,7 +300,7 @@ const useAvailableModifications = ({
   }
 
   const isSingleOperationAllowed =
-    isElementInstanceKeyAvailable &&
+    isSingleRunningInstanceResolved &&
     runningElementInstanceCount === 1 &&
     !isSubProcess(businessObjects?.[elementId]);
 

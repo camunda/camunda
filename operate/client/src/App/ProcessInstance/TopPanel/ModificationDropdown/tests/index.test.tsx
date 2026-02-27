@@ -480,6 +480,70 @@ describe('Modification Dropdown', () => {
     expect(screen.getByText(/Add/)).toBeInTheDocument();
   });
 
+  it('should not show modifications for a terminated element instance', async () => {
+    mockFetchElementInstance('terminated-instance-key').withSuccess({
+      elementInstanceKey: 'terminated-instance-key',
+      elementId: 'service-task-1',
+      elementName: 'Service Task 1',
+      type: 'SERVICE_TASK',
+      state: 'TERMINATED',
+      startDate: '2018-06-21',
+      endDate: '2018-06-22',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+    });
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1&elementInstanceKey=terminated-instance-key`,
+    ]);
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('dropdown-spinner'),
+    );
+
+    expect(screen.getByText(/No modifications available/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
+
+  it('should not show modifications for a completed element instance', async () => {
+    mockFetchElementInstance('completed-instance-key').withSuccess({
+      elementInstanceKey: 'completed-instance-key',
+      elementId: 'service-task-1',
+      elementName: 'Service Task 1',
+      type: 'SERVICE_TASK',
+      state: 'COMPLETED',
+      startDate: '2018-06-21',
+      endDate: '2018-06-22',
+      processDefinitionId: 'someKey',
+      processInstanceKey: 'instance_id',
+      processDefinitionKey: '2',
+      rootProcessInstanceKey: null,
+      hasIncident: false,
+      incidentKey: null,
+      tenantId: '<default>',
+    });
+
+    renderPopover([
+      `${Paths.processInstance('instance_id')}?elementId=service-task-1&elementInstanceKey=completed-instance-key`,
+    ]);
+
+    await waitForElementToBeRemoved(() =>
+      screen.queryByTestId('dropdown-spinner'),
+    );
+
+    expect(screen.getByText(/No modifications available/)).toBeInTheDocument();
+    expect(screen.queryByText(/Cancel/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Move/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Add/)).not.toBeInTheDocument();
+  });
+
   it('should display message when there are multiple instances and hide when specific instance is selected', async () => {
     const {unmount} = renderPopover([
       `${Paths.processInstance('instance_id')}?elementId=service-task-1`,

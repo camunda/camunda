@@ -435,7 +435,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'StartEvent_1',
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -451,7 +451,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -466,7 +466,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_0ruokei',
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -482,7 +482,7 @@ describe('modifications hooks', () => {
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
             isSpecificElementInstanceSelected: true,
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -508,7 +508,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_1daop2o',
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
@@ -566,7 +566,7 @@ describe('modifications hooks', () => {
           useAvailableModifications({
             runningElementInstanceCount: 1,
             elementId: 'ServiceTask_0ruokei',
-            isElementInstanceKeyAvailable: true,
+            isSingleRunningInstanceResolved: true,
           }),
         {wrapper: getWrapper()},
       );
