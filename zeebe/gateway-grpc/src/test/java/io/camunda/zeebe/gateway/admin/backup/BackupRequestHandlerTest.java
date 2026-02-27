@@ -457,8 +457,7 @@ public class BackupRequestHandlerTest extends GatewayTest {
                           1L,
                           CheckpointType.SCHEDULED_BACKUP,
                           now.minus(1, ChronoUnit.DAYS)),
-                      new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, now),
-                      Set.of(5L))));
+                      new CheckpointInfo(10, 100L, 150L, CheckpointType.SCHEDULED_BACKUP, now))));
           return new BrokerResponse<>(response);
         });
 

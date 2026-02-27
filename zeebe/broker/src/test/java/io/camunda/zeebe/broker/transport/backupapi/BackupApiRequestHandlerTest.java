@@ -53,7 +53,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.IntStream;
 import org.agrona.ExpandableArrayBuffer;
@@ -552,8 +551,8 @@ final class BackupApiRequestHandlerTest {
     final var info3 = createCheckpointInfo(checkpointId2);
     final var info4 = createCheckpointInfo(checkpointId3);
 
-    final var range1 = new BackupRangeStatus.Complete(info1, info2);
-    final var range2 = new BackupRangeStatus.Incomplete(info3, info4, Set.of(25L));
+    final var range1 = new BackupRangeStatus(info1, info2);
+    final var range2 = new BackupRangeStatus(info3, info4);
 
     when(backupManager.getBackupRangeStatus())
         .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
@@ -571,9 +570,9 @@ final class BackupApiRequestHandlerTest {
     assertThat(rangesResponse.getRanges())
         .containsExactlyInAnyOrder(
             new BackupRangesResponse.PartitionBackupRange(
-                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2), Set.of()),
+                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2)),
             new BackupRangesResponse.PartitionBackupRange(
-                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4), Set.of(25L)));
+                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4)));
   }
 
   private static BackupRangeStatus.CheckpointInfo createCheckpointInfo(final long checkpointId) {

@@ -34,33 +34,13 @@ public class CheckpointStateResponse implements BufferReader, BufferWriter {
 
   @Override
   public int getLength() {
-
-    final int checkpointStatesItemLength =
-        CheckpointStatesEncoder.sbeBlockLength()
-            + CheckpointStatesEncoder.partitionIdEncodingLength()
-            + CheckpointStatesEncoder.checkpointIdEncodingLength()
-            + CheckpointStatesEncoder.checkpointTypeEncodingLength()
-            + CheckpointStatesEncoder.checkpointTimestampEncodingLength()
-            + CheckpointStatesEncoder.checkpointPositionEncodingLength();
-
-    final int backupStatesItemLength =
-        BackupStatesEncoder.sbeBlockLength()
-            + BackupStatesEncoder.partitionIdEncodingLength()
-            + BackupStatesEncoder.checkpointIdEncodingLength()
-            + BackupStatesEncoder.checkpointTypeEncodingLength()
-            + BackupStatesEncoder.checkpointTimestampEncodingLength()
-            + BackupStatesEncoder.checkpointPositionEncodingLength()
-            + BackupStatesEncoder.firstLogPositionEncodingLength();
-
-    final int checkpointStatesLength = checkpointStates.size() * checkpointStatesItemLength;
-    final int backupStatesLength = backupStates.size() * backupStatesItemLength;
-
     return headerEncoder.encodedLength()
         + bodyEncoder.sbeBlockLength()
         // plus the length of both state sets
-        + (CheckpointStatesEncoder.HEADER_SIZE * 2)
-        + checkpointStatesLength
-        + backupStatesLength;
+        + CheckpointStatesEncoder.sbeHeaderSize()
+        + checkpointStates.size() * CheckpointStatesEncoder.sbeBlockLength()
+        + BackupStatesEncoder.sbeHeaderSize()
+        + backupStates.size() * BackupStatesEncoder.sbeBlockLength();
   }
 
   @Override
