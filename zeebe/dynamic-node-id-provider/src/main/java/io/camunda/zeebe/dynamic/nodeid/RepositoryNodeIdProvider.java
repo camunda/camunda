@@ -14,6 +14,7 @@ import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease;
 import io.camunda.zeebe.dynamic.nodeid.repository.NodeIdRepository.StoredLease.Initialized;
 import io.camunda.zeebe.util.ExponentialBackoffRetryDelay;
+import io.camunda.zeebe.util.VisibleForTesting;
 import java.time.Duration;
 import java.time.InstantSource;
 import java.util.Map;
@@ -180,21 +181,36 @@ public class RepositoryNodeIdProvider implements NodeIdProvider, AutoCloseable {
     return currentLease;
   }
 
-  private void renew() {
-    if (currentLease == null) {
-      LOG.warn(
-          "No current lease found, skipping renew. The process is shutting down already {}",
-          shutdownInitiated.get());
+  @VisibleForTesting
+  void renew() {
+    final var lease = currentLease;
+
+    if (lease == null) {
+      if (shutdownInitiated.get()) {
+        LOG.debug("Skipping lease renewal because the process is shutting down.");
+      } else {
+        LOG.error(
+            "Current lease is null during renewal but shutdown was not initiated. "
+                + "Triggering failure handler.");
+        onLeaseFailure.run();
+      }
+      return;
     }
+
     try {
-      final var newLease =
-          currentLease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
-      LOG.trace("Renewing lease with {}", newLease);
-      currentLease = nodeIdRepository.acquire(newLease, currentLease.eTag());
+      final var newLease = lease.lease().renew(clock.millis(), leaseDuration, knownVersionMappings);
+      if (!shutdownInitiated.get()) {
+        LOG.trace("Renewing lease with {}", newLease);
+        currentLease = nodeIdRepository.acquire(newLease, lease.eTag());
+      }
     } catch (final Exception e) {
-      LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
-      currentLease = null;
-      onLeaseFailure.run();
+      if (shutdownInitiated.get()) {
+        LOG.debug("Exception during lease renewal while shutting down, ignoring.", e);
+      } else {
+        LOG.warn("Failed to renew the lease: process is going to shut down immediately.", e);
+        currentLease = null;
+        onLeaseFailure.run();
+      }
     }
   }
 
