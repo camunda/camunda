@@ -33,6 +33,7 @@ class TenantEntityAuditLogTransformerTest {
         ImmutableTenantRecordValue.builder()
             .from(factory.generateObject(TenantRecordValue.class))
             .withTenantId("test-tenant")
+            .withName("Test Tenant")
             .withTenantKey(456L)
             .withEntityType(EntityType.GROUP)
             .build();
@@ -47,6 +48,7 @@ class TenantEntityAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("test-tenant");
+    assertThat(entity.getEntityDescription()).isEqualTo("Test Tenant");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.ASSIGN);
     assertThat(entity.getRelatedEntityKey()).isEqualTo(recordValue.getEntityId());
     assertThat(entity.getRelatedEntityType()).isEqualTo(AuditLogEntityType.GROUP);

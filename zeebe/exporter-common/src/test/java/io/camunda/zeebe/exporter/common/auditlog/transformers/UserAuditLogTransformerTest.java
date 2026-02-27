@@ -31,6 +31,7 @@ class UserAuditLogTransformerTest {
         ImmutableUserRecordValue.builder()
             .from(factory.generateObject(UserRecordValue.class))
             .withUsername("testuser")
+            .withName("Test User")
             .withUserKey(123L)
             .build();
 
@@ -44,6 +45,7 @@ class UserAuditLogTransformerTest {
 
     // then
     assertThat(entity.getEntityKey()).isEqualTo("testuser");
+    assertThat(entity.getEntityDescription()).isEqualTo("Test User");
     assertThat(entity.getOperationType()).isEqualTo(AuditLogOperationType.CREATE);
   }
 
