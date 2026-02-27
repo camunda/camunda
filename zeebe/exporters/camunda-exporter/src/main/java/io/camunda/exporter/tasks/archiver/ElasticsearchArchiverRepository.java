@@ -23,6 +23,7 @@ import co.elastic.clients.elasticsearch.core.CountRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 import co.elastic.clients.elasticsearch.core.ReindexRequest;
+import co.elastic.clients.elasticsearch.core.ReindexResponse;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.SearchResponse;
 import co.elastic.clients.elasticsearch.core.search.Hit;
@@ -65,6 +66,8 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
   private static final Time REINDEX_SCROLL_TIMEOUT = Time.of(t -> t.time("30s"));
   private static final Slices AUTO_SLICES =
       Slices.of(slices -> slices.computed(SlicesCalculation.Auto));
+  private static final long MAX_REINDEX_DOCS = 10_000L;
+  private static final long MAX_DELETE_DOCS = 10_000L;
   private final int partitionId;
   private final HistoryConfiguration config;
   private final IndexTemplateDescriptor listViewTemplateDescriptor;
@@ -303,17 +306,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .slices(AUTO_SLICES)
             .conflicts(Conflicts.Proceed)
             .query(buildFilterQuery(keysByField, filters))
+            .maxDocs(MAX_DELETE_DOCS)
             .build();
 
-    final var timer = Timer.start();
-    return client
-        .deleteByQuery(request)
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(DeleteByQueryResponse::total, executor)
-        .thenApplyAsync(ok -> null, executor);
+    return AsyncRepeatUntil.repeatUntil(
+        () -> deleteDocuments(request), reindexed -> reindexed < MAX_DELETE_DOCS);
   }
 
   @Override
@@ -341,16 +338,11 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
             .conflicts(Conflicts.Proceed)
             .scroll(REINDEX_SCROLL_TIMEOUT)
             .slices(AUTO_SLICES)
+            .maxDocs(MAX_REINDEX_DOCS)
             .build();
 
-    final var timer = Timer.start();
-    return client
-        .reindex(request)
-        .whenCompleteAsync(
-            (response, error) ->
-                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
-            executor)
-        .thenApplyAsync(ignored -> null, executor);
+    return AsyncRepeatUntil.repeatUntil(
+        () -> reindexDocuments(request), reindexed -> reindexed < MAX_REINDEX_DOCS);
   }
 
   @Override
@@ -364,6 +356,28 @@ public final class ElasticsearchArchiverRepository extends ElasticsearchReposito
                             config.getArchivingTimePoint(), partitionId)));
 
     return client.count(countRequest).thenApplyAsync(res -> Math.toIntExact(res.count()));
+  }
+
+  private CompletableFuture<Long> deleteDocuments(final DeleteByQueryRequest request) {
+    final var timer = Timer.start();
+    return client
+        .deleteByQuery(request)
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverDelete(response != null ? response.total() : null, timer),
+            executor)
+        .thenApplyAsync(DeleteByQueryResponse::total);
+  }
+
+  private CompletableFuture<Long> reindexDocuments(final ReindexRequest request) {
+    final var timer = Timer.start();
+    return client
+        .reindex(request)
+        .whenCompleteAsync(
+            (response, error) ->
+                metrics.measureArchiverReindex(response != null ? response.total() : null, timer),
+            executor)
+        .thenApplyAsync(ReindexResponse::total);
   }
 
   private Query finishedProcessInstancesQuery(
