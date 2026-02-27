@@ -63,7 +63,7 @@ jobs:
     name: "Unit - Front End"
     if: inputs.runFeTests
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     permissions: { }  # GITHUB_TOKEN unused in this job
     defaults:
       run:

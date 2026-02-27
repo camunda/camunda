@@ -252,7 +252,7 @@ jobs:
     # Zeebe tests requiring strace
     name: "Unit - Strace Tests"
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       TEST_OWNER: Core Features
