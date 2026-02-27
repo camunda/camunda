@@ -575,6 +575,62 @@ final class BackupApiRequestHandlerTest {
                 1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4)));
   }
 
+  @Test
+  void shouldSyncMetadata() {
+    // given
+    final long checkpointId1 = 10;
+    final long checkpointId2 = 20;
+    final long checkpointId3 = 30;
+
+    final var info1 = createCheckpointInfo(checkpointId1);
+    final var info2 = createCheckpointInfo(checkpointId2);
+    final var info3 = createCheckpointInfo(checkpointId2);
+    final var info4 = createCheckpointInfo(checkpointId3);
+    final var range1 = new BackupRangeStatus(info1, info2);
+    final var range2 = new BackupRangeStatus(info3, info4);
+    final var request =
+        new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
+
+    when(backupManager.syncMetadata())
+        .thenReturn(CompletableActorFuture.completed(List.of(range1, range2)));
+
+    // when
+    final var rangeResponse = new BackupRangesResponse();
+    serverOutput.setResponseObject(rangeResponse);
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture).succeedsWithin(Duration.ofMillis(100)).matches(Either::isRight);
+    assertThat(rangeResponse.getRanges())
+        .containsExactlyInAnyOrder(
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toResponseCheckpointInfo(info1), toResponseCheckpointInfo(info2)),
+            new BackupRangesResponse.PartitionBackupRange(
+                1, toResponseCheckpointInfo(info3), toResponseCheckpointInfo(info4)));
+  }
+
+  @Test
+  void shouldReturnErrorWhenSyncMetadataFails() {
+    // given
+    final var request =
+        new BackupRequest().setType(BackupRequestType.SYNC_METADATA).setPartitionId(1);
+
+    when(backupManager.syncMetadata())
+        .thenReturn(
+            CompletableActorFuture.completedExceptionally(new RuntimeException("sync failed")));
+
+    // when
+    handleRequest(request);
+
+    // then
+    assertThat(responseFuture)
+        .succeedsWithin(Duration.ofMillis(100))
+        .matches(Either::isLeft)
+        .extracting(Either::getLeft)
+        .returns(ErrorCode.INTERNAL_ERROR, ErrorResponse::getErrorCode)
+        .returns("sync failed", error -> BufferUtil.bufferAsString(error.getErrorData()));
+  }
+
   private static BackupRangeStatus.CheckpointInfo createCheckpointInfo(final long checkpointId) {
     return new BackupRangeStatus.CheckpointInfo(
         checkpointId, 100L, NOW.toEpochMilli(), CheckpointType.MANUAL_BACKUP, -1L);

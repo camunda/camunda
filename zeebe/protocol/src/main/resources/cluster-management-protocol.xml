@@ -24,6 +24,7 @@
       <validValue name="DELETE">3</validValue>
       <validValue name="QUERY_STATE">4</validValue>
       <validValue name="QUERY_RANGES">5</validValue>
+      <validValue name="SYNC_METADATA">6</validValue>
     </enum>
 
     <enum name="BackupStatusCode" encodingType="uint8">

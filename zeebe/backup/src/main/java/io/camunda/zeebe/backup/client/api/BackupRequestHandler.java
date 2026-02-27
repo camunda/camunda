@@ -95,6 +95,12 @@ public final class BackupRequestHandler implements BackupApi {
         .thenApply(ignored -> null);
   }
 
+  @Override
+  public CompletionStage<BackupRangesResponse> syncMetadata() {
+    return broadcastRequest(this::createMetadataSyncRequest)
+        .thenApply(this::aggregateRangesResponses);
+  }
+
   /**
    * Trigger a checkpoint of the given type across all partitions
    *
@@ -382,6 +388,12 @@ public final class BackupRequestHandler implements BackupApi {
 
   private BrokerBackupRangesRequest createRangesRequest(final int partitionId) {
     final var request = new BrokerBackupRangesRequest();
+    request.setPartitionId(partitionId);
+    return request;
+  }
+
+  private BrokerMetadataSyncRequest createMetadataSyncRequest(final int partitionId) {
+    final var request = new BrokerMetadataSyncRequest();
     request.setPartitionId(partitionId);
     return request;
   }

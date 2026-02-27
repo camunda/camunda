@@ -61,7 +61,7 @@ public final class BackupService extends Actor implements BackupManager {
     metrics = new BackupManagerMetrics(partitionRegistry);
     internalBackupManager =
         new BackupServiceImpl(
-            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState);
+            backupStore, logStreamWriter, backupRangeState, checkpointMetadataState, partitionId);
     actorName = buildActorName("BackupService", partitionId);
     journalInfoProvider = raftMetadataProvider;
   }
@@ -216,6 +216,11 @@ public final class BackupService extends Actor implements BackupManager {
   @Override
   public ActorFuture<Collection<BackupRangeStatus>> getBackupRangeStatus() {
     return internalBackupManager.getBackupRangeStatus(actor);
+  }
+
+  @Override
+  public ActorFuture<Collection<BackupRangeStatus>> syncMetadata() {
+    return internalBackupManager.syncMetadata(actor);
   }
 
   private BackupIdentifierImpl getBackupId(final long checkpointId) {
