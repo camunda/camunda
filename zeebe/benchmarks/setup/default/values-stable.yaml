@@ -4,12 +4,11 @@ zeebe:
   nodeSelector:
     cloud.google.com/gke-nodepool: n2-standard-2-stable
 
-  # Ignore the stable VM node taints
   tolerations:
-    - key: cloud.google.com/gke-spot
-      operator: Equal
-      effect: NoSchedule
-      value: 'false'
+  - key: nodepool
+    operator: Equal
+    value: n2-standard-2-stable
+    effect: NoSchedule
 
 # Support of 10.x camunda platform
 zeebeGateway:
@@ -25,9 +24,8 @@ zeebeGateway:
               - key: cloud.google.com/gke-spot
                 operator: DoesNotExist
 
-  # Ignore the stable VM node taints
   tolerations:
-    - key: cloud.google.com/gke-spot
-      operator: Equal
-      effect: NoSchedule
-      value: 'false'
+  - key: nodepool
+    operator: Equal
+    value: n2-standard-2-stable
+    effect: NoSchedule
