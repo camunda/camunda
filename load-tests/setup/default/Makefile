@@ -13,7 +13,7 @@ additional_platform_configuration ?=
 # Optional: additional Helm configuration for the load test release.
 # Use this to pass extra `--set`/`-f` flags when installing/upgrading the load tests.
 # See the load test README for example values and guidance.
-additional_load_test_configuration ?=
+additional_load_test_configuration ?= --set global.image.repository=registry.camunda.cloud/team-zeebe --set global.image.pullSecrets[0].name=harbor-registry
 
 # Construct platform values files based on configuration
 platform_values := -f camunda-platform-values.yaml
@@ -23,6 +23,8 @@ ifeq ($(secondary_storage),postgresql)
 platform_values += -f camunda-platform-values-rdbms.yaml
 else ifeq ($(secondary_storage),opensearch)
 platform_values += -f camunda-platform-values-opensearch.yaml
+else ifeq ($(secondary_storage),none)
+platform_values += -f camunda-platform-no-secondary-storage.yaml
 endif
 
 # Add Optimize values if enabled
