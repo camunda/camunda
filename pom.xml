@@ -64,6 +64,13 @@
               <exclude>**/target/**/*.md</exclude>
               <exclude>**/node_modules/**/*.md</exclude>
               <exclude>tasklist/client/**/*.md</exclude>
+              <!--
+              can be removed once upgrading to spotless >= 3.1.0 which supports enabling the
+              YamlFrontMatter flexmark extension
+              -->
+              <exclude>.github/instructions/**/*.md</exclude>
+              <exclude>.github/skills/**/*.md</exclude>
+              <exclude>.github/agents/**/*.md</exclude>
             </excludes>
             <flexmark></flexmark>
           </markdown>
