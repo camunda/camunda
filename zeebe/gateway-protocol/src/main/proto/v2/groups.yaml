@@ -538,7 +538,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+                $ref: '#/components/schemas/GroupMappingRuleSearchResult'
         "400":
           $ref: 'common-responses.yaml#/components/responses/InvalidData'
         "401":
@@ -828,3 +828,17 @@ components:
           type: array
           items:
             $ref: 'roles.yaml#/components/schemas/RoleResult'
+
+    GroupMappingRuleSearchResult:
+      description: Group mapping rule search response.
+      required:
+        - items
+      type: object
+      allOf:
+        - $ref: 'search-models.yaml#/components/schemas/SearchQueryResponse'
+      properties:
+        items:
+          description: The matching mapping rules.
+          type: array
+          items:
+            $ref: 'mapping-rules.yaml#/components/schemas/MappingRuleResult'
