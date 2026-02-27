@@ -8,7 +8,9 @@
 package io.camunda.zeebe.backup.management;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.camunda.zeebe.backup.api.BackupStore;
@@ -18,9 +20,11 @@ import io.camunda.zeebe.backup.common.BackupMetadata.RangeEntry;
 import io.camunda.zeebe.backup.processing.state.DbBackupRangeState.BackupRange;
 import io.camunda.zeebe.backup.processing.state.DbCheckpointMetadataState;
 import io.camunda.zeebe.protocol.record.value.management.CheckpointType;
+import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
+import java.util.OptionalLong;
 import java.util.concurrent.CompletableFuture;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -59,13 +63,14 @@ final class BackupMetadataSyncerTest {
     // then - verify the content is valid JSON that deserializes correctly
     final var manifest =
         BackupMetadataSyncer.MAPPER.readValue(contentCaptor.getValue(), BackupMetadata.class);
-    assertThat(manifest.partitionId()).isEqualTo(1);
+    assertThat(manifest.partitionId()).isOne();
     assertThat(manifest.checkpoints()).hasSize(1);
     assertThat(manifest.checkpoints().getFirst().checkpointId()).isEqualTo(10L);
     assertThat(manifest.checkpoints().getFirst().checkpointPosition()).isEqualTo(100L);
     assertThat(manifest.checkpoints().getFirst().checkpointType())
         .isEqualTo(CheckpointType.SCHEDULED_BACKUP);
-    assertThat(manifest.checkpoints().getFirst().firstLogPosition()).isEqualTo(50L);
+    assertThat(manifest.checkpoints().getFirst().firstLogPosition())
+        .isEqualTo(OptionalLong.of(50L));
     assertThat(manifest.ranges()).hasSize(1);
     assertThat(manifest.ranges().getFirst().start()).isEqualTo(10L);
     assertThat(manifest.ranges().getFirst().end()).isEqualTo(20L);
@@ -90,9 +95,17 @@ final class BackupMetadataSyncerTest {
     final var checkpoints =
         List.of(
             new CheckpointEntry(
-                1L, 100L, Instant.ofEpochMilli(1000), CheckpointType.SCHEDULED_BACKUP, 50L),
+                1L,
+                100L,
+                Instant.ofEpochMilli(1000),
+                CheckpointType.SCHEDULED_BACKUP,
+                OptionalLong.of(50L)),
             new CheckpointEntry(
-                2L, 200L, Instant.ofEpochMilli(2000), CheckpointType.MANUAL_BACKUP, 150L));
+                2L,
+                200L,
+                Instant.ofEpochMilli(2000),
+                CheckpointType.MANUAL_BACKUP,
+                OptionalLong.of(150L)));
     final var ranges = List.of(new RangeEntry(1L, 2L));
     final var manifest =
         new BackupMetadata(BackupMetadata.VERSION, 1, Instant.now(), checkpoints, ranges);
@@ -113,6 +126,94 @@ final class BackupMetadataSyncerTest {
     assertThat(loaded.ranges()).hasSize(1);
     assertThat(loaded.ranges().getFirst().start()).isEqualTo(1L);
     assertThat(loaded.ranges().getFirst().end()).isEqualTo(2L);
+  }
+
+  @Test
+  void shouldSerializeMarkerWithoutFirstLogPosition() throws IOException {
+    // given
+    final var checkpointEntry =
+        new DbCheckpointMetadataState.CheckpointEntry(10L, 100L, 1000L, CheckpointType.MARKER, -1L);
+    final var range = new BackupRange(10L, 20L);
+
+    final var contentCaptor = ArgumentCaptor.forClass(byte[].class);
+    when(backupStore.storeBackupMetadata(eq(1), contentCaptor.capture()))
+        .thenReturn(CompletableFuture.completedFuture(null));
+
+    // when
+    syncer.store(1, List.of(checkpointEntry), List.of(range)).join();
+
+    // then - verify the content is valid JSON that deserializes correctly
+    final var manifest =
+        BackupMetadataSyncer.MAPPER.readValue(contentCaptor.getValue(), BackupMetadata.class);
+    assertThat(manifest.partitionId()).isOne();
+    assertThat(manifest.checkpoints()).hasSize(1);
+    assertThat(manifest.checkpoints().getFirst().checkpointId()).isEqualTo(10L);
+    assertThat(manifest.checkpoints().getFirst().checkpointPosition()).isEqualTo(100L);
+    assertThat(manifest.checkpoints().getFirst().checkpointType()).isEqualTo(CheckpointType.MARKER);
+    assertThat(manifest.checkpoints().getFirst().firstLogPosition()).isEmpty();
+
+    assertThat(manifest.ranges()).hasSize(1);
+    assertThat(manifest.ranges().getFirst().start()).isEqualTo(10L);
+    assertThat(manifest.ranges().getFirst().end()).isEqualTo(20L);
+  }
+
+  @Test
+  void shouldParseMetadataWithoutFirstLogPositionOnMarker() {
+    // given
+    final var metadata =
+        """
+        {
+            "version": 1,
+            "partitionId": 1,
+            "lastUpdated": "2026-02-27T06:00:29.349354439Z",
+            "checkpoints": [
+                {
+                    "checkpointId": 1772172018889,
+                    "checkpointPosition": 744,
+                    "checkpointTimestamp": "2026-02-27T06:00:18.889Z",
+                    "checkpointType": "MARKER"
+                },
+                {
+                    "checkpointId": 1772172029318,
+                    "checkpointPosition": 752,
+                    "checkpointTimestamp": "2026-02-27T06:00:29.346Z",
+                    "checkpointType": "SCHEDULED_BACKUP",
+                    "firstLogPosition": 1
+                }
+            ],
+            "ranges": [
+                {
+                    "start": 1772172029318,
+                    "end": 1772172029318
+                }
+            ]
+        }
+        """;
+
+    final BackupStore store = mock(BackupStore.class);
+    final BackupMetadataSyncer syncer = new BackupMetadataSyncer(store);
+    when(store.loadBackupMetadata(anyInt()))
+        .thenReturn(CompletableFuture.completedFuture(Optional.of(metadata.getBytes())));
+
+    // when
+    final var loadedMetadata = syncer.load(1).join();
+
+    // then
+    assertThat(loadedMetadata.isPresent());
+    assertThat(loadedMetadata.get().checkpoints().size() == 2);
+    final var cp =
+        loadedMetadata.get().checkpoints().stream()
+            .filter(f -> f.checkpointType() == CheckpointType.MARKER)
+            .findFirst();
+    assertThat(cp).isPresent();
+    assertThat(cp.get().firstLogPosition()).isEmpty();
+
+    final var marker =
+        loadedMetadata.get().checkpoints().stream()
+            .filter(f -> f.checkpointType() == CheckpointType.SCHEDULED_BACKUP)
+            .findFirst();
+    assertThat(marker).isPresent();
+    assertThat(marker.get().firstLogPosition()).isEqualTo(OptionalLong.of(1L));
   }
 
   private static byte[] serializeManifest(final BackupMetadata manifest) {
