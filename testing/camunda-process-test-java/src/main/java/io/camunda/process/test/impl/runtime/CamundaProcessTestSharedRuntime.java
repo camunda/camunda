@@ -35,28 +35,25 @@ public class CamundaProcessTestSharedRuntime implements CamundaProcessTestRuntim
     initializeSharedRuntime(runtimeBuilder, sharedRuntimeStorage);
   }
 
-  private static void initializeSharedRuntime(
+  private static synchronized void initializeSharedRuntime(
       final Supplier<CamundaProcessTestContainerRuntime> runtimeBuilder,
       final SharedRuntimeStorage sharedRuntimeStorage) {
 
-    final CamundaProcessTestContainerRuntime sharedRuntime = sharedRuntimeStorage.getRuntime();
+    CamundaProcessTestContainerRuntime sharedRuntime = sharedRuntimeStorage.getRuntime();
     if (sharedRuntime == null) {
       // Initialize the shared runtime only once, when the first test class is instantiated. The
       // next test classes will reuse the same runtime instance.
-      sharedRuntimeStorage.setRuntime(runtimeBuilder.get());
+      sharedRuntime = runtimeBuilder.get();
+      sharedRuntimeStorage.setRuntime(sharedRuntime);
+
+      // Register a shutdown hook to close the shared runtime when all tests are finished.
+      registerClosingRuntimeHook(sharedRuntime);
     }
   }
 
   @Override
   public void start() {
-    if (!getSharedRuntime().isStarted()) {
-      // Start the shared runtime only once, when the first test class is instantiated. The next
-      // test classes will reuse the same runtime instance, which is already started.
-      getSharedRuntime().start();
-
-      // Register a shutdown hook to close the shared runtime when all tests are finished.
-      registerClosingRuntimeHook();
-    }
+    startSharedRuntime();
   }
 
   @Override
@@ -84,14 +81,23 @@ public class CamundaProcessTestSharedRuntime implements CamundaProcessTestRuntim
     return getSharedRuntime().getCamundaClientBuilderFactory();
   }
 
-  private void registerClosingRuntimeHook() {
+  private synchronized void startSharedRuntime() {
+    if (!getSharedRuntime().isStarted()) {
+      // Start the shared runtime only once, when the first test class is instantiated. The next
+      // test classes will reuse the same runtime instance, which is already started.
+      getSharedRuntime().start();
+    }
+  }
+
+  private static void registerClosingRuntimeHook(
+      final CamundaProcessTestContainerRuntime sharedRuntime) {
     Runtime.getRuntime()
         .addShutdownHook(
             new Thread(
                 () -> {
                   try {
-                    if (getSharedRuntime() != null) {
-                      getSharedRuntime().close();
+                    if (sharedRuntime.isStarted()) {
+                      sharedRuntime.close();
                     }
                   } catch (final Exception e) {
                     throw new RuntimeException("Failed to close shared runtime", e);
