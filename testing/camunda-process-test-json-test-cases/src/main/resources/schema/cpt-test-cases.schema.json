@@ -16,7 +16,7 @@
   "required": [
     "testCases"
   ],
-  "additionalProperties": false,
+  "additionalProperties": true,
   "definitions": {
     "TestCase": {
       "description": "A test case with instructions to validate the business process.",
@@ -42,7 +42,7 @@
         "name",
         "instructions"
       ],
-      "additionalProperties": false
+      "additionalProperties": true
     },
     "TestCaseInstruction": {
       "description": "An instruction to define an action or an assertion to be performed in a test case.",
