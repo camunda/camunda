@@ -338,6 +338,37 @@ jobs:
 
       # As the checkout step uses the initial token, we need to override the git auth with the renewed token in order to be able to push changes in the next steps.
       # checkout step is using extraheader for authentication, so we need to override the extraheader with the renewed token as well.
+      - name: Debug git extraheaders before override (sanitized)
+        if: ${{ !inputs.dryRun }}
+        run: |
+          sanitize() {
+            sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
+          }
+
+          inspect_key() {
+            local key="$1"
+            local label="$2"
+            mapfile -t lines < <(git config --local --show-origin --get-all "$key" 2>/dev/null || true)
+            local count="${#lines[@]}"
+
+            echo "--- ${label} ---"
+            echo "key=${key}"
+            echo "count=${count}"
+
+            if (( count == 0 )); then
+              echo "values=(none)"
+            else
+              printf '%s\n' "${lines[@]}" | sanitize
+            fi
+
+            if (( count > 1 )); then
+              echo "warning=duplicate-entries-detected"
+            fi
+          }
+
+          inspect_key "http.https://github.com/.extraheader" "host-scoped extraheader"
+          inspect_key "http.https://github.com/camunda/camunda/.extraheader" "repo-scoped extraheader"
+
       - name: Override git auth with renewed token (extraheader)
         if: ${{ !inputs.dryRun }}
         env:
@@ -345,7 +376,39 @@ jobs:
         run: |
           echo "::add-mask::$FRESH_TOKEN"
           AUTH_HEADER=$(printf "x-access-token:%s" "$FRESH_TOKEN" | base64 | tr -d '\n')
+          git config --local --unset-all http.https://github.com/.extraheader || true
           git config --local http.https://github.com/.extraheader "AUTHORIZATION: basic $AUTH_HEADER"
+
+      - name: Debug git extraheaders after override (sanitized)
+        if: ${{ !inputs.dryRun }}
+        run: |
+          sanitize() {
+            sed -E 's#(AUTHORIZATION: basic )[A-Za-z0-9+/=]+#\1***REDACTED***#g'
+          }
+
+          inspect_key() {
+            local key="$1"
+            local label="$2"
+            mapfile -t lines < <(git config --local --show-origin --get-all "$key" 2>/dev/null || true)
+            local count="${#lines[@]}"
+
+            echo "--- ${label} ---"
+            echo "key=${key}"
+            echo "count=${count}"
+
+            if (( count == 0 )); then
+              echo "values=(none)"
+            else
+              printf '%s\n' "${lines[@]}" | sanitize
+            fi
+
+            if (( count > 1 )); then
+              echo "warning=duplicate-entries-detected"
+            fi
+          }
+
+          inspect_key "http.https://github.com/.extraheader" "host-scoped extraheader"
+          inspect_key "http.https://github.com/camunda/camunda/.extraheader" "repo-scoped extraheader"
 
       - name: Debug Optimize Versions
         if: ${{ inputs.includeOptimize && inputs.dryRun }}
