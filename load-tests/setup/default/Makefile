@@ -87,6 +87,7 @@ install-platform: setup-leader-balancer
 		--reset-then-reuse-values \
 		--render-subchart-notes \
 		$(platform_values) \
+		-f values-preemptible.yaml \
 		$(additional_platform_configuration)
 
 # Install/upgrade Camunda Platform on stable VMs
@@ -129,6 +130,7 @@ setup-leader-balancer:
 template:
 	helm template $(namespace) camunda/$(helm_chart) \
 		$(platform_values) \
+		-f values-preemptible.yaml \
 		--output-dir .
 
 .PHONY: template-stable

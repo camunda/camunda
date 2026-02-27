@@ -1,6 +1,9 @@
 fullnameOverride: "prom-els-exporter"
 
 image:
+  # Route through colocated GAR pull-through cache to avoid quay.io rate limiting
+  # Original: quay.io/prometheuscommunity/elasticsearch-exporter
+  repository: "europe-west1-docker.pkg.dev/camunda-benchmark/quayio/prometheuscommunity/elasticsearch-exporter"
   # Set your specific exporter version here
   tag: "v1.10.0"
 
