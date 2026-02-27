@@ -16,7 +16,7 @@ import {
   calledDecisionInstanceMetadata,
 } from 'modules/mocks/metadata';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {labels, renderPopover} from './mocks';
 import type {
   ProcessInstance,
@@ -117,7 +117,7 @@ describe('MetadataPopover', () => {
 
     mockSearchUserTasks().withSuccess(searchResult([]));
 
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: FLOW_NODE_ID,
@@ -307,7 +307,7 @@ describe('MetadataPopover', () => {
         {...mockElementInstance, hasIncident: true},
       ]),
     );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: FLOW_NODE_ID,
@@ -457,7 +457,7 @@ describe('MetadataPopover', () => {
   });
 
   it('should search for single element instance when count is 1', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: FLOW_NODE_ID,
@@ -611,7 +611,7 @@ describe('MetadataPopover', () => {
         mockElementInstance,
       ]),
     );
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: FLOW_NODE_ID,

@@ -6,12 +6,15 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {mockGetRequest} from '../../mockRequest';
+import {useElementInstancesStatistics} from './useElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
-const mockFetchFlownodeInstancesStatistics = () =>
-  mockGetRequest<GetProcessInstanceStatisticsResponseBody>(
-    '/v2/process-instances/:processInstanceKey/statistics/element-instances',
-  );
+const selectableElementsParser = (
+  response: GetProcessInstanceStatisticsResponseBody,
+) => response.items.map(({elementId}) => elementId);
 
-export {mockFetchFlownodeInstancesStatistics};
+const useSelectableElements = () => {
+  return useElementInstancesStatistics(selectableElementsParser);
+};
+
+export {useSelectableElements};

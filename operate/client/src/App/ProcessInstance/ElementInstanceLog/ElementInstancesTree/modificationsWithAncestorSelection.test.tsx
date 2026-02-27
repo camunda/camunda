@@ -17,7 +17,7 @@ import {
 } from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
 import {generateUniqueID} from 'modules/utils/generateUniqueID';
@@ -35,7 +35,7 @@ describe.todo(
     beforeEach(async () => {
       mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
       mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-      mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+      mockFetchElementInstancesStatistics().withSuccess({items: []});
       mockQueryBatchOperationItems().withSuccess({
         items: [],
         page: {

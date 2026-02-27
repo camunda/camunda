@@ -12,7 +12,7 @@ import {ElementInstancesTree} from './index';
 import {Wrapper, mockMultiInstanceProcessInstance} from './mocks';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
@@ -88,7 +88,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
   it('should load the instance history', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [],
     });
 
@@ -113,7 +113,7 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
   it('should be able to unfold and fold subprocesses', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [],
     });
 
@@ -211,10 +211,10 @@ describe('ElementInstancesTree - Multi Instance Subprocess', () => {
 
   it('should poll for instances on root level', async () => {
     mockFetchProcessInstance().withSuccess(mockMultiInstanceProcessInstance);
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [],
     });
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [],
     });
 

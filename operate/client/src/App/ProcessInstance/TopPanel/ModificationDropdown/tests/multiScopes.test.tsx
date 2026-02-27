@@ -10,7 +10,7 @@ import {screen, waitForElementToBeRemoved} from '@testing-library/react';
 import {modificationsStore} from 'modules/stores/modifications';
 import {open} from 'modules/mocks/diagrams';
 import {renderPopover} from './mocks';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {type ProcessInstance} from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
@@ -98,8 +98,8 @@ describe('Modification Dropdown - Multi Scopes', () => {
     mockFetchProcessDefinitionXml().withSuccess(
       open('multipleInstanceSubProcess.bpmn'),
     );
-    mockFetchFlownodeInstancesStatistics().withSuccess(stats);
-    mockFetchFlownodeInstancesStatistics().withSuccess(stats);
+    mockFetchElementInstancesStatistics().withSuccess(stats);
+    mockFetchElementInstancesStatistics().withSuccess(stats);
     mockSearchElementInstances().withSuccess({
       items: [],
       page: {
@@ -113,7 +113,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should support add modification for task with multiple scopes', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'OuterSubProcess',
@@ -147,7 +147,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should render no modifications available when multi sub process instance is selected', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'OuterSubProcess',
@@ -193,7 +193,7 @@ describe('Modification Dropdown - Multi Scopes', () => {
   });
 
   it('should display visible child instances count when multi instance body element with multiple child instances is selected', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({
+    mockFetchElementInstancesStatistics().withSuccess({
       items: [
         {
           elementId: 'TaskB',

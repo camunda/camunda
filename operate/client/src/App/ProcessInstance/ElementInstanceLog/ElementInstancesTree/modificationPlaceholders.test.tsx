@@ -27,7 +27,7 @@ import {
   generateParentScopeIds,
 } from 'modules/utils/modifications';
 import {mockNestedSubProcessBusinessObjects} from 'modules/mocks/mockNestedSubProcessBusinessObjects';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';
 import {mockQueryBatchOperationItems} from 'modules/mocks/api/v2/batchOperations/queryBatchOperationItems';
@@ -49,14 +49,14 @@ const nestedSubprocessBusinessObjects = businessObjectsParser({
 describe('ElementInstancesTree - Modification placeholders', () => {
   beforeEach(async () => {
     mockFetchProcessDefinitionXml().withSuccess(multiInstanceProcess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockQueryBatchOperationItems().withSuccess(searchResult([]));
   });
 
   it('should create new parent scopes for a new placeholder if there are no running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithNoRunningScopeMock.firstLevel,
     );
@@ -446,7 +446,7 @@ describe('ElementInstancesTree - Modification placeholders', () => {
   it('should not create new parent scopes for a new placeholder if there is one running scopes', async () => {
     mockFetchProcessInstance().withSuccess(mockNestedSubProcessInstance);
     mockFetchProcessDefinitionXml().withSuccess(mockNestedSubprocess);
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
     mockSearchElementInstances().withSuccess(
       multipleSubprocessesWithOneRunningScopeMock.firstLevel,
     );

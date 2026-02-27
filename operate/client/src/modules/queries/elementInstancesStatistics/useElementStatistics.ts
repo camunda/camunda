@@ -6,17 +6,17 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from './useElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
-import {getStatisticsByFlowNode} from 'modules/utils/statistics/flownodeInstances';
+import {getStatisticsByElement} from 'modules/utils/statistics/elementInstances';
 import {useBusinessObjects} from '../processDefinitions/useBusinessObjects';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import type {FlowNodeState} from 'modules/types/operate';
 
-const statisticsByFlowNodeParser =
+const statisticsByElementParser =
   (businessObjects?: BusinessObjects) =>
   (response: GetProcessInstanceStatisticsResponseBody) => {
-    const statistics = getStatisticsByFlowNode(response.items, businessObjects);
+    const statistics = getStatisticsByElement(response.items, businessObjects);
 
     return Object.keys(statistics).flatMap((id) => {
       const types = [
@@ -33,10 +33,10 @@ const statisticsByFlowNodeParser =
         {
           id: string;
           count: number;
-          flowNodeState: FlowNodeState | 'completedEndEvents';
+          elementState: FlowNodeState | 'completedEndEvents';
         }[]
-      >((states, flowNodeState) => {
-        const count = statistic?.[flowNodeState] ?? 0;
+      >((states, elementState) => {
+        const count = statistic?.[elementState] ?? 0;
 
         if (count === 0) {
           return states;
@@ -47,19 +47,19 @@ const statisticsByFlowNodeParser =
           {
             id,
             count,
-            flowNodeState,
+            elementState,
           },
         ];
       }, []);
     });
   };
 
-const useFlownodeStatistics = () => {
+const useElementStatistics = () => {
   const {data: businessObjects} = useBusinessObjects();
 
-  return useFlownodeInstancesStatistics(
-    statisticsByFlowNodeParser(businessObjects),
+  return useElementInstancesStatistics(
+    statisticsByElementParser(businessObjects),
   );
 };
 
-export {useFlownodeStatistics};
+export {useElementStatistics};

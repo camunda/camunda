@@ -9,9 +9,9 @@
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
-import {useHasMultipleInstances} from './flowNodeMetadata';
+import {useHasMultipleInstances} from './elementMetadata';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockSearchElementInstances} from 'modules/mocks/api/v2/elementInstances/searchElementInstances';
@@ -82,7 +82,7 @@ describe('useHasMultipleInstances', () => {
   });
 
   it('should return true when a multi-instance element is selected with multiple instances', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess(
+    mockFetchElementInstancesStatistics().withSuccess(
       multipleInstancesStatistics,
     );
     mockSearchElementInstances().withSuccess(
@@ -104,9 +104,7 @@ describe('useHasMultipleInstances', () => {
   });
 
   it('should return false when a multi-instance element is selected with a single instance', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess(
-      singleInstanceStatistics,
-    );
+    mockFetchElementInstancesStatistics().withSuccess(singleInstanceStatistics);
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance]),
     );
@@ -122,7 +120,7 @@ describe('useHasMultipleInstances', () => {
   });
 
   it('should return false when a specific instance is selected', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess(
+    mockFetchElementInstancesStatistics().withSuccess(
       multipleInstancesStatistics,
     );
     mockFetchElementInstance('999').withSuccess({
@@ -154,7 +152,7 @@ describe('useHasMultipleInstances', () => {
   });
 
   it('should return true for elements with multiple instances', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess(
+    mockFetchElementInstancesStatistics().withSuccess(
       multipleInstancesStatistics,
     );
     mockSearchElementInstances().withSuccess(
@@ -175,9 +173,7 @@ describe('useHasMultipleInstances', () => {
   });
 
   it('should return false for elements with a single instance', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess(
-      singleInstanceStatistics,
-    );
+    mockFetchElementInstancesStatistics().withSuccess(singleInstanceStatistics);
     mockSearchElementInstances().withSuccess(
       searchResult([mockElementInstance]),
     );

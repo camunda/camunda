@@ -14,7 +14,7 @@ import {batchModificationStore} from 'modules/stores/batchModification';
 import {useProcessDefinitionKeyContext} from '../processDefinitionKeyContext';
 import {useListViewXml} from 'modules/queries/processDefinitions/useListViewXml';
 
-const FlowNodeField: React.FC = observer(() => {
+const ElementField: React.FC = observer(() => {
   const processDefinitionKey = useProcessDefinitionKeyContext();
   const {data: processDefinitionData, isFetching} = useListViewXml({
     processDefinitionKey,
@@ -47,4 +47,4 @@ const FlowNodeField: React.FC = observer(() => {
   );
 });
 
-export {FlowNodeField};
+export {ElementField};

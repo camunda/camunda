@@ -10,14 +10,14 @@ import React, {useEffect} from 'react';
 import {renderHook} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {getStatisticsByFlowNode} from './flownodeInstances';
+import {getStatisticsByElement} from './elementInstances';
 import {modificationsStore} from 'modules/stores/modifications';
 import type {BusinessObjects} from 'bpmn-js/lib/NavigatedViewer';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
 
-describe('getStatisticsByFlowNode', () => {
+describe('getStatisticsByElement', () => {
   const businessObjects: BusinessObjects = {
     StartEvent_1: {
       $type: 'bpmn:StartEvent',
@@ -80,7 +80,7 @@ describe('getStatisticsByFlowNode', () => {
     ];
 
     const {result} = renderHook(
-      () => getStatisticsByFlowNode(data, businessObjects),
+      () => getStatisticsByElement(data, businessObjects),
       {
         wrapper: Wrapper,
       },
@@ -123,7 +123,7 @@ describe('getStatisticsByFlowNode', () => {
     ];
 
     const {result} = renderHook(
-      () => getStatisticsByFlowNode(data, businessObjects),
+      () => getStatisticsByElement(data, businessObjects),
       {
         wrapper: Wrapper,
       },
@@ -154,7 +154,7 @@ describe('getStatisticsByFlowNode', () => {
     ];
 
     const {result} = renderHook(
-      () => getStatisticsByFlowNode(data, businessObjects),
+      () => getStatisticsByElement(data, businessObjects),
       {
         wrapper: Wrapper,
       },
@@ -183,7 +183,7 @@ describe('getStatisticsByFlowNode', () => {
     ];
 
     const {result} = renderHook(
-      () => getStatisticsByFlowNode(data, businessObjects),
+      () => getStatisticsByElement(data, businessObjects),
       {
         wrapper: Wrapper,
       },
@@ -212,7 +212,7 @@ describe('getStatisticsByFlowNode', () => {
     ];
 
     const {result} = renderHook(
-      () => getStatisticsByFlowNode(data, businessObjects),
+      () => getStatisticsByElement(data, businessObjects),
       {
         wrapper: Wrapper,
       },

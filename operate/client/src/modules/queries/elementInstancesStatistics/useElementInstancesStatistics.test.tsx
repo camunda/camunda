@@ -8,21 +8,21 @@
 
 import {renderHook, waitFor} from '@testing-library/react';
 import {QueryClientProvider} from '@tanstack/react-query';
-import {useFlownodeStatistics} from './useFlownodeStatistics';
+import {useElementInstancesStatistics} from './useElementInstancesStatistics';
 import {getMockQueryClient} from 'modules/react-query/mockQueryClient';
-import {mockFetchFlownodeInstancesStatistics} from 'modules/mocks/api/v2/flownodeInstances/fetchFlownodeInstancesStatistics';
+import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 import {
   createProcessInstance,
   mockProcessWithInputOutputMappingsXML,
 } from 'modules/testUtils';
 import {ProcessDefinitionKeyContext} from 'App/Processes/ListView/processDefinitionKeyContext';
-import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {MemoryRouter, Route, Routes} from 'react-router-dom';
 import {Paths} from 'modules/Routes';
+import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 
-describe('useFlownodeStatistics', () => {
+describe('useElementInstancesStatistics', () => {
   const Wrapper = ({children}: {children: React.ReactNode}) => {
     return (
       <ProcessDefinitionKeyContext.Provider value="123">
@@ -44,18 +44,18 @@ describe('useFlownodeStatistics', () => {
     mockFetchProcessInstance().withSuccess(createProcessInstance());
   });
 
-  it('should fetch parsed flownode statistics successfully', async () => {
+  it('should fetch flownode instances statistics successfully', async () => {
     const mockData: GetProcessInstanceStatisticsResponseBody = {
       items: [
         {
-          elementId: 'StartEvent_1',
+          elementId: 'node1',
           active: 5,
           completed: 10,
           canceled: 0,
           incidents: 0,
         },
         {
-          elementId: 'Activity_0qtp1k6',
+          elementId: 'node2',
           active: 3,
           completed: 7,
           canceled: 0,
@@ -64,30 +64,55 @@ describe('useFlownodeStatistics', () => {
       ],
     };
 
-    mockFetchFlownodeInstancesStatistics().withSuccess(mockData);
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
 
-    const {result} = renderHook(() => useFlownodeStatistics(), {
+    const {result} = renderHook(() => useElementInstancesStatistics(), {
       wrapper: Wrapper,
     });
 
-    mockFetchProcessDefinitionXml().withSuccess(
-      mockProcessWithInputOutputMappingsXML,
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(result.current.data).toEqual(mockData);
+  });
+
+  it('should handle select', async () => {
+    const mockData: GetProcessInstanceStatisticsResponseBody = {
+      items: [
+        {
+          elementId: 'node1',
+          active: 5,
+          completed: 10,
+          canceled: 0,
+          incidents: 0,
+        },
+        {
+          elementId: 'node2',
+          active: 3,
+          completed: 7,
+          canceled: 0,
+          incidents: 0,
+        },
+      ],
+    };
+
+    mockFetchElementInstancesStatistics().withSuccess(mockData);
+
+    const {result} = renderHook(
+      () => useElementInstancesStatistics((data) => data.items.length),
+      {
+        wrapper: Wrapper,
+      },
     );
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual([
-      {id: 'StartEvent_1', count: 5, flowNodeState: 'active'},
-      {id: 'StartEvent_1', count: 10, flowNodeState: 'completed'},
-      {id: 'Activity_0qtp1k6', count: 3, flowNodeState: 'active'},
-      {id: 'Activity_0qtp1k6', count: 7, flowNodeState: 'completed'},
-    ]);
+    expect(result.current.data).toEqual(mockData.items.length);
   });
 
-  it('should handle server error while fetching flownode statistics', async () => {
-    mockFetchFlownodeInstancesStatistics().withServerError();
+  it('should handle server error while fetching flownode instances overlay statistics', async () => {
+    mockFetchElementInstancesStatistics().withServerError();
 
-    const {result} = renderHook(() => useFlownodeStatistics(), {
+    const {result} = renderHook(() => useElementInstancesStatistics(), {
       wrapper: Wrapper,
     });
 
@@ -98,10 +123,10 @@ describe('useFlownodeStatistics', () => {
     expect(result.current.error?.response).toBeDefined();
   });
 
-  it('should handle network error while fetching flownode statistics', async () => {
-    mockFetchFlownodeInstancesStatistics().withNetworkError();
+  it('should handle network error while fetching flownode instances overlay statistics', async () => {
+    mockFetchElementInstancesStatistics().withNetworkError();
 
-    const {result} = renderHook(() => useFlownodeStatistics(), {
+    const {result} = renderHook(() => useElementInstancesStatistics(), {
       wrapper: Wrapper,
     });
 
@@ -113,24 +138,39 @@ describe('useFlownodeStatistics', () => {
   });
 
   it('should handle empty data', async () => {
-    mockFetchFlownodeInstancesStatistics().withSuccess({items: []});
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
 
-    const {result} = renderHook(() => useFlownodeStatistics(), {
+    const {result} = renderHook(() => useElementInstancesStatistics(), {
       wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual([]);
+    expect(result.current.data).toEqual({items: []});
   });
 
   it('should handle loading state', async () => {
-    mockFetchFlownodeInstancesStatistics().withDelay({items: []});
+    mockFetchElementInstancesStatistics().withDelay({items: []});
 
-    const {result} = renderHook(() => useFlownodeStatistics(), {
+    const {result} = renderHook(() => useElementInstancesStatistics(), {
       wrapper: Wrapper,
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(true));
+  });
+
+  it('should not fetch data when enabled is false', async () => {
+    mockFetchElementInstancesStatistics().withSuccess({items: []});
+
+    const {result} = renderHook(
+      () => useElementInstancesStatistics((data) => data, false),
+      {
+        wrapper: Wrapper,
+      },
+    );
+
+    expect(result.current.isLoading).toBe(false);
+    expect(result.current.isFetched).toBe(false);
+    expect(result.current.data).toBeUndefined();
   });
 });

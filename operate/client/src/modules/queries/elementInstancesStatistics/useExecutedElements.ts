@@ -6,15 +6,18 @@
  * except in compliance with the Camunda License 1.0.
  */
 
-import {useFlownodeInstancesStatistics} from './useFlownodeInstancesStatistics';
+import {useElementInstancesStatistics} from './useElementInstancesStatistics';
 import {type GetProcessInstanceStatisticsResponseBody} from '@camunda/camunda-api-zod-schemas/8.9';
 
-const selectableFlowNodesParser = (
+const executedElementsParser = (
   response: GetProcessInstanceStatisticsResponseBody,
-) => response.items.map(({elementId}) => elementId);
+) =>
+  response.items.filter(({completed}) => {
+    return completed > 0;
+  });
 
-const useSelectableFlowNodes = () => {
-  return useFlownodeInstancesStatistics(selectableFlowNodesParser);
+const useExecutedElements = () => {
+  return useElementInstancesStatistics(executedElementsParser);
 };
 
-export {useSelectableFlowNodes};
+export {useExecutedElements};

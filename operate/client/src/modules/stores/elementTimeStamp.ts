@@ -15,7 +15,7 @@ const DEFAULT_STATE: State = {
   isTimeStampVisible: false,
 };
 
-class FlowNodeTimeStamp {
+class ElementTimeStamp {
   state: State = {...DEFAULT_STATE};
 
   constructor() {
@@ -31,4 +31,4 @@ class FlowNodeTimeStamp {
   };
 }
 
-export const flowNodeTimeStampStore = new FlowNodeTimeStamp();
+export const elementTimeStampStore = new ElementTimeStamp();
