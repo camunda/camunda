@@ -18,6 +18,7 @@ import io.camunda.zeebe.protocol.impl.record.value.deployment.ResourceRecord;
 import io.camunda.zeebe.protocol.record.intent.ResourceIntent;
 import io.camunda.zeebe.stream.api.state.KeyGenerator;
 import io.camunda.zeebe.util.Either;
+import io.camunda.zeebe.util.buffer.BufferUtil;
 import java.util.Optional;
 import java.util.function.LongSupplier;
 import org.agrona.DirectBuffer;
@@ -157,7 +158,8 @@ class DefaultResourceTransformer implements DeploymentResourceTransformer {
         .ifPresentOrElse(
             latestResource -> {
               if (resourceMetadataRecord.isDuplicateOf(
-                  latestResource.getChecksum(), latestResource.getResourceName())) {
+                  BufferUtil.bufferAsArray(latestResource.getChecksum()),
+                  BufferUtil.bufferAsString(latestResource.getResourceName()))) {
                 resourceMetadataRecord
                     .setResourceKey(latestResource.getResourceKey())
                     .setVersion(latestResource.getVersion())

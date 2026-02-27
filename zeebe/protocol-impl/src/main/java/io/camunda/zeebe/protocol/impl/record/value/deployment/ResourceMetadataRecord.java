@@ -107,10 +107,6 @@ public class ResourceMetadataRecord extends UnifiedRecordValue implements Resour
     return isDuplicateProp.getValue();
   }
 
-  public boolean isDuplicateOf(final DirectBuffer checksum, final DirectBuffer resourceName) {
-    return getChecksumBuffer().equals(checksum) && getResourceNameBuffer().equals(resourceName);
-  }
-
   public ResourceMetadataRecord setDuplicate(final boolean isDuplicate) {
     isDuplicateProp.setValue(isDuplicate);
     return this;
