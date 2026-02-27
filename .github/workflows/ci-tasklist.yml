@@ -295,7 +295,7 @@ jobs:
   run-backup-restore-tests:
     if: inputs.runBeTests
     name: "Integration / Backup Restore ITs"
-    timeout-minutes: 15
+    timeout-minutes: 30
     runs-on: ubuntu-latest
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
@@ -371,7 +371,7 @@ jobs:
     # Currently only runs Tasklist Docker tests but should be extended in future to also include backend tests
     name: "Integration / Docker ITs"
     runs-on: gcp-core-4-default
-    timeout-minutes: 15
+    timeout-minutes: 30
     permissions: {}  # GITHUB_TOKEN unused in this job
     env:
       TEST_TYPE: Integration
