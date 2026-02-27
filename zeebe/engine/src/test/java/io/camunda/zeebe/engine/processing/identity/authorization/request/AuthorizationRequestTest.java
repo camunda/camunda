@@ -111,6 +111,16 @@ class AuthorizationRequestTest {
                   .authorizationClaims(Map.of(Authorization.AUTHORIZED_USERNAME, "userB"))
                   .resourceType(AuthorizationResourceType.RESOURCE)
                   .permissionType(PermissionType.READ)
+                  .build()),
+          // Different resource properties
+          Arguments.of(
+              baseRequestBuilder()
+                  .resourceProperties(
+                      UserTaskAuthorizationProperties.builder().assignee("user1").build())
+                  .build(),
+              baseRequestBuilder()
+                  .resourceProperties(
+                      UserTaskAuthorizationProperties.builder().assignee("user2").build())
                   .build()));
     }
 
