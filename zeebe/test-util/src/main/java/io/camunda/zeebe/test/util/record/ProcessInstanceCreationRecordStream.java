@@ -13,6 +13,7 @@ import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue
 import io.camunda.zeebe.protocol.record.value.ProcessInstanceCreationRecordValue.ProcessInstanceCreationStartInstructionValue;
 import io.camunda.zeebe.test.util.collection.Maps;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -59,6 +60,11 @@ public final class ProcessInstanceCreationRecordStream
   public ProcessInstanceCreationRecordStream withVariables(
       final Predicate<Map<String, Object>> matcher) {
     return valueFilter(v -> matcher.test(v.getVariables()));
+  }
+
+  public ProcessInstanceCreationRecordStream withTags(final String... tags) {
+    final Set<String> tagsSet = Set.of(tags);
+    return valueFilter(v -> v.getTags().containsAll(tagsSet));
   }
 
   public ProcessInstanceCreationRecordStream withStartInstruction(final String elementId) {
