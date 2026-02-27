@@ -18,26 +18,6 @@ export function isFlowNode(businessObject: BusinessObject) {
   return businessObject.$instanceOf?.('bpmn:FlowNode') ?? false;
 }
 
-export function getFlowNode({
-  businessObjects,
-  flowNodeId,
-}: {
-  businessObjects?: BusinessObjects;
-  flowNodeId?: string;
-}) {
-  return flowNodeId ? businessObjects?.[flowNodeId] : undefined;
-}
-
-export function getFlowNodeName({
-  businessObjects,
-  flowNodeId,
-}: {
-  businessObjects?: BusinessObjects;
-  flowNodeId?: string;
-}) {
-  return getFlowNode({businessObjects, flowNodeId})?.name ?? flowNodeId ?? '';
-}
-
 export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   if (elementsById === undefined) {
     return [];
@@ -48,7 +28,27 @@ export function getFlowNodes(elementsById?: DiagramModel['elementsById']) {
   );
 }
 
-export function getSubprocessOverlayFromIncidentFlowNodes(
+export function getElement({
+  businessObjects,
+  elementId,
+}: {
+  businessObjects?: BusinessObjects;
+  elementId?: string;
+}) {
+  return elementId ? businessObjects?.[elementId] : undefined;
+}
+
+export function getElementName({
+  businessObjects,
+  elementId,
+}: {
+  businessObjects?: BusinessObjects;
+  elementId?: string;
+}) {
+  return getElement({businessObjects, elementId})?.name ?? elementId ?? '';
+}
+
+export function getSubprocessOverlayFromIncidentElements(
   flowNodes?: (BusinessObject | undefined)[],
   type: string = 'flowNodeState',
 ) {
