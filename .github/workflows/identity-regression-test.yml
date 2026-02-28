@@ -60,7 +60,7 @@ jobs:
           ./mvnw -B -T2C -pl dist -am -DskipTests -DskipChecks -Dflatten.skip=true --no-transfer-progress package
 
       - name: Upload Camunda Distribution
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: camunda-dist
           path: dist/target/camunda-zeebe-*.tar.gz
@@ -134,7 +134,7 @@ jobs:
           java-version: 21
 
       - name: Download Camunda Distribution Artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: camunda-dist
           path: ./dist/target

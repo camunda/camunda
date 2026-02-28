@@ -110,13 +110,13 @@ jobs:
           echo "distzip=dist/target/${ARTIFACT}.zip" >> "$GITHUB_OUTPUT"
 
       - name: Upload camunda-dist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: camunda-platform-dist
           path: ${{ steps.build-dist.outputs.distball }}
 
       - name: Upload camunda-dist-zip
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: camunda-platform-dist-zip
           path: ${{ steps.build-dist.outputs.distzip }}
@@ -138,7 +138,7 @@ jobs:
           node-version: 24
 
       - name: Download Camunda Core Dist
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: camunda-platform-dist
           path: c8run
@@ -170,13 +170,13 @@ jobs:
         run: ./api_tests.sh
         working-directory: ./c8run/e2e_tests
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.os }}
           path: ./c8run/e2e_tests/playwright-report
           retention-days: 30
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: c8run-logs-${{ matrix.os }}
@@ -232,7 +232,7 @@ jobs:
           cache: false # disabling since not working anyways without a cache-dependency-path specified
 
       - name: Download Camunda Core Dist
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: camunda-platform-dist-zip
           path: c8run
@@ -312,19 +312,19 @@ jobs:
         run: npx playwright test
         working-directory: .\c8run\e2e_tests
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: playwright-report
           path: .\c8run\e2e_tests\playwright-report
           retention-days: 30
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         with:
           name: camunda8-run-build-windows
           path: .\c8run\camunda8-run*
           retention-days: 1
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: c8run-logs

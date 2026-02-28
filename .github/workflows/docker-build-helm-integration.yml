@@ -85,7 +85,7 @@ jobs:
           directory: ./operate/client
           package-manager: "npm"
       - name: Upload Operate frontend artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: operate-frontend
           path: operate/client/build
@@ -115,7 +115,7 @@ jobs:
           directory: ./tasklist/client
           package-manager: "npm"
       - name: Upload Tasklist frontend artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tasklist-frontend
           path: tasklist/client/build
@@ -145,7 +145,7 @@ jobs:
           directory: ./identity/client
           package-manager: "npm"
       - name: Upload Identity frontend artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: identity-frontend
           path: identity/client/dist
@@ -207,19 +207,19 @@ jobs:
           fi
 
       - name: Download Operate frontend artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: operate-frontend
           path: operate/client/build
 
       - name: Download Tasklist frontend artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: tasklist-frontend
           path: tasklist/client/build
 
       - name: Download Identity frontend artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: identity-frontend
           path: identity/client/dist

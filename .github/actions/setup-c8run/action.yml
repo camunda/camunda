@@ -206,7 +206,7 @@ runs:
       env:
         JAVA_VERSION: 21.0.3
 
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: camunda8-run-build-${{ inputs.os }}
         path: ./c8run/camunda8-run*

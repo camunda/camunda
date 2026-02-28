@@ -44,7 +44,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Download previous report
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         continue-on-error: true
         with:
           name: zeebe-version-compatibility
@@ -76,7 +76,7 @@ jobs:
         with:
           name: "Version compatibility ${{ strategy.job-index }}"
       - name: Upload report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: zeebe-version-compatibility-${{ strategy.job-index }}
@@ -131,7 +131,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Download all reports
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: zeebe-version-compatibility-*
       - name: Merge reports
@@ -141,7 +141,7 @@ jobs:
             exit 1
           fi
       - name: Upload shared report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: zeebe-version-compatibility
           path: ${{ github.workspace }}/zeebe-version-compatibility

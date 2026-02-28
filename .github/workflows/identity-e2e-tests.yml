@@ -137,7 +137,7 @@ jobs:
           ZEEBE_REST_ADDRESS: "http://localhost:8080"
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
         run: npm run test -- --project=identity-e2e
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: C8 Orchestration Cluster E2E Test Result
