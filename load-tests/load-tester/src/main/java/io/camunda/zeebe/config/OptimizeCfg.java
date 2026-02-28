@@ -17,6 +17,7 @@ public final class OptimizeCfg {
   private String password;
   private String reportId;
   private boolean enableOptimize;
+  private String processDefinitionKey;
   private int evaluationIntervalSeconds = 60; // Default: 10 minutes
   private int durationLimit = 0; // 0 means run forever
 
@@ -106,5 +107,13 @@ public final class OptimizeCfg {
 
   public void setEnableOptimize(final boolean enableOptimize) {
     this.enableOptimize = enableOptimize;
+  }
+
+  public String getProcessDefinitionKey() {
+    return processDefinitionKey;
+  }
+
+  public void setProcessDefinitionKey(final String processDefinitionKey) {
+    this.processDefinitionKey = processDefinitionKey;
   }
 }

@@ -514,54 +514,6 @@ public class OptimizeReportLoadTester {
   }
 
   /**
-   * Fetches process definitions from the overview API.
-   *
-   * @return list of process definition keys
-   * @throws Exception if the request fails
-   */
-  public List<String> fetchProcessDefinitions() throws Exception {
-    ensureValidToken();
-
-    final String url = String.format("%s/api/process/overview?", optimizeBaseUrl);
-
-    final HttpRequest request =
-        HttpRequest.newBuilder()
-            .uri(URI.create(url))
-            .header("Cookie", "X-Optimize-Authorization_0=" + accessToken)
-            .header("Content-Type", "application/json")
-            .GET()
-            .build();
-
-    final HttpResponse<String> response =
-        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-
-    if (response.statusCode() != 200) {
-      throw new RuntimeException(
-          String.format(
-              "Failed to fetch process definitions. Status: %d, Body: %s",
-              response.statusCode(), response.body()));
-    }
-
-    final List<String> processDefinitionKeys = new ArrayList<>();
-    final JsonNode rootNode = OBJECT_MAPPER.readTree(response.body());
-
-    if (rootNode.isArray()) {
-      for (final JsonNode processNode : rootNode) {
-        if (processNode.has("processDefinitionKey")) {
-          final String key = processNode.get("processDefinitionKey").asText();
-          if (key != null && !key.trim().isEmpty()) {
-            processDefinitionKeys.add(key);
-            LOG.info("Found process definition key: {}", key);
-          }
-        }
-      }
-    }
-
-    LOG.info("Fetched {} process definition keys", processDefinitionKeys.size());
-    return processDefinitionKeys;
-  }
-
-  /**
    * Fetches the instant benchmark dashboard for a specific process definition key.
    *
    * @param processDefinitionKey the process definition key
@@ -706,20 +658,12 @@ public class OptimizeReportLoadTester {
    * Evaluates the instant benchmark dashboard, then evaluates all reports and finally calls
    * detailed evaluate API for each report.
    *
+   * @param processDefinitionKey the process definition key to use for the instant benchmark
    * @return a result containing dashboard metrics, report evaluations, and detailed evaluations
    * @throws Exception if any request fails
    */
-  public InstantBenchmarkResult evaluateInstantBenchmark() throws Exception {
-    // Step 0: Fetch process definitions from the overview API
-    LOG.info("Fetching process definitions from overview API...");
-    final List<String> processDefinitionKeys = fetchProcessDefinitions();
-
-    if (processDefinitionKeys.isEmpty()) {
-      throw new RuntimeException("No process definitions found in the overview API");
-    }
-
-    // Use the first process definition key for backward compatibility
-    final String processDefinitionKey = processDefinitionKeys.get(0);
+  public InstantBenchmarkResult evaluateInstantBenchmark(final String processDefinitionKey) throws Exception {
+    // Step 0: Use the provided process definition key
     LOG.info("Using process definition key: {}", processDefinitionKey);
 
     // Step 1: Fetch instant benchmark dashboard for the process definition
