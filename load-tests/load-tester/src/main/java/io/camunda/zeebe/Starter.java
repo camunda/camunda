@@ -569,7 +569,8 @@ public class Starter extends App {
       optimizeLoadTester.ensureValidToken();
 
       final OptimizeReportLoadTester.InstantBenchmarkResult result =
-          optimizeLoadTester.evaluateInstantBenchmark(config.getOptimize().getProcessDefinitionKey());
+          optimizeLoadTester.evaluateInstantBenchmark(
+              config.getOptimize().getProcessDefinitionKey());
 
       final OptimizeReportLoadTester.DashboardEvaluationResult dashboardResult =
           result.getDashboardResult();

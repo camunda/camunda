@@ -662,7 +662,8 @@ public class OptimizeReportLoadTester {
    * @return a result containing dashboard metrics, report evaluations, and detailed evaluations
    * @throws Exception if any request fails
    */
-  public InstantBenchmarkResult evaluateInstantBenchmark(final String processDefinitionKey) throws Exception {
+  public InstantBenchmarkResult evaluateInstantBenchmark(final String processDefinitionKey)
+      throws Exception {
     // Step 0: Use the provided process definition key
     LOG.info("Using process definition key: {}", processDefinitionKey);
 
