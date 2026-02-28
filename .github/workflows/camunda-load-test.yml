@@ -312,9 +312,11 @@ jobs:
           --render-subchart-notes
           --set global.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           --set global.image.pullSecrets[0].name=harbor-registry
-          --set zeebe.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
+          --set zeebe.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
+          --set zeebe.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/zeebe' }}
           --set zeebe.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
-          --set zeebeGateway.image.repository=${{ env.IMAGE_REPOSITORY }}/zeebe
+          --set zeebeGateway.image.registry=${{ inputs.use-official-docker-images && 'docker.io' || 'registry.camunda.cloud' }}
+          --set zeebeGateway.image.repository=${{ inputs.use-official-docker-images && 'camunda/camunda' || 'team-zeebe/zeebe' }}
           --set zeebeGateway.image.tag=${{ needs.calculate-image-tag.outputs.image-tag }}
           -f https://raw.githubusercontent.com/camunda/camunda/${{ github.ref }}/zeebe/benchmarks/camunda-platform-values.yaml
           ${{ steps.find-chart-release.outputs.chart-release != '' && format('--version {0}', steps.find-chart-release.outputs.chart-release) || '' }}
