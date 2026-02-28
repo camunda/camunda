@@ -278,7 +278,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E API Test Result Release v${{ needs.validate-release.outputs.release_version }}
@@ -287,7 +287,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: json-report-release-api
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
@@ -652,7 +652,7 @@ jobs:
             --close-run \
             -f "$JUNIT_RESULTS_FILE"
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: C8 Orchestration Cluster E2E Test Result Release v${{ needs.validate-release.outputs.release_version }} (Tasklist ${{ matrix.tasklist_mode }} mode)
@@ -661,7 +661,7 @@ jobs:
 
       - name: Upload json report to GitHub Actions Artifacts
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: json-report-release-e2e-${{ needs.validate-release.outputs.release_version }}${{ matrix.tasklist_mode && format('-{0}', matrix.tasklist_mode) || '' }}
           path: qa/c8-orchestration-cluster-e2e-test-suite/json-report/**
