@@ -75,7 +75,7 @@
     "@testing-library/user-event": "14.6.1",
     "@types/carbon__elements": "11.10.3",
     "@types/lodash": "4.17.23",
-    "@types/node": "24.10.13",
+    "@types/node": "24.11.0",
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/react-transition-group": "4.4.12",
