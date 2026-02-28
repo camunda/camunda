@@ -102,7 +102,6 @@ public class Starter extends App {
 
     // init - check for topology and deploy process
     printTopology(client);
-
     if (config.isMonitorDataAvailability()) {
       setupDataAvailabilityMeter(client);
     }
@@ -110,7 +109,6 @@ public class Starter extends App {
     if (config.isPerformReadBenchmarks()) {
       setupDataReadMeter(client);
     }
-
     deployProcess(client, starterCfg);
 
     if (config.isPerformReadBenchmarks()) {

@@ -399,6 +399,7 @@ public class OptimizeReportLoadTester {
 
     transformViewSection(dataObjectNode);
     transformGroupBySection(dataObjectNode);
+    transformSortingSection(dataObjectNode);
   }
 
   /**
@@ -451,6 +452,36 @@ public class OptimizeReportLoadTester {
   }
 
   /**
+   * Transforms the sorting section by setting the "by" value to "startDate".
+   *
+   * @param dataObjectNode the data object node containing the configuration section
+   */
+  private void transformSortingSection(final ObjectNode dataObjectNode) {
+    if (!dataObjectNode.has("configuration")) {
+      return;
+    }
+
+    final JsonNode configurationNode = dataObjectNode.get("configuration");
+    if (!(configurationNode instanceof ObjectNode)) {
+      return;
+    }
+
+    final ObjectNode configurationObjectNode = (ObjectNode) configurationNode;
+
+    if (!configurationObjectNode.has("sorting")) {
+      return;
+    }
+
+    final JsonNode sortingNode = configurationObjectNode.get("sorting");
+    if (!(sortingNode instanceof ObjectNode)) {
+      return;
+    }
+
+    final ObjectNode sortingObjectNode = (ObjectNode) sortingNode;
+    sortingObjectNode.put("by", "startDate");
+  }
+
+  /**
    * Evaluates the management dashboard and returns the response time in milliseconds.
    *
    * @return the evaluation result containing response time and status
@@ -483,11 +514,96 @@ public class OptimizeReportLoadTester {
   }
 
   /**
+   * Fetches process definitions from the overview API.
+   *
+   * @return list of process definition keys
+   * @throws Exception if the request fails
+   */
+  public List<String> fetchProcessDefinitions() throws Exception {
+    ensureValidToken();
+
+    final String url = String.format("%s/api/process/overview?", optimizeBaseUrl);
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Cookie", "X-Optimize-Authorization_0=" + accessToken)
+            .header("Content-Type", "application/json")
+            .GET()
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    if (response.statusCode() != 200) {
+      throw new RuntimeException(
+          String.format(
+              "Failed to fetch process definitions. Status: %d, Body: %s",
+              response.statusCode(), response.body()));
+    }
+
+    final List<String> processDefinitionKeys = new ArrayList<>();
+    final JsonNode rootNode = OBJECT_MAPPER.readTree(response.body());
+
+    if (rootNode.isArray()) {
+      for (final JsonNode processNode : rootNode) {
+        if (processNode.has("processDefinitionKey")) {
+          final String key = processNode.get("processDefinitionKey").asText();
+          if (key != null && !key.trim().isEmpty()) {
+            processDefinitionKeys.add(key);
+            LOG.info("Found process definition key: {}", key);
+          }
+        }
+      }
+    }
+
+    LOG.info("Fetched {} process definition keys", processDefinitionKeys.size());
+    return processDefinitionKeys;
+  }
+
+  /**
+   * Fetches the instant benchmark dashboard for a specific process definition key.
+   *
+   * @param processDefinitionKey the process definition key
+   * @return the evaluation result containing response time and status
+   * @throws Exception if the request fails
+   */
+  public DashboardEvaluationResult evaluateInstantBenchmarkDashboard(
+      final String processDefinitionKey) throws Exception {
+    ensureValidToken();
+
+    final String url =
+        String.format("%s/api/dashboard/instant/%s", optimizeBaseUrl, processDefinitionKey);
+
+    final long startTime = System.currentTimeMillis();
+
+    final HttpRequest request =
+        HttpRequest.newBuilder()
+            .uri(URI.create(url))
+            .header("Cookie", "X-Optimize-Authorization_0=" + accessToken)
+            .header("Content-Type", "application/json")
+            .header("X-Optimize-Client-Timezone", "UTC")
+            .header("X-Optimize-Client-Locale", "en")
+            .GET()
+            .build();
+
+    final HttpResponse<String> response =
+        httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+
+    final long responseTime = System.currentTimeMillis() - startTime;
+
+    return new DashboardEvaluationResult(
+        "instant_" + processDefinitionKey, response.statusCode(), responseTime, response.body());
+  }
+
+  /**
    * Fetches the instant benchmark dashboard and returns the response.
    *
    * @return the evaluation result containing response time and status
    * @throws Exception if the request fails
+   * @deprecated Use evaluateInstantBenchmarkDashboard(String processDefinitionKey) instead
    */
+  @Deprecated
   public DashboardEvaluationResult evaluateInstantBenchmarkDashboard() throws Exception {
     ensureValidToken();
 
@@ -594,8 +710,21 @@ public class OptimizeReportLoadTester {
    * @throws Exception if any request fails
    */
   public InstantBenchmarkResult evaluateInstantBenchmark() throws Exception {
-    // Step 1: Fetch instant benchmark dashboard
-    final DashboardEvaluationResult dashboardResult = evaluateInstantBenchmarkDashboard();
+    // Step 0: Fetch process definitions from the overview API
+    LOG.info("Fetching process definitions from overview API...");
+    final List<String> processDefinitionKeys = fetchProcessDefinitions();
+
+    if (processDefinitionKeys.isEmpty()) {
+      throw new RuntimeException("No process definitions found in the overview API");
+    }
+
+    // Use the first process definition key for backward compatibility
+    final String processDefinitionKey = processDefinitionKeys.get(0);
+    LOG.info("Using process definition key: {}", processDefinitionKey);
+
+    // Step 1: Fetch instant benchmark dashboard for the process definition
+    final DashboardEvaluationResult dashboardResult =
+        evaluateInstantBenchmarkDashboard(processDefinitionKey);
 
     if (!dashboardResult.isSuccess()) {
       throw new RuntimeException(

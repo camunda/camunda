@@ -16,7 +16,7 @@ public final class OptimizeCfg {
   private String username;
   private String password;
   private String reportId;
-  private boolean enableOptimize = false;
+  private boolean enableOptimize;
   private int evaluationIntervalSeconds = 60; // Default: 10 minutes
   private int durationLimit = 0; // 0 means run forever
 
