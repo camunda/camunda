@@ -435,7 +435,7 @@ jobs:
           tar -czvf "../${BUNDLE_NAME}.tar.gz" .
 
       - name: Upload bundle artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ env.BUNDLE_NAME }}
           path: ${{ env.BUNDLE_NAME }}.${{ matrix.platform.archive_type }}
@@ -491,7 +491,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download bundle artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ env.BUNDLE_NAME }}
           path: .
@@ -772,7 +772,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download all bundle artifacts
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           path: bundles
           pattern: camunda8-getting-started-bundle-*

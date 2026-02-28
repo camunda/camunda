@@ -214,7 +214,7 @@ jobs:
       - name: Download tested combinations artifact
         id: download-tested
         continue-on-error: true
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: compatibility-tested-combinations
           path: /tmp/compatibility-state-download
@@ -361,7 +361,7 @@ jobs:
 
       - name: Upload tested combinations
         if: success()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: tested-combo-${{ matrix.client }}-${{ matrix.server }}
           path: compatibility-test-results/tested.txt
@@ -390,7 +390,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Download all tested combinations
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: tested-combo-*
           path: compatibility-test-results
@@ -413,7 +413,7 @@ jobs:
           cat compatibility-state/tested-combinations.txt
 
       - name: Upload combined results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: compatibility-tested-combinations
           path: compatibility-state/tested-combinations.txt

@@ -158,7 +158,7 @@ jobs:
           npm run test -- --project=request-validation-tests
         working-directory: qa/c8-orchestration-cluster-e2e-test-suite
 
-      - uses: actions/upload-artifact@v6
+      - uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: V2 Stateless Test Results (${{ matrix.branch }})
