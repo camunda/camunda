@@ -20,56 +20,26 @@
     </license>
   </licenses>
 
-  <properties>
-    <version.java>17</version.java>
-    <license.header>com/mycila/maven/plugin/license/templates/APACHE-2.txt</license.header>
-  </properties>
-
-  <dependencies>
-    <!-- Base Spring Boot 3.x starter - will be shaded into this artifact -->
-    <dependency>
-      <groupId>io.camunda</groupId>
+  <distributionManagement>
+    <relocation>
       <artifactId>spring-boot-starter-camunda-sdk</artifactId>
-    </dependency>
-  </dependencies>
+      <message>camunda-spring-boot-3-starter is an alias for spring-boot-starter-camunda-sdk (Spring Boot 3.x).
+        Use camunda-spring-boot-4-starter for Spring Boot 4.x compatibility.</message>
+    </relocation>
+  </distributionManagement>
 
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-shade-plugin</artifactId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>shade</goal>
-            </goals>
-            <phase>package</phase>
-            <configuration>
-              <createDependencyReducedPom>true</createDependencyReducedPom>
-              <promoteTransitiveDependencies>true</promoteTransitiveDependencies>
-              <artifactSet>
-                <includes>
-                  <!-- Only include the base starter module in the shaded jar -->
-                  <include>io.camunda:spring-boot-starter-camunda-sdk</include>
-                </includes>
-              </artifactSet>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-dependency-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>flatten-maven-plugin</artifactId>
         <configuration>
-          <ignoredUsedUndeclaredDependencies>
-            <dependency>*</dependency>
-          </ignoredUsedUndeclaredDependencies>
-          <ignoredNonTestScopedDependencies>
-            <dependency>*</dependency>
-          </ignoredNonTestScopedDependencies>
+          <pomElements>
+            <distributionManagement></distributionManagement>
+          </pomElements>
         </configuration>
       </plugin>
     </plugins>
   </build>
+
 </project>
