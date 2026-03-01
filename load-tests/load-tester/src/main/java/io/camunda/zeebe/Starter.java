@@ -99,6 +99,13 @@ public class Starter extends App {
         MicrometerUtil.buildTimer(StarterLatencyMetricsDoc.RESPONSE_LATENCY).register(registry);
 
     final CamundaClient client = createCamundaClient();
+    if (config.isMonitorDataAvailability()) {
+      setupDataAvailabilityMeter(client);
+    }
+
+    // init - check for topology and deploy process
+    printTopology(client);
+    deployProcess(client, starterCfg);
 
     // init - check for topology and deploy process
     printTopology(client);
