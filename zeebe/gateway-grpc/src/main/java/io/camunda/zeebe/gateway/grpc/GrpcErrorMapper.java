@@ -211,30 +211,13 @@ public final class GrpcErrorMapper {
     final Builder builder = Status.newBuilder().setMessage(message);
 
     switch (rejection.type()) {
-      case INVALID_ARGUMENT:
-        builder.setCode(Code.INVALID_ARGUMENT_VALUE);
-        break;
-      case NOT_FOUND:
-        builder.setCode(Code.NOT_FOUND_VALUE);
-        break;
-      case ALREADY_EXISTS:
-        builder.setCode(Code.ALREADY_EXISTS_VALUE);
-        break;
-      case INVALID_STATE:
-        builder.setCode(Code.FAILED_PRECONDITION_VALUE);
-        break;
-      case PROCESSING_ERROR:
-        builder.setCode(Code.INTERNAL_VALUE);
-        break;
-      case UNAUTHORIZED:
-      case FORBIDDEN:
-        builder.setCode(Code.PERMISSION_DENIED_VALUE);
-        break;
-      case SBE_UNKNOWN:
-      case NULL_VAL:
-      default:
-        builder.setCode(Code.UNKNOWN_VALUE);
-        break;
+      case INVALID_ARGUMENT -> builder.setCode(Code.INVALID_ARGUMENT_VALUE);
+      case NOT_FOUND -> builder.setCode(Code.NOT_FOUND_VALUE);
+      case ALREADY_EXISTS -> builder.setCode(Code.ALREADY_EXISTS_VALUE);
+      case INVALID_STATE -> builder.setCode(Code.FAILED_PRECONDITION_VALUE);
+      case PROCESSING_ERROR -> builder.setCode(Code.INTERNAL_VALUE);
+      case UNAUTHORIZED, FORBIDDEN -> builder.setCode(Code.PERMISSION_DENIED_VALUE);
+      default -> builder.setCode(Code.UNKNOWN_VALUE);
     }
 
     return builder.build();

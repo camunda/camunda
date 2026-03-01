@@ -46,18 +46,16 @@ public class ImmutableMapSerializer extends Serializer<ImmutableMap<?, ?>> {
   public ImmutableMap<?, ?> read(
       final Kryo kryo, final Input input, final Class<? extends ImmutableMap<?, ?>> type) {
     final int size = input.readInt();
-    switch (size) {
-      case 0:
-        return ImmutableMap.of();
-      case 1:
-        return ImmutableMap.of(kryo.readClassAndObject(input), kryo.readClassAndObject(input));
-
-      default:
+    return switch (size) {
+      case 0 -> ImmutableMap.of();
+      case 1 -> ImmutableMap.of(kryo.readClassAndObject(input), kryo.readClassAndObject(input));
+      default -> {
         final Builder<Object, Object> builder = ImmutableMap.builder();
         for (int i = 0; i < size; ++i) {
           builder.put(kryo.readClassAndObject(input), kryo.readClassAndObject(input));
         }
-        return builder.build();
-    }
+        yield builder.build();
+      }
+    };
   }
 }

@@ -241,15 +241,11 @@ public class RandomizedPartitionTransitionTest {
 
   private TestOperation createTestOperation(
       final TestOperationKind kind, final RaftServer.Role role) {
-    switch (kind) {
-      case TRANSITION_TO_ROLE_NO_PAUSE:
-        return new RequestTransition(role, false);
-      case TRANSITION_TO_RULE_PAUSED:
-        return new RequestTransition(role, true);
-      case CATCH_UP:
-      default:
-        return new CatchUpOperation();
-    }
+    return switch (kind) {
+      case TRANSITION_TO_ROLE_NO_PAUSE -> new RequestTransition(role, false);
+      case TRANSITION_TO_RULE_PAUSED -> new RequestTransition(role, true);
+      default -> new CatchUpOperation();
+    };
   }
 
   private StreamProcessor produceMockStreamProcessor(

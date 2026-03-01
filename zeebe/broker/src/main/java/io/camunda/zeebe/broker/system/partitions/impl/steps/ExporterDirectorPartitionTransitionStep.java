@@ -142,15 +142,9 @@ public final class ExporterDirectorPartitionTransitionStep implements PartitionT
             context.setExporterDirector(director);
             // Pause/Resume here in case the state was changed after the director was created
             switch (context.getExporterPhase()) {
-              case PAUSED:
-                director.pauseExporting();
-                break;
-              case SOFT_PAUSED:
-                director.softPauseExporting();
-                break;
-              default:
-                director.resumeExporting();
-                break;
+              case PAUSED -> director.pauseExporting();
+              case SOFT_PAUSED -> director.softPauseExporting();
+              default -> director.resumeExporting();
             }
 
             // The config might have changed after ExporterDirector has created

@@ -122,17 +122,12 @@ public final class QueryApiRequestHandler
 
     final Optional<DirectBuffer> bpmnProcessId;
     switch (messageDecoder.valueType()) {
-      case PROCESS:
-        bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
-        break;
-      case PROCESS_INSTANCE:
-        bpmnProcessId = queryService.getBpmnProcessIdForProcessInstance(key);
-        break;
-      case JOB:
-        bpmnProcessId = queryService.getBpmnProcessIdForJob(key);
-        break;
-      default:
+      case PROCESS -> bpmnProcessId = queryService.getBpmnProcessIdForProcess(key);
+      case PROCESS_INSTANCE -> bpmnProcessId = queryService.getBpmnProcessIdForProcessInstance(key);
+      case JOB -> bpmnProcessId = queryService.getBpmnProcessIdForJob(key);
+      default -> {
         return Either.left(failOnInvalidValueType(messageDecoder, errorResponseWriter));
+      }
     }
 
     if (bpmnProcessId.isEmpty()) {

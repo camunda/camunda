@@ -96,14 +96,9 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
         }
 
         switch (type) {
-          case REQUEST:
-            currentState = DecoderState.READ_SUBJECT_LENGTH;
-            break;
-          case REPLY:
-            currentState = DecoderState.READ_STATUS;
-            break;
-          default:
-            checkState(false, "Must not be here");
+          case REQUEST -> currentState = DecoderState.READ_SUBJECT_LENGTH;
+          case REPLY -> currentState = DecoderState.READ_STATUS;
+          default -> checkState(false, "Must not be here");
         }
         break;
       default:
@@ -111,7 +106,7 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
     }
 
     switch (type) {
-      case REQUEST:
+      case REQUEST -> {
         switch (currentState) {
           case READ_SUBJECT_LENGTH:
             if (buffer.readableBytes() < Short.BYTES) {
@@ -132,10 +127,10 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
           default:
             break;
         }
-        break;
-      case REPLY:
+      }
+      case REPLY -> {
         switch (currentState) {
-          case READ_STATUS:
+          case READ_STATUS -> {
             if (buffer.readableBytes() < Byte.BYTES) {
               return;
             }
@@ -143,13 +138,11 @@ class MessageDecoderV2 extends AbstractMessageDecoder {
             final ProtocolReply message = new ProtocolReply(messageId, content, status);
             out.add(message);
             currentState = DecoderState.READ_TYPE;
-            break;
-          default:
-            break;
+          }
+          default -> {}
         }
-        break;
-      default:
-        checkState(false, "Must not be here");
+      }
+      default -> checkState(false, "Must not be here");
     }
   }
 

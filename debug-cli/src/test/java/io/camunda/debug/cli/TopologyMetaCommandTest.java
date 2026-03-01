@@ -94,20 +94,11 @@ public class TopologyMetaCommandTest {
     final var args = new ArrayList<String>();
     args.add("topology");
     switch (method) {
-      case "file":
-        args.addAll(List.of("-v", "--file", filePath));
-        break;
-      case "f":
-        args.addAll(List.of("-v", "-f", filePath));
-        break;
-      case "r":
-        args.addAll(List.of("-v", "-r", Path.of(filePath).getParent().toString()));
-        break;
-      case "root":
-        args.addAll(List.of("-v", "--root", Path.of(filePath).getParent().toString()));
-        break;
-      default:
-        throw new IllegalArgumentException("Unknown method: " + method);
+      case "file" -> args.addAll(List.of("-v", "--file", filePath));
+      case "f" -> args.addAll(List.of("-v", "-f", filePath));
+      case "r" -> args.addAll(List.of("-v", "-r", Path.of(filePath).getParent().toString()));
+      case "root" -> args.addAll(List.of("-v", "--root", Path.of(filePath).getParent().toString()));
+      default -> throw new IllegalArgumentException("Unknown method: " + method);
     }
     args.addAll(Arrays.stream(extraArgs).toList());
     commandLine.execute(args.toArray(new String[0]));

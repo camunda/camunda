@@ -218,20 +218,13 @@ public class DefaultClusterEventService
     eventServiceExecutor.execute(
         () -> {
           switch (event.type()) {
-            case MEMBER_ADDED:
-              updateRemoteSubscription(event);
-              break;
-            case METADATA_CHANGED:
-              updateRemoteSubscription(event);
-              break;
-            case REACHABILITY_CHANGED:
-              break;
-            case MEMBER_REMOVED:
-              removeAllSubscription(event.subject().id());
-              break;
-            default:
-              LOGGER.warn(
-                  "Unexpected membership event type {} from {}", event.type(), event.subject());
+            case MEMBER_ADDED -> updateRemoteSubscription(event);
+            case METADATA_CHANGED -> updateRemoteSubscription(event);
+            case REACHABILITY_CHANGED -> {}
+            case MEMBER_REMOVED -> removeAllSubscription(event.subject().id());
+            default ->
+                LOGGER.warn(
+                    "Unexpected membership event type {} from {}", event.type(), event.subject());
           }
         });
   }

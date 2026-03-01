@@ -165,29 +165,29 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
       final ExecutableFlowElement element) {
 
     switch (intent) {
-      case ACTIVATE_ELEMENT:
+      case ACTIVATE_ELEMENT -> {
         final var activatingContext = stateTransitionBehavior.transitionToActivating(context);
         stateTransitionBehavior
             .onElementActivating(element, activatingContext)
             .flatMap(ok -> processor.onActivate(element, activatingContext))
             .flatMap(ok -> afterActivating(element, processor, activatingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, activatingContext));
-        break;
-      case COMPLETE_ELEMENT:
+      }
+      case COMPLETE_ELEMENT -> {
         final var completingContext = stateTransitionBehavior.transitionToCompleting(context);
         processor
             .onComplete(element, completingContext)
             .flatMap(ok -> afterCompleting(element, processor, completingContext))
             .ifLeft(failure -> incidentBehavior.createIncident(failure, completingContext));
-        break;
-      case TERMINATE_ELEMENT:
+      }
+      case TERMINATE_ELEMENT -> {
         final var terminatingContext = stateTransitionBehavior.transitionToTerminating(context);
         final var transitionOutcome = processor.onTerminate(element, terminatingContext);
         if (transitionOutcome == TransitionOutcome.CONTINUE) {
           processor.finalizeTermination(element, terminatingContext);
         }
-        break;
-      case COMPLETE_EXECUTION_LISTENER:
+      }
+      case COMPLETE_EXECUTION_LISTENER -> {
         final ProcessInstanceIntent elementState =
             stateBehavior.getElementInstance(context).getState();
         switch (elementState) {
@@ -201,16 +201,14 @@ public final class BpmnStreamProcessor implements TypedRecordProcessor<ProcessIn
               throw new BpmnProcessingException(
                   context, String.format("Unexpected element state: '%s'", elementState));
         }
-        break;
-      case CONTINUE_TERMINATING_ELEMENT:
-        processor.finalizeTermination(element, context);
-        break;
-      default:
-        throw new BpmnProcessingException(
-            context,
-            String.format(
-                "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
-                processor.getClass(), intent));
+      }
+      case CONTINUE_TERMINATING_ELEMENT -> processor.finalizeTermination(element, context);
+      default ->
+          throw new BpmnProcessingException(
+              context,
+              String.format(
+                  "Expected the processor '%s' to handle the event but the intent '%s' is not supported",
+                  processor.getClass(), intent));
     }
   }
 

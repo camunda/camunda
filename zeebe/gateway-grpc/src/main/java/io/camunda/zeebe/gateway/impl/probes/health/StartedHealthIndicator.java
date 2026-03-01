@@ -39,18 +39,11 @@ public class StartedHealthIndicator implements HealthIndicator {
       return Health.unknown().build();
     } else {
       final var status = optStatus.get();
-      switch (status) {
-        case INITIAL:
-        case STARTING:
-          return Health.down().build();
-        case RUNNING:
-          return Health.up().build();
-        case SHUTDOWN:
-          return Health.outOfService().build();
-        default:
-          LOG.warn("Encountered unexpected status " + status);
-          return Health.unknown().build();
-      }
+      return switch (status) {
+        case INITIAL, STARTING -> Health.down().build();
+        case RUNNING -> Health.up().build();
+        case SHUTDOWN -> Health.outOfService().build();
+      };
     }
   }
 }

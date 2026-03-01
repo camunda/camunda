@@ -273,36 +273,35 @@ public class CheckpointScheduleTest {
         .thenAnswer(
             invocation -> {
               final int count = callCount.incrementAndGet();
-              switch (count) {
-                case 1:
-                  // initial
-                  return CompletableFuture.completedStage(
-                      checkpointState(initTime.toEpochMilli(), latestBackupCheckpoint));
-                case 2:
-                  // after 5s
-                  return CompletableFuture.completedStage(
-                      checkpointState(
-                          initTime.plusSeconds(5).toEpochMilli(), latestBackupCheckpoint));
-                case 3:
-                  // after 10s
-                  return CompletableFuture.completedStage(
-                      checkpointState(
-                          initTime.plusSeconds(10).toEpochMilli(), latestBackupCheckpoint));
-                case 4:
-                  // after 15s
-                  return CompletableFuture.completedStage(
-                      checkpointState(
-                          initTime.plusSeconds(15).toEpochMilli(),
-                          latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
-                case 5:
-                  // after 20s
-                  return CompletableFuture.completedStage(
-                      checkpointState(
-                          initTime.plusSeconds(25).toEpochMilli(),
-                          latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
-                default:
-                  return null;
-              }
+              return switch (count) {
+                // initial
+                case 1 ->
+                    CompletableFuture.completedStage(
+                        checkpointState(initTime.toEpochMilli(), latestBackupCheckpoint));
+                // after 5s
+                case 2 ->
+                    CompletableFuture.completedStage(
+                        checkpointState(
+                            initTime.plusSeconds(5).toEpochMilli(), latestBackupCheckpoint));
+                // after 10s
+                case 3 ->
+                    CompletableFuture.completedStage(
+                        checkpointState(
+                            initTime.plusSeconds(10).toEpochMilli(), latestBackupCheckpoint));
+                // after 15s
+                case 4 ->
+                    CompletableFuture.completedStage(
+                        checkpointState(
+                            initTime.plusSeconds(15).toEpochMilli(),
+                            latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
+                // after 20s
+                case 5 ->
+                    CompletableFuture.completedStage(
+                        checkpointState(
+                            initTime.plusSeconds(25).toEpochMilli(),
+                            latestBackupCheckpoint + Duration.ofSeconds(15).toMillis()));
+                default -> null;
+              };
             });
 
     for (int i = 0; i < 4; i++) {

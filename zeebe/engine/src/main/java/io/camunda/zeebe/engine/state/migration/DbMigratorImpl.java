@@ -105,15 +105,15 @@ public class DbMigratorImpl implements DbMigrator {
   public MigrationsPerformed runMigrations() {
     var initializationOnly = false;
     switch (checkVersionCompatibility()) {
-      case final Indeterminate.PreviousVersionUnknown unknown:
+      case final Indeterminate.PreviousVersionUnknown unknown -> {
         LOGGER.debug("Snapshot is empty, only initialization migrations will be run.");
         initializationOnly = true;
-        break;
-      case final Compatible.SameVersion compatible:
+      }
+      case final Compatible.SameVersion compatible -> {
         LOGGER.debug("No migrations to run, snapshot is the same as current version");
         return MigrationsPerformed.none();
-      default:
-        break;
+      }
+      default -> {}
     }
     logPreview(migrationTasks, initializationOnly);
 

@@ -63,17 +63,9 @@ public final class GatewayHealthManagerImpl implements GatewayHealthManager {
 
   private void updateGrpcHealthStatus(final Status status) {
     switch (status) {
-      case RUNNING:
-        setGrpcHealthStatus(ServingStatus.SERVING);
-        break;
-      case SHUTDOWN:
-        statusManager.enterTerminalState();
-        break;
-      case INITIAL:
-      case STARTING:
-      default:
-        setGrpcHealthStatus(ServingStatus.NOT_SERVING);
-        break;
+      case RUNNING -> setGrpcHealthStatus(ServingStatus.SERVING);
+      case SHUTDOWN -> statusManager.enterTerminalState();
+      default -> setGrpcHealthStatus(ServingStatus.NOT_SERVING);
     }
   }
 

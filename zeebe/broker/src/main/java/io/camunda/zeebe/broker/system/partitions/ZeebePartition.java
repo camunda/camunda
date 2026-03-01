@@ -254,19 +254,9 @@ public final class ZeebePartition extends Actor
 
   private void onRoleChange(final Role newRole, final long newTerm) {
     switch (newRole) {
-      case LEADER:
-        leaderTransition(newTerm);
-        break;
-      case INACTIVE:
-        transitionToInactive();
-        break;
-      case PASSIVE:
-      case PROMOTABLE:
-      case CANDIDATE:
-      case FOLLOWER:
-      default:
-        followerTransition(newTerm);
-        break;
+      case LEADER -> leaderTransition(newTerm);
+      case INACTIVE -> transitionToInactive();
+      default -> followerTransition(newTerm);
     }
     LOG.debug("Partition role transitioning from {} to {} in term {}", raftRole, newRole, newTerm);
     raftRole = newRole;

@@ -459,17 +459,12 @@ public final class BrokerInfo implements BufferReader, BufferWriter {
         (partition, role) -> {
           partitionConsumer.accept(partition);
           switch (role) {
-            case LEADER:
-              leaderPartitionConsumer.accept(partition, partitionLeaderTerms.get(partition));
-              break;
-            case FOLLOWER:
-              followerPartitionsConsumer.accept(partition);
-              break;
-            case INACTIVE:
-              inactivePartitionsConsumer.accept(partition);
-              break;
-            default:
-              LOG.warn("Failed to decode broker info, found unknown partition role: {}", role);
+            case LEADER ->
+                leaderPartitionConsumer.accept(partition, partitionLeaderTerms.get(partition));
+            case FOLLOWER -> followerPartitionsConsumer.accept(partition);
+            case INACTIVE -> inactivePartitionsConsumer.accept(partition);
+            default ->
+                LOG.warn("Failed to decode broker info, found unknown partition role: {}", role);
           }
         });
   }

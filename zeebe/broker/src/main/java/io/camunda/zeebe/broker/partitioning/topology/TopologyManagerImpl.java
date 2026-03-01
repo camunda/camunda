@@ -120,22 +120,13 @@ public final class TopologyManagerImpl extends Actor
       actor.run(
           () -> {
             switch (clusterMembershipEvent.type()) {
-              case METADATA_CHANGED:
-              case MEMBER_ADDED:
-                onMetadataChanged(brokerInfo);
-                break;
-
-              case MEMBER_REMOVED:
-                onMemberRemoved(brokerInfo);
-                break;
-
-              case REACHABILITY_CHANGED:
-              default:
-                LOG.debug(
-                    "Received {} from member {}, was not handled.",
-                    clusterMembershipEvent.type(),
-                    brokerInfo.getNodeId());
-                break;
+              case METADATA_CHANGED, MEMBER_ADDED -> onMetadataChanged(brokerInfo);
+              case MEMBER_REMOVED -> onMemberRemoved(brokerInfo);
+              default ->
+                  LOG.debug(
+                      "Received {} from member {}, was not handled.",
+                      clusterMembershipEvent.type(),
+                      brokerInfo.getNodeId());
             }
           });
     }

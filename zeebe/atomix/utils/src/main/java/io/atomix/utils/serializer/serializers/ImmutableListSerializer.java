@@ -43,17 +43,16 @@ public class ImmutableListSerializer extends Serializer<ImmutableList<?>> {
   public ImmutableList<?> read(
       final Kryo kryo, final Input input, final Class<? extends ImmutableList<?>> type) {
     final int size = input.readInt();
-    switch (size) {
-      case 0:
-        return ImmutableList.of();
-      case 1:
-        return ImmutableList.of(kryo.readClassAndObject(input));
-      default:
+    return switch (size) {
+      case 0 -> ImmutableList.of();
+      case 1 -> ImmutableList.of(kryo.readClassAndObject(input));
+      default -> {
         final Object[] elms = new Object[size];
         for (int i = 0; i < size; ++i) {
           elms[i] = kryo.readClassAndObject(input);
         }
-        return ImmutableList.copyOf(elms);
-    }
+        yield ImmutableList.copyOf(elms);
+      }
+    };
   }
 }

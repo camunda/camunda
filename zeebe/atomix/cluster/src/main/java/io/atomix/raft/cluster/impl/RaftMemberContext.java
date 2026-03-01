@@ -116,19 +116,17 @@ public final class RaftMemberContext {
 
   private void openReader(final RaftLog log) {
     switch (member.getType()) {
-      case PASSIVE:
+      case PASSIVE -> {
         reader = log.openCommittedReader();
         resetReaderAtEndOfLog(reader);
-        break;
-      case PROMOTABLE:
-      case ACTIVE:
+      }
+      case PROMOTABLE, ACTIVE -> {
         reader = log.openUncommittedReader();
         resetReaderAtEndOfLog(reader);
-        break;
-      default:
-        LoggerFactory.getLogger(RaftMemberContext.class)
-            .error("ResetState: No case for Member type {}", member.getType());
-        break;
+      }
+      default ->
+          LoggerFactory.getLogger(RaftMemberContext.class)
+              .error("ResetState: No case for Member type {}", member.getType());
     }
   }
 

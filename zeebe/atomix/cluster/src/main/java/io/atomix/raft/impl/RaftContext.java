@@ -794,26 +794,26 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
 
   /** Creates an internal state for the given state type. */
   private RaftRole createRole(final Role role) {
-    switch (role) {
-      case INACTIVE:
+    return switch (role) {
+      case INACTIVE -> {
         raftRoleMetrics.becomingInactive();
-        return new InactiveRole(this);
-      case PASSIVE:
-        return new PassiveRole(this);
-      case PROMOTABLE:
-        return new PromotableRole(this);
-      case FOLLOWER:
+        yield new InactiveRole(this);
+      }
+      case PASSIVE -> new PassiveRole(this);
+      case PROMOTABLE -> new PromotableRole(this);
+      case FOLLOWER -> {
         raftRoleMetrics.becomingFollower();
-        return new FollowerRole(this, this::createElectionTimer);
-      case CANDIDATE:
+        yield new FollowerRole(this, this::createElectionTimer);
+      }
+      case CANDIDATE -> {
         raftRoleMetrics.becomingCandidate();
-        return new CandidateRole(this);
-      case LEADER:
+        yield new CandidateRole(this);
+      }
+      case LEADER -> {
         raftRoleMetrics.becomingLeader();
-        return new LeaderRole(this);
-      default:
-        throw new AssertionError();
-    }
+        yield new LeaderRole(this);
+      }
+    };
   }
 
   private ElectionTimer createElectionTimer(final Runnable triggerElection, final Logger log) {
@@ -834,26 +834,26 @@ public class RaftContext implements AutoCloseable, HealthMonitorable {
   /** Transitions the server to the base state for the given member type. */
   public void transition(final Type type) {
     switch (type) {
-      case ACTIVE:
+      case ACTIVE -> {
         if (!(role instanceof ActiveRole)) {
           transition(Role.FOLLOWER);
         }
-        break;
-      case PROMOTABLE:
+      }
+      case PROMOTABLE -> {
         if (role.role() != Role.PROMOTABLE) {
           transition(Role.PROMOTABLE);
         }
-        break;
-      case PASSIVE:
+      }
+      case PASSIVE -> {
         if (role.role() != Role.PASSIVE) {
           transition(Role.PASSIVE);
         }
-        break;
-      default:
+      }
+      default -> {
         if (role.role() != Role.INACTIVE) {
           transition(Role.INACTIVE);
         }
-        break;
+      }
     }
   }
 

@@ -991,18 +991,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
       channel.pipeline().addLast("handshake", new ClientHandshakeHandlerAdapter(future));
 
       switch (config.getCompressionAlgorithm()) {
-        case GZIP:
+        case GZIP -> {
           channel.pipeline().addLast(ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
           channel.pipeline().addLast(ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
-          break;
-        case SNAPPY:
+        }
+        case SNAPPY -> {
           channel.pipeline().addLast(new SnappyFrameEncoder());
           channel.pipeline().addLast(new SnappyFrameDecoder());
-          break;
-        case NONE:
-          break;
-        default:
-          log.debug("Unknown compression algorithm. Proceeding without compression.");
+        }
+        case NONE -> {}
+        default -> log.debug("Unknown compression algorithm. Proceeding without compression.");
       }
     }
 
@@ -1027,18 +1025,16 @@ public final class NettyMessagingService implements ManagedMessagingService {
       channel.pipeline().addLast("handshake", new ServerHandshakeHandlerAdapter());
 
       switch (config.getCompressionAlgorithm()) {
-        case GZIP:
+        case GZIP -> {
           channel.pipeline().addLast(ZlibCodecFactory.newZlibEncoder(ZlibWrapper.GZIP));
           channel.pipeline().addLast(ZlibCodecFactory.newZlibDecoder(ZlibWrapper.GZIP));
-          break;
-        case SNAPPY:
+        }
+        case SNAPPY -> {
           channel.pipeline().addLast(new SnappyFrameEncoder());
           channel.pipeline().addLast(new SnappyFrameDecoder());
-          break;
-        case NONE:
-          break;
-        default:
-          log.debug("Unknown compression algorithm. Proceeding without compression.");
+        }
+        case NONE -> {}
+        default -> log.debug("Unknown compression algorithm. Proceeding without compression.");
       }
     }
   }

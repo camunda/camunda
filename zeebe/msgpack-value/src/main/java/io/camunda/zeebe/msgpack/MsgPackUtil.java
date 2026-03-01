@@ -55,21 +55,18 @@ public final class MsgPackUtil {
   private static Object deserializeElement(final MsgPackReader reader) {
 
     final MsgPackToken token = reader.readToken();
-    switch (token.getType()) {
-      case INTEGER:
-        return token.getIntegerValue();
-      case FLOAT:
-        return token.getFloatValue();
-      case STRING:
-        return bufferAsString(token.getValueBuffer());
-      case BOOLEAN:
-        return token.getBooleanValue();
-      case BINARY:
+    return switch (token.getType()) {
+      case INTEGER -> token.getIntegerValue();
+      case FLOAT -> token.getFloatValue();
+      case STRING -> bufferAsString(token.getValueBuffer());
+      case BOOLEAN -> token.getBooleanValue();
+      case BINARY -> {
         final DirectBuffer valueBuffer = token.getValueBuffer();
         final byte[] valueArray = new byte[valueBuffer.capacity()];
         valueBuffer.getBytes(0, valueArray);
-        return valueArray;
-      case MAP:
+        yield valueArray;
+      }
+      case MAP -> {
         final Map<String, Object> valueMap = new HashMap<>();
         final int mapSize = token.getSize();
         for (int i = 0; i < mapSize; i++) {
@@ -77,17 +74,18 @@ public final class MsgPackUtil {
           final Object value = deserializeElement(reader);
           valueMap.put(key, value);
         }
-        return valueMap;
-      case ARRAY:
+        yield valueMap;
+      }
+      case ARRAY -> {
         final int size = token.getSize();
         final Object[] arr = new Object[size];
         for (int i = 0; i < size; i++) {
           arr[i] = deserializeElement(reader);
         }
-        return toString(arr);
-      default:
-        throw new RuntimeException("Not implemented yet");
-    }
+        yield toString(arr);
+      }
+      default -> throw new RuntimeException("Not implemented yet");
+    };
   }
 
   private static String toString(final Object[] arr) {

@@ -72,14 +72,11 @@ public abstract class ProtocolMessage {
      * @return the type enum for the given ID.
      */
     public static Type forId(final int id) {
-      switch (id) {
-        case 1:
-          return REQUEST;
-        case 2:
-          return REPLY;
-        default:
-          throw new IllegalArgumentException("Unknown status ID " + id);
-      }
+      return switch (id) {
+        case 1 -> REQUEST;
+        case 2 -> REPLY;
+        default -> throw new IllegalArgumentException("Unknown status ID " + id);
+      };
     }
   }
 }

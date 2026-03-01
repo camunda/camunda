@@ -166,27 +166,19 @@ final class ProcessInstanceElementActivatingV2Applier
     // sequence flow and for interrupting event sub processes we reset the count completely.
     // Furthermore some elements are special and need to be handled separately.
     switch (currentElementType) {
-      case START_EVENT:
-      case BOUNDARY_EVENT:
-        break;
-      case INTERMEDIATE_CATCH_EVENT:
-        decrementIntermediateCatchEventSequenceFlow(value, flowScopeInstance);
-        break;
-      case PARALLEL_GATEWAY:
-        decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
-        break;
-      case INCLUSIVE_GATEWAY:
-        decrementInclusiveGatewaySequenceFlow(flowScopeInstance, numberOfTakenSequenceFlows);
-        break;
-      case EVENT_SUB_PROCESS:
-        decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
-        break;
-      default:
+      case START_EVENT, BOUNDARY_EVENT -> {}
+      case INTERMEDIATE_CATCH_EVENT ->
+          decrementIntermediateCatchEventSequenceFlow(value, flowScopeInstance);
+      case PARALLEL_GATEWAY -> decrementParallelGatewaySequenceFlow(value, flowScopeInstance);
+      case INCLUSIVE_GATEWAY ->
+          decrementInclusiveGatewaySequenceFlow(flowScopeInstance, numberOfTakenSequenceFlows);
+      case EVENT_SUB_PROCESS -> decrementEventSubProcessSequenceFlow(value, flowScopeInstance);
+      default -> {
         if (flowScopeElementType != BpmnElementType.MULTI_INSTANCE_BODY) {
           flowScopeInstance.decrementActiveSequenceFlows();
           elementInstanceState.updateInstance(flowScopeInstance);
         }
-        break;
+      }
     }
   }
 
