@@ -89,11 +89,23 @@ jobs:
       ttl: 28
       reuse-tag: ${{ inputs.reuse-tag || '' }}
       scenario: latency
+  setup-optimize-realistic-test:
+    name: Optimize realistic load test
+    uses: ./.github/workflows/camunda-load-test.yml
+    secrets: inherit
+    needs:
+      - test-data
+    with:
+      name: ${{ needs.test-data.outputs.test }}-optimize
+      ttl: 28
+      reuse-tag: ${{ inputs.reuse-tag || '' }}
+      scenario: realistic
+      enable-optimize: true
 
   notify:
     name: Notify on failure
     runs-on: ubuntu-latest
-    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test ]
+    needs: [ setup-typical-load-test, setup-rdbms-typical-load-test, setup-realistic-test, setup-latency-test, setup-optimize-realistic-test ]
     if: failure()
     steps:
       - uses: actions/checkout@v6
