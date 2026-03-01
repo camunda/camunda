@@ -18,10 +18,17 @@ import {
 import {mockFetchProcessDefinitionXml} from 'modules/mocks/api/v2/processDefinitions/fetchProcessDefinitionXml';
 import {mockFetchElementInstancesStatistics} from 'modules/mocks/api/v2/elementInstances/elementInstancesStatistics/fetchElementInstancesStatistics';
 import {labels, renderPopover} from './mocks';
+<<<<<<< HEAD
 import type {
   ProcessInstance,
   ElementInstance,
   Incident,
+=======
+import {
+  type ProcessInstance,
+  type ElementInstance,
+  type Incident,
+>>>>>>> c2d873e8 (deps: bump API specs and use 8.9 types)
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import {mockFetchProcessInstance} from 'modules/mocks/api/v2/processInstances/fetchProcessInstance';
 import {mockFetchElementInstance} from 'modules/mocks/api/v2/elementInstances/fetchElementInstance';

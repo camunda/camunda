@@ -14,7 +14,10 @@ import type {
   Incident,
   ProcessDefinition,
   QueryProcessDefinitionsResponseBody,
+<<<<<<< HEAD
   QueryProcessInstancesResponseBody,
+=======
+>>>>>>> c2d873e8 (deps: bump API specs and use 8.9 types)
 } from '@camunda/camunda-api-zod-schemas/8.9';
 import type {
   ProcessInstanceEntity,
