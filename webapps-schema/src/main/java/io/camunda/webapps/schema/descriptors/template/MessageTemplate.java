@@ -10,10 +10,10 @@ package io.camunda.webapps.schema.descriptors.template;
 import static io.camunda.webapps.schema.descriptors.ComponentNames.OPERATE;
 
 import io.camunda.webapps.schema.descriptors.AbstractTemplateDescriptor;
-import io.camunda.webapps.schema.descriptors.backup.Prio4Backup;
+import io.camunda.webapps.schema.descriptors.backup.Prio3Backup;
 import java.util.Optional;
 
-public class MessageTemplate extends AbstractTemplateDescriptor implements Prio4Backup {
+public class MessageTemplate extends AbstractTemplateDescriptor implements Prio3Backup {
 
   public static final String INDEX_NAME = "message";
 

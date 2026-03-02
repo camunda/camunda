@@ -17,24 +17,25 @@ public record BackupPriorities(
     List<Prio1Backup> prio1,
     List<Prio2Backup> prio2,
     List<Prio3Backup> prio3,
-    List<Prio4Backup> prio4,
-    List<Prio5Backup> prio5) {
+    List<Prio4Backup> prio4) {
 
   public Stream<BackupPriority> allPriorities() {
-    return Stream.of(prio1(), prio2(), prio3(), prio4(), prio5()).flatMap(List::stream);
+    return Stream.of(prio1(), prio2(), prio3(), prio4()).flatMap(List::stream);
   }
 
   public Stream<SnapshotIndexCollection> indicesSplitBySnapshot() {
     return Stream.of(
-        fullQualifiedName(prio1()),
-        fullQualifiedName(prio2()),
-        // dated indices
-        fullQualifiedNameWithMatcher(prio2()),
-        fullQualifiedName(prio3()),
-        fullQualifiedName(prio4()),
-        // dated indices
-        fullQualifiedNameWithMatcher(prio4()),
-        fullQualifiedName(prio5()));
+            fullQualifiedName(prio1()),
+            fullQualifiedName(prio2()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio2()),
+            fullQualifiedName(prio3()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio3()),
+            fullQualifiedName(prio4()),
+            // dated indices
+            fullQualifiedNameWithMatcher(prio4()))
+        .filter(snapshotIndexCollection -> !snapshotIndexCollection.isEmpty());
   }
 
   private static <A extends BackupPriority> SnapshotIndexCollection fullQualifiedName(

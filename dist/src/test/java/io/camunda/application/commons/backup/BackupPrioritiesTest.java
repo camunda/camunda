@@ -108,33 +108,31 @@ class BackupPrioritiesTest {
     final var configuration =
         new BackupPriorityConfiguration(new OperateProperties(), null, matchingProfiles("operate"));
     final var priorities = configuration.backupPriorities();
-
     final var indices = priorities.indicesSplitBySnapshot().toList();
+    final var iterator = priorities.indicesSplitBySnapshot().toList().iterator();
 
-    assertThat(indices.size()).isEqualTo(7);
+    assertThat(indices).hasSize(7);
     // PRIO 1
-    assertThat(indices.get(0).allIndices())
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-metadata-8.8.0_",
             "operate-import-position-8.3.0_",
             "tasklist-import-position-8.2.0_");
-    // PRIO 2
-    assertThat(indices.get(1).allIndices())
+    // PRIO 2 main indices
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder("operate-list-view-8.3.0_", "tasklist-task-8.8.0_");
-    // PRIO 2 TEMPLATES
-    assertThat(indices.get(2).allIndices())
+    // PRIO 2 dated indices
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
             "operate-list-view-8.3.0_*",
             "-operate-list-view-8.3.0_",
             "tasklist-task-8.8.0_*",
             "-tasklist-task-8.8.0_");
-    // PRIO 3
-    assertThat(indices.get(3).allIndices())
-        .containsExactlyInAnyOrder("operate-batch-operation-1.0.0_", "operate-operation-8.4.1_");
-    // PRIO 4
-    assertThat(indices.get(4).allIndices())
+    // PRIO 3 main indices
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
-            "operate-decision-8.3.0_",
+            "operate-batch-operation-1.0.0_",
+            "operate-operation-8.4.1_",
             "operate-decision-instance-8.3.0_",
             "operate-event-8.3.0_",
             "operate-flownode-instance-8.3.1_",
@@ -147,10 +145,15 @@ class BackupPrioritiesTest {
             "tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_",
             "camunda-correlated-message-subscription-8.8.0_");
-
-    // PRIO 4 TEMPLATES
-    assertThat(indices.get(5).allIndices())
+    // PRIO 3 dated indices
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "operate-batch-operation-1.0.0_*",
+            "-operate-batch-operation-1.0.0_",
+            "operate-operation-8.4.1_*",
+            "-operate-operation-8.4.1_",
+            "operate-decision-instance-8.3.0_*",
+            "-operate-decision-instance-8.3.0_",
             "operate-event-8.3.0_*",
             "-operate-event-8.3.0_",
             "operate-flownode-instance-8.3.1_*",
@@ -167,18 +170,17 @@ class BackupPrioritiesTest {
             "-operate-sequence-flow-8.3.0_",
             "operate-variable-8.3.0_*",
             "-operate-variable-8.3.0_",
-            "-operate-decision-instance-8.3.0_",
-            "operate-decision-instance-8.3.0_*",
-            "-tasklist-draft-task-variable-8.3.0_",
             "tasklist-draft-task-variable-8.3.0_*",
-            "-tasklist-task-variable-8.3.0_",
+            "-tasklist-draft-task-variable-8.3.0_",
             "tasklist-task-variable-8.3.0_*",
-            "-camunda-correlated-message-subscription-8.8.0_",
-            "camunda-correlated-message-subscription-8.8.0_*");
+            "-tasklist-task-variable-8.3.0_",
+            "camunda-correlated-message-subscription-8.8.0_*",
+            "-camunda-correlated-message-subscription-8.8.0_");
 
-    // PRIO 5
-    assertThat(indices.get(6).allIndices())
+    // PRIO 4 main indices
+    assertThat(iterator.next().allIndices())
         .containsExactlyInAnyOrder(
+            "operate-decision-8.3.0_",
             "operate-decision-requirements-8.3.0_",
             "operate-metric-8.3.0_",
             "operate-process-8.3.0_",
@@ -193,6 +195,14 @@ class BackupPrioritiesTest {
             "camunda-user-8.8.0_",
             "camunda-usage-metric-8.8.0_",
             "camunda-usage-metric-tu-8.8.0_");
+
+    // PRIO 4 dated indices
+    assertThat(iterator.next().allIndices())
+        .containsExactlyInAnyOrder(
+            "camunda-usage-metric-8.8.0_*",
+            "-camunda-usage-metric-8.8.0_",
+            "camunda-usage-metric-tu-8.8.0_*",
+            "-camunda-usage-metric-tu-8.8.0_");
 
     for (final var indexList : indices) {
       assertThat(indexList.allIndices())
