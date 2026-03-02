@@ -47,10 +47,10 @@ public final class ExpressionServices extends ApiServices<ExpressionServices> {
     return sendBrokerRequest(
         new BrokerExpressionEvaluationRequest()
             .setExpression(request.expression())
-            .setVariables(request.context())
+            .setVariables(request.variables())
             .setTenantId(request.tenantId()));
   }
 
   public record ExpressionEvaluationRequest(
-      String expression, String tenantId, Map<String, Object> context) {}
+      String expression, String tenantId, Map<String, Object> variables) {}
 }
