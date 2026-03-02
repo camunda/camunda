@@ -130,6 +130,7 @@ const auditLogFilterSchema = z
 		formKey: advancedStringFilterSchema.optional(),
 		resourceKey: advancedStringFilterSchema.optional(),
 		relatedEntityType: getEnumFilterSchema(auditLogEntityTypeSchema).optional(),
+		relatedEntityKey: advancedStringFilterSchema.optional(),
 		entityDescription: advancedStringFilterSchema.optional(),
 	})
 	.partial();
