@@ -7,37 +7,17 @@
  */
 
 import {z} from 'zod';
+import {API_VERSION, type Endpoint} from './common';
+import {queryAuditLogsResponseBodySchema} from './audit-log';
 import {
-	API_VERSION,
-	advancedDateTimeFilterSchema,
-	advancedStringFilterSchema,
-	getEnumFilterSchema,
-	getQueryRequestBodySchema,
-	type Endpoint,
-} from './common';
-import {
-	auditLogOperationTypeSchema,
-	auditLogResultStatusSchema,
-	auditLogActorTypeSchema,
-	queryAuditLogsResponseBodySchema,
-} from './audit-log';
-import {auditLogSearchQuerySortRequestSchema} from './gen';
+	userTaskAuditLogFilterSchema as genUserTaskAuditLogFilterSchema,
+	userTaskAuditLogSearchQueryRequestSchema,
+} from './gen';
 
-const userTaskAuditLogFilterSchema = z
-	.object({
-		operationType: getEnumFilterSchema(auditLogOperationTypeSchema).optional(),
-		result: getEnumFilterSchema(auditLogResultStatusSchema).optional(),
-		timestamp: advancedDateTimeFilterSchema.optional(),
-		actorType: getEnumFilterSchema(auditLogActorTypeSchema).optional(),
-		actorId: advancedStringFilterSchema.optional(),
-	})
-	.partial();
+const userTaskAuditLogFilterSchema = genUserTaskAuditLogFilterSchema;
 type UserTaskAuditLogFilter = z.infer<typeof userTaskAuditLogFilterSchema>;
 
-const queryUserTaskAuditLogsRequestBodySchema = getQueryRequestBodySchema({
-	sortFields: auditLogSearchQuerySortRequestSchema.shape.field.options as [string, ...string[]],
-	filter: userTaskAuditLogFilterSchema,
-});
+const queryUserTaskAuditLogsRequestBodySchema = userTaskAuditLogSearchQueryRequestSchema;
 type QueryUserTaskAuditLogsRequestBody = z.infer<typeof queryUserTaskAuditLogsRequestBodySchema>;
 
 const queryUserTaskAuditLogsResponseBodySchema = queryAuditLogsResponseBodySchema;
