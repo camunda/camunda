@@ -97,8 +97,6 @@ const queryVariablesByUserTask: Endpoint<{userTaskKey: string; truncateValues?: 
 	method: 'POST',
 	getUrl: ({userTaskKey, truncateValues}) =>
 		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
-	getUrl: ({userTaskKey, truncateValues}) =>
-		`/${API_VERSION}/user-tasks/${userTaskKey}/variables/search${truncateValues !== undefined ? `?truncateValues=${truncateValues}` : ''}`,
 };
 
 const queryUserTaskAuditLogsRequestBodySchema = userTaskAuditLogSearchQueryRequestSchema;
