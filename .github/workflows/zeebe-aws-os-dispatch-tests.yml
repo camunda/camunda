@@ -11,8 +11,8 @@ on:
         description: Version of AWS OS
         type: choice
         options:
-          - "2.17"
           - "2.19"
+          - "3.3"
   schedule:
     - cron: "0 4 * * Mon-Fri"
 
@@ -33,7 +33,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.17", "2.19"')) }}
+        os_version: ${{ fromJSON(format('[{0}]', inputs.os_version || '"2.19", "3.3"')) }}
         group:
         - os-exporter
         - search-client-os
@@ -79,8 +79,8 @@ jobs:
           roleId: ${{ secrets.VAULT_ROLE_ID }}
           secretId: ${{ secrets.VAULT_SECRET_ID }}
           secrets: |
-            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_17_URL;
             secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_2_19_URL;
+            secret/data/products/camunda/ci/github-actions CAMUNDA_CI_OPENSEARCH_3_3_URL;
       - name: Set temp GH envs
         id: temp-vars
         run: |
@@ -92,14 +92,14 @@ jobs:
             echo "AWS_STS_REGIONAL_ENDPOINTS=$AWS_STS_REGIONAL_ENDPOINTS"
           } >> "$GITHUB_ENV"
 
-          if [[ "${{ matrix.os_version }}" = "2.17" ]]
-          then
-            echo "Using OS 2.17"
-            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_17_URL }};
-          elif [[ "${{ matrix.os_version }}" = "2.19" ]]
+          if [[ "${{ matrix.os_version }}" = "2.19" ]]
           then
             echo "Using OS 2.19"
             OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_2_19_URL }};
+          elif [[ "${{ matrix.os_version }}" = "3.3" ]]
+          then
+            echo "Using OS 3.3"
+            OS_URL="https://"${{ steps.secrets.outputs.CAMUNDA_CI_OPENSEARCH_3_3_URL }};
           else
             echo "Incorrect on usupported version of OpenSearch"
             exit 1
