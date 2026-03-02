@@ -27,6 +27,7 @@ public class Processing {
   private static final boolean DEFAULT_ENABLE_ASYNC_TIMER_DUEDATE_CHECKER = false;
   private static final boolean DEFAULT_ENABLE_STRAIGHTTHROUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+  private static final boolean DEFAULT_ENABLE_GENERIC_RESOURCE_DEPLOYMENT = false;
 
   private static final Set<String> LEGACY_MAX_COMMANDS_IN_BATCH_PROPERTIES =
       Set.of("zeebe.broker.processingCfg.maxCommandsInBatch");
@@ -53,6 +54,10 @@ public class Processing {
           Set.of("zeebe.broker.experimental.features.enableStraightThroughProcessingLoopDetector");
   private static final Set<String> LEGACY_FEATURES_ENABLE_MESSAGE_BODY_ON_EXPIRED_PROPERTIES =
       Set.of("zeebe.broker.experimental.features.enableMessageBodyOnExpired");
+
+  private static final Set<String>
+      LEGACY_FEATURES_ENABLE_GENERIC_RESOURCE_DEPLOYMENT_PROPERTIES =
+          Set.of("zeebe.broker.experimental.features.enableGenericResourceDeployment");
 
   /**
    * Configure flow control for user requests. This setting takes precedence over the backpressure
@@ -166,6 +171,18 @@ public class Processing {
    * default value is false, meaning message bodies will not be appended unless explicitly enabled.
    */
   private boolean enableMessageBodyOnExpired = DEFAULT_ENABLE_MESSAGE_BODY_ON_EXPIRED;
+
+  /**
+   * Alpha feature: enables deployment of generic resources (any file type that is not a BPMN, DMN,
+   * form, or RPA resource). When enabled, files with unrecognized extensions are stored as generic
+   * resources and can be referenced by service tasks via linked resources with deployment binding.
+   * The resource can then be fetched by key via GET /v2/resources/{key}/content.
+   *
+   * <p>This feature is disabled by default because the current resource fetching implementation is
+   * command-based and does not scale. It is intended for alpha use only until a proper read-path
+   * implementation is provided.
+   */
+  private boolean enableGenericResourceDeployment = DEFAULT_ENABLE_GENERIC_RESOURCE_DEPLOYMENT;
 
   public Integer getMaxCommandsInBatch() {
     return UnifiedConfigurationHelper.validateLegacyConfiguration(
@@ -317,6 +334,19 @@ public class Processing {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public boolean isEnableGenericResourceDeployment() {
+    return UnifiedConfigurationHelper.validateLegacyConfiguration(
+        PREFIX + ".enable-generic-resource-deployment",
+        enableGenericResourceDeployment,
+        Boolean.class,
+        BackwardsCompatibilityMode.SUPPORTED,
+        LEGACY_FEATURES_ENABLE_GENERIC_RESOURCE_DEPLOYMENT_PROPERTIES);
+  }
+
+  public void setEnableGenericResourceDeployment(final boolean enableGenericResourceDeployment) {
+    this.enableGenericResourceDeployment = enableGenericResourceDeployment;
   }
 
   public FlowControl getFlowControl() {

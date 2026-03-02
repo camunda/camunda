@@ -47,6 +47,7 @@ public final class FeatureFlags {
   private static final boolean ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR = true;
   private static final boolean ENABLE_IDENTITY_SETUP = true;
   private static final boolean ENABLE_MESSAGE_BODY_ON_EXPIRED = false;
+  private static final boolean ENABLE_GENERIC_RESOURCE_DEPLOYMENT = false;
 
   private boolean yieldingDueDateChecker;
   private boolean enableActorMetrics;
@@ -54,6 +55,7 @@ public final class FeatureFlags {
   private boolean enableTimerDueDateCheckerAsync;
   private boolean enableStraightThroughProcessingLoopDetector;
   private boolean enableMessageBodyOnExpired;
+  private boolean enableGenericResourceDeployment;
 
   public FeatureFlags(
       final boolean yieldingDueDateChecker,
@@ -61,14 +63,15 @@ public final class FeatureFlags {
       final boolean enableMessageTTLCheckerAsync,
       final boolean enableTimerDueDateCheckerAsync,
       final boolean enableStraightThroughProcessingLoopDetector,
-      final boolean enableMessageBodyOnExpired
-      /*, boolean foo*/ ) {
+      final boolean enableMessageBodyOnExpired,
+      final boolean enableGenericResourceDeployment) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
     this.enableActorMetrics = enableActorMetrics;
     this.enableMessageTTLCheckerAsync = enableMessageTTLCheckerAsync;
     this.enableTimerDueDateCheckerAsync = enableTimerDueDateCheckerAsync;
     this.enableStraightThroughProcessingLoopDetector = enableStraightThroughProcessingLoopDetector;
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+    this.enableGenericResourceDeployment = enableGenericResourceDeployment;
   }
 
   public static FeatureFlags createDefault() {
@@ -78,8 +81,8 @@ public final class FeatureFlags {
         ENABLE_MSG_TTL_CHECKER_ASYNC,
         ENABLE_DUE_DATE_CHECKER_ASYNC,
         ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR,
-        ENABLE_MESSAGE_BODY_ON_EXPIRED
-        /*, FOO_DEFAULT*/ );
+        ENABLE_MESSAGE_BODY_ON_EXPIRED,
+        ENABLE_GENERIC_RESOURCE_DEPLOYMENT);
   }
 
   /**
@@ -94,8 +97,8 @@ public final class FeatureFlags {
         true, /* ENABLE_MSG_TTL_CHECKER_ASYNC */
         true, /* ENABLE_DUE_DATE_CHECKER_ASYNC */
         true, /* ENABLE_STRAIGHT_THOUGH_PROCESSING_LOOP_DETECTOR */
-        false /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
-        /*, FOO_DEFAULT*/ );
+        false, /* ENABLE_MESSAGE_BODY_ON_EXPIRED */
+        true /* ENABLE_GENERIC_RESOURCE_DEPLOYMENT */);
   }
 
   public boolean yieldingDueDateChecker() {
@@ -122,6 +125,10 @@ public final class FeatureFlags {
     return enableMessageBodyOnExpired;
   }
 
+  public boolean enableGenericResourceDeployment() {
+    return enableGenericResourceDeployment;
+  }
+
   public void setYieldingDueDateChecker(final boolean yieldingDueDateChecker) {
     this.yieldingDueDateChecker = yieldingDueDateChecker;
   }
@@ -145,6 +152,10 @@ public final class FeatureFlags {
 
   public void setEnableMessageBodyOnExpired(final boolean enableMessageBodyOnExpired) {
     this.enableMessageBodyOnExpired = enableMessageBodyOnExpired;
+  }
+
+  public void setEnableGenericResourceDeployment(final boolean enableGenericResourceDeployment) {
+    this.enableGenericResourceDeployment = enableGenericResourceDeployment;
   }
 
   @Override

@@ -185,4 +185,37 @@ final class FeatureFlagsCfgTest {
     // then
     assertThat(featureFlagsCfg.isEnableMessageBodyOnExpired()).isFalse();
   }
+
+  @Test
+  void shouldEnableGenericResourceDeploymentFromConfig() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableGenericResourceDeployment()).isTrue();
+  }
+
+  @Test
+  void shouldDisableGenericResourceDeploymentByDefault() {
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("empty", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableGenericResourceDeployment()).isFalse();
+  }
+
+  @Test
+  void shouldSetEnableGenericResourceDeploymentFromEnv() {
+    // given
+    environment.put("zeebe.broker.experimental.features.enableGenericResourceDeployment", "false");
+
+    // when
+    final BrokerCfg cfg = TestConfigReader.readConfig("feature-flags-cfg", environment);
+    final var featureFlagsCfg = cfg.getExperimental().getFeatures();
+
+    // then
+    assertThat(featureFlagsCfg.isEnableGenericResourceDeployment()).isFalse();
+  }
 }
